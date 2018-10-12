@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: all gpfsplugin
+NAME=csi-gpfs
 
-GPFS_IMAGE_NAME=faas-registry.sl.cloud9.ibm.com:5000/gpfs-csi/gpfsplugin
-GPFS_IMAGE_VERSION=v0.1
+.PHONY: all $NAME
 
-all: gpfsplugin
+IMAGE_NAME=faas-registry.sl.cloud9.ibm.com:5000/$(NAME)
+IMAGE_VERSION=v0.1
 
-gpfsplugin:
+all: $NAME
+
+$NAME:
 	if [ ! -d ./vendor ]; then dep ensure; fi
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/gpfsplugin ./gpfs
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd
 
-image-gpfsplugin: gpfsplugin
-	cp _output/gpfsplugin  deploy/gpfs/docker
-	docker build -t $(GPFS_IMAGE_NAME):$(GPFS_IMAGE_VERSION) deploy/gpfs/docker
+image-$(NAME): $NAME
+	cp _output/$(NAME)  deploy/docker
+	docker build -t $(IMAGE_NAME):$(IMAGE_VERSION) deploy/docker
 
-image-push-gpfsplugin: gpfsplugin image-gpfsplugin
-	docker push $(GPFS_IMAGE_NAME):$(GPFS_IMAGE_VERSION)
+image-push-$(NAME): $(NAME) image-$(NAME)
+	docker push $(IMAGE_NAME):$(IMAGE_VERSION)
