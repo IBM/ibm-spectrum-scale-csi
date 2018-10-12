@@ -33,7 +33,7 @@ func init() {
 
 var (
 	endpoint   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
-	driverName = flag.String("drivername", "csi-gpfsplugin", "name of the driver")
+	driverName = flag.String("drivername", "csi-gpfs", "name of the driver")
 	nodeID     = flag.String("nodeid", "", "node id")
 	//gpfsApi    = flag.String("gpfsapi", "gpfs-api-server:50051", "address of GPFS API")
 	vendorVersion = "0.3.0"
