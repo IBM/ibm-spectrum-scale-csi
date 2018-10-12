@@ -1,0 +1,98 @@
+# For StatefulSet validation
+#kind: Service
+#apiVersion: v1
+#metadata:
+#  name: csi-gpfsplugin
+  #namespace: kube-system
+#  labels:
+#    app: csi-gpfsplugin
+#spec:
+#  selector:
+#    app: csi-gpfsplugin-driver
+#  ports:
+#    - name: dummy
+#      port: 12345
+---
+
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: csi-gpfsplugin-controller
+spec:
+  serviceName: "csi-gpfsplugin"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-gpfsplugin-driver
+  template:
+    metadata:
+      labels:
+        app: csi-gpfsplugin-driver
+    spec:
+      serviceAccount: csi-controller-sa
+      containers:
+        - name: csi-provisioner
+          imagePullPolicy: Always
+          image: quay.io/k8scsi/csi-provisioner:canary #v0.3.0
+          args:
+            - "--v=5"
+            - "--provisioner=csi-gpfsplugin"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m" # Added
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: csi-attacher
+          imagePullPolicy: Always
+          image: quay.io/k8scsi/csi-attacher:canary #v0.3.0
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m" # Added
+            - "--timeout=2m" # Added
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: gpfsplugin-driver
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          imagePullPolicy: Always
+          image: faas-registry.sl.cloud9.ibm.com:5000/gpfs-csi/gpfsplugin:v0.1
+          args:
+            - "--v=5"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodeid=$(KUBE_NODE_NAME)"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:/csi/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: plugin-dir
+              mountPath: /var/lib/kubelet/plugins/csi-gpfsplugin
+            - name: cmap-config
+              mountPath: /etc/config
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+        # Remove this
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-gpfsplugin
+            type: DirectoryOrCreate
+        - name: cmap-config
+          configMap:
+            name: cmap-config

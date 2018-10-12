@@ -1,0 +1,47 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-gpfsplugin-provisioner
+  labels:
+    app: csi-gpfsplugin-provisioner
+spec:
+  selector:
+    app: csi-gpfsplugin-provisioner
+  ports:
+    - name: dummy
+      port: 12345
+
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: csi-gpfsplugin-provisioner
+spec:
+  serviceName: "csi-gpfsplugin-provisioner"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: csi-gpfsplugin-provisioner
+    spec:
+      serviceAccount: csi-provisioner
+      containers:
+        - name: csi-provisioner
+          image: quay.io/k8scsi/csi-provisioner:v0.3.0
+          args:
+            - "--provisioner=csi-gpfsplugin"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m" # Added
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-gpfsplugin/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/csi-gpfsplugin
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-gpfsplugin
+            type: DirectoryOrCreate

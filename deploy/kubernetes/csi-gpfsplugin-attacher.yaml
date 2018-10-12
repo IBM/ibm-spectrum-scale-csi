@@ -1,0 +1,47 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-gpfsplugin-attacher
+  labels:
+    app: csi-gpfsplugin-attacher
+spec:
+  selector:
+    app: csi-gpfsplugin-attacher
+  ports:
+    - name: dummy
+      port: 12345
+
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: csi-gpfsplugin-attacher
+spec:
+  serviceName: "csi-gpfsplugin-attacher"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: csi-gpfsplugin-attacher
+    spec:
+      serviceAccount: csi-attacher
+      containers:
+        - name: csi-gpfsplugin-attacher
+          image: quay.io/k8scsi/csi-attacher:v0.3.0
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m" # Added
+            - "--resync=10m" # Added
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-gpfsplugin/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/csi-gpfsplugin
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-gpfsplugin
+            type: DirectoryOrCreate

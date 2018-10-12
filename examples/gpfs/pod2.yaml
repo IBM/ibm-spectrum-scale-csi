@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csigpfs-demo-pod2
+spec:
+  containers:
+   - name: web-server
+     image: nginx 
+     volumeMounts:
+       - name: mypvc
+         mountPath: /var/lib/www/html
+  volumes:
+   - name: mypvc
+     persistentVolumeClaim:
+       claimName: gpfs-pvc
+       readOnly: false
