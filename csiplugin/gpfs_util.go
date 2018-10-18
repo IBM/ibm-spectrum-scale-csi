@@ -20,34 +20,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	//"os/exec"
 	"path"
+	//"os/exec"
 	//"strings"
 	//"errors"
 
 	"github.com/golang/glog"
-	//"k8s.io/apimachinery/pkg/util/sets"
-	//"k8s.io/apimachinery/pkg/util/wait"
-	//"k8s.io/kubernetes/pkg/util/keymutex"
-
-        //"github.ibm.com/FSaaS/FSaaS/k8storage/pkg/gpfs"
 )
 
 type gpfsVolume struct {
 	VolName       string `json:"volName"`
 	VolID         string `json:"volID"`
-	Monitors      string `json:"monitors"`
-	Pool          string `json:"pool"`
-	ImageFormat   string `json:"imageFormat"`
-	ImageFeatures string `json:"imageFeatures"`
 	VolSize       int64  `json:"volSize"`
-	AdminId       string `json:"adminId"`
-	UserId        string `json:"userId"`
+	VolFormat     string `json:"volFormat"`
 }
 
 
-// CreateImage creates a new ceph image with provision and volume options.
-func createGpfsImage(pOpts *gpfsVolume, volSz int, adminId string, credentials map[string]string) error {
+// CreateImage creates a new volume with provision and volume options.
+func createGpfsImage(pOpts *gpfsVolume, volSz int) error {
 	var err error
 
 	volName := pOpts.VolID //Name
@@ -71,9 +61,9 @@ func createGpfsImage(pOpts *gpfsVolume, volSz int, adminId string, credentials m
 func getGpfsVolumeOptions(volOptions map[string]string) (*gpfsVolume, error) {
 	var ok bool
 	gpfsVol := &gpfsVolume{}
-	gpfsVol.Pool, ok = volOptions["pool"]
+	gpfsVol.VolFormat, ok = volOptions["volFormat"]
 	if !ok {
-		return nil, fmt.Errorf("Missing required parameter pool")
+		return nil, fmt.Errorf("Missing required parameter volFormat")
 	}
 	return gpfsVol, nil
 }
@@ -131,23 +121,11 @@ func deleteVolInfo(image string, persistentStoragePath string) error {
 	return nil
 }
 
-// DeleteImage deletes a ceph image with provision and volume options.
-func deleteGpfsImage(pOpts *gpfsVolume, adminId string, credentials map[string]string) error {
+// DeleteImage deletes a volume with provision and volume options.
+func deleteGpfsImage(pOpts *gpfsVolume) error {
 	var output []byte
 	var err error
 	image := pOpts.VolID //Name
-	/*found, _, err := gpfsStatus(pOpts, adminId, credentials)
-	if err != nil {
-		return err
-	}
-	if found {
-		glog.Info("gpfs is still being used ", image)
-		return fmt.Errorf("gpfs %s is still being used", image)
-	}*/
-	/*key, err := getGpfsKey(adminId, credentials)
-	if err != nil {
-		return err
-	}*/
 	glog.V(4).Infof("gpfs: rm %s", image)
 
         // Delete FS
@@ -167,8 +145,3 @@ func deleteGpfsImage(pOpts *gpfsVolume, adminId string, credentials map[string]s
 	glog.Errorf("failed to delete gpfs image: %v, command output: %s", err, string(output))
 	return err
 }
-
-/*func execCommand(command string, args []string) ([]byte, error) {
-	cmd := exec.Command(command, args...)
-	return cmd.CombinedOutput()
-}*/

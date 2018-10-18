@@ -37,8 +37,6 @@ import (
 // PluginFolder defines the location of gpfsplugin
 const (
 	PluginFolder      = "/var/lib/kubelet/plugins/csi-gpfs"
-	rbdDefaultAdminId = "admin"
-	rbdDefaultUserId  = rbdDefaultAdminId
 )
 
 type GPFSDriver struct {
@@ -207,7 +205,6 @@ func (driver *GPFSDriver) SetupGPFSDriver(name, vendorVersion, nodeID string) er
 
 func (driver *GPFSDriver) Run(endpoint string) {
 	glog.Infof("Driver: %v version: %v", driver.name, driver.vendorVersion)
-
 	s := NewNonBlockingGRPCServer()
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()

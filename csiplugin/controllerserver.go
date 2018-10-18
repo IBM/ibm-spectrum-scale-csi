@@ -101,7 +101,7 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 	gpfsVol.VolSize = volSizeBytes
 	volSizeGB := int(volSizeBytes / 1024 / 1024 / 1024)
 
-	if err := createGpfsImage(gpfsVol, volSizeGB, gpfsVol.AdminId, req.GetControllerCreateSecrets()); err != nil {
+	if err := createGpfsImage(gpfsVol, volSizeGB); err != nil {
 		if err != nil {
 			glog.Warningf("failed to create volume: %v", err)
 			return nil, err
@@ -137,7 +137,7 @@ func (cs *GPFSControllerServer) DeleteVolume(ctx context.Context, req *csi.Delet
 	volName := gpfsVol.VolName
 	// Deleting gpfs image
 	glog.V(4).Infof("deleting volume %s", volName)
-	if err := deleteGpfsImage(gpfsVol, gpfsVol.AdminId, req.GetControllerDeleteSecrets()); err != nil {
+	if err := deleteGpfsImage(gpfsVol); err != nil {
 		glog.V(3).Infof("failed to delete gpfs image: %s/%s with error: %v", gpfsVol.Pool, volName, err)
 		return nil, err
 	}
