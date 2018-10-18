@@ -23,11 +23,10 @@ all: $NAME
 
 $NAME:
 	if [ ! -d ./vendor ]; then dep ensure; fi
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/csi-gpfs
 
-image-$(NAME): $NAME
-	cp _output/$(NAME)  deploy/docker
-	docker build -t $(IMAGE_NAME):$(IMAGE_VERSION) deploy/docker
+build-image: $NAME
+	docker build -t $(IMAGE_NAME):$(IMAGE_VERSION) .
 
-image-push-$(NAME): $(NAME) image-$(NAME)
+push-image: build-image
 	docker push $(IMAGE_NAME):$(IMAGE_VERSION)
