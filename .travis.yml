@@ -1,8 +1,11 @@
 language: go
 go:
-    - "1.9.4"
-    - "1.11.1"
+    - "1.10.4"
+#    - "1.11.1"
+#script:
+#    - go test -v
 notifications:
     email: false
 before_install:
-    go get -u github.com/golang/dep/cmd/dep
+    - go get -u github.com/golang/dep/cmd/dep
+    - git config --global url."git@github.ibm.com:".insteadOf "https://github.ibm.com/"
