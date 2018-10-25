@@ -28,10 +28,9 @@ import (
 	"google.golang.org/grpc/status"
 	"github.com/golang/glog"
 	"github.com/container-storage-interface/spec/lib/go/csi/v0"
+        "k8s.io/kubernetes/pkg/util/mount"
 
-        //"github.ibm.com/FSaaS/FSaaS/k8storage/pkg/api"
         "github.ibm.com/FSaaS/FSaaS/k8storage/pkg/gpfs"
-        //"github.ibm.com/FSaaS/FSaaS/k8storage/pkg/settings"
 )
 
 // PluginFolder defines the location of gpfsplugin
@@ -121,9 +120,10 @@ func NewControllerServer(d *GPFSDriver) *GPFSControllerServer {
 	}
 }
 
-func NewNodeServer(d *GPFSDriver) *GPFSNodeServer {
+func NewNodeServer(d *GPFSDriver, mounter *mount.SafeFormatAndMount) *GPFSNodeServer {
 	return &GPFSNodeServer{
 		Driver: d,
+		Mounter: mounter,
 	}
 }
 
@@ -169,7 +169,7 @@ func (driver *GPFSDriver) ValidateControllerServiceRequest(c csi.ControllerServi
 	return status.Error(codes.InvalidArgument, "Invalid controller service request")
 }
 
-func (driver *GPFSDriver) SetupGPFSDriver(name, vendorVersion, nodeID string) error {
+func (driver *GPFSDriver) SetupGPFSDriver(name, vendorVersion, nodeID string, mounter *mount.SafeFormatAndMount) error {
 	if name == "" {
 		return fmt.Errorf("Driver name missing")
 	}
@@ -197,8 +197,8 @@ func (driver *GPFSDriver) SetupGPFSDriver(name, vendorVersion, nodeID string) er
 
 	// Set up RPC Servers
 	driver.ids = NewIdentityServer(driver)
-	driver.ns = NewNodeServer(driver) //, mounter, deviceUtils, meta)
-	driver.cs = NewControllerServer(driver)//, cloudProvider, meta)
+	driver.ns = NewNodeServer(driver, mounter) 
+	driver.cs = NewControllerServer(driver)
 
 	return nil
 }

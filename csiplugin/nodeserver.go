@@ -19,7 +19,7 @@ package gpfs
 import (
 	"fmt"
 	"sync"
-	//"os"
+	"os"
 	//"strings"
 
 	"github.com/golang/glog"
@@ -29,11 +29,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	volumeutils "k8s.io/kubernetes/pkg/volume/util"
 	"k8s.io/kubernetes/pkg/util/mount"
 )
 
 type GPFSNodeServer struct {
 	Driver          *GPFSDriver
+	Mounter		*mount.SafeFormatAndMount
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
 	mux sync.Mutex
 }
@@ -62,26 +64,62 @@ func (ns *GPFSNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePu
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Volume Capability must be provided")
 	}
 
-	options := []string{}
+	notMnt, err := ns.Mounter.Interface.IsLikelyNotMountPoint(targetPath)
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorf("cannot validate mount point: %s %v", targetPath, err)
+		return nil, err
+	}
+	if !notMnt {
+		// TODO(#95): check if mount is compatible. Return OK if it is, or appropriate error.
+		/*
+			1) Target Path MUST be the vol referenced by vol ID
+			2) VolumeCapability MUST match
+			3) Readonly MUST match
+
+		*/
+		return &csi.NodePublishVolumeResponse{}, nil
+	}
+
+	if err := ns.Mounter.Interface.MakeDir(targetPath); err != nil {
+		glog.Errorf("mkdir failed on disk %s (%v)", targetPath, err)
+		return nil, err
+	}
+
+	// Perform a bind mount to the full path to allow duplicate mounts of the same PD.
+	options := []string{"bind"}
 	if readOnly {
 		options = append(options, "ro")
 	}
-	options = append(options, "bind")
 
-	fsType := ""
-	glog.V(4).Infof("Bind mount %s at %s, fsType %s, options %v ...", stagingTargetPath, targetPath, fsType, options)
-	mounter := mount.New("")
-	if err := mounter.Mount(stagingTargetPath, targetPath, fsType, options); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	err = ns.Mounter.Interface.Mount(stagingTargetPath, targetPath, "ext4", options)
+	if err != nil {
+		notMnt, mntErr := ns.Mounter.Interface.IsLikelyNotMountPoint(targetPath)
+		if mntErr != nil {
+			glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("NodePublishVolume failed to check whether target path is a mount point: %v", err))
+		}
+		if !notMnt {
+			if mntErr = ns.Mounter.Interface.Unmount(targetPath); mntErr != nil {
+				glog.Errorf("Failed to unmount: %v", mntErr)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("NodePublishVolume failed to unmount target path: %v", err))
+			}
+			notMnt, mntErr := ns.Mounter.Interface.IsLikelyNotMountPoint(targetPath)
+			if mntErr != nil {
+				glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("NodePublishVolume failed to check whether target path is a mount point: %v", err))
+			}
+			if !notMnt {
+				// This is very odd, we don't expect it.  We'll try again next sync loop.
+				glog.Errorf("%s is still mounted, despite call to unmount().  Will try again next sync loop.", targetPath)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("NodePublishVolume something is wrong with mounting: %v", err))
+			}
+		}
+		os.Remove(targetPath)
+		glog.Errorf("Mount of disk %s failed: %v", targetPath, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("NodePublishVolume mount of disk failed: %v", err))
 	}
-	glog.V(4).Infof("Mount bind %s at %s succeed", stagingTargetPath, targetPath)
 
-	/*fsType := "gpfs"
-	diskMounter := &mount.SafeFormatAndMount{Interface: mount.New(""), Exec: mount.NewOsExec()}
-	if err := diskMounter.FormatAndMount(stagingTargetPath, targetPath, fsType, options); err != nil {
-		return nil, err
-	}*/
-
+	glog.V(4).Infof("Successfully mounted %s", targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -99,16 +137,14 @@ func (ns *GPFSNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Node
 		return nil, status.Error(codes.InvalidArgument, "NodeUnpublishVolume Target Path must be provided")
 	}
 
-	// TODO: Check volume still exists
-
-	mounter := mount.New("")
-	err :=  mounter.Unmount(targetPath) //ns.Mounter.Interface.Unmount(targetPath)
+	err := volumeutils.UnmountMountPoint(targetPath, ns.Mounter.Interface, false /* bind mount */)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unmount failed: %v\nUnmounting arguments: %s\n", err, targetPath))
 	}
 
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
+
 func (ns *GPFSNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (
 	*csi.NodeStageVolumeResponse, error) {
 	ns.mux.Lock()

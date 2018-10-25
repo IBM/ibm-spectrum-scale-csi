@@ -23,8 +23,10 @@ import (
 	"time"
 	"math/rand"
 
-	"github.ibm.com/FSaaS/FSaaS/k8storage/csi/pkg/gpfs"
 	"github.com/golang/glog"
+
+	driver "github.ibm.com/FSaaS/csi-gpfs/csiplugin"
+	mountmanager "github.ibm.com/FSaaS/csi-iscsi/pkg/mount-manager"
 )
 
 func init() {
@@ -43,11 +45,11 @@ func main() {
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 
-	if err := createPersistentStorage(path.Join(gpfs.PluginFolder, "controller")); err != nil {
+	if err := createPersistentStorage(path.Join(driver.PluginFolder, "controller")); err != nil {
 		glog.Errorf("failed to create persistent storage for controller %v", err)
 		os.Exit(1)
 	}
-	if err := createPersistentStorage(path.Join(gpfs.PluginFolder, "node")); err != nil {
+	if err := createPersistentStorage(path.Join(driver.PluginFolder, "node")); err != nil {
 		glog.Errorf("failed to create persistent storage for node %v", err)
 		os.Exit(1)
 	}
@@ -57,8 +59,9 @@ func main() {
 }
 
 func handle() {
-	driver := gpfs.GetGpfsDriver()
-	err := driver.SetupGPFSDriver(*driverName, vendorVersion, *nodeID)
+	driver := driver.GetGpfsDriver()
+	mounter := mountmanager.NewSafeMounter()
+	err := driver.SetupGPFSDriver(*driverName, vendorVersion, *nodeID, mounter)
 	if err != nil {
 		glog.Fatalf("Failed to initialize GPFS CSI Driver: %v", err)
 	}

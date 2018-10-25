@@ -43,11 +43,15 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.ibm.com/FSaaS/csi-iscsi"
+
+[[constraint]]
+  branch = "master"
   name = "golang.org/x/net"
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "1.15.0"
+  version = "1.16.0"
 
 [[constraint]]
   name = "k8s.io/kubernetes"

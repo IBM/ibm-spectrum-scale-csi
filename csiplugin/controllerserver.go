@@ -87,7 +87,7 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 	volName := req.GetName()
 	uniqueID := uuid.NewUUID().String()
 	if len(volName) == 0 {
-		volName = gpfsVol.Pool + "_dynamic_pvc_" + uniqueID
+		volName = "dynamic_pvc_" + uniqueID
 	}
 	gpfsVol.VolName = volName
 	//volumeID := "csi_gpfs-" + uniqueID
@@ -138,7 +138,7 @@ func (cs *GPFSControllerServer) DeleteVolume(ctx context.Context, req *csi.Delet
 	// Deleting gpfs image
 	glog.V(4).Infof("deleting volume %s", volName)
 	if err := deleteGpfsImage(gpfsVol); err != nil {
-		glog.V(3).Infof("failed to delete gpfs image: %s/%s with error: %v", gpfsVol.Pool, volName, err)
+		glog.V(3).Infof("failed to delete gpfs image: %s with error: %v", volName, err)
 		return nil, err
 	}
 	// Removing persistent storage file for the unmapped volume
