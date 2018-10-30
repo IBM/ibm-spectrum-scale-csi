@@ -27,7 +27,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
-            - name: socket-dir
+            - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins/csi-gpfs
         - name: csi-gpfs
           securityContext:
@@ -57,11 +57,6 @@ spec:
               mountPropagation: "Bidirectional"
             - mountPath: /dev
               name: host-dev
-            - mountPath: /sys
-              name: host-sys
-            - mountPath: /lib/modules
-              name: lib-modules
-              readOnly: true
             - name: cmap-config
               mountPath: /etc/config
       volumes:
@@ -73,19 +68,9 @@ spec:
           hostPath:
             path: /var/lib/kubelet
             type: Directory
-        - name: socket-dir
-          hostPath:
-            path: /var/lib/kubelet/plugins/csi-gpfs
-            type: DirectoryOrCreate
         - name: host-dev
           hostPath:
             path: /dev
-        - name: host-sys
-          hostPath:
-            path: /sys
-        - name: lib-modules
-          hostPath:
-            path: /lib/modules
         - name: cmap-config
           configMap:
             name: cmap-config

@@ -30,7 +30,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi/v0"
         "k8s.io/kubernetes/pkg/util/mount"
 
-        "github.ibm.com/FSaaS/FSaaS/k8storage/pkg/gpfs"
+        "github.ibm.com/FSaaS/scale-image/pkg/gpfs"
 )
 
 // PluginFolder defines the location of gpfsplugin

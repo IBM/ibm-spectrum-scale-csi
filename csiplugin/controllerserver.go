@@ -45,7 +45,7 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 	glog.V(3).Infof("create volume req: %v", req)
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		glog.V(3).Infof("invalid create volume req: %v", req)
-		return nil, err
+		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume ValidateControllerServiceRequest failed: %v", err))
 	}
 	// Check sanity of request Name, Volume Capabilities
 	if len(req.Name) == 0 {
@@ -73,13 +73,16 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 				},
 			}, nil
 		}
-		return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("Volume with the same name: %s but with different size already exist", req.GetName()))
+		return nil, status.Error(codes.AlreadyExists,
+					 fmt.Sprintf("Volume with the same name: %s but with different size already exist",
+						     req.GetName()))
 	}
 	glog.V(3).Infof("volume with name %s does not exist (volumes len: %d), create\n", req.GetName(), len(gpfsVolumes))
 
 	gpfsVol, err := getGpfsVolumeOptions(req.GetParameters())
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal,
+					 fmt.Sprintf("CreateVolume unable to get volume options: %v", err))
 	}
 
 	/* Generating Volume Name and Volume ID, as according to CSI
@@ -104,13 +107,16 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 	if err := createGpfsImage(gpfsVol, volSizeGB); err != nil {
 		if err != nil {
 			glog.Warningf("failed to create volume: %v", err)
-			return nil, err
+			return nil, status.Error(codes.Internal,
+						 fmt.Sprintf("Failed to create volume: %v", err))
 		}
 	}
 	glog.V(4).Infof("created gpfs backend volume %s, create response", volName)
 	// Storing volInfo into a persistent file.
 	if err := persistVolInfo(volumeID, path.Join(PluginFolder, "controller"), gpfsVol); err != nil {
-		glog.Warningf("gpfs: failed to store volInfo with error: %v", err)
+		glog.Warningf("failed to store volInfo with error: %v", err)
+		return nil, status.Error(codes.Internal,
+					 fmt.Sprintf("failed to store volInfo with error: %v", err))
 	}
 	gpfsVolumes[volumeID] = gpfsVol
 	glog.V(4).Infof("Added volumeID %s in gpfsVolumes (len %d)", volumeID, len(gpfsVolumes))
@@ -126,24 +132,28 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 func (cs *GPFSControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		glog.Warningf("invalid delete volume req: %v", req)
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument,
+					 fmt.Sprintf("invalid delete volume req (%v): %v", req, err))
 	}
 	// For now the image get unconditionally deleted, but here retention policy can be checked
 	volumeID := req.GetVolumeId()
 	gpfsVol := &gpfsVolume{}
 	if err := loadVolInfo(volumeID, path.Join(PluginFolder, "controller"), gpfsVol); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal,
+					 fmt.Sprintf("failed to load volInfo: %v", err))
 	}
 	volName := gpfsVol.VolName
 	// Deleting gpfs image
 	glog.V(4).Infof("deleting volume %s", volName)
 	if err := deleteGpfsImage(gpfsVol); err != nil {
 		glog.V(3).Infof("failed to delete gpfs image: %s with error: %v", volName, err)
-		return nil, err
+		return nil, status.Error(codes.Internal,
+					 fmt.Sprintf("failed to delete gpfs image: %s with error: %v", volName, err))
 	}
 	// Removing persistent storage file for the unmapped volume
 	if err := deleteVolInfo(volumeID, path.Join(PluginFolder, "controller")); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal,
+					 fmt.Sprintf("failed to delete volInfo with error: %v", err))
 	}
 
 	delete(gpfsVolumes, volumeID)

@@ -26,7 +26,7 @@ import (
 	"github.com/golang/glog"
 
 	driver "github.ibm.com/FSaaS/csi-gpfs/csiplugin"
-	mountmanager "github.ibm.com/FSaaS/csi-iscsi/pkg/mount-manager"
+	mountmanager "github.ibm.com/FSaaS/csi-gpfs/pkg/mount-manager"
 )
 
 func init() {

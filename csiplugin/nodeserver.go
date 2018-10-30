@@ -69,8 +69,9 @@ func (ns *GPFSNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePu
 		glog.Errorf("cannot validate mount point: %s %v", targetPath, err)
 		return nil, err
 	}
+
 	if !notMnt {
-		// TODO(#95): check if mount is compatible. Return OK if it is, or appropriate error.
+		// TODO: check if mount is compatible. Return OK if it is, or appropriate error.
 		/*
 			1) Target Path MUST be the vol referenced by vol ID
 			2) VolumeCapability MUST match
@@ -82,7 +83,8 @@ func (ns *GPFSNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePu
 
 	if err := ns.Mounter.Interface.MakeDir(targetPath); err != nil {
 		glog.Errorf("mkdir failed on disk %s (%v)", targetPath, err)
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument,
+                                         fmt.Sprintf("mkdir failed on disk %s (%v)", targetPath, err))
 	}
 
 	// Perform a bind mount to the full path to allow duplicate mounts of the same PD.

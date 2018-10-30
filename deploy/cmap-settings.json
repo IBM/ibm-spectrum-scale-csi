@@ -1,0 +1,8 @@
+{
+   "settings": {
+      "gpfsApi": {
+         "gpfsApiListen":":50051",
+         "gpfsApiDial":"fin27p:50051"
+      }
+   }
+}
