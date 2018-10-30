@@ -262,7 +262,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ad08bc25d80e8028e6d8184f17361e8d50c42667f42fbf331dd75327d805abc3"
+  digest = "1:fc8d05699da989b4e1e39e702dae219328cb1c7e9e8ffb0a384a99ed662ad5e0"
   name = "github.ibm.com/FSaaS/scale-image"
   packages = [
     "helloworld",
@@ -271,7 +271,7 @@
     "pkg/settings",
   ]
   pruneopts = "NUT"
-  revision = "f572b1db0072c2eb29ebe01e17ea6c76760ca124"
+  revision = "a63c4ba89b481749a9a011309e803e307fcadfc2"
 
 [[projects]]
   branch = "master"
