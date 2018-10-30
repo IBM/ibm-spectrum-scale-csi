@@ -39,11 +39,36 @@ git clone git@github.ibm.com:FSaaS/csi-gpfs.git
 ## Deployment
 
   * Create
-    * To deploy the plugin along with the external-attacher, external-provisioner, and set the RBAC settings run:
+    * Deploy the plugin along with the external-attacher, external-provisioner, configuration (GPFS API, block devices), and RBAC:
     ```
     ./deploy/create.sh
     ```
   * Delete
   ```
   ./deploy/delete.sh
+  ```
+## Example usage
+
+* Create
+  * Create a GPFS PVC - provision a GPFS PV
+  ```
+  ./examples/create.sh
+  ```
+  * Deploy POD using created PVC
+  ```
+  kubectl create -f ./examples/pod.yaml
+  ```
+  * Deploy additional POD using created PVC
+  ```
+  kubectl create -f ./examples/pod2.yaml
+  ```
+* Delete
+  * Delete PODs
+  ```
+  kubectl delete -f ./examples/pod.yaml
+  kubectl delete -f ./examples/pod2.yaml
+  ```
+  * Delete PVC (deprovision GPFS PV)
+  ```
+  ./examples/destroy.sh
   ```
