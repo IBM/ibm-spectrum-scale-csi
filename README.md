@@ -45,7 +45,7 @@ git clone git@github.ibm.com:FSaaS/csi-gpfs.git
     ```
   * Delete
   ```
-  ./deploy/delete.sh
+  ./deploy/destroy.sh
   ```
 ## Example usage
 * First, deploy scale-image (see other repo). In particular, the API server must have started.
