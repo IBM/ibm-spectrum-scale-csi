@@ -48,7 +48,7 @@ git clone git@github.ibm.com:FSaaS/csi-gpfs.git
   ./deploy/delete.sh
   ```
 ## Example usage
-
+* First, deploy scale-image (see other repo). In particular, the API server must have started.
 * Create
   * Create a GPFS PVC - provision a GPFS PV
   ```
