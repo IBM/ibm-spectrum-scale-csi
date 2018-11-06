@@ -4,5 +4,5 @@ metadata:
    name: csi-gpfs
 provisioner: csi-gpfs
 parameters:
-    volFormat: tbd
+    volIscsi: false
 reclaimPolicy: Delete

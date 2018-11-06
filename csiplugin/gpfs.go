@@ -31,6 +31,7 @@ import (
         "k8s.io/kubernetes/pkg/util/mount"
 
         "github.ibm.com/FSaaS/scale-image/pkg/gpfs"
+        "github.ibm.com/FSaaS/csi-iscsi/pkg/iscsi"
 )
 
 // PluginFolder defines the location of gpfsplugin
@@ -56,6 +57,9 @@ var gpfsVolumes map[string]*gpfsVolume
 
 // GPFS Operations
 var ops = gpfs.NewGpfsOps()
+
+// iSCSI Operations
+var iscsiOps = iscsi.NewOps()
 
 
 // Init checks for the persistent volume file and loads all found volumes

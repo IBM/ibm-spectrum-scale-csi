@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	//"os/exec"
 	//"strings"
 	//"errors"
@@ -32,7 +33,7 @@ type gpfsVolume struct {
 	VolName       string `json:"volName"`
 	VolID         string `json:"volID"`
 	VolSize       int64  `json:"volSize"`
-	VolFormat     string `json:"volFormat"`
+	VolIscsi      bool   `json:"volIscsi"`
 }
 
 
@@ -41,9 +42,45 @@ func createGpfsImage(pOpts *gpfsVolume, volSz int) error {
 	var err error
 
 	volName := pOpts.VolID //Name
+	var device string = ""
 
-	glog.V(4).Infof("create NSD (%s)", volName)
-	err = ops.CreateNSD(volName)
+	/* 
+	* Check if device for NSD must be backed by iSCSI
+	* and if so, create/attach an iSCSI volume.
+	*/
+	if (pOpts.VolIscsi) {
+		// Create iSCSI volume.
+		glog.V(4).Infof("create iSCSI volume (%s)", volName)
+		pbVol, err := iscsiOps.CreateVolume(volName, volSz)
+		if err != nil {
+			glog.Errorf("Failed to create volume (%s): %v", volName, err)
+			return err
+		}
+
+		// Attach volume to all nodes in gpfs cluster.
+		nodes := []string{"fin27p","fin31p","fin57p"} // TODO
+		for _, node := range nodes {
+			err = ops.AttachIscsiDevicesToNode(pbVol.Iphost, pbVol.Iqn, node)
+			if err != nil {
+				glog.Errorf("Failed to attach devices to node (%s): %v", node, err)
+				return err
+			}
+		}
+		device = iscsiOps.GetDevicePath(pbVol.Iphost, pbVol.Iqn, pbVol.Lun)
+		// Pick node for NSD
+		device = "fin31p:"+device
+		
+	} else {
+	        // Pick raw device based on some policy.
+        	device, err = ops.Sched.PickNextRawDevice()
+	        if err != nil {
+			glog.Errorf("Failed to pick backing device: %v", err)
+                	return err
+	        }
+	}
+
+	glog.V(4).Infof("create NSD (%s) backed by %s", volName, device)
+	err = ops.CreateNSD(volName, device)
 	if err != nil {
 		glog.Errorf("Failed to create nsd (%s): %v", volName, err)
 		return err
@@ -59,11 +96,11 @@ func createGpfsImage(pOpts *gpfsVolume, volSz int) error {
 }
 
 func getGpfsVolumeOptions(volOptions map[string]string) (*gpfsVolume, error) {
-	var ok bool
+	var err error
 	gpfsVol := &gpfsVolume{}
-	gpfsVol.VolFormat, ok = volOptions["volFormat"]
-	if !ok {
-		return nil, fmt.Errorf("Missing required parameter volFormat")
+	gpfsVol.VolIscsi, err = strconv.ParseBool(volOptions["volIscsi"])
+	if err != nil {
+		return nil, fmt.Errorf("Missing required parameter volIscsi, %v", err)
 	}
 	return gpfsVol, nil
 }

@@ -12,11 +12,16 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.ibm.com/FSaaS/csi-iscsi"
+
+[[constraint]]
+  branch = "master"
   name = "github.ibm.com/FSaaS/scale-image"
 
 [[constraint]]
   name = "golang.org/x/net"
-  branch = "master"
+  #branch = "master"
+  branch = "release-branch.go1.10"
 
 [[constraint]]
   name = "google.golang.org/grpc"
