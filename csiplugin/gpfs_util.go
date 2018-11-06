@@ -66,7 +66,7 @@ func createGpfsImage(pOpts *gpfsVolume, volSz int) error {
 				return err
 			}
 		}
-		device = iscsiOps.GetDevicePath(pbVol.Iphost, pbVol.Iqn, pbVol.Lun)
+		device = iscsiOps.GetDevicePath(pbVol.Iphost, pbVol.Iqn, strconv.Itoa(int(pbVol.Lun)))
 		// Pick node for NSD
 		device = "fin31p:"+device
 		
