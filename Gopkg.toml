@@ -20,8 +20,8 @@
 
 [[constraint]]
   name = "golang.org/x/net"
-  #branch = "master"
-  branch = "release-branch.go1.10"
+  branch = "master"
+  #branch = "release-branch.go1.10"
 
 [[constraint]]
   name = "google.golang.org/grpc"
