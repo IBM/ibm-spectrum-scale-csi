@@ -3,7 +3,7 @@
       "gpfsApi": {
          "gpfsApiListen":":50051",
          "gpfsApiDial":"fin27p:50051"
-      }
+      },
       "iscsiApi": {
          "iscsiApiDial":"fin27p:50061"
       }
