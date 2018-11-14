@@ -34,11 +34,12 @@ type gpfsVolume struct {
 	VolID         string `json:"volID"`
 	VolSize       int64  `json:"volSize"`
 	VolIscsi      bool   `json:"volIscsi"`
+	VolIscsiVid   string `json:"volIscsiVid"`
 }
 
 
 // CreateImage creates a new volume with provision and volume options.
-func createGpfsImage(pOpts *gpfsVolume, volSz int) error {
+func createGpfsImage(pOpts *gpfsVolume, volSzMb int) error {
 	var err error
 
 	volName := pOpts.VolID //Name
@@ -51,11 +52,12 @@ func createGpfsImage(pOpts *gpfsVolume, volSz int) error {
 	if (pOpts.VolIscsi) {
 		// Create iSCSI volume.
 		glog.V(4).Infof("create iSCSI volume (%s)", volName)
-		pbVol, err := iscsiOps.CreateVolume(volName, volSz)
+		pbVol, err := iscsiOps.CreateVolume(volName, volSzMb)
 		if err != nil {
 			glog.Errorf("Failed to create volume (%s): %v", volName, err)
 			return err
 		}
+		pOpts.VolIscsiVid = pbVol.Vid.Val
 
 		// Attach volume to all nodes in gpfs cluster.
 		nodes := []string{"fin27p","fin31p","fin57p"} // TODO
@@ -160,7 +162,7 @@ func deleteVolInfo(image string, persistentStoragePath string) error {
 
 // DeleteImage deletes a volume with provision and volume options.
 func deleteGpfsImage(pOpts *gpfsVolume) error {
-	var output []byte
+	//var output []byte
 	var err error
 	image := pOpts.VolID //Name
 	glog.V(4).Infof("gpfs: rm %s", image)
@@ -179,6 +181,7 @@ func deleteGpfsImage(pOpts *gpfsVolume) error {
                 return fmt.Errorf("failed to delete gpfs nsd: %v", err)
         }
 
-	glog.Errorf("failed to delete gpfs image: %v, command output: %s", err, string(output))
+	//glog.Errorf("failed to delete gpfs image: %v, command output: %s", err, string(output))
+	err = iscsiOps.DeleteVolume(pOpts.VolIscsiVid)
 	return err
 }

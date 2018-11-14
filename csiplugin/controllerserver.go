@@ -102,9 +102,9 @@ func (cs *GPFSControllerServer) CreateVolume(ctx context.Context, req *csi.Creat
 		volSizeBytes = int64(req.GetCapacityRange().GetRequiredBytes())
 	}
 	gpfsVol.VolSize = volSizeBytes
-	volSizeGB := int(volSizeBytes / 1024 / 1024 / 1024)
+	volSizeMB := int(volSizeBytes / 1024 / 1024)
 
-	if err := createGpfsImage(gpfsVol, volSizeGB); err != nil {
+	if err := createGpfsImage(gpfsVol, volSizeMB); err != nil {
 		if err != nil {
 			glog.Warningf("failed to create volume: %v", err)
 			return nil, status.Error(codes.Internal,
