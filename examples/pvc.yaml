@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: gpfs-pvc
+  name: scale-pvc
 spec:
   accessModes:
   - ReadWriteMany

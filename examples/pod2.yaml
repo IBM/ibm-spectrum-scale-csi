@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: csigpfs-demo-pod2
+  name: csi-scale-demo-pod2
 spec:
   containers:
    - name: web-server
@@ -12,5 +12,5 @@ spec:
   volumes:
    - name: mypvc
      persistentVolumeClaim:
-       claimName: gpfs-pvc
+       claimName: scale-pvc
        readOnly: false
