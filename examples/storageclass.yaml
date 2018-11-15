@@ -1,8 +1,8 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-   name: csi-gpfs
-provisioner: csi-gpfs
+   name: csi-scale
+provisioner: csi-scale
 parameters:
     volIscsi: "true"
 reclaimPolicy: Delete

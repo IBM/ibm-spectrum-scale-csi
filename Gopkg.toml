@@ -42,6 +42,22 @@
   name = "k8s.io/apiserver"
   version = "kubernetes-1.12.1"
 
+[[override]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.12.1"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.12.1"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.12.1"
+
+[[override]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.12.1"
+
 # Transitive dependency of CSI Spec
 #[[override]]
 #  name = "github.com/golang/protobuf"

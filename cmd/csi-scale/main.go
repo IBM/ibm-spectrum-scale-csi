@@ -25,8 +25,8 @@ import (
 
 	"github.com/golang/glog"
 
-	driver "github.ibm.com/FSaaS/csi-gpfs/csiplugin"
-	mountmanager "github.ibm.com/FSaaS/csi-gpfs/pkg/mount-manager"
+	driver "github.ibm.com/FSaaS/csi-scale/csiplugin"
+	mountmanager "github.ibm.com/FSaaS/csi-scale/pkg/mount-manager"
 )
 
 func init() {
@@ -35,7 +35,7 @@ func init() {
 
 var (
 	endpoint   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
-	driverName = flag.String("drivername", "csi-gpfs", "name of the driver")
+	driverName = flag.String("drivername", "csi-scale", "name of the driver")
 	nodeID     = flag.String("nodeid", "", "node id")
 	//gpfsApi    = flag.String("gpfsapi", "gpfs-api-server:50051", "address of GPFS API")
 	vendorVersion = "0.3.0"

@@ -1,4 +1,4 @@
-[![Build Status](https://travis.ibm.com/FSaaS/csi-gpfs.svg?token=sfEsUpvxtZ9kpqpJBFp8&branch=master)](https://travis.ibm.com/FSaaS/csi-gpfs)
+[![Build Status](https://travis.ibm.com/FSaaS/csi-scale.svg?token=sfEsUpvxtZ9kpqpJBFp8&branch=master)](https://travis.ibm.com/FSaaS/csi-scale)
 
 # CSI Plugin for GPFS
 
@@ -13,7 +13,7 @@ export $GOPATH=/path/to/src
 ```
 mkdir -p $GOPATH/github.ibm.com/FSaaS
 cd $GOPATH/github.ibm.com/FSaaS
-git clone git@github.ibm.com:FSaaS/csi-gpfs.git
+git clone git@github.ibm.com:FSaaS/csi-scale.git
 ```
 
 * Build

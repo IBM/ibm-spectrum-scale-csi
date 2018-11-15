@@ -36,7 +36,7 @@ import (
 
 // PluginFolder defines the location of gpfsplugin
 const (
-	PluginFolder      = "/var/lib/kubelet/plugins/csi-gpfs"
+	PluginFolder      = "/var/lib/kubelet/plugins/csi-scale"
 )
 
 type GPFSDriver struct {

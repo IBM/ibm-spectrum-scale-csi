@@ -1,15 +1,15 @@
 kind: DaemonSet
 apiVersion: apps/v1beta2
 metadata:
-  name: csi-gpfs
+  name: csi-scale
 spec:
   selector:
     matchLabels:
-      app: csi-gpfs
+      app: csi-scale
   template:
     metadata:
       labels:
-        app: csi-gpfs
+        app: csi-scale
     spec:
       serviceAccount: csi-nodeplugin
       hostNetwork: true
@@ -21,37 +21,37 @@ spec:
             - "--csi-address=$(ADDRESS)"
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/csi-gpfs/csi.sock
+              value: /var/lib/kubelet/plugins/csi-scale/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/csi-gpfs
-        - name: csi-gpfs
+              mountPath: /var/lib/kubelet/plugins/csi-scale
+        - name: csi-scale
           securityContext:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: faas-registry.sl.cloud9.ibm.com:5000/csi-gpfs:v0.1
+          image: faas-registry.sl.cloud9.ibm.com:5000/csi-scale:v0.1
           args :
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--v=5"
-            - "--drivername=csi-gpfs"
+            - "--drivername=csi-scale"
           env:
             - name: NODE_ID
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: CSI_ENDPOINT
-              value: unix:/var/lib/kubelet/plugins/csi-gpfs/csi.sock
+              value: unix:/var/lib/kubelet/plugins/csi-scale/csi.sock
           imagePullPolicy: "Always" #"IfNotPresent"
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/csi-gpfs
+              mountPath: /var/lib/kubelet/plugins/csi-scale
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet
               mountPropagation: "Bidirectional"
@@ -62,7 +62,7 @@ spec:
       volumes:
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/csi-gpfs
+            path: /var/lib/kubelet/plugins/csi-scale
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:
