@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gpfs
+package scale
 
 import (
 	"encoding/json"
@@ -30,33 +30,33 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi/v0"
         "k8s.io/kubernetes/pkg/util/mount"
 
-        "github.ibm.com/FSaaS/scale-image/pkg/gpfs"
+        "github.ibm.com/FSaaS/scale-image/pkg/scale"
         "github.ibm.com/FSaaS/csi-iscsi/pkg/iscsi"
 )
 
-// PluginFolder defines the location of gpfsplugin
+// PluginFolder defines the location of scaleplugin
 const (
 	PluginFolder      = "/var/lib/kubelet/plugins/csi-scale"
 )
 
-type GPFSDriver struct {
+type ScaleDriver struct {
 	name          string
 	vendorVersion string
 	nodeID        string
 
-	ids *GPFSIdentityServer
-	ns  *GPFSNodeServer
-	cs  *GPFSControllerServer
+	ids *ScaleIdentityServer
+	ns  *ScaleNodeServer
+	cs  *ScaleControllerServer
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
 	nscap []*csi.NodeServiceCapability
 }
 
-var gpfsVolumes map[string]*gpfsVolume
+var scaleVolumes map[string]*scaleVolume
 
-// GPFS Operations
-var ops = gpfs.NewGpfsOps()
+// Scale Operations
+var ops = scale.NewScaleOps()
 
 // iSCSI Operations
 var iscsiOps = iscsi.NewOps()
@@ -65,27 +65,27 @@ var iscsiOps = iscsi.NewOps()
 // Init checks for the persistent volume file and loads all found volumes
 // into a memory structure
 func init() {
-	gpfsVolumes = map[string]*gpfsVolume{}
+	scaleVolumes = map[string]*scaleVolume{}
 	if _, err := os.Stat(path.Join(PluginFolder, "controller")); os.IsNotExist(err) {
-		glog.Infof("gpfs: folder %s not found. Creating... \n", path.Join(PluginFolder, "controller"))
+		glog.Infof("scale: folder %s not found. Creating... \n", path.Join(PluginFolder, "controller"))
 		if err := os.Mkdir(path.Join(PluginFolder, "controller"), 0755); err != nil {
 			glog.Fatalf("Failed to create a controller's volumes folder with error: %v\n", err)
 		}
 	} else {
 		// Since "controller" folder exists, it means the plugin has already been running, it means
-		// there might be some volumes left, they must be re-inserted into gpfsVolumes map
+		// there might be some volumes left, they must be re-inserted into scaleVolumes map
 		loadExVolumes()
 	}
 }
 
 
 // loadExVolumes check for any *.json files in the  PluginFolder/controller folder
-// and loads then into gpfsVolumes map
+// and loads then into scaleVolumes map
 func loadExVolumes() {
-	gpfsVol := gpfsVolume{}
+	scaleVol := scaleVolume{}
 	files, err := ioutil.ReadDir(path.Join(PluginFolder, "controller"))
 	if err != nil {
-		glog.Infof("gpfs: failed to read controller's volumes folder: %s error:%v", path.Join(PluginFolder, "controller"), err)
+		glog.Infof("scale: failed to read controller's volumes folder: %s error:%v", path.Join(PluginFolder, "controller"), err)
 		return
 	}
 	for _, f := range files {
@@ -94,44 +94,44 @@ func loadExVolumes() {
 		}
 		fp, err := os.Open(path.Join(PluginFolder, "controller", f.Name()))
 		if err != nil {
-			glog.Infof("gpfs: open file: %s err %%v", f.Name(), err)
+			glog.Infof("scale: open file: %s err %%v", f.Name(), err)
 			continue
 		}
 		decoder := json.NewDecoder(fp)
-		if err = decoder.Decode(&gpfsVol); err != nil {
-			glog.Infof("gpfs: decode file: %s err: %v", f.Name(), err)
+		if err = decoder.Decode(&scaleVol); err != nil {
+			glog.Infof("scale: decode file: %s err: %v", f.Name(), err)
 			fp.Close()
 			continue
 		}
-		gpfsVolumes[gpfsVol.VolID] = &gpfsVol
+		scaleVolumes[scaleVol.VolID] = &scaleVol
 	}
-	glog.Infof("gpfs: Loaded %d volumes from %s", len(gpfsVolumes), path.Join(PluginFolder, "controller"))
+	glog.Infof("scale: Loaded %d volumes from %s", len(scaleVolumes), path.Join(PluginFolder, "controller"))
 }
 
-func GetGpfsDriver() *GPFSDriver {
-	return &GPFSDriver{}
+func GetScaleDriver() *ScaleDriver {
+	return &ScaleDriver{}
 }
 
-func NewIdentityServer(d *GPFSDriver) *GPFSIdentityServer {
-	return &GPFSIdentityServer{
+func NewIdentityServer(d *ScaleDriver) *ScaleIdentityServer {
+	return &ScaleIdentityServer{
 		Driver: d,
 	}
 }
 
-func NewControllerServer(d *GPFSDriver) *GPFSControllerServer {
-	return &GPFSControllerServer{
+func NewControllerServer(d *ScaleDriver) *ScaleControllerServer {
+	return &ScaleControllerServer{
 		Driver: d,
 	}
 }
 
-func NewNodeServer(d *GPFSDriver, mounter *mount.SafeFormatAndMount) *GPFSNodeServer {
-	return &GPFSNodeServer{
+func NewNodeServer(d *ScaleDriver, mounter *mount.SafeFormatAndMount) *ScaleNodeServer {
+	return &ScaleNodeServer{
 		Driver: d,
 		Mounter: mounter,
 	}
 }
 
-func (driver *GPFSDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) error {
+func (driver *ScaleDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) error {
 	var vca []*csi.VolumeCapability_AccessMode
 	for _, c := range vc {
 		glog.V(4).Infof("Enabling volume access mode: %v", c.String())
@@ -141,7 +141,7 @@ func (driver *GPFSDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapabili
 	return nil
 }
 
-func (driver *GPFSDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) error {
+func (driver *ScaleDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) error {
 	var csc []*csi.ControllerServiceCapability
 	for _, c := range cl {
 		glog.V(4).Infof("Enabling controller service capability: %v", c.String())
@@ -151,7 +151,7 @@ func (driver *GPFSDriver) AddControllerServiceCapabilities(cl []csi.ControllerSe
 	return nil
 }
 
-func (driver *GPFSDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapability_RPC_Type) error {
+func (driver *ScaleDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapability_RPC_Type) error {
 	var nsc []*csi.NodeServiceCapability
 	for _, n := range nl {
 		glog.V(4).Infof("Enabling node service capability: %v", n.String())
@@ -161,7 +161,7 @@ func (driver *GPFSDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapabil
 	return nil
 }
 
-func (driver *GPFSDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
+func (driver *ScaleDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}
@@ -173,7 +173,7 @@ func (driver *GPFSDriver) ValidateControllerServiceRequest(c csi.ControllerServi
 	return status.Error(codes.InvalidArgument, "Invalid controller service request")
 }
 
-func (driver *GPFSDriver) SetupGPFSDriver(name, vendorVersion, nodeID string, mounter *mount.SafeFormatAndMount) error {
+func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string, mounter *mount.SafeFormatAndMount) error {
 	if name == "" {
 		return fmt.Errorf("Driver name missing")
 	}
@@ -207,7 +207,7 @@ func (driver *GPFSDriver) SetupGPFSDriver(name, vendorVersion, nodeID string, mo
 	return nil
 }
 
-func (driver *GPFSDriver) Run(endpoint string) {
+func (driver *ScaleDriver) Run(endpoint string) {
 	glog.Infof("Driver: %v version: %v", driver.name, driver.vendorVersion)
 	s := NewNonBlockingGRPCServer()
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)

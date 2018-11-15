@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gpfs
+package scale
 
 import (
 	"fmt"
@@ -33,14 +33,14 @@ import (
 	"k8s.io/kubernetes/pkg/util/mount"
 )
 
-type GPFSNodeServer struct {
-	Driver          *GPFSDriver
+type ScaleNodeServer struct {
+	Driver          *ScaleDriver
 	Mounter		*mount.SafeFormatAndMount
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
 	mux sync.Mutex
 }
 
-func (ns *GPFSNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	ns.mux.Lock()
 	defer ns.mux.Unlock()
 	glog.V(4).Infof("NodePublishVolume called with req: %#v", req)
@@ -125,7 +125,7 @@ func (ns *GPFSNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePu
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
-func (ns *GPFSNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	ns.mux.Lock()
 	defer ns.mux.Unlock()
 	glog.V(4).Infof("NodeUnpublishVolume called with args: %v", req)
@@ -147,7 +147,7 @@ func (ns *GPFSNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Node
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
-func (ns *GPFSNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (
+func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (
 	*csi.NodeStageVolumeResponse, error) {
 	ns.mux.Lock()
 	defer ns.mux.Unlock()
@@ -177,7 +177,7 @@ func (ns *GPFSNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStag
 	return &csi.NodeStageVolumeResponse{}, nil
 }
 
-func (ns *GPFSNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (
+func (ns *ScaleNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (
 	*csi.NodeUnstageVolumeResponse, error) {
 	ns.mux.Lock()
 	defer ns.mux.Unlock()
@@ -200,21 +200,21 @@ func (ns *GPFSNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUn
 	return &csi.NodeUnstageVolumeResponse{}, nil
 }
 
-func (ns *GPFSNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
+func (ns *ScaleNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	glog.V(4).Infof("NodeGetCapabilities called with req: %#v", req)
 	return &csi.NodeGetCapabilitiesResponse{
 		Capabilities: ns.Driver.nscap,
 	}, nil
 }
 
-func (ns *GPFSNodeServer) NodeGetId(ctx context.Context, req *csi.NodeGetIdRequest) (*csi.NodeGetIdResponse, error) {
+func (ns *ScaleNodeServer) NodeGetId(ctx context.Context, req *csi.NodeGetIdRequest) (*csi.NodeGetIdResponse, error) {
 	glog.V(4).Infof("NodeGetId called with req: %#v", req)
 	return &csi.NodeGetIdResponse{
 		NodeId: ns.Driver.nodeID,
 	}, nil
 }
 
-func (ns *GPFSNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
+func (ns *ScaleNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	glog.V(4).Infof("NodeGetInfo called with req: %#v", req)
 	return &csi.NodeGetInfoResponse{
 		NodeId: ns.Driver.nodeID,

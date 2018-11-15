@@ -37,7 +37,7 @@ var (
 	endpoint   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName = flag.String("drivername", "csi-scale", "name of the driver")
 	nodeID     = flag.String("nodeid", "", "node id")
-	//gpfsApi    = flag.String("gpfsapi", "gpfs-api-server:50051", "address of GPFS API")
+	//scaleApi    = flag.String("scaleapi", "scale-api-server:50051", "address of Scale API")
 	vendorVersion = "0.3.0"
 )
 
@@ -59,11 +59,11 @@ func main() {
 }
 
 func handle() {
-	driver := driver.GetGpfsDriver()
+	driver := driver.GetScaleDriver()
 	mounter := mountmanager.NewSafeMounter()
-	err := driver.SetupGPFSDriver(*driverName, vendorVersion, *nodeID, mounter)
+	err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID, mounter)
 	if err != nil {
-		glog.Fatalf("Failed to initialize GPFS CSI Driver: %v", err)
+		glog.Fatalf("Failed to initialize Scale CSI Driver: %v", err)
 	}
 	driver.Run(*endpoint)
 }

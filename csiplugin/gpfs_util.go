@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gpfs
+package scale
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ import (
 	"github.com/golang/glog"
 )
 
-type gpfsVolume struct {
+type scaleVolume struct {
 	VolName       string `json:"volName"`
 	VolID         string `json:"volID"`
 	VolSize       int64  `json:"volSize"`
@@ -39,7 +39,7 @@ type gpfsVolume struct {
 
 
 // CreateImage creates a new volume with provision and volume options.
-func createGpfsImage(pOpts *gpfsVolume, volSzMb int) error {
+func createScaleImage(pOpts *scaleVolume, volSzMb int) error {
 	var err error
 
 	volName := pOpts.VolID //Name
@@ -59,7 +59,7 @@ func createGpfsImage(pOpts *gpfsVolume, volSzMb int) error {
 		}
 		pOpts.VolIscsiVid = pbVol.Vid.Val
 
-		// Attach volume to all nodes in gpfs cluster.
+		// Attach volume to all nodes in scale cluster.
 		nodes := []string{"fin27p","fin31p","fin57p"} // TODO
 		for _, node := range nodes {
 			err = ops.AttachIscsiDevicesToNode(pbVol.Iphost, pbVol.Iqn, node)
@@ -97,52 +97,52 @@ func createGpfsImage(pOpts *gpfsVolume, volSzMb int) error {
 	return nil
 }
 
-func getGpfsVolumeOptions(volOptions map[string]string) (*gpfsVolume, error) {
+func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	var err error
-	gpfsVol := &gpfsVolume{}
-	gpfsVol.VolIscsi, err = strconv.ParseBool(volOptions["volIscsi"])
+	scaleVol := &scaleVolume{}
+	scaleVol.VolIscsi, err = strconv.ParseBool(volOptions["volIscsi"])
 	if err != nil {
 		return nil, fmt.Errorf("Missing required parameter volIscsi, %v", err)
 	}
-	return gpfsVol, nil
+	return scaleVol, nil
 }
 
-func getGpfsVolumeByName(volName string) (*gpfsVolume, error) {
-	for _, gpfsVol := range gpfsVolumes {
-		if gpfsVol.VolName == volName {
-			return gpfsVol, nil
+func getScaleVolumeByName(volName string) (*scaleVolume, error) {
+	for _, scaleVol := range scaleVolumes {
+		if scaleVol.VolName == volName {
+			return scaleVol, nil
 		}
 	}
 	return nil, fmt.Errorf("volume name %s does not exit in the volumes list", volName)
 }
 
-func persistVolInfo(image string, persistentStoragePath string, volInfo *gpfsVolume) error {
+func persistVolInfo(image string, persistentStoragePath string, volInfo *scaleVolume) error {
 	file := path.Join(persistentStoragePath, image+".json")
 	fp, err := os.Create(file)
 	if err != nil {
-		glog.Errorf("gpfs: failed to create persistent storage file %s with error: %v\n", file, err)
-		return fmt.Errorf("gpfs: create err %s/%s", file, err)
+		glog.Errorf("scale: failed to create persistent storage file %s with error: %v\n", file, err)
+		return fmt.Errorf("scale: create err %s/%s", file, err)
 	}
 	defer fp.Close()
 	encoder := json.NewEncoder(fp)
 	if err = encoder.Encode(volInfo); err != nil {
-		glog.Errorf("gpfs: failed to encode volInfo: %+v for file: %s with error: %v\n", volInfo, file, err)
-		return fmt.Errorf("gpfs: encode err: %v", err)
+		glog.Errorf("scale: failed to encode volInfo: %+v for file: %s with error: %v\n", volInfo, file, err)
+		return fmt.Errorf("scale: encode err: %v", err)
 	}
-	glog.Infof("gpfs: successfully saved volInfo: %+v into file: %s\n", volInfo, file)
+	glog.Infof("scale: successfully saved volInfo: %+v into file: %s\n", volInfo, file)
 	return nil
 }
-func loadVolInfo(image string, persistentStoragePath string, volInfo *gpfsVolume) error {
+func loadVolInfo(image string, persistentStoragePath string, volInfo *scaleVolume) error {
 	file := path.Join(persistentStoragePath, image+".json")
 	fp, err := os.Open(file)
 	if err != nil {
-		return fmt.Errorf("gpfs: open err %s/%s", file, err)
+		return fmt.Errorf("scale: open err %s/%s", file, err)
 	}
 	defer fp.Close()
 
 	decoder := json.NewDecoder(fp)
 	if err = decoder.Decode(volInfo); err != nil {
-		return fmt.Errorf("gpfs: decode err: %v.", err)
+		return fmt.Errorf("scale: decode err: %v.", err)
 	}
 
 	return nil
@@ -150,38 +150,38 @@ func loadVolInfo(image string, persistentStoragePath string, volInfo *gpfsVolume
 
 func deleteVolInfo(image string, persistentStoragePath string) error {
 	file := path.Join(persistentStoragePath, image+".json")
-	glog.Infof("gpfs: Deleting file for Volume: %s at: %s resulting path: %+v\n", image, persistentStoragePath, file)
+	glog.Infof("scale: Deleting file for Volume: %s at: %s resulting path: %+v\n", image, persistentStoragePath, file)
 	err := os.Remove(file)
 	if err != nil {
 		if err != os.ErrNotExist {
-			return fmt.Errorf("gpfs: error removing file: %s/%s", file, err)
+			return fmt.Errorf("scale: error removing file: %s/%s", file, err)
 		}
 	}
 	return nil
 }
 
 // DeleteImage deletes a volume with provision and volume options.
-func deleteGpfsImage(pOpts *gpfsVolume) error {
+func deleteScaleImage(pOpts *scaleVolume) error {
 	//var output []byte
 	var err error
 	image := pOpts.VolID //Name
-	glog.V(4).Infof("gpfs: rm %s", image)
+	glog.V(4).Infof("scale: rm %s", image)
 
         // Delete FS
         glog.V(4).Infof("Delete filesystem (%s)", image)
         err = ops.DeleteFS(image)
         if err != nil {
-                return fmt.Errorf("failed to delete gpfs: %v", err)
+                return fmt.Errorf("failed to delete scale: %v", err)
         }
 
         // Delete NSD
         glog.V(4).Infof("Delete NSD (%s)", image)
         err = ops.DeleteNSD(image)
         if err != nil {
-                return fmt.Errorf("failed to delete gpfs nsd: %v", err)
+                return fmt.Errorf("failed to delete scale nsd: %v", err)
         }
 
-	//glog.Errorf("failed to delete gpfs image: %v, command output: %s", err, string(output))
+	//glog.Errorf("failed to delete scale image: %v, command output: %s", err, string(output))
 	err = iscsiOps.DeleteVolume(pOpts.VolIscsiVid)
 	return err
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gpfs
+package scale
 
 import (
 	csi "github.com/container-storage-interface/spec/lib/go/csi/v0"

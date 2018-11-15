@@ -1,6 +1,6 @@
 [![Build Status](https://travis.ibm.com/FSaaS/csi-scale.svg?token=sfEsUpvxtZ9kpqpJBFp8&branch=master)](https://travis.ibm.com/FSaaS/csi-scale)
 
-# CSI Plugin for GPFS
+# CSI Plugin for Scale
 
 ## Development
 
@@ -39,7 +39,7 @@ git clone git@github.ibm.com:FSaaS/csi-scale.git
 ## Deployment
 
   * Create
-    * Deploy the plugin along with the external-attacher, external-provisioner, configuration (GPFS API, block devices), and RBAC:
+    * Deploy the plugin along with the external-attacher, external-provisioner, configuration (Scale API, block devices), and RBAC:
     ```
     ./deploy/create.sh
     ```
@@ -50,7 +50,7 @@ git clone git@github.ibm.com:FSaaS/csi-scale.git
 ## Example usage
 * First, deploy scale-image (see other repo). In particular, the API server must have started.
 * Create
-  * Create a GPFS PVC - provision a GPFS PV
+  * Create a Scale PVC - provision a Scale PV
   ```
   ./examples/create.sh
   ```
@@ -68,7 +68,7 @@ git clone git@github.ibm.com:FSaaS/csi-scale.git
   kubectl delete -f ./examples/pod.yaml
   kubectl delete -f ./examples/pod2.yaml
   ```
-  * Delete PVC (deprovision GPFS PV)
+  * Delete PVC (deprovision Scale PV)
   ```
   ./examples/destroy.sh
   ```
