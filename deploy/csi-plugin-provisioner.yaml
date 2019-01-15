@@ -1,17 +1,3 @@
-kind: Service
-apiVersion: v1
-metadata:
-  name: csi-scale-provisioner
-  labels:
-    app: csi-scale-provisioner
-spec:
-  selector:
-    app: csi-scale-provisioner
-  ports:
-    - name: dummy
-      port: 12345
-
----
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
