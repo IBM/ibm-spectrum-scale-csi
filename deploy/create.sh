@@ -7,8 +7,3 @@ kubectl create configmap cmap-config --from-file=cmap-devices.json=deploy/cmap-d
 kubectl apply -f deploy/csi-plugin-attacher.yaml
 kubectl apply -f deploy/csi-plugin-provisioner.yaml
 kubectl apply -f deploy/csi-plugin.yaml
-
-#######
-#kubectl apply -f examples/pvc.yaml
-#kubectl apply -f examples/storageclass.yaml
-#######

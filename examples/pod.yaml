@@ -8,7 +8,9 @@ spec:
      image: nginx 
      volumeMounts:
        - name: mypvc
-         mountPath: /var/lib/www/html
+         mountPath: /usr/share/nginx/html/scale
+     ports:
+     - containerPort: 80
   volumes:
    - name: mypvc
      persistentVolumeClaim:
