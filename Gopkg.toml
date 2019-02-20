@@ -39,6 +39,10 @@
   name = "github.com/docker/distribution"
 
 [[override]]
+  name = "k8s.io/kubernetes"
+  version = "=1.12.1"
+
+[[override]]
   name = "k8s.io/apiserver"
   version = "kubernetes-1.12.1"
 
