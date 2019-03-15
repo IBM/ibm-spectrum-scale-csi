@@ -11,8 +11,8 @@ export $GOPATH=/path/to/src
 
 * Clone
 ```
-mkdir -p $GOPATH/github.ibm.com/FSaaS
-cd $GOPATH/github.ibm.com/FSaaS
+mkdir -p $GOPATH/src/github.ibm.com/FSaaS
+cd $GOPATH/src/github.ibm.com/FSaaS
 git clone git@github.ibm.com:FSaaS/csi-scale.git
 ```
 
