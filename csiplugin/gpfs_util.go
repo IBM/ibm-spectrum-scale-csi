@@ -23,7 +23,7 @@ import (
 	"path"
 	"strconv"
 	//"os/exec"
-	//"strings"
+	"strings"
 	//"errors"
 
 	"github.com/golang/glog"
@@ -35,6 +35,7 @@ type scaleVolume struct {
 	VolSize       int64  `json:"volSize"`
 	VolIscsi      bool   `json:"volIscsi"`
 	VolIscsiVid   string `json:"volIscsiVid"`
+	VolBackendFs  string `json:"volBackendFs"`
 }
 
 
@@ -44,6 +45,24 @@ func createScaleImage(pOpts *scaleVolume, volSzMb int) error {
 
 	volName := pOpts.VolID //Name
 	var device string = ""
+
+        if (len(pOpts.VolBackendFs) > 0) {
+                // Create fileset on existing filesystem
+                glog.V(4).Infof("create fileset on filesystem (%s) for volume (%s)", pOpts.VolBackendFs, volName)
+		s := strings.Split(pOpts.VolBackendFs, "/")
+		fsName := s[len(s)-1]
+                err = ops.CreateFSet(fsName, volName) // mmcrfileset gpfs1 fset1
+                if err != nil {
+                        glog.Errorf("Failed to create fileset: %v", err)
+                        return err
+                }
+		err = ops.LinkFSet(fsName, volName, pOpts.VolBackendFs+"/"+volName) // mmlinkfileset gpfs1 fset1 -J /gpfs1/fset1
+                if err != nil {
+                        glog.Errorf("Failed to link fileset: %v", err)
+                        return err
+		}
+                return nil
+        }
 
 	/* 
 	* Check if device for NSD must be backed by iSCSI
@@ -71,13 +90,12 @@ func createScaleImage(pOpts *scaleVolume, volSzMb int) error {
 		device = iscsiOps.GetDevicePath(pbVol.Iphost, pbVol.Iqn, strconv.Itoa(int(pbVol.Lun)))
 		// Pick node for NSD
 		device = "fin31p:"+device
-		
 	} else {
 	        // Pick raw device based on some policy.
-        	device, err = ops.Sched.PickNextRawDevice()
+		device, err = ops.Sched.PickNextRawDevice()
 	        if err != nil {
 			glog.Errorf("Failed to pick backing device: %v", err)
-                	return err
+			return err
 	        }
 	}
 
@@ -87,7 +105,7 @@ func createScaleImage(pOpts *scaleVolume, volSzMb int) error {
 		glog.Errorf("Failed to create nsd (%s): %v", volName, err)
 		return err
 	}
-	
+
 	glog.V(4).Infof("create FS (%s)", volName)
 	err = ops.CreateFS(volName, volName)
 	if err != nil {
@@ -98,12 +116,13 @@ func createScaleImage(pOpts *scaleVolume, volSzMb int) error {
 }
 
 func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
-	var err error
+	//var err error
 	scaleVol := &scaleVolume{}
-	scaleVol.VolIscsi, err = strconv.ParseBool(volOptions["volIscsi"])
-	if err != nil {
+	scaleVol.VolIscsi, _ = strconv.ParseBool(volOptions["volIscsi"])
+	/*if err != nil {
 		return nil, fmt.Errorf("Missing required parameter volIscsi, %v", err)
-	}
+	}*/
+	scaleVol.VolBackendFs = volOptions["volBackendFs"]
 	return scaleVol, nil
 }
 
@@ -164,19 +183,36 @@ func deleteVolInfo(image string, persistentStoragePath string) error {
 func deleteScaleImage(pOpts *scaleVolume) error {
 	//var output []byte
 	var err error
-	image := pOpts.VolID //Name
-	glog.V(4).Infof("scale: rm %s", image)
+	volId := pOpts.VolID //Name
+	glog.V(4).Infof("scale: rm %s", volId)
+
+        if (len(pOpts.VolBackendFs) > 0) {
+                // Create fileset on existing filesystem
+                s := strings.Split(pOpts.VolBackendFs, "/")
+		fsName := s[len(s)-1]
+                err = ops.UnlinkFSet(fsName, volId) // mmunlinkfileset gpfs1 fset2 -f
+                if err != nil {
+                        glog.Errorf("Failed to unlink scale fileset: %v", err)
+                        return err
+		}
+                err = ops.DeleteFSet(fsName, volId) // mmdelfileset gpfs1 fset2 -f
+                if err != nil {
+                        glog.Errorf("Failed to delete scale fileset: %v", err)
+                        return err
+                }
+                return nil
+        }
 
         // Delete FS
-        glog.V(4).Infof("Delete filesystem (%s)", image)
-        err = ops.DeleteFS(image)
+        glog.V(4).Infof("Delete filesystem (%s)", volId)
+        err = ops.DeleteFS(volId)
         if err != nil {
-                return fmt.Errorf("failed to delete scale: %v", err)
+                return fmt.Errorf("failed to delete scale fs: %v", err)
         }
 
         // Delete NSD
-        glog.V(4).Infof("Delete NSD (%s)", image)
-        err = ops.DeleteNSD(image)
+        glog.V(4).Infof("Delete NSD (%s)", volId)
+        err = ops.DeleteNSD(volId)
         if err != nil {
                 return fmt.Errorf("failed to delete scale nsd: %v", err)
         }

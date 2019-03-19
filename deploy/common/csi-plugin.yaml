@@ -19,8 +19,11 @@ spec:
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
+            - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           env:
             - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-scale/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
               value: /var/lib/kubelet/plugins/csi-scale/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
@@ -29,6 +32,8 @@ spec:
           volumeMounts:
             - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins/csi-scale
+            - name: registration-dir
+              mountPath: /registration
         - name: csi-scale
           securityContext:
             privileged: true
@@ -59,11 +64,17 @@ spec:
               name: host-dev
             - name: cmap-config
               mountPath: /etc/config
+            - name: gpfs-classical
+              mountPath: /gpfs
       volumes:
         - name: plugin-dir
           hostPath:
             path: /var/lib/kubelet/plugins/csi-scale
             type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/
+            type: Directory
         - name: pods-mount-dir
           hostPath:
             path: /var/lib/kubelet
@@ -74,3 +85,7 @@ spec:
         - name: cmap-config
           configMap:
             name: cmap-config
+        - name: gpfs-classical
+          hostPath:
+            path: /gpfs
+            type: Directory

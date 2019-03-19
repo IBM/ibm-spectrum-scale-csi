@@ -26,7 +26,7 @@ $NAME:
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/csi-scale
 
 build-image: $NAME
-	docker build -t $(IMAGE_NAME):$(IMAGE_VERSION) .
+	docker build --network=host -t $(IMAGE_NAME):$(IMAGE_VERSION) .
 
 push-image: build-image
 	docker push $(IMAGE_NAME):$(IMAGE_VERSION)

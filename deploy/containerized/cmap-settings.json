@@ -1,0 +1,12 @@
+{
+   "settings": {
+      "scaleApi": {
+         "scaleApiListen":":50051",
+         "scaleApiDial":"fin27p:50051",
+	 "scaleApiSsh":"false"
+      },
+      "iscsiApi": {
+         "iscsiApiDial":"fin27p:50061"
+      }
+   }
+}

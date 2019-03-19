@@ -95,6 +95,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	scaleVol.VolName = volName
 	//volumeID := "csi_scale-" + uniqueID
 	volumeID := uniqueID
+	if (len(scaleVol.VolBackendFs) > 0) {
+		volumeID += "-fileset"
+	}
 	scaleVol.VolID = volumeID
 	// Volume Size - Default is 1 GiB
 	volSizeBytes := int64(oneGB)

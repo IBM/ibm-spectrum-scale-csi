@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 	"os"
-	//"strings"
+	"strings"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -51,6 +51,12 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	readOnly := req.GetReadonly()
 	volumeID := req.GetVolumeId()
 	volumeCapability := req.GetVolumeCapability()
+
+	volBackendFs := req.GetVolumeAttributes()["volBackendFs"]
+        if len(volBackendFs) > 0 {
+                stagingTargetPath = volBackendFs
+        }
+
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Volume ID must be provided")
 	}
@@ -167,6 +173,12 @@ func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeSta
 		return nil, status.Error(codes.InvalidArgument, "NodeStageVolume Volume Capability must be provided")
 	}
 
+	// Check if we operate on a fileset and skip staging ; TODO decouple "existing fs" and fset option 
+	volBackendFs := req.GetVolumeAttributes()["volBackendFs"]
+	if len(volBackendFs) > 0 {
+		return &csi.NodeStageVolumeResponse{}, nil
+	}
+
 	err := ops.MountFS(volumeID, stagingTargetPath, ns.Driver.nodeID)
 	if err != nil {
 		return nil, status.Error(codes.Internal,
@@ -192,6 +204,11 @@ func (ns *ScaleNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeU
 	if len(stagingTargetPath) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodeUnstageVolume Staging Target Path must be provided")
 	}
+
+	volSplit := strings.Split(volumeID, "-")
+	if volSplit[len(volSplit) - 1] == "fileset" {
+                return &csi.NodeUnstageVolumeResponse{}, nil
+        }
 
 	err := ops.UnmountFS(volumeID)
 	if err != nil {
