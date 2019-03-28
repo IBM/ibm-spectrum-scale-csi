@@ -64,7 +64,7 @@ spec:
               name: host-dev
             - name: cmap-config
               mountPath: /etc/config
-            - name: gpfs-classical
+            - name: gpfs-classic
               mountPath: /gpfs
       volumes:
         - name: plugin-dir
@@ -85,7 +85,7 @@ spec:
         - name: cmap-config
           configMap:
             name: cmap-config
-        - name: gpfs-classical
+        - name: gpfs-classic
           hostPath:
             path: /gpfs
             type: Directory

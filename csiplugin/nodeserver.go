@@ -21,6 +21,7 @@ import (
 	"sync"
 	"os"
 	"strings"
+	"path"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -54,7 +55,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 
 	volBackendFs := req.GetVolumeAttributes()["volBackendFs"]
         if len(volBackendFs) > 0 {
-                stagingTargetPath = volBackendFs
+		fileset := strings.Replace(volumeID, "-", "_", -1)
+                stagingTargetPath = path.Join(volBackendFs, fileset)
         }
 
 	if len(volumeID) == 0 {

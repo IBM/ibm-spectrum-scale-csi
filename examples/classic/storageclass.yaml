@@ -4,6 +4,5 @@ metadata:
    name: csi-scale
 provisioner: csi-scale
 parameters:
-    volIscsi: "false"
-    volBackendFs: "/gpfs/mcfs"
+    volBackendFs: "/gpfs/fs1"
 reclaimPolicy: Delete
