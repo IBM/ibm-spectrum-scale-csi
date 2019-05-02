@@ -18,12 +18,9 @@ package scale
 
 import (
 	"fmt"
-	//"os/exec"
 	"path"
-	//"syscall"
-	//"time"
 
-	"github.com/container-storage-interface/spec/lib/go/csi/v0"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -67,9 +64,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			// TODO Do I need to make sure that volume still exists?
 			return &csi.CreateVolumeResponse{
 				Volume: &csi.Volume{
-					Id:            exVol.VolID,
+					VolumeId:            exVol.VolID,
 					CapacityBytes: int64(exVol.VolSize),
-					Attributes:    req.GetParameters(),
+					VolumeContext:    req.GetParameters(),
 				},
 			}, nil
 		}
@@ -125,9 +122,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	glog.V(4).Infof("Added volumeID %s in scaleVolumes (len %d)", volumeID, len(scaleVolumes))
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			Id:            volumeID,
+			VolumeId:            volumeID,
 			CapacityBytes: int64(volSizeBytes),
-			Attributes:    req.GetParameters(),
+			VolumeContext:    req.GetParameters(),
 		},
 	}, nil
 }
@@ -174,10 +171,14 @@ func (cs *ScaleControllerServer) ControllerGetCapabilities(ctx context.Context, 
 func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	for _, cap := range req.VolumeCapabilities {
 		if cap.GetAccessMode().GetMode() != csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
-			return &csi.ValidateVolumeCapabilitiesResponse{Supported: false, Message: ""}, nil
+			return &csi.ValidateVolumeCapabilitiesResponse{Message: ""}, nil
 		}
 	}
-	return &csi.ValidateVolumeCapabilitiesResponse{Supported: true, Message: ""}, nil
+	return &csi.ValidateVolumeCapabilitiesResponse{
+		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
+			VolumeCapabilities: req.VolumeCapabilities,
+		},
+	}, nil
 }
 
 func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
@@ -201,9 +202,11 @@ func (cs *ScaleControllerServer) ListSnapshots(ctx context.Context, req *csi.Lis
 }
 
 func (cs *ScaleControllerServer) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-	// DISKS_TOTAL_GB.
 	return nil, status.Error(codes.Unimplemented, "")
 }
 func (cs *ScaleControllerServer) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
+}
+func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+        return nil, status.Error(codes.Unimplemented, "")
 }

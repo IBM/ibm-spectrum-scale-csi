@@ -13,12 +13,12 @@ spec:
       serviceAccount: csi-provisioner
       containers:
         - name: csi-provisioner
-          image: quay.io/k8scsi/csi-provisioner:v0.3.0
+          image: quay.io/k8scsi/csi-provisioner:v1.0.0
           args:
             - "--provisioner=csi-scale"
             - "--csi-address=$(ADDRESS)"
-            - "--connection-timeout=2m" # Added
-            - "--v=5"
+            - "--connection-timeout=2m"
+            - "--v=5" # Debugging
           env:
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/csi-scale/csi.sock

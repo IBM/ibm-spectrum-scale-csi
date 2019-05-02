@@ -37,8 +37,7 @@ var (
 	endpoint   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName = flag.String("drivername", "csi-scale", "name of the driver")
 	nodeID     = flag.String("nodeid", "", "node id")
-	//scaleApi    = flag.String("scaleapi", "scale-api-server:50051", "address of Scale API")
-	vendorVersion = "0.3.0"
+	vendorVersion = "1.0.0"
 )
 
 func main() {

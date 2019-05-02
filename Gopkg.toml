@@ -1,6 +1,6 @@
 [[constraint]]
   name = "github.com/container-storage-interface/spec"
-  version = "0.3.0"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/pborman/uuid"
@@ -40,27 +40,27 @@
 
 [[override]]
   name = "k8s.io/kubernetes"
-  version = "=1.12.1"
+  version = "=1.13.3"
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.12.1"
+  version = "kubernetes-1.13.3"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.1"
+  version = "kubernetes-1.13.3"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.1"
+  version = "kubernetes-1.13.3"
 
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.1"
+  version = "kubernetes-1.13.3"
 
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.12.1"
+  version = "kubernetes-1.13.3"
 
 # Transitive dependency of CSI Spec
 #[[override]]

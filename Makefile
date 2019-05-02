@@ -17,7 +17,7 @@ NAME=csi-scale
 .PHONY: all $NAME
 
 IMAGE_NAME=faas-registry.sl.cloud9.ibm.com:5000/$(NAME)
-IMAGE_VERSION=v0.1
+IMAGE_VERSION=v1.0.0
 
 all: $NAME
 

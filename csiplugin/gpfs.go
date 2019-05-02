@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"github.com/golang/glog"
-	"github.com/container-storage-interface/spec/lib/go/csi/v0"
+	"github.com/container-storage-interface/spec/lib/go/csi"
         "k8s.io/kubernetes/pkg/util/mount"
 
         "github.ibm.com/FSaaS/scale-image/pkg/scale"
@@ -201,7 +201,7 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string, 
 
 	// Set up RPC Servers
 	driver.ids = NewIdentityServer(driver)
-	driver.ns = NewNodeServer(driver, mounter) 
+	driver.ns = NewNodeServer(driver, mounter)
 	driver.cs = NewControllerServer(driver)
 
 	return nil

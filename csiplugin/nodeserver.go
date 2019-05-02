@@ -26,7 +26,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	"github.com/container-storage-interface/spec/lib/go/csi/v0"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -53,7 +53,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	volumeID := req.GetVolumeId()
 	volumeCapability := req.GetVolumeCapability()
 
-	volBackendFs := req.GetVolumeAttributes()["volBackendFs"]
+	volBackendFs := req.GetVolumeContext()["volBackendFs"]
         if len(volBackendFs) > 0 {
 		fileset := strings.Replace(volumeID, "-", "_", -1)
                 stagingTargetPath = path.Join(volBackendFs, fileset)
@@ -176,7 +176,7 @@ func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeSta
 	}
 
 	// Check if we operate on a fileset and skip staging ; TODO decouple "existing fs" and fset option 
-	volBackendFs := req.GetVolumeAttributes()["volBackendFs"]
+	volBackendFs := req.GetVolumeContext()["volBackendFs"]
 	if len(volBackendFs) > 0 {
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
@@ -226,16 +226,17 @@ func (ns *ScaleNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.Nod
 	}, nil
 }
 
-func (ns *ScaleNodeServer) NodeGetId(ctx context.Context, req *csi.NodeGetIdRequest) (*csi.NodeGetIdResponse, error) {
-	glog.V(4).Infof("NodeGetId called with req: %#v", req)
-	return &csi.NodeGetIdResponse{
-		NodeId: ns.Driver.nodeID,
-	}, nil
-}
-
 func (ns *ScaleNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	glog.V(4).Infof("NodeGetInfo called with req: %#v", req)
 	return &csi.NodeGetInfoResponse{
 		NodeId: ns.Driver.nodeID,
 	}, nil
 }
+
+func (ns *ScaleNodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
