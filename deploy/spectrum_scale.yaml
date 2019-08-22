@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+    # IMPORTANT THE OPERATOR LOOKS FOR THIS!
+    name: 'spectrum-scale-config'
+data: 
+  config: |
+    {"clusters":[ 
+      {"id": "<cluster-id>",
+        "cacert": "mycertificate.pem",
+        "secrets": "secret1",
+        "secureSslMode": true,
+        "restApi": [{
+          "guiHost": "<gui-server>",
+          "guiPort": 443 }],
+        "primary": {
+          "primaryFS":    "fs1",
+          "primaryFset": "csiFset2"}
+      },{ "id": "<cluster-id-2>",
+        "secrets": "secret2",
+        "restApi": [{ 
+          "guiHost": "<gui-server>"
+          }]
+      }]}
+  

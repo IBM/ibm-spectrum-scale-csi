@@ -1,0 +1,48 @@
+---
+# tasks file for ansible-role-csi-scale
+- debug:
+    var: namespace
+
+- name: "Get cluster information"
+  set_fact:
+    api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+
+# ====================================================================
+- name: "Get spectrum-scale-config from configmaps"
+  set_fact: 
+    test_scale_config: "{{ lookup('k8s', field_selector='data', resource_name='spectrum-scale-config', kind='configmaps', 
+        namespace=lookup( 'vars','namespace' ) ) }}"
+
+- name: "Verify JSON formatting of spectrum-scale-config"
+  set_fact:
+    scale_cluster: "{{ test_scale_config.data.config | from_json }}"
+
+    #- name: "Verify secrets of spectrum-scale-config"
+    #  k8s_facts:
+    #    kind: secrets
+    #    namespace: "{{ lookup( 'vars','namespace' ) }}"
+    #    name : "{{ item.secrets }}"
+    #  loop:  "{{ scale_cluster.clusters }}"
+    #  register: result
+    #  failed_when: result.rc
+    # 
+    #- debug: 
+    #    msg: "secret: {{ item.secrets }}"
+    #  loop:  "{{ scale_cluster.clusters }}"
+
+
+# ====================================================================
+      
+
+- name: 'Set csi-scale objects state={{ state }}'
+  k8s:
+    state: '{{ state }}'
+    definition: "{{ lookup('template', item.name) | from_yaml }}"
+  loop:
+    - name: csi-plugin-attacher.yaml.j2
+    - name: csi-plugin-provisioner.yaml.j2	 
+    - name: csi-plugin.yaml.j2
+    - name: pvc.yaml.j2
+    - name: storageclass.yaml.j2
+
+

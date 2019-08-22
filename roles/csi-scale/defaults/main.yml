@@ -1,0 +1,20 @@
+---
+# defaults file for ansible-role-csi-scale
+name: "csi-scale"
+#namespace: "{{ meta.namespace | default('csi-scale-operator') }}" 
+# TODO 8/12/19 - John Need a better Start location.
+image: sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0
+namespace: '{{ meta.namespace }}'
+
+
+# State of driver in the cluster (might not be needed).
+#state: absent
+state: present
+
+# The number of operator replicas.
+operator-count: 1
+
+# The number of csi-plugin daemons per node.
+daemon-count: 2
+
+

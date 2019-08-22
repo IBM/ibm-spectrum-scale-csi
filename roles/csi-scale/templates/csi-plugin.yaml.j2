@@ -1,0 +1,114 @@
+kind: DaemonSet
+apiVersion: apps/v1beta2
+metadata:
+  name: {{ name }}
+  namespace: '{{ meta.namespace }}'
+spec:
+  selector:
+    matchLabels:
+      app: {{ name }}
+  template:
+    metadata:
+      labels:
+       app: {{ name }}
+    spec:
+      serviceAccount: csi-nodeplugin
+      hostNetwork: true
+      containers:
+        - name: driver-registrar
+          image: quay.io/k8scsi/csi-node-driver-registrar:v1.0.1
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+            - name: registration-dir
+              mountPath: /registration
+        - name: csi-spectrum-scale
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          image: {{ image }}
+          args :
+            - "--nodeid=$(NODE_ID)"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--v=5"
+            - "--drivername=csi-spectrum-scale"
+          env:
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: CSI_ENDPOINT
+              value: unix:/var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+            - name: SCALE_HOSTPATH
+              value: /gpfs/fs1
+            - name: SKIP_MOUNT_UNMOUNT
+              value: "yes"
+          imagePullPolicy: "IfNotPresent" # "Always"
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet
+              mountPropagation: "Bidirectional"
+            - mountPath: /dev
+              name: host-dev
+            - name: spectrum-scale-config
+              mountPath: /var/lib/ibm/config
+            - name: cert1
+              mountPath: /var/lib/ibm/ssl/public
+            - name: gpfs-classic
+              mountPath: /gpfs/fs1
+            - name: secret1
+              mountPath: /var/lib/ibm/secret1
+              readOnly: true
+            - name: secret2
+              mountPath: /var/lib/ibm/secret2
+              readOnly: true
+      volumes:
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet
+            type: Directory
+        - name: host-dev
+          hostPath:
+            path: /dev
+        - name: spectrum-scale-config
+          configMap:
+            name: spectrum-scale-config
+        - name: cert1
+          configMap:
+            name: cert1
+        - name: gpfs-classic
+          hostPath:
+            path: /gpfs/fs1
+            type: Directory
+        - name: secret1
+          secret:
+            secretName: secret1
+        - name: secret2
+          secret:
+            secretName: secret2
+

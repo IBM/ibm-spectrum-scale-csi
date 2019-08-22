@@ -1,0 +1,7 @@
+apiVersion: cache.example.com/v1alpha1
+kind: CSIScaleOperator
+metadata:
+  name: csi-scale-operator
+spec:
+  # Add fields here
+  size: 3
