@@ -69,16 +69,16 @@ spec:
               name: host-dev
             - name: spectrum-scale-config
               mountPath: /var/lib/ibm/config
-            - name: cert1
-              mountPath: /var/lib/ibm/ssl/public
+#            - name: cert1
+#              mountPath: /var/lib/ibm/ssl/public
             - name: gpfs-classic
               mountPath: /gpfs/fs1
-            - name: secret1
-              mountPath: /var/lib/ibm/secret1
+            - name: jsecret
+              mountPath: /var/lib/ibm/jsecret
               readOnly: true
-            - name: secret2
-              mountPath: /var/lib/ibm/secret2
-              readOnly: true
+#            - name: secret2
+#              mountPath: /var/lib/ibm/secret2
+#              readOnly: true
       volumes:
         - name: plugin-dir
           hostPath:
@@ -98,17 +98,17 @@ spec:
         - name: spectrum-scale-config
           configMap:
             name: spectrum-scale-config
-        - name: cert1
-          configMap:
-            name: cert1
+#        - name: cert1
+#          configMap:
+#            name: cert1
         - name: gpfs-classic
           hostPath:
             path: /gpfs/fs1
             type: Directory
-        - name: secret1
+        - name: jsecret
           secret:
-            secretName: secret1
-        - name: secret2
-          secret:
-            secretName: secret2
+            secretName: jsecret
+#        - name: secret2
+#          secret:
+#            secretName: secret2
 
