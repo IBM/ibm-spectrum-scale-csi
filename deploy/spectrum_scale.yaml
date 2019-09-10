@@ -5,21 +5,34 @@ metadata:
     name: 'spectrum-scale-config'
 data: 
   config: |
-    {"clusters":[ 
-      {"id": "<cluster-id>",
-        "cacert": "mycertificate.pem",
-        "secrets": "secret1",
-        "secureSslMode": true,
-        "restApi": [{
-          "guiHost": "<gui-server>",
-          "guiPort": 443 }],
-        "primary": {
-          "primaryFS":    "fs1",
-          "primaryFset": "csiFset2"}
-      },{ "id": "<cluster-id-2>",
-        "secrets": "secret2",
+    {"clusters":[
+    { "id": "2229162730554346701",
+        "secrets": "jsecret",
         "restApi": [{ 
-          "guiHost": "<gui-server>"
-          }]
+          "guiHost": "scuttleclaw-vm5.tuc.stglabs.ibm.com"
+          }],
+          "primary": {
+              "primaryFS":    "fs1",
+              "primaryFset": "csiFset2"
+           }
       }]}
+
+
+#    {"clusters":[ 
+#      {"id": "<cluster-id>",
+#        "cacert": "mycertificate.pem",
+#        "secrets": "secret1",
+#        "secureSslMode": true,
+#        "restApi": [{
+#          "guiHost": "<gui-server>",
+#          "guiPort": 443 }],
+#        "primary": {
+#          "primaryFS":    "fs1",
+#          "primaryFset": "csiFset2"}
+#      },{ "id": "<cluster-id-2>",
+#        "secrets": "secret2",
+#        "restApi": [{ 
+#          "guiHost": "<gui-server>"
+#          }]
+#      }]}
   
