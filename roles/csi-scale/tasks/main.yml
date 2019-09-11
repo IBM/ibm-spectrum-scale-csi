@@ -15,9 +15,12 @@
         resource_name='spectrum-scale-config', kind='configmaps', 
         namespace=lookup( 'vars','namespace' ) ) }}"
 
+- debug:
+    msg: "{{ test_scale_config.data}}"
+
 - name: "Verify JSON formatting of spectrum-scale-config"
   set_fact:
-    scale_cluster: "{{ test_scale_config.data.config | from_json }}"
+    scale_cluster: "{{ test_scale_config.data['spectrum-scale-config.json'] | from_json }}"
 
 - name: "Aggregate Secret Names"
   set_fact:

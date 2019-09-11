@@ -55,7 +55,7 @@ spec:
             - name: CSI_ENDPOINT
               value: unix:/var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
             - name: SCALE_HOSTPATH
-              value: /gpfs/fs1
+              value: /ibm/fs1
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
           imagePullPolicy: "IfNotPresent" # "Always"
