@@ -1,5 +1,5 @@
 ---
 - version: v1alpha1
-  group: cache.example.com
+  group: scale.ibm.com
   kind: CSIScaleOperator
   role: /opt/ansible/roles/csi-scale
