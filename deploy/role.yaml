@@ -23,7 +23,7 @@ rules:
   - apiGroups: [ "apps" ]
     resources: [ "replicasets" ]
     verbs: [ "get" ]
-  - apiGroups: [ "cache.example.com" ]
+  - apiGroups: [ "scale.ibm.com" ]
     resources: [ '*' ]
     verbs: [ '*' ]
 

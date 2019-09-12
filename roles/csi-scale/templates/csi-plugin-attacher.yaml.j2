@@ -14,7 +14,7 @@ spec:
       serviceAccount: csi-attacher
       containers:
         - name: "{{ name }}-attacher"
-          image: quay.io/k8scsi/csi-attacher:v1.0.0
+          image: "{{ csi-attacher }}
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"

@@ -3,5 +3,9 @@ kind: CSIScaleOperator
 metadata:
   name: csi-scale-operator
 spec:
-  # Add fields here
-  size: 3
+  size: 1
+  csi-attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
+  csi-provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
+  csi-driver-registrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
+  csi-spectrum-scale: "doomfang-vm1.tuc.stglabs.ibm.com/csi-spectrum-scale:v1.0.0"
+

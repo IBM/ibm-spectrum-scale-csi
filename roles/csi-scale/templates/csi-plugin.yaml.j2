@@ -16,7 +16,7 @@ spec:
       hostNetwork: true
       containers:
         - name: driver-registrar
-          image: quay.io/k8scsi/csi-node-driver-registrar:v1.0.1
+          image: {{ csi-driver-registrar }}
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
@@ -41,7 +41,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: {{ image }}
+          image: {{ csi-spectrum-scale }}
           args :
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
@@ -55,7 +55,7 @@ spec:
             - name: CSI_ENDPOINT
               value: unix:/var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
             - name: SCALE_HOSTPATH
-              value: /ibm/fs1
+              value: "{{ scaleHostpath }}"
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
           imagePullPolicy: "IfNotPresent" # "Always"
@@ -67,13 +67,27 @@ spec:
               mountPropagation: "Bidirectional"
             - mountPath: /dev
               name: host-dev
-            - name: spectrum-scale-config
+            - name: spectrum-scale-config-json
               mountPath: /var/lib/ibm/config
+
+            # Grab user clusters
+            {% for cluster in clusters %}
+            # TODO can there be  multiples?
+            {% if  cluster.primary is defined  and  cluster.primary.primaryFS is defined %}
             - name: gpfs-classic
-              mountPath: /ibm/fs1
-            - name: secret1
-              mountPath: /var/lib/ibm/secret1
-              readOnly: true
+              mountPath: "/ibm/{{ cluster.primary.primaryFS }}"
+            {% endif %}
+        
+            {% if cluster.secrets is defined %}
+            - name: "{{ cluster.secrets }}"
+              mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
+            {% endif %}
+
+            {% if cluster.cacert is defined %}
+            - name: "{{ cluster.cacert }}"
+              mountPath: "/var/lib/ibm/{{ cluster.cacert }}"
+            {% endif %}
+            {% endfor %}
       volumes:
         - name: plugin-dir
           hostPath:
@@ -90,15 +104,32 @@ spec:
         - name: host-dev
           hostPath:
             path: /dev
-        - name: spectrum-scale-config
+        - name: spectrum-scale-config-json
           configMap:
-            name: spectrum-scale-config
+            name: spectrum-scale-config-json
+
+        # Grab user clusters
+        {% for cluster in clusters %}
+        # TODO can there be  multiples?
+        {% if  cluster.primary is defined  and  cluster.primary.primaryFS is defined %}
         - name: gpfs-classic
           hostPath:
-            path: /ibm/fs1
+            path: "/ibm/{{ cluster.primary.primaryFS }}"
             type: Directory
-        - name: secret1
+        {% endif %}
+        
+        {% if cluster.secrets is defined %}
+        - name: "{{ cluster.secrets }}"
           secret:
-            secretName: secret1
+            secretName: "{{ cluster.secrets }}"
+        {% endif %}
 
-# abc
+        {% if cluster.cacert is defined %}
+        - name: "{{ cluster.cacert }}"
+          configMap:
+            name: "{{ cluster.cacert }}"
+        {% endif %}
+        {% endfor %}
+        
+
+

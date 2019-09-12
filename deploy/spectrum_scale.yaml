@@ -4,36 +4,16 @@ metadata:
     # IMPORTANT THE OPERATOR LOOKS FOR THIS!
     name: 'spectrum-scale-config'
 data: 
-  spectrum-scale-config.json: |
-    {"clusters":[
-    { "id": "2120508922778391120",
-        "secrets": "secret1",
-        "restApi": [{ 
-          "guiHost": "doomfang-vm5.tuc.stglabs.ibm.com"
-          }],
-          "secureSslMode":false,
-          "primary": {
-              "primaryFS":    "fs1",
-              "primaryFset": "csiFset2"
-           }
-      }]}
+  # 
+  scaleHostpath: "/ibm/fs1"
 
+  clusters:
+    - id: 2120508922778391120
+      secrets: secret1
+      secureSslMode: false
+      primary:
+        primaryFS: "fs1"
+        primaryFset: "csiFset2"
+      restAPI: 
+        - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
 
-#    {"clusters":[ 
-#      {"id": "<cluster-id>",
-#        "cacert": "mycertificate.pem",
-#        "secrets": "secret1",
-#        "secureSslMode": true,
-#        "restApi": [{
-#          "guiHost": "<gui-server>",
-#          "guiPort": 443 }],
-#        "primary": {
-#          "primaryFS":    "fs1",
-#          "primaryFset": "csiFset2"}
-#      },{ "id": "<cluster-id-2>",
-#        "secrets": "secret2",
-#        "restApi": [{ 
-#          "guiHost": "<gui-server>"
-#          }]
-#      }]}
-  
