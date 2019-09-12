@@ -3,9 +3,10 @@
 name: "csi-scale"
 #namespace: "{{ meta.namespace | default('csi-scale-operator') }}" 
 # TODO 8/12/19 - John Need a better Start location.
-image: sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0
+#image: sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0
+image: doomfang-vm1.tuc.stglabs.ibm.com/csi-spectrum-scale:v1.0.0
 namespace: '{{ meta.namespace }}'
-storage-class: "csi-scale"
+storage-class: "csi-spectrum-scale"
 
 
 # State of driver in the cluster (might not be needed).
