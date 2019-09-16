@@ -4,10 +4,10 @@ name: "csi-spectrum-scale"
 namespace: '{{ meta.namespace }}'
 storage-class: "csi-spectrum-scale"
 
-csi-attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
-csi-provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
-csi-driver-registrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
-csi-spectrum-scale: "sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0"
+csi_attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
+csi_provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
+csi_driver_registrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
+csi_spectrum_scale: "sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0"
 
 
 # State of driver in the cluster (might not be needed).

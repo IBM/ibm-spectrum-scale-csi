@@ -3,9 +3,9 @@ kind: CSIScaleOperator
 metadata:
   name: csi-scale-operator
 spec:
-  size: 1
-  csi_attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
-  csi_provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
-  csi_driver_registrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
-  csi_spectrum_scale: "doomfang-vm1.tuc.stglabs.ibm.com/csi-spectrum-scale:v1.0.0"
+  # csi-spectrum-scale driver variables.
+  csi_scale_hostpath: "/ibm/fs1"
+  csi_scale_plugin:
+    clusters:
+      - id: "unset"
 

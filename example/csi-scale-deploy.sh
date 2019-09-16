@@ -16,14 +16,13 @@ then
     docker push ${REPO}csi-scale-operator
 fi 
 
-# This is the user config
-kubectl create -f deploy/spectrum_scale.yaml
-
 kubectl create -f deploy/service_account.yaml
 kubectl create -f deploy/role.yaml
 kubectl create -f deploy/role_binding.yaml
 kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_crd.yaml
+kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_cr.yaml --save-config
+kubectl apply -f deploy/spectrum_scale.yaml
+
 kubectl create -f deploy/operator.yaml
-kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_cr.yaml
 
 

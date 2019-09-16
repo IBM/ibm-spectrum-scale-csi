@@ -1,38 +1,32 @@
 ---
+- debug:
+    msg: "{{_scale_ibm_com_csiscaleoperator}}"
+
 - name: Retrieve spectrum-scale-config 
   set_fact: 
-    test_scale_config: "{{ 
-        lookup('k8s', field_selector='data', 
-         resource_name='spectrum-scale-config', 
-         kind='configmaps', 
-         namespace=lookup( 'vars','namespace' ) ) }}"
-  #fail:
-  #  msg: "spectrum-scale-config was not prsent in namespace '{{namespace}}'"
-
+    scale_config: _scale_ibm_com_csiscaleoperator
+    #scale_config: "{{ 
+    #    lookup('k8s', field_selector='data', 
+    #     resource_name='csi-scale-operator', 
+    #     kind='csi-scale-operators.scale.ibm.com', 
+    #     namespace=lookup( 'vars','namespace' ) ) }}"
 - name: Ensure hostpath
-  set_fact:
-    scale_hostpath: "{{ test_scale_config.data.scale_hostpath }}"
+  set_fact: 
+    csi_scale_hostpath: test_scale_config.csi_scale_hostpath 
   
 
-- name: Ensure plugin key
+- name: Ensure plugin config
   set_fact: 
-    plugin: "{{ test_scale_config.data.plugin  | from_yaml}}"
-  #fail: 
-  #  msg: "Plugin configuration was not supplied in spectrum-scale-config"
+    plugin: csi_scale_plugin 
 
-- name: Retrieve clusters
-  set_fact:
-    clusters: "{{ plugin.clusters }}"
-  #fail: 
-  #  msg: "User specified clusters were missing."
 
 - name: Ensure the clusters are valid
   include_tasks: cluster_check.yml
-  loop:  "{{ clusters }}"
+  loop:  csi_scale_plugin.clusters 
   
 - name: Cache clusters as json in config_map
   set_fact:
-    spectrum_json_conf: "{{ clusters | to_json }}"
+    spectrum_json_conf: csi_scale_plugin.clusters
 
 - name: "Set processed spectrum-scale-config to {{ state }}"
   k8s:

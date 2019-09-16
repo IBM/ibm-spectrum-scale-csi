@@ -42,6 +42,7 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "csi-scale-operator"
+             
       volumes:
         - name: runner
           emptyDir: {}
