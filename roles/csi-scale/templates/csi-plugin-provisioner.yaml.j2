@@ -14,7 +14,7 @@ spec:
       serviceAccount: csi-provisioner
       containers:
         - name: csi-provisioner
-          image: "{{ csi-provisioner }}"
+          image: '{{ csi_provisioner }}'
           args:
             - "--provisioner=csi-spectrum-scale"
             - "--csi-address=$(ADDRESS)"

@@ -5,15 +5,16 @@ metadata:
     name: 'spectrum-scale-config'
 data: 
   # 
-  scaleHostpath: "/ibm/fs1"
+  scale_hostpath: "/ibm/fs1"
 
-  clusters:
-    - id: 2120508922778391120
-      secrets: secret1
-      secureSslMode: false
-      primary:
-        primaryFS: "fs1"
-        primaryFset: "csiFset2"
-      restAPI: 
-        - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
+  plugin: | 
+    clusters: 
+      - id: "2120508922778391120"
+        secrets: "secret1"
+        secureSslMode: false
+        primary:
+          primaryFS: "fs1"
+          primaryFset: "csiFset2"
+        restAPI: 
+          - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
 

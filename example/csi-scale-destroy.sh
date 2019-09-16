@@ -1,5 +1,6 @@
 #!/bin/bash
 
+kubectl delete csi-scale-operator --all
 kubectl delete -f deploy/crds/cache_v1alpha1_podset_cr.yaml
 kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml

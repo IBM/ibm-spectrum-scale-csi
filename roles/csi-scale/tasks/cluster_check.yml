@@ -7,8 +7,8 @@
     name : "{{ item.secrets }}"
   register: result
   failed_when: result is not defined
-  fail:
-    msg: "Secret could not be found"
+  #fail:
+  #  msg: "Secret could not be found"
 
 
 

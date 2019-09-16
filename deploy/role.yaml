@@ -35,7 +35,7 @@ metadata:
   name: csi-scale-operator
 rules:
   - apiGroups: [ "" ]
-    resources: [ "persistentvolumeclaims", "persistentvolumes"]
+    resources: [ "persistentvolumeclaims", "persistentvolumes", "configmaps"]
     verbs: [ '*' ]
   - apiGroups: ["storage.k8s.io"]
     resources: ["volumeattachments", "storageclasses" ]

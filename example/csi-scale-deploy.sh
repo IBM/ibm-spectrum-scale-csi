@@ -16,12 +16,7 @@ then
     docker push ${REPO}csi-scale-operator
 fi 
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i "" 's|{{ REPLACE_IMAGE }}|csi-scale-operator|g' deploy/operator.yaml
-else
-    sed -i 's|{{ REPLACE_IMAGE }}|csi-scale-operator|g' deploy/operator.yaml
-fi
-
+# This is the user config
 kubectl create -f deploy/spectrum_scale.yaml
 
 kubectl create -f deploy/service_account.yaml

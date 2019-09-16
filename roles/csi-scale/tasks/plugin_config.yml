@@ -6,14 +6,25 @@
          resource_name='spectrum-scale-config', 
          kind='configmaps', 
          namespace=lookup( 'vars','namespace' ) ) }}"
-  fail:
-    msg: "spectrum-scale-config was not prsent in namespace '{{namespace}}'"
+  #fail:
+  #  msg: "spectrum-scale-config was not prsent in namespace '{{namespace}}'"
+
+- name: Ensure hostpath
+  set_fact:
+    scale_hostpath: "{{ test_scale_config.data.scale_hostpath }}"
+  
+
+- name: Ensure plugin key
+  set_fact: 
+    plugin: "{{ test_scale_config.data.plugin  | from_yaml}}"
+  #fail: 
+  #  msg: "Plugin configuration was not supplied in spectrum-scale-config"
 
 - name: Retrieve clusters
   set_fact:
-    clusters: "{{ test_scale_config.data.clusters }}"
-  fail: 
-    msg: "User specified clusters were missing."
+    clusters: "{{ plugin.clusters }}"
+  #fail: 
+  #  msg: "User specified clusters were missing."
 
 - name: Ensure the clusters are valid
   include_tasks: cluster_check.yml
@@ -23,7 +34,7 @@
   set_fact:
     spectrum_json_conf: "{{ clusters | to_json }}"
 
-- name: Set processed spectrum-scale-config to {{ state }}
+- name: "Set processed spectrum-scale-config to {{ state }}"
   k8s:
     state: "{{ state }}"
-    definition: "{{ lookup('template',spectrum_scale.yaml.j2  ) | from_yaml }}"
+    definition: "{{ lookup('template', 'spectrum_scale.yaml.j2'  ) | from_yaml }}"
