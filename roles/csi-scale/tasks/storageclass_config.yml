@@ -1,0 +1,11 @@
+---
+# TODO need to make storage class configurable
+# TODO pvc configuration
+
+- name: "Ensure cluster[{{ item.id }}] storage class is configured"  
+  k8s:
+    state: "{{ state }}"
+    definition: "{{ lookup('template', 'storageclass.yaml.j2'  ) | from_yaml }}"
+  when: item.primary is defined and item.primary.primaryFS is defined
+
+
