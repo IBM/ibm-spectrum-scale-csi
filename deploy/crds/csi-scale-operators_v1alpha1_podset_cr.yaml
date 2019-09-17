@@ -5,7 +5,6 @@ metadata:
 spec:
   # csi-spectrum-scale driver variables.
   csi_scale_hostpath: "/ibm/fs1"
-  csi_scale_plugin:
-    clusters:
+  csi_clusters:
       - id: "unset"
 

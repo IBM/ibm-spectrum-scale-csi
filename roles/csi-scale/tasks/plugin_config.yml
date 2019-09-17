@@ -9,7 +9,7 @@
   
 - name: "Ensure clusters configured"
   set_fact: 
-    clusters: "{{ scale_config.csi_scale_plugin.clusters }}"
+    clusters: "{{ scale_config.csi_clusters }}"
 
 - name: "Ensure the clusters are valid"
   include_tasks: cluster_check.yml
