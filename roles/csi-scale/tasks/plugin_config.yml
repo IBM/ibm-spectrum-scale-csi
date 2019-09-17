@@ -1,33 +1,21 @@
 ---
-- debug:
-    msg: "{{_scale_ibm_com_csiscaleoperator}}"
+- name: "Ensure scale_config"
+  set_fact: 
+    scale_config: '{{ _scale_ibm_com_csiscaleoperator.data }}'
 
-- name: Retrieve spectrum-scale-config 
+- name: "Ensure csi_scale_hostpath configured"
   set_fact: 
-    scale_config: _scale_ibm_com_csiscaleoperator
-    #scale_config: "{{ 
-    #    lookup('k8s', field_selector='data', 
-    #     resource_name='csi-scale-operator', 
-    #     kind='csi-scale-operators.scale.ibm.com', 
-    #     namespace=lookup( 'vars','namespace' ) ) }}"
-- name: Ensure hostpath
-  set_fact: 
-    csi_scale_hostpath: test_scale_config.csi_scale_hostpath 
+    csi_scale_hostpath: "{{ scale_config.csi_scale_hostpath }}" 
   
-
-- name: Ensure plugin config
+- name: "Ensure clusters configured"
   set_fact: 
-    plugin: csi_scale_plugin 
+    clusters: "{{ scale_config.csi_scale_plugin.clusters }}"
 
-
-- name: Ensure the clusters are valid
+- name: "Ensure the clusters are valid"
   include_tasks: cluster_check.yml
-  loop:  csi_scale_plugin.clusters 
-  
-- name: Cache clusters as json in config_map
-  set_fact:
-    spectrum_json_conf: csi_scale_plugin.clusters
+  loop:  "{{ clusters }}"
 
+  
 - name: "Set processed spectrum-scale-config to {{ state }}"
   k8s:
     state: "{{ state }}"
