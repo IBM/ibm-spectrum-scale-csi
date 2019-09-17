@@ -1,23 +1,13 @@
 ---
-{% if 'apps.openshift.io' in api_groups %}
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
-{% else %}
 apiVersion: apps/v1
 kind: Deployment
-{% endif %}
 metadata:
   name: csi-scale-operator
 spec:
   replicas: 1
-{% if 'apps.openshift.io' in api_groups %}
-  selector:
-    app: csi-scale-operator
-{% else %}
   selector:
     matchLabels:
-      app: csi-scale-operator
-{% endif %}
+      name: csi-scale-operator
   template:
     metadata:
       labels:
@@ -53,7 +43,6 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "csi-scale-operator"
-             
       volumes:
         - name: runner
           emptyDir: {}
