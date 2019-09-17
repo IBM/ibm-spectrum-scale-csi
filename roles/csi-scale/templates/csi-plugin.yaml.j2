@@ -16,6 +16,10 @@ spec:
       hostNetwork: true
       containers:
         - name: driver-registrar
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
           image: "{{ csi_driver_registrar }}"
           args:
             - "--v=5"

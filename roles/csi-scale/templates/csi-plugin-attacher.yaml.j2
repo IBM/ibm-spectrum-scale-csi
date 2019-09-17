@@ -14,6 +14,10 @@ spec:
       serviceAccount: csi-attacher
       containers:
         - name: "{{ name }}-attacher"
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
           image: "{{ csi_attacher }}"
           args:
             - "--v=5"

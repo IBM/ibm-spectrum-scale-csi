@@ -1,12 +1,23 @@
+---
+{% if 'apps.openshift.io' in api_groups %}
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+{% else %}
 apiVersion: apps/v1
 kind: Deployment
+{% endif %}
 metadata:
   name: csi-scale-operator
 spec:
   replicas: 1
+{% if 'apps.openshift.io' in api_groups %}
+  selector:
+    app: csi-scale-operator
+{% else %}
   selector:
     matchLabels:
-      name: csi-scale-operator
+      app: csi-scale-operator
+{% endif %}
   template:
     metadata:
       labels:
