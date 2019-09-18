@@ -16,6 +16,5 @@
     - name: csi-plugin-attacher.yaml.j2
     - name: csi-plugin-provisioner.yaml.j2	 
     - name: csi-plugin.yaml.j2
-    - name: pvc.yaml.j2
 
 
