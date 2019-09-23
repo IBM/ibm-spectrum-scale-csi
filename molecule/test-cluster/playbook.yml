@@ -6,17 +6,17 @@
   vars:
     ansible_python_interpreter: '{{ ansible_playbook_python }}'
     deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
-    image_name: cache.example.com/csi-scale-operator:testing
+    image_name: scale.ibm.com/csi-scale-operator:testing
     custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/cache_v1alpha1_podset_cr.yaml'])) | from_yaml }}"
   tasks:
-  - name: Create the cache.example.com/v1alpha1.PodSet
+  - name: Create the scale.ibm.com/v1alpha1.PodSet
     k8s:
       namespace: '{{ namespace }}'
       definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/cache_v1alpha1_podset_cr.yaml'])) }}"
 
   - name: Get the newly created Custom Resource
     debug:
-      msg: "{{ lookup('k8s', group='cache.example.com', api_version='v1alpha1', kind='PodSet', namespace=namespace, resource_name=custom_resource.metadata.name) }}"
+      msg: "{{ lookup('k8s', group='scale.ibm.com', api_version='v1alpha1', kind='PodSet', namespace=namespace, resource_name=custom_resource.metadata.name) }}"
 
   - name: Wait 60s for reconciliation to run
     k8s_facts:

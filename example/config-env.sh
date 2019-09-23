@@ -14,6 +14,6 @@ docker push ${REPO}csi-scale-operator
 cd ../../FSaaS/csi-scale
 make build-image
 cd -
-docker tag "sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0" ${REPO}csi-scale
-docker push ${REPO}csi-scale
+docker tag "sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi-spectrum-scale:v1.0.0" ${REPO}csi-spectrum-scale
+docker push ${REPO}csi-spectrum-scale
 

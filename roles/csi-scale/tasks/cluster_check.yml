@@ -1,0 +1,15 @@
+--- 
+
+- name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
+  k8s_facts:
+    kind: secrets
+    namespace: "{{ lookup( 'vars','namespace' ) }}"
+    name : "{{ item.secrets }}"
+  register: result
+  failed_when: result is not defined
+  #fail:
+  #  msg: "Secret could not be found"
+
+
+
+

@@ -2,7 +2,7 @@ kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: "{{ name }}-attacher"
-  namespace: '{{ meta.namespace }}'
+  namespace: "{{ meta.namespace }}"
 spec:
   serviceName: "{{ name }}-attacher"
   replicas: 1
@@ -14,7 +14,11 @@ spec:
       serviceAccount: csi-attacher
       containers:
         - name: "{{ name }}-attacher"
-          image: quay.io/k8scsi/csi-attacher:v1.0.0
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
+          image: "{{ csi_attacher }}"
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"

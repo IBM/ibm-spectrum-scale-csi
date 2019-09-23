@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,15 +20,15 @@ spec:
           - /usr/local/bin/ao-logs
           - /tmp/ansible-operator/runner
           - stdout
-          image: "csi-scale-operator:latest"
-          imagePullPolicy: "IfNotPresent"
+          image: "doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest"
+          imagePullPolicy: "Always"
           volumeMounts:
           - mountPath: /tmp/ansible-operator/runner
             name: runner
             readOnly: true
         - name: operator
-          image: "csi-scale-operator:latest"
-          imagePullPolicy: "IfNotPresent"
+          image: "doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest"
+          imagePullPolicy: "Always"
           volumeMounts:
           - mountPath: /tmp/ansible-operator/runner
             name: runner
@@ -42,8 +43,6 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "csi-scale-operator"
-              #            - name: ANSIBLE_VERBOSITY
-              #value: "4"
       volumes:
         - name: runner
           emptyDir: {}
