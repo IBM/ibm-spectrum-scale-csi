@@ -1,0 +1,43 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-spectrum-scale-attacher
+  labels:
+    product: ibm-spectrum-scale-csi
+spec:
+  selector:
+    matchLabels:
+      app: csi-spectrum-scale-attacher
+  serviceName: "csi-spectrum-scale-attacher"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: csi-spectrum-scale-attacher
+        product: ibm-spectrum-scale-csi
+    spec:
+#      nodeSelector:
+#        spectrumscalenode: "yes"
+      serviceAccount: csi-attacher
+      containers:
+        - name: csi-spectrum-scale-attacher
+          image: $attacher
+          securityContext:
+            privileged: true
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m" # Added
+            - "--resync=10m" # Added
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            type: DirectoryOrCreate

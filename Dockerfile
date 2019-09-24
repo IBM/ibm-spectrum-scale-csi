@@ -1,7 +1,7 @@
-FROM centos:7
-LABEL maintainers="FSaaS Authors"
-LABEL description="CSI Plugin for Scale"
+FROM registry.access.redhat.com/ubi7-minimal:latest
+LABEL maintainers="IBM Spectrum Scale"
+LABEL description="CSI Plugin for IBM Spectrum Scale"
 
-COPY _output/csi-scale /csi-scale
-RUN chmod +x /csi-scale
-ENTRYPOINT ["/csi-scale"]
+COPY _output/csi-spectrum-scale /csi-spectrum-scale
+RUN chmod +x /csi-spectrum-scale
+ENTRYPOINT ["/csi-spectrum-scale"]

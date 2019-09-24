@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+   name: csi-spectrum-scale-lt
+provisioner: csi-spectrum-scale
+parameters:
+    volBackendFs: "gpfs1"
+    volDirBasePath: "DiffFS/N1"
+    uid: "1000"
+    gid: "1000"
+reclaimPolicy: Delete
+

@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NAME=csi-scale
+NAME=csi-spectrum-scale
 
 .PHONY: all $NAME
 
-IMAGE_NAME=faas-registry.sl.cloud9.ibm.com:5000/$(NAME)
-IMAGE_VERSION=v1.0.0
+IMAGE_VERSION=v0.9.0
+IMAGE_NAME=$(NAME)
 
 all: $NAME
 
 $NAME:
 	if [ ! -d ./vendor ]; then dep ensure; fi
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/csi-scale
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/csi-spectrum-scale
 
 build-image: $NAME
 	docker build --network=host -t $(IMAGE_NAME):$(IMAGE_VERSION) .
 
-push-image: build-image
-	docker push $(IMAGE_NAME):$(IMAGE_VERSION)
+save-image: build-image
+	docker save $(IMAGE_NAME):$(IMAGE_VERSION) -o _output/$(IMAGE_NAME)_$(IMAGE_VERSION).tar

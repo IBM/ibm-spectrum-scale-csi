@@ -1,0 +1,41 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-spectrum-scale-provisioner
+  labels:
+    product: ibm-spectrum-scale-csi
+spec:
+  selector:
+    matchLabels:
+      app: csi-spectrum-scale-provisioner
+  serviceName: "csi-spectrum-scale-provisioner"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: csi-spectrum-scale-provisioner
+        product: ibm-spectrum-scale-csi
+    spec:
+#      nodeSelector:
+#        spectrumscalenode: "yes"
+      serviceAccount: csi-provisioner
+      containers:
+        - name: csi-provisioner
+          image: quay.io/k8scsi/csi-provisioner:v1.0.0
+          args:
+            - "--provisioner=csi-spectrum-scale"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m"
+            - "--v=5" # Debugging
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            type: DirectoryOrCreate

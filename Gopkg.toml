@@ -3,20 +3,8 @@
   version = "1.0.0"
 
 [[constraint]]
-  name = "github.com/pborman/uuid"
-  version = "1.2.0"
-
-[[constraint]]
   name = "github.com/golang/glog"
   branch = "master"
-
-[[constraint]]
-  branch = "master"
-  name = "github.ibm.com/FSaaS/csi-iscsi"
-
-[[constraint]]
-  branch = "master"
-  name = "github.ibm.com/FSaaS/scale-image"
 
 [[constraint]]
   name = "golang.org/x/net"
