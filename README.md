@@ -295,7 +295,7 @@ In order to deploy CSI driver on such a configuration, following steps should be
    ```
    **Note:** username and passoword are base64 encoded.
 
-- Add an entry for secret2 in deploy/csi-plugin.yaml file under "volumes"
+- Add an entry for secret2 in deploy/csi-plugin.yaml file under "volumes":
 
    ```
    - name: secret2
@@ -303,7 +303,7 @@ In order to deploy CSI driver on such a configuration, following steps should be
        secretName: secret2
    ```
 
-   Add corresponding entry under "containers -> csi-spectrum-scale -> volumeMounts" section
+   Add corresponding entry under "containers -> csi-spectrum-scale -> volumeMounts" section:
 
    ```
    - name: secret2
@@ -404,8 +404,8 @@ Red Hat's test matrix for OpenShift 4.x.
 [IBM Storage Enabler for Containers Welcome Page](https://www.ibm.com/support/knowledgecenter/en/SSCKLT/landing/IBM_Storage_Enabler_for_Containers_welcome_page.html)
 Flex Volume driver released in late 2018 with a HELM update in early 2019, providing compatibility with IBM Spectrum Scale for file storage and multiple IBM storage systems for block storage. Future development efforts have shifted to CSI.
 
-[Spectrum Scale Users Group](http://www.gpfsug.org/%29%5D%28http://www.gpfsug.org/)
+[Spectrum Scale Users Group](http://www.gpfsug.org/)
 A group of both IBM and non-IBM users, interested in Spectrum Scale
 
-[Spectrum Scale Users Group Mailing List and Slack Channel](https://www.spectrumscaleug.org/join/%29%5D%28https://www.spectrumscaleug.org/join/)
+[Spectrum Scale Users Group Mailing List and Slack Channel](https://www.spectrumscaleug.org/join/)
 Join everyone and let the team know about your experience with the CSI driver
