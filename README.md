@@ -232,7 +232,7 @@ export $GOPATH=/path/to/go-tree
 ```
 
 cd <repo_base_path>
-git clone git@github.ibm.com:FSaaS/csi-scale.git
+git clone git@github.com:IBM/ibm-spectrum-scale-csi-driver.git
 
 ```
 
