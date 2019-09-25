@@ -29,9 +29,9 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
         "k8s.io/kubernetes/pkg/util/mount"
 
-        "github.ibm.com/FSaaS/csi-scale/csiplugin/connectors"
-        "github.ibm.com/FSaaS/csi-scale/csiplugin/settings"
-        "github.ibm.com/FSaaS/csi-scale/csiplugin/utils"
+        "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/connectors"
+        "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/settings"
+        "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/utils"
 )
 
 // PluginFolder defines the location of scaleplugin

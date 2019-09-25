@@ -17,7 +17,7 @@
 package connectors
 
 import (
-	"github.ibm.com/FSaaS/csi-scale/csiplugin/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/settings"
 	"github.com/golang/glog"
 )
 
