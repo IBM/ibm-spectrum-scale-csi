@@ -8,4 +8,4 @@ notifications:
     email: false
 before_install:
     - go get -u github.com/golang/dep/cmd/dep
-    - git config --global url."git@github.ibm.com:".insteadOf "https://github.ibm.com/"
+#    - git config --global url."git@github.ibm.com:".insteadOf "https://github.ibm.com/"

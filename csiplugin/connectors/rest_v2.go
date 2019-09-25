@@ -26,8 +26,8 @@ import (
         "strings"
         "strconv"
 
-	"github.ibm.com/FSaaS/csi-scale/csiplugin/utils"
-        "github.ibm.com/FSaaS/csi-scale/csiplugin/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/utils"
+        "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/settings"
 	"github.com/golang/glog"
         "google.golang.org/grpc/codes"
         "google.golang.org/grpc/status"

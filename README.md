@@ -115,7 +115,7 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 2. Set your GOPATH
 
    ```
-   export $GOPATH=/path/to/go-tree
+   export GOPATH=/path/to/go-tree
    ```
 
 3. Clone the code
@@ -140,21 +140,21 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
      4.2 Compile:
 
      ```
-     cd <repo_base_path>/csi-scale
+     cd <repo_base_path>/ibm-spectrum-scale-csi-driver
      make
      ```
   
      4.3 Compile/build the docker image:
 
      ```
-     cd <repo_base_path>/csi-scale
+     cd <repo_base_path>/ibm-spectrum-scale-csi-driver
      make build-image
      ```
 
      4.4 Compile/build/save the docker image:
 
      ```
-     cd <repo_base_path>/csi-scale
+     cd <repo_base_path>/ibm-spectrum-scale-csi-driver
      make save-image
      ```
 
@@ -176,10 +176,10 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 2. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
 
-3. Set the environment variable CSI_SCALE_PATH to `<repo_base_path>/csi-scale`
+3. Set the environment variable CSI_SCALE_PATH to `<repo_base_path>/ibm-spectrum-scale-csi-driver`
 
    ```
-   export CSI_SCALE_PATH=<repo_base_path>/csi-scale
+   export CSI_SCALE_PATH=<repo_base_path>/ibm-spectrum-scale-csi-driver
    ```
 
 4. Run the install helper script:

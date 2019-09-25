@@ -25,8 +25,8 @@ import (
 
 	"github.com/golang/glog"
 
-	driver "github.ibm.com/FSaaS/csi-scale/csiplugin"
-	mountmanager "github.ibm.com/FSaaS/csi-scale/pkg/mount-manager"
+	driver "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin"
+	mountmanager "github.com/IBM/ibm-spectrum-scale-csi-driver/pkg/mount-manager"
 )
 
 func init() {

@@ -21,13 +21,13 @@ import (
 	"strings"
 	"strconv"
 	"path/filepath"
-	"github.ibm.com/FSaaS/csi-scale/csiplugin/utils"
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"github.ibm.com/FSaaS/csi-scale/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/connectors"
 )
 
 type ScaleControllerServer struct {
