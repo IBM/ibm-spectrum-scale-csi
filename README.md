@@ -111,17 +111,23 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 ## Building the docker image
 
 1. Install the latest version of Go. Refer https://golang.org/
-
-2. Set your GOPATH
+   Add Go to PATH
 
    ```
-   export GOPATH=/path/to/go-tree
+   export PATH=$PATH:/go/install/dir/bin
+   ```
+
+2. Set your GOPATH to a directory where you want to clone the repo
+
+   ```
+   export GOPATH=/path/to/repo/base
    ```
 
 3. Clone the code
 
    ```
-   cd <repo_base_path>
+   mkdir -p $GOPATH/src/github.com/IBM
+   cd $GOPATH/src/github.com/IBM
    git clone https://github.com/IBM/ibm-spectrum-scale-csi-driver.git
    ```
 
@@ -140,21 +146,21 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
      4.2 Compile:
 
      ```
-     cd <repo_base_path>/ibm-spectrum-scale-csi-driver
+     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
      make
      ```
   
      4.3 Compile/build the docker image:
 
      ```
-     cd <repo_base_path>/ibm-spectrum-scale-csi-driver
+     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
      make build-image
      ```
 
      4.4 Compile/build/save the docker image:
 
      ```
-     cd <repo_base_path>/ibm-spectrum-scale-csi-driver
+     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
      make save-image
      ```
 
