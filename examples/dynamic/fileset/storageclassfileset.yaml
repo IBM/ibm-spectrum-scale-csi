@@ -4,7 +4,7 @@ metadata:
    name: csi-spectrum-scale-fileset
 provisioner: csi-spectrum-scale
 parameters:
-    volBackendFs: "gpfs1"
+    volBackendFs: "gpfs0"
     clusterId: "7118073361626808055"
 reclaimPolicy: Delete
 

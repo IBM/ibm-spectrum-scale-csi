@@ -4,9 +4,7 @@ metadata:
    name: csi-spectrum-scale-lt
 provisioner: csi-spectrum-scale
 parameters:
-    volBackendFs: "gpfs1"
-    volDirBasePath: "DiffFS/N1"
-    uid: "1000"
-    gid: "1000"
+    volBackendFs: "gpfs0"
+    volDirBasePath: "pvfileset/lwdir"
 reclaimPolicy: Delete
 

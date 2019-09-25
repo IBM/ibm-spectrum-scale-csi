@@ -4,10 +4,8 @@ metadata:
    name: csi-spectrum-scale-fileset-dependent
 provisioner: csi-spectrum-scale
 parameters:
-    volBackendFs: "gpfs1"
+    volBackendFs: "gpfs0"
     clusterId: "7118073361626808055"
-    uid: "1000"
-    gid: "1000"
     fileset-type: "dependent"
     parentFileset: "pvc-9c93ffc6-b113-47b4-bbb4-29306f567f2b"
 reclaimPolicy: Delete

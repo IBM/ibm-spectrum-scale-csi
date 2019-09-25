@@ -167,13 +167,13 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 ## Install and Deploy the Spectrum Scale CSI driver
 
-1. Load the docker image to all Kubernetes worker nodes
+1. Copy and load the docker image on all Kubernetes worker nodes
 
    ```
    docker image load -i csi-spectrum-scale_v0.9.0.tar
    ```
 
-   *On OpenShift, use this command instead:*
+   *On OpenShift setup, use this command instead:*
 
    ```
    podman image load -i csi-spectrum-scale_v0.9.0.tar
@@ -181,10 +181,10 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 2. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
 
-3. Set the environment variable CSI_SCALE_PATH to `<repo_base_path>/ibm-spectrum-scale-csi-driver`
+3. Set the environment variable CSI_SCALE_PATH to ibm-spectrum-scale-csi-driver directory
 
    ```
-   export CSI_SCALE_PATH=<repo_base_path>/ibm-spectrum-scale-csi-driver
+   export CSI_SCALE_PATH=$GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
    ```
 
 4. Run the install helper script:
@@ -217,8 +217,8 @@ For static provisioning of existing directories perform the following steps:
 - Generate static pv yaml file using helper script
 
    ```
-   tools/generate_pv_yaml.sh --filesystem rgpfs2 --size 10 \
-   --linkpath /ibm/rgpfs2/static-pv-from-vmi-146/static-pv-1 --pvname static-pv
+   tools/generate_pv_yaml.sh --filesystem gpfs0 --size 10 \
+   --linkpath /ibm/gpfs0/pvfileset/static-pv --pvname static-pv
    ```
 
 - Use sample static_pvc and pod files for sanity test under `examples/static`
