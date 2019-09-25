@@ -29,6 +29,37 @@ import (
        "google.golang.org/grpc/codes"
 )
 
+type scaleVolume struct {
+        VolName        string `json:"volName"`
+        VolSize        uint64  `json:"volSize"`
+        VolBackendFs   string `json:"volBackendFs"`
+        IsFilesetBased bool   `json:"isFilesetBased"`
+        VolDirBasePath string `json:"volDirBasePath"`
+        VolUid         string `json:"volUid"`
+        VolGid         string `json:"volGid"`
+        ClusterId      string `json:"clusterId"`
+        FilesetType    string `json:"filesetType"`
+        InodeLimit     string `json:"inodeLimit"`
+        Connector      connectors.SpectrumScaleConnector `json:"connector"`
+        PrimaryConnector      connectors.SpectrumScaleConnector `json:"primaryConnector"`
+        PrimarySLnkRelPath string `json:"primarySLnkRelPath"`
+        PrimarySLnkPath string `json:"primarySLnkPath"`
+        PrimaryFS      string `json:"primaryFS"`
+        PrimaryFSMount string `json:"primaryFSMount"`
+        ParentFileset string `json:"parentFileset"`
+        LocalFS          string `json:"localFS"`
+}
+
+type scaleVolId struct {
+        ClusterId string
+        FsUUID    string
+        FsetId    string
+        DirPath   string
+        SymLnkPath string
+        IsFilesetBased bool
+}
+
+
 func executeCmd(command string, args []string) ([]byte, error) {
         glog.V(5).Infof("gpfs_util executeCmd")
 
