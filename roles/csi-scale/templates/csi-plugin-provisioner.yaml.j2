@@ -1,0 +1,38 @@
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: '{{ name }}-provisioner'
+  namespace: '{{ meta.namespace }}'
+spec:
+  serviceName: '{{ name }}-provisioner'
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: '{{ name }}-provisioner'
+    spec:
+      serviceAccount: csi-provisioner
+      containers:
+        - name: csi-provisioner
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
+          image: '{{ csi_provisioner }}'
+          args:
+            - "--provisioner=csi-spectrum-scale"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m"
+            - "--v=5" # Debugging
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            type: DirectoryOrCreate
