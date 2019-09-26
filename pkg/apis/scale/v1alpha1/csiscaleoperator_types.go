@@ -7,27 +7,47 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// Defines the primary filesystem.
+// +k8s:openapi-gen=true
 type CSIPrimarySpec struct {
-  primaryFs   string `json:"primaryFS"`
-  primaryFset string `json:"primaryFset"`
+  // The name of the primary filesystem.
+  PrimaryFS   string `json:"primaryFS,omitempty"`
+
+  // The name of the primary fileset, created in primaryFS.
+  PrimaryFset string `json:"primaryFset,omitempty"`
 }
 
+// Defines the desired REST API access info.
+// +k8s:openapi-gen=true
 type CSIRestApiSpec struct {
-  GuiHost string `json:"guiHost"`
-  GuiPort string `json:"guiPort"`
+  // The hostname of the REST server.
+  GuiHost string `json:"guiHost,omitempty"`
+  
+  // The port number running the REST server.
+  GuiPort string `json:"guiPort,omitempty"`
 }
 
 
+//  CSIClusterSpec  defines the desired state of CSIi Scale Cluster
+// +k8s:openapi-gen=true
 type CSIClusterSpec struct {
+    // The cluster id of the gpfs cluster specified (mandatory).
     Id             string  `json:"id"`
-    SecureSslMode  bool    `json:"secureSslMode"`
 
-    //TODO make a secret ref?
-    Secrets        string  `json:"secrets"`
-    Cacert         string  `json:"cacert"`
+    // Require a secure SSL connection to connect to GPFS.
+    SecureSslMode  bool    `json:"secureSslMode,omitempty"`
 
-    Primary   CSIPrimarySpec `json:"primary"`
-    RestApi []CSIRestApiSpec `json:"restApi"`
+    // A string specifying a secret resource name.
+    Secrets        string  `json:"secrets,omitempty"`
+
+    // A string specifying a cacert resource name.
+    Cacert         string  `json:"cacert,omitempty"`
+
+    // The primary file system for the GPFS cluster.
+    Primary   CSIPrimarySpec `json:"primary,omitempty"`
+
+    // A collection of targets for REST calls.
+    RestApi []CSIRestApiSpec `json:"restApi,omitempty"`
 
 }
 
@@ -38,12 +58,23 @@ type CSIScaleOperatorSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 
-  Attacher        string `json:"csi_attacher"`
-  Provisioner     string `json:"csi_provisioner"`
-  DriverRegistrar string `json:"csi_driver_registrar"`
-  SpectrumScale   string `json:"csi_spectrum_scale"`
-  ScaleHostpath   string `json:"csi_scale_hostpath"`
-  Clusters []CSIClusterSpec `json:"csi_clusters"`
+  // Attacher image for csi (actually attaches to the storage).
+  Attacher        string `json:"attacher,omitempty"`
+  
+  // Provisioner image for csi (actually issues provision requests).
+  Provisioner     string `json:"provisioner,omitempty"`
+  
+  // Sidecar container image for the csi spectrum scale plugin pods.
+  DriverRegistrar string `json:"driverRegistrar,omitempty"`
+  
+  // Image name for the csi spectrum scale plugin container.
+  SpectrumScale   string `json:"spectrumScale,omitempty"`
+  
+  // The path to the gpfs file system mounted on the host machine.
+  ScaleHostpath   string `json:"scaleHostpath,omitempty"`
+
+  //A collection of gpfs cluster properties for the csi driver to mount.
+  Clusters []CSIClusterSpec `json:"clusters,omitempty"`
 
 }
 
