@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csi-scale-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: csi-scale-operator
+  template:
+    metadata:
+      labels:
+        name: csi-scale-operator
+    spec:
+      serviceAccountName: csi-scale-operator
+      containers:
+        - name: csi-scale-operator
+          # Replace this with the built image name
+          image: REPLACE_IMAGE
+          command:
+          - csi-scale-operator
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "csi-scale-operator"

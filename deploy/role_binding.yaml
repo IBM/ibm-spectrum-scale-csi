@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-scale-operator
+subjects:
+- kind: ServiceAccount
+  name: csi-scale-operator
+roleRef:
+  kind: Role
+  name: csi-scale-operator
+  apiGroup: rbac.authorization.k8s.io
