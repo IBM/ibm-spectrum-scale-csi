@@ -2,8 +2,10 @@ package csiscaleoperator
 
 import (
 	"context"
-
-//	"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
+	//"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -63,7 +65,46 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	//	return err
 	//}
 
-	err = c.Watch(&source.Kind{Type: &v1.Secret{}}, 
+	// Set up the watches for the Secret events:
+	// ----------------------------------------------------------------
+	const LabelName  = "app.kubernetes.io/name"
+	const LabelConst = "ibm-spectrum-scale-csi-operator"
+	src := &source.Kind{Type: &v1.Secret{}}
+	hdl := &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &ibmv1alpha1.CSIScaleOperator{},
+	}
+	prd := predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			labels :=  e.MetaNew.GetLabels()
+			if labels != nil {
+				value, ok := labels[LabelName]
+				return ok && value == LabelConst
+			}
+			return  false
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			labels := e.Meta.GetLabels()
+			if labels != nil {
+				value, ok := labels[LabelName]
+				return ok && value == LabelConst
+			}
+			return false
+		},
+		// TODO create?
+	}
+
+	err = c.Watch(src, hdl, prd)
+	if err != nil {
+		return err
+	}
+	// ----------------------------------------------------------------
+
+
+
+
+
+	//err = c.Watch(&source.Kind{Type: &v1.Secret{}}, 
 	//run, err := runner.New(nil)
 
 	return nil
