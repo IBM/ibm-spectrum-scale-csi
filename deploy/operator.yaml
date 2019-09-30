@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: csi-scale-operator
+  name: ibm-spectrum-scale-csi-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: csi-scale-operator
+      name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
       labels:
-        name: csi-scale-operator
+        name: ibm-spectrum-scale-csi-operator
     spec:
-      serviceAccountName: csi-scale-operator
+      serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
-        - name: csi-scale-operator
+        - name: ibm-spectrum-scale-csi-operator
           # Replace this with the built image name
           image: REPLACE_IMAGE
           command:
-          - csi-scale-operator
+          - ibm-spectrum-scale-csi-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -30,4 +30,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "csi-scale-operator"
+              value: "ibm-spectrum-scale-csi-operator"
