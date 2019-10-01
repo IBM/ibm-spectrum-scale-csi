@@ -41,7 +41,7 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - ibm.scale.com
+  - scale.ibm.com
   resources:
   - '*'
   verbs:

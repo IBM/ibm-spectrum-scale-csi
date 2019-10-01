@@ -1,4 +1,4 @@
-apiVersion: ibm.scale.com/v1alpha1
+apiVersion: scale.ibm.com/v1alpha1
 kind: CSIScaleOperator
 metadata:
   name: example-csiscaleoperator
