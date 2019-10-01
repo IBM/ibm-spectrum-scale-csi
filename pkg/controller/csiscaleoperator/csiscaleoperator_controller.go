@@ -2,7 +2,9 @@ package csiscaleoperator
 
 import (
 	"context"
-	//"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
+	"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
+	//"github.com/operator-framework/operator-sdk/pkg/ansible/watches"
+
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -22,6 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+// Track that the secret was added to the controller.
+var SecretAddedCOS = false
 var log = logf.Log.WithName("controller_csiscaleoperator")
 
 // Add creates a new CSIScaleOperator Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -46,57 +50,67 @@ func Add(mgr manager.Manager) error {
 		return err
 	}
 
-	// Set up the watches for the Secret events:
-	// ----------------------------------------------------------------
-	const LabelName  = "app.kubernetes.io/name"
-	const LabelConst = "ibm-spectrum-scale-csi-operator"
-	src := &source.Kind{Type: &v1.Secret{}}
-	hdl := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			// Query for all Operator resources in the namespace.
-			cso := &ibmv1alpha1.CSIScaleOperatorList{}
-			opts := &client.ListOptions{ Namespace: a.Meta.GetNamespace() }
-			_ = mgr.GetClient().List(context.TODO(), opts, cso)
+	log.Info("Add the Secrets to be watched.")
 
-			// Compose the Requests.
-			reqs := make([]reconcile.Request, len(cso.Items))
-			for  i, _ := range reqs {
-				reqs[i].NamespacedName.Name = cso.Items[i].Name
-				reqs[i].Namespace = a.Meta.GetNamespace()
-			}
+	if !SecretAddedCOS {
+		SecretAddedCOS = true
 
-			return reqs
-		}),
+		// Add the secret to the controller.
+		// Define the label to look for and the contant for the operator.
+		const LabelName  = "app.kubernetes.io/name"
+		const LabelConst = "ibm-spectrum-scale-csi-operator"
+
+		// Set the source to monitor secrets.
+		src := &source.Kind{Type: &v1.Secret{}}
+
+		// Setup a handler mapping to access all custom resources.
+		hdl := &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
+				// Query for all Operator resources in the namespace.
+				cso := &ibmv1alpha1.CSIScaleOperatorList{}
+				opts := &client.ListOptions{ Namespace: a.Meta.GetNamespace() }
+				_ = mgr.GetClient().List(context.TODO(), opts, cso)
+
+				// Compose the Requests.
+				reqs := make([]reconcile.Request, len(cso.Items))
+				for  i, _ := range reqs {
+					reqs[i].NamespacedName.Name = cso.Items[i].Name
+					reqs[i].Namespace = a.Meta.GetNamespace()
+				}
+
+				return reqs
+			}),
+		}
+
+		// Setup the predicate filter for secret updates and creates.
+		prd := predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				labels :=  e.MetaNew.GetLabels()
+				if labels != nil {
+					return  labels[LabelName] == LabelConst
+				}
+				return  false
+			},
+			CreateFunc: func(e event.CreateEvent) bool {
+				labels := e.Meta.GetLabels()
+				if labels != nil {
+					value := labels[LabelName]
+					return value == LabelConst
+				}
+				return false
+			},
+		}
+
+		err = c.Watch(src, hdl, prd)
+		if err != nil {
+			return err
+		}
 	}
-	prd := predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			labels :=  e.MetaNew.GetLabels()
-			if labels != nil {
-				return  labels[LabelName] == LabelConst
-			}
-			return  false
-		},
-		CreateFunc: func(e event.CreateEvent) bool {
-			labels := e.Meta.GetLabels()
-			if labels != nil {
-				value := labels[LabelName]
-				return value == LabelConst
-			}
-			return false
-		},
-	}
-
-	err = c.Watch(src, hdl, prd)
-	if err != nil {
-		return err
-	}
-	// ----------------------------------------------------------------
-
-	//err = c.Watch(&source.Kind{Type: &v1.Secret{}}, 
-	//run, err := runner.New(nil)
 
 	return nil
 }
+
+
 
 // blank assignment to verify that ReconcileCSIScaleOperator implements reconcile.Reconciler
 var _ reconcile.Reconciler = &ReconcileCSIScaleOperator{}
@@ -107,13 +121,11 @@ type ReconcileCSIScaleOperator struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	Runner  runner.Runner
 }
 
 // Reconcile reads that state of the cluster for a CSIScaleOperator object and makes changes based on the state read
 // and what is in the CSIScaleOperator.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -137,6 +149,12 @@ func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconc
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+
+	//reconcileResult := reconcile.Result{}
+
+
+
+
 
 	return reconcile.Result{}, nil
 }

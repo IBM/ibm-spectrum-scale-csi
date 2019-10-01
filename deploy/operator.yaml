@@ -14,11 +14,22 @@ spec:
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
-        - name: ibm-spectrum-scale-csi-operator
-          # Replace this with the built image name
+        - name: ansible
           image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator
           command:
-          - ibm-spectrum-scale-csi-operator
+            - /usr/local/bin/ao-logs
+            - /tmp/ansible-operator/runner
+            - stdout
+          imagePullPolicy: Always
+          #volumeMounts:
+          #  - mountPath: /tmp/ansible-operator/runner
+          #    name: runner
+          #    readOnly: true
+
+        - name: operator
+          image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator
+          command:
+            - ibm-spectrum-scale-csi-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
