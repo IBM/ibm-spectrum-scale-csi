@@ -13,8 +13,10 @@ COPY build/bin /usr/local/bin
 #RUN  /usr/local/bin/user_setup
 
 # Copy the Roles and watches
-COPY watches.yaml ${HOME}/watches.yaml
+COPY watches.yaml /watches.yaml
 COPY roles/ ${HOME}/roles/
+# Might not need.
+COPY roles/ /roles/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 

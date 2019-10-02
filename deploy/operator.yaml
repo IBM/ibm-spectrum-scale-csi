@@ -28,8 +28,8 @@ spec:
 
         - name: operator
           image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator
-          command:
-            - ibm-spectrum-scale-csi-operator
+          #command:
+          #  - ibm-spectrum-scale-csi-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

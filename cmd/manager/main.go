@@ -60,6 +60,7 @@ func main() {
 	logf.SetLogger(zap.Logger())
 
 	printVersion()
+	log.Info(os.Getwd())
 
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
