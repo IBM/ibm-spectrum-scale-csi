@@ -25,7 +25,7 @@ kubectl create -f deploy/role.yaml
 kubectl create -f deploy/role_binding.yaml
 kubectl create -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 #kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_cr.yaml --save-config
-#kubectl create -f deploy/spectrum_scale.yaml
+kubectl create -f example/spectrum_scale.yaml
 
 kubectl create -f deploy/operator.yaml
 

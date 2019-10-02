@@ -15,22 +15,23 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
         - name: ansible
-          image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator
+          image: "doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest"
           command:
             - /usr/local/bin/ao-logs
             - /tmp/ansible-operator/runner
             - stdout
           imagePullPolicy: Always
-          #volumeMounts:
-          #  - mountPath: /tmp/ansible-operator/runner
-          #    name: runner
-          #    readOnly: true
+          volumeMounts:
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
+              readOnly: true
 
         - name: operator
-          image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator
-          #command:
-          #  - ibm-spectrum-scale-csi-operator
+          image: "doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest"
           imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -42,3 +43,8 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ibm-spectrum-scale-csi-operator"
+            - name: ANSIBLE_VERBOSITY
+              value: "4"
+      volumes:
+        - name: runner
+          emptyDir: {}

@@ -1,4 +1,4 @@
-package csiscaleoperator
+package csiscalesecret
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func Add(mgr manager.Manager)  *controller.Controller {
 	}
 
 	// Create a new controller
-	c, err := controller.New("csiscaleoperator-controller", mgr, controller.Options{
+	c, err := controller.New("csiscalesecret-controller", mgr, controller.Options{
 		Reconciler: r,
 	})
 	if err != nil {
