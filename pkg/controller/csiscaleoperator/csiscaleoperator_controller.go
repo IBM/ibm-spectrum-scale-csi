@@ -2,7 +2,7 @@ package csiscaleoperator
 
 import (
 	"context"
-	"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
+	//"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
 	//"github.com/operator-framework/operator-sdk/pkg/ansible/watches"
 
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	//"k8s.io/apimachinery/pkg/api/errors"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	//"k8s.io/apimachinery/pkg/types"
@@ -22,15 +22,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Track that the secret was added to the controller.
 var SecretAddedCOS = false
 var log = logf.Log.WithName("controller_csiscaleoperator")
 
+var GVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group: "core",
+		Kind: "Secret",
+	}
+
 // Add creates a new CSIScaleOperator Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
+func Add(mgr manager.Manager)  *controller.Controller {
 	r :=   &ReconcileCSIScaleOperator{
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
@@ -41,14 +48,10 @@ func Add(mgr manager.Manager) error {
 		Reconciler: r,
 	})
 	if err != nil {
-		return err
+		log.Error(nil, "Unable to create csiscaleoperator-controller")
+		return nil
 	}
 
-	// Watch for changes to primary resource CSIScaleOperator
-	err = c.Watch(&source.Kind{Type: &ibmv1alpha1.CSIScaleOperator{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
 
 	log.Info("Add the Secrets to be watched.")
 
@@ -103,11 +106,12 @@ func Add(mgr manager.Manager) error {
 
 		err = c.Watch(src, hdl, prd)
 		if err != nil {
-			return err
+			log.Error(nil, "Unable to setup secret watch.")
+			return nil
 		}
 	}
 
-	return nil
+	return &c
 }
 
 
@@ -121,7 +125,6 @@ type ReconcileCSIScaleOperator struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	Runner  runner.Runner
 }
 
 // Reconcile reads that state of the cluster for a CSIScaleOperator object and makes changes based on the state read
@@ -129,33 +132,6 @@ type ReconcileCSIScaleOperator struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues(
-		"Request.Namespace", request.Namespace, 
-		"Request.Name", request.Name,
-		"Request.NamespacedName", request.NamespacedName)
-	reqLogger.Info("Reconciling CSIScaleOperator")
-
-
-	// Fetch the CSIScaleOperator instance
-	instance := &ibmv1alpha1.CSIScaleOperator{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
-	}
-
-	//reconcileResult := reconcile.Result{}
-
-
-
-
-
 	return reconcile.Result{}, nil
 }
 
