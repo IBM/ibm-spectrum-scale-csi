@@ -123,7 +123,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		var gvks []schema.GroupVersionKind
 		cMap.Store(w.GroupVersionKind, &controllermap.Contents{Controller: *ctr,
 			WatchDependentResources:     w.WatchDependentResources,
 			WatchClusterScopedResources: w.WatchClusterScopedResources,
@@ -134,14 +133,18 @@ func main() {
 	}
 	// ---------------------------------------------------------
 
-	log.Info("before secret")
 	// This is what we needed to inject for secret monitoring.
 	ctr := csiscalesecret.Add(mgr)
 	if ctr == nil {
 		log.Error(nil, "failed to add controller for secrets")
 		os.Exit(1)
 	}
-	cMap.Store(csiscalesecret.GVK, &controllermap.Contents{ Controller: *ctr } )
+	cMap.Store(csiscalesecret.GVK, &controllermap.Contents{ Controller: *ctr,
+		WatchDependentResources:	true,
+		WatchClusterScopedResources: true,
+		OwnerWatchMap:               controllermap.NewWatchMap(), 
+		AnnotationWatchMap:          controllermap.NewWatchMap(),
+	} )
 	gvks = append(gvks, csiscalesecret.GVK)
 
 	operatorName, err := k8sutil.GetOperatorName()

@@ -74,6 +74,9 @@ func Add(mgr manager.Manager)  *controller.Controller {
 				opts := &client.ListOptions{ Namespace: a.Meta.GetNamespace() }
 				_ = mgr.GetClient().List(context.TODO(), opts, cso)
 
+				log.Info(fmt.Sprintf("In Mapping function, mapping to %v items", len(cso.Items))
+
+
 				// Compose the Requests.
 				reqs := make([]reconcile.Request, len(cso.Items))
 				for  i, _ := range reqs {
@@ -97,8 +100,7 @@ func Add(mgr manager.Manager)  *controller.Controller {
 			CreateFunc: func(e event.CreateEvent) bool {
 				labels := e.Meta.GetLabels()
 				if labels != nil {
-					value := labels[LabelName]
-					return value == LabelConst
+					return labels[LabelName] == LabelConst
 				}
 				return false
 			},
