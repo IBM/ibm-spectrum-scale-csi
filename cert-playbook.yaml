@@ -1,0 +1,20 @@
+- name: Run cert
+  hosts: localhost
+  become: yes
+  gather_facts: false
+  tasks:
+    - name: Ensure casectl is installed 
+      shell: command -v casectl >/dev/null 2>&1
+      register: casectl_installed
+      ignore_errors: yes
+      failed_when: no
+      changed_when: no
+
+    - name: Install casectl when not installed
+      include_tasks: cert/install_case.yaml
+      when: casectl_installed.rc == 1
+
+    - name: Ensure Operator is bundled
+      include_tasks: cert/case_bundle.yaml
+
+
