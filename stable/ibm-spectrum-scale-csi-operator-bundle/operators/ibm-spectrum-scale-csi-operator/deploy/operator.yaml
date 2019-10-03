@@ -43,8 +43,6 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "ibm-spectrum-scale-csi-operator"
-            - name: ANSIBLE_VERBOSITY
-              value: "4"
       volumes:
         - name: runner
           emptyDir: {}
