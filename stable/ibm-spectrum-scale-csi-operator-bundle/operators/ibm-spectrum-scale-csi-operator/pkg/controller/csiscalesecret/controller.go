@@ -5,9 +5,9 @@ import (
 	//"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
 	//"github.com/operator-framework/operator-sdk/pkg/ansible/watches"
 
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
 	//"k8s.io/apimachinery/pkg/api/errors"
@@ -17,12 +17,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Track that the secret was added to the controller.
@@ -30,15 +30,15 @@ var SecretAddedCOS = false
 var log = logf.Log.WithName("controller_csiscaleoperator")
 
 var GVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group: "core",
-		Kind: "Secret",
-	}
+	Version: "v1",
+	Group:   "core",
+	Kind:    "Secret",
+}
 
 // Add creates a new CSIScaleOperator Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager)  *controller.Controller {
-	r :=   &ReconcileCSIScaleOperator{
+func Add(mgr manager.Manager) *controller.Controller {
+	r := &ReconcileCSIScaleOperator{
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
 	}
@@ -52,7 +52,6 @@ func Add(mgr manager.Manager)  *controller.Controller {
 		return nil
 	}
 
-
 	log.Info("Add the Secrets to be watched.")
 
 	if !SecretAddedCOS {
@@ -60,7 +59,7 @@ func Add(mgr manager.Manager)  *controller.Controller {
 
 		// Add the secret to the controller.
 		// Define the label to look for and the contant for the operator.
-		const LabelName  = "app.kubernetes.io/name"
+		const LabelName = "app.kubernetes.io/name"
 		const LabelConst = "ibm-spectrum-scale-csi-operator"
 
 		// Set the source to monitor secrets.
@@ -71,15 +70,14 @@ func Add(mgr manager.Manager)  *controller.Controller {
 			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 				// Query for all Operator resources in the namespace.
 				cso := &ibmv1alpha1.CSIScaleOperatorList{}
-				opts := &client.ListOptions{ Namespace: a.Meta.GetNamespace() }
+				opts := &client.ListOptions{Namespace: a.Meta.GetNamespace()}
 				_ = mgr.GetClient().List(context.TODO(), opts, cso)
 
-				log.Info(fmt.Sprintf("In Mapping function, mapping to %v items", len(cso.Items))
-
+				//log.Info(fmt.Sprintf("In Mapping function, mapping to %v items", len(cso.Items)))
 
 				// Compose the Requests.
 				reqs := make([]reconcile.Request, len(cso.Items))
-				for  i, _ := range reqs {
+				for i, _ := range reqs {
 					reqs[i].NamespacedName.Name = cso.Items[i].Name
 					reqs[i].Namespace = a.Meta.GetNamespace()
 				}
@@ -91,11 +89,11 @@ func Add(mgr manager.Manager)  *controller.Controller {
 		// Setup the predicate filter for secret updates and creates.
 		prd := predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {
-				labels :=  e.MetaNew.GetLabels()
+				labels := e.MetaNew.GetLabels()
 				if labels != nil {
-					return  labels[LabelName] == LabelConst
+					return labels[LabelName] == LabelConst
 				}
-				return  false
+				return false
 			},
 			CreateFunc: func(e event.CreateEvent) bool {
 				labels := e.Meta.GetLabels()
@@ -116,8 +114,6 @@ func Add(mgr manager.Manager)  *controller.Controller {
 	return &c
 }
 
-
-
 // blank assignment to verify that ReconcileCSIScaleOperator implements reconcile.Reconciler
 var _ reconcile.Reconciler = &ReconcileCSIScaleOperator{}
 
@@ -136,4 +132,3 @@ type ReconcileCSIScaleOperator struct {
 func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	return reconcile.Result{}, nil
 }
-
