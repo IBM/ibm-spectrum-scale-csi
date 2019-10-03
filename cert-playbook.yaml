@@ -17,4 +17,5 @@
     - name: Ensure Operator is bundled
       include_tasks: cert/case_bundle.yaml
 
-
+    - name: Ensure Operator is verified
+      include_tasks: cert/verify_operator.yaml

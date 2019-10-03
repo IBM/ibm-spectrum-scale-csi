@@ -1,0 +1,59 @@
+---
+# TODO need to ensure operaator
+
+- name: Ensure 'operator-sdk' is installed
+  get_url:  
+    url: "https://github.com/operator-framework/operator-sdk/releases/download/{{release}}/operator-sdk-{{release}}-x86    _64-linux-gnu"
+    dest: /usr/local/bin/operator-sdk
+    mode: '0755'
+  vars:
+    release: "v0.10.0"
+
+- name: Ensure 'python3' is installed
+  yum:
+    name: "{{packages}}"
+  vars:
+    packages:
+        - python36
+        - python36-pip
+
+- name: Ensure 'operator-courier' is installed
+  pip:
+    name: operator-courier
+    version: 2.0.1
+    executable: pip3
+        
+# TODO Work on this
+#- name: Run 'operator-sdk' scorecard
+#  shell: "operator-sdk scorecard {{SC_VARS}}"
+#  args:
+#    chdir: "{{OPERATOR_DIR}}"
+#  environment:
+#    GO111MODULE: on
+#
+
+- name: Set OLM directory fact
+  set_fact:
+    OLM_DIR: "deploy/olm-catalog/{{OPERATOR_NAME}}/{{OPERATOR_VERSION}}/"
+    OLM_MANIFEST: "deploy/olm-catalog/{{OPERATOR_NAME}}/{{OPERATOR_NAME}}.package.yaml"
+
+- name: Build operator 'ClusterServiceVersion'
+  shell: "operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{OPERATOR_VERSION}} --update-crds"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+  environment:
+    GO111MODULE: on
+
+- name: Copy 'bindings.yaml' into OLM directory
+  copy: 
+    src: "deploy/ibm-spectrum-scale-csi-operator_bindings.yaml"
+    dest: "{{OLM_DIR}}"
+
+- name: Run the 'operator-courier'
+  shell: "operator-courier verify --ui_validate_io {{OLM_MANIFEST}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}" 
+
+
+
+

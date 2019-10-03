@@ -18,24 +18,6 @@ spec:
         - apiGroups:
           - ""
           resources:
-          - persistentvolumeclaims
-          - persistentvolumes
-          - configmaps
-          - secrets
-          verbs:
-          - '*'
-        - apiGroups:
-          - storage.k8s.io
-          resources:
-          - volumeattachments
-          - storageclasses
-          verbs:
-          - '*'
-        serviceAccountName: ibm-spectrum-scale-csi-operator
-      - rules:
-        - apiGroups:
-          - ""
-          resources:
           - nodes
           verbs:
           - get

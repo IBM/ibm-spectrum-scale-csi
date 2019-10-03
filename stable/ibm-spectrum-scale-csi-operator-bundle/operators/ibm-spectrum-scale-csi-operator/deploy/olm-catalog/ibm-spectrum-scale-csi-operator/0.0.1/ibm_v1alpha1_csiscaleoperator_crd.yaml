@@ -1,0 +1,108 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: csiscaleoperators.scale.ibm.com
+spec:
+  group: scale.ibm.com
+  names:
+    kind: CSIScaleOperator
+    listKind: CSIScaleOperatorList
+    plural: csiscaleoperators
+    singular: csiscaleoperator
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          type: object
+          properties:
+            csi_attacher:
+              description: "Attacher image for csi (actually attaches to the storage)."
+              type: string
+#              default: "quay.io/k8scsi/csi-attacher:v1.0.0"
+
+            csi_provisioner:
+              description: "Provisioner image for csi (actually issues provision requests)."
+              type: string
+#              default: "quay.io/k8scsi/csi-provisioner:v1.0.0"
+
+            csi_driver_registrar:
+              description: "Sidecar container image for the csi spectrum scale plugin pods."
+              type: string
+#              default: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
+
+            csi_spectrum_scale: 
+              description: "Image name for the csi spectrum scale plugin container."
+              type: string
+#              default: "doomfang-vm1.tuc.stglabs.ibm.com/csi-spectrum-scale:v1.0.0"
+
+            csi_scale_hostpath:
+              description: "The path to the gpfs file system mounted on the host machine."
+              type: string
+
+            csi_clusters:
+              description: "A collection of gpfs cluster properties for the csi driver to mount."
+              type: array
+              required:
+                - id
+              properties:
+                id:
+                  description: "The cluster id of the gpfs cluster specified (mandatory)."
+                  type: string
+
+                primary:
+                  description: "The primary file system for the GPFS cluster."
+                  type: object
+                  properties:
+                    primaryFS:
+                      description: "The name of the primary filesystem."
+                      type: string
+
+                    primaryFset:
+                      description: "The name of the primary fileset, created in primaryFS."
+                      type: string
+
+                secureSslMode:
+                    description: "Require a secure SSL connection to connect to GPFS."
+                    type: boolean
+
+                secrets:
+                  description: "A string specifying a secret resource name.."
+                  type: string
+
+                cacert: 
+                  description: "A string specifying a cacert resource name."
+                  type: string
+
+                restApi:
+                  description: "A collection of targets for REST calls." 
+                  type: array
+                  properties:
+                    guiHost:
+                      description: "The hostname of the REST server."
+                      type: string
+
+                    guiPort:
+                      description: "The port number running the REST server."
+                      type: string
+        status:
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
