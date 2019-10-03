@@ -1,7 +1,19 @@
 apiVersion: scale.ibm.com/v1alpha1
-kind: CSIScaleOperator
-metadata:
-  name: example-csiscaleoperator
-spec:
-  # Add fields here
-  size: 3
+kind: 'CSIScaleOperator'
+metadata: 
+    # IMPORTANT THE OPERATOR LOOKS FOR THIS!
+    name: 'csi-scale-operator'
+data: 
+  # 
+  csi_scale_hostpath: "/ibm/fs1"
+
+  csi_clusters: 
+    - id: "2120508922778391120"
+      secrets: "secret1"
+      secureSslMode: false
+      primary:
+        primaryFS: "fs1"
+        primaryFset: "csiFset2"
+      restAPI: 
+        - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
+
