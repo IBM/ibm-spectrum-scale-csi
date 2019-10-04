@@ -50,8 +50,6 @@ def main(args):
 
     parser.add_argument( '--csv', metavar='csv', dest='csv', default=None,
         help='''The output CSV to clone the data to.''')
-    parser.add_argument( '-p', metavar='prefix', dest='prefix', default='ibm-csi-scale',
-        help='''The prefix for the generated file names.''')
 
     args = parser.parse_args()
 
