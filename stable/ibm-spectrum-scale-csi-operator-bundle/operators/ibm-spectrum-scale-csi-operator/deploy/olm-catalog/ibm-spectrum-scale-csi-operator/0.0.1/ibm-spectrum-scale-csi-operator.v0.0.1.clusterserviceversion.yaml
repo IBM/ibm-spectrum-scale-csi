@@ -4,10 +4,8 @@ metadata:
   annotations:
     alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","data":{"csi_clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restAPI":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"csi_scale_hostpath":"/ibm/fs1"},"kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"}}]'
     capabilities: Basic Install
-    categories: "Storage"
+    categories: Storage
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator
-    
-
   name: ibm-spectrum-scale-csi-operator.v0.0.1
   namespace: placeholder
 spec:
@@ -18,20 +16,54 @@ spec:
       displayName: IBM CSI Spectrum Scale App
       kind: CSIScaleOperator
       name: csiscaleoperators.scale.ibm.com
-      version: v1alpha1
       resources:
-        - kind: Deployment
-          version: v1
-        - kind: Secret
-          version: v1 
-        - kind: Pod
-          version: v1
-        - kind: StatefulSet
-          version: v1beta1
-        - kind: DaemonSet 
-          version: v1beta2
-        - kind: ConfigMap
-          version: v1
+      - kind: Deployment
+        version: v1
+      - kind: Secret
+        version: v1
+      - kind: Pod
+        version: v1
+      - kind: StatefulSet
+        version: v1beta1
+      - kind: DaemonSet
+        version: v1beta2
+      - kind: ConfigMap
+        version: v1
+      specDescriptors:
+      - description: Sidecar container image for the csi spectrum scale plugin pods.
+        path: csi_driver_registrar
+      - description: A collection of gpfs cluster properties for the csi driver to
+          mount.
+        path: csi_clusters
+      - description: Attacher image for csi (actually attaches to the storage).
+        path: csi_attacher
+      - description: Provisioner image for csi (actually issues provision requests).
+        path: csi_provisioner
+      - description: Image name for the csi spectrum scale plugin container.
+        path: csi_spectrum_scale
+      - description: The path to the gpfs file system mounted on the host machine.
+        path: csi_scale_hostpath
+      - description: A string specifying a cacert resource name.
+        path: csi_clusters.cacert
+      - description: Require a secure SSL connection to connect to GPFS.
+        path: csi_clusters.secureSslMode
+      - description: A string specifying a secret resource name..
+        path: csi_clusters.secrets
+      - description: A collection of targets for REST calls.
+        path: csi_clusters.restApi
+      - description: The primary file system for the GPFS cluster.
+        path: csi_clusters.primary
+      - description: The cluster id of the gpfs cluster specified (mandatory).
+        path: csi_clusters.id
+      - description: The hostname of the REST server.
+        path: csi_clusters.restApi.guiHost
+      - description: The port number running the REST server.
+        path: csi_clusters.restApi.guiPort
+      - description: The name of the primary filesystem.
+        path: csi_clusters.primary.primaryFS
+      - description: The name of the primary fileset, created in primaryFS.
+        path: csi_clusters.primary.primaryFset
+      version: v1alpha1
   description: An Operator used to deploy and manage your Spectrum CSI Plugin.
   displayName: IBM Spectrum Scale CSI Plugin Operator
   install:
@@ -39,7 +71,7 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - ""
+          - ''
           resources:
           - persistentvolumeclaims
           - persistentvolumes
@@ -57,7 +89,7 @@ spec:
         serviceAccountName: ibm-spectrum-scale-csi-operator
       - rules:
         - apiGroups:
-          - ""
+          - ''
           resources:
           - nodes
           verbs:
@@ -65,14 +97,14 @@ spec:
           - list
           - update
         - apiGroups:
-          - ""
+          - ''
           resources:
           - namespaces
           verbs:
           - get
           - list
         - apiGroups:
-          - ""
+          - ''
           resources:
           - persistentvolumes
           verbs:
@@ -92,7 +124,7 @@ spec:
         serviceAccountName: csi-nodeplugin
       - rules:
         - apiGroups:
-          - ""
+          - ''
           resources:
           - events
           verbs:
@@ -101,7 +133,7 @@ spec:
           - watch
           - update
         - apiGroups:
-          - ""
+          - ''
           resources:
           - persistentvolumes
           verbs:
@@ -110,7 +142,7 @@ spec:
           - watch
           - update
         - apiGroups:
-          - ""
+          - ''
           resources:
           - nodes
           verbs:
@@ -129,14 +161,14 @@ spec:
         serviceAccountName: external-attacher-runner
       - rules:
         - apiGroups:
-          - ""
+          - ''
           resources:
           - secrets
           verbs:
           - get
           - list
         - apiGroups:
-          - ""
+          - ''
           resources:
           - persistentvolumes
           verbs:
@@ -146,7 +178,7 @@ spec:
           - create
           - delete
         - apiGroups:
-          - ""
+          - ''
           resources:
           - persistentvolumeclaims
           verbs:
@@ -163,7 +195,7 @@ spec:
           - list
           - watch
         - apiGroups:
-          - ""
+          - ''
           resources:
           - events
           verbs:
@@ -224,7 +256,7 @@ spec:
       permissions:
       - rules:
         - apiGroups:
-          - ""
+          - ''
           resources:
           - pods
           - persistentvolumeclaims
@@ -261,7 +293,7 @@ spec:
           verbs:
           - update
         - apiGroups:
-          - ""
+          - ''
           resources:
           - pods
           verbs:

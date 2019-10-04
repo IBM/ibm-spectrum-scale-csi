@@ -23,19 +23,11 @@
     version: 2.0.1
     executable: pip3
         
-# TODO Work on this
-- name: Run 'operator-sdk' scorecard
-  shell: "operator-sdk scorecard {{SC_VARS}}"
-  args:
-    chdir: "{{OPERATOR_DIR}}"
-  environment:
-    GO111MODULE: on
-#
-
-- name: Set OLM directory fact
+- name: Set deploy directory facts
   set_fact:
     OLM_DIR: "deploy/olm-catalog/{{OPERATOR_NAME}}/{{OPERATOR_VERSION}}/"
     OLM_MANIFEST: "deploy/olm-catalog/{{OPERATOR_NAME}}/"
+    CSI_CRD: "deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml" # TOOD Make inferred.
 
 - name: Build operator 'ClusterServiceVersion'
   shell: "operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{OPERATOR_VERSION}} --update-crds"
@@ -44,27 +36,35 @@
   environment:
     GO111MODULE: on
 
-- name: Split 'role_binding.yaml' into OLM directory
-  shell: "python hacks/split_yaml.py -f {{src}} -d {{dest}}"
+- name: "Split '{{item}}' into OLM directory"
+  shell: "python hacks/split_yaml.py -f {{item}} -d {{dest}}"
   args:
     chdir: "{{OPERATOR_DIR}}"
   vars:
-    src: "deploy/role_binding.yaml"
     dest: "{{OLM_DIR}}"
+  loop:
+    - "deploy/service_account.yaml"
+    -  "deploy/role_binding.yaml"
 
-- name: Split 'service_account.yaml' into OLM directory
-  shell: "python hacks/split_yaml.py -f {{src}} -d {{dest}}"
+- name: "Copy details from CRD {{item}} into CSV"
+  shell: "python hacks/copy_crd_descriptions.py --crd {{item}} --csv  {{dest}}"
   args:
     chdir: "{{OPERATOR_DIR}}"
   vars:
-    src: "deploy/service_account.yaml"
     dest: "{{OLM_DIR}}"
+  loop:
+    - "{{CSI_CRD}}"
 
 - name: Run the 'operator-courier'
   shell: "operator-courier verify --ui_validate_io {{OLM_MANIFEST}}"
   args:
     chdir: "{{OPERATOR_DIR}}" 
 
-
-
+- name: Run 'operator-sdk' scorecard
+  shell: "operator-sdk scorecard {{SC_VARS}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+  environment:
+    GO111MODULE: on
+  
 
