@@ -44,8 +44,11 @@
   environment:
     GO111MODULE: on
 
-- name: Copy 'bindings.yaml' into OLM directory
-  copy: 
+- name: Split 'bindings.yaml' into OLM directory
+  shell: "python hacks/split_yaml.py -f {{src}} -d {{dest}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+  vars:
     src: "deploy/ibm-spectrum-scale-csi-operator_bindings.yaml"
     dest: "{{OLM_DIR}}"
 
