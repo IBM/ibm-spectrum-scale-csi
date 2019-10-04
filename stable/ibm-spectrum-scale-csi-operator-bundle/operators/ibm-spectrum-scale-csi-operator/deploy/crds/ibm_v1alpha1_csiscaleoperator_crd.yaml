@@ -101,6 +101,14 @@ spec:
                       type: string
         status:
           type: object
+          properties:
+            conditions:
+                description: "The active status of the operator"
+                type: array
+                properties:
+                    isRunning:
+                        type: bool
+                        description: "Indicates that the plugin is running."
   version: v1alpha1
   versions:
   - name: v1alpha1

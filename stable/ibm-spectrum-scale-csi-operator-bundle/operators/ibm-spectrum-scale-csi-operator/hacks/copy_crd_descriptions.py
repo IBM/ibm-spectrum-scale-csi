@@ -6,6 +6,41 @@ import sys
 import os
 import yaml
 
+def loadDescriptors(descType, crd, csv):
+    props = crd.get("spec", {})    \
+        .get("validation",{})      \
+        .get("openAPIV3Schema", {})\
+        .get("properties", {})     \
+    
+    spec            = props.get(descType, {})
+    specprops       = spec.get("properties", {})
+    specdescriptors = []
+    specpaths       = specprops.keys()
+    
+    while len(specpaths) > 0:
+        # Load the path and then iterate to get the property.
+        path    = specpaths.pop(0)
+        keys    = path.split(".")
+        prop    = spec
+        subprops = specprops
+      
+        for key in keys:
+            prop     = subprops.get(key, {})
+            subprops = prop.get("properties", {})
+        
+        # Enqueue the sub properties (if present)
+        for subprop in prop.get("properties", {}).keys():
+            specpaths.append("{0}.{1}".format(path,subprop))
+        
+        # Construct description
+        specdescriptors.append({ 
+          "path" : path,
+          "description" : prop.get("description", "") })
+        
+    return specdescriptors
+
+
+
 def main(args):
     parser = argparse.ArgumentParser(
         description='''A hack to clone descriptions from the CRD.''')
@@ -48,35 +83,8 @@ def main(args):
 
     if crd is not None and csv is not None:
         metaname= crd.get("metadata",{}).get("name", "")
-        props = crd.get("spec", {})    \
-            .get("validation",{})      \
-            .get("openAPIV3Schema", {})\
-            .get("properties", {})     \
-        
-        spec            = props.get("spec", {})
-        specprops       = spec.get("properties", {})
-        specdescriptors = []
-        specpaths       = specprops.keys()
-
-        while len(specpaths) > 0:
-            # Load the path and then iterate to get the property.
-            path    = specpaths.pop(0)
-            keys    = path.split(".")
-            prop    = spec
-            subprops = specprops
-          
-            for key in keys:
-                prop     = subprops.get(key, {})
-                subprops = prop.get("properties", {})
-            
-            # Enqueue the sub properties (if present)
-            for subprop in prop.get("properties", {}).keys():
-                specpaths.append("{0}.{1}".format(path,subprop))
-            
-            # Construct description
-            specdescriptors.append({ 
-              "path" : path,
-              "description" : prop.get("description", "") })
+        specdescriptors = loadDescriptors("spec", crd, csv)
+        statusdescriptors = loadDescriptors("status", crd, csv)
 
         # TODO need to replace with something 
         resourcefound=False
@@ -85,12 +93,15 @@ def main(args):
             if resource.get("name","") == metaname:
                 resourcefound = True
                 resource["specDescriptors"] = specdescriptors
+                resource["statusDescriptors"] = statusdescriptors
+                resource["version"] = crd.get("spec",{}).get("version","v1")
 
         # If the resource wasn't present in the customresourcedefinitions add it. 
         if not resourcefound:
             owned.append({
                 "name"            : metaname,
                 "kind"            : crd.get("kind","CustomResourceDefinition"),
+                "version"         : crd.get("spec",{}).get("version","v1"),
                 "displayName"     : metaname,
                 "specDescriptors" : specdescriptors,
                 "description"     : "TODO: Fill this in"})
