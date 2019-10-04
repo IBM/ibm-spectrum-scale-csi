@@ -35,7 +35,7 @@
 - name: Set OLM directory fact
   set_fact:
     OLM_DIR: "deploy/olm-catalog/{{OPERATOR_NAME}}/{{OPERATOR_VERSION}}/"
-    OLM_MANIFEST: "deploy/olm-catalog/{{OPERATOR_NAME}}/{{OPERATOR_NAME}}.package.yaml"
+    OLM_MANIFEST: "deploy/olm-catalog/{{OPERATOR_NAME}}/"
 
 - name: Build operator 'ClusterServiceVersion'
   shell: "operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{OPERATOR_VERSION}} --update-crds"

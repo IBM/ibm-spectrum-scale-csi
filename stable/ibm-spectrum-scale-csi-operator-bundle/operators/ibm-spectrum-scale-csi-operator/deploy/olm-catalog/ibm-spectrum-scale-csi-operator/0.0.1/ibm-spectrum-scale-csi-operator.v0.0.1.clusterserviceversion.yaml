@@ -4,16 +4,57 @@ metadata:
   annotations:
     alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","data":{"csi_clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restAPI":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"csi_scale_hostpath":"/ibm/fs1"},"kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"}}]'
     capabilities: Basic Install
+    categories: "Storage"
+    repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator
+    
+
   name: ibm-spectrum-scale-csi-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Represents a deployment of the IBM CSI Spectrum Scale plugin.
+      displayName: IBM CSI Spectrum Scale App
+      kind: CSIScaleOperator
+      name: csiscaleoperators.scale.ibm.com
+      version: v1alpha1
+      resources:
+        - kind: Deployment
+          version: v1
+        - kind: Secret
+          version: v1 
+        - kind: Pod
+          version: v1
+        - kind: StatefulSet
+          version: v1beta1
+        - kind: DaemonSet 
+          version: v1beta2
+        - kind: ConfigMap
+          version: v1
   description: An Operator used to deploy and manage your Spectrum CSI Plugin.
   displayName: IBM Spectrum Scale CSI Plugin Operator
   install:
     spec:
       clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          - persistentvolumes
+          - configmaps
+          - secrets
+          verbs:
+          - '*'
+        - apiGroups:
+          - storage.k8s.io
+          resources:
+          - volumeattachments
+          - storageclasses
+          verbs:
+          - '*'
+        serviceAccountName: ibm-spectrum-scale-csi-operator
       - rules:
         - apiGroups:
           - ""
