@@ -3,7 +3,8 @@ kind: 'CSIScaleOperator'
 metadata: 
     # IMPORTANT THE OPERATOR LOOKS FOR THIS!
     name: 'csi-scale-operator'
-data: 
+status: {}
+spec: 
   # 
   csi_scale_hostpath: "/ibm/fs1"
 

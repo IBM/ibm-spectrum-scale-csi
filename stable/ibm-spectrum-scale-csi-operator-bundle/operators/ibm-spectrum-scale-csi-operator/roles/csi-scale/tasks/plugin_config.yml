@@ -1,7 +1,7 @@
 ---
 - name: "Ensure scale_config"
   set_fact: 
-    scale_config: '{{ _scale_ibm_com_csiscaleoperator.data }}'
+    scale_config: '{{ _scale_ibm_com_csiscaleoperator.spec }}'
 
 - name: "Ensure csi_scale_hostpath configured"
   set_fact: 

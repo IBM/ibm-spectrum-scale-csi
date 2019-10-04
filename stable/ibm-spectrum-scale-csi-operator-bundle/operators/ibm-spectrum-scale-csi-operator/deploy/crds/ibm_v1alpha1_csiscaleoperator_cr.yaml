@@ -3,7 +3,7 @@ kind: 'CSIScaleOperator'
 metadata: 
     # IMPORTANT THE OPERATOR LOOKS FOR THIS!
     name: 'csi-scale-operator'
-data: 
+spec: 
   # 
   csi_scale_hostpath: "/ibm/fs1"
 
@@ -17,3 +17,4 @@ data:
       restAPI: 
         - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
 
+status: {}

@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","data":{"csi_clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restAPI":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"csi_scale_hostpath":"/ibm/fs1"},"kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"}}]'
+    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"csi_clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restAPI":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"csi_scale_hostpath":"/ibm/fs1"},"status":{}}]'
     capabilities: Basic Install
     categories: Storage
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator
@@ -18,16 +18,22 @@ spec:
       name: csiscaleoperators.scale.ibm.com
       resources:
       - kind: Deployment
+        name: ""
         version: v1
       - kind: Secret
+        name: ""
         version: v1
       - kind: Pod
+        name: ""
         version: v1
       - kind: StatefulSet
+        name: ""
         version: v1beta1
       - kind: DaemonSet
+        name: ""
         version: v1beta2
       - kind: ConfigMap
+        name: ""
         version: v1
       specDescriptors:
       - description: Sidecar container image for the csi spectrum scale plugin pods.
@@ -71,7 +77,7 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - ''
+          - ""
           resources:
           - persistentvolumeclaims
           - persistentvolumes
@@ -89,7 +95,7 @@ spec:
         serviceAccountName: ibm-spectrum-scale-csi-operator
       - rules:
         - apiGroups:
-          - ''
+          - ""
           resources:
           - nodes
           verbs:
@@ -97,14 +103,14 @@ spec:
           - list
           - update
         - apiGroups:
-          - ''
+          - ""
           resources:
           - namespaces
           verbs:
           - get
           - list
         - apiGroups:
-          - ''
+          - ""
           resources:
           - persistentvolumes
           verbs:
@@ -124,7 +130,7 @@ spec:
         serviceAccountName: csi-nodeplugin
       - rules:
         - apiGroups:
-          - ''
+          - ""
           resources:
           - events
           verbs:
@@ -133,7 +139,7 @@ spec:
           - watch
           - update
         - apiGroups:
-          - ''
+          - ""
           resources:
           - persistentvolumes
           verbs:
@@ -142,7 +148,7 @@ spec:
           - watch
           - update
         - apiGroups:
-          - ''
+          - ""
           resources:
           - nodes
           verbs:
@@ -161,14 +167,14 @@ spec:
         serviceAccountName: external-attacher-runner
       - rules:
         - apiGroups:
-          - ''
+          - ""
           resources:
           - secrets
           verbs:
           - get
           - list
         - apiGroups:
-          - ''
+          - ""
           resources:
           - persistentvolumes
           verbs:
@@ -178,7 +184,7 @@ spec:
           - create
           - delete
         - apiGroups:
-          - ''
+          - ""
           resources:
           - persistentvolumeclaims
           verbs:
@@ -195,7 +201,7 @@ spec:
           - list
           - watch
         - apiGroups:
-          - ''
+          - ""
           resources:
           - events
           verbs:
@@ -256,7 +262,7 @@ spec:
       permissions:
       - rules:
         - apiGroups:
-          - ''
+          - ""
           resources:
           - pods
           - persistentvolumeclaims
@@ -293,7 +299,7 @@ spec:
           verbs:
           - update
         - apiGroups:
-          - ''
+          - ""
           resources:
           - pods
           verbs:
