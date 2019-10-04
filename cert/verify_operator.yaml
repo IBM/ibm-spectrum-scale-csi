@@ -24,12 +24,12 @@
     executable: pip3
         
 # TODO Work on this
-#- name: Run 'operator-sdk' scorecard
-#  shell: "operator-sdk scorecard {{SC_VARS}}"
-#  args:
-#    chdir: "{{OPERATOR_DIR}}"
-#  environment:
-#    GO111MODULE: on
+- name: Run 'operator-sdk' scorecard
+  shell: "operator-sdk scorecard {{SC_VARS}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+  environment:
+    GO111MODULE: on
 #
 
 - name: Set OLM directory fact
@@ -44,12 +44,20 @@
   environment:
     GO111MODULE: on
 
-- name: Split 'bindings.yaml' into OLM directory
+- name: Split 'role_binding.yaml' into OLM directory
   shell: "python hacks/split_yaml.py -f {{src}} -d {{dest}}"
   args:
     chdir: "{{OPERATOR_DIR}}"
   vars:
-    src: "deploy/ibm-spectrum-scale-csi-operator_bindings.yaml"
+    src: "deploy/role_binding.yaml"
+    dest: "{{OLM_DIR}}"
+
+- name: Split 'service_account.yaml' into OLM directory
+  shell: "python hacks/split_yaml.py -f {{src}} -d {{dest}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+  vars:
+    src: "deploy/service_account.yaml"
     dest: "{{OLM_DIR}}"
 
 - name: Run the 'operator-courier'
