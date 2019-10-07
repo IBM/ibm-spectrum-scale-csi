@@ -2,22 +2,16 @@ package csiscalesecret
 
 import (
 	"context"
-	//"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
-	//"github.com/operator-framework/operator-sdk/pkg/ansible/watches"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
-	//"k8s.io/apimachinery/pkg/api/errors"
-	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	//"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -58,7 +52,7 @@ func Add(mgr manager.Manager) *controller.Controller {
 		SecretAddedCOS = true
 
 		// Add the secret to the controller.
-		// Define the label to look for and the contant for the operator.
+		// Define the label to look for and the constant for the operator.
 		const LabelName = "app.kubernetes.io/name"
 		const LabelConst = "ibm-spectrum-scale-csi-operator"
 
