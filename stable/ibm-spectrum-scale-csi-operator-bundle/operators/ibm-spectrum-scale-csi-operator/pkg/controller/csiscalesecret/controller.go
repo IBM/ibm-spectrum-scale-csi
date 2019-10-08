@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/davecgh/go-spew/spew"
+	//"github.com/davecgh/go-spew/spew"
 	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
 	//"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -153,7 +153,6 @@ func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconc
 	}
 
 	cso.Spec.SecretCounter = cso.Spec.SecretCounter + 1
-	spew.Dump(cso)
 
 	//sCount, found, err := unstructured.NestedString(u.UnstructuredContent(), "spec", "secretCounter")
 	//if !found {
