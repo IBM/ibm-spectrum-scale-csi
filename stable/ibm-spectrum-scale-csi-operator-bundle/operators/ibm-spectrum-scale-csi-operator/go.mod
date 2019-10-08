@@ -1,6 +1,7 @@
 module github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/go-openapi/spec v0.19.0
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/operator-framework/operator-sdk v0.10.0

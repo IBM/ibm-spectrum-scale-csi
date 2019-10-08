@@ -52,7 +52,7 @@ spec:
 
             secretCounter:
               description: "An internal counter used by the operator to trigger reloads on secret change."
-              type: int
+              type: integer
 
             clusters:
               description: "A collection of gpfs cluster properties for the csi driver to mount."

@@ -12,16 +12,15 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	//"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis"
+	"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis"
 	"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/controller/csiscalesecret"
 
+	aocontroller "github.com/operator-framework/operator-sdk/pkg/ansible/controller"
 	aoflags "github.com/operator-framework/operator-sdk/pkg/ansible/flags"
 	proxy "github.com/operator-framework/operator-sdk/pkg/ansible/proxy"
-	aocontroller "github.com/operator-framework/operator-sdk/pkg/ansible/controller"
 	"github.com/operator-framework/operator-sdk/pkg/ansible/proxy/controllermap"
-	"github.com/operator-framework/operator-sdk/pkg/ansible/watches"
 	"github.com/operator-framework/operator-sdk/pkg/ansible/runner"
-
+	"github.com/operator-framework/operator-sdk/pkg/ansible/watches"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
@@ -35,18 +34,18 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
+	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // Change below variables to serve metrics on different host or port.
 var (
-	log = logf.Log.WithName("cmd")
-	metricsHost       = "0.0.0.0"
-	metricsPort int32 = 8383
+	log                       = logf.Log.WithName("cmd")
+	metricsHost               = "0.0.0.0"
+	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
 )
 
@@ -92,6 +91,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Setup Scheme for all resources
+	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
 	// This reimplements the Ansible run code.
 	// Effectively this patches in the runners.
 	// ---------------------------------------------------------
@@ -102,15 +107,14 @@ func main() {
 		log.Error(err, "Failed to load watches.")
 		os.Exit(1)
 	}
-	log.Info("Howdy")
+
 	for _, w := range watches {
-		log.Info("In the for loop")
 		runner, err := runner.New(w)
 		if err != nil {
 			log.Error(err, "Failed to create runner")
 			os.Exit(1)
 		}
-		log.Info (fmt.Sprintf("Role %s", w.Role ))
+		log.Info(fmt.Sprintf("Role %s", w.Role))
 		ctr := aocontroller.Add(mgr, aocontroller.Options{
 			GVK:             w.GroupVersionKind,
 			Runner:          runner,
@@ -119,7 +123,7 @@ func main() {
 			ReconcilePeriod: w.ReconcilePeriod,
 		})
 		if ctr == nil {
-			log.Error(nil,"failed to add controller for GVK %v", w.GroupVersionKind.String())
+			log.Error(nil, "failed to add controller for GVK %v", w.GroupVersionKind.String())
 			os.Exit(1)
 		}
 
@@ -139,12 +143,12 @@ func main() {
 		log.Error(nil, "failed to add controller for secrets")
 		os.Exit(1)
 	}
-	cMap.Store(csiscalesecret.GVK, &controllermap.Contents{ Controller: *ctr,
-		WatchDependentResources:	true,
-		WatchClusterScopedResources: true,
-		OwnerWatchMap:               controllermap.NewWatchMap(), 
-		AnnotationWatchMap:          controllermap.NewWatchMap(),
-	} )
+	//cMap.Store(csiscalesecret.GVK, &controllermap.Contents{Controller: *ctr,
+	//	WatchDependentResources:     true,
+	//	WatchClusterScopedResources: true,
+	//	OwnerWatchMap:               controllermap.NewWatchMap(),
+	//	AnnotationWatchMap:          controllermap.NewWatchMap(),
+	//})
 	gvks = append(gvks, csiscalesecret.GVK)
 
 	operatorName, err := k8sutil.GetOperatorName()
@@ -169,6 +173,7 @@ func main() {
 	servicePorts := []v1.ServicePort{
 		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
 	}
+
 	// Create Service object to expose the metrics port(s).
 	// TODO: probably should expose the port as an environment variable
 	_, err = metrics.CreateMetricsService(context.TODO(), cfg, servicePorts)
@@ -209,7 +214,6 @@ func main() {
 	log.Info("Exiting.")
 }
 
-
 // The following function is borrowed from the operator sdk run.
 func getMaxWorkers(gvk schema.GroupVersionKind, defValue int) int {
 	envVar := strings.ToUpper(strings.Replace(
@@ -229,4 +233,3 @@ func getMaxWorkers(gvk schema.GroupVersionKind, defValue int) int {
 		return maxWorkers
 	}
 }
-

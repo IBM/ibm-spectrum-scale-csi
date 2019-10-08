@@ -2,12 +2,16 @@ package csiscalesecret
 
 import (
 	"context"
+	"fmt"
+	//"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/davecgh/go-spew/spew"
 	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
+	//"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,13 +69,17 @@ func Add(mgr manager.Manager) *controller.Controller {
 				// Query for all Operator resources in the namespace.
 				cso := &ibmv1alpha1.CSIScaleOperatorList{}
 				opts := &client.ListOptions{Namespace: a.Meta.GetNamespace()}
-				_ = mgr.GetClient().List(context.TODO(), opts, cso)
+				err = mgr.GetClient().List(context.TODO(), opts, cso)
+				if err != nil {
+					log.Error(err, "Error Message")
+				}
 
-				//log.Info(fmt.Sprintf("In Mapping function, mapping to %v items", len(cso.Items)))
+				log.Info(fmt.Sprintf("In Mapping function, mapping to %v items: %s", len(cso.Items), "test"))
 
 				// Compose the Requests.
 				reqs := make([]reconcile.Request, len(cso.Items))
 				for i, _ := range reqs {
+					log.Info(fmt.Sprintf("Name: %s  -  Namespace: %s", cso.Items[i].Name, a.Meta.GetNamespace()))
 					reqs[i].NamespacedName.Name = cso.Items[i].Name
 					reqs[i].Namespace = a.Meta.GetNamespace()
 				}
@@ -124,5 +132,46 @@ type ReconcileCSIScaleOperator struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	log.Info(fmt.Sprintf("In Reconciler Name: %s  -  Namespace: %s", request.Name, request.Namespace))
+
+	cso := &ibmv1alpha1.CSIScaleOperator{}
+
+	// TODO Make this not hard coded.
+	//var oGVK = schema.GroupVersionKind{
+	//	Version: "v1alpha1",
+	//	Group:   "scale.ibm.com",
+	//	Kind:    "CSIScaleOperator",
+	//}
+
+	//// Retrieve the current config
+	//u := &unstructured.Unstructured{}
+	//u.SetGroupVersionKind(oGVK)
+	err := r.client.Get(context.TODO(), request.NamespacedName, cso)
+	if err != nil {
+		log.Error(err, "Unable to get operator object.")
+		return reconcile.Result{}, err
+	}
+
+	cso.Spec.SecretCounter = cso.Spec.SecretCounter + 1
+	spew.Dump(cso)
+
+	//sCount, found, err := unstructured.NestedString(u.UnstructuredContent(), "spec", "secretCounter")
+	//if !found {
+	//	sCount = "0"
+	//}
+
+	//spew.Dump(u.UnstructuredContent())
+	//log.Info(fmt.Sprintf("SecretCount: %v", sCount))
+	//// TODO add secret watcher.
+	//if n, err := strconv.Atoi(sCount); err != nil {
+	//	unstructured.SetNestedField(u.UnstructuredContent(), n+1, "spec", "secretCounter")
+	//}
+
+	err = r.client.Update(context.TODO(), cso)
+	if err != nil {
+		log.Error(err, "Unable to update operator object.")
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
 }
