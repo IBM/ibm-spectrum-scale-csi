@@ -71,8 +71,11 @@ type CSIScaleOperatorSpec struct {
 	// The path to the gpfs file system mounted on the host machine.
 	ScaleHostpath string `json:"scaleHostpath,omitempty"`
 
-	//A collection of gpfs cluster properties for the csi driver to mount.
+	// A collection of gpfs cluster properties for the csi driver to mount.
 	Clusters []CSIClusterSpec `json:"clusters,omitempty"`
+
+	// Trigger used by the operator for secret changes.
+	SecretCounter int `json:"secretCounter,omitempty"`
 }
 
 // CSIScaleOperatorCondition defines the observed Condition of CSIScaleOperator

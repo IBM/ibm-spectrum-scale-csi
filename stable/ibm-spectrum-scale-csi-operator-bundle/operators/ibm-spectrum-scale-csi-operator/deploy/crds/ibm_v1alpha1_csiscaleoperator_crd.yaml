@@ -30,31 +30,31 @@ spec:
         spec:
           type: object
           properties:
-            csi_attacher:
+            attacher:
               description: "Attacher image for csi (actually attaches to the storage)."
               type: string
-#              default: "quay.io/k8scsi/csi-attacher:v1.0.0"
 
-            csi_provisioner:
+            provisioner:
               description: "Provisioner image for csi (actually issues provision requests)."
               type: string
-#              default: "quay.io/k8scsi/csi-provisioner:v1.0.0"
 
-            csi_driver_registrar:
+            driverRegistrar:
               description: "Sidecar container image for the csi spectrum scale plugin pods."
               type: string
-#              default: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
 
-            csi_spectrum_scale: 
+            spectrumScale: 
               description: "Image name for the csi spectrum scale plugin container."
               type: string
-#              default: "doomfang-vm1.tuc.stglabs.ibm.com/csi-spectrum-scale:v1.0.0"
 
-            csi_scale_hostpath:
+            scaleHostpath:
               description: "The path to the gpfs file system mounted on the host machine."
               type: string
 
-            csi_clusters:
+            secretCounter:
+              description: "An internal counter used by the operator to trigger reloads on secret change."
+              type: int
+
+            clusters:
               description: "A collection of gpfs cluster properties for the csi driver to mount."
               type: array
               required:

@@ -6,9 +6,9 @@ metadata:
 status: {}
 spec: 
   # 
-  csi_scale_hostpath: "/ibm/fs1"
+  scaleHostpath: "/ibm/fs1"
 
-  csi_clusters: 
+  clusters: 
     - id: "2120508922778391120"
       secrets: "secret1"
       secureSslMode: false
