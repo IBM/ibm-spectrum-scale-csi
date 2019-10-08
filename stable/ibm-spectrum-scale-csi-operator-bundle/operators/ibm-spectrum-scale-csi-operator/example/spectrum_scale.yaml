@@ -15,6 +15,6 @@ spec:
       primary:
         primaryFS: "fs1"
         primaryFset: "csiFset2"
-      restAPI: 
+      restApi: 
         - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
 

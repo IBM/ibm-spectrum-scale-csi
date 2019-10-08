@@ -12,8 +12,8 @@ import (
 func (in *CSIClusterSpec) DeepCopyInto(out *CSIClusterSpec) {
 	*out = *in
 	out.Primary = in.Primary
-	if in.RestAPI != nil {
-		in, out := &in.RestAPI, &out.RestAPI
+	if in.RestApi != nil {
+		in, out := &in.RestApi, &out.RestApi
 		*out = make([]CSIRestApiSpec, len(*in))
 		copy(*out, *in)
 	}

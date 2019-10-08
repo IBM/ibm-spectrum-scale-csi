@@ -34,7 +34,7 @@ type CSIClusterSpec struct {
 	Id string `json:"id"`
 
 	// Require a secure SSL connection to connect to GPFS.
-	SecureSslMode bool `json:"secureSslMode,omitempty"`
+	SecureSslMode bool `json:"secureSslMode"`
 
 	// A string specifying a secret resource name.
 	Secrets string `json:"secrets,omitempty"`
@@ -46,7 +46,7 @@ type CSIClusterSpec struct {
 	Primary CSIPrimarySpec `json:"primary,omitempty"`
 
 	// A collection of targets for REST calls.
-	RestAPI []CSIRestApiSpec `json:"restAPI,omitempty"`
+	RestApi []CSIRestApiSpec `json:"restApi,omitempty"`
 }
 
 // CSIScaleOperatorSpec defines the desired state of CSIScaleOperator

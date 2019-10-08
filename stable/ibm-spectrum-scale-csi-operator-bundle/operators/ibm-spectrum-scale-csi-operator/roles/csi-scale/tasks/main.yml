@@ -1,7 +1,4 @@
 ---
-- debug:
-    msg: "we made it"
-
 # tasks file for ansible-role-csi-scale
 - name: "Get cluster information"
   set_fact:
