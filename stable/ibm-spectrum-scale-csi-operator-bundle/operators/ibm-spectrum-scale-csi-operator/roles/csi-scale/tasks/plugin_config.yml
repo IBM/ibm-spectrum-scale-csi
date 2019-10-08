@@ -5,7 +5,7 @@
 
 - name: "Ensure scaleHostpath configured"
   set_fact: 
-    csi_scale_hostpath: "{{ scale_config.scaleHostpath }}" 
+    scaleHostpath: "{{ scale_config.scaleHostpath }}" 
   
 - name: "Ensure clusters configured"
   set_fact: 

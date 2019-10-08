@@ -18,7 +18,7 @@ spec:
           securityContext:
             privileged: true
 {% endif %}
-          image: '{{ csi_provisioner }}'
+          image: '{{ provisioner }}'
           args:
             - "--provisioner=csi-spectrum-scale"
             - "--csi-address=$(ADDRESS)"

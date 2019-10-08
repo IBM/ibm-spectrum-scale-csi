@@ -18,7 +18,7 @@ spec:
           securityContext:
             privileged: true
 {% endif %}
-          image: "{{ csi_attacher }}"
+          image: "{{ attacher }}"
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
