@@ -46,7 +46,7 @@ type CSIClusterSpec struct {
 	Primary CSIPrimarySpec `json:"primary,omitempty"`
 
 	// A collection of targets for REST calls.
-	RestApi []CSIRestApiSpec `json:"restApi,omitempty"`
+	RestAPI []CSIRestApiSpec `json:"restAPI,omitempty"`
 }
 
 // CSIScaleOperatorSpec defines the desired state of CSIScaleOperator
