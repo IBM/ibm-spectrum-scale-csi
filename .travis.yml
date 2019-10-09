@@ -12,13 +12,12 @@ stages:
 jobs:
   fast_finish: true
   include:
-    - stage: Prep Scripts
+    - stage: Build Image
       script: 
         - sudo curl -L ${OPERATOR_SDK} -o /usr/local/bin/operator-sdk
         - sudo chmod +x /usr/local/bin/operator-sdk
         - cd ${CSI_OP_BUILD_DIR}
-    - stage: Build Image
-      script: "operator-sdk build csi-scale-operator"
+        - operator-sdk build csi-scale-operator
 env:
   global:
     - GO111MODULE=on
