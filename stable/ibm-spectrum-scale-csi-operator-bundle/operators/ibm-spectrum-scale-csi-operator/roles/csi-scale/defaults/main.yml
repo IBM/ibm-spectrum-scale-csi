@@ -1,0 +1,16 @@
+---
+# defaults file for ansible-role-csi-scale
+name: "csi-spectrum-scale"
+namespace: '{{ meta.namespace }}'
+storage-class: "csi-spectrum-scale"
+
+attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
+provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
+driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
+spectrumScale: "doomfang-vm1.tuc.stglabs.ibm.com/csi-spectrum-scale:v1.0.0"
+
+
+# State of driver in the cluster (might not be needed).
+#state: absent
+state: present
+

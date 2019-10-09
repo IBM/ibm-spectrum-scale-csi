@@ -1,0 +1,24 @@
+galaxy_info:
+  author: John Dunham
+  description: An operator for managing and deploying Scale CSI drivers.
+  company: IBM
+  license: GPL-2.0-or-later
+  min_ansible_version: 2.4
+
+  platforms:
+    - name: Kubernetes
+      versions:
+        - 1.14
+    - name: OpenShift
+      versions:
+        - all
+
+
+  galaxy_tags: 
+    - kubernetes
+    - k8s
+    - openshift
+    - CSI
+
+dependencies: []
+  

@@ -1,0 +1,30 @@
+- name: Run cert
+  hosts: localhost
+  become: yes
+  gather_facts: false
+  tasks:
+    # TODO make this more intelligent.
+    - name: Ensure CASE bundle is defined
+      stat:
+        path: stable
+      register: case_details
+
+    - name: Ensure CASE bundle
+      when: case_details.stat.exists and case_details.stat.isdir
+      block:
+        - name: Ensure casectl is installed 
+          shell: command -v casectl >/dev/null 2>&1
+          register: casectl_installed
+          ignore_errors: yes
+          failed_when: no
+          changed_when: no
+
+        - name: Install casectl when not installed
+          include_tasks: cert/install_case.yaml
+          when: casectl_installed.rc == 1
+
+        - name: Ensure Operator is bundled
+          include_tasks: cert/case_bundle.yaml
+
+    - name: Ensure Operator is verified
+      include_tasks: cert/verify_operator.yaml
