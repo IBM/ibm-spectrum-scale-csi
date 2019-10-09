@@ -6,16 +6,21 @@ install:
     #molecule openshift
 go:
   - 1.13.x
+stages:
+  - Prep Scripts
+  - Build Image
 jobs:
   fast_finish: true
   include:
-    - stage: Prep Build
+    - stage: Prep Scripts
       script: 
-        - sudo curl -L https://github.com/operator-framework/operator-sdk/releases/download/v0.10.0/operator-sdk-v0.10.0-x86_64-linux-gnu -o /usr/local/bin/operator-sdk
+        - sudo curl -L ${CSI_OP_BUILD_DIR} -o /usr/local/bin/operator-sdk
         - sudo chmod +x /usr/local/bin/operator-sdk
-        - cd $TRAVIS_BUILD_DIR/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
-    - stage: build
+        - cd ${CSI_OP_BUILD_DIR}
+    - stage: Build Image
       script: "operator-sdk build csi-scale-operator"
 env:
   global:
     - GO111MODULE=on
+    - CSI_OP_BUILD_DIR="$TRAVIS_BUILD_DIR/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operttor"
+    - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/v0.10.0/operator-sdk-v0    .10.0-x86_64-linux-gnu"
