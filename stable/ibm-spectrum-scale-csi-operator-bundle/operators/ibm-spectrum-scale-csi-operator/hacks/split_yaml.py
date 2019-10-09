@@ -13,7 +13,7 @@ def main(args):
     parser.add_argument( '-f', metavar='filename', dest='filename', default=None,
         help='''The filename containing multiple YAML objects.''')
     parser.add_argument( '-d', metavar='destination', dest='dest', default='.',
-        help='''The destination to store the resulting YAML files.''')
+        help='''The destination to store the contents of the YAML files.''')
     parser.add_argument( '-p', metavar='prefix', dest='prefix', default='ibm-csi-scale',
         help='''The prefix for the generated file names.''')
 
@@ -33,13 +33,18 @@ def main(args):
         except yaml.YAMLError as e:
             print(e)
             return 1
+        
 
         for  obj in objs:
+            if obj is None:
+                continue
+
             ofile="{0}/{1}-{2}_{3}.yaml".format(dest, args.prefix, obj.get("kind", ""), 
                 obj.get("metadata",{}).get("name", ""))
 
+            os.remove(ofile)
             with open(ofile, 'w') as outfile:
-                yaml.dump(ofile, outfile, default_flow_style=False)
+                yaml.dump(obj, outfile, default_flow_style=False)
 
 
 if __name__ == "__main__":
