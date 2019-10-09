@@ -1,37 +1,37 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: csi-scale-operator
+  name: ibm-spectrum-scale-csi-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: csi-scale-operator
+      name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
       labels:
-        name: csi-scale-operator
+        name: ibm-spectrum-scale-csi-operator
     spec:
-      serviceAccountName: csi-scale-operator
+      serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
         - name: ansible
-          command:
-          - /usr/local/bin/ao-logs
-          - /tmp/ansible-operator/runner
-          - stdout
           image: "doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest"
-          imagePullPolicy: "Always"
+          command:
+            - /usr/local/bin/ao-logs
+            - /tmp/ansible-operator/runner
+            - stdout
+          imagePullPolicy: Always
           volumeMounts:
-          - mountPath: /tmp/ansible-operator/runner
-            name: runner
-            readOnly: true
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
+              readOnly: true
+
         - name: operator
           image: "doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest"
-          imagePullPolicy: "Always"
+          imagePullPolicy: Always
           volumeMounts:
-          - mountPath: /tmp/ansible-operator/runner
-            name: runner
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -42,7 +42,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "csi-scale-operator"
+              value: "ibm-spectrum-scale-csi-operator"
+            - name: ANSIBLE_VERBOSITY
+              value: "4"
       volumes:
         - name: runner
           emptyDir: {}

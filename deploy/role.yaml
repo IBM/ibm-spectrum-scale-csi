@@ -2,19 +2,20 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: csi-scale-operator
+  name: ibm-spectrum-scale-csi-operator
 rules:
   - apiGroups: [ "" ]
-    resources: [ "pods", "persistentvolumeclaims", "services", "endpoints", "events", "configmaps", "secrets" ]
+    resources: [ "pods", "persistentvolumeclaims", "services", "endpoints", "events", "configmaps",
+      "secrets", "secrets/status" ]
     verbs: [ '*' ]
   - apiGroups: [ "apps" ]
     resources: [ "deployments", "daemonsets", "replicasets", "statefulsets" ]
     verbs: [ '*' ]
   - apiGroups: [ "monitoring.coreos.com" ]
-    resources: [ "servicemonitors" ] 
-    verbs: [ "get", "create" ] 
+    resources: [ "servicemonitors" ]
+    verbs: [ "get", "create" ]
   - apiGroups: [ "apps" ]
-    resourceNames: [ "csi-scale-operator" ]
+    resourceNames: [ "ibm-spectrum-scale-csi-operator" ]
     resources: [ "deployments/finalizers" ]
     verbs: [ "update" ]
   - apiGroups: [""]
@@ -27,15 +28,15 @@ rules:
     resources: [ '*' ]
     verbs: [ '*' ]
 
---- 
-# Cluster Role level settings for the csi-scale-operator.
+---
+# Cluster Role level settings for the ibm-spectrum-scale-csi-operator.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: csi-scale-operator
+  name: ibm-spectrum-scale-csi-operator
 rules:
   - apiGroups: [ "" ]
-    resources: [ "persistentvolumeclaims", "persistentvolumes", "configmaps"]
+    resources: [ "persistentvolumeclaims", "persistentvolumes", "configmaps", "secrets"]
     verbs: [ '*' ]
   - apiGroups: ["storage.k8s.io"]
     resources: ["volumeattachments", "storageclasses" ]

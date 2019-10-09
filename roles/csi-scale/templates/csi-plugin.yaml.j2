@@ -34,6 +34,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+
           volumeMounts:
             - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
@@ -56,6 +57,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+
             - name: CSI_ENDPOINT
               value: unix:/var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
             - name: SCALE_HOSTPATH
@@ -73,15 +75,12 @@ spec:
               name: host-dev
             - name: "spectrum-scale-config"
               mountPath: /var/lib/ibm/config
+            - name: gpfs-classic
+              mountPath: "{{ csi_scale_hostpath }}"
 
             # Grab user clusters
 {% for cluster in clusters %}
-            # TODO can there be  multiples?
-{% if  cluster.primary is defined  and  cluster.primary.primaryFS is defined %}
-            - name: gpfs-classic
-              mountPath: "/ibm/{{ cluster.primary.primaryFS }}"
-{% endif %}
-        
+
 {% if cluster.secrets is defined %}
             - name: "{{ cluster.secrets }}"
               mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
@@ -111,16 +110,14 @@ spec:
         - name: "spectrum-scale-config"
           configMap:
             name: "spectrum-scale-config-json"
+        - name: gpfs-classic
+          hostPath:
+            path: "{{ csi_scale_hostpath }}"
+            type: Directory
 
 # Grab user clusters
 {% for cluster in clusters %}
-# TODO can there be  multiples?
-{% if  cluster.primary is defined  and  cluster.primary.primaryFS is defined %}
-        - name: gpfs-classic
-          hostPath:
-            path: "/ibm/{{ cluster.primary.primaryFS }}"
-            type: Directory
-{% endif %}
+
 
 {% if cluster.secrets is defined %}
         - name: "{{ cluster.secrets }}"
