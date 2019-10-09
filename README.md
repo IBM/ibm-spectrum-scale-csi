@@ -1,4 +1,4 @@
-# CSI Spectrum Scale Operator
+# IBM Spectrum Scale CSI Operator
 
 An Ansible based operator to run and manage the deployment of the 
 [IBM Spectrum Scale CSI Driver](https://github.com/IBM/ibm-spectrum-scale-csi-driver)
