@@ -2,6 +2,8 @@
 
 [![Documentation Status](https://readthedocs.org/projects/ibm-spectrum-scale-csi-operator/badge/?version=latest)](https://ibm-spectrum-scale-csi-operator.readthedocs.io/en/latest/?badge=latest)
 
+[![Docker Repository on Quay](https://quay.io/repository/mew2057/ibm-spectrum-scale-csi-operator/status "Docker Repository on Quay")](https://quay.io/repository/mew2057/ibm-spectrum-scale-csi-operator)
+
 An Ansible based operator to run and manage the deployment of the 
 [IBM Spectrum Scale CSI Driver](https://github.com/IBM/ibm-spectrum-scale-csi-driver)
 
