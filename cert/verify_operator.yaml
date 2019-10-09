@@ -27,33 +27,31 @@
   set_fact:
     OLM_DIR: "deploy/olm-catalog/{{OPERATOR_NAME}}/{{OPERATOR_VERSION}}/"
     OLM_MANIFEST: "deploy/olm-catalog/{{OPERATOR_NAME}}/"
-    CSI_CRD: "deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml" # TOOD Make inferred.
+    OLM_CSV: "{{OPERATOR_NAME}}.v{{OPERATOR_VERSION}}.clusterserviceversion.yaml"
+    CSI_CRD: "deploy/crds/"
 
 - name: Build operator 'ClusterServiceVersion'
-  shell: "operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{OPERATOR_VERSION}} --update-crds"
+  shell: "GO111MODULE=on operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{OPERATOR_VERSION}} --update-crds"
   args:
     chdir: "{{OPERATOR_DIR}}"
-  environment:
-    GO111MODULE: on
 
-- name: "Split '{{item}}' into OLM directory"
-  shell: "python hacks/split_yaml.py -f {{item}} -d {{dest}}"
+# TODO where does this live?
+#- name: "Split any additional resources into OLM directory"
+#  shell: "python hacks/split_yaml.py -f deploy/{{item}} -d {{dest}}"
+#  args:
+#    chdir: "{{OPERATOR_DIR}}"
+#  vars:
+#    dest: "{{OLM_DIR}}"
+#  loop: "{{ADDITIONAL_RESOURCES}}"
+
+- name: "Copy details from CRD into CSV"
+  shell: "python hacks/copy_crd_descriptions.py --crd {{src}} --csv  {{dest}}"
   args:
     chdir: "{{OPERATOR_DIR}}"
   vars:
-    dest: "{{OLM_DIR}}"
-  loop:
-    - "deploy/service_account.yaml"
-    -  "deploy/role_binding.yaml"
-
-- name: "Copy details from CRD {{item}} into CSV"
-  shell: "python hacks/copy_crd_descriptions.py --crd {{item}} --csv  {{dest}}"
-  args:
-    chdir: "{{OPERATOR_DIR}}"
-  vars:
-    dest: "{{OLM_DIR}}"
-  loop:
-    - "{{CSI_CRD}}"
+    dest: "{{OLM_DIR}}/{{OLM_CSV}}"
+    src:  "{{CSI_CRD}}/{{item}}"
+  loop: "{{CRD_LIST}}"
 
 - name: Run the 'operator-courier'
   shell: "operator-courier verify --ui_validate_io {{OLM_MANIFEST}}"
@@ -61,10 +59,8 @@
     chdir: "{{OPERATOR_DIR}}" 
 
 - name: Run 'operator-sdk' scorecard
-  shell: "operator-sdk scorecard {{SC_VARS}}"
+  shell: "GO111MODULE=on operator-sdk scorecard {{SC_VARS}}"
   args:
     chdir: "{{OPERATOR_DIR}}"
-  environment:
-    GO111MODULE: on
   
 

@@ -2,9 +2,12 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"csi_clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restAPI":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"csi_scale_hostpath":"/ibm/fs1"},"status":{}}]'
+    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
     capabilities: Basic Install
     categories: Storage
+    containerImage: TODO
+    createdAt: Wed Oct  9 06:41:31 MST 2019
+    description: An operator for the CSI scale plugin offering.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v0.0.1
   namespace: placeholder
@@ -18,6 +21,7 @@ spec:
       name: csiscaleoperators.scale.ibm.com
       resources:
       - kind: csiscaleoperators
+        name: ''
         version: v1alpha1
       - kind: Deployment
         name: ''
@@ -343,6 +347,9 @@ spec:
   - Spectrum Scale
   labels:
     operator: ibm-spectrum-scale-csi-operator
+  links:
+  - name: CSI Developer Documentation
+    url: https://kubernetes-csi.github.io/docs/
   maintainers:
   - email: jdunham@us.ibm.com
     name: John Dunham
