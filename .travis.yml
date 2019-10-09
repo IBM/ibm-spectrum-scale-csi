@@ -6,6 +6,9 @@ install:
     #molecule openshift
 go:
   - 1.13.x
+build:
+  post_ci:
+    - docker push ${DOCKER_REPO}
 stages:
   - Prep Scripts
   - Build Image
@@ -21,7 +24,7 @@ jobs:
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker push ${DOCKER_REPO}
+          #        - docker push ${DOCKER_REPO}
 env:
   global:
     - GO111MODULE=on
