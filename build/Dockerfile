@@ -11,6 +11,3 @@ FROM quay.io/operator-framework/ansible-operator:v0.9.0
 COPY build/_output/bin/ibm-spectrum-scale-csi-operator ${OPERATOR}
 COPY watches.yaml ${HOME}/watches.yaml
 COPY roles/ ${HOME}/roles/
-
-
-

@@ -14,11 +14,6 @@
 - name: "Ensure the clusters are valid"
   include_tasks: cluster_check.yml
   loop:  "{{ clusters }}"
-
-#- name: "Ensure the storage classes are created"
-#  include_tasks: storageclass_config.yml
-#  loop:  "{{ clusters }}"
-
   
 - name: "Set processed spectrum-scale-config to {{ state }}"
   k8s:

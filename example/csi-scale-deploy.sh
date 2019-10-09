@@ -8,7 +8,6 @@ then
     #operator-sdk generate k8s
     operator-sdk build csi-scale-operator
     shift
-
     export REPO="$(hostname -f)/"
     if [ ! -z "$1" ]
     then
@@ -16,6 +15,7 @@ then
     fi 
 
     sed -i "s|REPLACE_IMAGE|${REPO}csi-scale-operator|g" deploy/operator.yaml
+
     docker tag csi-scale-operator ${REPO}csi-scale-operator
     docker push ${REPO}csi-scale-operator
 fi 
@@ -28,4 +28,3 @@ kubectl create -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl create -f example/spectrum_scale.yaml
 
 kubectl create -f deploy/operator.yaml
-

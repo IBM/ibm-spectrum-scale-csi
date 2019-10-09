@@ -1,0 +1,30 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no 
+  vars:
+    present: True
+    op_version: v1alpha1 
+    user_config: spectrum_scale.yaml
+  tasks:
+
+    - name: Ensure desired operator state
+      set_fact: 
+        op_state: "{{ 'present' if present == True else 'absent' }}"
+
+    - name: Ensure user configuration is loaded
+      k8s:
+        state: "{{ op_state }}"
+        definition: "{{ user_config }}"
+
+    - name: Ensure operator environment is loaded
+      k8s:
+        state: "{{ op_state }}"
+        definition: "item.name"
+      loop:
+        - name: "service_account.yaml"
+        - name: "role.yaml"
+        - name: "role_binding.yaml"
+        - name: "crds/cache_{{ op_version }}_podset_crd.yaml"
+        - name: "operator.yaml"
+        - name: "crds/cache_{{ op_version }}_podset_cr.yaml"
+
