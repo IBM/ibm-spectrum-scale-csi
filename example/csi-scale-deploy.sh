@@ -12,6 +12,8 @@ then
         export REPO="$1/"
     fi 
 
+    sed -i "s|REPLACE_IMAGE|${REPO}csi-scale-operator|g" deploy/operator.yaml
+
     docker tag csi-scale-operator ${REPO}csi-scale-operator
     docker push ${REPO}csi-scale-operator
 fi 
@@ -24,5 +26,4 @@ kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_crd.yaml
 #kubectl create -f deploy/spectrum_scale.yaml
 
 kubectl create -f deploy/operator.yaml
-
 

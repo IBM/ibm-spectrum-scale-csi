@@ -73,15 +73,10 @@ spec:
               name: host-dev
             - name: "spectrum-scale-config"
               mountPath: /var/lib/ibm/config
-
-            # Grab user clusters
-{% for cluster in clusters %}
-            # TODO can there be  multiples?
-{% if  cluster.primary is defined  and  cluster.primary.primaryFS is defined %}
             - name: gpfs-classic
               mountPath: "/ibm/{{ cluster.primary.primaryFS }}"
-{% endif %}
-        
+            # Grab user clusters
+{% for cluster in clusters %}
 {% if cluster.secrets is defined %}
             - name: "{{ cluster.secrets }}"
               mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
@@ -121,6 +116,7 @@ spec:
             path: "/ibm/{{ cluster.primary.primaryFS }}"
             type: Directory
 {% endif %}
+
 
 {% if cluster.secrets is defined %}
         - name: "{{ cluster.secrets }}"
