@@ -1,0 +1,361 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
+    capabilities: Basic Install
+    categories: Storage
+    containerImage: TODO
+    createdAt: Wed Oct  9 06:41:31 MST 2019
+    description: An operator for the CSI scale plugin offering.
+    repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator
+  name: ibm-spectrum-scale-csi-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Represents a deployment of the IBM CSI Spectrum Scale plugin.
+      displayName: IBM CSI Spectrum Scale App
+      kind: CSIScaleOperator
+      name: csiscaleoperators.scale.ibm.com
+      resources:
+      - kind: csiscaleoperators
+        name: ''
+        version: v1alpha1
+      - kind: Deployment
+        name: ''
+        version: v1
+      - kind: Secret
+        name: ''
+        version: v1
+      - kind: Pod
+        name: ''
+        version: v1
+      - kind: StatefulSet
+        name: ''
+        version: v1beta1
+      - kind: DaemonSet
+        name: ''
+        version: v1beta2
+      - kind: ConfigMap
+        name: ''
+        version: v1
+      specDescriptors:
+      - description: Sidecar container image for the csi spectrum scale plugin pods.
+        path: driverRegistrar
+      - description: The path to the gpfs file system mounted on the host machine.
+        path: scaleHostpath
+      - description: Provisioner image for csi (actually issues provision requests).
+        path: provisioner
+      - description: Image name for the csi spectrum scale plugin container.
+        path: spectrumScale
+      - description: A collection of gpfs cluster properties for the csi driver to
+          mount.
+        path: clusters
+      - description: Attacher image for csi (actually attaches to the storage).
+        path: attacher
+      - description: An internal counter used by the operator to trigger reloads on
+          secret change.
+        path: secretCounter
+      - description: A string specifying a cacert resource name.
+        path: clusters.cacert
+      - description: Require a secure SSL connection to connect to GPFS.
+        path: clusters.secureSslMode
+      - description: A string specifying a secret resource name..
+        path: clusters.secrets
+      - description: A collection of targets for REST calls.
+        path: clusters.restApi
+      - description: The primary file system for the GPFS cluster.
+        path: clusters.primary
+      - description: The cluster id of the gpfs cluster specified (mandatory).
+        path: clusters.id
+      - description: The hostname of the REST server.
+        path: clusters.restApi.guiHost
+      - description: The port number running the REST server.
+        path: clusters.restApi.guiPort
+      - description: The name of the primary filesystem.
+        path: clusters.primary.primaryFS
+      - description: The name of the primary fileset, created in primaryFS.
+        path: clusters.primary.primaryFset
+      statusDescriptors:
+      - description: The active status of the operator
+        path: conditions
+      - description: Indicates that the plugin is running.
+        path: conditions.isRunning
+      version: v1alpha1
+  description: An Operator used to deploy and manage your Spectrum CSI Plugin.
+  displayName: IBM Spectrum Scale CSI Plugin Operator
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ''
+          resources:
+          - persistentvolumeclaims
+          - persistentvolumes
+          - configmaps
+          - secrets
+          verbs:
+          - '*'
+        - apiGroups:
+          - storage.k8s.io
+          resources:
+          - volumeattachments
+          - storageclasses
+          verbs:
+          - '*'
+        serviceAccountName: ibm-spectrum-scale-csi-operator
+      - rules:
+        - apiGroups:
+          - ''
+          resources:
+          - nodes
+          verbs:
+          - get
+          - list
+          - update
+        - apiGroups:
+          - ''
+          resources:
+          - namespaces
+          verbs:
+          - get
+          - list
+        - apiGroups:
+          - ''
+          resources:
+          - persistentvolumes
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
+          - storage.k8s.io
+          resources:
+          - volumeattachments
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        serviceAccountName: csi-nodeplugin
+      - rules:
+        - apiGroups:
+          - ''
+          resources:
+          - events
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
+          - ''
+          resources:
+          - persistentvolumes
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
+          - ''
+          resources:
+          - nodes
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - storage.k8s.io
+          resources:
+          - volumeattachments
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        serviceAccountName: external-attacher-runner
+      - rules:
+        - apiGroups:
+          - ''
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+        - apiGroups:
+          - ''
+          resources:
+          - persistentvolumes
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+        - apiGroups:
+          - ''
+          resources:
+          - persistentvolumeclaims
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
+          - storage.k8s.io
+          resources:
+          - storageclasses
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ''
+          resources:
+          - events
+          verbs:
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        serviceAccountName: external-provisioner-runner
+      deployments:
+      - name: ibm-spectrum-scale-csi-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: ibm-spectrum-scale-csi-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: ibm-spectrum-scale-csi-operator
+            spec:
+              containers:
+              - command:
+                - /usr/local/bin/ao-logs
+                - /tmp/ansible-operator/runner
+                - stdout
+                image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest
+                imagePullPolicy: Always
+                name: ansible
+                resources: {}
+                volumeMounts:
+                - mountPath: /tmp/ansible-operator/runner
+                  name: runner
+                  readOnly: true
+              - env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: ibm-spectrum-scale-csi-operator
+                image: doomfang-vm1.tuc.stglabs.ibm.com/csi-scale-operator:latest
+                imagePullPolicy: Always
+                name: operator
+                resources: {}
+                volumeMounts:
+                - mountPath: /tmp/ansible-operator/runner
+                  name: runner
+              serviceAccountName: ibm-spectrum-scale-csi-operator
+              volumes:
+              - emptyDir: {}
+                name: runner
+      permissions:
+      - rules:
+        - apiGroups:
+          - ''
+          resources:
+          - pods
+          - persistentvolumeclaims
+          - services
+          - endpoints
+          - events
+          - configmaps
+          - secrets
+          - secrets/status
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - apps
+          resourceNames:
+          - ibm-spectrum-scale-csi-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ''
+          resources:
+          - pods
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resources:
+          - replicasets
+          verbs:
+          - get
+        - apiGroups:
+          - scale.ibm.com
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        serviceAccountName: ibm-spectrum-scale-csi-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - IBM
+  - GPFS
+  - Spectrum Scale
+  labels:
+    operator: ibm-spectrum-scale-csi-operator
+  links:
+  - name: CSI Developer Documentation
+    url: https://kubernetes-csi.github.io/docs/
+  maintainers:
+  - email: jdunham@us.ibm.com
+    name: John Dunham
+  - email: yadayada@in.ibm.com
+    name: Yadavendra Yadav
+  maturity: alpha
+  provider:
+    name: IBM
+  version: 0.0.1

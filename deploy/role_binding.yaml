@@ -1,26 +1,27 @@
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: ibm-spectrum-scale-csi-operator
+  name: csi-scale-operator
 subjects:
 - kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-operator
+  name: csi-scale-operator
 roleRef:
   kind: Role
-  name: ibm-spectrum-scale-csi-operator
+  name: csi-scale-operator
   apiGroup: rbac.authorization.k8s.io
+
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: ibm-spectrum-scale-csi-operator
+  name: csi-scale-operator
 subjects:
   - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-operator
+    name: csi-scale-operator
     namespace: default
 roleRef:
   kind: ClusterRole
-  name: ibm-spectrum-scale-csi-operator
+  name: csi-scale-operator
   apiGroup: rbac.authorization.k8s.io
 
 ---

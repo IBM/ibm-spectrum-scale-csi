@@ -1,6 +1,0 @@
----
-# tasks file for csi-scale-secrets
-#
-#
-- debug:
-    msg: "The Secret stuff worked!"
