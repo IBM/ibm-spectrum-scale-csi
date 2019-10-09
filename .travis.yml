@@ -2,7 +2,8 @@ services: docker
 language: go
 sudo: required
 install:
-  - sudo pip install docker molecule openshift
+  - sudo pip install docker 
+    #molecule openshift
 go:
   - 1.13.x
 script: 
