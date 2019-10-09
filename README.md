@@ -1,7 +1,7 @@
 # CSI Spectrum Scale Operator
 
 An Ansible based operator to run and manage the deployment of the 
-[CSI Spectrum Scale Operator](https://github.ibm.com/FSaaS/csi-scale).
+[IBM Spectrum Scale CSI Driver](https://github.com/IBM/ibm-spectrum-scale-csi-driver)
 
 This project was originally generated using [operator-sdk](https://github.com/operator-framework/operator-sdk).
 
