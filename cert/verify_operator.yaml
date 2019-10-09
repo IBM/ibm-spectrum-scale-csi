@@ -55,12 +55,20 @@
 
 - name: Run the 'operator-courier'
   shell: "operator-courier verify --ui_validate_io {{OLM_MANIFEST}}"
+  register: ocOut
   args:
     chdir: "{{OPERATOR_DIR}}" 
+- debug: var=ocOut.stdout_lines
+- debug: var=ocOut.stderr_lines
+
+
 
 - name: Run 'operator-sdk' scorecard
   shell: "GO111MODULE=on operator-sdk scorecard {{SC_VARS}}"
+  register: scOut
   args:
     chdir: "{{OPERATOR_DIR}}"
+- debug: var=scOut.stdout_lines
+- debug: var=scOut.stderr_lines
   
 
