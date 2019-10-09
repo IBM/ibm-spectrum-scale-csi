@@ -23,4 +23,4 @@ env:
   global:
     - GO111MODULE=on
     - CSI_OP_BUILD_DIR="$TRAVIS_BUILD_DIR/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operttor"
-    - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/v0.10.0/operator-sdk-v0    .10.0-x86_64-linux-gnu"
+    - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/v0.10.0/operator-sdk-v0.10.0-x86_64-linux-gnu"
