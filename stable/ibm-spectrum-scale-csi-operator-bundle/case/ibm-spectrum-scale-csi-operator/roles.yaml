@@ -1,0 +1,15 @@
+
+# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own CASE information
+
+roles:
+  roleDefs:
+    clusterAdmin:
+      metadata:
+        displayDescription: A user who has cluster administrator permissions.
+        displayName: Cluster Admin
+        name: clusterAdmin
+    namespaceAdmin:
+      metadata:
+        displayDescription: A user who has namespace administrator permissions.
+        displayName: Namespace Admin
+        name: namespaceAdmin
