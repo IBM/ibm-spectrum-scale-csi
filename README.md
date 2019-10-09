@@ -50,3 +50,4 @@ The following must be executed in the root directory of this repository:
 ```
 operator-sdk build csi-scale-operator
 ```
+
