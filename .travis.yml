@@ -14,7 +14,7 @@ jobs:
   include:
     - stage: Prep Scripts
       script: 
-        - sudo curl -L ${CSI_OP_BUILD_DIR} -o /usr/local/bin/operator-sdk
+        - sudo curl -L ${OPERATOR_SDK} -o /usr/local/bin/operator-sdk
         - sudo chmod +x /usr/local/bin/operator-sdk
         - cd ${CSI_OP_BUILD_DIR}
     - stage: Build Image
