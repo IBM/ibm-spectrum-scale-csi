@@ -3,7 +3,6 @@ package csiscalesecret
 import (
 	"context"
 	"fmt"
-	//"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -16,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -74,12 +75,11 @@ func Add(mgr manager.Manager) *controller.Controller {
 					log.Error(err, "Error Message")
 				}
 
-				log.Info(fmt.Sprintf("In Mapping function, mapping to %v items: %s", len(cso.Items), "test"))
+				log.Info(fmt.Sprintf("In Mapping function, mapping to %v items", len(cso.Items)))
 
 				// Compose the Requests.
 				reqs := make([]reconcile.Request, len(cso.Items))
 				for i, _ := range reqs {
-					log.Info(fmt.Sprintf("Name: %s  -  Namespace: %s", cso.Items[i].Name, a.Meta.GetNamespace()))
 					reqs[i].NamespacedName.Name = cso.Items[i].Name
 					reqs[i].Namespace = a.Meta.GetNamespace()
 				}
