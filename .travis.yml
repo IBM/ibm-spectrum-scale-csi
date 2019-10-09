@@ -19,7 +19,7 @@ jobs:
         - sudo chmod +x /usr/local/bin/operator-sdk
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${DOCKER_REPO}csi-scale-operator
+        - docker tag csi-scale-operator ${DOCKER_REPO}
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
         - docker push ${DOCKER_REPO}
 env:
