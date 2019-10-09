@@ -3,7 +3,7 @@
 
 - name: Ensure 'operator-sdk' is installed
   get_url:  
-    url: "https://github.com/operator-framework/operator-sdk/releases/download/{{release}}/operator-sdk-{{release}}-x86    _64-linux-gnu"
+    url: "https://github.com/operator-framework/operator-sdk/releases/download/{{release}}/operator-sdk-{{release}}-x86_64-linux-gnu"
     dest: /usr/local/bin/operator-sdk
     mode: '0755'
   vars:

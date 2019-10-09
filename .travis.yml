@@ -1,0 +1,19 @@
+services: docker
+language: go
+sudo: required
+install:
+  - pip install docker molecule openshift
+go:
+  - 1.13.x
+script: 
+  - sudo curl -L https://github.com/operator-framework/operator-sdk/releases/download/v0.10.0/operator-sdk-v0.10.0-x86_64-linux-gnu -o /usr/local/bin/operator-sdk
+  - sudo chmod +x /usr/local/bin/operator-sdk
+  - cd $TRAVIS_BUILD_DIR/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+jobs:
+  fast_finish: true
+  include:
+    - stage: build
+      script: "operator-sdk build csi-scale-operator"
+env:
+  global:
+    - GO111MODULE=on
