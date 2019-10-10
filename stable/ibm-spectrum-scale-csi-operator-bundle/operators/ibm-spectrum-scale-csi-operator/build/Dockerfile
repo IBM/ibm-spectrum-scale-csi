@@ -24,7 +24,7 @@ RUN yum clean all && rm -rf /var/cache/yum/* \
  && yum clean all \
  && rm -rf /var/cache/yum
 
-COPY bin /usr/local/bin
+COPY build/bin /usr/local/bin
 RUN /usr/local/bin/user_setup
 
 # Ensure directory permissions are properly set
