@@ -39,7 +39,7 @@ RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--", "/usr/local/bin/entrypoint"]
 USER ${USER_UID}
 
-COPY library/k8s_status.py /usr/share/ansible/openshift/
+#COPY library/k8s_status.py /usr/share/ansible/openshift/
 COPY build/_output/bin/ibm-spectrum-scale-csi-operator ${OPERATOR}
 COPY watches.yaml ${HOME}/watches.yaml
 COPY roles/ ${HOME}/roles/
