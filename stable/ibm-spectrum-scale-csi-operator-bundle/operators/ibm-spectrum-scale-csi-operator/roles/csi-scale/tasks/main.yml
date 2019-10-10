@@ -13,7 +13,7 @@
     definition: "{{ lookup('template', item.name) | from_yaml }}"
   loop:
     - name: csi-plugin-attacher.yaml.j2
-    - name: csi-plugin-provisioner.yaml.j2	 
+    - name: csi-plugin-provisioner.yaml.j2
     - name: csi-plugin.yaml.j2
 
 

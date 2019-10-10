@@ -2,7 +2,7 @@
 # TODO need to make storage class configurable
 # TODO pvc configuration
 
-- name: "Refresh Storage Class" 
+- name: "Refresh Storage Class"
   block: 
     # TODO Not sure if this is "correct", but this is the only way to make it work.
     - name: "Destroy old storage class."
@@ -10,7 +10,7 @@
         state: absent
         definition: "{{ lookup('template', 'storageclass.yaml.j2'  ) | from_yaml }}"
 
-    - name: "Ensure cluster[{{ item.id }}] storage class is configured"  
+    - name: "Ensure cluster[{{ item.id }}] storage class is configured"
       k8s:
         state: "{{ state }}"
         definition: "{{ lookup('template', 'storageclass.yaml.j2'  ) | from_yaml }}"
