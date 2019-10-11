@@ -1,0 +1,39 @@
+---
+- name: Ensure common tasks are run
+  include_tasks: common/dev-env.yaml
+    
+
+i
+- name: Gather cluster information
+
+
+
+- name: "Ensure CASE github repository is present"
+  git:
+    repo: 'https://github.ibm.com/CloudPakOpenContent/case-spec-cli.git'
+    dest: ~/CASE
+    clone: yes
+    update: no
+
+- name: "Ensure packages {{packages}} are installed"
+  yum:
+    name: "{{packages}}"
+  vars:
+    packages:
+      - golang-bin-1.13
+
+- name: Ensure go mod is tidy for CASE
+  shell: go mod tidy >/dev/null 2>&1
+  args:
+    chdir:  ~/CASE
+
+
+- name: Make 'install' target for casectl
+  make:
+    chdir: ~/CASE
+    target: install
+  become: yes
+  environment:
+    GITHUB_TOKEN: "{{GITHUB_TOKEN}}"
+
+

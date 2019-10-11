@@ -1,0 +1,7 @@
+- name: Prepare environment for development.
+  hosts: localhost
+  become: yes
+  gather_facts: false
+  tasks:
+    - name: Ensure common tasks are run
+      include_tasks: common/dev-env.yaml
