@@ -1,0 +1,7 @@
+Value fs ([^\s:]+)
+Value mount ([^\s]+)
+
+Start
+  ^File system attributes for ${fs}:
+  ^\s+-T\s+${mount}\s.* -> Next.Record
+
