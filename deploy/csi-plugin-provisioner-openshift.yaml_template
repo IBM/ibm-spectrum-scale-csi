@@ -22,8 +22,8 @@ spec:
       containers:
         - name: csi-provisioner
           image: $provisioner
-          securityContext:
-            privileged: true
+          securityContext:
+            privileged: true
           args:
             - "--provisioner=csi-spectrum-scale"
             - "--csi-address=$(ADDRESS)"
