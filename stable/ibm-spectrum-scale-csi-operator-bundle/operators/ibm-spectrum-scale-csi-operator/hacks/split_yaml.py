@@ -42,7 +42,7 @@ def main(args):
             ofile="{0}/{1}-{2}_{3}.yaml".format(dest, args.prefix, obj.get("kind", ""), 
                 obj.get("metadata",{}).get("name", ""))
 
-            os.remove(ofile)
+            #os.remove(ofile)
             with open(ofile, 'w') as outfile:
                 yaml.dump(obj, outfile, default_flow_style=False)
 

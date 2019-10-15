@@ -11,7 +11,7 @@ spec:
       labels:
         app: '{{ name }}-provisioner'
     spec:
-      serviceAccount: csi-provisioner
+      serviceAccount: external-provisioner-runner
       containers:
         - name: csi-provisioner
 {% if 'apps.openshift.io' in api_groups %}

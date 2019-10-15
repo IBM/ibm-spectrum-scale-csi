@@ -18,6 +18,7 @@ then
     sed -i "s|REPLACE_IMAGE|${REPO}csi-scale-operator|g" deploy/operator.yaml
     docker tag csi-scale-operator ${REPO}csi-scale-operator
     docker push ${REPO}csi-scale-operator
+    echo ${REPO}csi-scale-operator
 fi 
 
 kubectl create -f deploy/role.yaml
