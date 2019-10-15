@@ -18,8 +18,8 @@ spec:
       containers:
         - name: driver-registrar
           image: $driverregistrar
-          securityContext:
-            privileged: true
+          securityContext:
+            privileged: true
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
