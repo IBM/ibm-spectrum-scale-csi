@@ -11,6 +11,7 @@
     packages:
     - python36
     - python36-pip
+    - jq
 
 - name: Ensure 'python3' requirements are installed
   pip: 
