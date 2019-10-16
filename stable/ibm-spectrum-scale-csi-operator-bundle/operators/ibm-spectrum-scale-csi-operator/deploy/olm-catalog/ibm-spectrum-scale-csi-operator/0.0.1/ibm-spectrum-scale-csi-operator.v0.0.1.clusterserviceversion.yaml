@@ -43,46 +43,84 @@ spec:
         version: v1
       specDescriptors:
       - description: Sidecar container image for the csi spectrum scale plugin pods.
+        displayName: driverRegistrar
         path: driverRegistrar
+        x-descriptors: []
       - description: The path to the gpfs file system mounted on the host machine.
+        displayName: scaleHostpath
         path: scaleHostpath
+        x-descriptors: []
       - description: Provisioner image for csi (actually issues provision requests).
+        displayName: provisioner
         path: provisioner
+        x-descriptors: []
       - description: Image name for the csi spectrum scale plugin container.
+        displayName: spectrumScale
         path: spectrumScale
+        x-descriptors: []
       - description: A collection of gpfs cluster properties for the csi driver to
           mount.
+        displayName: clusters
         path: clusters
+        x-descriptors: []
       - description: Attacher image for csi (actually attaches to the storage).
+        displayName: attacher
         path: attacher
+        x-descriptors: []
       - description: An internal counter used by the operator to trigger reloads on
           secret change.
+        displayName: secretCounter
         path: secretCounter
+        x-descriptors: []
       - description: A string specifying a cacert resource name.
+        displayName: cacert
         path: clusters.cacert
+        x-descriptors: []
       - description: Require a secure SSL connection to connect to GPFS.
+        displayName: secureSslMode
         path: clusters.secureSslMode
+        x-descriptors: []
       - description: A string specifying a secret resource name..
+        displayName: secrets
         path: clusters.secrets
+        x-descriptors: []
       - description: A collection of targets for REST calls.
+        displayName: restApi
         path: clusters.restApi
+        x-descriptors: []
       - description: The primary file system for the GPFS cluster.
+        displayName: primary
         path: clusters.primary
+        x-descriptors: []
       - description: The cluster id of the gpfs cluster specified (mandatory).
+        displayName: id
         path: clusters.id
+        x-descriptors: []
       - description: The hostname of the REST server.
+        displayName: guiHost
         path: clusters.restApi.guiHost
+        x-descriptors: []
       - description: The port number running the REST server.
+        displayName: guiPort
         path: clusters.restApi.guiPort
+        x-descriptors: []
       - description: The name of the primary filesystem.
+        displayName: primaryFS
         path: clusters.primary.primaryFS
+        x-descriptors: []
       - description: The name of the primary fileset, created in primaryFS.
+        displayName: primaryFset
         path: clusters.primary.primaryFset
+        x-descriptors: []
       statusDescriptors:
       - description: The active status of the operator
+        displayName: conditions
         path: conditions
+        x-descriptors: []
       - description: Indicates that the plugin is running.
+        displayName: isRunning
         path: conditions.isRunning
+        x-descriptors: []
       version: v1alpha1
   description: An Operator used to deploy and manage your Spectrum CSI Plugin.
   displayName: IBM Spectrum Scale CSI Plugin Operator
