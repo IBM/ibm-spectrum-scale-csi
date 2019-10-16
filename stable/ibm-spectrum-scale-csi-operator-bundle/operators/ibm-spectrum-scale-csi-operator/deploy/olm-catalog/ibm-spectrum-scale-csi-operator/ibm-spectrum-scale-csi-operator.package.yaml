@@ -2,4 +2,4 @@ channels:
 - currentCSV: ibm-spectrum-scale-csi-operator.v0.0.1
   name: alpha
 defaultChannel: alpha
-packageName: ibm-spectrum-scale-csi-operator
+packageName: ibm-spectrum-scale-csi-operator-app
