@@ -23,8 +23,8 @@ jobs:
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
-        - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io fi'
-        - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then docker push ${DOCKER_REPO} fi'
+        #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
+        #- docker push ${DOCKER_REPO} 
 env:
   global:
     - GO111MODULE=on
