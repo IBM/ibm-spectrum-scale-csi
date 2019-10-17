@@ -1,4 +1,4 @@
-module github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator
+module github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
 
 require (
 	github.com/davecgh/go-spew v1.1.1

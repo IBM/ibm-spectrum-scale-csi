@@ -11,7 +11,7 @@ spec:
       labels:
         app: "{{ name }}-attacher"
     spec:
-      serviceAccount: csi-attacher
+      serviceAccount: external-attacher-runner
       containers:
         - name: "{{ name }}-attacher"
 {% if 'apps.openshift.io' in api_groups %}

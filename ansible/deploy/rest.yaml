@@ -1,0 +1,13 @@
+---
+
+- name: Make the CsiAdmin user
+  shell: "/usr/lpp/mmfs/gui/cli/mkuser {{user}} -p {{pass}} -g CsiAdmin"
+  var: 
+    user: adm
+    pass: ppslab
+
+
+
+
+
+  

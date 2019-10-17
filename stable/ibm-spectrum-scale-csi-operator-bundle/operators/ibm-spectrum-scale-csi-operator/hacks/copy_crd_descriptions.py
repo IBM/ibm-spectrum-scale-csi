@@ -21,8 +21,12 @@ def loadDescriptors(descType, crd, csv):
         # Load the path and then iterate to get the property.
         path    = specpaths.pop(0)
         keys    = path.split(".")
+        name    = keys[-1]
         prop    = spec
         subprops = specprops
+        displayName = name
+  
+#        displayName = name.charAt(0).toUpperCase()  + name.slice(1).replace( /([A-Z])/g, " $1" );
       
         for key in keys:
             prop     = subprops.get(key, {})
@@ -32,8 +36,11 @@ def loadDescriptors(descType, crd, csv):
         for subprop in prop.get("properties", {}).keys():
             specpaths.append("{0}.{1}".format(path,subprop))
         
+
         # Construct description
         specdescriptors.append({ 
+          "displayName" : displayName,
+          "x-descriptors": [],
           "path" : path,
           "description" : prop.get("description", "") })
         

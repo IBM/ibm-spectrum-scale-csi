@@ -1,0 +1,34 @@
+services: docker
+language: go
+sudo: required
+install:
+  - sudo pip install docker 
+    #molecule openshift
+go:
+  - 1.13.x
+#build:
+#  post_ci:
+#    - docker push ${DOCKER_REPO}
+stages:
+  - Prep Scripts
+  - Build Image
+jobs:
+  fast_finish: true
+  include:
+    # TODO make this more modular.
+    - stage: Build Image and Push
+      script: 
+        - sudo curl -L ${OPERATOR_SDK} -o /usr/local/bin/operator-sdk
+        - sudo chmod +x /usr/local/bin/operator-sdk
+        - cd ${CSI_OP_BUILD_DIR}
+        - operator-sdk build csi-scale-operator
+        - docker tag csi-scale-operator ${DOCKER_REPO}
+        #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
+        #- docker push ${DOCKER_REPO} 
+env:
+  global:
+    - GO111MODULE=on
+    - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+    - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/v0.10.0/operator-sdk-v0.10.0-x86_64-linux-gnu"
+    - QUAY_USERNAME="mew2057"
+    - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator:v0.0.1"
