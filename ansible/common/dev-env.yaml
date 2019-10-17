@@ -11,6 +11,7 @@
     packages:
     - python36
     - python36-pip
+    - golang-bin-1.13
   #- jq
 
 - name: Ensure 'python3' requirements are installed
