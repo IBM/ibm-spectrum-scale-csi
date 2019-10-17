@@ -13,9 +13,9 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperator":       schema_pkg_apis_ibm_v1alpha1_CSIScaleOperator(ref),
-		"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorSpec":   schema_pkg_apis_ibm_v1alpha1_CSIScaleOperatorSpec(ref),
-		"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorStatus": schema_pkg_apis_ibm_v1alpha1_CSIScaleOperatorStatus(ref),
+		"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperator":       schema_pkg_apis_ibm_v1alpha1_CSIScaleOperator(ref),
+		"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorSpec":   schema_pkg_apis_ibm_v1alpha1_CSIScaleOperatorSpec(ref),
+		"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorStatus": schema_pkg_apis_ibm_v1alpha1_CSIScaleOperatorStatus(ref),
 	}
 }
 
@@ -46,19 +46,19 @@ func schema_pkg_apis_ibm_v1alpha1_CSIScaleOperator(ref common.ReferenceCallback)
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorSpec"),
+							Ref: ref("github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorStatus"),
+							Ref: ref("github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorSpec", "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorSpec", "github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1.CSIScaleOperatorStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

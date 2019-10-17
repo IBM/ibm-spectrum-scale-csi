@@ -20,6 +20,7 @@ then
     docker push ${REPO}csi-scale-operator
     echo ${REPO}csi-scale-operator
 fi 
+exit
 
 kubectl create -f deploy/role.yaml
 kubectl create -f deploy/service_account.yaml

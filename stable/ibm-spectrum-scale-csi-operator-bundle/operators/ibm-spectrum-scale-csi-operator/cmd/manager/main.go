@@ -12,8 +12,8 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis"
-	"github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/controller/csiscalesecret"
+	"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis"
+	"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/controller/csiscalesecret"
 
 	aocontroller "github.com/operator-framework/operator-sdk/pkg/ansible/controller"
 	aoflags "github.com/operator-framework/operator-sdk/pkg/ansible/flags"

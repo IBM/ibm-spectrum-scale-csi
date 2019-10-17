@@ -8,7 +8,7 @@ metadata:
     containerImage: TODO
     createdAt: Wed Oct  9 06:41:31 MST 2019
     description: An operator for the CSI scale plugin offering.
-    repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator
+    repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v0.0.1
   namespace: placeholder
 spec:

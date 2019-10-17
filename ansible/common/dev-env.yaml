@@ -11,8 +11,6 @@
     packages:
     - python36
     - python36-pip
-    - golang-bin-1.13
-  #- jq
 
 - name: Ensure 'python3' requirements are installed
   pip: 
@@ -26,4 +24,18 @@
     mode: '0755'
   vars:
     release: "{{OPERATOR_SDK_VER}}"
+
+- name: Ensure 'Go 1.13' is installed
+  unarchive:
+    src: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
+    dest: /usr/local
+    remote_src: yes
+
+
+- name: Expose Go to the global path
+  copy:
+    dest: /etc/profile.d/custom-path.sh
+    content: 'PATH=$PATH:/usr/local/go/bin'
+
+
 
