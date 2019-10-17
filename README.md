@@ -77,7 +77,7 @@ If you've built the image as outlined above and tagged it, you can easily run th
 kubectl create -f deploy/service_account.yaml
 kubectl create -f deploy/role.yaml
 kubectl create -f deploy/role_binding.yaml
-kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_crd.yaml
+kubectl create -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl create -f deploy/operator.yaml
 ```
 
@@ -176,7 +176,7 @@ kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml
 kubectl delete -f deploy/role_binding.yaml
 kubectl delete -f deploy/service_account.yaml
-kubectl delete -f deploy/crds/csi-scale-operators_v1alpha1_podset_crd.yaml
+kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 ```
 
 Please note, this will completely destroy the operator and all associated resources.
