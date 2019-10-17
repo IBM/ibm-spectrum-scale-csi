@@ -6,11 +6,11 @@
   - name: Ensure common tasks are run
     include_tasks: common/dev-env.yaml
 
-  - name: Ensure helm is installed (OLM testing)
-    shell: curl -L https://git.io/get_helm.sh | bash
-
-  - name : Ensure helm registry is installed (OLM testing)
-    shell: cd ~/.helm/plugins/ && git clone https://github.com/app-registry/appr-helm-plugin.git registry
-
-  - name: Ensure helm registry is loaded  (OLM testing)
-    shell: helm registry --help
+#  - name: Ensure helm is installed (OLM testing)
+#    shell: curl -L https://git.io/get_helm.sh | bash
+#
+#  - name : Ensure helm registry is installed (OLM testing)
+#    shell: cd ~/.helm/plugins/ && git clone https://github.com/app-registry/appr-helm-plugin.git registry
+#
+#  - name: Ensure helm registry is loaded  (OLM testing)
+#    shell: helm registry --help
