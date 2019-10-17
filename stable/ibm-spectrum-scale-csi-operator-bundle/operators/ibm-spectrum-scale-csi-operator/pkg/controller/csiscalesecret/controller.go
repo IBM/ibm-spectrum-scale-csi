@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	//"github.com/davecgh/go-spew/spew"
-	ibmv1alpha1 "github.ibm.com/jdunham/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
+	ibmv1alpha1 "github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
 	//"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"

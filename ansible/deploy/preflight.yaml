@@ -1,0 +1,21 @@
+---
+# Run preflight tests.    
+- name: Copy script hacks
+  copy: 
+    src: hacks
+    dest: /tmp/csi-deploy
+
+- name: Gather Spectrum Scale cluster information
+  script: "/tmp/csi-deploy/hacks/getscalecluster.py --templates /tmp/csi-deploy/hacks"
+  register: cluster_std
+
+- name: Ensure cluster information is ingested to ansible
+  set_fact:
+    cluster: "{{cluster_std.stdout | from_yaml}}"
+
+- debug: var=cluster
+
+
+
+
+  

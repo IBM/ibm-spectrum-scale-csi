@@ -1,0 +1,41 @@
+---
+- name: Set environment facts
+  set_fact:
+    OPERATOR_SDK_VER: "v0.10.0"
+    OPERATOR_VERSION: "0.0.1"
+
+- name: Ensure 'python3' is installed
+  package:
+    name: "{{packages}}"
+  vars:
+    packages:
+    - python36
+    - python36-pip
+
+- name: Ensure 'python3' requirements are installed
+  pip: 
+    requirements: "{{playbook_dir}}/common/requirements-dev.txt"
+    executable: pip3
+
+- name: Ensure 'operator-sdk' is installed
+  get_url:  
+    url: "https://github.com/operator-framework/operator-sdk/releases/download/{{release}}/operator-sdk-{{release}}-x86_64-linux-gnu"
+    dest: /usr/local/bin/operator-sdk
+    mode: '0755'
+  vars:
+    release: "{{OPERATOR_SDK_VER}}"
+
+- name: Ensure 'Go 1.13' is installed
+  unarchive:
+    src: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
+    dest: /usr/local
+    remote_src: yes
+
+
+- name: Expose Go to the global path
+  copy:
+    dest: /etc/profile.d/custom-path.sh
+    content: 'PATH=$PATH:/usr/local/go/bin'
+
+
+
