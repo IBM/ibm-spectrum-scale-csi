@@ -33,7 +33,7 @@ If you are working out of a forked copy you can change your origin to match:
 
 ``` bash
 git remote set-url origin <forked git repo>
-git remote set-url upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
+git remote add upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
 
 git pull origin
 ```
