@@ -135,16 +135,6 @@ func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconc
 
 	cso := &ibmv1alpha1.CSIScaleOperator{}
 
-	// TODO Make this not hard coded.
-	//var oGVK = schema.GroupVersionKind{
-	//	Version: "v1alpha1",
-	//	Group:   "scale.ibm.com",
-	//	Kind:    "CSIScaleOperator",
-	//}
-
-	//// Retrieve the current config
-	//u := &unstructured.Unstructured{}
-	//u.SetGroupVersionKind(oGVK)
 	err := r.client.Get(context.TODO(), request.NamespacedName, cso)
 	if err != nil {
 		log.Error(err, "Unable to get operator object.")
@@ -152,18 +142,6 @@ func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconc
 	}
 
 	cso.Spec.SecretCounter = cso.Spec.SecretCounter + 1
-
-	//sCount, found, err := unstructured.NestedString(u.UnstructuredContent(), "spec", "secretCounter")
-	//if !found {
-	//	sCount = "0"
-	//}
-
-	//spew.Dump(u.UnstructuredContent())
-	//log.Info(fmt.Sprintf("SecretCount: %v", sCount))
-	//// TODO add secret watcher.
-	//if n, err := strconv.Atoi(sCount); err != nil {
-	//	unstructured.SetNestedField(u.UnstructuredContent(), n+1, "spec", "secretCounter")
-	//}
 
 	err = r.client.Update(context.TODO(), cso)
 	if err != nil {
