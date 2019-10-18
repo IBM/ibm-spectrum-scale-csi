@@ -6,10 +6,14 @@ metadata:
 spec:
   serviceName: '{{ name }}-provisioner'
   replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ name }}-provisioner"
   template:
     metadata:
       labels:
         app: '{{ name }}-provisioner'
+        product: ibm-spectrum-scale-csi
     spec:
       serviceAccount: external-provisioner-runner
       containers:
