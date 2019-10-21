@@ -5,12 +5,13 @@ metadata:
     alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
     capabilities: Basic Install
     categories: Storage
+    certified: 'false'
     containerImage: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
     createdAt: Wed Oct  9 06:41:31 MST 2019
-    support: IBM
-    certified: "false"
-    description: An operator for the CSI scale plugin offering.
+    description: The IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster
+      providing a means to deploy and manage the CSI plugin for spectrum scale.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+    support: IBM
   name: ibm-spectrum-scale-csi-operator.v0.0.1
   namespace: placeholder
 spec:
@@ -124,8 +125,20 @@ spec:
         path: conditions.isRunning
         x-descriptors: []
       version: v1alpha1
-  description: An Operator used to deploy and manage your Spectrum CSI Plugin.
+  description: "# IBM Spectrum Scale CSI Operator Quickstart\n\nThe IBM Spectrum Scale\
+    \ CSI Operator runs within a Kubernetes cluster providing a means to \ndeploy\
+    \ and manage the CSI plugin for spectrum scale.\n\nThis operator should be used\
+    \ to deploy the CSI plugin.\n\nThe configuration process is as follows:\n\n1.\
+    \ (#spectrum-scale-gui-setup)\n2.\n\n\n## Spectrum Scale GUI Setup\n1. Ensure\
+    \ the Spectrum Scale GUI is running by pointing your browser to the IP hosting\
+    \ the GUI:\n  \n  ![Spectrum Scale GUI login](https://user-images.githubusercontent.com/1195452/67230992-6d2d9700-f40c-11e9-96d5-3f0e5bcb2d9a.png)\n\
+    \n\nand an account in the CsiAdmin group has been created\n\n```\n  export USERNAME=\"\
+    SomeUser\"\n  export PASSWORD=\"SomePassword\"\n  /usr/lpp/mmfs/gui/cli/mkuser\
+    \ ${USERNAME} -p ${PASSWORD} -g CsiAdmin\n```\n"
   displayName: IBM Spectrum Scale CSI Plugin Operator
+  icon:
+  - base64data: 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
+    mediatype: image/png
   install:
     spec:
       clusterPermissions:
@@ -399,7 +412,3 @@ spec:
   provider:
     name: IBM
   version: 0.0.1
-  icon: 
-  - base64data: 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
-    mediatype: image/png
-

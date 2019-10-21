@@ -81,7 +81,7 @@ spec:
                     type: boolean
 
                 secrets:
-                  description: "A string specifying a secret resource name.."
+                  description: "A string specifying a secret resource name."
                   type: string
 
                 cacert: 
