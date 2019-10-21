@@ -7,6 +7,8 @@ metadata:
     categories: Storage
     containerImage: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
     createdAt: Wed Oct  9 06:41:31 MST 2019
+    support: IBM
+    certified: "false"
     description: An operator for the CSI scale plugin offering.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v0.0.1
