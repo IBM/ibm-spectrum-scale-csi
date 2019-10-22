@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'IBM Spectrum Scale CSI Operator'
-copyright = '2019, John Dunham'
+copyright = '2019, IBM'
 author = 'John Dunham'
 
 # The full version, including alpha/beta/rc tags
@@ -47,9 +47,29 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+import os
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if on_rtd:
+    html_theme = 'default'
+else:
+    html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# Add md to suffix.
+source_suffix = ['.md', '.rst']
+
+# Markdown support.
+source_parsers = { '.md' : 'recommonmark.parser.CommonMarkParser' }
+
+
+ collection of substitutions.
+rst_epilog="""
+.. |driver-repo| replace:: GitHubDriver_
+.. |operator-repo| replace:: GitHubOperator_
+.. _GitHubDriver: https://github.com/IBM/ibm-spectrum-scale-csi-driver
+.. _GitHubOperator: https://github.com/IBM/
+"""
