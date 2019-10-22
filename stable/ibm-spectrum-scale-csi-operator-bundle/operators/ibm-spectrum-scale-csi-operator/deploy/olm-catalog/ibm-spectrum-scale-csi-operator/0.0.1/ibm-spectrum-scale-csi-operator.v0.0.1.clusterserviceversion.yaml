@@ -49,33 +49,33 @@ spec:
         displayName: Driver Registrar Image
         path: driverRegistrar
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The path to the gpfs file system mounted on the host machine.
         displayName: Spectrum Scale Hostpath
         path: scaleHostpath
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Provisioner image for csi (actually issues provision requests).
         displayName: Provisioner Image
         path: provisioner
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Image name for the csi spectrum scale plugin container.
         displayName: Spectrum Scale Image
         path: spectrumScale
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: A collection of gpfs cluster properties for the csi driver to
           mount.
         displayName: Clusters
         path: clusters
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - urn:alm:descriptor:com.tectonic.ui:arrayFieldGroup
       - description: Attacher image for csi (actually attaches to the storage).
         displayName: Attacher Image
         path: attacher
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: An internal counter used by the operator to trigger reloads on
           secret change.
         displayName: Secret Counter
@@ -86,7 +86,7 @@ spec:
         displayName: cacert Resource Name
         path: clusters.cacert
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Require a secure SSL connection to connect to GPFS.
         displayName: Secure SSL Mode
         path: clusters.secureSslMode
@@ -96,27 +96,27 @@ spec:
         displayName: Kubernetes Secret Name
         path: clusters.secrets
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: A collection of targets for REST calls.
         displayName: REST API
         path: clusters.restApi
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup
       - description: The primary file system for the GPFS cluster.
         displayName: Primary
         path: clusters.primary
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup
       - description: The cluster id of the gpfs cluster specified (mandatory).
         displayName: ID
         path: clusters.id
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The hostname of the REST server.
         displayName: GUI Host
         path: clusters.restApi.guiHost
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The port number running the REST server.
         displayName: GUI Port
         path: clusters.restApi.guiPort
@@ -126,12 +126,12 @@ spec:
         displayName: Primary File System
         path: clusters.primary.primaryFS
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The name of the primary fileset, created in primaryFS.
         displayName: Primary File Set
         path: clusters.primary.primaryFset
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:text
       statusDescriptors:
       - description: The active status of the operator
         displayName: Conditions
