@@ -13,7 +13,7 @@ This project was originally generated using [operator-sdk](https://github.com/op
 ## Setup from scratch
 ### Cloning the repository
 
->**WARNING** : This repository needs to be accessible in your `GOPATH`. In the development environment this was set to >`/root/go`, however this is at the discretion of the user.
+>**WARNING** : This repository needs to be accessible in your `GOPATH`. In the development environment this was set to `/root/go`, however this is at the discretion of the user.
 
 Due to constraints in golang (relative paths are not supported in golang) you **_MUST_** clone this repository to the IBM directory in your go path. If this is not done, the `operator-sdk` build operation will fail.
 
