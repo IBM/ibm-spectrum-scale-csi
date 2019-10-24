@@ -98,11 +98,11 @@ def main(args):
 
   parser.add_argument('--fs', metavar='filesystem',
       dest='fs', default=None,
-      help='''The name of the filesystem (including /dev/) to use with the csi driver'''
+      help='''The name of the filesystem (including /dev/) to use with the csi driver''')
 
   parser.add_argument('--fset', metavar='fileset',
       dest='fs', default=None,
-      help='''The name of the filesystem (including /dev/) to use with the csi driver'''
+      help='''The name of the filesystem (including /dev/) to use with the csi driver''')
 
   args = parser.parse_args()
 
