@@ -18,6 +18,7 @@ then
     docker tag csi-scale-operator ${REPO}csi-scale-operator
     docker push ${REPO}csi-scale-operator
 
+    #operator-sdk generate k8s
     hacks/change_deploy_image.py -i ${REPO}csi-scale-operator
 fi 
 
