@@ -13,7 +13,7 @@ This project was originally generated using [operator-sdk](https://github.com/op
 ## Setup from scratch
 ### Cloning the repository
 
->**WARNING** : This repository needs to be accessible in your `GOPATH`. In the development environment this was set to >`/root/go`, however this is at the discretion of the user.
+>**WARNING** : This repository needs to be accessible in your `GOPATH`. In the development environment this was set to `/root/go`, however this is at the discretion of the user.
 
 Due to constraints in golang (relative paths are not supported in golang) you **_MUST_** clone this repository to the IBM directory in your go path. If this is not done, the `operator-sdk` build operation will fail.
 
@@ -33,7 +33,7 @@ If you are working out of a forked copy you can change your origin to match:
 
 ``` bash
 git remote set-url origin <forked git repo>
-git remote set-url upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
+git remote add upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
 
 git pull origin
 ```
@@ -53,32 +53,51 @@ This script will do the following:
 4. Ensure `go-1.13` is installed.
 
 
-### Building the Image
+### Building the image
 
 To build the image the user must navigate to the operator directory (This directory structure is an artifact of the IBM Cloud Pak certification process). 
 
-```
+``` bash
 cd stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
 export GO111MODULE="on"
 operator-sdk build csi-scale-operator
 
-# If you want to use your
 docker tag csi-scale-operator quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
 ```
 
+### Using the image
+>**NOTE** If you're using the quay image, this step can be skipped.
+
+In order to use the image in your environment you will need to push the image to a [docker registry](https://docs.docker.com/registry/). You may setup your own image, or push to a repository such  as [quay.io](quay.io).
+
+Deploying your own registry is an [involved process](https://docs.docker.com/registry/deploying/), and outside of the scope of this document. 
+
+If you're using quay, we recommend doing the [Quay Tutorial](https://quay.io/tutorial/).
+
+
+Once you have a repository ready and you've logged you can tag and push your image:
+``` bash
+docker tag csi-scale-operator <your-repo>/ibm-spectrum-scale-csi-operator:v0.0.1
+docker push <your-repo>/ibm-spectrum-scale-csi-operator:v0.0.1
+
+# This will update your deployment to point at your image.
+hacks/change_deploy_image.py -i <your-repo>/ibm-spectrum-scale-csi-operator:v0.0.1
+```
 
 ## Deploying the Operator
+
+>**WARNING** If you are using your own image you must, complete (#using-the-image)!
 
 ### Option A: Manually
 
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
 
-```
-kubectl create -f deploy/service_account.yaml
-kubectl create -f deploy/role.yaml
-kubectl create -f deploy/role_binding.yaml
-kubectl create -f deploy/crds/csi-scale-operators_v1alpha1_podset_crd.yaml
-kubectl create -f deploy/operator.yaml
+``` bash
+kubectl apply -f deploy/service_account.yaml
+kubectl apply -f deploy/role.yaml
+kubectl apply -f deploy/role_binding.yaml
+kubectl apply -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
+kubectl apply -f deploy/operator.yaml
 ```
 
 At this point the operator is running and ready for use!
@@ -87,6 +106,11 @@ At this point the operator is running and ready for use!
 
 > **NOTE** : This will be the prefered method, however, work is ongoing.
 
+The following will subsrcibe the [quay.io](quay.io) version of the operator assuming OLM is installed.
+
+``` bash
+kubectl apply -f deploy/olm-test/operator-source.yaml
+```
 
 ## Starting the CSI Driver
 
@@ -94,6 +118,8 @@ Once the operator is running the user needs to access the operator's API and req
 use of the `CSIScaleOperator` Custom Resource. This resource will be tuned to your environment. A sample of the file is given:
 
 ``` YAML
+# spectrum_scale.yaml
+
 apiVersion: scale.ibm.com/v1alpha1
 kind: 'CSIScaleOperator'
 metadata:
@@ -157,26 +183,25 @@ spec:
 To acutally start the CSI Plugin run the following command
 
 ``` bash
-kubectl apply -f deploy/spectrum_scale.yaml
+kubectl apply -f spectrum_scale.yaml
 ```
 
 To stop the CSI plugin you can run:
 
 ``` bash
-kubectl delete -f deploy/spectrum_scale.yaml
+kubectl delete -f spectrum_scale.yaml
 ```
-
 
 ## Uninstalling the CSI Operator
 
 To remove the operator:
-```
+``` bash
 kubectl delete -f deploy/spectrum_scale.yaml
 kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml
 kubectl delete -f deploy/role_binding.yaml
 kubectl delete -f deploy/service_account.yaml
-kubectl delete -f deploy/crds/csi-scale-operators_v1alpha1_podset_crd.yaml
+kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 ```
 
 Please note, this will completely destroy the operator and all associated resources.

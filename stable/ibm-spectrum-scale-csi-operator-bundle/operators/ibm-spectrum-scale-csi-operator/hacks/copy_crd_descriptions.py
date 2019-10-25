@@ -6,7 +6,7 @@ import sys
 import os
 import yaml
 
-def loadDescriptors(descType, crd, csv):
+def loadDescriptors(descType, crd, csv, descriptorMap={}):
     props = crd.get("spec", {})    \
         .get("validation",{})      \
         .get("openAPIV3Schema", {})\
@@ -26,8 +26,6 @@ def loadDescriptors(descType, crd, csv):
         subprops = specprops
         displayName = name
   
-#        displayName = name.charAt(0).toUpperCase()  + name.slice(1).replace( /([A-Z])/g, " $1" );
-      
         for key in keys:
             prop     = subprops.get(key, {})
             subprops = prop.get("properties", {})
@@ -36,17 +34,29 @@ def loadDescriptors(descType, crd, csv):
         for subprop in prop.get("properties", {}).keys():
             specpaths.append("{0}.{1}".format(path,subprop))
         
-
+        
+        desc = descriptorMap.get(path,{})
         # Construct description
         specdescriptors.append({ 
-          "displayName" : displayName,
-          "x-descriptors": [],
+          "displayName" : desc.get("displayName", displayName),
+          "x-descriptors": desc.get("x-descriptors", []),
           "path" : path,
           "description" : prop.get("description", "") })
         
     return specdescriptors
 
+def mapDescriptors(metaname, spec):
+  specMap = {}
+  statusMap = {}
+  for resource in spec:
+    if resource.get("name","") == metaname:
+      for specD in resource.get("specDescriptors",[]):
+        specMap[specD.get("path","")] = specD
 
+      for statusD in resource.get("statusDescriptors",[]):
+        statusMap[statusD.get("path","")] = statusD
+
+  return (specMap, statusMap)
 
 def main(args):
     parser = argparse.ArgumentParser(
@@ -88,12 +98,15 @@ def main(args):
 
     if crd is not None and csv is not None:
         metaname= crd.get("metadata",{}).get("name", "")
-        specdescriptors = loadDescriptors("spec", crd, csv)
-        statusdescriptors = loadDescriptors("status", crd, csv)
 
         # TODO need to replace with something 
         resourcefound=False
         owned = csv.get("spec",{}).get("customresourcedefinitions",{}).get("owned",{})
+        specmap, statusmap =  mapDescriptors(metaname, owned)
+
+        specdescriptors = loadDescriptors("spec", crd, csv, specmap)
+        statusdescriptors = loadDescriptors("status", crd, csv, statusmap)
+
         for resource in owned:
             if resource.get("name","") == metaname:
                 resourcefound = True
@@ -115,10 +128,6 @@ def main(args):
         with open(csvf, 'w') as outfile:
             yaml.dump(csv, outfile, default_flow_style=False)
         
-
-
-
-
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
 
