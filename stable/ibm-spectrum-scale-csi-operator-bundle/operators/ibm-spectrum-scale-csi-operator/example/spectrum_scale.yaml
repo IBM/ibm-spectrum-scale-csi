@@ -9,12 +9,12 @@ spec:
   scaleHostpath: "/ibm/fs1"
 
   clusters: 
-    - id: "2120508922778391120"
+    - id: "11832033572270148010"
       secrets: "secret1"
       secureSslMode: false
       primary:
         primaryFS: "fs1"
         primaryFset: "csiFset2"
       restApi: 
-        - guiHost: "doomfang-vm5.tuc.stglabs.ibm.com"
+      - guiHost: "jdunham-rh72-k8s-scale-master.fyre.ibm.com"
 
