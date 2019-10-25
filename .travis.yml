@@ -31,8 +31,6 @@ env:
     - MINIKUBE_HOME=$HOME
     - KUBECONFIG=$HOME/.kube/config
 
-before_script: 
-  - fold() 
 
 stages:
   - courier-lint
