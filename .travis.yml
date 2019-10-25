@@ -31,6 +31,9 @@ env:
     - MINIKUBE_HOME=$HOME
     - KUBECONFIG=$HOME/.kube/config
 
+before_script: 
+  - fold() 
+
 stages:
   - courier-lint
   - scorecard
@@ -57,12 +60,12 @@ jobs:
         - operator-sdk version
         - kubectl version
         - go version
-        - kubectl cluster-info dump
+        - ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.1 "cluster information"  kubectl cluster-info dump
 
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - operator-sdk scorecard ${SC_VARS}
-        - kubectl cluster-info dump
+        - ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
         
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
