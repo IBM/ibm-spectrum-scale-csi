@@ -52,9 +52,17 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
+
+        # Print environment 
+        - operator-sdk version
+        - kubectl version
+        - go version
+        - kubectl cluster-info dump
+
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - operator-sdk scorecard ${SC_VARS}
+        - kubectl cluster-info dump
         
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
