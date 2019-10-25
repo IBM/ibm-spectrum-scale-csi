@@ -20,7 +20,7 @@ spec:
             - /usr/local/bin/ao-logs
             - /tmp/ansible-operator/runner
             - stdout
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /tmp/ansible-operator/runner
               name: runner
@@ -28,7 +28,7 @@ spec:
 
         - name: operator
           image: "quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /tmp/ansible-operator/runner
               name: runner

@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"2120508922778391120","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"doomfang-vm5.tuc.stglabs.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
+    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"11832033572270148010","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"jdunham-rh72-k8s-scale-master.fyre.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
