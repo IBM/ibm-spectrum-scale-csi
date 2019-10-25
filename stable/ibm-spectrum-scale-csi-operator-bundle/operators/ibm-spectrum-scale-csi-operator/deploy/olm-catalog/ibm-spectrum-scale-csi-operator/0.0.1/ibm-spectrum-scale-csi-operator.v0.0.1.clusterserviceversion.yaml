@@ -82,67 +82,12 @@ spec:
         path: secretCounter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - description: A string specifying a cacert resource name.
-        displayName: cacert Resource Name
-        path: clusters.cacert
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Require a secure SSL connection to connect to GPFS.
-        displayName: Secure SSL Mode
-        path: clusters.secureSslMode
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: A string specifying a secret resource name.
-        displayName: Kubernetes Secret Name
-        path: clusters.secrets
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: A collection of targets for REST calls.
-        displayName: REST API
-        path: clusters.restApi
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup
-      - description: The primary file system for the GPFS cluster.
-        displayName: Primary
-        path: clusters.primary
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup
-      - description: The cluster id of the gpfs cluster specified (mandatory).
-        displayName: ID
-        path: clusters.id
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The hostname of the REST server.
-        displayName: GUI Host
-        path: clusters.restApi.guiHost
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The port number running the REST server.
-        displayName: GUI Port
-        path: clusters.restApi.guiPort
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:number
-      - description: The name of the primary filesystem.
-        displayName: Primary File System
-        path: clusters.primary.primaryFS
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The name of the primary fileset, created in primaryFS.
-        displayName: Primary File Set
-        path: clusters.primary.primaryFset
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
       statusDescriptors:
       - description: The active status of the operator
         displayName: Conditions
         path: conditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
-      - description: Indicates that the plugin is running.
-        displayName: Is Running
-        path: conditions.isRunning
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.phase
       version: v1alpha1
   description: "IBM Spectrum Scale CSI Operator Quickstart\n==========================================\n\
     \nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster providing\
