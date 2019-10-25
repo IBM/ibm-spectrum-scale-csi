@@ -21,6 +21,7 @@ echo "Usage: $0
                 -l|--linkpath <full Path of Volume in Primary Filesystem>
                 -s|--size <size in GB>
                 [-p|--pvname <name for pv>
+                [-c|--storageclass <StorageClass for pv>
                 [-h|--help] " 1>&2; exit 1; }
 
 fullUsage(){
@@ -29,6 +30,7 @@ echo "Usage: $0
 		-l|--linkpath <full Path of Volume in Primary Filesystem>
 		-s|--size <size in GB>
         	[-p|--pvname <name for pv> 
+                [-c|--storageclass <StorageClass for pv>
 		[-h|--help] 
 		
 
@@ -71,14 +73,15 @@ spec:
   csi:
     driver: csi-spectrum-scale
     volumeHandle: ${volhandle}
+  ${STORAGECLASS}
 EOL
 echo "INFO: volumeHandle: ${volhandle}"
 echo "INFO: Successfully created ${volname}.yaml"
 }
 
 
-SHORT=hf:l:s:p:
-LONG=help,filesystem:,linkpath:,size:,pvname:
+SHORT=hf:l:s:p:c:
+LONG=help,filesystem:,linkpath:,size:,pvname:,storageclass:
 ERROROUT="/tmp/csierror.out"
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
 
@@ -106,6 +109,10 @@ while true ; do
       ;;
     -p | --pvname )
       VOLNAME="$2"
+      shift 2
+      ;;
+    -c | --storageclass )
+      CLASS="$2"
       shift 2
       ;;
     -- )
@@ -161,6 +168,16 @@ if ! [[ "${VOLNAME}" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z
 	echo "ERROR: Invalid pv name specified. pv name must satisfy DNS-1123 label requirement."
         exit 2
 fi
+
+STORAGECLASS=""
+if ! [[ -z "${CLASS}" ]] ; then
+	if ! [[ "${CLASS}" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
+		echo "ERROR: Invalid storageClass name specified. storageClass name must satisfy DNS-1123 label requirement."
+		exit 2
+	fi
+	STORAGECLASS="storageClassName: ${CLASS}"
+fi
+
 
 # Check if this is spectrum scale node
 if [[ ! -f /usr/lpp/mmfs/bin/mmlscluster ]] ; then

@@ -44,21 +44,15 @@ type ScaleNodeServer struct {
 func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
         glog.V(3).Infof("nodeserver NodePublishVolume")
 
-	ns.mux.Lock()
-	defer ns.mux.Unlock()
 	glog.V(4).Infof("NodePublishVolume called with req: %#v", req)
 
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
-	stagingTargetPath := req.GetStagingTargetPath()
 	volumeID := req.GetVolumeId()
 	volumeCapability := req.GetVolumeCapability()
 
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Volume ID must be provided")
-	}
-	if len(stagingTargetPath) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Staging Target Path must be provided")
 	}
 	if len(targetPath) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Target Path must be provided")
@@ -111,8 +105,6 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 
 func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
         glog.V(3).Infof("nodeserver NodeUnpublishVolume")
-	ns.mux.Lock()
-	defer ns.mux.Unlock()
 	glog.V(4).Infof("NodeUnpublishVolume called with args: %v", req)
 	// Validate Arguments
 	targetPath := req.GetTargetPath()

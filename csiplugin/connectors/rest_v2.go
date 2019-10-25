@@ -454,14 +454,14 @@ func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath strin
 
 }
 
-func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string) error {
-	glog.V(4).Infof("rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", filesystemName, filesetName, quota)
+func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string, softquota string) error {
+	glog.V(4).Infof("rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s, softquota: %s", filesystemName, filesetName, quota, softquota)
 
 	setQuotaURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName))
 	quotaRequest := SetQuotaRequest_v2{}
 
 	quotaRequest.BlockHardLimit = quota
-	quotaRequest.BlockSoftLimit = quota
+	quotaRequest.BlockSoftLimit = softquota
 	quotaRequest.OperationType = "setQuota"
 	quotaRequest.QuotaType = "fileset"
 	quotaRequest.ObjectName = filesetName
