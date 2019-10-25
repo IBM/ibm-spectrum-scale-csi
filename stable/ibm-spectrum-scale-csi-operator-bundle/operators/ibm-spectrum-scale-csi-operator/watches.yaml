@@ -4,7 +4,7 @@
   kind: CSIScaleOperator
   role: /opt/ansible/roles/csi-scale
   ManageStatus: True
-#  finalizer:
-#    name: finalizer.scale.ibm.com
-#    vars:
-#      state: absent
+  finalizer:
+    name: finalizer.scale.ibm.com
+    vars:
+      state: absent
