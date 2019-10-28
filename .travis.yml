@@ -8,6 +8,7 @@ go:
 
 env:
   global:
+    - PATH=/opt/python/3.6.7/bin:$PATH
     - GO111MODULE=on
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.10.0"
@@ -31,6 +32,11 @@ env:
     - MINIKUBE_HOME=$HOME
     - KUBECONFIG=$HOME/.kube/config
 
+addons:
+  apt:
+    packages:
+      - "python3"
+      - "python3-pip" 
 
 stages:
   - courier-lint
@@ -42,7 +48,6 @@ jobs:
     # Install operator-courier and run the lint on the manifest.
     - stage: courier-lint
       script:
-        - pyenv global 3.7
         - pip install operator-courier 
         - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
 
