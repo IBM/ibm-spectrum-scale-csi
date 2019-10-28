@@ -273,7 +273,7 @@ spec:
                 - /tmp/ansible-operator/runner
                 - stdout
                 image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
                 name: ansible
                 resources: {}
                 volumeMounts:
@@ -292,7 +292,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: ibm-spectrum-scale-csi-operator
                 image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
                 name: operator
                 resources: {}
                 volumeMounts:
@@ -315,6 +315,7 @@ spec:
           - configmaps
           - secrets
           - secrets/status
+          - services/finalizers
           verbs:
           - '*'
         - apiGroups:

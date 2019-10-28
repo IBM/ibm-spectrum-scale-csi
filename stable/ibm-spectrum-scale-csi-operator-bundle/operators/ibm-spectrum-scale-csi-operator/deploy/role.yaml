@@ -6,7 +6,7 @@ metadata:
 rules:
   - apiGroups: [ "" ]
     resources: [ "pods", "persistentvolumeclaims", "services", "endpoints", "events", "configmaps",
-      "secrets", "secrets/status" ]
+      "secrets", "secrets/status", "services/finalizers"  ]
     verbs: [ '*' ]
   - apiGroups: [ "apps" ]
     resources: [ "deployments", "daemonsets", "replicasets", "statefulsets" ]
