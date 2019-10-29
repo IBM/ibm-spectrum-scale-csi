@@ -9,6 +9,8 @@ provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
 driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
 spectrumScale: "quay.io/mew2057/ibm-spectrum-scale-csi-driver:v0.9.0"
 
+_scale_ibm_com_csiscaleoperator: {}
+
 
 # State of driver in the cluster (might not be needed).
 #state: absent
