@@ -66,11 +66,11 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.1 "cluster information"  kubectl cluster-info dump
 
         # Build the image, clear and restore the finalizers.
-        - hacks/clear_finalizers.py
+        - python hacks/clear_finalizers.py
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - operator-sdk scorecard ${SC_VARS}
-        - hacks/clear_finalizers.py --restore
+        - python  hacks/clear_finalizers.py --restore
 
         - ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
         
