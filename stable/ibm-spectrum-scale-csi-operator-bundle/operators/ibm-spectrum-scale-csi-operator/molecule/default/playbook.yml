@@ -5,6 +5,6 @@
   vars:
     ansible_python_interpreter: '{{ ansible_playbook_python }}'
   roles:
-    - podset
+    - csi-scale
 
 - import_playbook: '{{ playbook_dir }}/asserts.yml'
