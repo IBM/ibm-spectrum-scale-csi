@@ -54,7 +54,8 @@ jobs:
     # Install minikube, build the image and run the scorecard.
     - stage: scorecard
       script: 
-        - sudo pip install docker 
+        - sudo pip install docker
+        - pip install yaml shutil
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
