@@ -55,7 +55,7 @@ jobs:
     - stage: scorecard
       script: 
         - sudo pip install docker
-        - pip install pyyaml shutil
+        - pip install pyyaml molecule
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
