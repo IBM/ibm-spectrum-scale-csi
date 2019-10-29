@@ -1,5 +1,5 @@
 #FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
-FROM quay.io/operator-framework/ansible-operator:v0.10.0
+FROM quay.io/operator-framework/ansible-operator:v0.11.0
 
 # Clean up the packas.
 #RUN yum -y update && yum clean all
