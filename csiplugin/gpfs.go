@@ -24,15 +24,13 @@ import (
 	"path"
 	"strings"
 
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/kubernetes/pkg/util/mount"
-
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/connectors"
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/settings"
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/utils"
 )
 
 // PluginFolder defines the location of scaleplugin
@@ -131,11 +129,10 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	}
 }
 
-func NewNodeServer(d *ScaleDriver, mounter *mount.SafeFormatAndMount) *ScaleNodeServer {
+func NewNodeServer(d *ScaleDriver) *ScaleNodeServer {
 	glog.V(3).Infof("gpfs NewNodeServer")
 	return &ScaleNodeServer{
-		Driver:  d,
-		Mounter: mounter,
+		Driver: d,
 	}
 }
 
@@ -185,7 +182,7 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(c csi.ControllerServ
 	return status.Error(codes.InvalidArgument, "Invalid controller service request")
 }
 
-func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string, mounter *mount.SafeFormatAndMount) error {
+func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string) error {
 	glog.V(3).Infof("gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", name, vendorVersion, nodeID)
 	if name == "" {
 		return fmt.Errorf("Driver name missing")
@@ -217,7 +214,7 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string, 
 	driver.AddNodeServiceCapabilities(ns)
 
 	driver.ids = NewIdentityServer(driver)
-	driver.ns = NewNodeServer(driver, mounter)
+	driver.ns = NewNodeServer(driver)
 	driver.cs = NewControllerServer(driver, scmap, cmap, primary)
 	return nil
 }

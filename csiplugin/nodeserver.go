@@ -17,12 +17,9 @@
 package scale
 
 import (
-	//	"fmt"
 	"os"
 	"strings"
 	"sync"
-
-	//	"path"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -30,14 +27,10 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	//	volumeutils "k8s.io/kubernetes/pkg/volume/util"
-	"k8s.io/kubernetes/pkg/util/mount"
 )
 
 type ScaleNodeServer struct {
-	Driver  *ScaleDriver
-	Mounter *mount.SafeFormatAndMount
+	Driver *ScaleDriver
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
 	mux sync.Mutex
 }
