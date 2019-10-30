@@ -23,12 +23,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-        "github.com/golang/glog"
+
+	"github.com/golang/glog"
 )
 
 func ReadAndUnmarshal(object interface{}, dir string, fileName string) error {
-        glog.V(6).Infof("utils ReadAndUnmarshal. object: %v, dir: %s, fileName: %s", object, dir, fileName)
-	
+	glog.V(6).Infof("utils ReadAndUnmarshal. object: %v, dir: %s, fileName: %s", object, dir, fileName)
+
 	path := dir + string(os.PathSeparator) + fileName
 
 	bytes, err := ReadFile(path)
@@ -47,14 +48,14 @@ func ReadAndUnmarshal(object interface{}, dir string, fileName string) error {
 }
 
 func MarshalAndRecord(object interface{}, dir string, fileName string) error {
-        glog.V(6).Infof("utils MarshalAndRecord. object: %v, dir: %s, fileName: %s", object, dir, fileName)
+	glog.V(6).Infof("utils MarshalAndRecord. object: %v, dir: %s, fileName: %s", object, dir, fileName)
 
 	MkDir(dir)
 	path := dir + string(os.PathSeparator) + fileName
 
 	bytes, err := json.MarshalIndent(object, "", " ")
 	if err != nil {
-                glog.Errorf("Error in MarshalIndent %v: %v", object, err)
+		glog.Errorf("Error in MarshalIndent %v: %v", object, err)
 		return err
 	}
 
@@ -62,18 +63,18 @@ func MarshalAndRecord(object interface{}, dir string, fileName string) error {
 }
 
 func ReadFile(path string) (content []byte, err error) {
-        glog.V(6).Infof("utils ReadFile. path: %s", path)
+	glog.V(6).Infof("utils ReadFile. path: %s", path)
 
 	file, err := os.Open(path)
 	if err != nil {
-                glog.Errorf("Error in opening file %s: %v", path, err)
+		glog.Errorf("Error in opening file %s: %v", path, err)
 		return
 	}
 	defer file.Close()
 
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
-                glog.Errorf("Error in read file %s: %v", path, err)
+		glog.Errorf("Error in read file %s: %v", path, err)
 		return
 	}
 	content = bytes
@@ -82,11 +83,11 @@ func ReadFile(path string) (content []byte, err error) {
 }
 
 func WriteFile(path string, content []byte) error {
-        glog.V(6).Infof("utils WriteFile. path: %s", path)
+	glog.V(6).Infof("utils WriteFile. path: %s", path)
 
 	err := ioutil.WriteFile(path, content, 0700)
 	if err != nil {
-                glog.Errorf("Error in write file %s: %v", path, err)
+		glog.Errorf("Error in write file %s: %v", path, err)
 		return err
 	}
 
@@ -94,7 +95,7 @@ func WriteFile(path string, content []byte) error {
 }
 
 func GetPath(paths []string) string {
-        glog.V(6).Infof("utils GetPath. paths: %v", paths)
+	glog.V(6).Infof("utils GetPath. paths: %v", paths)
 
 	workDirectory, _ := os.Getwd()
 
@@ -113,7 +114,7 @@ func GetPath(paths []string) string {
 }
 
 func Exists(path string) bool {
-        glog.V(6).Infof("utils Exists. path: %s", path)
+	glog.V(6).Infof("utils Exists. path: %s", path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
@@ -121,7 +122,7 @@ func Exists(path string) bool {
 }
 
 func MkDir(path string) error {
-        glog.V(6).Infof("utils MkDir. path: %s", path)
+	glog.V(6).Infof("utils MkDir. path: %s", path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
@@ -135,7 +136,7 @@ func MkDir(path string) error {
 }
 
 func StringInSlice(a string, list []string) bool {
-        glog.V(6).Infof("utils StringInSlice. string: %s, slice: %v", a, list)
+	glog.V(6).Infof("utils StringInSlice. string: %s, slice: %v", a, list)
 	for _, b := range list {
 		if b == a {
 			return true
@@ -145,7 +146,7 @@ func StringInSlice(a string, list []string) bool {
 }
 
 func ConvertToBytes(inputStr string) (uint64, error) {
-        glog.V(6).Infof("utils ConvertToBytes. string: %s", inputStr)
+	glog.V(6).Infof("utils ConvertToBytes. string: %s", inputStr)
 	var Iter int
 	var byteSlice []byte
 	var retValue uint64
@@ -203,7 +204,7 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 }
 
 func GetEnv(envName string, defaultValue string) string {
-        glog.V(6).Infof("utils GetEnv. envName: %s", envName)
+	glog.V(6).Infof("utils GetEnv. envName: %s", envName)
 	envValue := os.Getenv(envName)
 	if envValue == "" {
 		envValue = defaultValue

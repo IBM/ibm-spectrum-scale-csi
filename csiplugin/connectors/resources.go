@@ -310,15 +310,15 @@ type GetFilesystemResponse_v2 struct {
 }
 
 type OwnerInfo struct {
-  User  string  `json:user,omitempty"`
-  UID   int     `json:uid,omitempty"`
-  Group string  `json:group,omitempty"`
-  GID   int     `json:gid,omitempty"`
+	User  string `json:user,omitempty"`
+	UID   int    `json:uid,omitempty"`
+	Group string `json:group,omitempty"`
+	GID   int    `json:gid,omitempty"`
 }
 
 type OwnerResp_v2 struct {
-  Status Status    `json:"status,omitempty"`
-  Owner  OwnerInfo `json:"owner,omitempty"`
+	Status Status    `json:"status,omitempty"`
+	Owner  OwnerInfo `json:"owner,omitempty"`
 }
 
 type BlockInfo struct {
@@ -338,10 +338,10 @@ type MountInfo struct {
 	AutomaticMountOption   string `json:"automaticMountOption,omitempty"`
 	AdditionalMountOptions string `json:"additionalMountOptions,omitempty"`
 	MountPriority          int    `json:"mountPriority,omitempty"`
-//	DriveLetter            string `json:"driveLetter,omitempty"`
-	RemoteDeviceName       string `json:"remoteDeviceName,omitempty"`
-        NodesMounted           []string `json:"nodesMountedReadWrite,omitempty"`
-	ReadOnly               bool   `json:"readOnly,omitempty"`
+	//	DriveLetter            string `json:"driveLetter,omitempty"`
+	RemoteDeviceName string   `json:"remoteDeviceName,omitempty"`
+	NodesMounted     []string `json:"nodesMountedReadWrite,omitempty"`
+	ReadOnly         bool     `json:"readOnly,omitempty"`
 }
 
 type QuotaInfo struct {
@@ -447,9 +447,9 @@ type Node_v2 struct {
 }
 
 type Fileset_v2 struct {
-	AFM    AFM              `json:"afm,omitempty"`
-	Config FilesetConfig_v2 `json:"config,omitempty"`
-	FilesetName          string `json:"filesetName,omitempty"`
+	AFM         AFM              `json:"afm,omitempty"`
+	Config      FilesetConfig_v2 `json:"config,omitempty"`
+	FilesetName string           `json:"filesetName,omitempty"`
 }
 
 type GetFilesetResponse_v2 struct {
@@ -554,26 +554,26 @@ type CreateFilesetRequest struct {
 }
 
 type CreateMakeDirRequest struct {
-        UID string `json:"uid,omitempty"`
-        GID string `json:"gid,omitempty"`
+	UID string `json:"uid,omitempty"`
+	GID string `json:"gid,omitempty"`
 }
 
 type SymLnkRequest struct {
-       FilesystemName  string `json:"filesystemName"`
-       RelativePath    string `json:"relativePath"`
+	FilesystemName string `json:"filesystemName"`
+	RelativePath   string `json:"relativePath"`
 }
 
 type MountFilesystemRequest struct {
-	Nodes                        []string `json:"nodes,omitempty"`
-	MountOptions                 string `json:"mountOptions,omitempty"`
+	Nodes        []string `json:"nodes,omitempty"`
+	MountOptions string   `json:"mountOptions,omitempty"`
 }
 
 type UnmountFilesystemRequest struct {
-	Nodes                        []string `json:"nodes,omitempty"`
-	Force          	             bool `json:"force,omitempty"`
+	Nodes []string `json:"nodes,omitempty"`
+	Force bool     `json:"force,omitempty"`
 }
 
 const (
-    UserSpecifiedUID string = "uid"
-    UserSpecifiedGID string = "gid"
+	UserSpecifiedUID string = "uid"
+	UserSpecifiedGID string = "gid"
 )
