@@ -1,14 +1,34 @@
 ---
-# tasks file for ansible-role-csi-scale
+- name: 'Assert that the cluster has been specified.'
+  assert:
+    that:
+      - clusters  is defined
+
+
+#- debug:
+#    msg: 
+#      - "scaleHostpath - {{ scaleHostpath }}"
+#      - "secretCounter - {{ secretCounter }}"
+#      - "attacher - {{ attacher }}"
+#      - "provisioner - {{ provisioner }}"
+#      - "driverRegistrar -{{ driverRegistrar}}"
+#      - "spectrumScale - {{ spectrumScale }}"
+
+
 - name: "Get cluster information"
   set_fact:
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
-    secret_counter: "{{_scale_ibm_com_csiscaleoperator.spec.secretCounter | default(-1) }}"
 
-- name: Ensure the plugin configuration is correct
-  include_tasks: plugin_config.yml
+- name: "Ensure the clusters are valid"
+  include_tasks: cluster_check.yml
+  loop: "{{ clusters }}"
 
-- name: Ensure csi-scale objects are {{ state }}
+- name: "Set processed spectrum-scale-config to {{ state }}"
+  k8s:
+    state: "{{ state }}"
+    definition: "{{ lookup('template', 'spectrum_scale.yaml.j2'  ) | from_yaml }}"
+
+- name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
@@ -17,17 +37,3 @@
     - name: csi-plugin-provisioner.yaml.j2
     - name: csi-plugin.yaml.j2
 
-#- name: "Set finalizer to {{state}}"
-#  when: state is match("absent")
-#  block:
-#  - name: "Strip the finalizer out of the Custom Resource"
-#    set_fact: 
-#      final_stripped: "{{ _scale_ibm_com_csiscaleoperator | combine({'metadata': {'finalizers':[]}})}}"
-#
-#  - name: "Write the change to the finalizer"
-#    k8s:
-#      state: present
-#      definition : "{{final_stripped}}"
-#
-
-  
