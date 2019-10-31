@@ -123,5 +123,9 @@ get_k8snodes_cmd="$cmd describe nodes"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd >> $get_k8snodes 2>&1 || :
 
+get_clusterinfo_cmd="$cmd cluster-info dump --namespaces kube-system --output-directory=$logdir"
+echo "$get_clusterinfo_cmd"
+out=$($get_clusterinfo_cmd 2>&1)
+
 echo "Finished collecting \"$PRODUCT_NAME\" logs in the folder -> $logdir"
 
