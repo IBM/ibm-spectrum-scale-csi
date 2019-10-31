@@ -9,7 +9,8 @@
     image_name: scale.ibm.com/csi-scale-operator:testing
     custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/ibm_v1alpha1_csiscaleoperator_cr.yaml'])) | from_yaml }}"
   tasks:
-  - name: Create the scale.ibm.com/v1alpha1.PodSet
+
+  - name: Create the scale.ibm.com/v1alpha1.CSIScaleOperator
     k8s:
       namespace: '{{ namespace }}'
       definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/ibm_v1alpha1_csiscaleoperator_cr.yaml'])) }}"

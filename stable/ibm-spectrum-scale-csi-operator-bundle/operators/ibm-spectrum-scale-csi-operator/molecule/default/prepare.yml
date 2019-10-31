@@ -34,13 +34,3 @@
       retries: 60
       delay: 5
 
-    - name: "Ensure namespace osdk-test is present."
-      k8s:
-        state: "present"
-        definition:
-          apiVersion: "v1"
-          kind: "Namespace"
-          metadata:
-            name: "osdk-test"
-    
-
