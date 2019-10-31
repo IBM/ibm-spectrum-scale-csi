@@ -1,6 +1,6 @@
 ---
 # defaults file for ansible-role-csi-scale
-name: "csi-spectrum-scale"
+name: '{{meta.name | default("csi-spectrum-scale")}}'
 namespace: '{{ meta.namespace | default("default") }}'
 storage-class: "csi-spectrum-scale"
 

@@ -20,14 +20,14 @@
 
 
 # I don't think this is strictly needed, but we _definitely_ shouldn't kill a namespace.
-- name: "Ensure {{namespace}} is present."
-  k8s:
-    state: "present"
-    definition:
-      apiVersion: "v1"
-      kind: "Namespace"
-      metadata:
-        name: "{{namespace}}"
+#- name: "Ensure {{namespace}} is present."
+#  k8s:
+#    state: "present"
+#    definition:
+#      apiVersion: "v1"
+#      kind: "Namespace"
+#      metadata:
+#        name: "{{namespace}}"
 
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
@@ -38,4 +38,12 @@
     - name: "csi-plugin-attacher.yaml.j2"
     - name: "csi-plugin-provisioner.yaml.j2"
     - name: "csi-plugin.yaml.j2"
+
+#- k8s_status:
+#    api_version: scale.ibm.com/v1alpha1
+#    kind: CSIScaleOperator
+#    name: "{{name}}"
+#    namespace: "{{namespace}}"
+#    status:
+#      isRunning: True if state=='present' else False
 
