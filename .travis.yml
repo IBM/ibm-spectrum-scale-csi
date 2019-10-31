@@ -39,44 +39,48 @@ addons:
       - "python3-dev"
       - "python3-pip" 
 
+
+
 stages:
-  - courier-lint
-  - scorecard
+  - lint
+  - test
 jobs:
   fast_finish: true
   include:
     
     # Install operator-courier and run the lint on the manifest.
-    - stage: courier-lint
+    - stage: lint
       script:
         - pip install operator-courier 
         - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
 
     # Install minikube, build the image and run the scorecard.
-    - stage: scorecard
-      script: 
+    - stage: test
+      before_script:
         - sudo pip install docker
         - pip install pyyaml molecule openshift docker jmespath
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
-
-        # Print environment 
         - operator-sdk version
         - kubectl version
         - go version
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.1 "cluster information"  kubectl cluster-info dump
-
+      script: 
+        # Print environment 
+        #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.1 "cluster information"  kubectl cluster-info dump
         # Build the image, clear and restore the finalizers.
         - python hacks/clear_finalizers.py
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - operator-sdk scorecard ${SC_VARS}
-        - molecule test
+        # TODO should this live somewhere else?
+        #- molecule test
         - python  hacks/clear_finalizers.py --restore
 
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
+          #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
         
+    - script: 
+      - molecule test
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
 notifications:
