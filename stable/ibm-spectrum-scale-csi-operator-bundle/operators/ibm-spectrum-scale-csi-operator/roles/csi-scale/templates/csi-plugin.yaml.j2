@@ -2,7 +2,7 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: "{{ name }}"
-  namespace: '{{ meta.namespace }}'
+  namespace: '{{ namespace }}'
 spec:
   selector:
     matchLabels:
@@ -83,7 +83,7 @@ spec:
               mountPath: "{{ scaleHostpath }}"
 
             # Grab user clusters
-{% for cluster in clusters %}
+{% for cluster in clustersCamelCase %}
 {% if cluster.secrets is defined %}
             - name: "{{ cluster.secrets }}"
               mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
@@ -119,7 +119,7 @@ spec:
             type: Directory
 
 # Grab user clusters
-{% for cluster in clusters %}
+{% for cluster in clustersCamelCase %}
 
 {% if cluster.secrets is defined %}
         - name: "{{ cluster.secrets }}"

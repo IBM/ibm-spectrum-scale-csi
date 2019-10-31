@@ -7,7 +7,6 @@
 #      - "provisioner - {{ provisioner }}"
 #      - "driverRegistrar - {{ driverRegistrar}}"
 #      - "spectrumScale - {{ spectrumScale }}"
-#      - "clusters - {{ clusters }}"
 #      - "clustersCamelCase - {{clustersCamelCase}}"
 
 

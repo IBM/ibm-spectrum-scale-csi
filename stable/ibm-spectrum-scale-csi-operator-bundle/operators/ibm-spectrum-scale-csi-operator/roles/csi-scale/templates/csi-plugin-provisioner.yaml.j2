@@ -2,7 +2,7 @@ kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: '{{ name }}-provisioner'
-  namespace: '{{ meta.namespace }}'
+  namespace: '{{ namespace }}'
 spec:
   serviceName: '{{ name }}-provisioner'
   replicas: 1

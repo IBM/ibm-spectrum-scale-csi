@@ -2,7 +2,7 @@ kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: "{{ name }}-attacher"
-  namespace: "{{ meta.namespace }}"
+  namespace: "{{ namespace }}"
 spec:
   serviceName: "{{ name }}-attacher"
   replicas: 1
