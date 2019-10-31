@@ -59,7 +59,15 @@ fi
 out=$($cmd get namespace | grep "$ns\s*Active" 2>&1)
 if [[ $? != 0 ]]
 then
-  echo "Namespace $ns is invalid or not active. Please specify a valid namespace"
+  echo "Namespace $ns is invalid or not active. Please provide a valid namespace"
+  exit 1
+fi
+
+# check if csi-spectrum-scale resources are running in specified namespace
+out=$($cmd describe StatefulSet csi-spectrum-scale-attacher 2>&1 | grep 'Namespace' | awk 'BEGIN { FS="[[:space:]]+" } ; { print $2 }')
+if [[ $out != $ns ]]
+then
+  echo "csi-spectrum-scale is not running in namespace $ns. Please provide a valid namespace"
   exit 1
 fi
 
@@ -93,6 +101,8 @@ for csi_pod in `$cmd get pod -l app=csi-spectrum-scale --namespace $ns | grep -v
    echo "$klog pod/${csi_pod}"
    $klog pod/${csi_pod} -c csi-spectrum-scale > ${logdir}/${csi_pod}.log 2>&1 || :
    $klog pod/${csi_pod} -c driver-registrar > ${logdir}/${csi_pod}-driver-registrar.log 2>&1 || :
+   $klog pod/${csi_pod} -c csi-spectrum-scale --previous > ${logdir}/${csi_pod}-previous.log 2>&1 || :
+   $klog pod/${csi_pod} -c driver-registrar --previous > ${logdir}/${csi_pod}-driver-registrar-previous.log 2>&1 || :
 done
 
 describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
