@@ -24,7 +24,8 @@ env:
     - OLM_MANIFEST="${CSI_OP_BUILD_DIR}/deploy/olm-catalog/${OPERATOR_NAME}/"
 
     # TODO replace his with something better.
-    - SC_VARS="--config .osdk-scorecard.yaml --cr-manifest  deploy/crds/ibm_v1alpha1_csiscaleoperator_cr.yaml  --csv-path deploy/olm-catalog/ibm-spectrum-scale-csi-operator/${CSI_OP_VER}/ibm-spectrum-scale-csi-operator.v${CSI_OP_VER}.clusterserviceversion.yaml"
+    #- SC_VARS="--config .osdk-scorecard.yaml --cr-manifest  deploy/crds/ibm_v1alpha1_csiscaleoperator_cr.yaml  --csv-path deploy/olm-catalog/ibm-spectrum-scale-csi-operator/${CSI_OP_VER}/ibm-spectrum-scale-csi-operator.v${CSI_OP_VER}.clusterserviceversion.yaml"
+    - SC_VARS="--config .osdk-scorecard.yaml"
 
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -70,8 +71,6 @@ jobs:
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - operator-sdk scorecard ${SC_VARS}
-        # TODO should this live somewhere else?
-        #- molecule test
         - python  hacks/clear_finalizers.py --restore
 
           #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
