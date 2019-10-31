@@ -1,16 +1,16 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: "{{ name }}"
+  name: "{{ opName }}"
   namespace: '{{ namespace }}'
 spec:
   selector:
     matchLabels:
-      app: "{{ name }}"
+      app: "{{ opName }}"
   template:
     metadata:
       labels:
-       app: "{{ name }}"
+       app: "{{ opName }}"
     spec:
       serviceAccount: csi-nodeplugin
       hostNetwork: true

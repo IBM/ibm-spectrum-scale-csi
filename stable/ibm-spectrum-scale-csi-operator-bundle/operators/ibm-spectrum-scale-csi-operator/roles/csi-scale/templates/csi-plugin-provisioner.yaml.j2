@@ -1,18 +1,18 @@
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: '{{ name }}-provisioner'
+  name: '{{ opName }}-provisioner'
   namespace: '{{ namespace }}'
 spec:
-  serviceName: '{{ name }}-provisioner'
+  serviceName: '{{ opName }}-provisioner'
   replicas: 1
   selector:
     matchLabels:
-      app: "{{ name }}-provisioner"
+      app: "{{ opName }}-provisioner"
   template:
     metadata:
       labels:
-        app: '{{ name }}-provisioner'
+        app: '{{ opName }}-provisioner'
         product: ibm-spectrum-scale-csi
     spec:
       serviceAccount: external-provisioner-runner
