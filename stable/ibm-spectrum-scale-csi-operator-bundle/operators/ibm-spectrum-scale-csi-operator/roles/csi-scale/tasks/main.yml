@@ -18,13 +18,24 @@
   include_tasks: cluster_check.yml
   loop: "{{ clustersCamelCase }}"
 
+
+# I don't think this is strictly needed, but we _definitely_ shouldn't kill a namespace.
+- name: "Ensure {{namespace}} is present."
+  k8s:
+    state: "present"
+    definition:
+      apiVersion: "v1"
+      kind: "Namespace"
+      metadata:
+        name: "{{namespace}}"
+
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
   loop:
-    - name: spectrum_scale.yaml.j2 
-    - name: csi-plugin-attacher.yaml.j2
-    - name: csi-plugin-provisioner.yaml.j2
-    - name: csi-plugin.yaml.j2
+    - name: "spectrum_scale.yaml.j2"
+    - name: "csi-plugin-attacher.yaml.j2"
+    - name: "csi-plugin-provisioner.yaml.j2"
+    - name: "csi-plugin.yaml.j2"
 
