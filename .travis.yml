@@ -55,7 +55,7 @@ jobs:
     - stage: test
       before_install:
         - sudo pip install docker
-        - pip install pyyaml molecule openshift docker jmespath
+        - pip install openshift
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
@@ -76,7 +76,16 @@ jobs:
 
           #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
         
-    - script: 
+    - before_install:
+        - sudo pip install docker
+        - pip install pyyaml molecule openshift docker jmespath
+        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
+        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
+        - cd ${CSI_OP_BUILD_DIR}
+        - operator-sdk version
+        - kubectl version
+        - go version
+      script: 
       - molecule test
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
