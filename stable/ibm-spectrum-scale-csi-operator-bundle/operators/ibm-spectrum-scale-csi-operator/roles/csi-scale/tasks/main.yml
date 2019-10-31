@@ -1,18 +1,14 @@
 ---
-- name: 'Assert that the cluster has been specified.'
-  assert:
-    that:
-      - clusters  is defined
-
-
 #- debug:
 #    msg: 
 #      - "scaleHostpath - {{ scaleHostpath }}"
 #      - "secretCounter - {{ secretCounter }}"
 #      - "attacher - {{ attacher }}"
 #      - "provisioner - {{ provisioner }}"
-#      - "driverRegistrar -{{ driverRegistrar}}"
+#      - "driverRegistrar - {{ driverRegistrar}}"
 #      - "spectrumScale - {{ spectrumScale }}"
+#      - "clusters - {{ clusters }}"
+#      - "clustersCamelCase - {{clustersCamelCase}}"
 
 
 - name: "Get cluster information"
@@ -21,18 +17,14 @@
 
 - name: "Ensure the clusters are valid"
   include_tasks: cluster_check.yml
-  loop: "{{ clusters }}"
-
-- name: "Set processed spectrum-scale-config to {{ state }}"
-  k8s:
-    state: "{{ state }}"
-    definition: "{{ lookup('template', 'spectrum_scale.yaml.j2'  ) | from_yaml }}"
+  loop: "{{ clustersCamelCase }}"
 
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
   loop:
+    - name: spectrum_scale.yaml.j2 
     - name: csi-plugin-attacher.yaml.j2
     - name: csi-plugin-provisioner.yaml.j2
     - name: csi-plugin.yaml.j2
