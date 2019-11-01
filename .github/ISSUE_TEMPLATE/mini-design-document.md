@@ -8,9 +8,9 @@ assignees: ''
 ---
 
 --- Replace this with your feature name.
-# Feature Name
+**Feature Name**
 
-## Dependencies
+**Dependencies**
 --- Populate a list of dependencies, can be libraries or other repositories
 * `go`
 * `pyYaml`
