@@ -10,6 +10,9 @@
     register: prev_hash
     changed_when: false
     
+  - shell: cat /etc/*rele*
+    register: out
+  - debug: var=out.stdout_lines
   - name: Build Operator Image
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
     register: build_cmd
