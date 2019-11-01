@@ -1,5 +1,4 @@
 ---
-
 - name: Build Operator in Kubernetes docker container
   hosts: k8s
   vars:
@@ -10,7 +9,7 @@
     command: docker images -q {{ image_name }}
     register: prev_hash
     changed_when: false
-
+    
   - name: Build Operator Image
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
     register: build_cmd

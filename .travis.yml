@@ -85,7 +85,7 @@ jobs:
         - kubectl version
         - go version
       script: 
-      - molecule test
+        - molecule test -s test-local
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
 notifications:
