@@ -34,3 +34,6 @@
       retries: 60
       delay: 5
 
+    #- name: Ensure certs for quay.io are defined
+
+  
