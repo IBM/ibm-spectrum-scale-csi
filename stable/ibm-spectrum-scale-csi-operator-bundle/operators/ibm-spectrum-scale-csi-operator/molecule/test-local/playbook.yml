@@ -13,6 +13,12 @@
   - shell: cat /etc/*rele*
     register: out
   - debug: var=out.stdout_lines
+
+  - name: Build Operator
+    shell: "GO111MODULE=on operator-sdk build csi-scale-operator"
+    args:
+      chdir: /build
+
   - name: Build Operator Image
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
     register: build_cmd
