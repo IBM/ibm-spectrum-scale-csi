@@ -52,17 +52,17 @@ jobs:
         - pip install operator-courier 
         - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
 
+
+
     # Install minikube, build the image and run the scorecard.
     - stage: test
       before_install:
         - sudo pip install docker
+        - pip install pyyaml molecule openshift docker jmespath
         - pip install openshift
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
-        - operator-sdk version
-        - kubectl version
-        - go version
       script: 
         # Print environment 
         #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.1 "cluster information"  kubectl cluster-info dump
@@ -73,21 +73,11 @@ jobs:
         - operator-sdk scorecard ${SC_VARS}
         - python  hacks/clear_finalizers.py --restore
 
+        # FIXME this shoule run in parallel to the scorecard, but splitting the stage slows things down A LOT.
+        - molecule test -s test-local
+
           #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
         
-    - before_install:
-        - sudo pip install docker
-        - pip install pyyaml molecule openshift docker jmespath
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
-        - cd ${CSI_OP_BUILD_DIR}
-        - operator-sdk version
-        - kubectl version
-        - go version
-      script: 
-        #  This needs to be built before we can test with molecule for reasons.
-        - operator-sdk build csi-scale-operator
-        - molecule test -s test-local
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
 notifications:
