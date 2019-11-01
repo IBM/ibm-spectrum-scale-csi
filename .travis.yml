@@ -85,6 +85,8 @@ jobs:
         - kubectl version
         - go version
       script: 
+        #  This needs to be built before we can test with molecule for reasons.
+        - operator-sdk build csi-scale-operator
         - molecule test -s test-local
         #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         #- docker push ${DOCKER_REPO} 
