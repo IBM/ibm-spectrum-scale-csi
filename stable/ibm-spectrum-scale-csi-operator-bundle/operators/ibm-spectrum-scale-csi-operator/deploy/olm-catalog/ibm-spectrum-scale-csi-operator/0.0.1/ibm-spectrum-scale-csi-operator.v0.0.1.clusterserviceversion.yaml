@@ -273,8 +273,8 @@ spec:
                 - /usr/local/bin/ao-logs
                 - /tmp/ansible-operator/runner
                 - stdout
-                image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
-                imagePullPolicy: Always
+                image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
+                imagePullPolicy: IfNotPresent
                 name: ansible
                 resources: {}
                 volumeMounts:
@@ -292,8 +292,8 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-spectrum-scale-csi-operator
-                image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
-                imagePullPolicy: Always
+                image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
+                imagePullPolicy: IfNotPresent
                 name: operator
                 resources: {}
                 volumeMounts:
