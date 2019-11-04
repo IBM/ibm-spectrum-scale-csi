@@ -1,20 +1,30 @@
 ---
-# tasks file for ansible-role-csi-scale
+#- debug:
+#    msg: 
+#      - "scaleHostpath - {{ scaleHostpath }}"
+#      - "secretCounter - {{ secretCounter }}"
+#      - "attacher - {{ attacher }}"
+#      - "provisioner - {{ provisioner }}"
+#      - "driverRegistrar - {{ driverRegistrar}}"
+#      - "spectrumScale - {{ spectrumScale }}"
+#      - "clustersCamelCase - {{clustersCamelCase}}"
+
+
 - name: "Get cluster information"
   set_fact:
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
-    secret_counter: "{{_scale_ibm_com_csiscaleoperator.spec.secretCounter | default(-1) }}"
 
-- name: Ensure the plugin configuration is correct
-  include_tasks: plugin_config.yml
+- name: "Ensure the clusters are valid"
+  include_tasks: cluster_check.yml
+  loop: "{{ clustersCamelCase }}"
 
-- name: Ensure csi-scale objects are {{ state }}
+- name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
   loop:
-    - name: csi-plugin-attacher.yaml.j2
-    - name: csi-plugin-provisioner.yaml.j2
-    - name: csi-plugin.yaml.j2
-
+    - name: "spectrum_scale.yaml.j2"
+    - name: "csi-plugin-attacher.yaml.j2"
+    - name: "csi-plugin-provisioner.yaml.j2"
+    - name: "csi-plugin.yaml.j2"
 

@@ -48,7 +48,7 @@ ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-operator/ansi
 
 This script will do the following:
 1. Install `python3`
-2. Install `python3` requirements (`sphinx`, `operator-courier`)
+2. Install `python3` requirements (`sphinx`, `operator-courier`, `docker`)
 3. Install `operator-sdk`
 4. Ensure `go-1.13` is installed.
 
@@ -64,6 +64,8 @@ operator-sdk build csi-scale-operator
 
 docker tag csi-scale-operator quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
 ```
+
+>**NOTE** This requires `docker`.
 
 ### Using the image
 >**NOTE** If you're using the quay image, this step can be skipped.

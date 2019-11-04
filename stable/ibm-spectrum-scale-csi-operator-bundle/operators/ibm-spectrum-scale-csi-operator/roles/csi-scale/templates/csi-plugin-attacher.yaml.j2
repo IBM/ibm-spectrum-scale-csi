@@ -1,23 +1,23 @@
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: "{{ name }}-attacher"
-  namespace: "{{ meta.namespace }}"
+  name: "{{ opName }}-attacher"
+  namespace: "{{ namespace }}"
 spec:
-  serviceName: "{{ name }}-attacher"
+  serviceName: "{{ opName }}-attacher"
   replicas: 1
   selector:
     matchLabels:
-      app: "{{ name }}-attacher"
+      app: "{{ opName }}-attacher"
   template:
     metadata:
       labels:
-        app: "{{ name }}-attacher"
+        app: "{{ opName }}-attacher"
         product: ibm-spectrum-scale-csi
     spec:
       serviceAccount: external-attacher-runner
       containers:
-        - name: "{{ name }}-attacher"
+        - name: "{{ opName }}-attacher"
 {% if 'apps.openshift.io' in api_groups %}
           securityContext:
             privileged: true

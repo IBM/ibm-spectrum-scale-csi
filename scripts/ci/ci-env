@@ -1,0 +1,18 @@
+export GO111MODULE=on
+export KUBE_VERSION="v1.16.2"
+export OP_VER="v0.10.0"
+export QUAY_USERNAME="mew2057"
+
+export OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
+export 
+export CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+export DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator:v0.0.1"
+
+export OPERATOR_NAME=ibm-spectrum-scale-csi-operator
+export OLM_MANIFEST="${CSI_OP_BUILD_DIR}/deploy/olm-catalog/${OPERATOR_NAME}/"
+
+export CHANGE_MINIKUBE_NONE_USER=true
+export MINIKUBE_WANTUPDATENOTIFICATION=false
+export MINIKUBE_WANTREPORTERRORPROMPT=false
+export MINIKUBE_HOME=$HOME
+export KUBECONFIG=$HOME/.kube/config

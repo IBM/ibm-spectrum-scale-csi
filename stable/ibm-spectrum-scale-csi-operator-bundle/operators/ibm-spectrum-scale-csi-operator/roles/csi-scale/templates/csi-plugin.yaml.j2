@@ -1,16 +1,16 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: "{{ name }}"
-  namespace: '{{ meta.namespace }}'
+  name: "{{ opName }}"
+  namespace: '{{ namespace }}'
 spec:
   selector:
     matchLabels:
-      app: "{{ name }}"
+      app: "{{ opName }}"
   template:
     metadata:
       labels:
-       app: "{{ name }}"
+       app: "{{ opName }}"
     spec:
       serviceAccount: csi-nodeplugin
       hostNetwork: true
@@ -65,7 +65,7 @@ spec:
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
             - name: SECRET_TRIGGER
-              value: "{{secret_counter}}"
+              value: "{{secretCounter}}"
 
             # Get refs to the secrets so we can trigger a refresh
           imagePullPolicy: "IfNotPresent" # "Always"
@@ -83,7 +83,7 @@ spec:
               mountPath: "{{ scaleHostpath }}"
 
             # Grab user clusters
-{% for cluster in clusters %}
+{% for cluster in clustersCamelCase %}
 {% if cluster.secrets is defined %}
             - name: "{{ cluster.secrets }}"
               mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
@@ -119,7 +119,7 @@ spec:
             type: Directory
 
 # Grab user clusters
-{% for cluster in clusters %}
+{% for cluster in clustersCamelCase %}
 
 {% if cluster.secrets is defined %}
         - name: "{{ cluster.secrets }}"

@@ -3,6 +3,7 @@
   set_fact:
     OPERATOR_SDK_VER: "v0.10.0"
     OPERATOR_VERSION: "0.0.1"
+    GO_VERSION:       "go1.13"
 
 - name: Ensure 'python3' is installed
   package:
@@ -25,11 +26,16 @@
   vars:
     release: "{{OPERATOR_SDK_VER}}"
 
-- name: Ensure 'Go 1.13' is installed
+- name: "Ensure '{{GO_VERSION}}' is installed; Gather Facts"
+  shell: "go version | grep -q {{GO_VERSION}}"
+  register: go_version
+
+- name: "Ensure '{{GO_VERSION}}' is installed; Install"
   unarchive:
     src: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
     dest: /usr/local
     remote_src: yes
+  when: go_version.rc != 0
 
 
 - name: Expose Go to the global path

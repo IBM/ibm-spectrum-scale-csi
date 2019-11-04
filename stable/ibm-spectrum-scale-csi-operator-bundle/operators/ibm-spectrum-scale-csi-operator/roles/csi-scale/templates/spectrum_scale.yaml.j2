@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: 'spectrum-scale-config-json'
-  namespace: '{{ meta.namespace }}'  
+  namespace: '{{ namespace }}'  
 data:
-  spectrum-scale-config.json: '{ "clusters":  {{ scale_config.clusters | to_json }} }'
+  spectrum-scale-config.json: '{ "clusters":  {{ clustersCamelCase | to_json }} }'
 
