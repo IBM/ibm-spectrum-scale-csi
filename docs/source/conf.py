@@ -66,7 +66,7 @@ source_suffix = ['.md', '.rst']
 source_parsers = { '.md' : 'recommonmark.parser.CommonMarkParser' }
 
 
- collection of substitutions.
+# collection of substitutions.
 rst_epilog="""
 .. |driver-repo| replace:: GitHubDriver_
 .. |operator-repo| replace:: GitHubOperator_
