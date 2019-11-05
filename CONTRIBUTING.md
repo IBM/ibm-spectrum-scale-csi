@@ -1,9 +1,3 @@
-[go_effectivego]: https://golang.org/doc/effective_go.html
-[go_gettingstarted]: https://github.com/golang/go/wiki#getting-started-with-go
-[go_goreturns]: https://github.com/sqs/goreturns
-[go_golangci-lint]: https://github.com/golangci/golangci-lint#install
-[go_codecomments]: https://github.com/golang/go/wiki/CodeReviewComments
-
 # Contributing
 
 ## Before You Submit a Pull Request
@@ -18,12 +12,14 @@
     - get started with [go-lang][go_gettingstarted]
     - practice [Effective Go][go_effectivego]
     - format code with [goreturns][go_goreturns]
+    - lint project with [golangci-lint][go_golangci-lint]
     - keep in mind [common review comments][go_codecomments]
 
 ### Run Local Verifications
 You can run these verifications locally to predict the pass or fail of continuous integration.
 
 * ```goreturns -d ./```
+* ```golangci-lint run```
 
 ### Sign your work for submittal
 
@@ -81,3 +77,9 @@ Date:   Thu Feb 2 11:41:15 2018 -0800
 
     Signed-off-by: Joe Smith <joe.smith@email.com>
 Notice the Author and Signed-off-by lines match. If they don't your PR will be rejected.
+
+[go_effectivego]: (https://golang.org/doc/effective_go.html)
+[go_gettingstarted]: (https://github.com/golang/go/wiki#getting-started-with-go)
+[go_goreturns]: (https://github.com/sqs/goreturns)
+[go_golangci-lint]: (https://github.com/golangci/golangci-lint#install)
+[go_codecomments]: (https://github.com/golang/go/wiki/CodeReviewComments)
