@@ -16,11 +16,66 @@
 #
 #USAGE collect_log.sh <namespace> 
 
-ns=${1-default}
+ns="default"
+node=""
+outdir="."
+cmd="kubectl"
+
+while getopts 'n:N:o:' OPTION; do
+  case "$OPTION" in
+    n)
+      ns="$OPTARG"
+      ;;
+
+    o)
+      outdir="$OPTARG"
+      ;;
+
+    ?)
+      echo "USAGE collect_log.sh [-n namespace] [-o output-dir]"
+      exit 1
+      ;;
+  esac
+done
+
+if [[ $outdir != "." && ! -d $outdir ]]
+then
+  echo "Output directory $outdir does not exist. "
+  exit 1
+fi
+
+# use oc commands on openshift cluster
+out=$(which oc 2>&1) 
+if [[ $? == 0 ]]
+then
+  out=$(oc status 2>&1)
+  if [[ $? == 0 ]]
+  then
+    cmd="oc"
+  fi
+fi
+
+# check if the namespace is valid and active
+out=$($cmd get namespace | grep "$ns\s*Active" 2>&1)
+if [[ $? != 0 ]]
+then
+  echo "Namespace $ns is invalid or not active. Please provide a valid namespace"
+  exit 1
+fi
+
+# check if csi-spectrum-scale resources are running in specified namespace
+out=$($cmd describe StatefulSet csi-spectrum-scale-attacher 2>&1 | grep 'Namespace' | awk 'BEGIN { FS="[[:space:]]+" } ; { print $2 }')
+if [[ $out != $ns ]]
+then
+  echo "csi-spectrum-scale is not running in namespace $ns. Please provide a valid namespace"
+  exit 1
+fi
 
 time=`date +"%m-%d-%Y-%T"`
-logdir=./spectrum_scale_csi_collect_logs_$time
-klog="kubectl logs --namespace $ns"
+logdir=${outdir%/}/ibm-spectrum-scale-csi-logs_$time
+
+
+klog="$cmd logs --namespace $ns"
 mkdir $logdir
 CSI_SPECTRUM_SCALE_LABEL="ibm-spectrum-scale-csi"
 PRODUCT_NAME="ibm-spectrum-scale-csi"
@@ -28,13 +83,13 @@ PRODUCT_NAME="ibm-spectrum-scale-csi"
 echo "Collecting \"$PRODUCT_NAME\" logs..."
 echo "The log files will be saved in the folder [$logdir]"
 
-csi_spectrum_scale_attacher_log_name=${logdir}/csi_spectrum_scale_attacher.log
-csi_spectrum_scale_provisioner_log_name=${logdir}/csi_spectrum_scale_provisioner.log
+csi_spectrum_scale_attacher_log_name=${logdir}/csi-spectrum-scale-attacher.log
+csi_spectrum_scale_provisioner_log_name=${logdir}/csi-spectrum-scale-provisioner.log
 
-describe_all_per_label=${logdir}/csi_spectrum_scale_describe_all_by_label
-get_all_per_label=${logdir}/csi_spectrum_scale_get_all_by_label
-get_configmap=${logdir}/csi_spectrum_scale_configmap
-get_k8snodes=${logdir}/csi_spectrums_scale_k8snodes
+describe_all_per_label=${logdir}/csi-spectrum-scale-describe-all-by-label
+get_all_per_label=${logdir}/csi-spectrum-scale-get-all-by-label
+get_configmap=${logdir}/csi-spectrum-scale-configmap
+get_k8snodes=${logdir}/csi-spectrum-scale-k8snodes
 
 echo "$klog StatefulSet/csi-spectrum-scale-attacher"
 $klog StatefulSet/csi-spectrum-scale-attacher > ${csi_spectrum_scale_attacher_log_name} 2>&1 || :
@@ -42,39 +97,45 @@ echo "$klog StatefulSet/csi-spectrum-scale-provisioner"
 $klog StatefulSet/csi-spectrum-scale-provisioner > ${csi_spectrum_scale_provisioner_log_name} 2>&1 || :
 
 # kubectl logs on csi pods
-for csi_pod in `kubectl get pod -l app=csi-spectrum-scale --namespace $ns | grep -v NAME | awk '{print $1}'`; do
+for csi_pod in `$cmd get pod -l app=csi-spectrum-scale --namespace $ns | grep -v NAME | awk '{print $1}'`; do
    echo "$klog pod/${csi_pod}"
    $klog pod/${csi_pod} -c csi-spectrum-scale > ${logdir}/${csi_pod}.log 2>&1 || :
-   $klog pod/${csi_pod} -c driver-registrar > ${logdir}/${csi_pod}_driver_registrar.log 2>&1 || :
+   $klog pod/${csi_pod} -c driver-registrar > ${logdir}/${csi_pod}-driver-registrar.log 2>&1 || :
+   $klog pod/${csi_pod} -c csi-spectrum-scale --previous > ${logdir}/${csi_pod}-previous.log 2>&1 || :
+   $klog pod/${csi_pod} -c driver-registrar --previous > ${logdir}/${csi_pod}-driver-registrar-previous.log 2>&1 || :
 done
 
-describe_label_cmd="kubectl describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
+describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
 echo "$describe_label_cmd"
 $describe_label_cmd > $describe_all_per_label 2>&1 || :
 
-describe_clusterroles="kubectl describe clusterroles/external-provisioner-runner clusterrolebindings/csi-provisioner-role clusterroles/external-attacher-runner clusterrolebindings/csi-provisioner-role clusterroles/csi-nodeplugin clusterrolebindings/csi-nodeplugin --namespace $ns"
+describe_clusterroles="$cmd describe clusterroles/external-provisioner-runner clusterrolebindings/csi-provisioner-role clusterroles/external-attacher-runner clusterrolebindings/csi-provisioner-role clusterroles/csi-nodeplugin clusterrolebindings/csi-nodeplugin --namespace $ns"
 echo "$describe_clusterroles"
 $describe_clusterroles >> $describe_all_per_label 2>&1 || :
 
-get_label_cmd="kubectl get all,cm,secret,storageclass,pvc,ds,serviceaccount --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
+get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,ds,serviceaccount --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
 echo "$get_label_cmd"
 $get_label_cmd > $get_all_per_label 2>&1 || :
 
-get_label_cmd="kubectl get pod --namespace $ns -o wide  -l product=${CSI_SPECTRUM_SCALE_LABEL}"
+get_label_cmd="$cmd get pod --namespace $ns -o wide  -l product=${CSI_SPECTRUM_SCALE_LABEL}"
 echo "$get_label_cmd"
 $get_label_cmd >> $get_all_per_label 2>&1 || :
 
-get_configmap_cmd="kubectl get configmap spectrum-scale-config --namespace $ns -o yaml"
+get_configmap_cmd="$cmd get configmap spectrum-scale-config --namespace $ns -o yaml"
 echo "$get_configmap_cmd"
 $get_configmap_cmd > $get_configmap 2>&1 || :
 
-get_k8snodes_cmd="kubectl get nodes"
+get_k8snodes_cmd="$cmd get nodes"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd > $get_k8snodes 2>&1 || :
 
-get_k8snodes_cmd="kubectl describe nodes"
+get_k8snodes_cmd="$cmd describe nodes"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd >> $get_k8snodes 2>&1 || :
+
+get_clusterinfo_cmd="$cmd cluster-info dump --namespaces kube-system --output-directory=$logdir"
+echo "$get_clusterinfo_cmd"
+out=$($get_clusterinfo_cmd 2>&1)
 
 echo "Finished collecting \"$PRODUCT_NAME\" logs in the folder -> $logdir"
 
