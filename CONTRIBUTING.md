@@ -1,3 +1,9 @@
+[go_effectivego]: https://golang.org/doc/effective_go.html
+[go_gettingstarted]: https://github.com/golang/go/wiki#getting-started-with-go
+[go_goreturns]: https://github.com/sqs/goreturns
+[go_golangci-lint]: https://github.com/golangci/golangci-lint#install
+[go_codecomments]: https://github.com/golang/go/wiki/CodeReviewComments
+
 # Contributing
 
 ## Before You Submit a Pull Request
@@ -77,9 +83,3 @@ Date:   Thu Feb 2 11:41:15 2018 -0800
 
     Signed-off-by: Joe Smith <joe.smith@email.com>
 Notice the Author and Signed-off-by lines match. If they don't your PR will be rejected.
-
-[go_effectivego]: (https://golang.org/doc/effective_go.html)
-[go_gettingstarted]: (https://github.com/golang/go/wiki#getting-started-with-go)
-[go_goreturns]: (https://github.com/sqs/goreturns)
-[go_golangci-lint]: (https://github.com/golangci/golangci-lint#install)
-[go_codecomments]: (https://github.com/golang/go/wiki/CodeReviewComments)
