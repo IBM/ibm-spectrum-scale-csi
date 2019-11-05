@@ -5,7 +5,7 @@ Work on the `ibm-spectrum-scale-csi-operator` should always be performed in a fo
 
 When adding features the following process should be followed:
 
-0. Make sure you've been [approved to contribute code](sign-your-work-for-submittal)
+0. Make sure you've been [approved to contribute code](#sign-your-work-for-submittal)
 1. Write a [Mini Design Document](https://github.com/IBM/ibm-spectrum-scale-csi-operator/issues/new?assignees=&labels=Epic&template=mini-design-document.md&title=%5BMDD%5D+New+Feature) for your feature.
 2. On your [fork](#forking-the-repo), create a branch for your feature
 3. Create a [pull request](https://github.com/IBM/ibm-spectrum-scale-csi-operator/compare) with your features.
