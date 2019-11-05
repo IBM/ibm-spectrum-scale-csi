@@ -139,7 +139,15 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		glog.V(4).Infof("Created Spectrum Scale connector without SSL mode for %v", guiHost)
 	}
 
-	return &spectrumRestV2{httpClient: &http.Client{Transport: tr}, endpoint: endpoint, user: guiUser, password: guiPwd}, nil
+	return &spectrumRestV2{
+		httpClient: &http.Client{
+			Transport: tr,
+			Timeout:   time.Second * 10,
+		},
+		endpoint: endpoint,
+		user:     guiUser,
+		password: guiPwd,
+	}, nil
 }
 
 func (s *spectrumRestV2) GetClusterId() (string, error) {
