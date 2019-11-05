@@ -411,15 +411,16 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
                 if reqCap.GetBlock() != nil {
                         return nil, status.Error(codes.Unimplemented, "Block Volume is not supported")
                 }
+	         if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
+                        return nil, status.Error(codes.Unimplemented, "Volume with Access Mode ReadOnlyMany is not supported")
+                }
         }
-
 
        scaleVol, err := getScaleVolumeOptions(req.GetParameters())
 
        if err != nil {
                 return nil, err
        }
-
 
        scaleVol.VolName = volName
        scaleVol.VolSize = uint64(volSize)
@@ -743,97 +744,12 @@ func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, 
                 return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume: ValidateControllerServiceRequest failed: %v", err))
         }
 
-	nodeID := req.GetNodeId()
 	volumeID := req.GetVolumeId()
-	var isFsMounted bool
 
 	/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
 	splitVolID := strings.Split(volumeID, ";")
 	if len(splitVolID) < 3 {
 		return nil, status.Error(codes.InvalidArgument, "ControllerUnpublishVolume VolumeID is not in proper format")
-	}
-
-	filesystemID := splitVolID[1]
-
-	// if SKIP_MOUNT_UNMOUNT == "yes" then mount/unmount will not be invoked
-	skipMountUnmount := utils.GetEnv("SKIP_MOUNT_UNMOUNT", "yes")
-
-	glog.V(4).Infof("ControllerUnpublishVolume : SKIP_MOUNT_UNMOUNT is set to %s", skipMountUnmount)
-	if skipMountUnmount == "yes" {
-		glog.V(4).Infof("ControllerUnpublishVolume : Skipping Unmount as SKIP_MOUNT_UNMOUNT is set to yes")
-		return &csi.ControllerUnpublishVolumeResponse{}, nil
-	}
-
-	//Get filesystem name from UUID
-	fsName, err := cs.Driver.connmap["primary"].GetFilesystemName(filesystemID)
-	if err != nil {
-		glog.Errorf("ControllerUnpublishVolume : Error in getting filesystem Name for %s", filesystemID)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume : Error in getting filesystem Name for %s. Error [%v]", filesystemID, err))
-	}
-
-	//Check if primary filesystem is mounted.
-	primaryfsName := cs.Driver.primary.PrimaryFS
-	pfsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(primaryfsName)
-	if err != nil {
-		glog.Errorf("ControllerUnpublishVolume : Error in getting filesystem mount details for %s", primaryfsName)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume : Error in getting filesystem mount details for %s. Error [%v]", primaryfsName, err))
-	}
-
-        // Node mapping check
-        scalenodeID := utils.GetEnv(nodeID, nodeID)
-	glog.V(4).Infof("ControllerUnpublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, nodeID)
-
-	ispFsMounted := utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
-
-	glog.V(4).Infof("ControllerUnpublishVolume : Primary Fileystem is %s and Volume is from Filesystem %s", primaryfsName, fsName)
-	// Skip if primary filesystem and volume filesystem is same
-	if primaryfsName != fsName {
-		//Check if filesystem is mounted
-		fsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(fsName)
-		if err != nil {
-			glog.Errorf("ControllerUnpublishVolume : Error in getting filesystem mount details for %s", fsName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
-		}
-		isFsMounted = utils.StringInSlice(scalenodeID, fsMount.NodesMounted)
-	} else {
-		isFsMounted = ispFsMounted
-	}
-
-	if !isFsMounted && !ispFsMounted {
-		glog.V(4).Infof("ControllerUnpublishVolume : Filesystem %s and %s is not mounted on %s so returning success", fsName, primaryfsName, scalenodeID)
-		return &csi.ControllerUnpublishVolumeResponse{}, nil
-	}
-
-	//Try Unmounting the primary filesystem if mounted
-	if ispFsMounted && skipMountUnmount == "no" {
-		glog.V(4).Infof("ControllerUnpublishVolume : unmounting Filesystem %s from %s", primaryfsName, scalenodeID)
-		err = cs.Driver.connmap["primary"].UnmountFilesystem(primaryfsName, scalenodeID)
-		if err != nil {
-			//  return error except only  unmount return busy assuming other volumes are using this fileystem
-			if strings.Contains(err.Error(), "target is busy") {
-				glog.Info("ControllerUnpublishVolume : Unmount of Primary filesystem %s on node %s failed because target is busy. ", primaryfsName, scalenodeID)
-				glog.V(4).Infof("ControllerUnpublishVolume : Unmount Error :%v", err)
-			} else {
-				glog.Info("ControllerUnpublishVolume : Unmount of Primary filesystem %s on node %s failed. Error : %v ", primaryfsName, scalenodeID, err)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume : Unmount of Primary filesystem %s on node %s failed. Error [%v]", primaryfsName, scalenodeID, err))
-			}
-		}
-	}
-
-	//Try Unmounting the volume filesystem if mounted
-	if isFsMounted && skipMountUnmount == "no" && primaryfsName != fsName {
-		glog.V(4).Infof("ControllerUnpublishVolume : unmounting %s from %s", fsName, scalenodeID)
-		err = cs.Driver.connmap["primary"].UnmountFilesystem(fsName, scalenodeID)
-		if err != nil {
-			// return error except only unmount return busy assuming other volumes are using this fileystem
-			if strings.Contains(err.Error(), "target is busy") {
-				glog.Info("ControllerUnpublishVolume : Unmount of Volume filesystem %s on node %s failed because target is busy. ", fsName, scalenodeID)
-				glog.V(4).Infof("ControllerUnpublishVolume : Unmount Error :%v", err)
-			} else {
-				glog.Info("ControllerUnpublishVolume : Unmount of Volume filesystem %s on node %s failed. Error : %v ", fsName, scalenodeID, err)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume : Unmount of Volume filesystem %s on node %s failed. Error [%v]", fsName, scalenodeID, err))
-			}
-		}
 	}
 
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
