@@ -25,16 +25,16 @@ import (
 type SpectrumScaleConnector interface {
 	//Cluster operations
 	GetClusterId() (string, error)
-        //Filesystem operations
-        GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
+	//Filesystem operations
+	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMounted(filesystemName string) (bool, error)
 	ListFilesystems() ([]string, error)
 	GetFilesystemMountpoint(filesystemName string) (string, error)
-        //Fileset operations
+	//Fileset operations
 	CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
-        LinkFileset(filesystemName string, filesetName string, linkpath string) error
+	LinkFileset(filesystemName string, filesetName string, linkpath string) error
 	UnlinkFileset(filesystemName string, filesetName string) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(filesystemName string, filesetName string) (Fileset_v2, error)
@@ -43,29 +43,29 @@ type SpectrumScaleConnector interface {
 	ListFilesetQuota(filesystemName string, filesetName string) (string, error)
 	SetFilesetQuota(filesystemName string, filesetName string, quota string, softquota string) error
 	CheckIfFSQuotaEnabled(filesystem string) error
-        //Directory operations
-        MakeDirectory(filesystemName string, relativePath string, uid int, gid int) error
+	//Directory operations
+	MakeDirectory(filesystemName string, relativePath string, uid int, gid int) error
 	MountFilesystem(filesystemName string, nodeName string) error
 	UnmountFilesystem(filesystemName string, nodeName string) error
 	GetFilesystemName(filesystemUUID string) (string, error)
-        CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
-        CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
-        GetFsUid(filesystemName string) (string, error)
-        DeleteDirectory(filesystemName string, dirName string) error
-        GetFileSetUid(filesystemName string, filesetName string) (string, error)
-        GetFileSetNameFromId(filesystemName string, Id string) (string, error)
-        DeleteSymLnk(filesystemName string, LnkName string) error    	
+	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
+	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
+	GetFsUid(filesystemName string) (string, error)
+	DeleteDirectory(filesystemName string, dirName string) error
+	GetFileSetUid(filesystemName string, filesetName string) (string, error)
+	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
+	DeleteSymLnk(filesystemName string, LnkName string) error
 }
 
 const (
-	UserSpecifiedFilesetType   string = "fileset-type"
-	UserSpecifiedInodeLimit    string = "inode-limit"
-	UserSpecifiedUid           string = "uid"
-	UserSpecifiedGid           string = "gid"
-	UserSpecifiedClusterId     string = "clusterId"
-        UserSpecifiedParentFset    string = "parentFileset"
-	UserSpecifiedVolBackendFs  string = "volBackendFs"
-        UserSpecifiedVolDirPath    string = "volDirBasePath"
+	UserSpecifiedFilesetType  string = "fileset-type"
+	UserSpecifiedInodeLimit   string = "inode-limit"
+	UserSpecifiedUid          string = "uid"
+	UserSpecifiedGid          string = "gid"
+	UserSpecifiedClusterId    string = "clusterId"
+	UserSpecifiedParentFset   string = "parentFileset"
+	UserSpecifiedVolBackendFs string = "volBackendFs"
+	UserSpecifiedVolDirPath   string = "volDirBasePath"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {

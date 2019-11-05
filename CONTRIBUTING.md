@@ -1,6 +1,31 @@
-------------------------------
-Sign your work for submittal
-------------------------------
+[go_effectivego]: https://golang.org/doc/effective_go.html
+[go_gettingstarted]: https://github.com/golang/go/wiki#getting-started-with-go
+[go_goreturns]: https://github.com/sqs/goreturns
+[go_golangci-lint]: https://github.com/golangci/golangci-lint#install
+[go_codecomments]: https://github.com/golang/go/wiki/CodeReviewComments
+
+# Contributing
+
+## Before You Submit a Pull Request
+
+1. Follow [coding practices](#coding-practices)
+2. [Verify](#run-local-verifications) your pull request
+3. [Sign your work](#sign-your-work-for-submittal) (required)
+
+### Coding Practices
+
+* Go 
+    - get started with [go-lang][go_gettingstarted]
+    - practice [Effective Go][go_effectivego]
+    - format code with [goreturns][go_goreturns]
+    - keep in mind [common review comments][go_codecomments]
+
+### Run Local Verifications
+You can run these verifications locally to predict the pass or fail of continuous integration.
+
+* ```goreturns -d ./```
+
+### Sign your work for submittal
 
 The sign-off is a simple line at the end of the explanation for the patch. Your signature certifies that you wrote the patch or otherwise have the right to pass it on as an open-source patch. The rules are pretty simple: if you can certify the below (from developercertificate.org):
 
