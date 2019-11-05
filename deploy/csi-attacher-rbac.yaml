@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: csi-attacher
+  name: ibm-spectrum-scale-csi-attacher-sa
   labels:
     product: ibm-spectrum-scale-csi
 
@@ -9,7 +9,7 @@ metadata:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: external-attacher-runner
+  name: ibm-spectrum-scale-csi-attacher-role
   labels:
     product: ibm-spectrum-scale-csi
 rules:
@@ -30,14 +30,14 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-attacher-role
+  name: ibm-spectrum-scale-csi-attacher-binding
   labels:
     product: ibm-spectrum-scale-csi
 subjects:
   - kind: ServiceAccount
-    name: csi-attacher
+    name: ibm-spectrum-scale-csi-attacher-sa
     namespace: default
 roleRef:
   kind: ClusterRole
-  name: external-attacher-runner
+  name: ibm-spectrum-scale-csi-attacher-role
   apiGroup: rbac.authorization.k8s.io

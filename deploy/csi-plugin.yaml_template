@@ -2,6 +2,8 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: csi-spectrum-scale
+  labels:
+    product: ibm-spectrum-scale-csi
 spec:
   selector:
     matchLabels:
@@ -10,10 +12,11 @@ spec:
     metadata:
       labels:
         app: csi-spectrum-scale
+        product: ibm-spectrum-scale-csi
     spec:
 #      nodeSelector:
 #        spectrumscalenode: "yes"
-      serviceAccount: csi-nodeplugin
+      serviceAccount: ibm-spectrum-scale-csi-node-sa
       hostNetwork: true
       containers:
         - name: driver-registrar

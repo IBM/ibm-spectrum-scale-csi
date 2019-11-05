@@ -18,7 +18,7 @@ spec:
     spec:
 #      nodeSelector:
 #        spectrumscalenode: "yes"
-      serviceAccount: csi-attacher
+      serviceAccount: ibm-spectrum-scale-csi-attacher-sa
       containers:
         - name: csi-spectrum-scale-attacher
           image: $attacher
