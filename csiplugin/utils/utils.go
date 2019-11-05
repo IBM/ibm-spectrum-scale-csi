@@ -138,7 +138,7 @@ func MkDir(path string) error {
 func StringInSlice(a string, list []string) bool {
 	glog.V(6).Infof("utils StringInSlice. string: %s, slice: %v", a, list)
 	for _, b := range list {
-		if b == a {
+		if strings.EqualFold(b, a) {
 			return true
 		}
 	}

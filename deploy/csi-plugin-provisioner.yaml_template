@@ -18,7 +18,7 @@ spec:
     spec:
 #      nodeSelector:
 #        spectrumscalenode: "yes"
-      serviceAccount: csi-provisioner
+      serviceAccount: ibm-spectrum-scale-csi-provisioner-sa
       containers:
         - name: csi-provisioner
           image: $provisioner
