@@ -1,8 +1,8 @@
-[go_effectivego]: (https://golang.org/doc/effective_go.html)
-[go_gettingstarted]: (https://github.com/golang/go/wiki#getting-started-with-go)
-[go_goreturns]: (https://github.com/sqs/goreturns)
-[go_golangci-lint]: (https://github.com/golangci/golangci-lint#install)
-[go_codecomments]: (https://github.com/golang/go/wiki/CodeReviewComments)
+[go_effectivego]: https://golang.org/doc/effective_go.html
+[go_gettingstarted]: https://github.com/golang/go/wiki#getting-started-with-go
+[go_goreturns]: https://github.com/sqs/goreturns
+[go_golangci-lint]: https://github.com/golangci/golangci-lint#install
+[go_codecomments]: https://github.com/golang/go/wiki/CodeReviewComments
 
 # Contributing
 
