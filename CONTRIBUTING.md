@@ -18,14 +18,12 @@
     - get started with [go-lang][go_gettingstarted]
     - practice [Effective Go][go_effectivego]
     - format code with [goreturns][go_goreturns]
-    - lint project with [golangci-lint][go_golangci-lint]
     - keep in mind [common review comments][go_codecomments]
 
 ### Run Local Verifications
 You can run these verifications locally to predict the pass or fail of continuous integration.
 
 * ```goreturns -d ./```
-* ```golangci-lint run```
 
 ### Sign your work for submittal
 
