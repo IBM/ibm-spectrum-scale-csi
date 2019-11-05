@@ -38,5 +38,14 @@
     chdir: "{{OPERATOR_DIR}}"
 - debug: var=scOut.stdout_lines
 - debug: var=scOut.stderr_lines
+
+- name: Run 'molecule'
+  shell: "molecule test"
+  register: mOut
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+- debug: var=mOut.stdout_lines
+- debug: var=mOut.stderr_lines
   
+
 

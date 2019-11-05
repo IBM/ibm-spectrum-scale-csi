@@ -3,3 +3,6 @@ sphinx_rtd_theme
 recommonmark
 operator-courier==2.0.1
 docker
+pyyaml
+molecule
+jmespath
