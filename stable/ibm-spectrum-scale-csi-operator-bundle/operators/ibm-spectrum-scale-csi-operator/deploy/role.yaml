@@ -3,7 +3,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-role-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
@@ -69,7 +69,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrole-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
@@ -96,7 +96,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrole-csi-nodeplugin
+    app.kubernetes.io/instance: ssco-csi-nodeplugin
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: csi-nodeplugin
@@ -139,7 +139,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrole-external-attacher-runner
+    app.kubernetes.io/instance: ssco-external-attacher-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: external-attacher-runner
@@ -184,7 +184,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrole-external-provisioner-runner
+    app.kubernetes.io/instance: ssco-external-provisioner-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: external-provisioner-runner

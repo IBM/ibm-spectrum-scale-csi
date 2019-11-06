@@ -22,7 +22,7 @@ def label(obj):
   name     = metadata.get("name","").lower()
   kind     = obj.get("kind", "").lower()
 
-  labels["app.kubernetes.io/instance"]   = "spectrum-scale-csi-operator-{0}-{1}".format(kind, name)
+  labels["app.kubernetes.io/instance"]   = "ssco-{0}".format(name)
   labels["app.kubernetes.io/managed-by"] = "operator"
   labels["app.kubernetes.io/name"]       = "spectrum-scale-csi-operator"
 

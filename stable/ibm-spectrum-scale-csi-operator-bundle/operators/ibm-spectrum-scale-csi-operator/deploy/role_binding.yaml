@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-rolebinding-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
@@ -18,7 +18,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrolebinding-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
@@ -35,7 +35,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrolebinding-csi-nodeplugin
+    app.kubernetes.io/instance: ssco-csi-nodeplugin
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: csi-nodeplugin
@@ -52,7 +52,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrolebinding-external-provisioner-runner
+    app.kubernetes.io/instance: ssco-external-provisioner-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: external-provisioner-runner
@@ -69,7 +69,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/instance: spectrum-scale-csi-operator-clusterrolebinding-external-attacher-runner
+    app.kubernetes.io/instance: ssco-external-attacher-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: external-attacher-runner
