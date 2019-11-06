@@ -40,6 +40,13 @@ spec:
           tcpSocket:
             port: 8080
         name: ansible
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m" 
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -74,6 +81,13 @@ spec:
           tcpSocket:
             port: 8080
         name: operator
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m" 
         ports:
         - containerPort: 8080
         readinessProbe:
