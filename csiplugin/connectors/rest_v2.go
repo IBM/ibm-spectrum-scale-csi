@@ -515,7 +515,7 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 
 	//TODO check which quota in quotas[] and which attribute
 	if len(listQuotaResponse.Quotas) > 0 {
-		return fmt.Sprintf("%dK", listQuotaResponse.Quotas[0].BlockQuota), nil
+		return fmt.Sprintf("%dK", listQuotaResponse.Quotas[0].BlockLimit), nil
 	} else {
 		glog.Errorf("No quota information found for fileset %s: %s", filesetName, err)
 		return "", err

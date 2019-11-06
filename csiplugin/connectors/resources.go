@@ -492,6 +492,7 @@ type Quota_v2 struct {
 	ObjectName     string `json:"objectName,omitempty"`
 	ObjectId       int    `json:"objectId,omitempty"`
 	BlockUsage     int    `json:"blockUsage,omitempty"`
+	BlockLimit     int    `json:"blockLimit,omitempty"`
 	BlockQuota     int    `json:"blockQuota,omitempty"`
 	BlockInDoubt   int    `json:"blockInDoubt,omitempty"`
 	BlockGrace     string `json:"blockGrace,omitempty"`

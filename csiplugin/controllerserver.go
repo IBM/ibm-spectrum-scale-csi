@@ -71,17 +71,19 @@ func (cs *ScaleControllerServer) IfFileSetBasedVolExist(scVol *scaleVolume) (boo
 		return false, nil
 	}
 
-	quota, err := scVol.Connector.ListFilesetQuota(scVol.VolBackendFs, scVol.VolName)
-	if err != nil {
-		return false, status.Error(codes.Internal, fmt.Sprintf("Unable to list quota for Fset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err))
-	}
+	if (scVol.VolSize != 0) {
+		quota, err := scVol.Connector.ListFilesetQuota(scVol.VolBackendFs, scVol.VolName)
+		if err != nil {
+			return false, status.Error(codes.Internal, fmt.Sprintf("Unable to list quota for Fset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err))
+		}
 
-	filesetQuotaBytes, err := ConvertToBytes(quota)
-	if err != nil {
-		return false, err
-	}
-	if filesetQuotaBytes != scVol.VolSize {
-		return false, status.Error(codes.Internal, fmt.Sprintf("Fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize))
+		filesetQuotaBytes, err := ConvertToBytes(quota)
+		if err != nil {
+			return false, err
+		}
+		if filesetQuotaBytes != scVol.VolSize {
+			return false, status.Error(codes.AlreadyExists, fmt.Sprintf("Fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize))
+		}
 	}
 
 	/* Check if Symlink Present */
@@ -149,11 +151,11 @@ func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
 	baseDirExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.VolBackendFs, scVol.VolDirBasePath)
 
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Unable to check if DirBasePath %v is present in FS %v", scVol.VolDirBasePath, scVol.PrimaryFS))
+		return status.Error(codes.Internal, fmt.Sprintf("Unable to check if DirBasePath %v is present in FS %v", scVol.VolDirBasePath, scVol.VolBackendFs))
 	}
 
 	if !baseDirExists {
-		return status.Error(codes.Internal, fmt.Sprintf("Directory base path %v not present in FS %v", scVol.VolDirBasePath, scVol.PrimaryFS))
+		return status.Error(codes.Internal, fmt.Sprintf("Directory base path %v not present in FS %v", scVol.VolDirBasePath, scVol.VolBackendFs))
 	}
 
 	dirPath := fmt.Sprintf("%s/%s", scVol.VolDirBasePath, scVol.VolName)
@@ -249,9 +251,11 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 		return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
 	}
 
-	err = scVol.Connector.CheckIfFSQuotaEnabled(scVol.VolBackendFs)
-	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("Quota not enabled for Filesystem %v inside cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+	if (scVol.VolSize != 0) {
+		err = scVol.Connector.CheckIfFSQuotaEnabled(scVol.VolBackendFs)
+		if err != nil {
+			return "", status.Error(codes.Internal, fmt.Sprintf("Quota not enabled for Filesystem %v inside cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+		}
 	}
 
 	if scVol.VolUid != "" {
@@ -296,16 +300,18 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 		return "", status.Error(codes.Internal, fmt.Sprintf("Fileset [%v] was created in FS [%v] but was not linked", scVol.VolName, scVol.VolBackendFs))
 	}
 
-	volsiz := strconv.FormatUint(scVol.VolSize, 10)
+	if (scVol.VolSize != 0) {
+		volsiz := strconv.FormatUint(scVol.VolSize, 10)
 
-	// Set softquota = 85% of hardquota/volsize
-	softquota := strconv.FormatUint((scVol.VolSize * 85 / 100), 10)
+		// Set softquota = 85% of hardquota/volsize
+		softquota := strconv.FormatUint((scVol.VolSize * 85 / 100), 10)
 
-	err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz, softquota)
+		err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz, softquota)
 
-	if err != nil {
-		cs.Cleanup(scVol)
-		return "", status.Error(codes.Internal, fmt.Sprintf("Fileset [%v] was created in FS [%v] but not able to set quota [%v]", scVol.VolName, scVol.VolBackendFs, scVol.VolSize))
+		if err != nil {
+			cs.Cleanup(scVol)
+			return "", status.Error(codes.Internal, fmt.Sprintf("Fileset [%v] was created in FS [%v] but not able to set quota [%v]", scVol.VolName, scVol.VolBackendFs, scVol.VolSize))
+		}
 	}
 
 	/* Now we need to create a dir inside a fileset */
@@ -345,10 +351,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 func (cs *ScaleControllerServer) GetVolumeSizeInBytes(req *csi.CreateVolumeRequest) (int64, error) {
 
 	cap := req.GetCapacityRange()
-	if cap != nil {
-		return cap.GetRequiredBytes(), nil
-	}
-	return 0, status.Error(codes.InvalidArgument, "Volume Capacity is a required field")
+	return cap.GetRequiredBytes(), nil
 }
 
 func (cs *ScaleControllerServer) GetConnFromClusterID(cid string) (connectors.SpectrumScaleConnector, error) {
@@ -625,7 +628,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	volumeIdMembers, err := cs.GetVolIdMembers(volumeID)
 
 	if err != nil {
-		return nil, err
+		return &csi.DeleteVolumeResponse{}, nil
 	}
 
 	glog.Infof("Volume Id Members [%v]", volumeIdMembers)
@@ -714,6 +717,17 @@ func (cs *ScaleControllerServer) ControllerGetCapabilities(ctx context.Context, 
 }
 
 func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+
+	volumeID := req.GetVolumeId()
+
+	if (volumeID == "") {
+		return nil, status.Error(codes.InvalidArgument, "VolumeID not present")
+	}
+
+	if (len(req.VolumeCapabilities) == 0) {
+		return nil, status.Error(codes.InvalidArgument, "No volume capability specified")
+	}
+
 	for _, cap := range req.VolumeCapabilities {
 		if cap.GetAccessMode().GetMode() != csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
 			return &csi.ValidateVolumeCapabilitiesResponse{Message: ""}, nil
@@ -760,7 +774,17 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	//ControllerPublishVolumeRequest{VolumeId:"934225357755027944;09762E35:5D26932A;path=/ibm/gpfs0/volume1", NodeId:"node4", VolumeCapability:(*csi.VolumeCapability)(0xc00005d6c0), Readonly:false, Secrets:map[string]string(nil), VolumeContext:map[string]string(nil), XXX_NoUnkeyedLiteral:struct {}{}, XXX_unrecognized:[]uint8(nil), XXX_sizecache:0}
 
 	nodeID := req.GetNodeId()
+
+	if (nodeID == "") {
+		return nil, status.Error(codes.InvalidArgument, "NodeID not present")
+	}
+
 	volumeID := req.GetVolumeId()
+
+	if (volumeID == "") {
+		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume : VolumeID is not present")
+	}
+
 	var isFsMounted bool
 
 	/* VolumeID format : <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
