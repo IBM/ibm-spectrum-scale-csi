@@ -2,7 +2,7 @@ apiVersion: scale.ibm.com/v1alpha1
 kind: CSIScaleOperator
 metadata:
   labels:
-    app.kubernetes.io/instance: ssco-csi-scale-operator
+    app.kubernetes.io/instance: ssco-custom-resource
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: csi-scale-operator

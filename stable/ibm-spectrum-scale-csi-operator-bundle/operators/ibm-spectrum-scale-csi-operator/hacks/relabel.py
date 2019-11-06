@@ -23,10 +23,12 @@ def label(obj):
   name     = metadata.get("name","").lower()
   kind     = obj.get("kind", "").lower()
 
-  labels["app.kubernetes.io/instance"]   = "ssco-{0}".format(name)
   labels["app.kubernetes.io/managed-by"] = "operator"
   labels["app.kubernetes.io/name"]       = "spectrum-scale-csi-operator"
 
+  # Only write if missing.
+  if "app.kubernetes.io/instance" not in labels:
+    labels["app.kubernetes.io/instance"]   = "ssco-{0}".format(name)
 
 def main(args):
     parser = argparse.ArgumentParser(
