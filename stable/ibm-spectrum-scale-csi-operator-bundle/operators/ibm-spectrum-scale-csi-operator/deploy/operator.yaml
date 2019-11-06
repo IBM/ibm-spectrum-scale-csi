@@ -1,6 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app.kubernetes.io/instance: spectrum-scale-csi-operator-deployment-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
 spec:
   replicas: 1
