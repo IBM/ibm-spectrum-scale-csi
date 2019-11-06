@@ -13,7 +13,14 @@ spec:
       name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
+      annotations:
+        productID: ibm-spectrum-scale-csi-operator
+        productName: IBM Spectrum Scale CSI Operator
+        productVersion: 1.0.0
       labels:
+        app.kubernetes.io/instance: ssco-deployment
+        app.kubernetes.io/managed-by: operator
+        app.kubernetes.io/name: spectrum-scale-csi-operator
         name: ibm-spectrum-scale-csi-operator
     spec:
       containers:
@@ -23,6 +30,10 @@ spec:
         - stdout
         image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
         imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            drop:
+              - ALL
         livenessProbe:
           initialDelaySeconds: 15
           periodSeconds: 20
@@ -53,6 +64,10 @@ spec:
           value: ibm-spectrum-scale-csi-operator
         image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
         imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            drop:
+              - ALL
         livenessProbe:
           initialDelaySeconds: 15
           periodSeconds: 20
