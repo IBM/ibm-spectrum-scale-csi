@@ -8,7 +8,8 @@ import yaml
 
 BASE_DIR="{0}/..".format(os.path.dirname(os.path.realpath(__file__)))
 DEPLOY_DIR="{0}/deploy".format(BASE_DIR)
-CONFIG_FILES=["operator.yaml", "role_binding.yaml", "role.yaml", "service_account.yaml"]
+CONFIG_FILES=["operator.yaml", "role_binding.yaml", "role.yaml", "service_account.yaml",
+    "crds/ibm_v1alpha1_csiscaleoperator_crd.yaml", "crds/ibm_v1alpha1_csiscaleoperator_cr.yaml"]
 
 
 def label(obj):
