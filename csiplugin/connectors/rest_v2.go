@@ -238,6 +238,14 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 	filesetType, filesetTypeSpecified := opts[UserSpecifiedFilesetType]
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
 
+	if !filesetTypeSpecified {
+		filesetType, filesetTypeSpecified = opts[UserSpecifiedFilesetTypeDep]
+	}
+
+	if !inodeLimitSpecified {
+		inodeLimit, inodeLimitSpecified = opts[UserSpecifiedInodeLimitDep]
+	}
+
 	if filesetTypeSpecified && filesetType.(string) == "dependent" {
 		/* Add fileset for dependent fileset-name: */
 		parentFileSetName, parentFileSetNameSpecified := opts[UserSpecifiedParentFset]

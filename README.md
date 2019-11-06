@@ -291,9 +291,9 @@ Storageclass defines what type of backend volume should be created by dynamic pr
  - **volDirBasePath**: Base directory path relative to the filesystem mount point under which directory based volumes should be created. If specified, the storageclass is used for directory based (lightweight) volume creation. If not specified, storageclass creates fileset based volumes.
  - **uid**: UID with which the volume should be created. Optional
  - **gid**: UID with which the volume should be created. Optional
- - **fileset-type**: Type of fileset. Valid values are "independent" or "dependent". Default is "independent". 
+ - **filesetType**: Type of fileset. Valid values are "independent" or "dependent". Default is "independent". 
  - **parentFileset**: Specifies the parent fileset under which dependent fileset should be created. Mandatory if "fileset-type" is specified.
- - **inode-limit**: Inode limit for fileset based volumes. If not specified, default Spectrum Scale inode limit of 1million is used.
+ - **inodeLimit**: Inode limit for fileset based volumes. If not specified, default Spectrum Scale inode limit of 1million is used.
  
 For dynamic provisioning, use sample storageclass, pvc and pod files for sanity test under examples/dynamic
 
@@ -318,7 +318,7 @@ In order to deploy CSI driver on such a configuration, following steps should be
 - Update `deploy/spectrum-scale-config.json` file with remote cluster and filesystem name information under "primary" section by adding the two parameters as:
 
    * "**remoteCluster**":"<remote cluster ID>",  
-   * "**remoteFS**":"remote filesystem name" (Required only if remote filesystem name is different than the locally mounted filesystem name)
+   * "**remoteFs**":"remote filesystem name" (Required only if remote filesystem name is different than the locally mounted filesystem name)
 
 - Make another entry for this cluster under the "clusters" section of `deploy/spectrum-scale-config.json` as:
 

@@ -88,7 +88,7 @@ def validateImages(conf_dict):
 
 def configureCmapConfig(conf_dict, infile, outfile):
         if conf_dict.get("inodelimit") != "" and conf_dict.get("inodelimit") != None :
-             inodelimitstring = '"inode-limit":"' + conf_dict.get("inodelimit") + '",'
+             inodelimitstring = '"inodeLimit":"' + conf_dict.get("inodelimit") + '",'
              conf_dict["inodelimitstr"] = inodelimitstring
         else:
              conf_dict["inodelimitstr"] = ""
@@ -96,7 +96,7 @@ def configureCmapConfig(conf_dict, infile, outfile):
         if conf_dict.get("securesslmode") == "true":
              conf_dict["cacertstr"] = '"cacert":"guicertificate",'
         else:
-             conf_dict["cacertstr"] = ""     
+             conf_dict["cacertstr"] = ""
 
         configureDriver(conf_dict, infile, outfile)
 
@@ -205,7 +205,7 @@ except:
 
 deploybasepath = os.path.join(basepath, "deploy")
 
-driverconf = sys.argv[1] 
+driverconf = sys.argv[1]
 config = ConfigParser()
 config.read(driverconf)
 
@@ -214,17 +214,17 @@ validate(config, "SECRET")
 validate(config, "PLUGIN")
 validate(config, "IMAGES")
 
-configure(config, "CONFIGMAP", os.path.join(deploybasepath, "spectrum-scale-config.json_template"), 
+configure(config, "CONFIGMAP", os.path.join(deploybasepath, "spectrum-scale-config.json_template"),
                               os.path.join(deploybasepath, "spectrum-scale-config.json"))
 print "Configured '" + basepath + "/deploy/spectrum-scale-config.json'"
-     
-configure(config, "SECRET", os.path.join(deploybasepath, "spectrum-scale-secret.json_template"), 
+
+configure(config, "SECRET", os.path.join(deploybasepath, "spectrum-scale-secret.json_template"),
                               os.path.join(deploybasepath, "spectrum-scale-secret.json"))
 print "Configured '" + basepath + "/deploy/spectrum-scale-secret.json'"
 
 conf_dict = dict(config.items("PLUGIN"))
 if conf_dict.get("openshiftdeployment") == "true" :
-    configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-plugin-openshift.yaml_template"), 
+    configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-plugin-openshift.yaml_template"),
                                   os.path.join(deploybasepath, "csi-plugin.yaml"))
 else:
     configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-plugin.yaml_template"),
@@ -256,4 +256,3 @@ print "Generated cleanup script '" + basepath + "/deploy/destroy.sh'"
 print "Spectrum Scale CSI driver configuration is complete. Please review the configuration and run '" + basepath + "/deploy/create.sh' to deploy the driver"
 
 exit(0)
-

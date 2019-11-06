@@ -86,7 +86,7 @@ def validateImages(conf_dict):
 
 def configureCmapConfig(conf_dict, infile, outfile):
         if conf_dict.get("inodelimit") != "" and conf_dict.get("inodelimit") != None :
-             inodelimitstring = '"inode-limit":"' + conf_dict.get("inodelimit") + '",'
+             inodelimitstring = '"inodeLimit":"' + conf_dict.get("inodelimit") + '",'
              conf_dict["inodelimitstr"] = inodelimitstring
         else:
              conf_dict["inodelimitstr"] = ""
@@ -94,7 +94,7 @@ def configureCmapConfig(conf_dict, infile, outfile):
         if conf_dict.get("securesslmode") == "true":
              conf_dict["cacertstr"] = '"cacert":"cert1",'
         else:
-             conf_dict["cacertstr"] = ""     
+             conf_dict["cacertstr"] = ""
 
         configureDriver(conf_dict, infile, outfile)
 
@@ -181,7 +181,7 @@ except:
 classicbasepath = os.path.join(basepath, "deploy", "classic")
 commonbasepath = os.path.join(basepath, "deploy", "common")
 
-driverconf = sys.argv[1] 
+driverconf = sys.argv[1]
 config = ConfigParser()
 config.read(driverconf)
 
@@ -190,15 +190,15 @@ validate(config, "SECRET")
 validate(config, "PLUGIN")
 validate(config, "IMAGES")
 
-configure(config, "CONFIGMAP", os.path.join(classicbasepath, "spectrum-scale-config.json_template"), 
+configure(config, "CONFIGMAP", os.path.join(classicbasepath, "spectrum-scale-config.json_template"),
                               os.path.join(classicbasepath, "spectrum-scale-config.json"))
 print "Configured 'deploy/classic/spectrum-scale-config.json'"
-     
-configure(config, "SECRET", os.path.join(classicbasepath, "spectrum-scale-secret.json_template"), 
+
+configure(config, "SECRET", os.path.join(classicbasepath, "spectrum-scale-secret.json_template"),
                               os.path.join(classicbasepath, "spectrum-scale-secret.json"))
 print "Configured 'deploy/classic/spectrum-scale-secret.json'"
 
-configure(config, "PLUGIN", os.path.join(commonbasepath, "csi-plugin.yaml_template"), 
+configure(config, "PLUGIN", os.path.join(commonbasepath, "csi-plugin.yaml_template"),
                               os.path.join(commonbasepath, "csi-plugin.yaml"))
 print "Configured 'deploy/common/csi-plugin.yaml'"
 
@@ -216,4 +216,3 @@ print "Generated deployment script 'deploy/classic/create.sh'"
 print "Spectrum Scale CSI driver configuration is complete. Please review the configuration and run 'deploy/classic/create.sh' to deploy the driver"
 
 exit(0)
-

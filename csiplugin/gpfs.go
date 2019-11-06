@@ -94,7 +94,7 @@ func loadExVolumes() {
 		}
 		fp, err := os.Open(path.Join(PluginFolder, "controller", f.Name()))
 		if err != nil {
-			glog.Infof("scale: open file: %s err %%v", f.Name(), err)
+			glog.Infof("scale: open file: %s err %v", f.Name(), err)
 			continue
 		}
 		decoder := json.NewDecoder(fp)
@@ -262,9 +262,9 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			scaleConnMap["primary"] = sc
 
 			// check if primary filesystem exists and mounted on atleast one node
-			fsMount, err := sc.GetFilesystemMountDetails(cluster.Primary.PrimaryFS)
+			fsMount, err := sc.GetFilesystemMountDetails(cluster.Primary.GetPrimaryFs())
 			if err != nil {
-				glog.Errorf("Error in getting filesystem details for %s", cluster.Primary.PrimaryFS)
+				glog.Errorf("Error in getting filesystem details for %s", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
 			if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
@@ -278,13 +278,13 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		}
 	}
 
-	fs := primaryInfo.PrimaryFS
+	fs := primaryInfo.GetPrimaryFs()
 	sconn := scaleConnMap["primary"]
 	fsmount := primaryInfo.PrimaryFSMount
 	if primaryInfo.RemoteCluster != "" {
 		sconn = scaleConnMap[primaryInfo.RemoteCluster]
-		if primaryInfo.RemoteFS != "" {
-			fs = primaryInfo.RemoteFS
+		if primaryInfo.GetRemoteFs() != "" {
+			fs = primaryInfo.GetRemoteFs()
 
 			// check if primary filesystem exists on remote cluster and mounted on atleast one node
 			fsMount, err := sconn.GetFilesystemMountDetails(fs)
@@ -300,7 +300,7 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		}
 	}
 
-	fsetlinkpath, err := driver.CreatePrimaryFileset(sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.InodeLimit)
+	fsetlinkpath, err := driver.CreatePrimaryFileset(sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())
 	if err != nil {
 		glog.Errorf("Error in creating primary fileset")
 		return scaleConnMap, scaleConfig, primaryInfo, err
@@ -318,7 +318,7 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 	}
 
 	// Create directory where volume symlinks will reside
-	symlinkPath, relativePath, err := driver.CreateSymlinkPath(scaleConnMap["primary"], primaryInfo.PrimaryFS, primaryInfo.PrimaryFSMount, fsetlinkpath)
+	symlinkPath, relativePath, err := driver.CreateSymlinkPath(scaleConnMap["primary"], primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFSMount, fsetlinkpath)
 	if err != nil {
 		glog.Errorf("Error in creating volumes directory")
 		return scaleConnMap, scaleConfig, primaryInfo, err
@@ -448,7 +448,7 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 
 			primaryClusterFound = true
 
-			if cluster.Primary.PrimaryFS == "" || cluster.Primary.PrimaryFset == "" {
+			if cluster.Primary.GetPrimaryFs() == "" || cluster.Primary.PrimaryFset == "" {
 				return false, fmt.Errorf("Mandatory parameters not specified for primary cluster %v", cluster.ID)
 			}
 

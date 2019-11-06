@@ -31,17 +31,47 @@ type ScaleSettingsConfigMap struct {
 }
 
 type Primary struct {
-	PrimaryFS     string `json:"primaryFS"`
+	PrimaryFSDep  string `json:"primaryFS"` // Deprecated
+	PrimaryFs     string `json:"primaryFs"`
 	PrimaryFset   string `json:"primaryFset"`
 	PrimaryCid    string `json:"primaryCid"`
-	InodeLimit    string `json:"inode-limit"`
+	InodeLimitDep string `json:"inode-limit"` // Deprecated
+	InodeLimits   string `json:"inodeLimit"`
 	RemoteCluster string `json:"remoteCluster"`
-	RemoteFS      string `json:"remoteFS"`
+	RemoteFSDep   string `json:"remoteFS"` // Deprecated
+	RemoteFs      string `json:"remoteFs"`
 
 	PrimaryFSMount      string
 	PrimaryFsetLink     string
 	SymlinkAbsolutePath string
 	SymlinkRelativePath string
+}
+
+/* To support backwards compatibility if the PrimaryFs field is not defined then
+   use the previous version of the field. */
+func (primary Primary) GetPrimaryFs() string {
+	if primary.PrimaryFs == "" {
+		return primary.PrimaryFSDep
+	}
+	return primary.PrimaryFs
+}
+
+/* To support backwards compatibility if the RemoteFs field is not defined then
+   use the previous version of the field. */
+func (primary Primary) GetRemoteFs() string {
+	if primary.RemoteFs == "" {
+		return primary.RemoteFSDep
+	}
+	return primary.RemoteFs
+}
+
+/* To support backwards compatibility if the InodeLimit field is not defined then
+   use the previous version of the field. */
+func (primary Primary) GetInodeLimit() string {
+	if primary.InodeLimits == "" {
+		return primary.InodeLimitDep
+	}
+	return primary.InodeLimits
 }
 
 type RestAPI struct {

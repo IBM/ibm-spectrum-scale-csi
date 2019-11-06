@@ -58,14 +58,16 @@ type SpectrumScaleConnector interface {
 }
 
 const (
-	UserSpecifiedFilesetType  string = "fileset-type"
-	UserSpecifiedInodeLimit   string = "inode-limit"
-	UserSpecifiedUid          string = "uid"
-	UserSpecifiedGid          string = "gid"
-	UserSpecifiedClusterId    string = "clusterId"
-	UserSpecifiedParentFset   string = "parentFileset"
-	UserSpecifiedVolBackendFs string = "volBackendFs"
-	UserSpecifiedVolDirPath   string = "volDirBasePath"
+	UserSpecifiedFilesetType    string = "filesetType"
+	UserSpecifiedFilesetTypeDep string = "fileset-type"
+	UserSpecifiedInodeLimit     string = "inodeLimit"
+	UserSpecifiedInodeLimitDep  string = "inode-limit"
+	UserSpecifiedUid            string = "uid"
+	UserSpecifiedGid            string = "gid"
+	UserSpecifiedClusterId      string = "clusterId"
+	UserSpecifiedParentFset     string = "parentFileset"
+	UserSpecifiedVolBackendFs   string = "volBackendFs"
+	UserSpecifiedVolDirPath     string = "volDirBasePath"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
