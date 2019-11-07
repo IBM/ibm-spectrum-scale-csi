@@ -12,6 +12,12 @@ spec:
       labels:
        app: "{{ opName }}"
     spec:
+{% if pluginNodeSelector|length > 0 %}
+      nodeSelector:
+{% for pluginNodeSelect in pluginNodeSelector %}
+        {{ pluginNodeSelect.key }}: "{{ pluginNodeSelect.value }}"
+{% endfor %}
+{% endif %}
       serviceAccount: csi-nodeplugin
       hostNetwork: true
       containers:
@@ -34,7 +40,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-
           volumeMounts:
             - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
@@ -66,7 +71,12 @@ spec:
               value: "yes"
             - name: SECRET_TRIGGER
               value: "{{secretCounter}}"
-
+{% if nodeMapping|length > 0 %}
+{% for nodemap in nodeMapping %}
+            - name: "{{ nodemap.k8sNode }}"
+              value: "{{ nodemap.spectrumscaleNode }}"
+{% endfor %}
+{% endif %}
             # Get refs to the secrets so we can trigger a refresh
           imagePullPolicy: "IfNotPresent" # "Always"
           volumeMounts:

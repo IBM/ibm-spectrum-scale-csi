@@ -15,6 +15,12 @@ spec:
         app: '{{ opName }}-provisioner'
         product: ibm-spectrum-scale-csi
     spec:
+{% if provisionerNodeSelector|length > 0 %}
+      nodeSelector:
+{% for provisionerNodeSelect in provisionerNodeSelector %}
+        {{ provisionerNodeSelect.key }}: "{{ provisionerNodeSelect.value }}"
+{% endfor %}
+{% endif %}
       serviceAccount: external-provisioner-runner
       containers:
         - name: csi-provisioner

@@ -15,6 +15,12 @@ spec:
         app: "{{ opName }}-attacher"
         product: ibm-spectrum-scale-csi
     spec:
+{% if attacherNodeSelector|length > 0 %}
+      nodeSelector:
+{% for attacherNodeSelect in attacherNodeSelector %}
+        {{ attacherNodeSelect.key }}: "{{ attacherNodeSelect.value }}"
+{% endfor %}
+{% endif %}
       serviceAccount: external-attacher-runner
       containers:
         - name: "{{ opName }}-attacher"
