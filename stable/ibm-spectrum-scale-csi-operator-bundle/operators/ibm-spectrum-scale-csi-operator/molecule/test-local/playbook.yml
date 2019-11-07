@@ -11,7 +11,7 @@
     changed_when: false
 
   - name: Check if CI
-    set_fac:
+    set_fact:
       CI: lookup('env', 'CI')
     
   - name: Build Operator Image
