@@ -94,7 +94,7 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
-        - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then operator-sdk build csi-scale-operator; docker tag csi-scale-operator ${DOCKER_REPO}; fi' 
+        - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh; operator-sdk build csi-scale-operator; docker tag csi-scale-operator ${DOCKER_REPO}; fi' 
       name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
