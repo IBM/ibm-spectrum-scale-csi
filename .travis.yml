@@ -12,20 +12,16 @@ env:
     - GO111MODULE=on
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.11.0"
-    - CSI_OP_VER="0.0.1"
+    - CSI_OP_VER="${TRAVIS_BRANCH}.${TRAVIS_OS_NAME}"
     - QUAY_USERNAME="mew2057"
+    - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator-test:${CSI_OP_VER}"
 
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
-
     - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
-    - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator:v0.0.1"
+
 
     - OPERATOR_NAME=ibm-spectrum-scale-csi-operator
     - OLM_MANIFEST="${CSI_OP_BUILD_DIR}/deploy/olm-catalog/${OPERATOR_NAME}/"
-
-    # TODO replace his with something better.
-    #- SC_VARS="--config .osdk-scorecard.yaml --cr-manifest  deploy/crds/ibm_v1alpha1_csiscaleoperator_cr.yaml  --csv-path deploy/olm-catalog/ibm-spectrum-scale-csi-operator/${CSI_OP_VER}/ibm-spectrum-scale-csi-operator.v${CSI_OP_VER}.clusterserviceversion.yaml"
-    - SC_VARS="--config .osdk-scorecard.yaml"
 
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -41,6 +37,7 @@ addons:
       - "python3-pip" 
 stages:
   - lint
+  - build
   - test
 jobs:
   fast_finish: true
@@ -52,7 +49,18 @@ jobs:
         - pip install operator-courier 
         - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
 
-
+    - stage: build
+      script:
+        - sudo pip install docker
+        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
+        - cd ${CSI_OP_BUILD_DIR}
+        - operator-sdk version
+        - kubectl version
+        - go version
+        - operator-sdk build csi-scale-operator
+        - docker tag csi-scale-operator ${DOCKER_REPO}
+        - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
+        - docker push ${DOCKER_REPO} 
 
     # Install minikube, build the image and run the scorecard.
     - stage: test
@@ -62,20 +70,13 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
-        - operator-sdk version
-        - kubectl version
-        - go version
       script: 
         # Print environment 
-        #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.1 "cluster information"  kubectl cluster-info dump
         # Build the image, clear and restore the finalizers.
-        - python hacks/clear_finalizers.py
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${DOCKER_REPO}
-        - operator-sdk scorecard ${SC_VARS}
-        - python  hacks/clear_finalizers.py --restore
-
-          #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
+        #- python hacks/clear_finalizers.py
+        - python hacks/change_deploy_image.py ${DOCKER_REPO}
+        - operator-sdk scorecard --config .osdk-scorecard.yaml
+        #- python  hacks/clear_finalizers.py --restore
         
     - before_install:
         - sudo pip install docker
@@ -83,18 +84,12 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
-        - operator-sdk version
-        - kubectl version
-        - go version
       script: 
         #  This needs to be built before we can test with molecule for reasons.
-        - operator-sdk build csi-scale-operator
+        - python hacks/change_deploy_image.py ${DOCKER_REPO}
         - molecule test -s test-local
 
           #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
-        
-        #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
-        #- docker push ${DOCKER_REPO} 
 notifications:
   email:
     - jdunham@us.ibm.com
