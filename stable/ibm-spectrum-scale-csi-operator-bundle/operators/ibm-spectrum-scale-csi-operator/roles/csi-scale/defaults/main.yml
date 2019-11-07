@@ -19,6 +19,18 @@ scaleHostpath: "{{ scale_hostpath | default('/') }}"
 # This needs a default for molecule, also the clusters version does weird stuff to the object?
 #clusters: []
 clustersCamelCase: "{{ _scale_ibm_com_csiscaleoperator.spec.clusters | default([])}}"
+
+# Node Selector for Attacher sidecar.
+attacherNodeSelector: "{{ _scale_ibm_com_csiscaleoperator.spec.attacherNodeSelector | default([])}}"
+
+# Node Selector for Provisioner sidecar.
+provisionerNodeSelector: "{{ _scale_ibm_com_csiscaleoperator.spec.provisionerNodeSelector | default([])}}"
+
+# Node Selector for SpectrumScale CSI Plugin.
+pluginNodeSelector: "{{ _scale_ibm_com_csiscaleoperator.spec.pluginNodeSelector | default([])}}"
+
+# Node mapping between K8s and spectrumscale node.
+nodeMapping: "{{ _scale_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 #"{{ _scale_ibm_com_csiscaleoperator.spec.clusters | default([])}}"
 
 # State of driver in the cluster (might not be needed).
