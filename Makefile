@@ -16,7 +16,7 @@ NAME=csi-spectrum-scale
 
 .PHONY: all $NAME
 
-IMAGE_VERSION=v0.9.0
+IMAGE_VERSION=v0.9.1
 IMAGE_NAME=$(NAME)
 
 all: $NAME

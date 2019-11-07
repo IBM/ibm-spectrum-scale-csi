@@ -189,25 +189,25 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 2. Invoke multi-stage build
 
    ```
-   docker build -t csi-spectrum-scale:v0.9.0 -f Dockerfile.msb .
+   docker build -t csi-spectrum-scale:v0.9.1 -f Dockerfile.msb .
    ```
 
    *On podman setup, use this command instead:*
 
    ```
-   podman build -t csi-spectrum-scale:v0.9.0 -f Dockerfile.msb .
+   podman build -t csi-spectrum-scale:v0.9.1 -f Dockerfile.msb .
    ```
 
 3. save the docker image
 
    ```
-   docker save csi-spectrum-scale:v0.9.0 -o _output/csi-spectrum-scale_v0.9.0.tar
+   docker save csi-spectrum-scale:v0.9.1 -o _output/csi-spectrum-scale_v0.9.1.tar
    ```
 
    *On podman setup, use this command instead:*
 
    ```
-   podman save csi-spectrum-scale:v0.9.0 -o _output/csi-spectrum-scale_v0.9.0.tar
+   podman save csi-spectrum-scale:v0.9.1 -o _output/csi-spectrum-scale_v0.9.1.tar
    ```
 
       A tar file of docker image will be stored under the _output directory.
@@ -219,13 +219,13 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 1. Copy and load the docker image on all Kubernetes worker nodes
 
    ```
-   docker image load -i csi-spectrum-scale_v0.9.0.tar
+   docker image load -i csi-spectrum-scale_v0.9.1.tar
    ```
 
    *On OpenShift setup, use this command instead:*
 
    ```
-   podman image load -i csi-spectrum-scale_v0.9.0.tar
+   podman image load -i csi-spectrum-scale_v0.9.1.tar
    ```
 
 2. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
@@ -430,7 +430,7 @@ To use this feature, perform the following steps after running the installer "sp
 
    ```
    % docker images -a | grep csi-spectrum-scale
-   csi-spectrum-scale v0.9.0 465ca978127a 18 minutes ago 109MB
+   csi-spectrum-scale v0.9.1 465ca978127a 18 minutes ago 109MB
 
    % docker rmi 465ca978127a
    ```
