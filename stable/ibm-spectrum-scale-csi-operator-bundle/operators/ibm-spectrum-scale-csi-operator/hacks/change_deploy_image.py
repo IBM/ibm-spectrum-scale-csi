@@ -45,6 +45,11 @@ This should be used when deploying a custom image.
       default=DEFAULT_IMAGE,
       help='''The new image, defaults to "official" image.''')
 
+  parser.add_argument( '--ifnotpresent',  dest='ifnotpresent', 
+      action='store_true',
+      help='''A flag to set image pull to ifnotpresent.''')
+
+
   parser.add_argument( '--output', metavar='output', dest='output',
      default=DEFAULT_DEPLOY,
      help='''Where to save the deployment, if unset overwrites deployment.''')
@@ -66,7 +71,7 @@ This should be used when deploying a custom image.
       output ="{0}/{1}".format(os.getcwd(), output)
 
   image      = args.image
-  pullpolicy = DEV_PULL if image != DEFAULT_IMAGE else REL_PULL
+  pullpolicy = REL_PULL if (image == DEFAULT_IMAGE or args.ifnotpresent) else DEV_PULL
 
   change_image(operator, output, image, pullpolicy)
 
