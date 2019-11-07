@@ -51,18 +51,18 @@ jobs:
         - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
 
     - stage: build
-      name: "Build: Operator"
+      name: "Build: operator"
       script:
         - sudo pip install docker
+        - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk version
         - go version
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
-        - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         - docker push ${DOCKER_REPO} 
-    - name: "Build: Docs"
+    - name: "Build: docs"
       script:
         - pip install sphinx sphinx_rtd_theme recommonmark 
         - cd ${TRAVIS_BUILD_DIR}/docs
