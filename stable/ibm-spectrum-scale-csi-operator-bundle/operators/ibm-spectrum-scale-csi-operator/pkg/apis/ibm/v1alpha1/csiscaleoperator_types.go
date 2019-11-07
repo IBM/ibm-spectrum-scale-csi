@@ -15,6 +15,30 @@ type CSIPrimarySpec struct {
 
 	// The name of the primary fileset, created in primaryFS.
 	PrimaryFset string `json:"primaryFset,omitempty"`
+
+       // Inode Limit for Primary Fileset
+       InodeLimit string `json:"inodeLimit,omitempty"`
+
+       // RemoteCluster ID, in case Primary fileset is on remote cluster
+       RemoteCluster string `json:"remoteCluster,omitempty"`
+
+       // Remote FS name, in case we use Remote cluster for Primary FS
+       RemoteFs string `json:"remoteFs,omitempty"`
+
+}
+
+// Node Mapping
+// +k8s:openapi-gen=true
+type NodeMap struct {
+	K8sNode	string `json:"k8sNode,omitempty"`
+	SpectrumscaleNode string `json:"spectrumscaleNode,omitempty"`
+}
+
+// Node Selector Key value
+// +k8s:openapi-gen=true
+type KeyVal struct {
+	Key string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // Defines the desired REST API access info.
@@ -70,6 +94,21 @@ type CSIScaleOperatorSpec struct {
 
 	// The path to the gpfs file system mounted on the host machine.
 	ScaleHostpath string `json:"scaleHostpath,omitempty"`
+
+        // Node selector for attacher
+        AttacherNodeSelector []KeyVal `json:"attacherNodeSelector,omitempty"`
+
+	// Node selector for provisioner
+
+	ProvisionerNodeSelector []KeyVal `json:"provisionerNodeSelector,omitempty"`
+
+	// Node Selector for Plugin.
+
+	PluginNodeSelector []KeyVal `json:"pluginNodeSelector,omitempty"`
+
+	// Node Mapping information for plugin
+
+	NodeMapping []NodeMap `json:"nodeMapping,omitempty"`
 
 	// A collection of gpfs cluster properties for the csi driver to mount.
 	Clusters []CSIClusterSpec `json:"clusters,omitempty"`
