@@ -14,6 +14,7 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -59,22 +60,24 @@ spec:
               type: array
               required:
                 - id
-              properties:
-                id:
-                  description: "The cluster id of the gpfs cluster specified (mandatory)."
-                  type: string
+              items:
+                type: object
+                properties:
+                  id:
+                    description: "The cluster id of the gpfs cluster specified (mandatory)."
+                    type: string
 
-                primary:
-                  description: "The primary file system for the GPFS cluster."
-                  type: object
-                  properties:
-                    primaryFS:
-                      description: "The name of the primary filesystem."
-                      type: string
+                  primary:
+                    description: "The primary file system for the GPFS cluster."
+                    type: object
+                    properties:
+                      primaryFS:
+                        description: "The name of the primary filesystem."
+                        type: string
 
-                    primaryFset:
-                      description: "The name of the primary fileset, created in primaryFS."
-                      type: string
+                      primaryFset:
+                        description: "The name of the primary fileset, created in primaryFS."
+                        type: string
 
                 secureSslMode:
                     description: "Require a secure SSL connection to connect to GPFS."
@@ -91,21 +94,25 @@ spec:
                 restApi:
                   description: "A collection of targets for REST calls." 
                   type: array
-                  properties:
-                    guiHost:
-                      description: "The hostname of the REST server."
-                      type: string
+                  items:
+                    type: object
+                    properties:
+                      guiHost:
+                        description: "The hostname of the REST server."
+                        type: string
 
-                    guiPort:
-                      description: "The port number running the REST server."
-                      type: string
+                      guiPort:
+                        description: "The port number running the REST server."
+                        type: string
         status:
           type: object
           properties:
             conditions:
                 description: "The active status of the operator"
                 type: array
-                properties:
+                items:
+                  type: object
+                  properties:
                     isRunning:
                         type: bool
                         description: "Indicates that the plugin is running."

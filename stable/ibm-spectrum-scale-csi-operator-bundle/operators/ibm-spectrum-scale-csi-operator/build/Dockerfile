@@ -1,19 +1,26 @@
-#FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
-FROM quay.io/operator-framework/ansible-operator:v0.10.0
+FROM quay.io/operator-framework/ansible-operator:v0.11.0
+MAINTAINER jdunham@us.ibm.com
 
-# Clean up the packas.
-#RUN yum -y update && yum clean all
+LABEL name="IBM Spectrum Scale CSI Operator" \
+      vendor="ibm" \
+      version="1.0" \
+      release="1" \
+      run='docker run ibm-spectrum-scale-csi-operator' \
+      summary="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
+      description="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." 
 
-#ENV OPERATOR=/usr/local/bin/ibm-spectrum-scale-csi-operator \
-#    USER_UID=1001 \
-#    USER_NAME=ibm-spectrum-scale-csi-operator\
-#    HOME=/opt/ansible\
-#    RUNNER_BASE_COMMAND=ansible-playbook
+#
+#RUN REPOLIST=ubi-7,ubi-7-optional \
+#    yum -y update-minimal --disablerepo "*" --enablerepo ubi-7 --disableplugin=subscription-manager --setopt=tsflags=nodocs \
+#      --security --sec-severity=Important --sec-severity=Critical && \
+#    yum -y install --disablerepo "*" --enablerepo ${REPOLIST} --disableplugin=subscription-manager --setopt=tsflags=nodocs ${INSTALL_PKGS} && \
+#    yum clean all
 
-#COPY build/bin /usr/local/bin
-COPY build/_output/bin/ibm-spectrum-scale-csi-operator ${OPERATOR}
+COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
+COPY build/_output/bin/ibm-spectrum-scale-csi-operator ${OPERATOR}
 COPY roles/ ${HOME}/roles/
+
 
 
 

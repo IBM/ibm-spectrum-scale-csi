@@ -1,10 +1,5 @@
----
-- version: v1alpha1
+- ManageStatus: true
   group: scale.ibm.com
   kind: CSIScaleOperator
   role: /opt/ansible/roles/csi-scale
-  ManageStatus: True
-  finalizer:
-    name: finalizer.scale.ibm.com
-    vars:
-      state: absent
+  version: v1alpha1

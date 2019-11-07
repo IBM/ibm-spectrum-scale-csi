@@ -8,8 +8,10 @@ import yaml
 
 DEFAULT_DEPLOY="{0}/../deploy/operator.yaml".format(os.path.dirname(os.path.realpath(__file__)))
 DEFAULT_IMAGE="quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1"
+DEV_PULL="Always"
+REL_PULL="IfNotPresent"
 
-def change_image(operator=DEFAULT_DEPLOY, output=DEFAULT_DEPLOY, image=DEFAULT_IMAGE ):
+def change_image(operator=DEFAULT_DEPLOY, output=DEFAULT_DEPLOY, image=DEFAULT_IMAGE, pullpolicy=REL_PULL ):
   with open(operator, 'r') as stream:
     try:
         opobj= yaml.safe_load(stream)
@@ -21,6 +23,7 @@ def change_image(operator=DEFAULT_DEPLOY, output=DEFAULT_DEPLOY, image=DEFAULT_I
 
     for i, container in enumerate(containers):
       containers[i]["image"] = image
+      containers[i]["imagePullPolicy"] = pullpolicy
 
     with open(output, 'w') as outfile:
       yaml.dump(opobj, outfile, default_flow_style=False)
@@ -62,9 +65,10 @@ This should be used when deploying a custom image.
   if output[0] is not '/':
       output ="{0}/{1}".format(os.getcwd(), output)
 
-  image=args.image
+  image      = args.image
+  pullpolicy = DEV_PULL if image != DEFAULT_IMAGE else REL_PULL
 
-  change_image(operator, output, image)
+  change_image(operator, output, image, pullpolicy)
 
 
 if __name__ == "__main__":

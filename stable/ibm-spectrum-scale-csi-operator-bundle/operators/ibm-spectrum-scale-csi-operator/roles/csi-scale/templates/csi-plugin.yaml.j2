@@ -1,17 +1,23 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: "{{ name }}"
-  namespace: '{{ meta.namespace }}'
+  name: "{{ opName }}"
+  namespace: '{{ namespace }}'
 spec:
   selector:
     matchLabels:
-      app: "{{ name }}"
+      app: "{{ opName }}"
   template:
     metadata:
       labels:
-       app: "{{ name }}"
+       app: "{{ opName }}"
     spec:
+{% if pluginNodeSelector|length > 0 %}
+      nodeSelector:
+{% for pluginNodeSelect in pluginNodeSelector %}
+        {{ pluginNodeSelect.key }}: "{{ pluginNodeSelect.value }}"
+{% endfor %}
+{% endif %}
       serviceAccount: csi-nodeplugin
       hostNetwork: true
       containers:
@@ -34,7 +40,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-
           volumeMounts:
             - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
@@ -65,8 +70,13 @@ spec:
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
             - name: SECRET_TRIGGER
-              value: "{{secret_counter}}"
-
+              value: "{{secretCounter}}"
+{% if nodeMapping|length > 0 %}
+{% for nodemap in nodeMapping %}
+            - name: "{{ nodemap.k8sNode }}"
+              value: "{{ nodemap.spectrumscaleNode }}"
+{% endfor %}
+{% endif %}
             # Get refs to the secrets so we can trigger a refresh
           imagePullPolicy: "IfNotPresent" # "Always"
           volumeMounts:
@@ -83,7 +93,7 @@ spec:
               mountPath: "{{ scaleHostpath }}"
 
             # Grab user clusters
-{% for cluster in clusters %}
+{% for cluster in clustersCamelCase %}
 {% if cluster.secrets is defined %}
             - name: "{{ cluster.secrets }}"
               mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
@@ -119,7 +129,7 @@ spec:
             type: Directory
 
 # Grab user clusters
-{% for cluster in clusters %}
+{% for cluster in clustersCamelCase %}
 
 {% if cluster.secrets is defined %}
         - name: "{{ cluster.secrets }}"

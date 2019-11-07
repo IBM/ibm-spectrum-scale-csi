@@ -6,7 +6,7 @@ metadata:
 rules:
   - apiGroups: [ "" ]
     resources: [ "pods", "persistentvolumeclaims", "services", "endpoints", "events", "configmaps",
-      "secrets", "secrets/status" ]
+      "secrets", "secrets/status", "services/finalizers"  ]
     verbs: [ '*' ]
   - apiGroups: [ "apps" ]
     resources: [ "deployments", "daemonsets", "replicasets", "statefulsets" ]
@@ -36,7 +36,7 @@ metadata:
   name: ibm-spectrum-scale-csi-operator
 rules:
   - apiGroups: [ "" ]
-    resources: [ "persistentvolumeclaims", "persistentvolumes", "configmaps", "secrets"]
+    resources: [ "persistentvolumeclaims", "persistentvolumes", "configmaps", "secrets",  "services/finalizers"]
     verbs: [ '*' ]
   - apiGroups: ["storage.k8s.io"]
     resources: ["volumeattachments", "storageclasses" ]
