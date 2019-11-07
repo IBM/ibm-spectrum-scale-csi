@@ -1,0 +1,20 @@
+#[all]
+#localhost ansible_host=localhost ansible_user=root
+
+[all:vars]
+# Token required for courier tasks.
+GITHUB_TOKEN=***REMOVED***
+
+# Operator details.
+OPERATOR_NAME=ibm-spectrum-scale-csi-operator
+OPERATOR_VERSION=0.0.1
+OPERATOR_DIR=../stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
+# Assumed to be in the "deploy" directory.
+ADDITIONAL_RESOURCES=["service_account.yaml", "role_binding.yaml"]
+
+# Assumed to be in the "deploy" directory.
+CRD_LIST=["ibm_v1alpha1_csiscaleoperator_crd.yaml"]
+
+# Socrecard Variables FIXME
+SC_VARS="--config .osdk-scorecard.yaml --cr-manifest  deploy/crds/ibm_v1alpha1_csiscaleoperator_cr.yaml  --csv-path deploy/olm-catalog/ibm-spectrum-scale-csi-operator/0.0.1/ibm-spectrum-scale-csi-operator.v0.0.1.clusterserviceversion.yaml"
