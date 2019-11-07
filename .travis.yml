@@ -74,7 +74,7 @@ jobs:
         # Print environment 
         # Build the image, clear and restore the finalizers.
         #- python hacks/clear_finalizers.py
-        - python hacks/change_deploy_image.py ${DOCKER_REPO}
+        - python hacks/change_deploy_image.py -i ${DOCKER_REPO}
         - operator-sdk scorecard --config .osdk-scorecard.yaml
         #- python  hacks/clear_finalizers.py --restore
         
@@ -86,7 +86,7 @@ jobs:
         - cd ${CSI_OP_BUILD_DIR}
       script: 
         #  This needs to be built before we can test with molecule for reasons.
-        - python hacks/change_deploy_image.py ${DOCKER_REPO}
+        - python hacks/change_deploy_image.py -i ${DOCKER_REPO}
         - molecule test -s test-local
 
           #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump

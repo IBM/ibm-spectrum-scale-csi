@@ -14,6 +14,7 @@
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
     register: build_cmd
     changed_when: not prev_hash.stdout or (prev_hash.stdout and prev_hash.stdout not in ''.join(build_cmd.stdout_lines[-2:]))
+    when: "not {{ lookup('env', 'CI') | default(false)}}"
 
 - name: Converge
   hosts: localhost
