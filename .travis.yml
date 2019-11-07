@@ -54,7 +54,7 @@ jobs:
       name: "Build: operator"
       script:
         - sudo pip install docker
-        - docker login -u "$QUAY_BOT_USERNAME" -p "$QUAY_BOT_PASSWORD"  quay.io 
+        - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io 
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk version
