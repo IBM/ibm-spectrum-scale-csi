@@ -45,11 +45,13 @@ jobs:
     
     # Install operator-courier and run the lint on the manifest.
     - stage: lint
+      name: "Lint: operator-courier"
       script:
         - pip install operator-courier 
         - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
 
     - stage: build
+      name: "Build: Operator"
       script:
         - sudo pip install docker
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
@@ -60,9 +62,16 @@ jobs:
         - docker tag csi-scale-operator ${DOCKER_REPO}
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
         - docker push ${DOCKER_REPO} 
+    - name: "Build: Docs"
+      script:
+        - pip install sphinx sphinx_rtd_theme recommonmark 
+        - cd ${TRAVIS_BUILD_DIR}/docs
+        - make html
+
 
     # Install minikube, build the image and run the scorecard.
     - stage: test
+      name: "Test: scorecard"
       before_install:
         - sudo pip install docker
         - pip install openshift
@@ -84,6 +93,7 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
+      name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
         - python hacks/change_deploy_image.py -i ${DOCKER_REPO}
