@@ -99,7 +99,7 @@
           kind="Deployment",
           api_version="apps/v1",
           namespace=namespace,
-          label_selector="app=memcached"
+          label_selector="app.kubernetes.io/name=spectrum-scale-csi-operator"
         )}}'
 
     - name: get operator logs
