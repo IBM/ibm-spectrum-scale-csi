@@ -80,7 +80,7 @@ jobs:
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk build csi-scale-operator
-          docker tag csi-scale-operator ${DOCKER_REPO};
+        - docker tag csi-scale-operator ${DOCKER_REPO}
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
@@ -93,11 +93,11 @@ jobs:
         - sudo pip install docker
         - pip install pyyaml molecule openshift docker jmespath
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
-          ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
+        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk build csi-scale-operator
-          docker tag csi-scale-operator ${DOCKER_REPO}
+        - docker tag csi-scale-operator ${DOCKER_REPO}
       name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
