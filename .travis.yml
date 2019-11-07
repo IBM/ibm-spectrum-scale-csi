@@ -61,7 +61,7 @@ jobs:
         - go version
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
-        - 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io; docker push ${DOCKER_REPO}; fi'
+          #- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io; docker push ${DOCKER_REPO}; fi'
     - name: "Build: docs"
       script:
         - pip install sphinx sphinx_rtd_theme recommonmark 
@@ -79,7 +79,8 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
-        - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then operator-sdk build csi-scale-operator; docker tag csi-scale-operator ${DOCKER_REPO}; fi' 
+        - operator-sdk build csi-scale-operator
+          docker tag csi-scale-operator ${DOCKER_REPO};
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
@@ -95,7 +96,8 @@ jobs:
           ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
-        - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then operator-sdk build csi-scale-operator; docker tag csi-scale-operator ${DOCKER_REPO}; fi' 
+        - operator-sdk build csi-scale-operator
+          docker tag csi-scale-operator ${DOCKER_REPO}
       name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
