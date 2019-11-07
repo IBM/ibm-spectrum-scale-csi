@@ -9,12 +9,16 @@
     command: docker images -q {{ image_name }}
     register: prev_hash
     changed_when: false
+
+  - name: Check if CI
+    set_fac:
+      CI: lookup('env', 'CI')
     
   - name: Build Operator Image
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
     register: build_cmd
     changed_when: not prev_hash.stdout or (prev_hash.stdout and prev_hash.stdout not in ''.join(build_cmd.stdout_lines[-2:]))
-    when: "not {{ lookup('env', 'CI') | default(false)}}"
+    when: not CI
 
 - name: Converge
   hosts: localhost
