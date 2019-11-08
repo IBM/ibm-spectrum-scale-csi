@@ -1,7 +1,6 @@
-OLM Setup
-=========
+# Operator Lifecycle Manager (OLM) Setup
 
-> *WARNING* :  THIS IS IN PROGRESS
+## Sample Setup
 
 From Operator Directory:
 
