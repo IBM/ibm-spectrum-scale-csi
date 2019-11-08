@@ -79,6 +79,7 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
+        - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
       script: 
@@ -96,6 +97,7 @@ jobs:
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
+        - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
       name: "Test: molecule"
