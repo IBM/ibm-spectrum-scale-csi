@@ -15,7 +15,7 @@ env:
     - CSI_OP_VER="${TRAVIS_BRANCH}.${TRAVIS_OS_NAME}"
     - QUAY_USERNAME="mew2057"
     - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator-test:${CSI_OP_VER}"
-    - LOCAL_IMAGE="ibm-spectrum-scale-csi-operator-test:latest"
+    - LOCAL_IMAGE="ibm.scale.com/csi-scale-operator:testing"
 
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
     - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
