@@ -105,7 +105,7 @@ jobs:
       name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
-    - python hacks/change_deploy_image.py -i ${LOCAL_IMAGE} ---ifnotpresent
+        - python hacks/change_deploy_image.py -i ${LOCAL_IMAGE} ---ifnotpresent
         - molecule test -s test-local
 
           #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
