@@ -14,6 +14,10 @@
 #    - python36
 #    - python36-pip
 
+- name: Ensure 'docker' is installed in the default python environment
+  pip: 
+    name: docker
+
 - name: Ensure 'python3' requirements are installed
   pip: 
     requirements: "{{playbook_dir}}/common/requirements-dev.txt"
