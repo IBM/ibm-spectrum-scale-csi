@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#USAGE collect_log.sh <namespace> 
+#USAGE spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
 
 ns="default"
 node=""
 outdir="."
 cmd="kubectl"
 
-while getopts 'n:N:o:' OPTION; do
+while getopts 'n:o:h' OPTION; do
   case "$OPTION" in
     n)
       ns="$OPTARG"
@@ -31,8 +31,13 @@ while getopts 'n:N:o:' OPTION; do
       outdir="$OPTARG"
       ;;
 
+    h)
+      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]"
+      exit 0
+      ;;
+
     ?)
-      echo "USAGE collect_log.sh [-n namespace] [-o output-dir]"
+      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]"
       exit 1
       ;;
   esac

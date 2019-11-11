@@ -15,6 +15,7 @@
          * [Node Selector](#node-selector)
          * [Kubernetes node to Spectrum Scale node mapping](#kubernetes-node-to-spectrum-scale-node-mapping)
       * [Cleanup](#cleanup)
+      * [Troubleshooting](#troubleshooting)
       * [Environments in Test](TESTCONFIG.md#environments-in-test)
       * [Example Hardware Configs](TESTCONFIG.md#example-hardware-configs)
       * [Example of using the Install Toolkit to build a Spectrum Scale cluster for testing the CSI driver](TESTCONFIG.md#example-of-using-the-install-toolkit-to-build-a-spectrum-scale-cluster-for-testing-the-csi-driver)
@@ -433,6 +434,22 @@ To use this feature, perform the following steps after running the installer "sp
    csi-spectrum-scale v0.9.1 465ca978127a 18 minutes ago 109MB
 
    % docker rmi 465ca978127a
+   ```
+
+## Troubleshooting
+
+The tool `spectrum-scale-driver-snap.sh` collects the CSI driver debug data and stores in the given output directory.
+
+Usage:
+
+   ```
+   spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
+   -n: Debug data for CSI resources under this namespace will be collected.
+       If not specified, default namespace is used. The tool returns error
+       if CSI is not running under the given namespace.
+   -o: Output directory where debug data will be stored. If not specified,
+       the debug data is stored in current directory.
+   -h: Prints the usage
    ```
 
 ## Links
