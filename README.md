@@ -111,73 +111,10 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 ## Building the docker image
 
-	Use Method#1 or Method#2 for building the docker image based on your preference/environment.
 
+**Using multi-stage build**
 
-**Method#1: Using local golang build environment**
-
-	This method involves installation of golang and dep package on local build machine
-
-1. Install the latest version of Go and add it to PATH. Refer https://golang.org/
-
-   ```
-   export PATH=$PATH:<go_install_dir>/bin
-   ```
-
-2. Set your GOPATH to a directory where you want to clone the repo
-
-   ```
-   export GOPATH=<path_to_repo_base>
-   ```
-
-3. Clone the code
-
-   ```
-   mkdir -p $GOPATH/src/github.com/IBM
-   cd $GOPATH/src/github.com/IBM
-   git clone https://github.com/IBM/ibm-spectrum-scale-csi-driver.git
-   ```
-
-4. Build
-
-     4.1 Get dep (*Go's dependency manager*), which will be used by Makefile:
-
-     ```
-     wget --directory-prefix=/tmp/ https://github.com/golang/dep/releases/download/v0.5.1/dep-linux-amd64
-     mkdir -p $GOPATH/bin
-     mv /tmp/dep-linux-amd64 $GOPATH/bin/dep
-     chmod +x $GOPATH/bin/dep
-     export PATH=$PATH:$GOPATH/bin
-     ```
-  
-     4.2 Compile:
-
-     ```
-     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
-     make
-     ```
-  
-     4.3 Compile/build the docker image:
-
-     ```
-     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
-     make build-image
-     ```
-
-     4.4 Compile/build/save the docker image:
-
-     ```
-     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
-     make save-image
-     ```
-
-      A tar file of docker image will be stored under the _output directory.
-
-
-
- **Method#2: Using multi-stage build approach**
-
-	This method requires active Docker installation on local build machine.
+Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
 
 1. Clone the code
@@ -202,13 +139,13 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 3. save the docker image
 
    ```
-   docker save csi-spectrum-scale:v0.9.1 -o _output/csi-spectrum-scale_v0.9.1.tar
+   docker save csi-spectrum-scale:v0.9.1 -o csi-spectrum-scale_v0.9.1.tar
    ```
 
    *On podman setup, use this command instead:*
 
    ```
-   podman save csi-spectrum-scale:v0.9.1 -o _output/csi-spectrum-scale_v0.9.1.tar
+   podman save csi-spectrum-scale:v0.9.1 -o csi-spectrum-scale_v0.9.1.tar
    ```
 
       A tar file of docker image will be stored under the _output directory.
@@ -229,15 +166,25 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
    podman image load -i csi-spectrum-scale_v0.9.1.tar
    ```
 
-2. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
+2. Deploy CSI driver
 
-3. Set the environment variable CSI_SCALE_PATH to ibm-spectrum-scale-csi-driver directory
+   **Method 1: Operator (Recommended)**
+
+   Follow the instructions from [ibm-spectrum-scale-csi-operator](https://github.com/IBM/ibm-spectrum-scale-csi-operator) for deployment of CSI driver
+
+   **Method 2: Install script**
+
+   a. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
+
+   Note that on OpenShift setup, the image is listed as `localhost/csi-spectrum-scale:v0.9.1`. Change the value of "spectrumscaleplugin" parameter in images section accordingly. 
+
+   b. Set the environment variable CSI_SCALE_PATH to ibm-spectrum-scale-csi-driver directory
 
    ```
    export CSI_SCALE_PATH=$GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
    ```
 
-4. Run the install helper script:
+   c. Run the install helper script:
 
    ```
    tools/spectrum-scale-driver.py $CSI_SCALE_PATH/deploy/spectrum-scale-driver.conf
@@ -245,9 +192,9 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
    Review the generated configuration files in deploy.
 
-5. Run the `deploy/create.sh` script to deploy the plugin
+   d. Run the `deploy/create.sh` script to deploy the plugin
 
-6. Check that the csi pods are up and running
+3. Check that the csi pods are up and running
 
    ```
    % kubectl get pod
@@ -308,7 +255,9 @@ Example:
 
 ## Advanced Configuration
 
-Following is advanced configuration of IBM Spectrum Scale CSI driver and is not supported through the installer "spectrum-scale-driver.py".
+Following is advanced configuration of IBM Spectrum Scale CSI driver and is not supported through the installer "spectrum-scale-driver.py". Perform the below steps after running the installer "spectrum-scale-driver.py".
+
+Note: This advanced configuration is supported through operator and manual steps given below are not needed.
 
 ### Remote mount support
 
