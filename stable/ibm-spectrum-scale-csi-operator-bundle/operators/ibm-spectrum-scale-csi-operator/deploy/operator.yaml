@@ -35,25 +35,13 @@ spec:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-        imagePullPolicy: IfNotPresent
+        image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+        imagePullPolicy: Always
+        name: ansible
         securityContext:
           capabilities:
             drop:
-              - ALL
-        livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          tcpSocket:
-            port: 8080
-        name: ansible
-        ports:
-        - containerPort: 8080
-        readinessProbe:
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          tcpSocket:
-            port: 8080
+            - ALL
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -69,25 +57,13 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-        imagePullPolicy: IfNotPresent
+        image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+        imagePullPolicy: Always
+        name: operator
         securityContext:
           capabilities:
             drop:
-              - ALL
-        livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          tcpSocket:
-            port: 8080
-        name: operator
-        ports:
-        - containerPort: 8080
-        readinessProbe:
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          tcpSocket:
-            port: 8080
+            - ALL
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
