@@ -37,6 +37,8 @@ spec:
           env:
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+            - name: CHECKSUM
+              value: "{{cluster_checksum}}"
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: socket-dir

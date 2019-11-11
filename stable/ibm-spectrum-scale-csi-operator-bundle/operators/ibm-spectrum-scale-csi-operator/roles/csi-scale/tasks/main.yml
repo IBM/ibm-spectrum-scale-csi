@@ -13,6 +13,8 @@
 - name: "Get cluster information"
   set_fact:
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+    cluster_checksum: "{{ clustersCamelCase | to_json | checksum }}"
+
 
 - name: "Ensure the clusters are valid"
   include_tasks: cluster_check.yml

@@ -34,6 +34,8 @@ spec:
           env:
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+            - name: CHECKSUM
+              value: "{{cluster_checksum}}"
             - name: DRIVER_REG_SOCK_PATH
               value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
             - name: KUBE_NODE_NAME
@@ -63,6 +65,8 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
 
+            - name: CHECKSUM
+              value: "{{cluster_checksum}}"
             - name: CSI_ENDPOINT
               value: unix:/var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
             - name: SCALE_HOSTPATH
