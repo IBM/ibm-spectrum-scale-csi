@@ -36,6 +36,7 @@
 - name: "Ensure '{{GO_VERSION}}' is installed; Gather Facts"
   shell: "go version | grep -q {{GO_VERSION}}"
   register: go_version
+  changed_when: false
 
 - name: "Ensure '{{GO_VERSION}}' is installed; Install"
   unarchive:
