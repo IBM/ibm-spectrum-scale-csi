@@ -1,6 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
 spec:
   replicas: 1
@@ -9,17 +13,35 @@ spec:
       name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
+      annotations:
+        productID: ibm-spectrum-scale-csi-operator
+        productName: IBM Spectrum Scale CSI Operator
+        productVersion: 1.0.0
       labels:
+        app.kubernetes.io/instance: ssco-deployment
+        app.kubernetes.io/managed-by: operator
+        app.kubernetes.io/name: spectrum-scale-csi-operator
         name: ibm-spectrum-scale-csi-operator
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/arch
+                operator: Exists
       containers:
       - command:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-        imagePullPolicy: IfNotPresent
+        image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+        imagePullPolicy: Always
         name: ansible
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -35,9 +57,13 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-        imagePullPolicy: IfNotPresent
+        image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+        imagePullPolicy: Always
         name: operator
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner

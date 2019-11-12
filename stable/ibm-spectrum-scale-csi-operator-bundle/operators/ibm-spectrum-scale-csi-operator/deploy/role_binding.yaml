@@ -1,68 +1,83 @@
-kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
 metadata:
-  name: ibm-spectrum-scale-csi-operator
-subjects:
-- kind: ServiceAccount
+  labels:
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: ibm-spectrum-scale-csi-operator
-  apiGroup: rbac.authorization.k8s.io
-
+subjects:
+- kind: ServiceAccount
+  name: ibm-spectrum-scale-csi-operator
 ---
-kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
+  name: ibm-spectrum-scale-csi-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: ibm-spectrum-scale-csi-operator
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-operator
   namespace: default
-roleRef:
-  kind: ClusterRole
-  name: ibm-spectrum-scale-csi-operator
-  apiGroup: rbac.authorization.k8s.io
-
 ---
-kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/instance: ssco-csi-nodeplugin
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
+  name: csi-nodeplugin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: csi-nodeplugin
 subjects:
 - kind: ServiceAccount
   name: csi-nodeplugin
   namespace: default
-roleRef:
-  kind: ClusterRole
-  name: csi-nodeplugin
-  apiGroup: rbac.authorization.k8s.io
-
 ---
-kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/instance: ssco-external-provisioner-runner
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
+  name: external-provisioner-runner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: external-provisioner-runner
 subjects:
 - kind: ServiceAccount
   name: external-provisioner-runner
   namespace: default
-roleRef:
-  kind: ClusterRole
-  name: external-provisioner-runner
-  apiGroup: rbac.authorization.k8s.io
-
 ---
-
-kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/instance: ssco-external-attacher-runner
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
+  name: external-attacher-runner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: external-attacher-runner
 subjects:
 - kind: ServiceAccount
   name: external-attacher-runner
   namespace: default
-roleRef:
-  kind: ClusterRole
-  name: external-attacher-runner
-  apiGroup: rbac.authorization.k8s.io

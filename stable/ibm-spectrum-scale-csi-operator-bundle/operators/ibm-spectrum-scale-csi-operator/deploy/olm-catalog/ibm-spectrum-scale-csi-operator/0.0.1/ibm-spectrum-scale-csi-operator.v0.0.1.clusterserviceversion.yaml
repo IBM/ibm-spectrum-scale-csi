@@ -1,8 +1,8 @@
-apiVersion: operators.coreos.com/v1alpha1
+apiVersion: operators.coreos.com/v1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"11832033572270148010","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"jdunham-rh72-k8s-scale-master.fyre.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
+    alm-examples: '[{"apiVersion":"scale.ibm.com/v1alpha1","kind":"CSIScaleOperator","metadata":{"labels":{"app.kubernetes.io/instance":"ssco-csi-scale-operator","app.kubernetes.io/managed-by":"operator","app.kubernetes.io/name":"spectrum-scale-csi-operator"},"name":"csi-scale-operator"},"spec":{"clusters":[{"id":"11832033572270148010","primary":{"primaryFS":"fs1","primaryFset":"csiFset2"},"restApi":[{"guiHost":"jdunham-rh72-k8s-scale-master.fyre.ibm.com"}],"secrets":"secret1","secureSslMode":false}],"scaleHostpath":"/ibm/fs1"},"status":{}}]'
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
@@ -12,6 +12,10 @@ metadata:
       providing a means to deploy and manage the CSI plugin for spectrum scale.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
     support: IBM
+  labels:
+    app.kubernetes.io/instance: issco-csv
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v0.0.1
   namespace: placeholder
 spec:
@@ -273,9 +277,21 @@ spec:
                 - /usr/local/bin/ao-logs
                 - /tmp/ansible-operator/runner
                 - stdout
-                image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-                imagePullPolicy: IfNotPresent
+                image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+                imagePullPolicy: Always
+                livenessProbe:
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                  tcpSocket:
+                    port: 8080
                 name: ansible
+                ports:
+                - containerPort: 8080
+                readinessProbe:
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  tcpSocket:
+                    port: 8080
                 resources: {}
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
@@ -292,9 +308,21 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-spectrum-scale-csi-operator
-                image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
-                imagePullPolicy: IfNotPresent
+                image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+                imagePullPolicy: Always
+                livenessProbe:
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                  tcpSocket:
+                    port: 8080
                 name: operator
+                ports:
+                - containerPort: 8080
+                readinessProbe:
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  tcpSocket:
+                    port: 8080
                 resources: {}
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner

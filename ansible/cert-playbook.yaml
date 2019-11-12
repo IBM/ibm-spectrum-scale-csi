@@ -1,7 +1,7 @@
 - name: Run cert
   hosts: localhost
   become: yes
-  gather_facts: false
+  gather_facts: true
   tasks:
     # TODO make this more intelligent.
     - name: Ensure CASE bundle is defined

@@ -25,5 +25,6 @@ echo $HOME
 # Start minikube and chown for minikub.
 sudo chown -R travis: /home/travis/.minikube/
 sudo minikube start --vm-driver=none --kubernetes-version=${KUBE_VERSION}
+minikube update-context
 eval $(minikube docker-env)
 

@@ -5,13 +5,14 @@
     OPERATOR_VERSION: "0.0.1"
     GO_VERSION:       "go1.13"
 
-- name: Ensure 'python3' is installed
-  package:
-    name: "{{packages}}"
-  vars:
-    packages:
-    - python36
-    - python36-pip
+# Something is wrong with this bit.
+#- name: Ensure 'python3' is installed
+#  package:
+#    name: "{{packages}}"
+#  vars:
+#    packages:
+#    - python36
+#    - python36-pip
 
 - name: Ensure 'python3' requirements are installed
   pip: 
