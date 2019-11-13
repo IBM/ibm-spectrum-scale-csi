@@ -33,21 +33,21 @@ spec:
 {% endif %}
           image: '{{ provisioner }}'
           args:
-            - "--provisioner=csi-spectrum-scale"
+            - "--provisioner=ibm-spectrum-scale-csi"
             - "--csi-address=$(ADDRESS)"
             - "--connection-timeout=2m"
             - "--v=5" # Debugging
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
             - name: CHECKSUM
               value: "{{cluster_checksum}}"
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: socket-dir
-              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             type: DirectoryOrCreate
