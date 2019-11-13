@@ -31,11 +31,18 @@
 - debug: var=ocOut.stdout_lines
 - debug: var=ocOut.stderr_lines
 
+- name: Create namespace
+  shell: "kubectl create -f deploy/namespace.yaml"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+  ignore_errors: yes
+
 - name: Run 'operator-sdk' scorecard
   shell: "GO111MODULE=on operator-sdk scorecard {{SC_VARS}}"
   register: scOut
   args:
     chdir: "{{OPERATOR_DIR}}"
+
 - debug: var=scOut.stdout_lines
 - debug: var=scOut.stderr_lines
 
