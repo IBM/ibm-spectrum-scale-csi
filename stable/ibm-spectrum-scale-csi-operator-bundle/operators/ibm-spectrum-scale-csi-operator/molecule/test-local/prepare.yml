@@ -23,6 +23,7 @@
       definition: "{{ lookup('template', '/'.join([deploy_dir, item])) }}"
       namespace: '{{ namespace }}'
     with_items:
+      - namespace.yaml
       - role.yaml
       - role_binding.yaml
       - service_account.yaml
