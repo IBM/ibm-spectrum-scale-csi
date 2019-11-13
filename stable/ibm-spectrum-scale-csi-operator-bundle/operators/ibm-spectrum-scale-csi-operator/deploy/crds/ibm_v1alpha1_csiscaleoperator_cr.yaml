@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
   name: csi-scale-operator
+  namespace: ibm-spectrum-scale-csi-driver
 spec:
   clusters:
   - id: '11832033572270148010'

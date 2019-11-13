@@ -115,7 +115,7 @@ spec:
       volumes:
         - name: plugin-dir
           hostPath:
-            mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             type: DirectoryOrCreate
         - name: registration-dir
           hostPath:
