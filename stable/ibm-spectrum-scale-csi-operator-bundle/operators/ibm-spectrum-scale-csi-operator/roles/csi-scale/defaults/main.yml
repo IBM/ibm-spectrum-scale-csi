@@ -1,8 +1,9 @@
 ---
 # defaults file for ansible-role-csi-scale
-opName: '{{ meta.name | default("csi-spectrum-scale") }}'
+opName: '{{ meta.name | default("ibm-spectrum-scale-csi") }}'
+productName: '{{ meta.product | default("ibm-spectrum-scale-csi") }}'
 namespace: '{{ meta.namespace | default("default") }}'
-storage-class: "csi-spectrum-scale"
+storage-class: "ibm-spectrum-scale-csi"
 
 # Image defaults
 attacher:    "quay.io/k8scsi/csi-attacher:v1.0.0"

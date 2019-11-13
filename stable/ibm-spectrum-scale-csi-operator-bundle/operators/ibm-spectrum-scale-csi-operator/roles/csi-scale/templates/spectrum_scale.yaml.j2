@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: 'spectrum-scale-config-json'
   namespace: '{{ namespace }}'  
+  product: '{{ productName }}'
 data:
   spectrum-scale-config.json: '{ "clusters":  {{ clustersCamelCase | to_json }} }'
 

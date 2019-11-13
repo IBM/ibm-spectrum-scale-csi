@@ -95,6 +95,7 @@ hacks/change_deploy_image.py -i <your-repo>/ibm-spectrum-scale-csi-operator:v0.0
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
 
 ``` bash
+kubectl apply -f deploy/namespace.yaml
 kubectl apply -f deploy/service_account.yaml
 kubectl apply -f deploy/role.yaml
 kubectl apply -f deploy/role_binding.yaml
@@ -141,6 +142,32 @@ spec:
   
   # Image name for the csi spectrum scale plugin container.
   spectrumScale: "quay.io/mew2057/ibm-spectrum-scale-csi-driver:v0.9.0"
+
+  # Node selector for attacher sidecar, can have multiple key value.
+  attacherNodeSelector:
+    - key: "scale"
+      value: "true"
+    - key: "infranode"
+      value: "2"
+
+  # Node selector for provisioner sidecar, can have multiple key value.
+  provisionerNodeSelector:
+    - key: "scale"
+      value: "true"
+    - key: "infranode"
+      value: "2"
+
+  # Node selector for SpectrumScale CSI Plugin, can have multiple key value.
+  pluginNodeSelector:
+    - key: "scale"
+      value: "true"
+
+  # Node mapping between K8s node and SpectrumScale node, can have multiple
+  # values.
+  nodeMapping:
+    - k8sNode: "node1"
+      spectrumscaleNode: "scaleNode1"
+
   # ----
   
   # Required
@@ -165,9 +192,15 @@ spec:
       # The primary file system for the GPFS cluster
       primary:
         # The name of the primary filesystem.
-        primaryFS: "fs1"
+        primaryFs: "fs1"
         # The name of the primary fileset, created in primaryFS.
         primaryFset: "csiFset2"
+        # Inode Limit for Primary Fileset
+        inodeLimit: "1024"
+        # Remote cluster ID
+        remoteCluster: "2120508922778391121"
+        # Filesystem name on remote cluster.
+        remoteFs: "gpfs2"
         
       # A collection of targets for REST calls.
       restApi:
@@ -204,6 +237,7 @@ kubectl delete -f deploy/role.yaml
 kubectl delete -f deploy/role_binding.yaml
 kubectl delete -f deploy/service_account.yaml
 kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
+kubectl delete -f deploy/namespace.yaml
 ```
 
 Please note, this will completely destroy the operator and all associated resources.

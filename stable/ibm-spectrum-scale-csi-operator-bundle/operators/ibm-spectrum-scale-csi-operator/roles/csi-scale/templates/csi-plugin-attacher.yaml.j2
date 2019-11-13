@@ -3,17 +3,20 @@ apiVersion: apps/v1
 metadata:
   name: "{{ opName }}-attacher"
   namespace: "{{ namespace }}"
+  labels:
+    product: "{{ productName }}"
 spec:
   serviceName: "{{ opName }}-attacher"
   replicas: 1
   selector:
     matchLabels:
       app: "{{ opName }}-attacher"
+      product: ibm-spectrum-scale-csi
   template:
     metadata:
       labels:
         app: "{{ opName }}-attacher"
-        product: ibm-spectrum-scale-csi
+        product: "{{ productName }}"
     spec:
 {% if attacherNodeSelector|length > 0 %}
       nodeSelector:
@@ -21,7 +24,7 @@ spec:
         {{ attacherNodeSelect.key }}: "{{ attacherNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: external-attacher-runner
+      serviceAccount: "{{ productName }}-attacher-sa"
       containers:
         - name: "{{ opName }}-attacher"
 {% if 'apps.openshift.io' in api_groups %}

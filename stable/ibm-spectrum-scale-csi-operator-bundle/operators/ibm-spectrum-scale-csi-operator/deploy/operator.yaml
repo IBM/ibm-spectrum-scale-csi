@@ -67,7 +67,7 @@ spec:
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
-      serviceAccountName: ibm-spectrum-scale-csi-operator
+      serviceAccountName: ibm-spectrum-scale-csi-operator-sa
       volumes:
       - emptyDir: {}
         name: runner

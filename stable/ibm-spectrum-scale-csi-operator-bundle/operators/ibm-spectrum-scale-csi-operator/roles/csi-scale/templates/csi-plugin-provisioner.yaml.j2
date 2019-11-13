@@ -3,17 +3,20 @@ apiVersion: apps/v1
 metadata:
   name: '{{ opName }}-provisioner'
   namespace: '{{ namespace }}'
+  labels:
+    product: '{{ productName }}'
 spec:
   serviceName: '{{ opName }}-provisioner'
   replicas: 1
   selector:
     matchLabels:
       app: "{{ opName }}-provisioner"
+      product: '{{ productName }}'
   template:
     metadata:
       labels:
         app: '{{ opName }}-provisioner'
-        product: ibm-spectrum-scale-csi
+        product: '{{ productName }}'
     spec:
 {% if provisionerNodeSelector|length > 0 %}
       nodeSelector:
@@ -21,7 +24,7 @@ spec:
         {{ provisionerNodeSelect.key }}: "{{ provisionerNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: external-provisioner-runner
+      serviceAccount: "{{ productName }}-provisioner-sa"
       containers:
         - name: csi-provisioner
 {% if 'apps.openshift.io' in api_groups %}
