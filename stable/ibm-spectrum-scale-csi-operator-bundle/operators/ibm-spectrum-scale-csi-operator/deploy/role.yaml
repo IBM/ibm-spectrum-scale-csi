@@ -8,8 +8,6 @@ metadata:
     app.kubernetes.io/name: spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
   name: ibm-spectrum-scale-csi-operator-role
-  namespace: ibm-spectrum-scale-csi-driver
-
 rules:
 - apiGroups:
   - ''
@@ -49,12 +47,6 @@ rules:
   - deployments/finalizers
   verbs:
   - update
-- apiGroups:
-  - ''
-  resources:
-  - pods
-  verbs:
-  - get
 - apiGroups:
   - apps
   resources:

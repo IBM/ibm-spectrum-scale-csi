@@ -6,15 +6,15 @@ metadata:
       kind\": \"CSIScaleOperator\",\n    \"metadata\": {\n      \"labels\": {\n  \
       \      \"app.kubernetes.io/instance\": \"ssco-custom-resource\",\n        \"\
       app.kubernetes.io/managed-by\": \"operator\",\n        \"app.kubernetes.io/name\"\
-      : \"spectrum-scale-csi-operator\"\n      },\n      \"name\": \"csi-scale-operator\"\
+      : \"spectrum-scale-csi-operator\"\n      },\n      \"name\": \"ibm-spectrum-scale-csi\"\
       ,\n      \"namespace\": \"ibm-spectrum-scale-csi-driver\"\n    },\n    \"spec\"\
       : {\n      \"clusters\": [\n        {\n          \"id\": \"11832033572270148010\"\
       ,\n          \"primary\": {\n            \"primaryFs\": \"fs1\",\n         \
       \   \"primaryFset\": \"csiFset2\"\n          },\n          \"restApi\": [\n\
       \            {\n              \"guiHost\": \"jdunham-rh72-k8s-scale-master.fyre.ibm.com\"\
       \n            }\n          ],\n          \"secrets\": \"secret1\",\n       \
-      \   \"secureSslMode\": false\n        }\n      ],\n      \"scaleHostpath\":\
-      \ \"/ibm/fs1\"\n    },\n    \"status\": {}\n  }\n]"
+      \   \"secureSslMode\": false\n        }\n      ]\n    },\n    \"status\": {}\n\
+      \  }\n]"
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
@@ -189,12 +189,6 @@ spec:
           - deployments/finalizers
           verbs:
           - update
-        - apiGroups:
-          - ''
-          resources:
-          - pods
-          verbs:
-          - get
         - apiGroups:
           - apps
           resources:
@@ -445,12 +439,6 @@ spec:
           verbs:
           - update
         - apiGroups:
-          - ''
-          resources:
-          - pods
-          verbs:
-          - get
-        - apiGroups:
           - apps
           resources:
           - replicasets
@@ -462,7 +450,7 @@ spec:
           - '*'
           verbs:
           - '*'
-        serviceAccountName: ibm-spectrum-scale-csi-operator
+        serviceAccountName: ibm-spectrum-scale-csi-operator-role
     strategy: deployment
   installModes:
   - supported: true
