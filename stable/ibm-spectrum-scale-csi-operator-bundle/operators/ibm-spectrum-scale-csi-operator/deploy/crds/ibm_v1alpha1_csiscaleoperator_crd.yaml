@@ -116,12 +116,12 @@ spec:
                     description: The primary file system for the GPFS cluster.
                     properties:
 
-                      primaryFS:
+                      primaryFs:
                         description: The name of the primary filesystem.
                         type: string
 
                       primaryFset:
-                        description: The name of the primary fileset, created in primaryFS.
+                        description: The name of the primary fileset, created in primaryFs.
                         type: string
 
                       inodeLimit:

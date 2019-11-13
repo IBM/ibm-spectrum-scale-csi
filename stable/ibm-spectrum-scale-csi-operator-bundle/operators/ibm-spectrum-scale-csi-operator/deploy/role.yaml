@@ -1,12 +1,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   creationTimestamp: null
   labels:
     app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-operator-role
+  namespace: ibm-spectrum-scale-csi-driver
+
 rules:
 - apiGroups:
   - ''
@@ -64,26 +67,6 @@ rules:
   - '*'
   verbs:
   - '*'
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: operator
-    app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator
-rules:
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims
-  - persistentvolumes
-  - configmaps
-  - secrets
-  - services/finalizers
-  verbs:
-  - '*'
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -99,7 +82,9 @@ metadata:
     app.kubernetes.io/instance: ssco-csi-nodeplugin
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: csi-nodeplugin
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-node-role
+
 rules:
 - apiGroups:
   - ''
@@ -142,7 +127,8 @@ metadata:
     app.kubernetes.io/instance: ssco-external-attacher-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: external-attacher-runner
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-attacher-role
 rules:
 - apiGroups:
   - ''
@@ -187,7 +173,8 @@ metadata:
     app.kubernetes.io/instance: ssco-external-provisioner-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: external-provisioner-runner
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-provisioner-role
 rules:
 - apiGroups:
   - ''

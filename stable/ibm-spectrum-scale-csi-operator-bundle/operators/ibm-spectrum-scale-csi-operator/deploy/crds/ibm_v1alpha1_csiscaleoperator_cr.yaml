@@ -10,7 +10,7 @@ spec:
   clusters:
   - id: '11832033572270148010'
     primary:
-      primaryFS: fs1
+      primaryFs: fs1
       primaryFset: csiFset2
     restApi:
     - guiHost: jdunham-rh72-k8s-scale-master.fyre.ibm.com
