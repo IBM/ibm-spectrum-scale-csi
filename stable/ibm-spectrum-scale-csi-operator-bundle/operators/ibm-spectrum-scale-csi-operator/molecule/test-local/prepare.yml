@@ -20,7 +20,7 @@
 
   - name: Modify the RoleBinding for this namespace
     replace:
-      path:  "{{ lookup('template', '/'.join([deploy_dir, 'role_binding.yaml'])) }}"
+      path:  "{{ '/'.join([deploy_dir, 'role_binding.yaml'])) }}"
       regexp: "(.*)ibm-spectrum-scale-csi-driver(.*)"
       replace: '\1{{ namespace }}\2'
 
