@@ -13,8 +13,8 @@ metadata:
       \   \"primaryFset\": \"csiFset2\"\n          },\n          \"restApi\": [\n\
       \            {\n              \"guiHost\": \"jdunham-rh72-k8s-scale-master.fyre.ibm.com\"\
       \n            }\n          ],\n          \"secrets\": \"secret1\",\n       \
-      \   \"secureSslMode\": false\n        }\n      ]\n    },\n    \"status\": {}\n\
-      \  }\n]"
+      \   \"secureSslMode\": false\n        }\n      ],\n      \"scaleHostpath\":\
+      \ \"/ibm/fs1\"\n    },\n    \"status\": {}\n  }\n]"
     capabilities: Basic Install
     categories: Storage
     certified: 'false'

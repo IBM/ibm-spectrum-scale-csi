@@ -9,6 +9,7 @@ metadata:
   namespace: ibm-spectrum-scale-csi-driver
 status: {}
 spec:
+  scaleHostpath: "/ibm/fs1"
   clusters:
   - id: "11832033572270148010"
     secrets: "secret1"

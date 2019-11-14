@@ -187,6 +187,8 @@ spec:
             spectrumScale:
               description: Image name for the csi spectrum scale plugin container.
               type: string
+          required:
+            - scaleHostpath
           type: object
         status:
           properties:
