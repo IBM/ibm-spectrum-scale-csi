@@ -30,7 +30,7 @@ provisioner:
   inventory:
     group_vars:
       all:
-        namespace: ${TEST_NAMESPACE:-osdk-test}
+        namespace: ibm-spectrum-scale-csi-driver
   env:
     K8S_AUTH_KUBECONFIG: /tmp/molecule/kind-test-local/kubeconfig
     KUBECONFIG: /tmp/molecule/kind-test-local/kubeconfig
