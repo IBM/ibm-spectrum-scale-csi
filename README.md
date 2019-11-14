@@ -62,7 +62,7 @@ cd stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-cs
 export GO111MODULE="on"
 operator-sdk build csi-scale-operator
 
-docker tag csi-scale-operator quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1
+docker tag csi-scale-operator quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
 ```
 
 >**NOTE** This requires `docker`.
@@ -79,11 +79,11 @@ If you're using quay, we recommend doing the [Quay Tutorial](https://quay.io/tut
 
 Once you have a repository ready and you've logged you can tag and push your image:
 ``` bash
-docker tag csi-scale-operator <your-repo>/ibm-spectrum-scale-csi-operator:v0.0.1
-docker push <your-repo>/ibm-spectrum-scale-csi-operator:v0.0.1
+docker tag csi-scale-operator <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
+docker push <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
 
 # This will update your deployment to point at your image.
-hacks/change_deploy_image.py -i <your-repo>/ibm-spectrum-scale-csi-operator:v0.0.1
+hacks/change_deploy_image.py -i <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
 ```
 
 ## Deploying the Operator
