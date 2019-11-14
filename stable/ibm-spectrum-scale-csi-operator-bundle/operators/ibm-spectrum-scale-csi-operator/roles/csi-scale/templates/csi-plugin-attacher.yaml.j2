@@ -24,7 +24,7 @@ spec:
         {{ attacherNodeSelect.key }}: "{{ attacherNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: "{{ productName }}-attacher-sa"
+      serviceAccount: "{{ productName }}-attacher"
       containers:
         - name: "{{ opName }}-attacher"
 {% if 'apps.openshift.io' in api_groups %}

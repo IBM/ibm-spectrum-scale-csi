@@ -24,7 +24,7 @@ spec:
         {{ provisionerNodeSelect.key }}: "{{ provisionerNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: "{{ productName }}-provisioner-sa"
+      serviceAccount: "{{ productName }}-provisioner"
       containers:
         - name: csi-provisioner
 {% if 'apps.openshift.io' in api_groups %}

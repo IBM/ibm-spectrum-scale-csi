@@ -18,7 +18,7 @@ metadata:
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
-    containerImage: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
+    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
     createdAt: Wed Oct  9 06:41:31 MST 2019
     description: The IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster
       providing a means to deploy and manage the CSI plugin for spectrum scale.
@@ -154,51 +154,8 @@ spec:
         - apiGroups:
           - ''
           resources:
-          - pods
-          - persistentvolumeclaims
-          - services
-          - endpoints
-          - events
-          - configmaps
           - secrets
           - secrets/status
-          - services/finalizers
-          verbs:
-          - '*'
-        - apiGroups:
-          - apps
-          resources:
-          - deployments
-          - daemonsets
-          - replicasets
-          - statefulsets
-          verbs:
-          - '*'
-        - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - servicemonitors
-          verbs:
-          - get
-          - create
-        - apiGroups:
-          - apps
-          resourceNames:
-          - ibm-spectrum-scale-csi-operator
-          resources:
-          - deployments/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - apps
-          resources:
-          - replicasets
-          verbs:
-          - get
-        - apiGroups:
-          - scale.ibm.com
-          resources:
-          - '*'
           verbs:
           - '*'
         - apiGroups:
@@ -208,7 +165,7 @@ spec:
           - storageclasses
           verbs:
           - '*'
-        serviceAccountName: ibm-spectrum-scale-csi-operator-role
+        serviceAccountName: ibm-spectrum-scale-csi-operator
       - rules:
         - apiGroups:
           - ''
@@ -243,7 +200,7 @@ spec:
           - list
           - watch
           - update
-        serviceAccountName: ibm-spectrum-scale-csi-node-role
+        serviceAccountName: ibm-spectrum-scale-csi-node
       - rules:
         - apiGroups:
           - ''
@@ -280,7 +237,7 @@ spec:
           - list
           - watch
           - update
-        serviceAccountName: ibm-spectrum-scale-csi-attacher-role
+        serviceAccountName: ibm-spectrum-scale-csi-attacher
       - rules:
         - apiGroups:
           - ''
@@ -326,7 +283,7 @@ spec:
           - create
           - update
           - patch
-        serviceAccountName: ibm-spectrum-scale-csi-provisioner-role
+        serviceAccountName: ibm-spectrum-scale-csi-provisioner
       deployments:
       - name: ibm-spectrum-scale-csi-operator
         spec:
@@ -340,7 +297,7 @@ spec:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
                 productName: IBM Spectrum Scale CSI Operator
-                productVersion: 1.0.0
+                productVersion: 0.9.1
               labels:
                 app.kubernetes.io/instance: ssco-deployment
                 app.kubernetes.io/managed-by: operator
@@ -360,7 +317,7 @@ spec:
                 - /usr/local/bin/ao-logs
                 - /tmp/ansible-operator/runner
                 - stdout
-                image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
                 imagePullPolicy: IfNotPresent
                 name: ansible
                 resources: {}
@@ -383,7 +340,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-spectrum-scale-csi-operator
-                image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
                 imagePullPolicy: IfNotPresent
                 name: operator
                 resources: {}
@@ -394,7 +351,7 @@ spec:
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
-              serviceAccountName: ibm-spectrum-scale-csi-operator-sa
+              serviceAccountName: ibm-spectrum-scale-csi-operator
               volumes:
               - emptyDir: {}
                 name: runner
@@ -450,7 +407,7 @@ spec:
           - '*'
           verbs:
           - '*'
-        serviceAccountName: ibm-spectrum-scale-csi-operator-role
+        serviceAccountName: ibm-spectrum-scale-csi-operator
     strategy: deployment
   installModes:
   - supported: true

@@ -18,7 +18,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 1.0.0
+        productVersion: 0.9.1
       labels:
         app.kubernetes.io/instance: ssco-deployment
         app.kubernetes.io/managed-by: operator
@@ -38,7 +38,7 @@ spec:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
         imagePullPolicy: IfNotPresent
         name: ansible
         securityContext:
@@ -60,7 +60,7 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
         imagePullPolicy: IfNotPresent
         name: operator
         securityContext:
@@ -70,7 +70,7 @@ spec:
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
-      serviceAccountName: ibm-spectrum-scale-csi-operator-sa
+      serviceAccountName: ibm-spectrum-scale-csi-operator
       volumes:
       - emptyDir: {}
         name: runner

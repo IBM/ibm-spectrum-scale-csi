@@ -22,7 +22,7 @@ spec:
         {{ pluginNodeSelect.key }}: "{{ pluginNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: "{{ productName }}-node-sa"
+      serviceAccount: "{{ productName }}-node"
       hostNetwork: true
       containers:
         - name: driver-registrar
