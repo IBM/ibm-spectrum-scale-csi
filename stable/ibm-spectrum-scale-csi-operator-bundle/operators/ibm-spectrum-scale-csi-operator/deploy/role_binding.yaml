@@ -33,7 +33,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-operator
-  namespace: metadata.namespace
+  namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -52,7 +52,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-node
-  namespace: metadata.namespace
+  namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -71,7 +71,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-provisioner
-  namespace: metadata.namespace
+  namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -90,4 +90,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-attacher
-  namespace: metadata.namespace
+  namespace: ibm-spectrum-scale-csi-driver
