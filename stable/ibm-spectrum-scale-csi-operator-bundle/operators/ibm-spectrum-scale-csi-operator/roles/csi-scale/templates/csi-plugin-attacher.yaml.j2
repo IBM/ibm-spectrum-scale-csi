@@ -3,17 +3,20 @@ apiVersion: apps/v1
 metadata:
   name: "{{ opName }}-attacher"
   namespace: "{{ namespace }}"
+  labels:
+    product: "{{ productName }}"
 spec:
   serviceName: "{{ opName }}-attacher"
   replicas: 1
   selector:
     matchLabels:
       app: "{{ opName }}-attacher"
+      product: "{{ productName }}"
   template:
     metadata:
       labels:
         app: "{{ opName }}-attacher"
-        product: ibm-spectrum-scale-csi
+        product: "{{ productName }}"
     spec:
 {% if attacherNodeSelector|length > 0 %}
       nodeSelector:
@@ -21,7 +24,7 @@ spec:
         {{ attacherNodeSelect.key }}: "{{ attacherNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: external-attacher-runner
+      serviceAccount: "{{ productName }}-attacher"
       containers:
         - name: "{{ opName }}-attacher"
 {% if 'apps.openshift.io' in api_groups %}
@@ -36,15 +39,15 @@ spec:
             - "--resync=10m" # Added
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
             - name: CHECKSUM
               value: "{{cluster_checksum}}"
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: socket-dir
-              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             type: DirectoryOrCreate

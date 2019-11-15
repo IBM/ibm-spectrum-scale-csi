@@ -1,0 +1,17 @@
+
+[all:vars]
+# Operator details.
+OPERATOR_NAME=ibm-spectrum-scale-csi-operator
+OPERATOR_VERSION=0.9.1
+OPERATOR_DIR=../stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+OP_PKG=ibm-spectrum-scale-csi-operator-app.zip
+
+# Assumed to be in the "deploy" directory.
+ADDITIONAL_RESOURCES=["service_account.yaml", "role_binding.yaml"]
+
+# Assumed to be in the "deploy" directory.
+CRD_LIST=["ibm_v1alpha1_csiscaleoperator_crd.yaml"]
+
+# Socrecard Variables FIXME
+SC_VARS="--config .osdk-scorecard.yaml"
+

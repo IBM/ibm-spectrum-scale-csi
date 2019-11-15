@@ -5,7 +5,9 @@ metadata:
     app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
+    product: ibm-spectrum-scale-csi
   name: ibm-spectrum-scale-csi-operator
+  namespace: ibm-spectrum-scale-csi-driver
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -21,7 +23,9 @@ metadata:
     app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
+    product: ibm-spectrum-scale-csi
   name: ibm-spectrum-scale-csi-operator
+  namespace: ibm-spectrum-scale-csi-driver
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -29,7 +33,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-operator
-  namespace: default
+  namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -38,15 +42,17 @@ metadata:
     app.kubernetes.io/instance: ssco-csi-nodeplugin
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: csi-nodeplugin
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-node
+  namespace: ibm-spectrum-scale-csi-driver
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: csi-nodeplugin
+  name: ibm-spectrum-scale-csi-node
 subjects:
 - kind: ServiceAccount
-  name: csi-nodeplugin
-  namespace: default
+  name: ibm-spectrum-scale-csi-node
+  namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -55,15 +61,17 @@ metadata:
     app.kubernetes.io/instance: ssco-external-provisioner-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: external-provisioner-runner
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-provisioner
+  namespace: ibm-spectrum-scale-csi-driver
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: external-provisioner-runner
+  name: ibm-spectrum-scale-csi-provisioner
 subjects:
 - kind: ServiceAccount
-  name: external-provisioner-runner
-  namespace: default
+  name: ibm-spectrum-scale-csi-provisioner
+  namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -72,12 +80,14 @@ metadata:
     app.kubernetes.io/instance: ssco-external-attacher-runner
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: spectrum-scale-csi-operator
-  name: external-attacher-runner
+    product: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-attacher
+  namespace: ibm-spectrum-scale-csi-driver
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: external-attacher-runner
+  name: ibm-spectrum-scale-csi-attacher
 subjects:
 - kind: ServiceAccount
-  name: external-attacher-runner
-  namespace: default
+  name: ibm-spectrum-scale-csi-attacher
+  namespace: ibm-spectrum-scale-csi-driver

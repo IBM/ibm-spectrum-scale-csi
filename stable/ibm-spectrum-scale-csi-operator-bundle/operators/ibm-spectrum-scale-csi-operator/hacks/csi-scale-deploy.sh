@@ -22,10 +22,11 @@ then
     hacks/change_deploy_image.py -i ${REPO}csi-scale-operator:latest
 fi 
 
+kubectl apply -f deploy/namespace.yaml
 kubectl apply -f deploy/role.yaml
 kubectl apply -f deploy/service_account.yaml
 kubectl apply -f deploy/role_binding.yaml
 kubectl apply -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl apply -f deploy/operator.yaml
-kubectl apply -f example/spectrum_scale.yaml
+#kubectl apply -f example/spectrum_scale.yaml
 
