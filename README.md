@@ -215,6 +215,16 @@ spec:
 ```
 > **NOTE** : Work is ongoing to reduce the amount end users need to populate.
 
+Before starting the pluging be sure to add any secrets to the appropriate namespace, the default
+namespace is `ibm-spectrum-scale-csi-driver`:
+
+``` bash
+kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
+```
+
+> **ATTENTION** : If the driver pod doesn't start, it's generally because the secrets haven't been created.
+
+
 To acutally start the CSI Plugin run the following command
 
 ``` bash
