@@ -7,9 +7,10 @@ import os
 import yaml
 
 DEFAULT_DEPLOY="{0}/../deploy/operator.yaml".format(os.path.dirname(os.path.realpath(__file__)))
-DEFAULT_IMAGE="quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.0.1"
+DEFAULT_IMAGE="quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1"
 DEV_PULL="Always"
 REL_PULL="IfNotPresent"
+NEV_PULL="Never"
 
 def change_image(operator=DEFAULT_DEPLOY, output=DEFAULT_DEPLOY, image=DEFAULT_IMAGE, pullpolicy=REL_PULL ):
   with open(operator, 'r') as stream:
@@ -45,6 +46,15 @@ This should be used when deploying a custom image.
       default=DEFAULT_IMAGE,
       help='''The new image, defaults to "official" image.''')
 
+  parser.add_argument( '--ifnotpresent',  dest='ifnotpresent', 
+      action='store_true',
+      help='''A flag to set image pull to ifnotpresent.''')
+
+  parser.add_argument( '--neverpull',  dest='neverpull', 
+      action='store_true',
+      help='''A flag to set never pull the image, takes precedence.''')
+
+
   parser.add_argument( '--output', metavar='output', dest='output',
      default=DEFAULT_DEPLOY,
      help='''Where to save the deployment, if unset overwrites deployment.''')
@@ -66,7 +76,10 @@ This should be used when deploying a custom image.
       output ="{0}/{1}".format(os.getcwd(), output)
 
   image      = args.image
-  pullpolicy = DEV_PULL if image != DEFAULT_IMAGE else REL_PULL
+  pullpolicy = REL_PULL if (image == DEFAULT_IMAGE or args.ifnotpresent) else DEV_PULL
+
+  if args.neverpull:
+    pullpolicy = NEV_PULL
 
   change_image(operator, output, image, pullpolicy)
 

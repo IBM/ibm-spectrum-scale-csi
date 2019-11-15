@@ -9,6 +9,10 @@
     command: docker images -q {{ image_name }}
     register: prev_hash
     changed_when: false
+
+  - name: Check if CI
+    set_fact:
+      CI: lookup('env', 'CI')
     
   - name: Build Operator Image
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
@@ -59,6 +63,9 @@
         namespace: '{{ namespace }}'
         definition: '{{ custom_resource }}'
 
+    - debug:
+        var: namespace
+
     - name: Wait 60s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
@@ -84,7 +91,7 @@
           resource_name=custom_resource.metadata.name
         )}}'
 
-    - name: debug memcached lookup
+    - name: debug spectrum-scale-csi-operator lookup
       ignore_errors: yes
       failed_when: false
       debug:
@@ -94,8 +101,20 @@
           kind="Deployment",
           api_version="apps/v1",
           namespace=namespace,
-          label_selector="app=memcached"
+          label_selector="app.kubernetes.io/name=spectrum-scale-csi-operator"
         )}}'
+
+    - name : debug pods lookup
+      ignore_errors: yes
+      failed_when: false
+      debug:
+        var: deploy
+      vars:
+        deploy: '{{ lookup("k8s",
+          kind="pods",
+          namespace=namespace
+        )}}'
+
 
     - name: get operator logs
       ignore_errors: yes

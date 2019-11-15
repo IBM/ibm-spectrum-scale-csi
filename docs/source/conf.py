@@ -22,7 +22,7 @@ copyright = '2019, IBM'
 author = 'John Dunham'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.9.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -66,7 +66,7 @@ source_suffix = ['.md', '.rst']
 source_parsers = { '.md' : 'recommonmark.parser.CommonMarkParser' }
 
 
- collection of substitutions.
+# collection of substitutions.
 rst_epilog="""
 .. |driver-repo| replace:: GitHubDriver_
 .. |operator-repo| replace:: GitHubOperator_

@@ -15,7 +15,9 @@ Spectrum Scale GUI Setup
 > **NOTE:** This step only needs to be preformed once per GUI.
 
 1. Ensure the Spectrum Scale GUI is running by pointing your browser to the IP hosting the GUI:
-    ![Spectrum Scale GUI login](https://user-images.githubusercontent.com/1195452/67230992-6d2d9700-f40c-11e9-96d5-3f0e5bcb2d9a.png)
+
+    ![](https://user-images.githubusercontent.com/1195452/67230992-6d2d9700-f40c-11e9-96d5-3f0e5bcb2d9a.png)
+
     > If you do not see a login follow on screen instructions, or review the [GUI Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.3/com.ibm.spectrum.scale.v5r03.doc/bl1ins_quickrefforgui.htm)
 
 

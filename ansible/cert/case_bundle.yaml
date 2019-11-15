@@ -1,5 +1,0 @@
----
-- name: Ensure new bundle.
-  shell: casectl new "{{OPERATOR_NAME}}"
-  args:
-    creates: "{{OPERATOR_NAME}}-bundle"

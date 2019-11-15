@@ -8,7 +8,9 @@ Welcome to IBM Spectrum Scale CSI Operator's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   ./quickstart.md
+   ./olm.md
 
 
 

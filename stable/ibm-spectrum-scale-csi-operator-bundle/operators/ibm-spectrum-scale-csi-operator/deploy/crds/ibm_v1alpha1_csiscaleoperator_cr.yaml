@@ -1,20 +1,21 @@
 apiVersion: scale.ibm.com/v1alpha1
-kind: 'CSIScaleOperator'
-metadata: 
-    # IMPORTANT THE OPERATOR LOOKS FOR THIS!
-    name: 'csi-scale-operator'
+kind: 'CSIScaleOperator' 
+metadata:
+  labels:
+    app.kubernetes.io/instance: ssco-custom-resource
+    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/name: spectrum-scale-csi-operator
+  name: 'ibm-spectrum-scale-csi'
+  namespace: ibm-spectrum-scale-csi-driver
 status: {}
-spec: 
-  # 
+spec:
   scaleHostpath: "/ibm/fs1"
-
-  clusters: 
-    - id: "11832033572270148010"
-      secrets: "secret1"
-      secureSslMode: false
-      primary:
-        primaryFS: "fs1"
-        primaryFset: "csiFset2"
-      restApi: 
-      - guiHost: "jdunham-rh72-k8s-scale-master.fyre.ibm.com"
-
+  clusters:
+  - id: "11832033572270148010"
+    secrets: "secret1"
+    secureSslMode: false
+    primary:
+      primaryFs: "fs1"
+      primaryFset: "csiFset2"
+    restApi:
+    - guiHost: "jdunham-rh72-k8s-scale-master.fyre.ibm.com" 
