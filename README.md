@@ -89,6 +89,8 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 
 ### Option A: Manually
 
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
 
 ``` bash
@@ -104,9 +106,11 @@ At this point the operator is running and ready for use!
 
 ### Option B: Using OLM
 
-> **NOTE** : This will be the prefered method, however, work is ongoing.
+> **NOTE**: This will be the prefered method.  However, work is ongoing.
 
-The following will subsrcibe the [quay.io](quay.io) version of the operator assuming OLM is installed.
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
+The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
 ``` bash
 kubectl apply -f deploy/olm-test/operator-source.yaml
@@ -114,129 +118,27 @@ kubectl apply -f deploy/olm-test/operator-source.yaml
 
 ## Starting the CSI Driver
 
-Once the operator is running the user needs to access the operator's API and request a deployment. This is done through
-use of the `CSIScaleOperator` Custom Resource. This resource will be tuned to your environment. A sample of the file is given:
+Once the operator is running the user needs to access the operator's API and request a deployment. This is done through use of the `CSIScaleOperator` Custom Resource. 
 
-``` YAML
-# spectrum_scale.yaml
-
-apiVersion: scale.ibm.com/v1alpha1
-kind: 'CSIScaleOperator'
-metadata:
-    name: 'csi-scale-operator'
-status: {}
-spec:
-  # Optional
-  # ----
-  # Attacher image for csi (actually attaches to the storage).
-  attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
-  
-  # Provisioner image for csi (actually issues provision requests).
-  provisioner:"quay.io/k8scsi/csi-provisioner:v1.0.0"
-  
-  # Sidecar container image for the csi spectrum scale plugin pods.
-  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
-  
-  # Image name for the csi spectrum scale plugin container.
-  spectrumScale: "quay.io/mew2057/ibm-spectrum-scale-csi-driver:v0.9.0"
-
-  # Node selector for attacher sidecar, can have multiple key value.
-  attacherNodeSelector:
-    - key: "scale"
-      value: "true"
-    - key: "infranode"
-      value: "2"
-
-  # Node selector for provisioner sidecar, can have multiple key value.
-  provisionerNodeSelector:
-    - key: "scale"
-      value: "true"
-    - key: "infranode"
-      value: "2"
-
-  # Node selector for SpectrumScale CSI Plugin, can have multiple key value.
-  pluginNodeSelector:
-    - key: "scale"
-      value: "true"
-
-  # Node mapping between K8s node and SpectrumScale node, can have multiple
-  # values.
-  nodeMapping:
-    - k8sNode: "node1"
-      spectrumscaleNode: "scaleNode1"
-
-  # ----
-  
-  # Required
-  # ----
-  # The path to the gpfs file system mounted on the host machine.
-  scaleHostpath: "/ibm/fs1"
-
-  # A collection of gpfs cluster properties for the csi driver to mount.
-  clusters:
-    # The cluster id of the gpfs cluster specified (mandatory).
-    - id: "2120508922778391120"
-      
-      # A string specifying a secret resource name.
-      secrets: "secret1"
-      
-      # Require a secure SSL connection to connect to GPFS.
-      secureSslMode: false
-      
-      # A string specifying a cacert resource name.
-      # cacert: <>
-      
-      # The primary file system for the GPFS cluster
-      primary:
-        # The name of the primary filesystem.
-        primaryFs: "fs1"
-        # The name of the primary fileset, created in primaryFS.
-        primaryFset: "csiFset2"
-        # Inode Limit for Primary Fileset
-        inodeLimit: "1024"
-        # Remote cluster ID
-        remoteCluster: "2120508922778391121"
-        # Filesystem name on remote cluster.
-        remoteFs: "gpfs2"
-        
-      # A collection of targets for REST calls.
-      restApi:
-        # The hostname of the REST server.
-        - guiHost: "GUI_HOST"
-        
-          # The port number running the REST server.
-          # guiPort
-        
-  # ----
-
-```
-> **NOTE** : Work is ongoing to reduce the amount end users need to populate.
-
-Before starting the pluging be sure to add any secrets to the appropriate namespace, the default
-namespace is `ibm-spectrum-scale-csi-driver`:
+Before starting the pluging, add any secrets to the appropriate namespace, the Spectrum Scale namespace is `ibm-spectrum-scale-csi-driver`:
 
 ``` bash
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-> **ATTENTION** : If the driver pod doesn't start, it's generally because the secrets haven't been created.
+> **ATTENTION** : If the driver pod does not start, it is generally due to missing secrets. 
 
+A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). Modify this file to match the properties in your environment, then:
 
-To acutally start the CSI Plugin run the following command
-
-``` bash
-kubectl apply -f spectrum_scale.yaml
-```
-
-To stop the CSI plugin you can run:
-
-``` bash
-kubectl delete -f spectrum_scale.yaml
-```
+  * To start the CSI plugin run: `kubectl apply -f spectrum_scale.yaml` 
+  * To stop the CSI plugin, run: `kubectl delete -f spectrum_scale.yaml` 
 
 ## Uninstalling the CSI Operator
 
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
 To remove the operator:
+
 ``` bash
 kubectl delete -f deploy/spectrum_scale.yaml
 kubectl delete -f deploy/operator.yaml
