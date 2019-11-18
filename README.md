@@ -71,7 +71,7 @@ Once you have a repository ready:
 
 ``` bash
 # Authenticate to quay.io
-docker login <credentials>  quay.io
+docker login <credentials> quay.io
 
 # Tag the build 
 docker tag csi-scale-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
@@ -89,8 +89,6 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 
 ### Option A: Manually
 
-> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
-
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
 
 ``` bash
@@ -102,40 +100,42 @@ kubectl apply -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl apply -f deploy/operator.yaml
 ```
 
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
 At this point the operator is running and ready for use!
 
 ### Option B: Using OLM
 
 > **NOTE**: This will be the prefered method.  However, work is ongoing.
 
-> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
-
 The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
 ``` bash
 kubectl apply -f deploy/olm-test/operator-source.yaml
 ```
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
 
 ## Starting the CSI Driver
 
 Once the operator is running the user needs to access the operator's API and request a deployment. This is done through use of the `CSIScaleOperator` Custom Resource. 
 
-Before starting the pluging, add any secrets to the appropriate namespace, the Spectrum Scale namespace is `ibm-spectrum-scale-csi-driver`:
+> **ATTENTION** : If the driver pod does not start, it is generally due to missing secrets. 
+
+Before starting the plugin, add any secrets to the appropriate namespace.  The Spectrum Scale namespace is `ibm-spectrum-scale-csi-driver`:
 
 ``` bash
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-> **ATTENTION** : If the driver pod does not start, it is generally due to missing secrets. 
+A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). 
 
-A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). Modify this file to match the properties in your environment, then:
+Modify this file to match the properties in your environment, then:
 
-  * To start the CSI plugin run: `kubectl apply -f spectrum_scale.yaml` 
+  * To start the CSI plugin, run: `kubectl apply -f spectrum_scale.yaml` 
   * To stop the CSI plugin, run: `kubectl delete -f spectrum_scale.yaml` 
 
 ## Uninstalling the CSI Operator
-
-> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
 
 To remove the operator:
 
@@ -149,6 +149,8 @@ kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl delete -f deploy/namespace.yaml
 ```
 
-Please note, this will completely destroy the operator and all associated resources.
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
+This will completely destroy the operator and all associated resources.
 
 
