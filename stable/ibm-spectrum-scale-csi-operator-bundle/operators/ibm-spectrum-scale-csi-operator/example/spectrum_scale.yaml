@@ -1,0 +1,22 @@
+apiVersion: scale.ibm.com/v1alpha1
+kind: 'CSIScaleOperator'
+metadata: 
+    # IMPORTANT THE OPERATOR LOOKS FOR THIS!
+    name: 'ibm-spectrum-scale-csi'
+    namespace: ibm-spectrum-scale-csi-driver
+status: {}
+spec: 
+  # 
+  scaleHostpath: "/ibm/fs1"
+
+  clusters: 
+    - id: "11832033572270148010"
+      secrets: "secret1"
+      secureSslMode: false
+      primary:
+        primaryFs: "fs1"
+        primaryFset: "csiFset2"
+      restApi: 
+      - guiHost: "jdunham-rh72-k8s-scale-master.fyre.ibm.com"
+
+
