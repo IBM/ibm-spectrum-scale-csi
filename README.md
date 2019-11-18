@@ -54,22 +54,33 @@ operator-sdk build csi-scale-operator
 >**NOTE** This requires `docker`.
 
 ### Using the image
->**NOTE** If you're using the quay image, this step can be skipped.
 
-In order to use the image in your environment you will need to push the image to a [docker registry](https://docs.docker.com/registry/). You may setup your own image, or push to a repository such  as [quay.io](quay.io).
+In order to use the images that you just built, the image needs to be pushed to some container repository.
 
-Deploying your own registry is an [involved process](https://docs.docker.com/registry/deploying/), and outside of the scope of this document. 
+* **Quay.io (recommended)**
 
-If you're using quay, we recommend doing the [Quay Tutorial](https://quay.io/tutorial/).
+  Follow this tutorial to configure [quay.io](https://quay.io/tutorial/) and then create a repository named: `ibm-spectrum-scale-csi-operator`.
 
+* **Docker** 
 
-Once you have a repository ready and you've logged you can tag and push your image:
+  Deploying your own Docker registry is an [involved process](https://docs.docker.com/registry/deploying/), and outside of the scope of this document. 
+
+The documentation will assume that the quay.io path is being used. 
+
+Once you have a repository ready:
+
 ``` bash
-docker tag csi-scale-operator <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
-docker push <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
+# Authenticate to quay.io
+docker login <credentials>  quay.io
 
-# This will update your deployment to point at your image.
-hacks/change_deploy_image.py -i <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
+# Tag the build 
+docker tag csi-scale-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+
+# push the image
+docker push quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+
+# Update your deployment to point at your image.
+hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
 ```
 
 ## Deploying the Operator
