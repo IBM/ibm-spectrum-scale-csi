@@ -23,7 +23,6 @@ This project was originally generated using [operator-sdk](https://github.com/op
 # Set up some helpful variables
 export GOPATH="/root/go"
 export IBM_DIR="$GOPATH/src/github.com/IBM"
-export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
 
 # Ensure the dir is present then clone.
 mkdir -p ${IBM_DIR}
@@ -44,11 +43,12 @@ ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-operator/ansi
 To build the image the user must navigate to the operator directory (This directory structure is an artifact of the IBM Cloud Pak certification process). 
 
 ``` bash
-cd stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+# IBM_DIR is defined in the previous step
+export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
 export GO111MODULE="on"
 operator-sdk build csi-scale-operator
-
-docker tag csi-scale-operator quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
 ```
 
 >**NOTE** This requires `docker`.
