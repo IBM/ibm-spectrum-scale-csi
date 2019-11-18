@@ -33,18 +33,11 @@ git clone https://github.com/IBM/ibm-spectrum-scale-csi-operator.git
 
 ### Development environment setup
 
-The development environment dependencies are managed using an ansible playbook for the IBM Spectrum Scale CSI Operator. If ansible is installed in your environment simply run the following command:
+To help configure and resolve dependencies to build the csi-operator, a ansible playbook is provided.  You can run the following to invoke the playbook:
 
 ``` bash
 ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-operator/ansible/dev-env-playbook.yaml
 ```
-
-This script will do the following:
-1. Install `python3`
-2. Install `python3` requirements (`sphinx`, `operator-courier`, `docker`)
-3. Install `operator-sdk`
-4. Ensure `go-1.13` is installed.
-
 
 ### Building the image
 
