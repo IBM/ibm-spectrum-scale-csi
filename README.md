@@ -85,7 +85,7 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 
 ## Deploying the Operator
 
->**WARNING** If you are using your own image you must, complete (#using-the-image)!
+> **WARNING** If you are using your own image you must, complete [using the image](#using-the-image)!
 
 ### Option A: Manually
 
