@@ -31,15 +31,6 @@ cd ${IBM_DIR}
 git clone https://github.com/IBM/ibm-spectrum-scale-csi-operator.git
 ```
 
-If you are working out of a forked copy you can change your origin to match:
-
-``` bash
-git remote set-url origin <forked git repo>
-git remote add upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
-
-git pull origin
-```
-
 ### Development environment setup
 
 The development environment dependencies are managed using an ansible playbook for the IBM Spectrum Scale CSI Operator. If ansible is installed in your environment simply run the following command:
