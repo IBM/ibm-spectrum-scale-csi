@@ -92,6 +92,8 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
 
 ``` bash
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
 kubectl apply -f deploy/namespace.yaml
 kubectl apply -f deploy/service_account.yaml
 kubectl apply -f deploy/role.yaml
@@ -111,7 +113,9 @@ At this point the operator is running and ready for use!
 The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
 ``` bash
-kubectl apply -f deploy/olm-test/operator-source.yaml
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
+kubectl apply -f deploy/olm-scripts/operator-source.yaml
 ```
 > **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
 
