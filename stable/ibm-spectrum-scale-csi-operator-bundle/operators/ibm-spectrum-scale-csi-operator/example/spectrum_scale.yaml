@@ -54,5 +54,4 @@ spec:
 
           # The port number running the REST server.
           # guiPort
-
   # ----
