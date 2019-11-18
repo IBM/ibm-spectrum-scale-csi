@@ -9,19 +9,19 @@ An Ansible based operator to run and manage the deployment of the
 
 This project was originally generated using [operator-sdk](https://github.com/operator-framework/operator-sdk).
 
-> **WARNING** : This repository undergoing active development! If you encounter issues with any of the following 
-> instructions, [_please open an issue_](https://github.com/IBM/ibm-spectrum-scale-csi-operator/issues).
+> **WARNING**: This repository undergoing active development! If you encounter issues with the following instructions, [_please open an issue_](https://github.com/IBM/ibm-spectrum-scale-csi-operator/issues).
 
 ## Setup from scratch
+
 ### Cloning the repository
 
->**WARNING** : This repository needs to be accessible in your `GOPATH`. In the development environment this was set to `/root/go`, however this is at the discretion of the user.
+> **WARNING**: This repository needs to be accessible in your `GOPATH`. In testing, the root user was used and set to: `GOPATH=/root/go`.
 
-Due to constraints in golang (relative paths are not supported in golang) you **_MUST_** clone this repository to the IBM directory in your go path. If this is not done, the `operator-sdk` build operation will fail.
+> **NOTE**: Due to current constraints in golang (relative paths are not supported in golang), you **_MUST_** clone this repository under your gopath. If not, the `operator-sdk` build operation will fail.
 
 ``` bash
 # Set up some helpful variables
-export GOPATH=<your-go-path>
+export GOPATH="/root/go"
 export IBM_DIR="$GOPATH/src/github.com/IBM"
 export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
 
