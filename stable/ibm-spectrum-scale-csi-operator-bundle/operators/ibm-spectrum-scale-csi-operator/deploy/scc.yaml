@@ -32,9 +32,9 @@ seLinuxContext:
 supplementalGroups:
   type: RunAsAny
 users:
-- system:serviceaccount:$namespace:ibm-spectrum-scale-csi-attacher
-- system:serviceaccount:$namespace:ibm-spectrum-scale-csi-provisioner
-- system:serviceaccount:$namespace:ibm-spectrum-scale-csi-node
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-attacher
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-provisioner
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-node
 volumes:
 - configMap
 - downwardAPI
