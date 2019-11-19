@@ -106,7 +106,7 @@ kubectl apply -f deploy/operator.yaml
 
 At this point the operator is running and ready for use!
 
-### Option B: Using OLM
+### Option B: Using Operator Lifecycle Manager (OLM)
 
 > **NOTE**: This will be the prefered method.  However, work is ongoing.
 
