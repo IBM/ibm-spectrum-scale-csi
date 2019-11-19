@@ -104,7 +104,11 @@ kubectl apply -f deploy/role_binding.yaml
 kubectl apply -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl apply -f deploy/operator.yaml
 ```
+For OpenShift environment we need to create security context constraints(scc)
 
+``` bash
+oc create -f deploy/scc.yaml
+```
 At this point the operator is running and ready for use!
 
 ### Option B: Using OLM
@@ -250,6 +254,11 @@ kubectl delete -f deploy/role_binding.yaml
 kubectl delete -f deploy/service_account.yaml
 kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl delete -f deploy/namespace.yaml
+```
+
+For Openshift environment we need to delete security context constraints.
+``` bash
+oc delete -f deploy/scc.yaml
 ```
 
 Please note, this will completely destroy the operator and all associated resources.
