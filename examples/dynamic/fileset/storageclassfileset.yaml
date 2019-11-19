@@ -1,10 +1,10 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-   name: csi-spectrum-scale-fileset
-provisioner: csi-spectrum-scale
+   name: ibm-spectrum-scale-csi-fileset
+provisioner: ibm-spectrum-scale-csi
 parameters:
-    volBackendFs: "gpfs0"
-    clusterId: "7118073361626808055"
+    volBackendFs: "fs1"
+    clusterId: "17797813605352210071"
 reclaimPolicy: Delete
 

@@ -1,43 +1,43 @@
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: csi-spectrum-scale-provisioner
+  name: ibm-spectrum-scale-csi-provisioner
   labels:
     product: ibm-spectrum-scale-csi
 spec:
   selector:
     matchLabels:
-      app: csi-spectrum-scale-provisioner
-  serviceName: "csi-spectrum-scale-provisioner"
+      app: ibm-spectrum-scale-csi-provisioner
+  serviceName: "ibm-spectrum-scale-csi-provisioner"
   replicas: 1
   template:
     metadata:
       labels:
-        app: csi-spectrum-scale-provisioner
+        app: ibm-spectrum-scale-csi-provisioner
         product: ibm-spectrum-scale-csi
     spec:
 #      nodeSelector:
 #        spectrumscalenode: "yes"
-      serviceAccount: ibm-spectrum-scale-csi-provisioner-sa
+      serviceAccount: ibm-spectrum-scale-csi-provisioner
       containers:
-        - name: csi-provisioner
+        - name: ibm-spectrum-scale-csi-provisioner
           image: $provisioner
           securityContext:
             privileged: true
           args:
-            - "--provisioner=csi-spectrum-scale"
+            - "--provisioner=ibm-spectrum-scale-csi"
             - "--csi-address=$(ADDRESS)"
             - "--connection-timeout=2m"
             - "--v=5" # Debugging
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: socket-dir
-              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             type: DirectoryOrCreate

@@ -68,6 +68,10 @@ def validatePluginConf(conf_dict):
              print "Mandatory parameter 'scalehostpath' in PLUGIN section missing"
              exit(1)
 
+        if conf_dict.get("namespace") == "" or conf_dict.get("namespace") == None:
+             print "Mandatory parameter 'namespace' in PLUGIN section missing"
+             exit(1)
+
 def validateImages(conf_dict):
         if conf_dict.get("provisioner") == "" or conf_dict.get("provisioner") == None:
              print "Mandatory parameter 'provisioner' in IMAGES section missing"
@@ -148,45 +152,76 @@ def validate(config, section):
            validateImages(conf_dict)
 
 
-def generateDeployScript(config, deployscript):
+def generateDeployScript(cmd, config, deployscript, deploybasepath):
       conf_dict = dict(config.items("CONFIGMAP"))
 
       with open(deployscript, 'w+') as f:
            f.write("set -e\n\n")
 
-           f.write("kubectl apply -f deploy/csi-attacher-rbac.yaml\n")
-           f.write("kubectl apply -f deploy/csi-nodeplugin-rbac.yaml\n")
-           f.write("kubectl apply -f deploy/csi-provisioner-rbac.yaml\n\n")
-           f.write("kubectl apply -f deploy/spectrum-scale-secret.json\n")
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-attacher-rbac.yaml"))
+           f.write("\n")
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-nodeplugin-rbac.yaml"))
+           f.write("\n")
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-provisioner-rbac.yaml"))
+           f.write("\n")
+
+           # Create an scc only in case of openshift
+           if cmd == "oc":
+                f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-scc.yaml"))
+                f.write("\n")
+           f.write("\n")
+
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "spectrum-scale-secret.json"))
+           f.write("\n")
 
            if conf_dict.get("securesslmode") == "true":
-                f.write("kubectl create configmap guicertificate --from-file=mycertificate.pem=" + conf_dict.get("cacert") + "\n")
+                f.write(cmd + " create configmap guicertificate --from-file=mycertificate.pem=" + conf_dict.get("cacert") + "\n")
 
-           f.write("kubectl create configmap spectrum-scale-config --from-file=spectrum-scale-config.json=deploy/spectrum-scale-config.json\n\n")
-           f.write("kubectl apply -f deploy/csi-plugin-attacher.yaml\n")
-           f.write("kubectl apply -f deploy/csi-plugin-provisioner.yaml\n")
-           f.write("kubectl apply -f deploy/csi-plugin.yaml\n")
+           f.write(cmd + " create configmap spectrum-scale-config --from-file=spectrum-scale-config.json=" + os.path.join(deploybasepath, "spectrum-scale-config.json"))
+           f.write("\n")
+           f.write("\n")
+
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-attacher.yaml"))
+           f.write("\n")
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
+           f.write("\n")
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin.yaml"))
+           f.write("\n")
 
       f.close()
 
-def generateDestroyScript(config, destroyscript):
+def generateDestroyScript(cmd, config, destroyscript, deploybasepath):
       conf_dict = dict(config.items("CONFIGMAP"))
 
       with open(destroyscript, 'w+') as f:
            f.write("set -e\n\n")
 
-           f.write("kubectl delete -f deploy/csi-attacher-rbac.yaml\n")
-           f.write("kubectl delete -f deploy/csi-nodeplugin-rbac.yaml\n")
-           f.write("kubectl delete -f deploy/csi-provisioner-rbac.yaml\n\n")
-           f.write("kubectl delete -f deploy/spectrum-scale-secret.json\n")
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-attacher-rbac.yaml"))
+           f.write("\n") 
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-nodeplugin-rbac.yaml"))
+           f.write("\n") 
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-provisioner-rbac.yaml"))
+           f.write("\n") 
+
+           # Delete scc in case of openshift
+           if cmd == "oc":
+                f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-scc.yaml"))
+                f.write("\n") 
+           f.write("\n") 
+
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "spectrum-scale-secret.json"))
+           f.write("\n") 
 
            if conf_dict.get("securesslmode") == "true":
-                f.write("kubectl delete configmap guicertificate \n")
+                f.write(cmd + " delete configmap guicertificate \n")
 
-           f.write("kubectl delete configmap spectrum-scale-config \n\n")
-           f.write("kubectl delete -f deploy/csi-plugin-attacher.yaml\n")
-           f.write("kubectl delete -f deploy/csi-plugin-provisioner.yaml\n")
-           f.write("kubectl delete -f deploy/csi-plugin.yaml\n")
+           f.write(cmd + " delete configmap spectrum-scale-config \n\n")
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-attacher.yaml"))
+           f.write("\n") 
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
+           f.write("\n") 
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin.yaml"))
+           f.write("\n") 
 
       f.close()
 
@@ -216,43 +251,64 @@ validate(config, "IMAGES")
 
 configure(config, "CONFIGMAP", os.path.join(deploybasepath, "spectrum-scale-config.json_template"),
                               os.path.join(deploybasepath, "spectrum-scale-config.json"))
-print "Configured '" + basepath + "/deploy/spectrum-scale-config.json'"
+print "Configured '" + deploybasepath + "/spectrum-scale-config.json'"
 
 configure(config, "SECRET", os.path.join(deploybasepath, "spectrum-scale-secret.json_template"),
                               os.path.join(deploybasepath, "spectrum-scale-secret.json"))
-print "Configured '" + basepath + "/deploy/spectrum-scale-secret.json'"
+print "Configured '" + deploybasepath + "/spectrum-scale-secret.json'"
 
+cmd = "kubectl"
 conf_dict = dict(config.items("PLUGIN"))
 if conf_dict.get("openshiftdeployment") == "true" :
+    cmd = "oc"
+
     configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-plugin-openshift.yaml_template"),
                                   os.path.join(deploybasepath, "csi-plugin.yaml"))
-else:
-    configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-plugin.yaml_template"),
-                                  os.path.join(deploybasepath, "csi-plugin.yaml"))
-print "Configured '" + basepath + "/deploy/csi-plugin.yaml'"
+    print "Configured '" + deploybasepath + "/csi-plugin.yaml'"
 
-if conf_dict.get("openshiftdeployment") == "true" :
     configure(config, "IMAGES", os.path.join(deploybasepath, "csi-plugin-provisioner-openshift.yaml_template"),
                                   os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
-else:
-    configure(config, "IMAGES", os.path.join(deploybasepath, "csi-plugin-provisioner.yaml_template"),
-                                  os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
-print "Configured '" + basepath + "/deploy/csi-plugin-provisioner.yaml'"
+    print "Configured '" + deploybasepath + "/csi-plugin-provisioner.yaml'"
 
-if conf_dict.get("openshiftdeployment") == "true" :
     configure(config, "IMAGES", os.path.join(deploybasepath, "csi-plugin-attacher-openshift.yaml_template"),
                                   os.path.join(deploybasepath, "csi-plugin-attacher.yaml"))
+    print "Configured '" + deploybasepath + "/csi-plugin-attacher.yaml'"
+
+    configureDriver(conf_dict, os.path.join(deploybasepath, "csi-plugin-scc.yaml_template"),
+                      os.path.join(deploybasepath, "csi-plugin-scc.yaml"))
 else:
+    cmd = "kubectl"
+
+    configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-plugin.yaml_template"),
+                                  os.path.join(deploybasepath, "csi-plugin.yaml"))
+    print "Configured '" + deploybasepath + "/csi-plugin.yaml'"
+
+    configure(config, "IMAGES", os.path.join(deploybasepath, "csi-plugin-provisioner.yaml_template"),
+                                  os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
+    print "Configured '" + deploybasepath + "/csi-plugin-provisioner.yaml'"
+
     configure(config, "IMAGES", os.path.join(deploybasepath, "csi-plugin-attacher.yaml_template"),
                                   os.path.join(deploybasepath, "csi-plugin-attacher.yaml"))
-print "Configured '" + basepath + "/deploy/csi-plugin-attacher.yaml'"
+    print "Configured '" + deploybasepath + "/csi-plugin-attacher.yaml'"
 
-generateDeployScript(config, os.path.join(deploybasepath, "create.sh"))
-print "Generated deployment script '" + basepath + "/deploy/create.sh'"
+configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-attacher-rbac.yaml_template"),
+                              os.path.join(deploybasepath, "csi-attacher-rbac.yaml"))
+print "Configured '" + deploybasepath + "/csi-attacher-rbac.yaml'"
 
-generateDestroyScript(config, os.path.join(deploybasepath, "destroy.sh"))
-print "Generated cleanup script '" + basepath + "/deploy/destroy.sh'"
+configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-provisioner-rbac.yaml_template"),
+                              os.path.join(deploybasepath, "csi-provisioner-rbac.yaml"))
+print "Configured '" + deploybasepath + "/csi-provisioner-rbac.yaml'"
 
-print "Spectrum Scale CSI driver configuration is complete. Please review the configuration and run '" + basepath + "/deploy/create.sh' to deploy the driver"
+configure(config, "PLUGIN", os.path.join(deploybasepath, "csi-nodeplugin-rbac.yaml_template"),
+                              os.path.join(deploybasepath, "csi-nodeplugin-rbac.yaml"))
+print "Configured '" + deploybasepath + "/csi-nodeplugin-rbac.yaml'"
+
+generateDeployScript(cmd, config, os.path.join(deploybasepath, "create.sh"), deploybasepath)
+print "Generated deployment script '" + deploybasepath + "/create.sh'"
+
+generateDestroyScript(cmd, config, os.path.join(deploybasepath, "destroy.sh"), deploybasepath)
+print "Generated cleanup script '" + deploybasepath + "/destroy.sh'"
+
+print "Spectrum Scale CSI driver configuration is complete. Please review the configuration and run '" + deploybasepath + "/create.sh' to deploy the driver"
 
 exit(0)

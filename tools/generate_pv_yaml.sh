@@ -71,7 +71,7 @@ spec:
   accessModes:
     - ReadWriteMany
   csi:
-    driver: csi-spectrum-scale
+    driver: ibm-spectrum-scale-csi
     volumeHandle: ${volhandle}
   ${STORAGECLASS}
 EOL

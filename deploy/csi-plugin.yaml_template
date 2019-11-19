@@ -1,22 +1,22 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: csi-spectrum-scale
+  name: ibm-spectrum-scale-csi
   labels:
     product: ibm-spectrum-scale-csi
 spec:
   selector:
     matchLabels:
-      app: csi-spectrum-scale
+      app: ibm-spectrum-scale-csi
   template:
     metadata:
       labels:
-        app: csi-spectrum-scale
+        app: ibm-spectrum-scale-csi
         product: ibm-spectrum-scale-csi
     spec:
 #      nodeSelector:
 #        spectrumscalenode: "yes"
-      serviceAccount: ibm-spectrum-scale-csi-node-sa
+      serviceAccount: ibm-spectrum-scale-csi-node
       hostNetwork: true
       containers:
         - name: driver-registrar
@@ -27,37 +27,32 @@ spec:
             - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             - name: registration-dir
               mountPath: /registration
-        - name: csi-spectrum-scale
-          securityContext:
-            privileged: true
-            capabilities:
-              add: ["SYS_ADMIN"]
-            allowPrivilegeEscalation: true
+        - name: ibm-spectrum-scale-csi
           image: $spectrumscaleplugin
           args :
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--v=5"
-            - "--drivername=csi-spectrum-scale"
+            - "--drivername=ibm-spectrum-scale-csi"
           env:
             - name: NODE_ID
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: CSI_ENDPOINT
-              value: unix:/var/lib/kubelet/plugins/csi-spectrum-scale/csi.sock
+              value: unix:/var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
             - name: SCALE_HOSTPATH
               value: $scalehostpath
             - name: SKIP_MOUNT_UNMOUNT
@@ -65,10 +60,9 @@ spec:
           imagePullPolicy: "IfNotPresent" # "Always"
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/csi-spectrum-scale
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet
-              mountPropagation: "Bidirectional"
             - name: spectrum-scale-config
               mountPath: /var/lib/ibm/config
             $cacertline1
@@ -81,7 +75,7 @@ spec:
       volumes:
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/csi-spectrum-scale
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             type: DirectoryOrCreate
         - name: registration-dir
           hostPath:

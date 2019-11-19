@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NAME=csi-spectrum-scale
+NAME=ibm-spectrum-scale-csi
 
 .PHONY: all $NAME
 
@@ -23,7 +23,7 @@ all: $NAME
 
 $NAME:
 	if [ ! -d ./vendor ]; then dep ensure; fi
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/csi-spectrum-scale
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/ibm-spectrum-scale-csi
 
 build-image: $NAME
 	docker build --network=host -t $(IMAGE_NAME):$(IMAGE_VERSION) .

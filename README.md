@@ -57,12 +57,11 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 - The size specified in PersistentVolumeClaim for lightweight volume and dependent fileset volume, is not honored.
 - Volumes cannot be mounted in read-only mode.
-- Maximum number of supported volumes that can be created using independent fileset storage class is 1000. This is based upon the [fileset maximums for IBM Spectrum Scale](https://www.ibm.com/support/knowledgecenter/STXKQY/gpfsclustersfaq.html#filesets)
+- Maximum number of supported volumes that can be created using independent fileset storage class is 998 (excluding the root fileset and primary fileset reserved for CSI driver). This is based upon the [fileset maximums for IBM Spectrum Scale](https://www.ibm.com/support/knowledgecenter/STXKQY/gpfsclustersfaq.html#filesets)
 - The IBM Spectrum Scale GUI server is relied upon for performing file system and cluster operations. If the GUI password or CA certificate expires, manual intervention is needed by the admin to reset the GUI password or generate a new certificate and update the configuration of the CSI driver. In this case, a restart of the CSI driver will be necessary.
 - Rest API status, used by the CSI driver, may lag from actual state, causing PVC mount or unmount failures.
 - Although multiple instances of the Spectrum Scale GUI are allowed, the CSI driver is currently limited to point to a single GUI node.
-- OpenShift 4.x has not been fully qualified with the IBM Spectrum Scale CSI driver. Additionally, [Red Hat considers the Container Storage Interface as a Technology Preview feature, within OpenShift 4.1.](https://docs.openshift.com/container-platform/4.1/storage/persistent-storage/persistent-storage-csi.html)
-- CRI-O, within OpenShift 4.x, currently issues an SELinux relabel upon mount of a PVC. This will fail if the underlying Spectrum Scale directory structure contains a .snapshots directory. Disable SELinux within CRI-O to avoid this (*see pre-requisites below*).
+- External attacher and external provisioner run as statefulsets, which by design do not failover to different node in case docker/kubelet is brought down. (They however failover to another node when the node itself is deleted explicitly). It is recommended to run the attacher and provisioner on two separate infrastructure nodes which can be done by using [Node Selector](#node-selector) or by configuring it during [operator deployment](https://github.com/IBM/ibm-spectrum-scale-csi-operator)
 
 ### Pre-requisites for installing and running the CSI driver
 
@@ -77,7 +76,7 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 - Red Hat 7.6 (**kernel 3.10.0-957 or higher**) on Spectrum Scale nodes
 
-- IBM Spectrum Scale version 5.0.3.3 is installed.
+- IBM Spectrum Scale version 5.0.4.1 is installed.
 
 - An IBM Spectrum Scale GUI is up and running on a Spectrum Scale node and a user is created and part of the `CsiAdmin` group
 
@@ -86,20 +85,7 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
   ```
 
 - Kubernetes ver 1.13+ cluster is created
-
-- If using OpenShift (or CRI-O), ensure that ver 4.1+ is installed and SELinux is disabled in CRI-O
-
-  a) On each worker node, edit `/etc/crio/crio.conf` and disable selinux
-     ```
-     selinux = false
-     ```
-
-  b) Reload and restart CRI-O 
-     ```
-     systemctl daemon-reload
-     systemctl restart crio
-     ```
-  
+ 
 - All Kubernetes worker nodes must also be Spectrum Scale client nodes. Install the Spectrum Scale client on all Kubernetes worker nodes and ensure they are added to the Spectrum Scale cluster. (To install Spectrum Scale and CSI driver only on selected nodes, perform the steps from [Node Selector](#node-selector)
 
 - The Filesystem to be used for persistent storage must be mounted on the Spectrum Scale GUI node as well as all Kubernetes worker nodes. (*If multiple filesystems are to be used as persistent storage for containers, then all need to be mounted*)
@@ -127,25 +113,25 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 2. Invoke multi-stage build
 
    ```
-   docker build -t csi-spectrum-scale:v0.9.1 -f Dockerfile.msb .
+   docker build -t ibm-spectrum-scale-csi:v0.9.2 -f Dockerfile.msb .
    ```
 
    *On podman setup, use this command instead:*
 
    ```
-   podman build -t csi-spectrum-scale:v0.9.1 -f Dockerfile.msb .
+   podman build -t ibm-spectrum-scale-csi:v0.9.2 -f Dockerfile.msb .
    ```
 
 3. save the docker image
 
    ```
-   docker save csi-spectrum-scale:v0.9.1 -o csi-spectrum-scale_v0.9.1.tar
+   docker save ibm-spectrum-scale-csi:v0.9.2 -o ibm-spectrum-scale-csi_v0.9.2.tar
    ```
 
    *On podman setup, use this command instead:*
 
    ```
-   podman save csi-spectrum-scale:v0.9.1 -o csi-spectrum-scale_v0.9.1.tar
+   podman save ibm-spectrum-scale-csi:v0.9.2 -o ibm-spectrum-scale-csi_v0.9.2.tar
    ```
 
       A tar file of docker image will be stored under the _output directory.
@@ -157,13 +143,13 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 1. Copy and load the docker image on all Kubernetes worker nodes
 
    ```
-   docker image load -i csi-spectrum-scale_v0.9.1.tar
+   docker image load -i ibm-spectrum-scale-csi_v0.9.2.tar
    ```
 
    *On OpenShift setup, use this command instead:*
 
    ```
-   podman image load -i csi-spectrum-scale_v0.9.1.tar
+   podman image load -i ibm-spectrum-scale-csi_v0.9.2.tar
    ```
 
 2. Deploy CSI driver
@@ -176,7 +162,7 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
    a. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
 
-   Note that on OpenShift setup, the image is listed as `localhost/csi-spectrum-scale:v0.9.1`. Change the value of "spectrumscaleplugin" parameter in images section accordingly. 
+   Note that on OpenShift setup, the image is listed as `localhost/ibm-spectrum-scale-csi:v0.9.2`. Change the value of "spectrumscaleplugin" parameter in images section accordingly. 
 
    b. Set the environment variable CSI_SCALE_PATH to ibm-spectrum-scale-csi-driver directory
 
@@ -199,9 +185,9 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
    ```
    % kubectl get pod
    NAME READY STATUS RESTARTS AGE
-   csi-spectrum-scale-7d8jg 2/2 Running 0 7s
-   csi-spectrum-scale-attacher-0 1/1 Running 0 8s
-   csi-spectrum-scale-provisioner-0 1/1 Running 0 8s
+   ibm-spectrum-scale-csi-7d8jg 2/2 Running 0 7s
+   ibm-spectrum-scale-csi-attacher-0 1/1 Running 0 8s
+   ibm-spectrum-scale-csi-provisioner-0 1/1 Running 0 8s
    ```
 
 
@@ -307,7 +293,7 @@ In order to deploy CSI driver on such a configuration, following steps should be
        secretName: secret2
    ```
 
-   Add corresponding entry under "containers -> csi-spectrum-scale -> volumeMounts" section:
+   Add corresponding entry under "containers -> ibm-spectrum-scale-csi -> volumeMounts" section:
 
    ```
    - name: secret2
@@ -356,7 +342,7 @@ In an environment where Kubernetes node names are different than the Spectrum Sc
 
 To use this feature, perform the following steps after running the installer "spectrum-scale-driver.py":
 
-- Add new environment variable in `deploy/csi-plugin.yaml` under container "*- name: csi-spectrum-scale*", where name of the environment variable is Kubernetes node name and value is the Spectrum Scale node name. 
+- Add new environment variable in `deploy/csi-plugin.yaml` under container "*- name: ibm-spectrum-scale-csi*", where name of the environment variable is Kubernetes node name and value is the Spectrum Scale node name. 
 
   ```
   env:
@@ -379,8 +365,8 @@ To use this feature, perform the following steps after running the installer "sp
 3. Find the CSI driver docker image and remove from all Kubernetes worker nodes
 
    ```
-   % docker images -a | grep csi-spectrum-scale
-   csi-spectrum-scale v0.9.1 465ca978127a 18 minutes ago 109MB
+   % docker images -a | grep ibm-spectrum-scale-csi
+   ibm-spectrum-scale-csi v0.9.2 465ca978127a 18 minutes ago 109MB
 
    % docker rmi 465ca978127a
    ```

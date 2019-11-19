@@ -8,5 +8,5 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: csi-spectrum-scale-lt
+  storageClassName: ibm-spectrum-scale-csi-lt
 
