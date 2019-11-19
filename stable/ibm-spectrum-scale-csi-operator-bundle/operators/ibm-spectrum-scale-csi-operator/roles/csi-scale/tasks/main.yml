@@ -20,6 +20,12 @@
   include_tasks: cluster_check.yml
   loop: "{{ clustersCamelCase }}"
 
+- name: "Ensure SCC are {{ state }}"
+  k8s:
+    state: "{{ state }}"
+    definition: "{{ lookup('template', 'scc.yaml.j2') | from_yaml }}"
+  when: '"apps.openshift.io" in api_groups'
+
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
