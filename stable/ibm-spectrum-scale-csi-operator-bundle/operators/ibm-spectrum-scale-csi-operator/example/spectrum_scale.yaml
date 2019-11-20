@@ -7,20 +7,6 @@ metadata:
     namespace: ibm-spectrum-scale-csi-driver
 status: {}
 spec:
-  # ----
-  # Attacher image for csi (actually attaches to the storage).
-  attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
-
-  # Provisioner image for csi (actually issues provision requests).
-  provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
-
-  # Sidecar container image for the csi spectrum scale plugin pods.
-  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
-
-  # Image name for the csi spectrum scale plugin container.
-  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v0.9.1"
-  # ----
-
   # Required
   # ----
   # The path to the gpfs file system mounted on the host machine.
