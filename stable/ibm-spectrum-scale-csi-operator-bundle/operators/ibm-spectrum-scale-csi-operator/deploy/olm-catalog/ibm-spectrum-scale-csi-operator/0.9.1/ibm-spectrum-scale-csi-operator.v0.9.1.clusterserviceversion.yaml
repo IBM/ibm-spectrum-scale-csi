@@ -83,8 +83,8 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
       - description: Node selector for SpectrumScale CSI Plugin.
-        displayName: pluginNodeSelector
-        path: Plugin Node Selector
+        displayName: Plugin Node Selector 
+        path: pluginNodeSelector
         x-descriptors: 
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Provisioner image for csi (actually issues provision requests).
