@@ -74,7 +74,7 @@ metadata:
   namespace: ibm-spectrum-scale-csi-driver
 rules:
 - apiGroups:
-  - 'security.openshift.io'
+  - security.openshift.io
   resources:
   - securitycontextconstraints
   verbs:
