@@ -253,4 +253,33 @@ kubectl delete -f deploy/namespace.yaml
 
 Please note, this will completely destroy the operator and all associated resources.
 
+### Open Shift Considerations
+
+When uninstalling on OpenShift the operator creates a `SecurityContextConstraint`  named `csiaccess`.
+This allows the driver to mount files in non default namespaces. 
+
+To verify the `SecurityContextConstraint` is gone:
+
+``` bash
+kubectl get SecurityContextConstraints csiaccess
+
+# If you get a result:
+kubectl delete SecurityContextConstraints csiaccess
+```
+
+### Stuck Operator
+In cases where deleting the operator `Custom Resource` fails the following recipe can be executed:
+
+``` bash
+# This may need to be customized in OLM environments:
+NAMESPACE=ibm-spectrum-scale-csi-driver
+kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
+curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json 127.0.0.1:8001/api/v1/namespaces/$NAMESPACE/finalize
+rm -f temp.json
+```
+
+Typically this happens when deleting the `Custom Resource Definition` before removing all of the `Custom Resources`.
+
+For more details on this check the following [GitHub Issue](https://github.com/operator-framework/operator-sdk/issues/2094).
+
 
