@@ -11,7 +11,7 @@ metadata:
       : {\n      \"clusters\": [\n        {\n          \"id\": \"11832033572270148010\"\
       ,\n          \"primary\": {\n            \"primaryFs\": \"fs1\",\n         \
       \   \"primaryFset\": \"csiFset2\"\n          },\n          \"restApi\": [\n\
-      \            {\n              \"guiHost\": \"jdunham-rh72-k8s-scale-master.fyre.ibm.com\"\
+      \            {\n              \"guiHost\": \"guihost.com\"\
       \n            }\n          ],\n          \"secrets\": \"secret1\",\n       \
       \   \"secureSslMode\": false\n        }\n      ],\n      \"scaleHostpath\":\
       \ \"/ibm/fs1\"\n    },\n    \"status\": {}\n  }\n]"
