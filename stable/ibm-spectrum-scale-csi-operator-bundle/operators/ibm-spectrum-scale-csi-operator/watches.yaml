@@ -3,7 +3,3 @@
   kind: CSIScaleOperator
   role: /opt/ansible/roles/csi-scale
   version: v1alpha1
-  finalizer:
-    name: finalizer.scale.ibm.com
-    vars:
-      state: absent
