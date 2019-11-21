@@ -17,7 +17,7 @@
 # Hash using a salted 
 - name: "Build Secret Checksum"
   set_fact: 
-    secret_checksums: "{{ secret_checksums +  [ (results.resources[0].data | to_json | default(' ')) | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) ] }}"
+    secret_checksums: "{{ secret_checksums +  [ (results.resources[0].data | default(' ')) | to_json | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) ] }}"
 
 
 
