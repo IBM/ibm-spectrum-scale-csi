@@ -18,4 +18,4 @@ spec:
       primaryFs: "fs1"
       primaryFset: "csiFset2"
     restApi:
-    - guiHost: "jdunham-rh72-k8s-scale-master.fyre.ibm.com" 
+    - guiHost: "guihost.com" 

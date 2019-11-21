@@ -2,7 +2,6 @@
 apiVersion: scale.ibm.com/v1alpha1
 kind: 'CSIScaleOperator'
 metadata:
-    # IMPORTANT THE OPERATOR LOOKS FOR THIS!
     name: 'ibm-spectrum-scale-csi'
     namespace: ibm-spectrum-scale-csi-driver
 status: {}
