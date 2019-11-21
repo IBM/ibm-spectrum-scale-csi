@@ -73,8 +73,8 @@ func Add(mgr manager.Manager) *controller.Controller {
 				if err != nil {
 					log.Error(err, "Error Message")
 				}
-
-				log.Info(fmt.Sprintf("In Mapping function, mapping to %v items", len(cso.Items)))
+				log.Info(fmt.Sprintf("In mapping function, mapping to %v operators; Secret: %s:%s",
+					len(cso.Items), a.Meta.GetName(), a.Meta.GetNamespace()))
 
 				// Compose the Requests.
 				reqs := make([]reconcile.Request, len(cso.Items))
