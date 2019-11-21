@@ -9,21 +9,20 @@ An Ansible based operator to run and manage the deployment of the
 
 This project was originally generated using [operator-sdk](https://github.com/operator-framework/operator-sdk).
 
-> **WARNING** : This repository undergoing active development! If you encounter issues with any of the following 
-> instructions, [_please open an issue_](https://github.com/IBM/ibm-spectrum-scale-csi-operator/issues).
+> **WARNING**: This repository undergoing active development! If you encounter issues with the following instructions, [_please open an issue_](https://github.com/IBM/ibm-spectrum-scale-csi-operator/issues).
 
 ## Setup from scratch
+
 ### Cloning the repository
 
->**WARNING** : This repository needs to be accessible in your `GOPATH`. In the development environment this was set to `/root/go`, however this is at the discretion of the user.
+> **WARNING**: This repository needs to be accessible in your `GOPATH`. In testing, the root user was used and set to: `GOPATH=/root/go`.
 
-Due to constraints in golang (relative paths are not supported in golang) you **_MUST_** clone this repository to the IBM directory in your go path. If this is not done, the `operator-sdk` build operation will fail.
+> **NOTE**: Due to current constraints in golang (relative paths are not supported in golang), you **_MUST_** clone this repository under your gopath. If not, the `operator-sdk` build operation will fail.
 
 ``` bash
 # Set up some helpful variables
-export GOPATH=<your-go-path>
+export GOPATH="/root/go"
 export IBM_DIR="$GOPATH/src/github.com/IBM"
-export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
 
 # Ensure the dir is present then clone.
 mkdir -p ${IBM_DIR}
@@ -31,72 +30,70 @@ cd ${IBM_DIR}
 git clone https://github.com/IBM/ibm-spectrum-scale-csi-operator.git
 ```
 
-If you are working out of a forked copy you can change your origin to match:
-
-``` bash
-git remote set-url origin <forked git repo>
-git remote add upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
-
-git pull origin
-```
-
 ### Development environment setup
 
-The development environment dependencies are managed using an ansible playbook for the IBM Spectrum Scale CSI Operator. If ansible is installed in your environment simply run the following command:
+To help configure and resolve dependencies to build the csi-operator, a ansible playbook is provided.  You can run the following to invoke the playbook:
 
 ``` bash
 ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-operator/ansible/dev-env-playbook.yaml
 ```
-
-This script will do the following:
-1. Install `python3`
-2. Install `python3` requirements (`sphinx`, `operator-courier`, `docker`)
-3. Install `operator-sdk`
-4. Ensure `go-1.13` is installed.
-
 
 ### Building the image
 
 To build the image the user must navigate to the operator directory (This directory structure is an artifact of the IBM Cloud Pak certification process). 
 
 ``` bash
-cd stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+# IBM_DIR is defined in the previous step
+export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
 export GO111MODULE="on"
 operator-sdk build csi-scale-operator
-
-docker tag csi-scale-operator quay.io/mew2057/ibm-spectrum-scale-csi-operator:v0.9.1
 ```
 
 >**NOTE** This requires `docker`.
 
 ### Using the image
->**NOTE** If you're using the quay image, this step can be skipped.
 
-In order to use the image in your environment you will need to push the image to a [docker registry](https://docs.docker.com/registry/). You may setup your own image, or push to a repository such  as [quay.io](quay.io).
+In order to use the images that you just built, the image needs to be pushed to some container repository.
 
-Deploying your own registry is an [involved process](https://docs.docker.com/registry/deploying/), and outside of the scope of this document. 
+* **Quay.io (recommended)**
 
-If you're using quay, we recommend doing the [Quay Tutorial](https://quay.io/tutorial/).
+  Follow this tutorial to configure [quay.io](https://quay.io/tutorial/) and then create a repository named: `ibm-spectrum-scale-csi-operator`.
 
+* **Docker** 
 
-Once you have a repository ready and you've logged you can tag and push your image:
+  Deploying your own Docker registry is an [involved process](https://docs.docker.com/registry/deploying/), and outside of the scope of this document. 
+
+The documentation will assume that the quay.io path is being used. 
+
+Once you have a repository ready:
+
 ``` bash
-docker tag csi-scale-operator <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
-docker push <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
+# Authenticate to quay.io
+docker login <credentials> quay.io
 
-# This will update your deployment to point at your image.
-hacks/change_deploy_image.py -i <your-repo>/ibm-spectrum-scale-csi-operator:v0.9.1
+# Tag the build 
+docker tag csi-scale-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+
+# push the image
+docker push quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+
+# Update your deployment to point at your image.
+hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
 ```
 
 ## Deploying the Operator
 
->**WARNING** If you are using your own image you must, complete (#using-the-image)!
+> **WARNING** If you are using your own image you must, complete [using the image](#using-the-image)!
 
 ### Option A: Manually
 
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
 
 ``` bash
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
 kubectl apply -f deploy/namespace.yaml
 kubectl apply -f deploy/service_account.yaml
 kubectl apply -f deploy/role.yaml
@@ -105,143 +102,47 @@ kubectl apply -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl apply -f deploy/operator.yaml
 ```
 
+> **NOTE**: Kubernetes uses `kubectl` the command, replace with `oc` if deploying in OpenShift.
+
 At this point the operator is running and ready for use!
 
-### Option B: Using OLM
+### Option B: Using Operator Lifecycle Manager (OLM)
 
-> **NOTE** : This will be the prefered method, however, work is ongoing.
+> **NOTE**: This will be the prefered method.  However, work is ongoing.
 
-The following will subsrcibe the [quay.io](quay.io) version of the operator assuming OLM is installed.
+The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
 ``` bash
-kubectl apply -f deploy/olm-test/operator-source.yaml
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
+kubectl apply -f deploy/olm-scripts/operator-source.yaml
 ```
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
 
 ## Starting the CSI Driver
 
-Once the operator is running the user needs to access the operator's API and request a deployment. This is done through
-use of the `CSIScaleOperator` Custom Resource. This resource will be tuned to your environment. A sample of the file is given:
+Once the operator is running the user needs to access the operator's API and request a deployment. This is done through use of the `CSIScaleOperator` Custom Resource. 
 
-``` YAML
-# spectrum_scale.yaml
+> **ATTENTION** : If the driver pod does not start, it is generally due to missing secrets. 
 
-apiVersion: scale.ibm.com/v1alpha1
-kind: 'CSIScaleOperator'
-metadata:
-    name: 'csi-scale-operator'
-status: {}
-spec:
-  # Optional
-  # ----
-  # Attacher image for csi (actually attaches to the storage).
-  attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
-  
-  # Provisioner image for csi (actually issues provision requests).
-  provisioner:"quay.io/k8scsi/csi-provisioner:v1.0.0"
-  
-  # Sidecar container image for the csi spectrum scale plugin pods.
-  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1"
-  
-  # Image name for the csi spectrum scale plugin container.
-  spectrumScale: "quay.io/mew2057/ibm-spectrum-scale-csi-driver:v0.9.0"
-
-  # Node selector for attacher sidecar, can have multiple key value.
-  attacherNodeSelector:
-    - key: "scale"
-      value: "true"
-    - key: "infranode"
-      value: "2"
-
-  # Node selector for provisioner sidecar, can have multiple key value.
-  provisionerNodeSelector:
-    - key: "scale"
-      value: "true"
-    - key: "infranode"
-      value: "2"
-
-  # Node selector for SpectrumScale CSI Plugin, can have multiple key value.
-  pluginNodeSelector:
-    - key: "scale"
-      value: "true"
-
-  # Node mapping between K8s node and SpectrumScale node, can have multiple
-  # values.
-  nodeMapping:
-    - k8sNode: "node1"
-      spectrumscaleNode: "scaleNode1"
-
-  # ----
-  
-  # Required
-  # ----
-  # The path to the gpfs file system mounted on the host machine.
-  scaleHostpath: "/ibm/fs1"
-
-  # A collection of gpfs cluster properties for the csi driver to mount.
-  clusters:
-    # The cluster id of the gpfs cluster specified (mandatory).
-    - id: "2120508922778391120"
-      
-      # A string specifying a secret resource name.
-      secrets: "secret1"
-      
-      # Require a secure SSL connection to connect to GPFS.
-      secureSslMode: false
-      
-      # A string specifying a cacert resource name.
-      # cacert: <>
-      
-      # The primary file system for the GPFS cluster
-      primary:
-        # The name of the primary filesystem.
-        primaryFs: "fs1"
-        # The name of the primary fileset, created in primaryFS.
-        primaryFset: "csiFset2"
-        # Inode Limit for Primary Fileset
-        inodeLimit: "1024"
-        # Remote cluster ID
-        remoteCluster: "2120508922778391121"
-        # Filesystem name on remote cluster.
-        remoteFs: "gpfs2"
-        
-      # A collection of targets for REST calls.
-      restApi:
-        # The hostname of the REST server.
-        - guiHost: "GUI_HOST"
-        
-          # The port number running the REST server.
-          # guiPort
-        
-  # ----
-
-```
-> **NOTE** : Work is ongoing to reduce the amount end users need to populate.
-
-Before starting the pluging be sure to add any secrets to the appropriate namespace, the default
-namespace is `ibm-spectrum-scale-csi-driver`:
+Before starting the plugin, add any secrets to the appropriate namespace.  The Spectrum Scale namespace is `ibm-spectrum-scale-csi-driver`:
 
 ``` bash
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-> **ATTENTION** : If the driver pod doesn't start, it's generally because the secrets haven't been created.
+A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). 
 
+Modify this file to match the properties in your environment, then:
 
-To acutally start the CSI Plugin run the following command
-
-``` bash
-kubectl apply -f spectrum_scale.yaml
-```
-
-To stop the CSI plugin you can run:
-
-``` bash
-kubectl delete -f spectrum_scale.yaml
-```
+  * To start the CSI plugin, run: `kubectl apply -f spectrum_scale.yaml` 
+  * To stop the CSI plugin, run: `kubectl delete -f spectrum_scale.yaml` 
 
 ## Uninstalling the CSI Operator
 
 To remove the operator:
+
 ``` bash
 kubectl delete -f deploy/spectrum_scale.yaml
 kubectl delete -f deploy/operator.yaml
@@ -252,6 +153,37 @@ kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 kubectl delete -f deploy/namespace.yaml
 ```
 
-Please note, this will completely destroy the operator and all associated resources.
+> **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+
+This will completely destroy the operator and all associated resources.
+
+### Open Shift Considerations
+
+When uninstalling on OpenShift the operator creates a `SecurityContextConstraint`  named `csiaccess`.
+This allows the driver to mount files in non default namespaces. 
+
+To verify the `SecurityContextConstraint` is gone:
+
+``` bash
+kubectl get SecurityContextConstraints csiaccess
+
+# If you get a result:
+kubectl delete SecurityContextConstraints csiaccess
+```
+
+### Stuck Operator
+In cases where deleting the operator `Custom Resource` fails the following recipe can be executed:
+
+``` bash
+# This may need to be customized in OLM environments:
+NAMESPACE=ibm-spectrum-scale-csi-driver
+kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
+curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json 127.0.0.1:8001/api/v1/namespaces/$NAMESPACE/finalize
+rm -f temp.json
+```
+
+Typically this happens when deleting the `Custom Resource Definition` before removing all of the `Custom Resources`.
+
+For more details on this check the following [GitHub Issue](https://github.com/operator-framework/operator-sdk/issues/2094).
 
 

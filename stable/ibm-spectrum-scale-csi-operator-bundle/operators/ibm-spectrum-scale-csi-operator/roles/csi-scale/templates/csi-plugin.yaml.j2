@@ -52,11 +52,6 @@ spec:
             - name: registration-dir
               mountPath: /registration
         - name: ibm-spectrum-scale-csi
-          securityContext:
-            privileged: true
-            capabilities:
-              add: ["SYS_ADMIN"]
-            allowPrivilegeEscalation: true
           image: "{{ spectrumScale }}"
           args :
             - "--nodeid=$(NODE_ID)"
@@ -77,8 +72,8 @@ spec:
               value: "{{ scaleHostpath }}"
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
-            - name: SECRET_TRIGGER
-              value: "{{secretCounter}}"
+            - name: SECRET_CHECKSUM
+              value: "{{secret_checksum}}"
 {% if nodeMapping|length > 0 %}
 {% for nodemap in nodeMapping %}
             - name: "{{ nodemap.k8sNode }}"
@@ -92,7 +87,6 @@ spec:
               mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet
-              mountPropagation: "Bidirectional"
             - mountPath: /dev
               name: host-dev
             - name: "spectrum-scale-config"
