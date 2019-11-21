@@ -4,6 +4,8 @@ import sys
 import os
 import yaml
 import zipfile
+from shutil import copyfile
+
 
 BASE_DIR="{0}/..".format(os.path.dirname(os.path.realpath(__file__)))
 OLM_CATALOG="{0}/deploy/olm-catalog".format(BASE_DIR)
@@ -31,6 +33,9 @@ A hack to package the operator for release.
 will be the <package-name>.zip (executing dir if not supplied). If a file with a path is supplied, 
 it will be placed in that location.''')
 
+  parser.add_argument( '--nozip',  dest='nozip', 
+      action='store_true',
+      help='''A flag to not zip the operator (useful for courier scans).''')
   
   args = parser.parse_args()
 
@@ -92,12 +97,20 @@ it will be placed in that location.''')
       zipname = args.output
 
   # zip the used files.
-  with  zipfile.ZipFile(zipname, 'w') as packagezip:
-    packagezip.write(packagefile, packagefilename)
+  if not args.nozip:
+    with  zipfile.ZipFile(zipname, 'w') as packagezip:
+      packagezip.write(packagefile, packagefilename)
+
+      for config in os.listdir(csvdir):
+        packagezip.write("{0}/{1}".format( csvdir, config), config)
+  else:
+    dirname= "{0}".format( args.output )
+    os.mkdir(dirname)
+    copyfile(packagefile, "{0}/{1}".format(dirname, packagefilename))
 
     for config in os.listdir(csvdir):
-      packagezip.write("{0}/{1}".format( csvdir, config), config)
-  
+      copyfile("{0}/{1}".format( csvdir, config), "{0}/{1}".format(dirname, config))
+
   print("Package {0} was bundled to {1}".format(packagename, zipname))
 
 if __name__ == "__main__":
