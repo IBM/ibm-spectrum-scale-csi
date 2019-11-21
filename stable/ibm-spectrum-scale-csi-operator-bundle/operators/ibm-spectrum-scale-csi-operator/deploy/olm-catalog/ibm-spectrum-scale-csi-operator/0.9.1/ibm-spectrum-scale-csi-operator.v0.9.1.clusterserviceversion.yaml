@@ -70,12 +70,6 @@ spec:
         path: scaleHostpath
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: A collection of gpfs cluster properties for the csi driver to
-          mount.
-        displayName: Clusters
-        path: clusters
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:arrayFieldGroup
       - description: Image name for the csi spectrum scale plugin container.
         displayName: Spectrum Scale Image
         path: spectrumScale
@@ -91,16 +85,12 @@ spec:
         displayName: nodeMapping
         path: nodeMapping
         x-descriptors: []
-      - description: Provisioner image for csi (actually issues provision requests).
-        displayName: Provisioner Image
-        path: provisioner
+      - description: A collection of gpfs cluster properties for the csi driver to
+          mount
+        displayName: Clusters
+        path: clusters
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Sidecar container image for the csi spectrum scale plugin pods.
-        displayName: Driver Registrar Image
-        path: driverRegistrar
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
+        - urn:alm:descriptor:com.tectonic.ui:arrayFieldGroup
       - description: Node selector for SpectrumScale CSI Plugin.
         displayName: pluginNodeSelector
         path: pluginNodeSelector
@@ -151,6 +141,12 @@ spec:
     spec:
       clusterPermissions:
       - rules:
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - '*'
         - apiGroups:
           - ''
           resources:
