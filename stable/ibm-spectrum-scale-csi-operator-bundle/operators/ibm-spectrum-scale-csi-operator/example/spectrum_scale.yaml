@@ -1,22 +1,43 @@
+# spectrum_scale.yaml
 apiVersion: scale.ibm.com/v1alpha1
 kind: 'CSIScaleOperator'
-metadata: 
+metadata:
     # IMPORTANT THE OPERATOR LOOKS FOR THIS!
     name: 'ibm-spectrum-scale-csi'
     namespace: ibm-spectrum-scale-csi-driver
 status: {}
-spec: 
-  # 
-  scaleHostpath: "/ibm/fs1"
+spec:
+  # Required
+  # ----
+  # The path to the gpfs file system mounted on the host machine.
+  scaleHostpath: "<REPLACE ME>"
 
-  clusters: 
-    - id: "11832033572270148010"
-      secrets: "secret1"
+  # A collection of gpfs cluster properties for the csi driver to mount.
+  clusters:
+    # The cluster id of the gpfs cluster specified (mandatory).
+    - id: "<REPLACE ME>"
+
+      # A string specifying a secret resource name.
+      secrets: "<REPLACE ME>"
+
+      # Require a secure SSL connection to connect to GPFS.
       secureSslMode: false
+
+      # A string specifying a cacert resource name.
+      # cacert: <>
+
+      # The primary file system for the GPFS cluster
       primary:
-        primaryFs: "fs1"
-        primaryFset: "csiFset2"
-      restApi: 
-      - guiHost: "jdunham-rh72-k8s-scale-master.fyre.ibm.com"
+        # The name of the primary filesystem.
+        primaryFS: "<REPLACE ME>"
+        # The name of the primary fileset, created in primaryFS.
+        primaryFset: "<REPLACE ME>"
 
+      # A collection of targets for REST calls.
+      restApi:
+        # The hostname of the REST server.
+        - guiHost: "<REPLACE ME>"
 
+          # The port number running the REST server.
+          # guiPort
+  # ----
