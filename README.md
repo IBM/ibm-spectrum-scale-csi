@@ -111,7 +111,7 @@ At this point the operator is running and ready for use!
 > **NOTE**: This will be the prefered method.  However, work is ongoing.
 
 
-> **NOTE**: Installing OLM is out of the scope of this document, please refer to [the official documentation](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md)
+> **NOTE**: Installing OLM is out of the scope of this document, please refer to [the official documentation](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md). If you're still having trouble, [this guide goes even deeper](https://github.com/operator-framework/community-operators/blob/master/docs/testing-operators.md).
 
 The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
