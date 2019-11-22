@@ -118,6 +118,11 @@ cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-s
 kubectl apply -f deploy/olm-scripts/operator-source.yaml
 ```
 > **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
+```
+cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+
+oc apply -f deploy/olm-scripts/operator-source-oc.yaml
+```
 
 
 ## Starting the CSI Driver
