@@ -161,7 +161,7 @@ spec:
 
                         guiPort:
                           description: The port number running the REST server.
-                          type: string
+                          type: integer
 
                   secrets:
                     description: A string specifying a secret resource name.
