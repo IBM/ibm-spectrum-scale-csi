@@ -109,6 +109,7 @@ At this point the operator is running and ready for use!
 ### Option B: Using Operator Lifecycle Manager (OLM)
 
 > **NOTE**: This will be the prefered method.  However, work is ongoing.
+> **NOTE**: Installing OLM is out of the scope of this document, please refer to [the official documentation](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md)
 
 The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
