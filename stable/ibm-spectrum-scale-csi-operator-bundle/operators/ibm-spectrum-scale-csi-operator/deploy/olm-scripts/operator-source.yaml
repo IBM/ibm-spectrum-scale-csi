@@ -39,7 +39,7 @@ metadata:
   name: oper-sub
   namespace: marketplace
 spec:
-  channel: alpha
+  channel: beta
   name: ibm-spectrum-scale-csi-operator-app
   source: ibm-spectrum-scale-csi-operator-app
   sourceNamespace: marketplace
