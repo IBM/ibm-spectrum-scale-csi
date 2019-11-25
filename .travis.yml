@@ -38,6 +38,7 @@ addons:
       - "python3-pip" 
 stages:
   - lint
+  - validate_yamls
   - build
   - test
 jobs:
@@ -53,6 +54,11 @@ jobs:
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
 
+    - stage: validate_yamls 
+      name: Validate if yamls are modified, the generated one is also committed
+      script: 
+        - ansible-playbook ${TRAVIS_BUILD_DIR}/ansible/generate-playbook-yaml --extra-vars "testing=true"
+        
     - stage: build
       name: "Build: operator"
       script:
