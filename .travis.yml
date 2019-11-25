@@ -48,8 +48,10 @@ jobs:
     - stage: lint
       name: "Lint: operator-courier"
       script:
-        - pip install operator-courier ansible
-        - ansible-playbook ${TRAVIS_BUILD_DIR}/ansible/generate-playbook.yaml --extra-vars "testing=true"
+        - pip install ansible
+        # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
+        - ansible-playbook ${TRAVIS_BUILD_DIR}/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
+        - pip install operator-courier
         - cd ${CSI_OP_BUILD_DIR}
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
