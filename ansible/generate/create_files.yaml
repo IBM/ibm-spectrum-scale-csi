@@ -4,6 +4,7 @@
   file:
     path: "{{ generated_dir }}"
     state: absent
+  when: not testing
 
 - name: "create the directory {{ generated_dir }}"
   file:
@@ -29,3 +30,9 @@
     - "deploy/namespace.yaml"
     - "example/spectrum_scale.yaml"
   when: non_generated
+
+- name: "[Testing] Comparing the generated operator file with checked in code ..."
+  shell: "diff {{ generated_dir }}/ibm-spectrum-scale-csi-operator.test.yaml {{ generated_dir }}/ibm-spectrum-scale-csi-operator.yaml"
+  failed_when: "diff_output.rc != 0"
+  register: diff_output
+  when: testing

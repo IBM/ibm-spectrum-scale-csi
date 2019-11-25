@@ -7,7 +7,9 @@
     operator_dir: "{{ repo_root_dir }}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
 
     generated_dir: "{{ repo_root_dir }}/generated/installer"
-    generated_op_yaml: "{{ generated_dir }}/ibm-spectrum-scale-csi-operator.yaml"
+  
+    filename: "{{ 'ibm-spectrum-scale-csi-operator.test.yaml' if testing else 'ibm-spectrum-scale-csi-operator.yaml' }}"
+    generated_op_yaml: "{{ generated_dir }}/{{ filename }}"
     operator_files: 
       - name: "deploy/operator.yaml"
       - name: "deploy/role.yaml"
@@ -17,7 +19,9 @@
 
     # Copy over the non modified file to the installer directory
     non_generated: false
-    
+    # Set to true to test Travis
+    testing: false
+
   tasks:
     - name: Create files to help manually install the operator
       include_tasks: generate/create_files.yaml
