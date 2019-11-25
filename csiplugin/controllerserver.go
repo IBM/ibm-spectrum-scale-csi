@@ -303,10 +303,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 	if (scVol.VolSize != 0) {
 		volsiz := strconv.FormatUint(scVol.VolSize, 10)
 
-		// Set softquota = 85% of hardquota/volsize
-		softquota := strconv.FormatUint((scVol.VolSize * 85 / 100), 10)
-
-		err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz, softquota)
+		err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz)
 
 		if err != nil {
 			cs.Cleanup(scVol)

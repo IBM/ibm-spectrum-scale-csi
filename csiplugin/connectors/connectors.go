@@ -41,7 +41,7 @@ type SpectrumScaleConnector interface {
 	IsFilesetLinked(filesystemName string, filesetName string) (bool, error)
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(filesystemName string, filesetName string) (string, error)
-	SetFilesetQuota(filesystemName string, filesetName string, quota string, softquota string) error
+	SetFilesetQuota(filesystemName string, filesetName string, quota string) error
 	CheckIfFSQuotaEnabled(filesystem string) error
 	//Directory operations
 	MakeDirectory(filesystemName string, relativePath string, uid int, gid int) error
