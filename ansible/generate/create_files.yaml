@@ -37,9 +37,14 @@
   register: diff_output
   when: travis_testing|bool
 
-- name: "[Testing] Diff output"
+- name: "[Testing] Diff standard out"
   debug:
     msg: "{{ diff_output.stdout }}"
+  when: travis_testing|bool
+
+- name: "[Testing] Diff standard error"
+  debug:
+    msg: "{{ diff_output.stderr }}"
   when: travis_testing|bool
 
 - name: "[Testing] Failure Message"
