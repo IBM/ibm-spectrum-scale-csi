@@ -4,7 +4,7 @@
   file:
     path: "{{ generated_dir }}"
     state: absent
-  when: not testing
+  when: not travis_testing
 
 - name: "create the directory {{ generated_dir }}"
   file:
@@ -33,6 +33,18 @@
 
 - name: "[Testing] Comparing the generated operator file with checked in code ..."
   shell: "diff {{ generated_dir }}/ibm-spectrum-scale-csi-operator.test.yaml {{ generated_dir }}/ibm-spectrum-scale-csi-operator.yaml"
-  failed_when: "diff_output.rc != 0"
+  ignore_errors: yes
   register: diff_output
-  when: testing
+  when: travis_testing|bool
+
+- name: "[Testing] Diff output"
+  debug:
+    msg: "{{ diff_output.stdout }}"
+  when: travis_testing|bool
+
+- name: "[Testing] Failure Message"
+  fail:
+    msg: "The generated ibm-spectrum-scale-csi-operator.yaml did not match the deploy yaml files, did you forget to check it in?"
+  when:
+    - travis_testing|bool
+    - "diff_output.rc != 0"
