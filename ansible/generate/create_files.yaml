@@ -1,0 +1,31 @@
+---
+
+- name: "delete the directory {{ generated_dir }}"
+  file:
+    path: "{{ generated_dir }}"
+    state: absent
+
+- name: "create the directory {{ generated_dir }}"
+  file:
+    path: "{{ generated_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: "Combining the individual deploy/*yaml files into a single one: {{ generated_op_yaml }}"
+  blockinfile:
+    marker: "# {mark} {{ item.name }}"
+    dest: "{{ generated_op_yaml }}"
+    block: "{{ lookup('file', '{{ operator_dir }}/{{ item.name }}') }}"
+    state: present
+    create: yes
+  with_items:
+    - "{{ operator_files }}"
+
+- name: copy over the files that are not modified
+  copy:
+    src: "{{ operator_dir }}/{{ item }}"
+    dest: "{{ generated_dir }}"
+  with_items: 
+    - "deploy/namespace.yaml"
+    - "example/spectrum_scale.yaml"
+  when: non_generated
