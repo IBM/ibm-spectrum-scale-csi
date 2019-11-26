@@ -154,8 +154,16 @@ def validate(config, section):
 
 def generateDeployScript(cmd, config, deployscript, deploybasepath):
       conf_dict = dict(config.items("CONFIGMAP"))
+      namespace = dict(config.items("PLUGIN")).get("namespace")
 
       with open(deployscript, 'w+') as f:
+           if cmd == "oc":
+                f.write(cmd + " new-project " + namespace)
+           else:
+                f.write(cmd + " create namespace " + namespace)
+           f.write("\n")
+           f.write("\n")
+
            f.write("set -e\n\n")
 
            f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-attacher-rbac.yaml"))
@@ -171,27 +179,28 @@ def generateDeployScript(cmd, config, deployscript, deploybasepath):
                 f.write("\n")
            f.write("\n")
 
-           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "spectrum-scale-secret.json"))
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "spectrum-scale-secret.yaml") + " -n " + namespace)
            f.write("\n")
 
            if conf_dict.get("securesslmode") == "true":
-                f.write(cmd + " create configmap guicertificate --from-file=mycertificate.pem=" + conf_dict.get("cacert") + "\n")
+                f.write(cmd + " create configmap guicertificate --from-file=mycertificate.pem=" + conf_dict.get("cacert") + "-n " + namespace + "\n")
 
-           f.write(cmd + " create configmap spectrum-scale-config --from-file=spectrum-scale-config.json=" + os.path.join(deploybasepath, "spectrum-scale-config.json"))
+           f.write(cmd + " create configmap spectrum-scale-config --from-file=spectrum-scale-config.json=" + os.path.join(deploybasepath, "spectrum-scale-config.json") + " -n " + namespace)
            f.write("\n")
            f.write("\n")
 
-           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-attacher.yaml"))
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-attacher.yaml") + " -n " + namespace)
            f.write("\n")
-           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin-provisioner.yaml") + " -n " + namespace)
            f.write("\n")
-           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin.yaml"))
+           f.write(cmd + " apply -f " + os.path.join(deploybasepath, "csi-plugin.yaml") + " -n " + namespace)
            f.write("\n")
 
       f.close()
 
 def generateDestroyScript(cmd, config, destroyscript, deploybasepath):
       conf_dict = dict(config.items("CONFIGMAP"))
+      namespace = dict(config.items("PLUGIN")).get("namespace")
 
       with open(destroyscript, 'w+') as f:
            f.write("set -e\n\n")
@@ -209,18 +218,18 @@ def generateDestroyScript(cmd, config, destroyscript, deploybasepath):
                 f.write("\n") 
            f.write("\n") 
 
-           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "spectrum-scale-secret.json"))
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "spectrum-scale-secret.yaml") + " -n " + namespace)
            f.write("\n") 
 
            if conf_dict.get("securesslmode") == "true":
-                f.write(cmd + " delete configmap guicertificate \n")
+                f.write(cmd + " delete configmap guicertificate -n " + namespace + "\n")
 
-           f.write(cmd + " delete configmap spectrum-scale-config \n\n")
-           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-attacher.yaml"))
+           f.write(cmd + " delete configmap spectrum-scale-config -n " + namespace + "\n\n")
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-attacher.yaml") + " -n " + namespace)
            f.write("\n") 
-           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-provisioner.yaml"))
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin-provisioner.yaml") + " -n " + namespace)
            f.write("\n") 
-           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin.yaml"))
+           f.write(cmd + " delete -f " + os.path.join(deploybasepath, "csi-plugin.yaml") + " -n " + namespace)
            f.write("\n") 
 
       f.close()
@@ -253,9 +262,9 @@ configure(config, "CONFIGMAP", os.path.join(deploybasepath, "spectrum-scale-conf
                               os.path.join(deploybasepath, "spectrum-scale-config.json"))
 print "Configured '" + deploybasepath + "/spectrum-scale-config.json'"
 
-configure(config, "SECRET", os.path.join(deploybasepath, "spectrum-scale-secret.json_template"),
-                              os.path.join(deploybasepath, "spectrum-scale-secret.json"))
-print "Configured '" + deploybasepath + "/spectrum-scale-secret.json'"
+configure(config, "SECRET", os.path.join(deploybasepath, "spectrum-scale-secret.yaml_template"),
+                              os.path.join(deploybasepath, "spectrum-scale-secret.yaml"))
+print "Configured '" + deploybasepath + "/spectrum-scale-secret.yaml'"
 
 cmd = "kubectl"
 conf_dict = dict(config.items("PLUGIN"))

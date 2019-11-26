@@ -4,6 +4,7 @@ metadata:
   name: ibm-spectrum-scale-csi-provisioner
   labels:
     product: ibm-spectrum-scale-csi
+  namespace: $namespace
 
 ---
 kind: ClusterRole
@@ -12,6 +13,7 @@ metadata:
   name: ibm-spectrum-scale-csi-provisioner
   labels:
     product: ibm-spectrum-scale-csi
+  namespace: $namespace
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -36,6 +38,7 @@ metadata:
   name: ibm-spectrum-scale-csi-provisioner-binding
   labels:
     product: ibm-spectrum-scale-csi
+  namespace: $namespace
 subjects:
   - kind: ServiceAccount
     name: ibm-spectrum-scale-csi-provisioner

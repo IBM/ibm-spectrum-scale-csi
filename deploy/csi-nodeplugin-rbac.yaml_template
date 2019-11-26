@@ -4,6 +4,7 @@ metadata:
   name: ibm-spectrum-scale-csi-node
   labels:
     product: ibm-spectrum-scale-csi
+  namespace: $namespace
 
 ---
 kind: ClusterRole
@@ -12,6 +13,7 @@ metadata:
   name: ibm-spectrum-scale-csi-node
   labels:
     product: ibm-spectrum-scale-csi
+  namespace: $namespace
 rules:
   - apiGroups: [""]
     resources: ["nodes"]
@@ -33,6 +35,7 @@ metadata:
   name: ibm-spectrum-scale-csi-node-binding
   labels:
     product: ibm-spectrum-scale-csi
+  namespace: $namespace
 subjects:
   - kind: ServiceAccount
     name: ibm-spectrum-scale-csi-node
