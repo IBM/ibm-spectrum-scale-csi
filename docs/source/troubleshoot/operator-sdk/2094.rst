@@ -1,0 +1,16 @@
+Removing Stuck Operator [operator-sdk/issue/2094]
+-------------------------------------------------
+
+In cases where deleting the operators ``Custom Resource`` fails, the following can be executed:
+
+.. code-block:: bash
+
+    # This may need to be customized in OLM environments:
+    NAMESPACE=ibm-spectrum-scale-csi-driver
+    kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
+    curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json 127.0.0.1:8001/api/v1/namespaces/$NAMESPACE/finalize
+    rm -f temp.json
+
+Typically this happens when deleting the ``Custom Resource Definition`` before removing all of the ``Custom Resources``.
+
+For more details on this check the following `operator-sdk/issue/2094 <https://github.com/operator-framework/operator-sdk/issues/2094>`_.
