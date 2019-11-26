@@ -6,26 +6,26 @@
          * [Limitations of the CSI driver](#limitations-of-the-csi-driver)
          * [Pre-requisites for installing and running the CSI driver](#pre-requisites-for-installing-and-running-the-csi-driver)
       * [Building the docker image](#building-the-docker-image)
-      * [Install and Deploy the Spectrum Scale CSI driver](#install-and-deploy-the-spectrum-scale-csi-driver)
+      * [Install and Deploy the IBM Spectrum Scale CSI driver](#install-and-deploy-the-spectrum-scale-csi-driver)
       * [Static Provisioning](#static-provisioning)
       * [Dynamic Provisioning](#dynamic-provisioning)
-         * [Storageclass](#storageclass)
+         * [Storageclass](#storageClass)
       * [Advanced Configuration](#advanced-configuration)
          * [Remote mount support](#remote-mount-support)
          * [Node Selector](#node-selector)
-         * [Kubernetes node to Spectrum Scale node mapping](#kubernetes-node-to-spectrum-scale-node-mapping)
+         * [Kubernetes node to IBM Spectrum Scale node mapping](#kubernetes-node-to-spectrum-scale-node-mapping)
       * [Cleanup](#cleanup)
       * [Troubleshooting](#troubleshooting)
       * [Environments in Test](TESTCONFIG.md#environments-in-test)
       * [Example Hardware Configs](TESTCONFIG.md#example-hardware-configs)
-      * [Example of using the Install Toolkit to build a Spectrum Scale cluster for testing the CSI driver](TESTCONFIG.md#example-of-using-the-install-toolkit-to-build-a-spectrum-scale-cluster-for-testing-the-csi-driver)
+      * [Example of using the Install Toolkit to build a IBM Spectrum Scale cluster for testing the CSI driver](TESTCONFIG.md#example-of-using-the-install-toolkit-to-build-a-spectrum-scale-cluster-for-testing-the-csi-driver)
       * [Links](#links)
 
   
 
 # Welcome to the public Beta of IBM Spectrum Scale Container Storage Interface (CSI) Driver
 
-DISCLAIMER: This Beta driver is provided as is, without warranty. Any issue will be handled on a best-effort basis. See the Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
+DISCLAIMER: This Beta driver is provided as is, without warranty. Any issue will be handled on a best-effort basis. See the IBM Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
 
   
 ## IBM Spectrum Scale Introduction
@@ -56,11 +56,10 @@ IBM Spectrum Scale Container Storage Interface (CSI) driver supports the followi
 The IBM Spectrum Scale Container Storage Interface (CSI) driver has the following limitations:
 
 - The size specified in PersistentVolumeClaim for lightweight volume and dependent fileset volume, is not honored.
-- Volumes cannot be mounted in read-only mode.
 - Maximum number of supported volumes that can be created using independent fileset storage class is 998 (excluding the root fileset and primary fileset reserved for CSI driver). This is based upon the [fileset maximums for IBM Spectrum Scale](https://www.ibm.com/support/knowledgecenter/STXKQY/gpfsclustersfaq.html#filesets)
 - The IBM Spectrum Scale GUI server is relied upon for performing file system and cluster operations. If the GUI password or CA certificate expires, manual intervention is needed by the admin to reset the GUI password or generate a new certificate and update the configuration of the CSI driver. In this case, a restart of the CSI driver will be necessary.
 - Rest API status, used by the CSI driver, may lag from actual state, causing PVC mount or unmount failures.
-- Although multiple instances of the Spectrum Scale GUI are allowed, the CSI driver is currently limited to point to a single GUI node.
+- Although multiple instances of the IBM Spectrum Scale GUI are allowed, the CSI driver is currently limited to point to a single GUI node.
 - External attacher and external provisioner run as statefulsets, which by design do not failover to different node in case docker/kubelet is brought down. (They however failover to another node when the node itself is deleted explicitly). It is recommended to run the attacher and provisioner on two separate infrastructure nodes which can be done by using [Node Selector](#node-selector) or by configuring it during [operator deployment](https://github.com/IBM/ibm-spectrum-scale-csi-operator)
 
 ### Pre-requisites for installing and running the CSI driver
@@ -74,11 +73,11 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
   | **GUI node** | required | do not install |
   | **NSD node** | required | optional |
 
-- Red Hat 7.6 (**kernel 3.10.0-957 or higher**) on Spectrum Scale nodes
+- Red Hat 7.6 (**kernel 3.10.0-957 or higher**) on IBM Spectrum Scale nodes
 
 - IBM Spectrum Scale version 5.0.4.1 is installed.
 
-- An IBM Spectrum Scale GUI is up and running on a Spectrum Scale node and a user is created and part of the `CsiAdmin` group
+- An IBM Spectrum Scale GUI is up and running on a IBM Spectrum Scale node and a user is created and part of the `CsiAdmin` group
 
   ```
   /usr/lpp/mmfs/gui/cli/mkuser <__username__> -p <__password__> -g CsiAdmin
@@ -86,9 +85,9 @@ The IBM Spectrum Scale Container Storage Interface (CSI) driver has the followin
 
 - Kubernetes ver 1.13+ cluster is created
  
-- All Kubernetes worker nodes must also be Spectrum Scale client nodes. Install the Spectrum Scale client on all Kubernetes worker nodes and ensure they are added to the Spectrum Scale cluster. (To install Spectrum Scale and CSI driver only on selected nodes, perform the steps from [Node Selector](#node-selector)
+- All Kubernetes worker nodes must also be IBM Spectrum Scale client nodes. Install the IBM Spectrum Scale client on all Kubernetes worker nodes and ensure they are added to the IBM Spectrum Scale cluster. (To install IBM Spectrum Scale and CSI driver only on selected nodes, perform the steps from [Node Selector](#node-selector)
 
-- The Filesystem to be used for persistent storage must be mounted on the Spectrum Scale GUI node as well as all Kubernetes worker nodes. (*If multiple filesystems are to be used as persistent storage for containers, then all need to be mounted*)
+- The Filesystem to be used for persistent storage must be mounted on the IBM Spectrum Scale GUI node as well as all Kubernetes worker nodes. (*If multiple filesystems are to be used as persistent storage for containers, then all need to be mounted*)
 
 - Quota must be enabled on the filesystem (*required for fileset based dynamic provisioning*)
   ```
@@ -138,7 +137,7 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
 
 
-## Install and Deploy the Spectrum Scale CSI driver
+## Install and Deploy the IBM Spectrum Scale CSI driver
 
 1. Copy and load the docker image on all Kubernetes worker nodes
 
@@ -215,21 +214,21 @@ For static provisioning of existing directories perform the following steps:
 
 ## Dynamic Provisioning
 
-Dynamic provisioning is used to dynamically provision the storage backend volume based on the storageclass.
+Dynamic provisioning is used to dynamically provision the storage backend volume based on the storageClass.
 
 ### Storageclass
-Storageclass defines what type of backend volume should be created by dynamic provisioning. IBM Spectrum Scale CSI driver supports creation of directory based (also known as lightweight volumes) and fileset based (independent as well as dependent) volumes. Following parameters are supported by BM Spectrum Scale CSI driver storageclass:
+Storageclass defines what type of backend volume should be created by dynamic provisioning. IBM Spectrum Scale CSI driver supports creation of directory based (also known as lightweight volumes) and fileset based (independent as well as dependent) volumes. Following parameters are supported by IBM Spectrum Scale CSI driver storageClass:
 
  - **volBackendFs**: Filesystem on which the volume should be created. This is a mandatory parameter.
  - **clusterId**: Cluster ID on which the volume should be created. 
- - **volDirBasePath**: Base directory path relative to the filesystem mount point under which directory based volumes should be created. If specified, the storageclass is used for directory based (lightweight) volume creation. If not specified, storageclass creates fileset based volumes.
+ - **volDirBasePath**: Base directory path relative to the filesystem mount point under which directory based volumes should be created. If specified, the storageClass is used for directory based (lightweight) volume creation. If not specified, storageClass creates fileset based volumes.
  - **uid**: UID with which the volume should be created. Optional
  - **gid**: UID with which the volume should be created. Optional
  - **filesetType**: Type of fileset. Valid values are "independent" or "dependent". Default is "independent". 
- - **parentFileset**: Specifies the parent fileset under which dependent fileset should be created. Mandatory if "fileset-type" is specified.
- - **inodeLimit**: Inode limit for fileset based volumes. If not specified, default Spectrum Scale inode limit of 1million is used.
+ - **parentFileset**: Specifies the parent fileset under which dependent fileset should be created. Mandatory if "filesetType" is specified.
+ - **inodeLimit**: Inode limit for fileset based volumes. If not specified, default IBM Spectrum Scale inode limit of 1 million is used.
  
-For dynamic provisioning, use sample storageclass, pvc and pod files for sanity test under examples/dynamic
+For dynamic provisioning, use sample storageClass, pvc and pod files for sanity test under examples/dynamic
 
 Example:
 
@@ -247,7 +246,7 @@ Note: This advanced configuration is supported through operator and manual steps
 
 ### Remote mount support
 
-IBM Spectrum Scale provides a feature to mount a Spectrum Scale file system that belongs to another IBM Spectrum Scale cluster. Consider the case where Kubernetes worker nodes are part of a "primary" Spectrum Scale cluster. This primary cluster has filesystems mounted from a "remote" Spectrum Scale cluster. 
+IBM Spectrum Scale provides a feature to mount a IBM Spectrum Scale file system that belongs to another IBM Spectrum Scale cluster. Consider the case where Kubernetes worker nodes are part of a "primary" Spectrum Scale cluster. This primary cluster has filesystems mounted from a "remote" IBM Spectrum Scale cluster.
 
 In order to deploy CSI driver on such a configuration, following steps should be performed after running the installer "spectrum-scale-driver.py":
 
@@ -303,14 +302,14 @@ In order to deploy CSI driver on such a configuration, following steps should be
 
 - Deploy the driver by running `deploy/create.sh`
 
-- For lightweight dynamic provisioning, no change in storageclass is needed.
+- For lightweight dynamic provisioning, no change in storageClass is needed.
 
-- For fileset based dynamic provisioning, use the storageclass parameters as below:
+- For fileset based dynamic provisioning, use the storageClass parameters as below:
 
    * **volBackendFs**: Filesystem on which the volume should be created. Use the remote cluster filesystem name here.
    * **clusterId**: Remote Cluster ID on which the volume (fileset) should be created. 
    * **localFs**: Name of the locally mounted filesystem. This is required only if the local name and remote filesystem names are different.
-	Rest of the storageclass parameteres remain valid.
+	Rest of the storageClass parameteres remain valid.
 
 ### Node Selector
 
@@ -336,13 +335,13 @@ To use this feature, perform the following steps after running the installer "sp
 
 **Note:** If you choose to run csi plugin on selective nodes using the node selector then make sure pod using scale csi pvc are getting scheduled on nodes where csi driver is running.
 
-### Kubernetes node to Spectrum Scale node mapping
+### Kubernetes node to IBM Spectrum Scale node mapping
 
-In an environment where Kubernetes node names are different than the Spectrum Scale node names, this mapping feature must be used for application pods with Spectrum Scale as persistent storage to be successfully mounted.
+In an environment where Kubernetes node names are different than the IBM Spectrum Scale node names, this mapping feature must be used for application pods with IBM Spectrum Scale as persistent storage to be successfully mounted.
 
 To use this feature, perform the following steps after running the installer "spectrum-scale-driver.py":
 
-- Add new environment variable in `deploy/csi-plugin.yaml` under container "*- name: ibm-spectrum-scale-csi*", where name of the environment variable is Kubernetes node name and value is the Spectrum Scale node name. 
+- Add new environment variable in `deploy/csi-plugin.yaml` under container "*- name: ibm-spectrum-scale-csi*", where name of the environment variable is Kubernetes node name and value is the IBM Spectrum Scale node name.
 
   ```
   env:
@@ -352,13 +351,13 @@ To use this feature, perform the following steps after running the installer "sp
        value: "scalenodename2"
   ```
 
-  **Note:** Only add those nodes whose name is different in Kubernetes (`kubectl get nodes`) and Spectrum Scale (`mmlscluster/mmlsnode`)
+  **Note:** Only add those nodes whose name is different in Kubernetes (`kubectl get nodes`) and IBM Spectrum Scale (`mmlscluster/mmlsnode`)
 	
 - Deploy the driver by running `deploy/create.sh`
 
 ## Cleanup
 
-1. Delete the resources that were created (pod, pvc, pv, storageclass)
+1. Delete the resources that were created (pod, pvc, pv, storageClass)
 
 2. Run deploy/destroy.sh script to cleanup the plugin resources
 
@@ -390,13 +389,13 @@ Usage:
 ## Links
 
 [IBM Spectrum Scale Knowledge Center Welcome Page](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html)
-The Knowledge Center contains all official Spectrum Scale information and guidance.
+The Knowledge Center contains all official IBM Spectrum Scale information and guidance.
 
 [IBM Spectrum Scale FAQ](https://www.ibm.com/support/knowledgecenter/en/STXKQY/gpfsclustersfaq.html)
-Main starting page for all Spectrum Scale compatibility information.
+Main starting page for all IBM Spectrum Scale compatibility information.
 
 [IBM Spectrum Scale Protocols Quick Overview](https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/fa32927c-e904-49cc-a4cc-870bcc8e307c/page/Protocols%20Quick%20Overview%20for%20IBM%20Spectrum%20Scale)
-Guide showing how to quickly install a Spectrum Scale cluster. Information similar to the above Install Toolkit example.
+Guide showing how to quickly install a IBM Spectrum Scale cluster. Information similar to the above Install Toolkit example.
 
 [IBM Block CSI driver](https://github.com/IBM/ibm-block-csi-driver)
 CSI driver supporting multiple IBM storage systems.
@@ -410,8 +409,8 @@ Red Hat's test matrix for OpenShift 4.x.
 [IBM Storage Enabler for Containers Welcome Page](https://www.ibm.com/support/knowledgecenter/en/SSCKLT/landing/IBM_Storage_Enabler_for_Containers_welcome_page.html)
 Flex Volume driver released in late 2018 with a HELM update in early 2019, providing compatibility with IBM Spectrum Scale for file storage and multiple IBM storage systems for block storage. Future development efforts have shifted to CSI.
 
-[Spectrum Scale Users Group](http://www.gpfsug.org/)
-A group of both IBM and non-IBM users, interested in Spectrum Scale
+[IBM Spectrum Scale Users Group](http://www.gpfsug.org/)
+A group of both IBM and non-IBM users, interested in IBM Spectrum Scale
 
-[Spectrum Scale Users Group Mailing List and Slack Channel](https://www.spectrumscaleug.org/join/)
+[IBM Spectrum Scale Users Group Mailing List and Slack Channel](https://www.spectrumscaleug.org/join/)
 Join everyone and let the team know about your experience with the CSI driver
