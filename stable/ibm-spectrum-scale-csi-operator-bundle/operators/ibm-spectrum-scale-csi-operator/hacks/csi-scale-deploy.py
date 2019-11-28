@@ -65,7 +65,7 @@ def main(args):
     "/bin/bash -c 'kubectl {0} -f deploy/role.yaml",
     "/bin/bash -c 'kubectl {0} -f deploy/service_account.yaml",
     "/bin/bash -c 'kubectl {0} -f deploy/role_binding.yaml",
-    "/bin/bash -c 'kubectl {0} -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml",
+    "/bin/bash -c 'kubectl {0} -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml",
     "/bin/bash -c 'kubectl {0} -f deploy/operator.yaml" 
   ]
 

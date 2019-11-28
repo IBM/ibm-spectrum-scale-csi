@@ -10,7 +10,7 @@ OP_PKG=ibm-spectrum-scale-csi-operator-app.zip
 ADDITIONAL_RESOURCES=["service_account.yaml", "role_binding.yaml"]
 
 # Assumed to be in the "deploy" directory.
-CRD_LIST=["ibm_v1alpha1_csiscaleoperator_crd.yaml"]
+CRD_LIST=["ibm-spectrum-scale-csi-operator-crd.yaml"]
 
 # Socrecard Variables FIXME
 SC_VARS="--config .osdk-scorecard.yaml"

@@ -2,7 +2,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/..
 
-CRD="ibm_v1alpha1_csiscaleoperator_crd.yaml"
+CRD="ibm-spectrum-scale-csi-operator-crd.yaml"
 OP_CRD="deploy/crds/${CRD}"
 CAT="deploy/olm-catalog/ibm-spectrum-scale-csi-operator/0.9.2"
 OP_CSV="${CAT}/ibm-spectrum-scale-csi-operator.v0.9.2.clusterserviceversion.yaml"

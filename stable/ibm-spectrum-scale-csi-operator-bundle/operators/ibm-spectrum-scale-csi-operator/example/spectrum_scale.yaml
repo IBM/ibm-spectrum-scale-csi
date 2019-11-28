@@ -28,7 +28,7 @@ spec:
       # The primary file system for the GPFS cluster
       primary:
         # The name of the primary filesystem.
-        primaryFS: "<REPLACE ME>"
+        primaryFs: "<REPLACE ME>"
         # The name of the primary fileset, created in primaryFS.
         primaryFset: "<REPLACE ME>"
 
