@@ -76,7 +76,7 @@ spec:
       volumes:
       - emptyDir: {}
         name: runner
-# END deploy/operator.yaml
+--- # END deploy/operator.yaml
 # BEGIN deploy/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -319,7 +319,7 @@ rules:
   - create
   - update
   - patch
-# END deploy/role.yaml
+--- # END deploy/role.yaml
 # BEGIN deploy/role_binding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -414,7 +414,7 @@ subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-attacher
   namespace: ibm-spectrum-scale-csi-driver
-# END deploy/role_binding.yaml
+--- # END deploy/role_binding.yaml
 # BEGIN deploy/service_account.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -459,7 +459,7 @@ metadata:
     product: ibm-spectrum-scale-csi
   name: ibm-spectrum-scale-csi-provisioner
   namespace: ibm-spectrum-scale-csi-driver
-# END deploy/service_account.yaml
+--- # END deploy/service_account.yaml
 # BEGIN deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -655,4 +655,4 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-# END deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
+--- # END deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml

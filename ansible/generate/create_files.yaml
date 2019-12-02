@@ -28,6 +28,15 @@
   with_items:
     - "{{ operator_files }}"
 
+- name: "Replace the marker END with ---"
+  lineinfile:
+    dest: "{{ generated_op_yaml }}"
+    line: "--- # END {{ item.name }}"
+    regexp: '\# END {{ item.name }}'
+    state: present
+  with_items: 
+    - "{{ operator_files }}"
+
 - name: copy over the files that are not modified
   copy:
     src: "{{ operator_dir }}/{{ item }}"
