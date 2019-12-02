@@ -1,4 +1,3 @@
-# spectrum_scale_detail.yaml
 apiVersion: csi.ibm.com/v1
 kind: 'CSIScaleOperator'
 metadata:

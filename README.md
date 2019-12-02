@@ -141,19 +141,19 @@ Before starting the plugin, add any secrets to the appropriate namespace.  The S
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). 
+A sample of the file is provided [deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml). 
 
 Modify this file to match the properties in your environment, then:
 
-  * To start the CSI plugin, run: `kubectl apply -f spectrum_scale.yaml` 
-  * To stop the CSI plugin, run: `kubectl delete -f spectrum_scale.yaml` 
+  * To start the CSI plugin, run: `kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
+  * To stop the CSI plugin, run: `kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
 
 ## Uninstalling the CSI Operator
 
 To remove the operator:
 
 ``` bash
-kubectl delete -f deploy/spectrum_scale.yaml
+kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml
 kubectl delete -f deploy/role_binding.yaml
