@@ -1,0 +1,18 @@
+- name: Run tests
+  hosts: all
+  become: yes
+  gather_facts: false
+  # The following simulates the metadata in molecule:
+  vars:
+    custom_resource:
+      apiVersion: scale.ibm.com/v1alpha1
+      kind:       CSIScaleOperator
+      metadata:
+        name: "ibm-spectrum-scale-csi"
+    namespace: ibm-spectrum-scale-csi-driver
+
+
+  tasks:
+    
+    - name: Run tests
+      include_tasks: ../default/tests/basic_tests.yaml
