@@ -41,6 +41,14 @@ spec:
               description: Image name for the csi spectrum scale plugin container.
               type: string
 
+            provisioner:
+              description: Provisioner image for csi (actually issues provision requests).
+              type: string
+
+            driverRegistrar:
+              description: Sidecar container image for the csi spectrum scale plugin pods.
+              type: string
+
             scaleHostpath:
               description: The path to the gpfs file system mounted on the host machine.
               type: string
@@ -102,7 +110,7 @@ spec:
                     type: string
 
             clusters:
-              description: A collection of gpfs cluster properties for the csi driver to mount
+              description: A collection of gpfs cluster properties for the csi driver to mount.
               required:
               - id
               type: array
@@ -153,7 +161,7 @@ spec:
 
                         guiPort:
                           description: The port number running the REST server.
-                          type: string
+                          type: integer
 
                   secrets:
                     description: A string specifying a secret resource name.

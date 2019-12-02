@@ -7,7 +7,7 @@ import os
 import yaml
 
 DEFAULT_DEPLOY="{0}/../deploy/operator.yaml".format(os.path.dirname(os.path.realpath(__file__)))
-DEFAULT_IMAGE="quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1"
+DEFAULT_IMAGE="quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.2"
 DEV_PULL="Always"
 REL_PULL="IfNotPresent"
 NEV_PULL="Never"

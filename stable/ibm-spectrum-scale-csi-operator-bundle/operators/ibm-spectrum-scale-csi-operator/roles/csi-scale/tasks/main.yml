@@ -14,11 +14,54 @@
   set_fact:
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
     cluster_checksum: "{{ clustersCamelCase | to_json | checksum }}"
-
+    secret_checksums: []
 
 - name: "Ensure the clusters are valid"
   include_tasks: cluster_check.yml
   loop: "{{ clustersCamelCase }}"
+
+- name: "Generate final secret checksum"
+  set_fact:
+    secret_checksum: "{{ secret_checksums | join('') | checksum }}"
+
+- name: "Ensure SCC"
+  when: '"apps.openshift.io" in api_groups'
+  block:
+  - name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
+    k8s_facts:
+      kind:  "SecurityContextConstraints"
+      name : "csiaccess"
+    register: csiaccess_results
+
+  - name: "Ensure the csiaccess_users list"
+    set_fact:
+      csiaccess_users: "{{ (csiaccess_results.resources[0].users | default([])) }}"
+      scc_state: "present"
+      csiaccess_users_new:
+        - 'system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-attacher'
+        - 'system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-provisioner'
+        - 'system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-node'
+  
+  - name: "Union users if state is present"
+    set_fact:
+      csiaccess_users: "{{csiaccess_users | union(csiaccess_users_new) }}"
+    when: 'state == "present"'
+
+  - name: "Difference users if state is absent"
+    set_fact:
+      csiaccess_users:  "{{csiaccess_users | difference(csiaccess_users_new)}}"
+    when: 'state != "present"'
+
+  - name: "Update scc_state"
+    set_fact:
+      scc_state: "absent"
+    when: '(csiaccess_users|length) == 0'
+
+  - name: "Ensure SCC are {{ state }}"
+    k8s:
+      state: "{{scc_state}}"
+      namespace: "{{namespace}}"
+      definition: "{{ lookup('template', 'scc.yaml.j2') | from_yaml }}"
 
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:

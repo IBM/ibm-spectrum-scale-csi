@@ -77,8 +77,8 @@ spec:
               value: "{{ scaleHostpath }}"
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
-            - name: SECRET_TRIGGER
-              value: "{{secretCounter}}"
+            - name: SECRET_CHECKSUM
+              value: "{{secret_checksum}}"
 {% if nodeMapping|length > 0 %}
 {% for nodemap in nodeMapping %}
             - name: "{{ nodemap.k8sNode }}"
@@ -130,7 +130,7 @@ spec:
             path: /dev
         - name: "spectrum-scale-config"
           configMap:
-            name: "spectrum-scale-config-json"
+            name: "spectrum-scale-config"
         - name: gpfs-classic
           hostPath:
             path: "{{ scaleHostpath }}"

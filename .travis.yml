@@ -49,7 +49,9 @@ jobs:
       name: "Lint: operator-courier"
       script:
         - pip install operator-courier 
-        - operator-courier verify --ui_validate_io ${OLM_MANIFEST}
+        - cd ${CSI_OP_BUILD_DIR}
+        - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
+        - operator-courier --verbose verify --ui_validate_io /tmp/operator
 
     - stage: build
       name: "Build: operator"

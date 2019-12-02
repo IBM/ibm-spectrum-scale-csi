@@ -28,10 +28,11 @@ def loadDescriptors(descType, crd, csv, descriptorMap={}):
   
         for key in keys:
             prop     = subprops.get(key, {})
-            subprops = prop.get("properties", {})
+            subprops = prop.get("items",{}).get("properties", {})
+
         
         # Enqueue the sub properties (if present)
-        for subprop in prop.get("properties", {}).keys():
+        for subprop in subprops.keys():
             specpaths.append("{0}.{1}".format(path,subprop))
         
         
