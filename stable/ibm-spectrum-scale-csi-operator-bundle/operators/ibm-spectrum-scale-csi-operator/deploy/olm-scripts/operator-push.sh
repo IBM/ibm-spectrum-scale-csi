@@ -6,11 +6,11 @@ cd ${DIR}/..
 export OPERATOR_DIR=olm-catalog/ibm-spectrum-scale-csi-operator
 export QUAY_NAMESPACE=mew2057
 export PACKAGE_NAME=ibm-spectrum-scale-csi-operator-app
-export PACKAGE_VERSION=0.1.13
+export PACKAGE_VERSION=0.1.21
 export TOKEN=$(curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '
 {"user": {"username": "'"${QUAY_USERNAME}"'","password": "'"${QUAY_PASSWORD}"'"}}' | cut -d'"' -f4)
 
-operator-courier verify --ui_validate_io "$OPERATOR_DIR"
+#operator-courier verify --ui_validate_io "$OPERATOR_DIR"
 
 if [ $? -eq 0 ] 
 then
