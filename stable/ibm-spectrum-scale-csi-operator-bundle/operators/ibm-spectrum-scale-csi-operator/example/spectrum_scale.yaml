@@ -1,5 +1,5 @@
 # spectrum_scale.yaml
-apiVersion: scale.ibm.com/v1alpha1
+apiVersion: csi.ibm.com/v1
 kind: 'CSIScaleOperator'
 metadata:
     name: 'ibm-spectrum-scale-csi'

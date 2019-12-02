@@ -55,7 +55,7 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - scale.ibm.com
+  - csi.ibm.com
   resources:
   - '*'
   verbs:

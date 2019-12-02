@@ -1,9 +1,9 @@
 - ManageStatus: true
-  group: scale.ibm.com
+  group: csi.ibm.com
   kind: CSIScaleOperator
   role: /opt/ansible/roles/csi-scale
-  version: v1alpha1
+  version: v1
   finalizer:
-    name: finalizer.scale.ibm.com
+    name: finalizer.spectrumscale.csi.ibm.com
     vars:
       state: absent

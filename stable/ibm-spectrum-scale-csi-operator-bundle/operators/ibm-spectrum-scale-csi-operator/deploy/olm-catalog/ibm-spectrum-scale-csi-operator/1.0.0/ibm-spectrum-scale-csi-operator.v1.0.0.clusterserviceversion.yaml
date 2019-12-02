@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: "[\n  {\n    \"apiVersion\": \"scale.ibm.com/v1alpha1\",\n    \"\
+    alm-examples: "[\n  {\n    \"apiVersion\": \"csi.ibm.com/v1\",\n    \"\
       kind\": \"CSIScaleOperator\",\n    \"metadata\": {\n      \"name\": \"ibm-spectrum-scale-csi\"\
       ,\n      \"namespace\": \"ibm-spectrum-scale-csi-driver\"\n    },\n    \"spec\"\
       : {\n      \"attacher\": \"\\u003c Attacher Image Name \\u003e\",\n      \"\
@@ -50,11 +50,11 @@ spec:
     - description: Represents a deployment of the IBM CSI Spectrum Scale plugin.
       displayName: IBM CSI Spectrum Scale App
       kind: CSIScaleOperator
-      name: csiscaleoperators.scale.ibm.com
+      name: csiscaleoperators.csi.ibm.com
       resources:
       - kind: csiscaleoperators
         name: ''
-        version: v1alpha1
+        version: v1
       - kind: Deployment
         name: ''
         version: v1
@@ -222,7 +222,7 @@ spec:
         path: conditions.isRunning
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.phase
-      version: v1alpha1
+      version: v1
   description: "IBM Spectrum Scale CSI Operator Quickstart\n==========================================\n\
     \nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster providing\
     \ a means to \ndeploy and manage the CSI plugin for spectrum scale.\n\nThis operator\
@@ -510,7 +510,7 @@ spec:
           verbs:
           - get
         - apiGroups:
-          - scale.ibm.com
+          - csi.ibm.com
           resources:
           - '*'
           verbs:
