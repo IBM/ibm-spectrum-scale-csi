@@ -55,7 +55,7 @@ Run the following to deploy the operator manually:
   kubectl apply -f deploy/role.yaml
   kubectl apply -f deploy/role_binding.yaml
   kubectl apply -f deploy/service_account.yaml
-  kubectl apply -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
+  kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
   
   
 Starting the CSI Driver
@@ -95,7 +95,7 @@ To remove the operator:
   kubectl delete -f deploy/role.yaml
   kubectl delete -f deploy/role_binding.yaml
   kubectl delete -f deploy/service_account.yaml
-  kubectl delete -f deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml
+  kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
 
   # The following removes the namespace 
   kubectl delete -f deploy/namespace.yaml

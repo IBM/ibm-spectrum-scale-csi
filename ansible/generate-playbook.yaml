@@ -15,7 +15,7 @@
       - name: "deploy/role.yaml"
       - name: "deploy/role_binding.yaml"
       - name: "deploy/service_account.yaml"
-      - name: "deploy/crds/ibm_v1alpha1_csiscaleoperator_crd.yaml"
+      - name: "deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml"
 
     # Copy over the non modified file to the installer directory
     non_generated: false
