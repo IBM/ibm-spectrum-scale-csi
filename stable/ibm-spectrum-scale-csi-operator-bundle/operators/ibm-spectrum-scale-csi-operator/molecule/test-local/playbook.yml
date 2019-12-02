@@ -95,7 +95,7 @@
     
     - name: Check if CI
       set_fact:
-      oper-debug: '{{ lookup("k8s",
+        oper-debug: '{{ lookup("k8s",
           kind="Deployment",
           api_version="apps/v1",
           namespace=namespace,
