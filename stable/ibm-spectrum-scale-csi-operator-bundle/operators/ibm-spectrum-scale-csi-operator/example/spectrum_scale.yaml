@@ -9,15 +9,15 @@ spec:
   # Required
   # ----
   # The path to the gpfs file system mounted on the host machine.
-  scaleHostpath: "<REPLACE ME>"
+  scaleHostpath: "< GPFS FileSystem Path >"
 
   # A collection of gpfs cluster properties for the csi driver to mount.
   clusters:
     # The cluster id of the gpfs cluster specified (mandatory).
-    - id: "<REPLACE ME>"
+    - id: "< Primary Cluster ID >"
 
       # A string specifying a secret resource name.
-      secrets: "<REPLACE ME>"
+      secrets: "< Primary Cluster Secret >"
 
       # Require a secure SSL connection to connect to GPFS.
       secureSslMode: false
@@ -28,14 +28,14 @@ spec:
       # The primary file system for the GPFS cluster
       primary:
         # The name of the primary filesystem.
-        primaryFs: "<REPLACE ME>"
+        primaryFs: "< Primary Filesystem >"
         # The name of the primary fileset, created in primaryFS.
-        primaryFset: "<REPLACE ME>"
+        primaryFset: "< Fileset in Primary Filesystem >"
 
       # A collection of targets for REST calls.
       restApi:
         # The hostname of the REST server.
-        - guiHost: "<REPLACE ME>"
+        - guiHost: "< Primary cluster GUI IP/Hostname >"
 
           # The port number running the REST server.
           # guiPort
