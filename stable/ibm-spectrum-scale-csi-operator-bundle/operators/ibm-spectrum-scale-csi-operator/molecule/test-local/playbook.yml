@@ -66,7 +66,7 @@
     - debug:
         var: namespace
 
-    - name: Wait 60s for reconciliation to run
+    - name: Wait 120s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
         kind: '{{ custom_resource.kind }}'
@@ -76,7 +76,7 @@
       until:
       - "'Successful' in (cr | json_query('resources[].status.conditions[].reason'))"
       delay: 6
-      retries: 10
+      retries: 20
 
 
     rescue:
