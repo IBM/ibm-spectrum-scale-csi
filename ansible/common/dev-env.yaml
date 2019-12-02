@@ -19,12 +19,12 @@
     requirements: "{{playbook_dir}}/common/requirements-dev.txt"
     executable: pip3
 
-#- name: Ensure that the docker is installed
-#  package:
-#    name: "{{ item }}"
-#    state: present
-#  with_items:
-#    - docker
+- name: Ensure that the docker is installed
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - docker
 
 - name: Ensure 'operator-sdk' is installed
   get_url:  
