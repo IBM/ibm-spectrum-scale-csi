@@ -75,11 +75,12 @@ spec:
 #        inodeLimit: "< node limit for Primary Fileset >"  # Optional
 #        remoteCluster: "< Remote ClusterID >" # Optional, This ID should have seperate entry in Clusters map.
 #        remoteFs: "< Remote Filesystem >" #Optional
+#      cacert: "< CA cert for GUI >" #Optional
       restApi: 
-      - guiHost: < Primary cluster GUI IP/Hostname >
+      - guiHost: "< Primary cluster GUI IP/Hostname >" 
 # In case we have multiple cluster, it can be specified as below. It is Optional
-#    - id: < Cluster ID >
-#      secrets: < Secret for Cluster >
+#    - id: "< Cluster ID >"
+#      secrets: "< Secret for Cluster >"
 #      secureSslMode: false
 #      restApi: 
-#      - guiHost: < Cluster GUI IP/Hostname >
+#      - guiHost: "< Cluster GUI IP/Hostname >"
