@@ -19,19 +19,19 @@ scaleHostpath: "{{ scale_hostpath | default('/') }}"
 
 # This needs a default for molecule, also the clusters version does weird stuff to the object?
 #clusters: []
-clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperator.spec.clusters | default([])}}"
+clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperators.spec.clusters | default([])}}"
 
 # Node Selector for Attacher sidecar.
-attacherNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.attacherNodeSelector | default([])}}"
+attacherNodeSelector: "{{ _csi_ibm_com_csiscaleoperators.spec.attacherNodeSelector | default([])}}"
 
 # Node Selector for Provisioner sidecar.
-provisionerNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.provisionerNodeSelector | default([])}}"
+provisionerNodeSelector: "{{ _csi_ibm_com_csiscaleoperators.spec.provisionerNodeSelector | default([])}}"
 
 # Node Selector for SpectrumScale CSI Plugin.
-pluginNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.pluginNodeSelector | default([])}}"
+pluginNodeSelector: "{{ _csi_ibm_com_csiscaleoperators.spec.pluginNodeSelector | default([])}}"
 
 # Node mapping between K8s and spectrumscale node.
-nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
+nodeMapping: "{{ _csi_ibm_com_csiscaleoperators.spec.nodeMapping | default([])}}"
 
 # State of driver in the cluster (might not be needed).
 #state: absent

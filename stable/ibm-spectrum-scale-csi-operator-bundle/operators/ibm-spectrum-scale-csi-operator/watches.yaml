@@ -4,6 +4,6 @@
   role: /opt/ansible/roles/csi-scale
   version: v1
   finalizer:
-    name: finalizer.spectrumscale.csi.ibm.com
+    name: finalizer.csiscaleoperators.csi.ibm.com
     vars:
       state: absent
