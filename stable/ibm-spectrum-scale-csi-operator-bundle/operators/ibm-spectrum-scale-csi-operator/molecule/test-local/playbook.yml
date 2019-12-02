@@ -92,19 +92,21 @@
           namespace=namespace,
           resource_name=custom_resource.metadata.name
         )}}'
-
-    - name: debug spectrum-scale-csi-operator lookup
-      ignore_errors: yes
-      failed_when: false
-      debug:
-        var: deploy
-      vars:
-        deploy: '{{ lookup("k8s",
+    
+    - name: Check if CI
+      set_fact:
+      oper-debug: '{{ lookup("k8s",
           kind="Deployment",
           api_version="apps/v1",
           namespace=namespace,
           label_selector="app.kubernetes.io/name=spectrum-scale-csi-operator"
         )}}'
+ 
+    - name: debug spectrum-scale-csi-operator lookup
+      ignore_errors: yes
+      failed_when: false
+      debug:
+        var: oper-debug
 
     - name : debug pods lookup
       ignore_errors: yes
@@ -116,16 +118,14 @@
           kind="pods",
           namespace=namespace
         )}}'
-
+ 
 
     - name: get operator logs
       ignore_errors: yes
       failed_when: false
-      command: kubectl logs deployment/{{ definition.metadata.name }} -n {{ namespace }}
+      command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
       environment:
         KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
-      vars:
-        definition: "{{ lookup('template', '/'.join([deploy_dir, 'operator.yaml'])) | from_yaml }}"
       register: log
 
     - debug: var=log.stdout_lines
