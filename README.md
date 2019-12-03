@@ -102,6 +102,7 @@ kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
 kubectl apply -f deploy/operator.yaml
 ```
 
+
 > **NOTE**: Kubernetes uses `kubectl` the command, replace with `oc` if deploying in OpenShift.
 
 At this point the operator is running and ready for use!
@@ -140,19 +141,19 @@ Before starting the plugin, add any secrets to the appropriate namespace.  The S
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). 
+A sample of the file is provided [deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml). 
 
 Modify this file to match the properties in your environment, then:
 
-  * To start the CSI plugin, run: `kubectl apply -f spectrum_scale.yaml` 
-  * To stop the CSI plugin, run: `kubectl delete -f spectrum_scale.yaml` 
+  * To start the CSI plugin, run: `kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
+  * To stop the CSI plugin, run: `kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
 
 ## Uninstalling the CSI Operator
 
 To remove the operator:
 
 ``` bash
-kubectl delete -f deploy/spectrum_scale.yaml
+kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml
 kubectl delete -f deploy/role_binding.yaml
@@ -164,6 +165,7 @@ kubectl delete -f deploy/namespace.yaml
 > **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
 
 This will completely destroy the operator and all associated resources.
+
 
 ### Open Shift Considerations
 
@@ -183,6 +185,8 @@ kubectl delete SecurityContextConstraints csiaccess
 In cases where deleting the operator `Custom Resource` fails the following recipe can be executed:
 
 ``` bash
+# You need the proxy ro be running for this command.
+kubectl proxy &
 # This may need to be customized in OLM environments:
 NAMESPACE=ibm-spectrum-scale-csi-driver
 kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
@@ -191,7 +195,17 @@ rm -f temp.json
 ```
 
 Typically this happens when deleting the `Custom Resource Definition` before removing all of the `Custom Resources`.
-
 For more details on this check the following [GitHub Issue](https://github.com/operator-framework/operator-sdk/issues/2094).
+
+> **NOTE**: If the operator stops processing CR CRUD after applying this fix it's recommended that the user restart the operator pod.
+
+To restart the operator pod, the following process must be followed:
+
+``` bash
+POD_NAME="ibm-spectrum-scale-csi-driver ibm-spectrum-scale-csi-operator-"
+NAMESPACE=ibm-spectrum-scale-csi-driver
+kubectl delete -n $NAMESPACE $POD_NAME
+```
+
 
 

@@ -2,23 +2,25 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: "[\n  {\n    \"apiVersion\": \"scale.ibm.com/v1alpha1\",\n    \"\
-      kind\": \"CSIScaleOperator\",\n    \"metadata\": {\n      \"labels\": {\n  \
-      \      \"app.kubernetes.io/instance\": \"ssco-custom-resource\",\n        \"\
-      app.kubernetes.io/managed-by\": \"operator\",\n        \"app.kubernetes.io/name\"\
-      : \"spectrum-scale-csi-operator\"\n      },\n      \"name\": \"ibm-spectrum-scale-csi\"\
-      ,\n      \"namespace\": \"ibm-spectrum-scale-csi-driver\"\n    },\n    \"spec\"\
-      : {\n      \"clusters\": [\n        {\n          \"id\": \"11832033572270148010\"\
-      ,\n          \"primary\": {\n            \"primaryFs\": \"fs1\",\n         \
-      \   \"primaryFset\": \"csiFset2\"\n          },\n          \"restApi\": [\n\
-      \            {\n              \"guiHost\": \"guihost.com\"\
-      \n            }\n          ],\n          \"secrets\": \"secret1\",\n       \
-      \   \"secureSslMode\": false\n        }\n      ],\n      \"scaleHostpath\":\
-      \ \"/ibm/fs1\"\n    },\n    \"status\": {}\n  }\n]"
+    alm-examples: "[\n  {\n    \"apiVersion\": \"csi.ibm.com/v1\",\n    \"kind\":\
+      \ \"CSIScaleOperator\",\n    \"metadata\": {\n      \"app.kubernetes.io/instance\"\
+      : \"ibm-spectrum-scale-csi-operator\",\n      \"app.kubernetes.io/managed-by\"\
+      : \"ibm-spectrum-scale-csi-operator\",\n      \"app.kubernetes.io/name\": \"\
+      ibm-spectrum-scale-csi-operator\",\n      \"name\": \"ibm-spectrum-scale-csi\"\
+      ,\n      \"namespace\": \"ibm-spectrum-scale-csi-driver\",\n      \"release\"\
+      : \"ibm-spectrum-scale-csi-operator\"\n    },\n    \"spec\": {\n      \"clusters\"\
+      : [\n        {\n          \"id\": \"\\u003c Primary Cluster ID \\u003e\",\n\
+      \          \"primary\": {\n            \"primaryFs\": \"\\u003c Primary Filesystem\
+      \ \\u003e\",\n            \"primaryFset\": \"\\u003c Fileset in Primary Filesystem\
+      \ \\u003e\"\n          },\n          \"restApi\": [\n            {\n       \
+      \       \"guiHost\": \"\\u003c Primary cluster GUI IP/Hostname \\u003e\"\n \
+      \           }\n          ],\n          \"secrets\": \"secret1\",\n         \
+      \ \"secureSslMode\": false\n        }\n      ],\n      \"scaleHostpath\": \"\
+      \\u003c GPFS FileSystem Path \\u003e\"\n    },\n    \"status\": {}\n  }\n]"
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
-    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
+    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
     createdAt: Wed Oct  9 06:41:31 MST 2019
     description: The IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster
       providing a means to deploy and manage the CSI plugin for spectrum scale.
@@ -28,7 +30,7 @@ metadata:
     app.kubernetes.io/instance: issco-csv
     app.kubernetes.io/managed-by: operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator.v0.9.1
+  name: ibm-spectrum-scale-csi-operator.v1.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -37,11 +39,11 @@ spec:
     - description: Represents a deployment of the IBM CSI Spectrum Scale plugin.
       displayName: IBM CSI Spectrum Scale App
       kind: CSIScaleOperator
-      name: csiscaleoperators.scale.ibm.com
+      name: csiscaleoperators.csi.ibm.com
       resources:
       - kind: csiscaleoperators
         name: ''
-        version: v1alpha1
+        version: v1
       - kind: Deployment
         name: ''
         version: v1
@@ -64,17 +66,13 @@ spec:
       - description: Node selector for provisioner sidecar.
         displayName: Provisioner Node Selector
         path: provisionerNodeSelector
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: The path to the gpfs file system mounted on the host machine.
         displayName: Spectrum Scale Hostpath
         path: scaleHostpath
         x-descriptors:
-<<<<<<< HEAD
         - urn:alm:descriptor:com.tectonic.ui:label
-=======
-        - urn:alm:descriptor:com.tectonic.ui:text
->>>>>>> dev
       - description: Image name for the csi spectrum scale plugin container.
         displayName: Spectrum Scale Image
         path: spectrumScale
@@ -86,11 +84,10 @@ spec:
         path: secretCounter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-<<<<<<< HEAD
       - description: Node selector for SpectrumScale CSI Plugin.
-        displayName: Plugin Node Selector 
+        displayName: Plugin Node Selector
         path: pluginNodeSelector
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Provisioner image for csi (actually issues provision requests).
         displayName: Provisioner Image
@@ -108,22 +105,6 @@ spec:
         path: clusters
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-=======
-      - description: Mapping of K8s node with SpectrumScale node.
-        displayName: nodeMapping
-        path: nodeMapping
-        x-descriptors: []
-      - description: A collection of gpfs cluster properties for the csi driver to
-          mount
-        displayName: Clusters
-        path: clusters
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:arrayFieldGroup
-      - description: Node selector for SpectrumScale CSI Plugin.
-        displayName: pluginNodeSelector
-        path: pluginNodeSelector
-        x-descriptors: []
->>>>>>> dev
       - description: Attacher image for csi (actually attaches to the storage).
         displayName: Attacher Image
         path: attacher
@@ -132,32 +113,32 @@ spec:
       - description: Node selector for attacher sidecar.
         displayName: Attacher Node Selector
         path: attacherNodeSelector
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Mapping of K8s node with SpectrumScale node.
         displayName: nodeMapping
         path: nodeMapping
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Key for node selector.
         displayName: Key
         path: provisionerNodeSelector.key
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Value for key.
         displayName: Value
         path: provisionerNodeSelector.value
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Key for node selector.
         displayName: Key
         path: pluginNodeSelector.key
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Value for key.
         displayName: Value
         path: pluginNodeSelector.value
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: A string specifying a cacert resource name.
         displayName: cacert Resource Name
@@ -192,22 +173,22 @@ spec:
       - description: Key for node selector.
         displayName: Key
         path: attacherNodeSelector.key
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Value for key.
         displayName: Value
         path: attacherNodeSelector.value
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: K8s node name.
         displayName: Kubernetes Node
         path: nodeMapping.k8sNode
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: SpectrumScale node name.
         displayName: Spectrum Scale Node
         path: nodeMapping.spectrumscaleNode
-        x-descriptors: 
+        x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: The hostname of the REST server.
         displayName: GUI Host
@@ -230,7 +211,7 @@ spec:
         path: conditions.isRunning
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.phase
-      version: v1alpha1
+      version: v1
   description: "IBM Spectrum Scale CSI Operator Quickstart\n==========================================\n\
     \nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster providing\
     \ a means to \ndeploy and manage the CSI plugin for spectrum scale.\n\nThis operator\
@@ -413,7 +394,7 @@ spec:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
                 productName: IBM Spectrum Scale CSI Operator
-                productVersion: 0.9.1
+                productVersion: 1.0.0
               labels:
                 app.kubernetes.io/instance: ssco-deployment
                 app.kubernetes.io/managed-by: operator
@@ -433,7 +414,7 @@ spec:
                 - /usr/local/bin/ao-logs
                 - /tmp/ansible-operator/runner
                 - stdout
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
                 imagePullPolicy: IfNotPresent
                 name: ansible
                 resources: {}
@@ -456,7 +437,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-spectrum-scale-csi-operator
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
                 imagePullPolicy: IfNotPresent
                 name: operator
                 resources: {}
@@ -518,7 +499,7 @@ spec:
           verbs:
           - get
         - apiGroups:
-          - scale.ibm.com
+          - csi.ibm.com
           resources:
           - '*'
           verbs:
@@ -532,7 +513,7 @@ spec:
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - IBM
@@ -551,4 +532,4 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  version: 0.9.1
+  version: 1.0.0

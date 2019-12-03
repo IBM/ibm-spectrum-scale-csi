@@ -1,6 +1,5 @@
 #!/bin/bash
 
-kubectl delete -f example/spectrum_scale.yaml
 kubectl delete csiscaleoperators --all
 kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml

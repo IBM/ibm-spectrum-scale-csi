@@ -2,7 +2,7 @@
 - name: Build Operator in Kubernetes docker container
   hosts: k8s
   vars:
-    image_name: ibm.scale.com/csi-scale-operator:testing
+    image_name: csi.ibm.com/csi-scale-operator:testing
   tasks:
   # using command so we don't need to install any dependencies
   - name: Get existing image hash
@@ -13,7 +13,7 @@
   - name: Check if CI
     set_fact:
       CI: lookup('env', 'CI')
-    
+
   - name: Build Operator Image
     command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
     register: build_cmd
@@ -26,7 +26,7 @@
     ansible_python_interpreter: '{{ ansible_playbook_python }}'
     deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
     pull_policy: Never
-    REPLACE_IMAGE: scale.ibm.com/csi-scale-operator:testing
+    REPLACE_IMAGE: csi.ibm.com/csi-scale-operator:testing
     custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/ibm-spectrum-scale-csi-operator-cr.yaml'])) | from_yaml }}"
   tasks:
   - block:
@@ -57,7 +57,27 @@
         namespace: '{{ namespace }}'
         definition: "{{ lookup('template', '/'.join([deploy_dir, 'operator.yaml'])) }}"
 
-    - name: Create the scale.ibm.com/v1alpha1.CSIScaleOperator
+    - name: Create the operator secret
+      k8s:
+        state:  present
+        definition: 
+          apiVersion: "v1"
+          kind:  "Secret"
+          metadata:
+            name: "{{ secret_name }}"
+            namespace: "{{ namespace }}"
+          data:
+            password: "{{ secret_pass }}"
+            username: "{{ secret_user }}"
+          type: "Opaque"
+          labels:
+            app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+      vars:
+        secret_pass: "cGFzc3dvcMq=" # "password"
+        secret_user: "dXNlcm5hbwu=" # "username"
+        secret_name: "secret1"
+
+    - name: Create the csi.ibm.com/v1.CSIScaleOperator
       k8s:
         state: present
         namespace: '{{ namespace }}'
@@ -66,7 +86,7 @@
     - debug:
         var: namespace
 
-    - name: Wait 60s for reconciliation to run
+    - name: Wait 120s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
         kind: '{{ custom_resource.kind }}'
@@ -76,7 +96,9 @@
       until:
       - "'Successful' in (cr | json_query('resources[].status.conditions[].reason'))"
       delay: 6
-      retries: 10
+      retries: 20
+
+
     rescue:
     - name: debug cr
       ignore_errors: yes
@@ -90,7 +112,7 @@
           namespace=namespace,
           resource_name=custom_resource.metadata.name
         )}}'
-
+    
     - name: debug spectrum-scale-csi-operator lookup
       ignore_errors: yes
       failed_when: false
@@ -114,22 +136,21 @@
           kind="pods",
           namespace=namespace
         )}}'
-
+ 
 
     - name: get operator logs
       ignore_errors: yes
       failed_when: false
-      command: kubectl logs deployment/{{ definition.metadata.name }} -n {{ namespace }}
+      command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
       environment:
         KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
-      vars:
-        definition: "{{ lookup('template', '/'.join([deploy_dir, 'operator.yaml'])) | from_yaml }}"
       register: log
 
     - debug: var=log.stdout_lines
 
     - fail:
         msg: "Failed on action: converge"
+  - include_tasks: '{{ playbook_dir }}/../default/tests/basic_tests.yaml'
 
 - import_playbook: '{{ playbook_dir }}/../default/asserts.yml'
 
