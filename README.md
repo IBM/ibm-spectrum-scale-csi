@@ -185,6 +185,8 @@ kubectl delete SecurityContextConstraints csiaccess
 In cases where deleting the operator `Custom Resource` fails the following recipe can be executed:
 
 ``` bash
+# You need the proxy ro be running for this command.
+kubectl proxy &
 # This may need to be customized in OLM environments:
 NAMESPACE=ibm-spectrum-scale-csi-driver
 kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
