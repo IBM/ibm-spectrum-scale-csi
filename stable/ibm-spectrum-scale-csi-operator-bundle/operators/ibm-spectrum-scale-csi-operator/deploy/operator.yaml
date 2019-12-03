@@ -2,14 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: operator
-    app.kubernetes.io/name: spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
       annotations:
