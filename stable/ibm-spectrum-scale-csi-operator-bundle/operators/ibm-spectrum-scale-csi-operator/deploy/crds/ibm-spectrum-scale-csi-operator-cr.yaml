@@ -14,52 +14,52 @@ spec:
 # IMAGES:
 
 # Attacher image name, in case we do not want to use default image.
-  attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
+#  attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
 
 # Provisioner image name, in case we do not want to use default image.
-  provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
+#  provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
 
 # Driver Registrar image name, in case we do not want to use default image.
-  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1'"
+#  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1'"
 
 # SpectrumScale CSI Plugin image name, in case we do not want to use default
 # image.
-  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.0.0"
+#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.0.0"
 
 # NODESELECTORS:
 
 # attacherNodeSelector specifies on which nodes we want to run attacher sidecar
 # In below example attacher will run on nodes which have label as "scale=true"
 # and "infranode=2". Can have multiple entries.
-  attacherNodeSelector:
-    - key: "scale"
-      value: "true"
-    - key: "infranode"
-      value: "2"
+#  attacherNodeSelector:
+#    - key: "scale"
+#      value: "true"
+#    - key: "infranode"
+#      value: "2"
 
 # provisionerNodeSelector specifies on which nodes we want to run provisioner
 # sidecar. In below example provisioner will run on nodes which have label as
 # "scale=true" and "infranode=1". Can have multiple entries.
-  provisionerNodeSelector:
-    - key: "scale"
-      value: "true"
-    - key: "infranode"
-      value: "1"
+#  provisionerNodeSelector:
+#    - key: "scale"
+#      value: "true"
+#    - key: "infranode"
+#      value: "1"
 
 # pluginNodeSelector specifies nodes on which we want to run plugin daemoset
 # In below example plugin daemonset will run on nodes which have label as
 # "scale=true". Can have multiple entries.
-  pluginNodeSelector:
-    - key: "scale"
-      value: "true"
+#  pluginNodeSelector:
+#    - key: "scale"
+#      value: "true"
 
 # NODEMAPPING:
 
 # In case K8s nodes name differs from SpectrumScale nodes name, we can provide
 # node mapping using nodeMapping attribute. Can have multiple entries.
-  nodeMapping:
-    - k8sNode: "< K8s Node Name >"
-      spectrumscaleNode: "< SpectrumScale Node Name >"
+#  nodeMapping:
+#    - k8sNode: "< K8s Node Name >"
+#      spectrumscaleNode: "< SpectrumScale Node Name >"
 
 # REQUIRED
 # --------

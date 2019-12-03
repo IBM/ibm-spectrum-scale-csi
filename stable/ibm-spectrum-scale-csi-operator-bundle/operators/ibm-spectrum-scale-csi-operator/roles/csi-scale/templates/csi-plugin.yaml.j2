@@ -52,8 +52,6 @@ spec:
             - name: registration-dir
               mountPath: /registration
         - name: ibm-spectrum-scale-csi
-          securityContext:
-            privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
@@ -92,7 +90,6 @@ spec:
               mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet
-              mountPropagation: "Bidirectional"
             - mountPath: /dev
               name: host-dev
             - name: "spectrum-scale-config"
