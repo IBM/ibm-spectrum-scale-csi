@@ -195,7 +195,17 @@ rm -f temp.json
 ```
 
 Typically this happens when deleting the `Custom Resource Definition` before removing all of the `Custom Resources`.
-
 For more details on this check the following [GitHub Issue](https://github.com/operator-framework/operator-sdk/issues/2094).
+
+> **NOTE**: If the operator stops processing CR CRUD after applying this fix it's recommended that the user restart the operator pod.
+
+To restart the operator pod, the following process must be followed:
+
+``` bash
+POD_NAME="ibm-spectrum-scale-csi-driver ibm-spectrum-scale-csi-operator-"
+NAMESPACE=ibm-spectrum-scale-csi-driver
+kubectl delete -n $NAMESPACE $POD_NAME
+```
+
 
 
