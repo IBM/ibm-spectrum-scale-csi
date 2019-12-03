@@ -30,8 +30,8 @@ metadata:
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
     support: IBM
   labels:
-    app.kubernetes.io/instance: issco-csv
-    app.kubernetes.io/managed-by: operator
+    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v1.0.0
   namespace: placeholder
@@ -399,9 +399,9 @@ spec:
                 productName: IBM Spectrum Scale CSI Operator
                 productVersion: 1.0.0
               labels:
-                app.kubernetes.io/instance: ssco-deployment
-                app.kubernetes.io/managed-by: operator
-                app.kubernetes.io/name: spectrum-scale-csi-operator
+                app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+                app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+                app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
                 name: ibm-spectrum-scale-csi-operator
                 product: ibm-spectrum-scale-csi
             spec:
