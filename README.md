@@ -1,5 +1,5 @@
 
-   * [Welcome to the public Beta of IBM Spectrum Scale Container Storage Interface (CSI) Driver](#welcome-to-the-public-beta-of-ibm-spectrum-scale-container-storage-interface-csi-driver)
+   * [IBM Spectrum Scale Container Storage Interface (CSI) Driver](#ibm-spectrum-scale-container-storage-interface-csi-driver)
       * [IBM Spectrum Scale Introduction](#ibm-spectrum-scale-introduction)
       * [IBM Spectrum Scale Container Storage Interface (CSI) driver](#ibm-spectrum-scale-container-storage-interface-csi-driver)
          * [Supported Features of the CSI driver](#supported-features-of-the-csi-driver)
@@ -13,7 +13,7 @@
       * [Advanced Configuration](#advanced-configuration)
          * [Remote mount support](#remote-mount-support)
          * [Node Selector](#node-selector)
-         * [Kubernetes node to IBM Spectrum Scale node mapping](#kubernetes-node-to-spectrum-scale-node-mapping)
+         * [Kubernetes node to IBM Spectrum Scale node mapping](#kubernetes-node-to-ibm-spectrum-scale-node-mapping)
       * [Cleanup](#cleanup)
       * [Troubleshooting](#troubleshooting)
       * [Environments in Test](TESTCONFIG.md#environments-in-test)
@@ -23,9 +23,9 @@
 
   
 
-# Welcome to the public Beta of IBM Spectrum Scale Container Storage Interface (CSI) Driver
+# IBM Spectrum Scale Container Storage Interface (CSI) Driver
 
-DISCLAIMER: This Beta driver is provided as is, without warranty. Any issue will be handled on a best-effort basis. See the IBM Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
+Please refer to the IBM Spectrum Scale Container Storage Interface Driver documentation on knowledge center for detailed documentation. See the IBM Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
 
   
 ## IBM Spectrum Scale Introduction
@@ -53,46 +53,11 @@ IBM Spectrum Scale Container Storage Interface (CSI) driver supports the followi
   
 ### Limitations of the CSI driver
 
-The IBM Spectrum Scale Container Storage Interface (CSI) driver has the following limitations:
-
-- The size specified in PersistentVolumeClaim for lightweight volume and dependent fileset volume, is not honored.
-- Maximum number of supported volumes that can be created using independent fileset storage class is 998 (excluding the root fileset and primary fileset reserved for CSI driver). This is based upon the [fileset maximums for IBM Spectrum Scale](https://www.ibm.com/support/knowledgecenter/STXKQY/gpfsclustersfaq.html#filesets)
-- The IBM Spectrum Scale GUI server is relied upon for performing file system and cluster operations. If the GUI password or CA certificate expires, manual intervention is needed by the admin to reset the GUI password or generate a new certificate and update the configuration of the CSI driver. In this case, a restart of the CSI driver will be necessary.
-- Rest API status, used by the CSI driver, may lag from actual state, causing PVC mount or unmount failures.
-- Although multiple instances of the IBM Spectrum Scale GUI are allowed, the CSI driver is currently limited to point to a single GUI node.
-- External attacher and external provisioner run as statefulsets, which by design do not failover to different node in case docker/kubelet is brought down. (They however failover to another node when the node itself is deleted explicitly). It is recommended to run the attacher and provisioner on two separate infrastructure nodes which can be done by using [Node Selector](#node-selector) or by configuring it during [operator deployment](https://github.com/IBM/ibm-spectrum-scale-csi-operator)
+Please refer to [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html) for limitations.
 
 ### Pre-requisites for installing and running the CSI driver
 
-- IBM Spectrum Scale / Kubernetes overlap should be as follows
-
-  | Node Type | Spectrum Scale | Kubernetes |
-  |--|--|--|
-  | **Master node(s)** | do not install | required |
-  | **Worker node(s)** | required | required |
-  | **GUI node** | required | do not install |
-  | **NSD node** | required | optional |
-
-- Red Hat 7.6 (**kernel 3.10.0-957 or higher**) on IBM Spectrum Scale nodes
-
-- IBM Spectrum Scale version 5.0.4.1 is installed.
-
-- An IBM Spectrum Scale GUI is up and running on a IBM Spectrum Scale node and a user is created and part of the `CsiAdmin` group
-
-  ```
-  /usr/lpp/mmfs/gui/cli/mkuser <__username__> -p <__password__> -g CsiAdmin
-  ```
-
-- Kubernetes ver 1.13+ cluster is created
- 
-- All Kubernetes worker nodes must also be IBM Spectrum Scale client nodes. Install the IBM Spectrum Scale client on all Kubernetes worker nodes and ensure they are added to the IBM Spectrum Scale cluster. (To install IBM Spectrum Scale and CSI driver only on selected nodes, perform the steps from [Node Selector](#node-selector)
-
-- The Filesystem to be used for persistent storage must be mounted on the IBM Spectrum Scale GUI node as well as all Kubernetes worker nodes. (*If multiple filesystems are to be used as persistent storage for containers, then all need to be mounted*)
-
-- Quota must be enabled on the filesystem (*required for fileset based dynamic provisioning*)
-  ```
-  mmchfs <__filesystem_name__> -Q yes
-  ```
+Please refer to [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html) for install pre-requisites.
 
 ## Building the docker image
 
@@ -112,28 +77,20 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 2. Invoke multi-stage build
 
    ```
-   docker build -t ibm-spectrum-scale-csi:v0.9.2 -f Dockerfile.msb .
+   docker build -t ibm-spectrum-scale-csi:v1.0.0 -f Dockerfile.msb .
    ```
 
-   *On podman setup, use this command instead:*
-
-   ```
-   podman build -t ibm-spectrum-scale-csi:v0.9.2 -f Dockerfile.msb .
-   ```
+   On podman setup, use *podman* command instead of *docker*
 
 3. save the docker image
 
    ```
-   docker save ibm-spectrum-scale-csi:v0.9.2 -o ibm-spectrum-scale-csi_v0.9.2.tar
+   docker save ibm-spectrum-scale-csi:v1.0.0 -o ibm-spectrum-scale-csi_v1.0.0.tar
    ```
 
-   *On podman setup, use this command instead:*
+   On podman setup, use *podman* command instead of *docker*
 
-   ```
-   podman save ibm-spectrum-scale-csi:v0.9.2 -o ibm-spectrum-scale-csi_v0.9.2.tar
-   ```
-
-      A tar file of docker image will be stored under the _output directory.
+      A tar file of docker image will be created.
 
 
 
@@ -142,14 +99,10 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 1. Copy and load the docker image on all Kubernetes worker nodes
 
    ```
-   docker image load -i ibm-spectrum-scale-csi_v0.9.2.tar
+   docker image load -i ibm-spectrum-scale-csi_v1.0.0.tar
    ```
 
-   *On OpenShift setup, use this command instead:*
-
-   ```
-   podman image load -i ibm-spectrum-scale-csi_v0.9.2.tar
-   ```
+   On podman setup, use *podman* command instead of *docker*
 
 2. Deploy CSI driver
 
@@ -161,7 +114,7 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
    a. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
 
-   Note that on OpenShift setup, the image is listed as `localhost/ibm-spectrum-scale-csi:v0.9.2`. Change the value of "spectrumscaleplugin" parameter in images section accordingly. 
+   Note that on OpenShift setup, the local image is listed as `localhost/ibm-spectrum-scale-csi:v1.0.0`. Change the value of "spectrumscaleplugin" parameter in images section accordingly. 
 
    b. Set the environment variable CSI_SCALE_PATH to ibm-spectrum-scale-csi-driver directory
 
@@ -267,21 +220,8 @@ In order to deploy CSI driver on such a configuration, following steps should be
    }
    ```
 
-- Ensure that a new entry is created in secrets list in `deploy/spectrum-scale-secret.json` for "secret2" as:
+- Ensure that a new secret (secret2) is created with the remote cluster GUI credentials:
 
-   ```
-   {
-      "kind": "Secret",
-      "apiVersion": "v1",
-      "metadata": {
-         "name": "secret2"
-      },
-      "data": {
-         "username": "YWRtaW4=",
-         "password": "MWYyZDFlMmU2N2Rm"
-      }
-   }
-   ```
    **Note:** username and passoword are base64 encoded.
 
 - Add an entry for secret2 in deploy/csi-plugin.yaml file under "volumes":
@@ -302,14 +242,11 @@ In order to deploy CSI driver on such a configuration, following steps should be
 
 - Deploy the driver by running `deploy/create.sh`
 
-- For lightweight dynamic provisioning, no change in storageClass is needed.
-
 - For fileset based dynamic provisioning, use the storageClass parameters as below:
 
-   * **volBackendFs**: Filesystem on which the volume should be created. Use the remote cluster filesystem name here.
+   * **volBackendFs**: Filesystem on which the volume should be created. Use the locally mounted filesystem name here.
    * **clusterId**: Remote Cluster ID on which the volume (fileset) should be created. 
-   * **localFs**: Name of the locally mounted filesystem. This is required only if the local name and remote filesystem names are different.
-	Rest of the storageClass parameteres remain valid.
+	Rest of the storageClass parameteres remain as explained above.
 
 ### Node Selector
 
@@ -365,7 +302,7 @@ To use this feature, perform the following steps after running the installer "sp
 
    ```
    % docker images -a | grep ibm-spectrum-scale-csi
-   ibm-spectrum-scale-csi v0.9.2 465ca978127a 18 minutes ago 109MB
+   ibm-spectrum-scale-csi v1.0.0 465ca978127a 18 minutes ago 109MB
 
    % docker rmi 465ca978127a
    ```

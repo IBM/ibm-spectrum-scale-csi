@@ -25,7 +25,7 @@ spec:
           securityContext:
             privileged: true
           args:
-            - "--provisioner=ibm-spectrum-scale-csi"
+            - "--provisioner=spectrumscale.csi.ibm.com"
             - "--csi-address=$(ADDRESS)"
             - "--connection-timeout=2m"
             - "--v=5" # Debugging

@@ -16,7 +16,7 @@ NAME=ibm-spectrum-scale-csi
 
 .PHONY: all $NAME
 
-IMAGE_VERSION=v0.9.1
+IMAGE_VERSION=v1.0.0
 IMAGE_NAME=$(NAME)
 
 all: $NAME
