@@ -3,15 +3,12 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: "[\n  {\n    \"apiVersion\": \"csi.ibm.com/v1\",\n    \"kind\":\
-      \ \"CSIScaleOperator\",\n    \"metadata\": {\n      \"app.kubernetes.io/instance\"\
-      : \"ibm-spectrum-scale-csi-operator\",\n      \"app.kubernetes.io/managed-by\"\
-      : \"ibm-spectrum-scale-csi-operator\",\n      \"app.kubernetes.io/name\": \"\
-      ibm-spectrum-scale-csi-operator\",\n      \"labels\": {\n        \"app.kubernetes.io/instance\"\
-      : \"ibm-spectrum-scale-csi-operator\",\n        \"app.kubernetes.io/managed-by\"\
-      : \"ibm-spectrum-scale-csi-operator\",\n        \"app.kubernetes.io/name\":\
-      \ \"ibm-spectrum-scale-csi-operator\"\n      },\n      \"name\": \"ibm-spectrum-scale-csi\"\
-      ,\n      \"namespace\": \"ibm-spectrum-scale-csi-driver\",\n      \"release\"\
-      : \"ibm-spectrum-scale-csi-operator\"\n    },\n    \"spec\": {\n      \"clusters\"\
+      \ \"CSIScaleOperator\",\n    \"metadata\": {\n      \"labels\": {\n        \"\
+      app.kubernetes.io/instance\": \"ibm-spectrum-scale-csi-operator\",\n       \
+      \ \"app.kubernetes.io/managed-by\": \"ibm-spectrum-scale-csi-operator\",\n \
+      \       \"app.kubernetes.io/name\": \"ibm-spectrum-scale-csi-operator\"\n  \
+      \    },\n      \"name\": \"ibm-spectrum-scale-csi\",\n      \"release\": \"\
+      ibm-spectrum-scale-csi-operator\"\n    },\n    \"spec\": {\n      \"clusters\"\
       : [\n        {\n          \"id\": \"\\u003c Primary Cluster ID \\u003e\",\n\
       \          \"primary\": {\n            \"primaryFs\": \"\\u003c Primary Filesystem\
       \ \\u003e\",\n            \"primaryFset\": \"\\u003c Fileset in Primary Filesystem\
