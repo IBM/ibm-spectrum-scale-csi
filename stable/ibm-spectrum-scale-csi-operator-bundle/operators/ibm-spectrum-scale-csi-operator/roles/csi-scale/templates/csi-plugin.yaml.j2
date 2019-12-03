@@ -52,9 +52,6 @@ spec:
             - name: registration-dir
               mountPath: /registration
         - name: ibm-spectrum-scale-csi
-            capabilities:
-              add: ["SYS_ADMIN"]
-            allowPrivilegeEscalation: true
           image: "{{ spectrumScale }}"
           args :
             - "--nodeid=$(NODE_ID)"
