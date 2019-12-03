@@ -125,12 +125,6 @@
           namespace=namespace,
           label_selector="app.kubernetes.io/name=spectrum-scale-csi-operator"
         )}}'
- 
-    - name: debug spectrum-scale-csi-operator lookup
-      ignore_errors: yes
-      failed_when: false
-      debug:
-        var: oper-debug
 
     - name : debug pods lookup
       ignore_errors: yes

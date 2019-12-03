@@ -34,7 +34,3 @@
       - role_binding.yaml
       - service_account.yaml
 
-  #- name: install openssl
-  #  package:
-  #    state: present
-  #    name: "openssl"
