@@ -93,9 +93,13 @@
           resource_name=custom_resource.metadata.name
         )}}'
     
-    - name: Check if CI
-      set_fact:
-        oper-debug: '{{ lookup("k8s",
+    - name: debug spectrum-scale-csi-operator lookup
+      ignore_errors: yes
+      failed_when: false
+      debug:
+        var: deploy
+      vars:
+        deploy: '{{ lookup("k8s",
           kind="Deployment",
           api_version="apps/v1",
           namespace=namespace,
