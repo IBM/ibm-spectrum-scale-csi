@@ -10,9 +10,6 @@ metadata:
   namespace: ibm-spectrum-scale-csi-driver
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
       annotations:

@@ -385,9 +385,6 @@ spec:
       - name: ibm-spectrum-scale-csi-operator
         spec:
           replicas: 1
-          selector:
-            matchLabels:
-              name: ibm-spectrum-scale-csi-operator
           strategy: {}
           template:
             metadata:
