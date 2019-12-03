@@ -70,7 +70,7 @@ spec:
 # plugin.
   clusters:
     - id: "< Primary Cluster ID >"
-      secrets: "< Primary Cluster Secret >"
+      secrets: "secret1"
       secureSslMode: false
       primary:
         primaryFs: "< Primary Filesystem >"
