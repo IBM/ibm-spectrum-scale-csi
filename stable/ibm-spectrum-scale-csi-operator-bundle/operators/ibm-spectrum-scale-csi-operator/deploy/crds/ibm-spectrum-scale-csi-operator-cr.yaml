@@ -2,8 +2,7 @@ apiVersion: csi.ibm.com/v1
 kind: 'CSIScaleOperator'
 metadata:
     name: 'ibm-spectrum-scale-csi'
-    # WARNING: THIS NEEDS TO BE SET IN MANUAL DEPLOYS!
-    #namespace: 'ibm-spectrum-scale-csi-driver'
+    namespace: 'ibm-spectrum-scale-csi-driver'
     labels:
       app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
       app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
