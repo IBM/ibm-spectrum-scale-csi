@@ -42,7 +42,7 @@ Once you have a repository ready:
 Installing Operator
 ```````````````````
 
-.. note:: For OpenShift environments, replace ``kubectl`` with  ``oc``.
+.. note:: For OpenShift environments, replace ``kubectl`` with  ``oc``
 
 Run the following to deploy the operator manually:
 
@@ -63,22 +63,20 @@ Starting the CSI Driver
 
 .. note:: Before starting the plugin, add any GUI secrets to the appropriate namespace. 
 
-A sample of the file is provided `examples/spectrum_scale.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi-operator/master/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml>`_.
-
-Modify this file to match the properties in your environment, then:
+A Custom Resource (CR) file is provided `deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi-operator/master/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_. Modify this file to match the properties in your environment.
 
 To start: 
 
 .. code-block:: bash
 
-  kubectl apply -f spectrum_scale.yaml
+  kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 
 
 To stop:
 
 .. code-block:: bash
 
-  kubectl delete -f spectrum_scale.yaml
+  kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 
 Removing the CSI Operator
 `````````````````````````
@@ -88,7 +86,7 @@ To remove the operator:
 .. code-block:: bash
 
   # The following removes the csi-driver
-  kubectl delete -f deploy/spectrum_scale.yaml
+  kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 
   # The following removes the csi-operator
   kubectl delete -f deploy/operator.yaml
@@ -99,6 +97,6 @@ To remove the operator:
 
   # The following removes the namespace 
   kubectl delete -f deploy/namespace.yaml
-```
+
 
 This will completely destroy the operator and all associated resources.

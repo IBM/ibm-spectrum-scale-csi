@@ -1,6 +1,8 @@
 Operator Lifecycle Manager (OLM)
 --------------------------------
 
+.. note:: For OpenShift environments, replace ``kubectl`` with  ``oc``
+
 1. Install OLM:
 
 .. code-block:: bash
@@ -16,5 +18,4 @@ Operator Lifecycle Manager (OLM)
 
     kubectl apply -f operator-source.yaml
 
-.. note:: For OpenShift environments, replace ``kubectl`` with  ``oc``.
 
