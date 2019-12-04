@@ -26,18 +26,24 @@ Spectrum Scale GUI Setup
 
 
 2. Create a CsiAdmin group account on in the GUI (currently requires a CLI call):
-   ``` bash
+
+   ```
+
    export USERNAME="SomeUser"
    export PASSWORD="SomePassword"
    /usr/lpp/mmfs/gui/cli/mkuser ${USERNAME} -p ${PASSWORD} -g CsiAdmin
+
    ```
 
 3. Create a Kubernetes secret for the `CsiAdmin` user:
-  ``` bash
+
+  ```
+
   export USERNAME_B64=$(echo $USERNAME | base64)
   export PASSWORD_B64=$(echo $PASSWORD | base64)
   export OPERATOR_NAMESPACE="ibm-spectrum-scale-csi-driver"  # Set this to the namespace you deploy the operator in.
-    
+  
+
   cat << EOF > /tmp/csisecret.yaml
   apiVersion: v1
   data:
@@ -52,6 +58,7 @@ Spectrum Scale GUI Setup
       app.kubernetes.io/name: ibm-spectrum-scale-csi-operator # Used by the operator to detect changes, set on load of CR change if secret matches name in CR and namespace.
   EOF
   
+
   kubectl create -f /tmp/csisecret.yaml
   rm -f /tmp/csisecret.yaml
   
