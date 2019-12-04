@@ -49,7 +49,7 @@
     dest: "{{ generated_dir }}"
   with_items: 
     - "deploy/namespace.yaml"
-    - "example/spectrum_scale.yaml"
+    - "deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml"
   when: non_generated
 
 - name: "[Testing] Comparing the generated operator file with checked in code ..."
