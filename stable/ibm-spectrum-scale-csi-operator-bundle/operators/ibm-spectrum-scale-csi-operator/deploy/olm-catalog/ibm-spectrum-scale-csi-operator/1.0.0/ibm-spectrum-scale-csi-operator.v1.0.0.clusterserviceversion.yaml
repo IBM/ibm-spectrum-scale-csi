@@ -24,7 +24,7 @@ metadata:
     createdAt: Wed Oct  9 06:41:31 MST 2019
     description: The IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster
       providing a means to deploy and manage the CSI plugin for spectrum scale.
-    repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+    repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/
     support: IBM
   labels:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
