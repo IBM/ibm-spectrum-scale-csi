@@ -15,7 +15,7 @@ roleRef:
 apiVersion: operators.coreos.com/v1
 kind: OperatorSource
 metadata:
-  name: ibm-spectrum-scale-csi-operator-app
+  name: ibm-spectrum-scale-csi
   namespace: marketplace
 spec:
   type: appregistry
@@ -39,8 +39,8 @@ metadata:
   name: oper-sub
   namespace: marketplace
 spec:
-  channel: beta
-  name: ibm-spectrum-scale-csi-operator-app
-  source: ibm-spectrum-scale-csi-operator-app
+  channel: stable
+  name: ibm-spectrum-scale-csi
+  source: ibm-spectrum-scale-csi
   sourceNamespace: marketplace
 
