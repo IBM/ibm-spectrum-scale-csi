@@ -37,8 +37,8 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents a deployment of the IBM CSI Spectrum Scale plugin.
-      displayName: IBM CSI Spectrum Scale App
+    - description: Represents a deployment of the IBM CSI Spectrum Scale driver.
+      displayName: IBM CSI Spectrum Scale Driver
       kind: CSIScaleOperator
       name: csiscaleoperators.csi.ibm.com
       resources:
