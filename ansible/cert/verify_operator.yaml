@@ -25,11 +25,11 @@
     chdir: "{{OPERATOR_DIR}}"
   loop: "{{CRD_LIST}}"
 
-- name: Copy the CR to the ClusterServiceVersion
-  shell: "python hacks/csv_copy_cr.py --cr {{item}} --version {{OPERATOR_VERSION}}"
-  args:
-    chdir: "{{OPERATOR_DIR}}"
-  loop: "{{CR_LIST}}"
+#- name: Copy the CR to the ClusterServiceVersion
+#  shell: "python hacks/csv_copy_cr.py --cr {{item}} --version {{OPERATOR_VERSION}}"
+#  args:
+#    chdir: "{{OPERATOR_DIR}}"
+#  loop: "{{CR_LIST}}"
 
 - name: Copy documentation for the ClusterServiceVersion
   shell: "python hacks/csv_copy_docs.py --version {{OPERATOR_VERSION}}"
