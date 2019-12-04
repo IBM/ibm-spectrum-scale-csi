@@ -89,7 +89,7 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 
 ### Option A: Manually
 
-If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
+If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually, for openshift use "oc" instead of "kubectl"
 
 ``` bash
 cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator

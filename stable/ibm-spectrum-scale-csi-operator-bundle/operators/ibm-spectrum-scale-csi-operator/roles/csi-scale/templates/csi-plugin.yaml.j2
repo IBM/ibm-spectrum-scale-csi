@@ -103,7 +103,7 @@ spec:
 
 {% if cluster.cacert is defined %}
             - name: "{{ cluster.cacert }}"
-              mountPath: "/var/lib/ibm/{{ cluster.cacert }}"
+              mountPath: "/var/lib/ibm/ssl/public"
 {% endif %}
 {% endfor %}
       volumes:
