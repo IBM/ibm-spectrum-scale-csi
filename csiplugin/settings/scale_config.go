@@ -150,6 +150,7 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
 			certPath := path.Join(CertificatePath, cmap.Clusters[i].Cacert)
+			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
 			file, e := ioutil.ReadFile(certPath)
 			if e != nil {
 				return fmt.Errorf("Spectrum Scale CA certificate not found: %v\n", e)
