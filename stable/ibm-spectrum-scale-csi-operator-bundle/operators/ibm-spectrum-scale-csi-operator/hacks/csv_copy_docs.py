@@ -8,7 +8,7 @@ import yaml
 BASE_DIR="{0}/../".format(os.path.dirname(os.path.realpath(__file__)))
 DEFAULT_VERSION="1.0.0"
 CSV_PATH="{0}deploy/olm-catalog/ibm-spectrum-scale-csi-operator/{1}/ibm-spectrum-scale-csi-operator.v{1}.clusterserviceversion.yaml"
-QUICKSTART="{0}../../../../docs/source/quickstart.md".format(BASE_DIR)
+QUICKSTART="{0}../../../../docs/source/get-started/quickstart.md".format(BASE_DIR)
 
 def main(args):
   parser = argparse.ArgumentParser(
