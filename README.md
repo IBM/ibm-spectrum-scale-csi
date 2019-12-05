@@ -1,5 +1,3 @@
-# ADVISORY - Please rebase instead of merge all branches created before 11/12/19
-
 # IBM Spectrum Scale CSI Operator
 
 [![Documentation Status](https://readthedocs.org/projects/ibm-spectrum-scale-csi-operator/badge/?version=latest)](https://ibm-spectrum-scale-csi-operator.readthedocs.io/en/latest/?badge=latest)
