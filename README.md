@@ -1,5 +1,3 @@
-# ADVISORY - Please rebase instead of merge all branches created before 11/12/19
-
 # IBM Spectrum Scale CSI Operator
 
 [![Documentation Status](https://readthedocs.org/projects/ibm-spectrum-scale-csi-operator/badge/?version=latest)](https://ibm-spectrum-scale-csi-operator.readthedocs.io/en/latest/?badge=latest)
@@ -89,7 +87,7 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 
 ### Option A: Manually
 
-If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually:
+If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually, for openshift use "oc" instead of "kubectl"
 
 ``` bash
 cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
@@ -141,19 +139,19 @@ Before starting the plugin, add any secrets to the appropriate namespace.  The S
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-A sample of the file is provided [examples/spectrum_scale.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/example/spectrum_scale.yaml). 
+A sample of the file is provided [deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml). 
 
 Modify this file to match the properties in your environment, then:
 
-  * To start the CSI plugin, run: `kubectl apply -f spectrum_scale.yaml` 
-  * To stop the CSI plugin, run: `kubectl delete -f spectrum_scale.yaml` 
+  * To start the CSI plugin, run: `kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
+  * To stop the CSI plugin, run: `kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
 
 ## Uninstalling the CSI Operator
 
 To remove the operator:
 
 ``` bash
-kubectl delete -f deploy/spectrum_scale.yaml
+kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 kubectl delete -f deploy/operator.yaml
 kubectl delete -f deploy/role.yaml
 kubectl delete -f deploy/role_binding.yaml
@@ -165,5 +163,47 @@ kubectl delete -f deploy/namespace.yaml
 > **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
 
 This will completely destroy the operator and all associated resources.
+
+
+### Open Shift Considerations
+
+When uninstalling on OpenShift the operator creates a `SecurityContextConstraint`  named `csiaccess`.
+This allows the driver to mount files in non default namespaces. 
+
+To verify the `SecurityContextConstraint` is gone:
+
+``` bash
+kubectl get SecurityContextConstraints csiaccess
+
+# If you get a result:
+kubectl delete SecurityContextConstraints csiaccess
+```
+
+### Stuck Operator
+In cases where deleting the operator `Custom Resource` fails the following recipe can be executed:
+
+``` bash
+# You need the proxy ro be running for this command.
+kubectl proxy &
+# This may need to be customized in OLM environments:
+NAMESPACE=ibm-spectrum-scale-csi-driver
+kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
+curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json 127.0.0.1:8001/api/v1/namespaces/$NAMESPACE/finalize
+rm -f temp.json
+```
+
+Typically this happens when deleting the `Custom Resource Definition` before removing all of the `Custom Resources`.
+For more details on this check the following [GitHub Issue](https://github.com/operator-framework/operator-sdk/issues/2094).
+
+> **NOTE**: If the operator stops processing CR CRUD after applying this fix it's recommended that the user restart the operator pod.
+
+To restart the operator pod, the following process must be followed:
+
+``` bash
+POD_NAME="ibm-spectrum-scale-csi-driver ibm-spectrum-scale-csi-operator-"
+NAMESPACE=ibm-spectrum-scale-csi-driver
+kubectl delete -n $NAMESPACE $POD_NAME
+```
+
 
 

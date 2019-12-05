@@ -66,6 +66,7 @@
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
+    namespace: "{{namespace}}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
   loop:
     - name: "spectrum_scale.yaml.j2"

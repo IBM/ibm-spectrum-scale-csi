@@ -3,8 +3,8 @@
   become: yes
   gather_facts: true
   vars:
-    VERSION_OLD: "0.9.1"
-    VERSION_NEW: "0.9.2"
+    VERSION_OLD: "0.9.2"
+    VERSION_NEW: "1.0.0"
     OPERATOR_DIR: "../stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
     OLM_DIR: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/"
     OPERATOR_NAME: "ibm-spectrum-scale-csi-operator"

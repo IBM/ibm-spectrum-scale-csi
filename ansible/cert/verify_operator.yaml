@@ -9,19 +9,32 @@
     OLM_CSV: "{{OPERATOR_NAME}}.v{{OPERATOR_VERSION}}.clusterserviceversion.yaml"
     CSI_CRD: "deploy/crds/"
 
-- name: Build operator 'ClusterServiceVersion'
+- name: Prep the CSV for operator-sdk generation
+  shell: "python hacks/csv_prep.py --version {{OPERATOR_VERSION}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
+
+- name: Build operator ClusterServiceVersion with operator-sdk
   shell: "GO111MODULE=on operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{OPERATOR_VERSION}} --update-crds"
   args:
     chdir: "{{OPERATOR_DIR}}"
 
-- name: "Copy details from CRD into CSV"
-  shell: "python hacks/copy_crd_descriptions.py --crd {{src}} --csv  {{dest}}"
+- name: Copy details from CRD into the ClusterServiceVersion
+  shell: "python hacks/csv_copy_crd_descriptions.py --crd {{item}} --version {{OPERATOR_VERSION}}"
   args:
     chdir: "{{OPERATOR_DIR}}"
-  vars:
-    dest: "{{OLM_DIR}}/{{OLM_CSV}}"
-    src:  "{{CSI_CRD}}/{{item}}"
   loop: "{{CRD_LIST}}"
+
+#- name: Copy the CR to the ClusterServiceVersion
+#  shell: "python hacks/csv_copy_cr.py --cr {{item}} --version {{OPERATOR_VERSION}}"
+#  args:
+#    chdir: "{{OPERATOR_DIR}}"
+#  loop: "{{CR_LIST}}"
+
+- name: Copy documentation for the ClusterServiceVersion
+  shell: "python hacks/csv_copy_docs.py --version {{OPERATOR_VERSION}}"
+  args:
+    chdir: "{{OPERATOR_DIR}}"
 
 - name: Package the operator
   shell: "python hacks/package_operator.py -o {{OP_PKG}}"

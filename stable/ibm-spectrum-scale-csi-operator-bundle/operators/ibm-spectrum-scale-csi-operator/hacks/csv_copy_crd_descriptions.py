@@ -1,10 +1,15 @@
 #!/bin/python
-# TODO write a script to break up yaml into multiple files.
 
 import argparse
 import sys
 import os
 import yaml
+
+BASE_DIR="{0}/../".format(os.path.dirname(os.path.realpath(__file__)))
+DEFAULT_VERSION="1.0.0"
+CSV_PATH="{0}deploy/olm-catalog/ibm-spectrum-scale-csi-operator/{1}/ibm-spectrum-scale-csi-operator.v{1}.clusterserviceversion.yaml"
+CRD_SOURCE_PATH="{0}deploy/crds/{1}"
+CRD_TARGET_PATH="{0}deploy/olm-catalog/ibm-spectrum-scale-csi-operator/{1}/{2}"
 
 def loadDescriptors(descType, crd, csv, descriptorMap={}):
     props = crd.get("spec", {})    \
@@ -66,25 +71,14 @@ def main(args):
     parser.add_argument( '--crd', metavar='crd', dest='crd', default=None,
         help='''The Custom Resource Definition File.''')
 
-    parser.add_argument( '--csv', metavar='csv', dest='csv', default=None,
-        help='''The output CSV to clone the data to.''')
+    parser.add_argument( '--version', metavar='CSV Version', dest='version', default=DEFAULT_VERSION,
+      help='''The version of the CSV to update''')
 
     args = parser.parse_args()
 
-    if args.crd is None:
-        print("Missing Custom Resource Definition")
-        return 1
-    if args.csv is None:
-        print("Missing CSV")
-        return 1
     
-    crdf=args.crd
-    if crdf[0] is not '/':
-        crdf ="{0}/{1}".format(os.getcwd(), crdf)
-
-    csvf=args.csv
-    if csvf[0] is not '/':
-        csvf ="{0}/{1}".format(os.getcwd(), csvf)
+    crdf = CRD_SOURCE_PATH.format(BASE_DIR, args.crd)
+    csvf = CSV_PATH.format(BASE_DIR, args.version)
 
     crd = None
     csv = None
@@ -125,9 +119,14 @@ def main(args):
                 "specDescriptors" : specdescriptors,
                 "description"     : "TODO: Fill this in"})
 
-
+        # Copy the updated CSV
         with open(csvf, 'w') as outfile:
             yaml.dump(csv, outfile, default_flow_style=False)
+
+        # Copy the CRD
+        crdtarget=CRD_TARGET_PATH.format(BASE_DIR, args.version, os.path.basename(crdf))
+        with open(crdtarget, 'w') as outfile:
+          yaml.dump(crd, outfile, default_flow_style=False)
         
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

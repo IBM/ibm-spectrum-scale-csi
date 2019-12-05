@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: ssco-ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: operator
-    app.kubernetes.io/name: spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
@@ -12,17 +12,17 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      name: ibm-spectrum-scale-csi-operator
+      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 0.9.1
+        productVersion: 1.0.0
       labels:
-        app.kubernetes.io/instance: ssco-deployment
-        app.kubernetes.io/managed-by: operator
-        app.kubernetes.io/name: spectrum-scale-csi-operator
+        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
         name: ibm-spectrum-scale-csi-operator
         product: ibm-spectrum-scale-csi
     spec:
@@ -38,7 +38,7 @@ spec:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
         imagePullPolicy: IfNotPresent
         name: ansible
         securityContext:
@@ -60,7 +60,7 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.9.1
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
         imagePullPolicy: IfNotPresent
         name: operator
         securityContext:

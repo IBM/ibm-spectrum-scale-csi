@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	//"github.com/davecgh/go-spew/spew"
-	ibmv1alpha1 "github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1alpha1"
+	ibmv1 "github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1"
 	//"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -67,7 +67,7 @@ func Add(mgr manager.Manager) *controller.Controller {
 		hdl := &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 				// Query for all Operator resources in the namespace.
-				cso := &ibmv1alpha1.CSIScaleOperatorList{}
+				cso := &ibmv1.CSIScaleOperatorList{}
 				opts := &client.ListOptions{Namespace: a.Meta.GetNamespace()}
 				err = mgr.GetClient().List(context.TODO(), opts, cso)
 				if err != nil {
@@ -133,7 +133,7 @@ type ReconcileCSIScaleOperator struct {
 func (r *ReconcileCSIScaleOperator) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	log.Info(fmt.Sprintf("In Reconciler Name: %s  -  Namespace: %s", request.Name, request.Namespace))
 
-	cso := &ibmv1alpha1.CSIScaleOperator{}
+	cso := &ibmv1.CSIScaleOperator{}
 
 	err := r.client.Get(context.TODO(), request.NamespacedName, cso)
 	if err != nil {

@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1
 kind: OperatorSource
 metadata:
-  name: ibm-spectrum-scale-csi-operator-app
+  name: ibm-spectrum-scale
   namespace: openshift-marketplace
 spec:
   type: appregistry

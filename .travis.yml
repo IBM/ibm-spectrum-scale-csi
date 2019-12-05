@@ -15,7 +15,7 @@ env:
     - CSI_OP_VER="${TRAVIS_BRANCH}.${TRAVIS_OS_NAME}"
     - QUAY_USERNAME="mew2057"
     - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator-test:${CSI_OP_VER}"
-    - LOCAL_IMAGE="ibm.scale.com/csi-scale-operator:testing"
+    - LOCAL_IMAGE="csi.ibm.com/csi-scale-operator:testing"
 
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
     - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
@@ -45,10 +45,13 @@ jobs:
   include:
     
     # Install operator-courier and run the lint on the manifest.
-    - stage: lint
-      name: "Lint: operator-courier"
+    - stage:  precheck 
+      name: "Precheck: Run linters and bundle automation."
       script:
-        - pip install operator-courier 
+        - pip install ansible
+        # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
+        - ansible-playbook ${TRAVIS_BUILD_DIR}/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
+        - pip install operator-courier
         - cd ${CSI_OP_BUILD_DIR}
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
@@ -88,11 +91,11 @@ jobs:
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
-        #- python hacks/clear_finalizers.py
+        - python hacks/clear_finalizers.py
         - python hacks/change_deploy_image.py -i ${DOCKER_REPO} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml
-        #- python  hacks/clear_finalizers.py --restore
+        - python  hacks/clear_finalizers.py --restore
         
     - before_install:
         - sudo pip install docker
