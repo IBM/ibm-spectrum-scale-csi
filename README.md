@@ -205,5 +205,3 @@ NAMESPACE=ibm-spectrum-scale-csi-driver
 kubectl delete -n $NAMESPACE $POD_NAME
 ```
 
-
-
