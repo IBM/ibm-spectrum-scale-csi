@@ -19,7 +19,7 @@ spec:
 # configuration for the plugin. https://github.com/IBM/ibm-spectrum-scale-csi-driver
 # ==================================================================================
   clusters:
-    - id: "< Primary Cluster ID >"
+    - id: "< Primary Cluster ID - WARNING: THIS IS A STRING NEEDS YAML QUOTES!>"
       secrets: "secret1"
       secureSslMode: false
       primary:

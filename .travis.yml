@@ -45,8 +45,8 @@ jobs:
   include:
     
     # Install operator-courier and run the lint on the manifest.
-    - stage: lint
-      name: "Lint: operator-courier"
+    - stage:  precheck 
+      name: "Precheck: Run linters and bundle automation."
       script:
         - pip install ansible
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
