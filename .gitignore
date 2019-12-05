@@ -1,6 +1,9 @@
 # Temporary Build Files
 build/_output
 build/_test
+.DS_Store
+# Travis Validation Files
+generated/installer/*.test.yaml
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-
