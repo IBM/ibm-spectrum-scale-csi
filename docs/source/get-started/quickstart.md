@@ -3,7 +3,7 @@ Quickstart Guide
 
 The IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster providing a means to 
 deploy and manage the CSI plugin for spectrum scale. For more in depth documentation please refer
-to the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/1.0.0/README.md).
+to the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.0/README.md).
 
 This operator should be used to deploy the CSI plugin.
 
