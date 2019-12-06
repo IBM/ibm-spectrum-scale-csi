@@ -48,16 +48,19 @@ echo "Copying yaml files to ${TMP_DIR} ..."
 for f in ${FILES[*]}; do 
    cp ${TOPLEVEL}/${f} ${TMP_DIR}/
 done
+
+# Create the md5sum for the yaml files 
+#
 cd ${TMP_DIR}
 md5sum * >> md5sum
 cd -
 
-
-
+#
+# Tar up and clean up working files 
 echo "Tar up files ..."
 tar cfvj ${TAR_FILE} ./${TMP_DIR}
 echo "Cleanup ${TMP_DIR} ..."
-# rm -rf ${TMP_DIR}
+rm -rf ${TMP_DIR}
 
 echo "====== Generated Files ======="
 ls -ltr ${TAR_FILE}
