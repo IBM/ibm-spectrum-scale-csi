@@ -58,7 +58,7 @@ cd -
 #
 # Tar up and clean up working files 
 echo "Tar up files ..."
-tar cfvj ${TAR_FILE} ./${TMP_DIR}
+tar -czvf ${TAR_FILE} ./${TMP_DIR}
 echo "Cleanup ${TMP_DIR} ..."
 rm -rf ${TMP_DIR}
 
