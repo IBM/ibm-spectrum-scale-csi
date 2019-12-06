@@ -18,30 +18,35 @@ FILES=( './stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-
 )
 
 TOPLEVEL=`git rev-parse --show-toplevel`
+echo ${TOPLEVEL}
 
-echo $TOPLEVEL
-
-PROJ_NAME=`basename $TOPLEVEL`
+PROJ_NAME=`basename ${TOPLEVEL}`
 if [[ -z ${1} ]]; then
-   TAG_NAME=`git symbolic-ref -q --short HEAD || git describe --tags --exact-match` 
+   TAG_NAME=`git describe || git describe --tags --exact-match`
 else
    TAG_NAME=${1}
 fi
 
-TAR_FILE="$PROJ_NAME-$TAG_NAME.tar.gz"
-TMP_DIR="$PROJ_NAME.${TAG_NAME}"
+if [[ -z ${TAG_NAME} ]]; then
+   echo "ERROR, could not determine the tag name, cannot continue."
+   exit 1
+fi
 
-echo "DEBUG: PROJ_NAME . . : $PROJ_NAME"
-echo "DEBUG: TAG_NAME . . .: $TAG_NAME"
-echo "DEBUG: TAR_FILE . . .: $TAR_FILE"
+TARGET_NAME="${PROJ_NAME}-${TAG_NAME}"
 
+echo "DEBUG: PROJ_NAME . . : ${PROJ_NAME}"
+echo "DEBUG: TAG_NAME . . .: ${TAG_NAME}"
+echo "DEBUG: TARGET_NAME  .: ${TARGET_NAME}"
+
+TAR_FILE="${TARGET_NAME}.tar.gz"
+TMP_DIR="${TARGET_NAME}"
 
 echo "Creating ${TMP_DIR} ..."
 mkdir -p ${TMP_DIR}
 
 echo "Copying yaml files to ${TMP_DIR} ..."
 for f in ${FILES[*]}; do 
-   cp $TOPLEVEL/$f ${TMP_DIR}/
+   cp ${TOPLEVEL}/${f} ${TMP_DIR}/
 done
 cd ${TMP_DIR}
 md5sum * >> md5sum
@@ -50,7 +55,7 @@ cd -
 
 
 echo "Tar up files ..."
-tar cfvj $TAR_FILE ./${TMP_DIR}
+tar cfvj ${TAR_FILE} ./${TMP_DIR}
 echo "Cleanup ${TMP_DIR} ..."
 # rm -rf ${TMP_DIR}
 
