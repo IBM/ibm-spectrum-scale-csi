@@ -22,7 +22,7 @@ echo ${TOPLEVEL}
 
 PROJ_NAME=`basename ${TOPLEVEL}`
 if [[ -z ${1} ]]; then
-   TAG_NAME=`git describe || git describe --tags --exact-match`
+   TAG_NAME=`git describe --tags --exact-match || git describe`
 else
    TAG_NAME=${1}
 fi
