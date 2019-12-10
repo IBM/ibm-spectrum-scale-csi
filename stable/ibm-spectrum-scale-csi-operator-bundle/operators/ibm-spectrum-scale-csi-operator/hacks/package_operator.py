@@ -14,7 +14,7 @@ OPERATOR="{0}/ibm-spectrum-scale-csi-operator".format(OLM_CATALOG)
 
 PACKAGE_POSTFIX="package.yaml"
 
-#1.0.0
+#1.0.1
 
 
 def main( args ):
