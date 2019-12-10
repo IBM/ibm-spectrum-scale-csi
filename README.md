@@ -10,15 +10,8 @@
       * [Static Provisioning](#static-provisioning)
       * [Dynamic Provisioning](#dynamic-provisioning)
          * [Storageclass](#storageClass)
-      * [Advanced Configuration](#advanced-configuration)
-         * [Remote mount support](#remote-mount-support)
-         * [Node Selector](#node-selector)
-         * [Kubernetes node to IBM Spectrum Scale node mapping](#kubernetes-node-to-ibm-spectrum-scale-node-mapping)
-      * [Cleanup](#cleanup)
-      * [Troubleshooting](#troubleshooting)
       * [Environments in Test](TESTCONFIG.md#environments-in-test)
       * [Example Hardware Configs](TESTCONFIG.md#example-hardware-configs)
-      * [Example of using the Install Toolkit to build a IBM Spectrum Scale cluster for testing the CSI driver](TESTCONFIG.md#example-of-using-the-install-toolkit-to-build-a-spectrum-scale-cluster-for-testing-the-csi-driver)
       * [Links](#links)
 
   
@@ -94,7 +87,9 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
 
 
+
 ## Install and Deploy the IBM Spectrum Scale CSI driver
+
 
 1. Copy and load the docker image on all Kubernetes worker nodes
 
@@ -104,43 +99,12 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
    On podman setup, use *podman* command instead of *docker*
 
-2. Deploy CSI driver
 
-   **Method 1: Operator (Recommended)**
+2. Deploy CSI driver
 
    Follow the instructions from [ibm-spectrum-scale-csi-operator](https://github.com/IBM/ibm-spectrum-scale-csi-operator) for deployment of CSI driver
 
-   **Method 2: Install script**
-
-   a. Update `deploy/spectrum-scale-driver.conf` with your cluster and environment details.
-
-   Note that on OpenShift setup, the local image is listed as `localhost/ibm-spectrum-scale-csi:v1.0.0`. Change the value of "spectrumscaleplugin" parameter in images section accordingly. 
-
-   b. Set the environment variable CSI_SCALE_PATH to ibm-spectrum-scale-csi-driver directory
-
-   ```
-   export CSI_SCALE_PATH=$GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
-   ```
-
-   c. Run the install helper script:
-
-   ```
-   tools/spectrum-scale-driver.py $CSI_SCALE_PATH/deploy/spectrum-scale-driver.conf
-   ```
-
-   Review the generated configuration files in deploy.
-
-   d. Run the `deploy/create.sh` script to deploy the plugin
-
-3. Check that the csi pods are up and running
-
-   ```
-   % kubectl get pod
-   NAME READY STATUS RESTARTS AGE
-   ibm-spectrum-scale-csi-7d8jg 2/2 Running 0 7s
-   ibm-spectrum-scale-csi-attacher-0 1/1 Running 0 8s
-   ibm-spectrum-scale-csi-provisioner-0 1/1 Running 0 8s
-   ```
+   For Advance configuration, Cleanup, Troubleshooting etc. refer [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html)
 
 
 ## Static Provisioning
@@ -191,137 +155,6 @@ Example:
    kubectl apply -f examples/dynamic/fileset/podfset.yaml
    ```
 
-## Advanced Configuration
-
-Following is advanced configuration of IBM Spectrum Scale CSI driver and is not supported through the installer "spectrum-scale-driver.py". Perform the below steps after running the installer "spectrum-scale-driver.py".
-
-Note: This advanced configuration is supported through operator and manual steps given below are not needed.
-
-### Remote mount support
-
-IBM Spectrum Scale provides a feature to mount a IBM Spectrum Scale file system that belongs to another IBM Spectrum Scale cluster. Consider the case where Kubernetes worker nodes are part of a "primary" Spectrum Scale cluster. This primary cluster has filesystems mounted from a "remote" IBM Spectrum Scale cluster.
-
-In order to deploy CSI driver on such a configuration, following steps should be performed after running the installer "spectrum-scale-driver.py":
-
-- Update `deploy/spectrum-scale-config.json` file with remote cluster and filesystem name information under "primary" section by adding the two parameters as:
-
-   * "**remoteCluster**":"<remote cluster ID>",  
-   * "**remoteFs**":"remote filesystem name" (Required only if remote filesystem name is different than the locally mounted filesystem name)
-
-- Make another entry for this cluster under the "clusters" section of `deploy/spectrum-scale-config.json` as:
-
-   ```
-   {"id":"2954738785946888888",
-    "secrets":"secret2",
-     "restApi": [
-        {"guiHost":"172.16.1.33"
-        }
-     ]
-   }
-   ```
-
-- Ensure that a new secret (secret2) is created with the remote cluster GUI credentials:
-
-   **Note:** username and passoword are base64 encoded.
-
-- Add an entry for secret2 in deploy/csi-plugin.yaml file under "volumes":
-
-   ```
-   - name: secret2
-     secret:
-       secretName: secret2
-   ```
-
-   Add corresponding entry under "containers -> ibm-spectrum-scale-csi -> volumeMounts" section:
-
-   ```
-   - name: secret2
-     mountPath: /var/lib/ibm/secret2
-     readOnly: true
-   ```
-
-- Deploy the driver by running `deploy/create.sh`
-
-- For fileset based dynamic provisioning, use the storageClass parameters as below:
-
-   * **volBackendFs**: Filesystem on which the volume should be created. Use the locally mounted filesystem name here.
-   * **clusterId**: Remote Cluster ID on which the volume (fileset) should be created. 
-	Rest of the storageClass parameteres remain as explained above.
-
-### Node Selector
-
-Node selector is used to control on which Kubernetes worker nodes the IBM Spectrum Scale CSI driver should be running. Node selector also helps in cases where new worker nodes are added to Kubernetes cluster but does not have IBM Spectrum Scale installed, in this case we would not want the CSI driver to be deployed on these nodes. If node selector is not used, CSI driver gets deployed on all worker nodes.
-
-To use this feature, perform the following steps after running the installer "spectrum-scale-driver.py":
-
-- Label the Kubernetes worker nodes where IBM Spectrum Scale is running. Example:
-	```
-	kubectl label node node7 spectrumscalenode=yes --overwrite=true
-	```
-- Uncomment the lines from the following files: 
-    * `deploy/csi-plugin-attacher.yaml`
-    * `deploy/csi-plugin-provisioner.yaml`
-    * `deploy/csi-plugin.yaml`
-
-    ```
-    #      nodeSelector:  
-    #        spectrumscalenode: "yes"
-    ```
-
-- Deploy the driver by running `deploy/create.sh`
-
-**Note:** If you choose to run csi plugin on selective nodes using the node selector then make sure pod using scale csi pvc are getting scheduled on nodes where csi driver is running.
-
-### Kubernetes node to IBM Spectrum Scale node mapping
-
-In an environment where Kubernetes node names are different than the IBM Spectrum Scale node names, this mapping feature must be used for application pods with IBM Spectrum Scale as persistent storage to be successfully mounted.
-
-To use this feature, perform the following steps after running the installer "spectrum-scale-driver.py":
-
-- Add new environment variable in `deploy/csi-plugin.yaml` under container "*- name: ibm-spectrum-scale-csi*", where name of the environment variable is Kubernetes node name and value is the IBM Spectrum Scale node name.
-
-  ```
-  env:
-     - name: k8snodename1  
-       value: "scalenodename1"
-     - name: k8snodename2  
-       value: "scalenodename2"
-  ```
-
-  **Note:** Only add those nodes whose name is different in Kubernetes (`kubectl get nodes`) and IBM Spectrum Scale (`mmlscluster/mmlsnode`)
-	
-- Deploy the driver by running `deploy/create.sh`
-
-## Cleanup
-
-1. Delete the resources that were created (pod, pvc, pv, storageClass)
-
-2. Run deploy/destroy.sh script to cleanup the plugin resources
-
-3. Find the CSI driver docker image and remove from all Kubernetes worker nodes
-
-   ```
-   % docker images -a | grep ibm-spectrum-scale-csi
-   ibm-spectrum-scale-csi v1.0.0 465ca978127a 18 minutes ago 109MB
-
-   % docker rmi 465ca978127a
-   ```
-
-## Troubleshooting
-
-The tool `spectrum-scale-driver-snap.sh` collects the CSI driver debug data and stores in the given output directory.
-
-Usage:
-
-   ```
-   spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
-   -n: Debug data for CSI resources under this namespace will be collected.
-       If not specified, default namespace is used. The tool returns error
-       if CSI is not running under the given namespace.
-   -o: Output directory where debug data will be stored. If not specified,
-       the debug data is stored in current directory.
-   -h: Prints the usage
-   ```
 
 ## Links
 
