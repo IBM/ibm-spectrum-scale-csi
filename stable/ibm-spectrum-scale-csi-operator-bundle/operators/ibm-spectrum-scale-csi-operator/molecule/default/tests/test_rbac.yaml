@@ -26,9 +26,10 @@
     name: ibm-spectrum-scale-csi-provisioner
 
 - name: Delete csi.ibm.com/v1.CSIScaleOperator 
-  state: absent
-  namespace: '{{ namespace }}'
-  definition: '{{ custom_resource }}'
+  k8s:
+    state: absent
+    namespace: '{{ namespace }}'
+    definition: '{{ custom_resource }}'
 
 
 - name: Verify RBAC absent
