@@ -30,6 +30,7 @@
     state: absent
     namespace: '{{ namespace }}'
     definition: '{{ custom_resource }}'
+    wait: yes
 
 
 - name: Verify RBAC absent
