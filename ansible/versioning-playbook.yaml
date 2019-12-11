@@ -46,6 +46,7 @@
       - hacks/csv_copy_crd_descriptions.py
       - hacks/csv_copy_docs.py
       - hacks/csv_prep.py
+      - ../../../../docs/source/conf.py
 
   - name: "Rebuild operator 'ClusterServiceVersion'"
     shell: "GO111MODULE=on operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{VERSION_NEW}} --update-crds"
