@@ -41,7 +41,7 @@
     api_version:  v1
     namespace: '{{ namespace }}'
   register: ref_abs
-  failed_when: ref_abs != None
+  failed_when: ref_abs.resources
   loop:
   - kind: ClusterRole
     name: ibm-spectrum-scale-csi-attacher
