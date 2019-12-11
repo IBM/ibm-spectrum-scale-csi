@@ -83,9 +83,6 @@
         namespace: '{{ namespace }}'
         definition: '{{ custom_resource }}'
 
-    - debug:
-        var: namespace
-
     - name: Wait 120s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
