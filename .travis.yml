@@ -98,7 +98,7 @@ jobs:
         - python  hacks/clear_finalizers.py --restore
         
     - before_install:
-        - sudo pip install docker 
+        - sudo pip install docker
         - pip install pyyaml molecule openshift docker jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
