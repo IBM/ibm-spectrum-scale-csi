@@ -18,7 +18,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 1.0.0
+        productVersion: 1.0.1
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -38,9 +38,19 @@ spec:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
         name: ansible
+        readinessProbe:
+          exec:
+            command: ["./health_check.sh"]
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        livenessProbe:
+          exec:
+            command: ["./health_check.sh"]
+          initialDelaySeconds: 10
+          periodSeconds: 30
         securityContext:
           capabilities:
             drop:
@@ -60,7 +70,7 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
         name: operator
         securityContext:
