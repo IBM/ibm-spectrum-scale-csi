@@ -4,6 +4,8 @@ build/_test
 .DS_Store
 # Travis Validation Files
 generated/installer/*.test.yaml
+# Tools 
+tools/ibm-spectrum-scale-csi-operator*
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-
