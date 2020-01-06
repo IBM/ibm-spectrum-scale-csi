@@ -7,13 +7,12 @@ metadata:
       app.kubernetes.io/instance\": \"ibm-spectrum-scale-csi-operator\",\n       \
       \ \"app.kubernetes.io/managed-by\": \"ibm-spectrum-scale-csi-operator\",\n \
       \       \"app.kubernetes.io/name\": \"ibm-spectrum-scale-csi-operator\"\n  \
-      \    },\n      \"name\": \"ibm-spectrum-scale-csi\",\n      \"release\": \"\
-      ibm-spectrum-scale-csi-operator\"\n    },\n    \"spec\": {\n      \"clusters\"\
-      : [\n        {\n          \"id\": \"\\u003c Primary Cluster ID - WARNING: THIS\
-      \ IS A STRING NEEDS YAML QUOTES!\\u003e\",\n          \"primary\": {\n     \
-      \       \"primaryFs\": \"\\u003c Primary Filesystem \\u003e\",\n           \
-      \ \"primaryFset\": \"\\u003c Fileset in Primary Filesystem \\u003e\"\n     \
-      \     },\n          \"restApi\": [\n            {\n              \"guiHost\"\
+      \    },\n      \"name\": \"ibm-spectrum-scale-csi\"\n    },\n    \"spec\": {\n\
+      \      \"clusters\": [\n        {\n          \"id\": \"\\u003c Primary Cluster\
+      \ ID - WARNING: THIS IS A STRING NEEDS YAML QUOTES!\\u003e\",\n          \"\
+      primary\": {\n            \"primaryFs\": \"\\u003c Primary Filesystem \\u003e\"\
+      ,\n            \"primaryFset\": \"\\u003c Fileset in Primary Filesystem \\u003e\"\
+      \n          },\n          \"restApi\": [\n            {\n              \"guiHost\"\
       : \"\\u003c Primary cluster GUI IP/Hostname \\u003e\"\n            }\n     \
       \     ],\n          \"secrets\": \"secret1\",\n          \"secureSslMode\":\
       \ false\n        }\n      ],\n      \"scaleHostpath\": \"\\u003c GPFS FileSystem\
@@ -23,7 +22,8 @@ metadata:
     certified: 'false'
     containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
     createdAt: Wed Dec  4 06:41:31 EST 2019
-    description: An operator for deploying and managing the IBM CSI Spectrum Scale Driver.
+    description: An operator for deploying and managing the IBM CSI Spectrum Scale
+      Driver.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi-operator/
     support: IBM
   labels:
@@ -212,10 +212,10 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.phase
       version: v1
-  description: "IBM Spectrum Scale CSI Operator Quickstart\n==========================================\n\
-    \nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster providing\
-    \ a means to \ndeploy and manage the CSI plugin for spectrum scale. For more in\
-    \ depth documentation please refer\nto the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.0/README.md).\n\
+  description: "Quickstart Guide\n================\n\nThe IBM Spectrum Scale CSI Operator\
+    \ runs within a Kubernetes cluster providing a means to \ndeploy and manage the\
+    \ CSI plugin for spectrum scale. For more in depth documentation please refer\n\
+    to the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.0/README.md).\n\
     \nThis operator should be used to deploy the CSI plugin.\n\nThe configuration\
     \ process is as follows:\n\n1. [Spectrum Scale GUI Setup](#spectrum-scale-gui-setup)\n\
     2. [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum\

@@ -82,6 +82,9 @@
         state: present
         namespace: '{{ namespace }}'
         definition: '{{ custom_resource }}'
+        validate:
+          strict: yes
+          fail_on_error: yes
 
     - debug:
         var: namespace
