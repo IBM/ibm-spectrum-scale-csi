@@ -20,7 +20,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 1.0.0
+        productVersion: 1.0.1
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -36,22 +36,40 @@ spec:
               - key: beta.kubernetes.io/arch
                 operator: Exists
       containers:
-      - command:
+      - name: ansible
+        command:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
-        name: ansible
+        readinessProbe:
+          exec:
+            command: ["./health_check.sh"]
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        livenessProbe:
+          exec:
+            command: ["./health_check.sh"]
+          initialDelaySeconds: 10
+          periodSeconds: 30
         securityContext:
           capabilities:
             drop:
             - ALL
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 50m
+          limits:
+            memory: 100Mi
+            cpu: 100m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
           readOnly: true
-      - env:
+      - name: operator
+        env:
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
@@ -62,13 +80,29 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
-        name: operator
+        readinessProbe:
+          exec:
+            command: ["./health_check.sh"]
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        livenessProbe:
+          exec:
+            command: ["./health_check.sh"]
+          initialDelaySeconds: 10
+          periodSeconds: 30
         securityContext:
           capabilities:
             drop:
             - ALL
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 50m
+          limits:
+            memory: 100Mi
+            cpu: 100m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -473,6 +507,7 @@ metadata:
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
   name: csiscaleoperators.csi.ibm.com
 spec:
+  appVersion: "1.0.0"
   group: csi.ibm.com
   names:
     kind: CSIScaleOperator
