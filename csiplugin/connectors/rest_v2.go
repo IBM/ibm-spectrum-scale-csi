@@ -135,7 +135,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool}}
 		glog.V(4).Infof("Created Spectrum Scale connector with SSL mode for %v", guiHost)
 	} else {
-		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec //InsecureSkipVerify was requested by user.
 		glog.V(4).Infof("Created Spectrum Scale connector without SSL mode for %v", guiHost)
 	}
 
@@ -163,7 +163,6 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	}
 	cid_str := fmt.Sprintf("%v", getClusterResponse.Cluster.ClusterSummary.ClusterID)
 	return cid_str, nil
-
 }
 
 func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
@@ -466,7 +465,6 @@ func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath strin
 	}
 
 	return nil
-
 }
 
 func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string) error {
@@ -546,6 +544,7 @@ func (s *spectrumRestV2) doHTTP(endpoint string, method string, responseObject i
 		glog.Errorf("Error in authentication request: %v", err)
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
 		return status.Error(codes.Unauthenticated, fmt.Sprintf("Unauthorized %s request to %v: %v", method, endpoint, response.Status))
@@ -563,7 +562,7 @@ func (s *spectrumRestV2) doHTTP(endpoint string, method string, responseObject i
 	return nil
 }
 
-func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string) error {
+func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string) error { //nolint:dupl
 	glog.V(4).Infof("rest_v2 MountFilesystem. filesystem: %s, node: %s", filesystemName, nodeName)
 
 	mountreq := MountFilesystemRequest{}
@@ -592,7 +591,7 @@ func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string)
 	return nil
 }
 
-func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName string) error {
+func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName string) error { //nolint:dupl
 	glog.V(4).Infof("rest_v2 UnmountFilesystem. filesystem: %s, node: %s", filesystemName, nodeName)
 
 	unmountreq := UnmountFilesystemRequest{}
@@ -739,11 +738,9 @@ func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) 
 	}
 
 	return getFilesetResponse.Filesets[0].FilesetName, nil
-
 }
 
 func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
-
 	RelPath := strings.ReplaceAll(relPath, "/", "%2F")
 	checkFilDirUrl := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/owner/%s", filesystemName, RelPath))
 	ownerResp := OwnerResp_v2{}
@@ -758,7 +755,6 @@ func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath st
 }
 
 func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error {
-
 	symLnkReq := SymLnkRequest{}
 	symLnkReq.FilesystemName = TargetFs
 	symLnkReq.RelativePath = relativePath

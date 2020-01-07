@@ -50,7 +50,7 @@ func ReadAndUnmarshal(object interface{}, dir string, fileName string) error {
 func MarshalAndRecord(object interface{}, dir string, fileName string) error {
 	glog.V(6).Infof("utils MarshalAndRecord. object: %v, dir: %s, fileName: %s", object, dir, fileName)
 
-	MkDir(dir)
+	_ = MkDir(dir)
 	path := dir + string(os.PathSeparator) + fileName
 
 	bytes, err := json.MarshalIndent(object, "", " ")
@@ -62,24 +62,23 @@ func MarshalAndRecord(object interface{}, dir string, fileName string) error {
 	return WriteFile(path, bytes)
 }
 
-func ReadFile(path string) (content []byte, err error) {
+func ReadFile(path string) ([]byte, error) {
 	glog.V(6).Infof("utils ReadFile. path: %s", path)
 
 	file, err := os.Open(path)
 	if err != nil {
 		glog.Errorf("Error in opening file %s: %v", path, err)
-		return
+		return nil, err
 	}
 	defer file.Close()
 
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		glog.Errorf("Error in read file %s: %v", path, err)
-		return
+		return nil, err
 	}
-	content = bytes
 
-	return
+	return bytes, nil
 }
 
 func WriteFile(path string, content []byte) error {

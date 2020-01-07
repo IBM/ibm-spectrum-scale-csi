@@ -96,7 +96,7 @@ const (
 	DefaultGuiPort  int    = 443
 	GuiProtocol     string = "https"
 	ConfigMapFile   string = "/var/lib/ibm/config/spectrum-scale-config.json"
-	SecretBasePath  string = "/var/lib/ibm/"
+	SecretBasePath  string = "/var/lib/ibm/" //nolint:gosec
 	CertificatePath string = "/var/lib/ibm/ssl/public"
 )
 
@@ -135,7 +135,7 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 			file_s := string(file)
 			file_s = strings.TrimSpace(file_s)
 			file_s = strings.TrimSuffix(file_s, "\n")
-			cmap.Clusters[i].MgmtUsername = string(file_s)
+			cmap.Clusters[i].MgmtUsername = file_s
 
 			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
 			file, e = ioutil.ReadFile(pwdPath)
@@ -145,7 +145,7 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 			file_s = string(file)
 			file_s = strings.TrimSpace(file_s)
 			file_s = strings.TrimSuffix(file_s, "\n")
-			cmap.Clusters[i].MgmtPassword = string(file_s)
+			cmap.Clusters[i].MgmtPassword = file_s
 		}
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {

@@ -1,0 +1,104 @@
+linters-settings:
+
+  funlen:
+    lines: 100
+    statements: 80
+  govet:
+    check-shadowing: false #too many false positives on shadowed err
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  golint:
+    min-confidence: 0
+  gofmt:
+    simplify: true
+  gocyclo:
+    min-complexity: 20
+  gocognit:
+    min-complexity: 10
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 120
+    tab-width: 1
+  nakedret:
+    max-func-lines: 0
+  dogsled:
+    max-blank-identifiers: 2
+
+linters:
+  disable-all: true
+  enable:
+    - megacheck
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - misspell
+    - nakedret
+    - scopelint
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+    - maligned
+    #best practice: add --enable=golint,gocritic to your editor configuration when using golangci-lint
+
+  # don't enable:
+  # - gochecknoglobals
+  # - gocognit # akin to gocyclo
+  # - godox # checks for TODO/BUG/FIXME
+  # - prealloc
+  # - wsl
+  # - stylecheck
+  # - lll # checks line length
+  # - golint
+  # - gocritic
+
+  presets:
+    - bugs
+    - unused
+  fast: false
+
+
+issues:
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+  exclude-use-default: true
+  max-issues-per-linter: 0
+  max-same-issues: 0

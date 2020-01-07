@@ -24,6 +24,18 @@
 You can run these verifications locally to predict the pass or fail of continuous integration.
 
 * ```goreturns -d ./```
+* ```golangci-lint run```
+* ```go test ./tests/sanity```
+
+#### Hint: configure your editor to use goreturns and golangci-lint
+```bash
+golangci-lint run --fast --enable=golint,gocritic
+```
+>Note: it is recommended to use golint and gocritic, even though they aren't enforced.
+
+```bash
+goreturns
+```
 
 ### Sign your work for submittal
 

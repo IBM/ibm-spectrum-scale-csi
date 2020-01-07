@@ -22,20 +22,20 @@ type GetClusterResponse struct {
 }
 type Cluster struct {
 	CesSummary     CesSummary        `json:"cesSummary,omitempty"`
-	ClusterSummary ClusterSummary    `json:clusterSummary`
+	ClusterSummary ClusterSummary    `json:"clusterSummary"`
 	CnfsSummary    CnfsSummary       `json:"cnfsSummary,omitempty"`
 	Links          map[string]string `json:"links,omitempty"`
 	Nodes          []ClusterNode     `json:"nodes,omitempty"`
 }
 
 type CesSummary struct {
-	EnabledServices string `json:enabledServices`
+	EnabledServices string `json:"enabledServices"`
 	AddressPolicy   string `json:"addressPolicy,omitempty"`
 	CesSharedRoot   string `json:"cesSharedRoot,omitempty"`
 	LogLevel        int    `json:"logLevel,omitempty"`
 }
 type ClusterSummary struct {
-	ClusterID       uint64 `json:clusterId`
+	ClusterID       uint64 `json:"clusterId"`
 	ClusterName     string `json:"clusterName,omitempty"`
 	PrimaryServer   string `json:"primaryServer,omitempty"`
 	RcpPath         string `json:"rcpPath,omitempty"`
@@ -176,23 +176,23 @@ type Fileset struct {
 }
 
 type AFM struct {
+	AFMPrimaryID                 string `json:"afmPrimaryID"`
+	AFMMode                      string `json:"afmMode"`
+	AFMTarget                    string `json:"afmTarget"`
 	AFMAsyncDelay                int    `json:"afmAsyncDelay"`
 	AFMDirLookupRefreshInterval  int    `json:"afmDirLookupRefreshInterval"`
 	AFMDirOpenRefreshInterval    int    `json:"afmDirOpenRefreshInterval"`
-	AFMEnableAutoEviction        bool   `json:"afmEnableAutoEviction"`
 	AFMExpirationTimeout         int    `json:"afmExpirationTimeout"`
 	AFMFileLookupRefreshInterval int    `json:"afmFileLookupRefreshInterval"`
-	AFMMode                      string `json:"afmMode"`
 	AFMNumFlushThreads           int    `json:"afmNumFlushThreads"`
 	AFMParallelReadChunkSize     int    `json:"afmParallelReadChunkSize"`
 	AFMParallelReadThreshold     int    `json:"afmParallelReadThreshold"`
 	AFMParallelWriteChunkSize    int    `json:"afmParallelWriteChunkSize"`
 	AFMParallelWriteThreshold    int    `json:"afmParallelWriteThreshold"`
 	AFMPrefetchThreshold         int    `json:"afmPrefetchThreshold"`
-	AFMPrimaryID                 string `json:"afmPrimaryID"`
 	AFMRPO                       int    `json:"afmRPO"`
+	AFMEnableAutoEviction        bool   `json:"afmEnableAutoEviction"`
 	AFMShowHomeSnapshots         bool   `json:"afmShowHomeSnapshots"`
-	AFMTarget                    string `json:"afmTarget"`
 }
 
 type FilesetConfig struct {
@@ -232,7 +232,7 @@ type GenericResponse struct {
 	Jobs   []Job  `json:"jobs,omitempty"`
 }
 
-type nfsExportRequest struct {
+type NfsExportRequest struct {
 	Path         string   `json:"path,omitempty"`
 	ClientDetail []string `json:"nfsClients,omitempty"`
 }
@@ -310,10 +310,10 @@ type GetFilesystemResponse_v2 struct {
 }
 
 type OwnerInfo struct {
-	User  string `json:user,omitempty"`
-	UID   int    `json:uid,omitempty"`
-	Group string `json:group,omitempty"`
-	GID   int    `json:gid,omitempty"`
+	User  string `json:"user,omitempty"`
+	UID   int    `json:"uid,omitempty"`
+	Group string `json:"group,omitempty"`
+	GID   int    `json:"gid,omitempty"`
 }
 
 type OwnerResp_v2 struct {
@@ -355,17 +355,17 @@ type QuotaInfo struct {
 type SettingInfo struct {
 	BlockAllocationType  string `json:"blockAllocationType,omitempty"`
 	FileLockingSemantics string `json:"fileLockingSemantics,omitempty"`
-	NumNodes             int    `json:"numNodes,omitempty"`
-	ExactMTime           bool   `json:"exactMTime,omitempty"`
 	SuppressATime        string `json:"suppressATime,omitempty"`
+	StripeMethod         string `json:"stripeMethod"`
+	ACLSemantics         string `json:"ACLSemantics,omitempty"`
+	NumNodes             int    `json:"numNodes,omitempty"`
+	MaxNumberOfInodes    int    `json:"maxNumberOfInodes,omitempty"`
+	ExactMTime           bool   `json:"exactMTime,omitempty"`
 	FastEAEnabled        bool   `json:"fastEAEnabled,omitempty"`
 	Encryption           bool   `json:"encryption,omitempty"`
-	MaxNumberOfInodes    int    `json:"maxNumberOfInodes,omitempty"`
 	Is4KAligned          bool   `json:"is4KAligned,omitempty"`
 	RapidRepairEnabled   bool   `json:"rapidRepairEnabled,omitempty"`
-	StripeMethod         string `json:"stripeMethod"`
 	StripedLogs          bool   `json:"stripedLogs,omitempty"`
-	ACLSemantics         string `json:"ACLSemantics,omitempty"`
 	DMAPIEnabled         bool   `json:"DMAPIEnabled,omitempty"`
 }
 

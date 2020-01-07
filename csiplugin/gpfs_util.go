@@ -18,11 +18,8 @@ package scale
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"path"
 	"strconv"
 	"strings"
 
@@ -110,7 +107,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 
 	if scaleVol.IsFilesetBased {
-
 		fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
 		if fsTypeSpecified {
 			scaleVol.FilesetType = fsType
@@ -132,68 +128,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		}
 	}
 	return scaleVol, nil
-}
-
-func getScaleVolumeByName(volName string) (*scaleVolume, error) {
-	glog.V(4).Infof("gpfs_util getScaleVolumeByName")
-
-	for _, scaleVol := range scaleVolumes {
-		if scaleVol.VolName == volName {
-			return scaleVol, nil
-		}
-	}
-	return nil, fmt.Errorf("volume name %s does not exit in the volumes list", volName)
-}
-
-func persistVolInfo(image string, persistentStoragePath string, volInfo *scaleVolume) error {
-	glog.V(4).Infof("gpfs_util persistVolInfo")
-
-	file := path.Join(persistentStoragePath, image+".json")
-	fp, err := os.Create(file)
-	if err != nil {
-		glog.Errorf("scale: failed to create persistent storage file %s with error: %v\n", file, err)
-		return fmt.Errorf("scale: create err %s/%s", file, err)
-	}
-	defer fp.Close()
-	encoder := json.NewEncoder(fp)
-	if err = encoder.Encode(volInfo); err != nil {
-		glog.Errorf("scale: failed to encode volInfo: %+v for file: %s with error: %v\n", volInfo, file, err)
-		return fmt.Errorf("scale: encode err: %v", err)
-	}
-	glog.Infof("scale: successfully saved volInfo: %+v into file: %s\n", volInfo, file)
-	return nil
-}
-
-func loadVolInfo(image string, persistentStoragePath string, volInfo *scaleVolume) error {
-	glog.V(4).Infof("gpfs_util loadVolInfo")
-
-	file := path.Join(persistentStoragePath, image+".json")
-	fp, err := os.Open(file)
-	if err != nil {
-		return fmt.Errorf("scale: open err %s/%s", file, err)
-	}
-	defer fp.Close()
-
-	decoder := json.NewDecoder(fp)
-	if err = decoder.Decode(volInfo); err != nil {
-		return fmt.Errorf("scale: decode err: %v.", err)
-	}
-
-	return nil
-}
-
-func deleteVolInfo(image string, persistentStoragePath string) error {
-	glog.V(4).Infof("gpfs_util deleteVolInfo")
-
-	file := path.Join(persistentStoragePath, image+".json")
-	glog.Infof("scale: Deleting file for Volume: %s at: %s resulting path: %+v\n", image, persistentStoragePath, file)
-	err := os.Remove(file)
-	if err != nil {
-		if err != os.ErrNotExist {
-			return fmt.Errorf("scale: error removing file: %s/%s", file, err)
-		}
-	}
-	return nil
 }
 
 func executeCmd(command string, args []string) ([]byte, error) {

@@ -54,7 +54,6 @@ Please refer to [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/suppor
 
 ## Building the docker image
 
-
 **Using multi-stage build**
 
 Pre-requisite: Docker 17.05 or higher is installed on local build machine.

@@ -28,10 +28,6 @@ import (
 	driver "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin"
 )
 
-func init() {
-	flag.Set("logtostderr", "true")
-}
-
 var (
 	endpoint      = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName    = flag.String("drivername", "ibm-spectrum-scale-csi", "name of the driver")
@@ -40,7 +36,9 @@ var (
 )
 
 func main() {
+	_ = flag.Set("logtostderr", "true")
 	flag.Parse()
+
 	rand.Seed(time.Now().UnixNano())
 
 	if err := createPersistentStorage(path.Join(driver.PluginFolder, "controller")); err != nil {
@@ -70,7 +68,6 @@ func createPersistentStorage(persistentStoragePath string) error {
 		if err := os.MkdirAll(persistentStoragePath, os.FileMode(0755)); err != nil {
 			return err
 		}
-	} else {
 	}
 	return nil
 }

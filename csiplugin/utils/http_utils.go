@@ -76,7 +76,7 @@ func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL
 
 	payload, err := json.MarshalIndent(rawPayload, "", " ")
 	if err != nil {
-		err = fmt.Errorf("Internal error marshalling params. url: %s: %#v", requestURL, err)
+		err = fmt.Errorf("Internal error marshaling params. url: %s: %#v", requestURL, err)
 		return nil, fmt.Errorf("failed %v", err)
 	}
 
@@ -97,28 +97,7 @@ func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL
 	glog.V(6).Infof("http_utils HttpExecuteUserAuth request: %+v", request)
 
 	return httpClient.Do(request)
-
 }
-
-/*
-func HttpExecute(httpClient *http.Client, requestType string, requestURL string, rawPayload interface{}, request_context connectors.RequestContext) (*http.Response, error) {
-	payload, err := json.MarshalIndent(rawPayload, "", " ")
-
-	if err != nil {
-		err = fmt.Errorf("Internal error marshalling params %#v", err)
-		return nil, fmt.Errorf("failed %v", err)
-	}
-
-	request, err := http.NewRequest(requestType, requestURL, bytes.NewBuffer(payload))
-
-	if err != nil {
-		err = fmt.Errorf("Error in creating request %#v", err)
-		return nil, fmt.Errorf("failed %v", err)
-	}
-
-        return httpClient.Do(request)
-}
-*/
 
 func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
 	glog.V(5).Infof("http_utils WriteResponse. code: %d, object: %v", code, object)
@@ -130,7 +109,7 @@ func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
 	}
 
 	w.WriteHeader(code)
-	fmt.Fprintf(w, string(data))
+	fmt.Fprint(w, string(data))
 }
 
 func Unmarshal(r *http.Request, object interface{}) error {
@@ -164,27 +143,3 @@ func UnmarshalDataFromRequest(r *http.Request, object interface{}) error {
 
 	return nil
 }
-
-/*
-func ExtractVarsFromRequest(r *http.Request, varName string) string {
-	return mux.Vars(r)[varName]
-}
-*/
-
-type encoding int
-
-const (
-	encodePath encoding = 1 + iota
-
-	encodePathSegment
-
-	encodeHost
-
-	encodeZone
-
-	encodeUserPassword
-
-	encodeQueryComponent
-
-	encodeFragment
-)
