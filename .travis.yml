@@ -1,34 +1,75 @@
 os: linux
 dist: xenial
+services: docker
 
 language: go
 go:
-    - "1.13"
+  - "1.13"
+
+env:
+  global:
+    - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
+    - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
+   
+    # Grab quay username from 'user+bot_token'
+    - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
+    # Format quay image target
+    - IMAGE_REPO=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME}
+    # Add image tag
+    - IMAGE_TAG=$( 
+        if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
+        then 
+            echo "nightly-${TRAVIS_BUILD_ID}-`date -u +%F`"; 
+        else
+            echo $TRAVIS_BRANCH; 
+        fi
+      )
+    # Add image repo and tag
+    - IMAGE_FQN=${IMAGE_REPO}:${IMAGE_TAG}
+    - IMAGE_VERSION=${IMAGE_TAG}
+    # Add image label to expire nightlies
+    - IMAGE_LABEL=$(
+        if [[ $TRAVIS_EVENT_TYPE == 'cron' ]];
+        then
+            echo "--label version=${IMAGE_VERSION} --label quay.expires-after=2w";
+        else
+            echo "--label version=${IMAGE_VERSION}";
+        fi
+      )
 
 stages:
   - lint
   - test
+
 jobs:
   fast_finish: true
   include:
-    
     # Lint with with .golangci.yml configuration
     - stage: lint
       before_install:
         - >-
-            curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
-            sh -s -- -b $(go env GOPATH)/bin v1.21.0 # pinned
+          curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
+          sh -s -- -b $(go env GOPATH)/bin v1.21.0 # pinned
       script:
         - golangci-lint run
 
     - stage: test
-      before_install:
-        - go version
-      script: 
+      env:
+        - GOFLAGS="-mod=vendor" #this should not be required in Go 1.14, see https://github.com/golang/go/issues/33848
+      before_script:
+        - go mod vendor
+      script:
         - go test -v -race ./...
-
-        #- echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io 
-        #- docker push ${DOCKER_REPO} 
+        - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile.msb -t ${REPO_NAME} .
+      before_deploy:
+          - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+          - docker tag ${REPO_NAME} ${IMAGE_FQN}
+      deploy:
+        - provider: script
+          script: docker push ${IMAGE_FQN}
+          on:
+            all_branches: true
+            condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
 
 notifications:
-    email: false
+  email: false
