@@ -147,6 +147,8 @@
       register: log
 
     - debug: var=log.stdout_lines
+    - debug: 
+        msg: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1     -d' ')  -n {{ namespace }}"
 
     - fail:
         msg: "Failed on action: converge"
