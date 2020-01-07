@@ -113,35 +113,35 @@
           resource_name=custom_resource.metadata.name
         )}}'
     
-    - name: debug spectrum-scale-csi-operator lookup
-      ignore_errors: yes
-      failed_when: false
-      debug:
-        var: deploy
-      vars:
-        deploy: '{{ lookup("k8s",
+    - name: Get Operator Pod
+      set_fact:
+        op_pod: '{{ lookup("k8s",
           kind="Deployment",
           api_version="apps/v1",
           namespace=namespace,
-          label_selector="app.kubernetes.io/name=spectrum-scale-csi-operator"
+          label_selector="app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
+        )}}'
+
+    - name: Get Pods
+      set_fact:
+        pods: '{{ lookup("k8s",
+          kind="pods",
+          namespace=namespace
+
         )}}'
 
     - name : debug pods lookup
       ignore_errors: yes
       failed_when: false
       debug:
-        var: deploy
-      vars:
-        deploy: '{{ lookup("k8s",
-          kind="pods",
-          namespace=namespace
-        )}}'
+        var: pods
  
 
     - name: get operator logs
       ignore_errors: yes
       failed_when: false
-      command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
+      #command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
+      command: "kubectl logs {{ op_pod[0].name }} -n {{ namespace }} ansible"
       environment:
         KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
       register: log
@@ -150,7 +150,7 @@
     - debug: var=deploy
 
     - debug: 
-        msg: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1     -d' ')  -n {{ namespace }}"
+        msg: "kubectl logs {{ op_pod[0].name }} -n {{ namespace }} ansible"
 
     - fail:
         msg: "Failed on action: converge"
