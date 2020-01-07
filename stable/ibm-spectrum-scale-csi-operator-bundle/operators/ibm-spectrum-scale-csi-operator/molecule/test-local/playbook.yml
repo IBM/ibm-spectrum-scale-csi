@@ -141,7 +141,7 @@
       ignore_errors: yes
       failed_when: false
       #command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
-      command: "kubectl logs {{ op_pod[0].name }} -n {{ namespace }} ansible"
+      command: "kubectl logs {{ op_pod.name }} -n {{ namespace }} ansible"
       environment:
         KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
       register: log
