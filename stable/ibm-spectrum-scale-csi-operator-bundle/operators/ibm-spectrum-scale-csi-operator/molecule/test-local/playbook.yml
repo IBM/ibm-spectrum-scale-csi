@@ -137,17 +137,25 @@
         var: pods
  
 
-    - name: get operator logs
+    - name: Get operator ansible logs
       ignore_errors: yes
       failed_when: false
-      #command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
       command: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
       environment:
         KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
-      register: log
+      register: ansible_log
 
-    - debug: var=log.stdout_lines
-    - debug: var=op_pod
+    - debug: var=ansible_log.stdout_lines
+
+    - name: Get operator ansible logs
+      ignore_errors: yes
+      failed_when: false
+      command: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} operator"
+      environment:
+        KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
+      register: oper_log
+
+    - debug: var=oper_log.stdout_lines
 
     - debug: 
         msg: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
