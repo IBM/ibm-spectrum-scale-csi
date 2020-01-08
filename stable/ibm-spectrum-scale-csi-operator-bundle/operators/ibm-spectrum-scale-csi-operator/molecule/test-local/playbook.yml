@@ -156,6 +156,14 @@
 
     - debug: var=oper_log.stdout_lines
 
+    - name: debug api_groups
+      ignore_errors: yes
+      failed_when: false
+      debug:
+        var: debug_api_groups
+      vars:
+        debug_cr: "{{ lookup('k8s', cluster_info='api_groups') }}"
+
     - debug: 
         msg: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
 
