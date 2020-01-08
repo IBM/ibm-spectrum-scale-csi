@@ -116,8 +116,7 @@
     - name: Get Operator Pod
       set_fact:
         op_pod: '{{ lookup("k8s",
-          kind="Deployment",
-          api_version="apps/v1",
+          kind="pods",
           namespace=namespace,
           label_selector="app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
         )}}'
