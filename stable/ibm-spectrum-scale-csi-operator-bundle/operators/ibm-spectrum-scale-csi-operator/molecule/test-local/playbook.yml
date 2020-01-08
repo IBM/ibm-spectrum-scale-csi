@@ -147,7 +147,7 @@
       register: log
 
     - debug: var=log.stdout_lines
-    - debug: var=deploy
+    - debug: var=op_pod
 
     - debug: 
         msg: "kubectl logs {{ op_pod[0].name }} -n {{ namespace }} ansible"
