@@ -96,7 +96,7 @@
       until:
       - "'Successful' in (cr | json_query('resources[].status.conditions[].reason'))"
       delay: 6
-      retries: 20
+      retries: 60
 
 
     rescue:
