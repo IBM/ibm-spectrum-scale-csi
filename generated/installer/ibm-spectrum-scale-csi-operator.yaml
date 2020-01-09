@@ -63,7 +63,7 @@ spec:
             cpu: 50m
           limits:
             memory: 500Mi
-            cpu: 1000m
+            cpu: 500m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -102,7 +102,7 @@ spec:
             cpu: 50m
           limits:
             memory: 500Mi
-            cpu: 1000m
+            cpu: 500m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
