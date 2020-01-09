@@ -59,9 +59,9 @@ spec:
           requests:
             memory: 50Mi
             cpu: 50m
-      #    limits:
-      #      memory: 100Mi
-      #      cpu: 100m
+          limits:
+            memory: 100Mi
+            cpu: 1000m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -98,9 +98,9 @@ spec:
           requests:
             memory: 50Mi
             cpu: 50m
-      #    limits:
-      #      memory: 100Mi
-      #      cpu: 100m
+          limits:
+            memory: 100Mi
+            cpu: 1000m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
