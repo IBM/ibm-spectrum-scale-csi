@@ -26,7 +26,7 @@ install:
   # Package for release 
   - if [[ ! -z "$TRAVIS_TAG" ]] ; then $toolsPath/release/bin/package.sh; fi
   # Lint and install/test charts (if cv-tests exist)
-  - $toolsPath/cv-test/bin/validateContent.sh
+  - set -x; $toolsPath/cv-test/bin/validateContent.sh
 
 script: echo "Override default script"
 
