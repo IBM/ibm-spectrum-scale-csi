@@ -1,0 +1,13 @@
+inventory:
+  k8sScope: namespace
+  metadata:
+    displayDescription: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+    displayName: "IBM CSI Spectrum Scale Driver"
+    name: "ibmCSIScaleOperator"
+    description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+  resourceDefs:
+    files:
+    - mediaType: application/vnd.case.resource.k8s.v1+yaml
+      ref: deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+    - mediaType: application/vnd.case.resource.image.manifest.v1
+      ref: manifest.yaml
