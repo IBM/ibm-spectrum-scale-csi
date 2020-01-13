@@ -7,17 +7,9 @@ overrides:
     reduceTo: WARNING
     rule: NoPrivilegedContainers
 
-#  - reason: beta.kubernetes.io/arch will be deprecated in k8s 1.18, we use kubernetes.io/arch
-#    reduceTo: WARNING
-#    rule: PodHasArchBasedNodeAffinity
-
   - reason: Using default values and DROP ALL capabilities. Did not make GA time for explicit defitinition.
     reduceTo: WARNING
     rule: PodSecurityContextDefined
-
-#  - reason: release is not used by non-ingress objects. All namespace operators are checked and giving false positives.
-#    reduceTo: WARNING
-#    rule: RequiredMetadataLabelsDefined
 
   - reason: both crd and olm-catalog in package.
     reduceTo: WARNING
