@@ -45,5 +45,3 @@ deploy:
     file: repo/stable/*
     on:
       tags: true
-
-

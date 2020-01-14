@@ -86,9 +86,6 @@
           strict: yes
           fail_on_error: yes
 
-    - debug:
-        var: namespace
-
     - name: Wait 120s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
