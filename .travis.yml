@@ -58,9 +58,7 @@ jobs:
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
 
     - name: "Lint: CASE"
-      exclude:
-        if: 
-        env: HELM_REPO_SSH_LOCATION=""
+      if: HELM_REPO_SSH_LOCATION!=""
       install:
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
