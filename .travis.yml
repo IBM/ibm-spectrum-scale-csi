@@ -61,7 +61,7 @@ jobs:
       exclude:
         if: 
         env: HELM_REPO_SSH_LOCATION=""
-      before_install:
+      install:
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
         - if [[ ! -z "$BRANCH_OVERRIDE" ]] ; then
@@ -73,7 +73,6 @@ jobs:
         # Install dependencies & determine chart delta
         - $toolsPath/build/bin/installDependencies.sh
         - export changeList=`$toolsPath/build/bin/determineChartDelta.sh | tee determineChartDelta.out | grep 'return determineChartDelta:' | cut -f2 -d:` && cat determineChartDelta.out
-      install:
         # Package for release
         - if [[ ! -z "$TRAVIS_TAG" ]] ; then $toolsPath/release/bin/package.sh; fi
         # Lint and install/test charts (if cv-tests exist)
