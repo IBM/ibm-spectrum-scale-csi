@@ -13,9 +13,9 @@ before_install:
   # Clone build tools & set tools path for follow on processing
   # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
   - if [[ ! -z "$BRANCH_OVERRIDE" ]] ; then
-      git clone -b $BRANCH_OVERRIDE git@github.ibm.com/ibmprivatecloud/content-tools;
+      git clone -b $BRANCH_OVERRIDE git@github.ibm.com:ibmprivatecloud/content-tools;
     else 
-      git clone git@github.ibm.com/ibmprivatecloud/content-tools;
+      git clone git@github.ibm.com:ibmprivatecloud/content-tools;
     fi
   - export toolsPath=`pwd`/content-tools/travis-tools/
   # Install dependencies & determine chart delta 
@@ -45,5 +45,3 @@ deploy:
     file: repo/stable/*
     on:
       tags: true
-
-
