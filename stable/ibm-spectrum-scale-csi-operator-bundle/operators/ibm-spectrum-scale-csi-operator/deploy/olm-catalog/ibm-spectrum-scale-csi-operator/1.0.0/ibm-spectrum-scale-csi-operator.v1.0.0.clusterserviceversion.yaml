@@ -30,6 +30,7 @@ metadata:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v1.0.0
   namespace: placeholder
 spec:
@@ -412,6 +413,7 @@ spec:
                 app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
                 name: ibm-spectrum-scale-csi-operator
                 product: ibm-spectrum-scale-csi
+                release: ibm-spectrum-scale-csi-operator
             spec:
               affinity:
                 nodeAffinity:
