@@ -20,7 +20,15 @@ spec:
     metadata:
       labels:
         app: '{{ opName }}-provisioner'
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
         product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
     spec:
 {% if provisionerNodeSelector|length > 0 %}
       nodeSelector:
