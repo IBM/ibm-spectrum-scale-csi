@@ -62,6 +62,7 @@ jobs:
       install:
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
+        - if [[ -z "$HELM_REPO_SSH_LOCATION" ]]; then
         - if [[ ! -z "$BRANCH_OVERRIDE" ]] ; then
             git clone -b $BRANCH_OVERRIDE git@github.ibm.com:ibmprivatecloud/content-tools;
           else
@@ -75,6 +76,7 @@ jobs:
         - if [[ ! -z "$TRAVIS_TAG" ]] ; then $toolsPath/release/bin/package.sh; fi
         # Lint and install/test charts (if cv-tests exist)
         - $toolsPath/cv-test/bin/validateContent.sh
+        - fi
       deploy:
           # scp helm repo(s) to location identified (Note: SSHPASS env variable must contain password)
           - provider: script
