@@ -2,6 +2,13 @@
 # defaults file for ansible-role-csi-scale
 opName: '{{ meta.name | default("ibm-spectrum-scale-csi") }}'
 productName: '{{ meta.product | default("ibm-spectrum-scale-csi") }}'
+labelInstance: 'ibm-spectrum-scale-csi-operator'
+labelManage: 'ibm-spectrum-scale-csi-operator'
+labelName: 'ibm-spectrum-scale-csi-operator'
+labelRelease: 'ibm-spectrum-scale-csi-operator'
+
+
+
 namespace: '{{ meta.namespace | default("default") }}'
 storage-class: "ibm-spectrum-scale-csi"
 
