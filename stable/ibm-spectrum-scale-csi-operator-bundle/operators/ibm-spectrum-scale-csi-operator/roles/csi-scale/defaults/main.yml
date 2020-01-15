@@ -6,6 +6,9 @@ labelInstance: 'ibm-spectrum-scale-csi-operator'
 labelManage: 'ibm-spectrum-scale-csi-operator'
 labelName: 'ibm-spectrum-scale-csi-operator'
 labelRelease: 'ibm-spectrum-scale-csi-operator'
+annotationProductID: "ibm-spectrum-scale-csi-operator"
+annotationProductName: "IBM Spectrum Scale CSI Operator"
+annotationProductVersion: "1.0.0"
 
 
 
