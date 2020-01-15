@@ -33,43 +33,44 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: beta.kubernetes.io/arch
+              - key: kubernetes.io/arch
                 operator: Exists
       containers:
-      - name: ansible
-        command:
+      - command:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
-        imagePullPolicy: IfNotPresent
-        readinessProbe:
-          exec:
-            command: ["./health_check.sh"]
-          initialDelaySeconds: 3
-          periodSeconds: 1
+        image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+        imagePullPolicy: Always
         livenessProbe:
           exec:
-            command: ["./health_check.sh"]
+            command:
+            - ./health_check.sh
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: ansible
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
         securityContext:
           capabilities:
             drop:
             - ALL
-        resources:
-          requests:
-            memory: 50Mi
-            cpu: 50m
-          limits:
-            memory: 500Mi
-            cpu: 500m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
           readOnly: true
-      - name: operator
-        env:
+      - env:
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
@@ -80,29 +81,32 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
-        imagePullPolicy: IfNotPresent
-        readinessProbe:
-          exec:
-            command: ["./health_check.sh"]
-          initialDelaySeconds: 3
-          periodSeconds: 1
+        image: jdunham-rh72-k8s-scale-master.fyre.ibm.com:5000/csi-scale-operator:latest
+        imagePullPolicy: Always
         livenessProbe:
           exec:
-            command: ["./health_check.sh"]
+            command:
+            - ./health_check.sh
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: operator
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
         securityContext:
           capabilities:
             drop:
             - ALL
-        resources:
-          requests:
-            memory: 50Mi
-            cpu: 50m
-          limits:
-            memory: 500Mi
-            cpu: 500m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
