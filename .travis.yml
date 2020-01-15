@@ -60,11 +60,11 @@ jobs:
     - name: "Lint: CASE"
       if: env.HELM_REPO_SSH_LOCATION!=""
       before_install:
-        - /bin/bash [  -z "$HELM_REPO_SSH_LOCATION" ] && exit 0;
+        - if [[  -z "$HELM_REPO_SSH_LOCATION" ]; then exit 0;fi
       install:
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
-        - /bin/bash [  -z "$HELM_REPO_SSH_LOCATION" ] && exit 0;
+        - if [[  -z "$HELM_REPO_SSH_LOCATION" ]; then exit 0;fi
         - if [[ ! -z "$BRANCH_OVERRIDE" ]] ; then
             git clone -b $BRANCH_OVERRIDE git@github.ibm.com:ibmprivatecloud/content-tools;
           else
