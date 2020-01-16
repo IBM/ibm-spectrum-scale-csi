@@ -176,13 +176,13 @@ if ! [[ "${VOLNAME}" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z
         exit 2
 fi
 
+[[ -z "${ACCESSMODE}" ]] && ACCESSMODE="ReadWriteMany"
+
 if ! [[ "$ACCESSMODE" == "ReadWriteMany" || "$ACCESSMODE" == "ReadWriteOnce" ]]
 then
         echo "ERROR: Invalid access mode specified. Valid accessmode are ReadWriteMany and ReadWriteOnce."
         exit 2
 fi
-
-[[ -z "${ACCESSMODE}" ]] && ACCESSMODE="ReadWriteMany"
 
 STORAGECLASS=""
 if ! [[ -z "${CLASS}" ]] ; then

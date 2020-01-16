@@ -1,7 +1,7 @@
-FROM registry.access.redhat.com/ubi7-minimal:latest
+FROM registry.access.redhat.com/ubi8-minimal:latest
 LABEL name="IBM Spectrum Scale CSI driver" \
       vendor="ibm" \
-      version="1.0.0" \
+      version="1.0.1" \
       release="1" \
       run='docker run ibm-spectrum-scale-csi-driver' \
       summary="An implementation of CSI Plugin for the IBM Spectrum Scale product."\
