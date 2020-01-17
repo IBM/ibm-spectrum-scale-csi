@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 spec:
@@ -27,6 +28,7 @@ spec:
         app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
         name: ibm-spectrum-scale-csi-operator
         product: ibm-spectrum-scale-csi
+        release: ibm-spectrum-scale-csi-operator
     spec:
       affinity:
         nodeAffinity:
@@ -36,40 +38,41 @@ spec:
               - key: beta.kubernetes.io/arch
                 operator: Exists
       containers:
-      - name: ansible
-        command:
+      - command:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
         image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
-        readinessProbe:
-          exec:
-            command: ["./health_check.sh"]
-          initialDelaySeconds: 3
-          periodSeconds: 1
         livenessProbe:
           exec:
-            command: ["./health_check.sh"]
+            command:
+            - ./health_check.sh
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: ansible
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
         securityContext:
           capabilities:
             drop:
             - ALL
-        resources:
-          requests:
-            memory: 50Mi
-            cpu: 50m
-          limits:
-            memory: 500Mi
-            cpu: 500m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
           readOnly: true
-      - name: operator
-        env:
+      - env:
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
@@ -82,27 +85,30 @@ spec:
           value: ibm-spectrum-scale-csi-operator
         image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
-        readinessProbe:
-          exec:
-            command: ["./health_check.sh"]
-          initialDelaySeconds: 3
-          periodSeconds: 1
         livenessProbe:
           exec:
-            command: ["./health_check.sh"]
+            command:
+            - ./health_check.sh
           initialDelaySeconds: 10
           periodSeconds: 30
+        name: operator
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
         securityContext:
           capabilities:
             drop:
             - ALL
-        resources:
-          requests:
-            memory: 50Mi
-            cpu: 50m
-          limits:
-            memory: 500Mi
-            cpu: 500m
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -122,6 +128,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 rules:
@@ -207,6 +214,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 roleRef:
@@ -228,6 +236,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 # END deploy/service_account.yaml
@@ -240,6 +249,7 @@ metadata:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    release: ibm-spectrum-scale-csi-operator
   name: csiscaleoperators.csi.ibm.com
 spec:
   group: csi.ibm.com

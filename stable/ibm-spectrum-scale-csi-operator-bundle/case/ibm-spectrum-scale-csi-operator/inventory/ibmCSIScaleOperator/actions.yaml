@@ -1,0 +1,217 @@
+
+actions:
+  metadata:
+    displayDescription: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+    displayName: "IBM CSI Spectrum Scale Driver"
+    name: "ibmCSIScaleOperator"
+    description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+  actionDefs:
+    install:
+      roles: []
+      k8sPermissions:
+        rules:
+        - rule:
+            group: ""
+            resource: pods
+            verbs:
+            - get
+            version: ""
+        - rule:
+            group: ""
+            resource: configmaps
+            verbs:
+            - get
+            - create
+            - delete
+            version: ""
+        - rule:
+            group: ""
+            resource: secrets
+            verbs:
+            - get
+            - list
+            version: ""
+        - rule:
+            group: ""
+            resource: persistentvolumeclaims
+            verbs:
+            - get
+            - list
+            - watch
+            - update
+            version: ""
+        - rule:
+            group: ""
+            resource: persistentvolumes
+            verbs:
+            - get
+            - list
+            - watch
+            - update
+            - create
+            - delete
+            version: ""
+        - rule:
+            group: ""
+            resource: events
+            verbs:
+            - '*'
+            version: ""
+        - rule:
+            group: ""
+            resource: nodes
+            verbs:
+            - get
+            - list
+            - watch
+            version: ""
+        - rule:
+            group: apps
+            resource: deployments
+            verbs:
+            - get
+            - list
+            - watch
+            - update
+            - create
+            - delete
+            version: ""
+        - rule:
+            group: apps
+            resource: daemonsets
+            verbs:
+            - get
+            - list
+            - watch
+            - update
+            - create
+            - delete
+            version: ""
+        - rule:
+            group: apps
+            resource: statefulsets
+            verbs:
+            - get
+            - list
+            - watch
+            - update
+            - create
+            - delete
+            version: ""
+        - rule:
+            group: ""
+            resource: serviceaccounts
+            verbs:
+            - create
+            - delete
+            - get
+            - watch
+            - list
+            version: ""
+        - rule:
+            group: rbac.authorization.k8s.io
+            resource: clusterroles
+            verbs:
+            - create
+            - delete
+            - get
+            - watch
+            - list
+            version: ""
+        - rule:
+            group: rbac.authorization.k8s.io
+            resource: clusterrolebindings
+            verbs:
+            - create
+            - delete
+            - get
+            - watch
+            - list
+            version: ""
+        - rule:
+            group: storage.k8s.io
+            resource: volumeattachments
+            verbs:
+            - get
+            - list
+            - watch
+            - update
+            version: ""
+        - rule:
+            group: storage.k8s.io
+            resource: storageclasses
+            verbs:
+            - get
+            - list
+            - watch
+            version: ""
+        - rule:
+            group: monitoring.coreos.com
+            resource: servicemonitors
+            verbs:
+            - get
+            - create
+            version: ""
+        - rule:
+            group: apps
+            resource: deployments/finalizers
+            verbs:
+            - update
+            version: ""
+        - rule:
+            group: storage.k8s.io
+            resource: csidrivers
+            verbs:
+            - create
+            - delete
+            - get
+            - watch
+            - list
+            version: ""
+        - rule:
+            group: storage.k8s.io
+            resource: csinodes
+            verbs:
+            - get
+            - list
+            - watch
+            version: ""
+        - rule:
+            group: csi.storage.k8s.io
+            resource: csidrivers
+            verbs:
+            - create
+            - delete
+            - get
+            - watch
+            - list
+            version: ""
+        - rule:
+            group: csi.storage.k8s.io
+            resource: csinodeinfos
+            verbs:
+            - get
+            - list
+            - watch
+            version: ""
+        - rule:
+            group: security.openshift.io
+            resource: securitycontextconstraints
+            verbs:
+            - use
+            version: ""
+        - rule:
+            group: apiextensions.k8s.io
+            resource: customresourcedefinitions
+            verbs:
+            - create
+            - list
+            - watch
+            - delete
+            version: ""
+        - rule:
+            group: csi.ibm.com
+            resource: '*'
+            verbs:
+            - '*'
+            version: ""

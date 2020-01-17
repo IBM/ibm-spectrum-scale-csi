@@ -1,13 +1,14 @@
 services: docker
 sudo: required
 dist: xenial
-
+#group: bluezone
 language: go
 go:
   - 1.13.x
 
 env:
   global:
+    - OCTOKIT_API_ENDPOINT="https://github.ibm.com/api/v3/"
     - PATH=/opt/python/3.6.7/bin:$PATH
     - GO111MODULE=on
     - KUBE_VERSION="v1.16.2"
@@ -37,7 +38,7 @@ addons:
       - "python3-dev"
       - "python3-pip" 
 stages:
-  - precheck
+  - lint
   - build
   - test
 jobs:
@@ -45,8 +46,8 @@ jobs:
   include:
     
     # Install operator-courier and run the lint on the manifest.
-    - stage:  precheck 
-      name: "Precheck: Run linters and bundle automation."
+    - stage: lint
+      name: "Lint: Run linters and bundle automation."
       script:
         - pip install ansible
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
@@ -55,6 +56,45 @@ jobs:
         - cd ${CSI_OP_BUILD_DIR}
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
+
+    - name: "Lint: CASE"
+      if: env.HELM_REPO_SSH_LOCATION!=""
+      before_install:
+        - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
+      install:
+        # Clone build tools & set tools path for follow on processing
+        # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
+        - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
+        - if [[ ! -z "$BRANCH_OVERRIDE" ]] ; then
+            git clone -b $BRANCH_OVERRIDE git@github.ibm.com:ibmprivatecloud/content-tools;
+          else
+            git clone git@github.ibm.com:ibmprivatecloud/content-tools;
+          fi
+        - export toolsPath=`pwd`/content-tools/travis-tools/
+        # Install dependencies & determine chart delta
+        - $toolsPath/build/bin/installDependencies.sh
+        - export changeList=`$toolsPath/build/bin/determineChartDelta.sh | tee determineChartDelta.out | grep 'return determineChartDelta:' | cut -f2 -d:` && cat determineChartDelta.out
+        # Package for release
+        - if [[ ! -z "$TRAVIS_TAG" ]] ; then $toolsPath/release/bin/package.sh; fi
+        # Lint and install/test charts (if cv-tests exist)
+        - $toolsPath/cv-test/bin/validateContent.sh
+      deploy:
+          # scp helm repo(s) to location identified (Note: SSHPASS env variable must contain password)
+          - provider: script
+            skip_cleanup: true
+            script:  $toolsPath/build/bin/deployHelmRepo.sh
+            on:
+              all_branches: true
+          # Publish tagged release
+          - provider: releases
+            skip_cleanup: true
+            api_key: $GITHUB_TOKEN
+            file_glob: true
+            file: repo/stable/*
+            on:
+              tags: true
+       
+
 
     - stage: build
       name: "Build: operator"
@@ -68,6 +108,7 @@ jobs:
         - operator-sdk build csi-scale-operator
         - docker tag csi-scale-operator ${DOCKER_REPO}
           #- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io; docker push ${DOCKER_REPO}; fi'
+
     - name: "Build: docs"
       script:
         - pip install sphinx sphinx_rtd_theme recommonmark 
@@ -99,7 +140,7 @@ jobs:
         
     - before_install:
         - sudo pip install docker
-        - pip install pyyaml molecule openshift docker jmespath
+        - pip install pyyaml molecule openshift docker jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
         - kubectl version
