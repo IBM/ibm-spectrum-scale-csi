@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 spec:
@@ -20,13 +21,14 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 1.0.0
+        productVersion: 1.0.1
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
         name: ibm-spectrum-scale-csi-operator
         product: ibm-spectrum-scale-csi
+        release: ibm-spectrum-scale-csi-operator
     spec:
       affinity:
         nodeAffinity:
@@ -40,9 +42,28 @@ spec:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 10
+          periodSeconds: 30
         name: ansible
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
         securityContext:
           capabilities:
             drop:
@@ -62,9 +83,28 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 10
+          periodSeconds: 30
         name: operator
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
         securityContext:
           capabilities:
             drop:
@@ -80,7 +120,7 @@ spec:
 ---
 # BEGIN deploy/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   creationTimestamp: null
   labels:
@@ -88,6 +128,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 rules:
@@ -103,6 +144,14 @@ rules:
   - secrets
   - secrets/status
   - services/finalizers
+  - serviceaccounts
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
   verbs:
   - '*'
 - apiGroups:
@@ -141,19 +190,6 @@ rules:
   - '*'
   verbs:
   - '*'
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  creationTimestamp: null
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
-rules:
 - apiGroups:
   - security.openshift.io
   resources:
@@ -161,186 +197,16 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - ''
-  resources:
-  - secrets
-  - secrets/status
-  verbs:
-  - '*'
-- apiGroups:
   - storage.k8s.io
   resources:
   - volumeattachments
   - storageclasses
   verbs:
   - '*'
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-node
-rules:
-- apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumes
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  verbs:
-  - get
-  - list
-  - watch
-  - update
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-attacher
-rules:
-- apiGroups:
-  - ''
-  resources:
-  - events
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumes
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  verbs:
-  - get
-  - list
-  - watch
-  - update
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-provisioner
-rules:
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-- apiGroups:
-  - ''
-  resources:
-  - persistentvolumeclaims
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - storageclasses
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - events
-  verbs:
-  - list
-  - watch
-  - create
-  - update
-  - patch
 # END deploy/role.yaml
 ---
 # BEGIN deploy/role_binding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: ibm-spectrum-scale-csi-operator
-subjects:
-- kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-operator
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -348,6 +214,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 roleRef:
@@ -357,63 +224,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-node
-  namespace: ibm-spectrum-scale-csi-driver
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: ibm-spectrum-scale-csi-node
-subjects:
-- kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-node
-  namespace: ibm-spectrum-scale-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-provisioner
-  namespace: ibm-spectrum-scale-csi-driver
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: ibm-spectrum-scale-csi-provisioner
-subjects:
-- kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-provisioner
-  namespace: ibm-spectrum-scale-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-attacher
-  namespace: ibm-spectrum-scale-csi-driver
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: ibm-spectrum-scale-csi-attacher
-subjects:
-- kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-attacher
   namespace: ibm-spectrum-scale-csi-driver
 # END deploy/role_binding.yaml
 ---
@@ -426,40 +236,8 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-attacher
-  namespace: ibm-spectrum-scale-csi-driver
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-node
-  namespace: ibm-spectrum-scale-csi-driver
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    product: ibm-spectrum-scale-csi
-  name: ibm-spectrum-scale-csi-provisioner
   namespace: ibm-spectrum-scale-csi-driver
 # END deploy/service_account.yaml
 ---
@@ -471,6 +249,7 @@ metadata:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    release: ibm-spectrum-scale-csi-operator
   name: csiscaleoperators.csi.ibm.com
 spec:
   group: csi.ibm.com

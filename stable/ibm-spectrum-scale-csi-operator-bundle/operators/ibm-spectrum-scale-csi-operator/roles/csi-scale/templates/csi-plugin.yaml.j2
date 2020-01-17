@@ -4,7 +4,11 @@ metadata:
   name: "{{ opName }}"
   namespace: '{{ namespace }}'
   labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
     product: '{{ productName }}'
+    release: '{{ labelRelease }}'
 spec:
   selector:
     matchLabels:
@@ -13,8 +17,16 @@ spec:
   template:
     metadata:
       labels:
-       app: "{{ opName }}"
-       product: '{{ productName }}'
+        app: "{{ opName }}"
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
+        product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
     spec:
 {% if pluginNodeSelector|length > 0 %}
       nodeSelector:

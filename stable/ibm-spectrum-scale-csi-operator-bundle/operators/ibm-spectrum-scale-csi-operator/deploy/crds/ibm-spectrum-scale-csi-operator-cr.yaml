@@ -7,6 +7,7 @@ metadata:
       app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
       app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
       app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+      release: ibm-spectrum-scale-csi-operator
 status: {}
 spec:
 # The path to the GPFS file system mounted on the host machine. 

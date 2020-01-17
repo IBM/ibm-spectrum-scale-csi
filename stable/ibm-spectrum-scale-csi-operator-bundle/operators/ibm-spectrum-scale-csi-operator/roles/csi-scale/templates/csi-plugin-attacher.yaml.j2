@@ -4,7 +4,11 @@ metadata:
   name: "{{ opName }}-attacher"
   namespace: "{{ namespace }}"
   labels:
-    product: "{{ productName }}"
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
 spec:
   serviceName: "{{ opName }}-attacher"
   replicas: 1
@@ -16,7 +20,15 @@ spec:
     metadata:
       labels:
         app: "{{ opName }}-attacher"
-        product: "{{ productName }}"
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
+        product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
     spec:
 {% if attacherNodeSelector|length > 0 %}
       nodeSelector:

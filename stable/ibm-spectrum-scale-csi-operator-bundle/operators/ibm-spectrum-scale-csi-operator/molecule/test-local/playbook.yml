@@ -86,9 +86,6 @@
           strict: yes
           fail_on_error: yes
 
-    - debug:
-        var: namespace
-
     - name: Wait 120s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
@@ -116,40 +113,59 @@
           resource_name=custom_resource.metadata.name
         )}}'
     
-    - name: debug spectrum-scale-csi-operator lookup
-      ignore_errors: yes
-      failed_when: false
-      debug:
-        var: deploy
-      vars:
-        deploy: '{{ lookup("k8s",
-          kind="Deployment",
-          api_version="apps/v1",
+    - name: Get Operator Pod
+      set_fact:
+        op_pod: '{{ lookup("k8s",
+          kind="pods",
           namespace=namespace,
-          label_selector="app.kubernetes.io/name=spectrum-scale-csi-operator"
+          label_selector="app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
+        )}}'
+
+    - name: Get Pods
+      set_fact:
+        pods: '{{ lookup("k8s",
+          kind="pods",
+          namespace=namespace
+
         )}}'
 
     - name : debug pods lookup
       ignore_errors: yes
       failed_when: false
       debug:
-        var: deploy
-      vars:
-        deploy: '{{ lookup("k8s",
-          kind="pods",
-          namespace=namespace
-        )}}'
+        var: pods
  
 
-    - name: get operator logs
+    - name: Get operator ansible logs
       ignore_errors: yes
       failed_when: false
-      command: "kubectl logs $(kubectl get pods -n {{namespace}} | grep ibm-spectrum-scale-csi-operator  |cut  -f1 -d' ')  -n {{ namespace }}"
+      command: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
       environment:
         KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
-      register: log
+      register: ansible_log
 
-    - debug: var=log.stdout_lines
+    - debug: var=ansible_log.stdout_lines
+
+    - name: Get operator ansible logs
+      ignore_errors: yes
+      failed_when: false
+      command: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} operator"
+      environment:
+        KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
+      register: oper_log
+
+    - debug: var=oper_log.stdout_lines
+
+    - name: debug api_groups
+      ignore_errors: yes
+      failed_when: false
+      debug:
+        var: debug_api_groups
+      vars:
+        debug_api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+
+    - debug: 
+        msg: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
 
     - fail:
         msg: "Failed on action: converge"

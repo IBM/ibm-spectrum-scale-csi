@@ -3,7 +3,12 @@ kind: ConfigMap
 metadata:
   name: 'spectrum-scale-config'
   namespace: '{{ namespace }}'  
-  product: '{{ productName }}'
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
 data:
   spectrum-scale-config.json: '{ "clusters":  {{ clustersCamelCase | to_json }} }'
 

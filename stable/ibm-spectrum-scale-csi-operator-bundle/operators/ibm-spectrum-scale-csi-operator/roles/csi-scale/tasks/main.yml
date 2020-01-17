@@ -16,9 +16,18 @@
     cluster_checksum: "{{ clustersCamelCase | to_json | checksum }}"
     secret_checksums: []
 
-- name: "Ensure the clusters are valid"
-  include_tasks: cluster_check.yml
-  loop: "{{ clustersCamelCase }}"
+- name: "Test Clusters"
+  block:
+  - name: "Ensure the clusters are valid"
+    include_tasks: cluster_check.yml
+    loop: "{{ clustersCamelCase }}"
+  rescue:
+  - name: "Assert cluster check failure is legal"
+    assert: 
+      that:
+        - state != "present"
+      fail_msg: "Cluster check failed when setting state to present, exiting"
+      success_msg: "Cluster check failed when setting state to absent, continuing"
 
 - name: "Generate final secret checksum"
   set_fact:
@@ -69,6 +78,15 @@
     namespace: "{{namespace}}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
   loop:
+    - name: "cluster-role-attacher.yaml.j2"
+    - name: "cluster-role-node.yaml.j2"
+    - name: "cluster-role-provisioner.yaml.j2"
+    - name: "sa-attacher.yaml.j2"
+    - name: "sa-node.yaml.j2"
+    - name: "sa-provisioner.yaml.j2"
+    - name: "crb-attacher.yaml.j2"
+    - name: "crb-node.yaml.j2"
+    - name: "crb-provisioner.yaml.j2"
     - name: "spectrum_scale.yaml.j2"
     - name: "csi-plugin-attacher.yaml.j2"
     - name: "csi-plugin-provisioner.yaml.j2"
