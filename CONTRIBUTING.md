@@ -1,57 +1,16 @@
 # Contributing
 
-Work on the `ibm-spectrum-scale-csi-operator` should always be performed in a forked copy of the repo, incorporated into the main project using a pull request. 
-
+Work on the `ibm-spectrum-scale-csi` project should always be performed in a forked copy of the repo, incorporated into the main project using a pull request against the Development (dev) branch. 
 
 When adding features the following process should be followed:
 
-0. Make sure you've been [approved to contribute code](#sign-your-work-for-submittal)
-1. Write a [Mini Design Document](https://github.com/IBM/ibm-spectrum-scale-csi-operator/issues/new?assignees=&labels=Epic&template=mini-design-document.md&title=%5BMDD%5D+New+Feature) for your feature.
-2. On your [fork](#forking-the-repo), create a branch for your feature
-3. Create a [pull request](https://github.com/IBM/ibm-spectrum-scale-csi-operator/compare) with your features.
+1. Make sure you have been approved to contribute code
+2. Fork the repo, create a branch for you feature
+3. Run changes through appropriate linters 
+4. Create a Pull Request for your feature
+5. [Sign your work](#sign-your-work-for-submittal) (required)
 
-
-## Forking the Repo
-
-The following is a quick guide to forking IBM Spectrum Scale CSI Operator.
-
-### GUI
-
-1. Select the fork option on github:
-
-<img width="1087" alt="Screen Shot 2019-11-05 at 4 49 16 PM" src="https://user-images.githubusercontent.com/1195452/68249220-5716fd80-ffec-11e9-8b3c-f0c70564f055.png">
-
-2. Select your user and create the fork.
-
-<img width="444" alt="image" src="https://user-images.githubusercontent.com/1195452/68249628-2f746500-ffed-11e9-9b2c-f27e9dfd418e.png">
-
-### Dev Environment
-
-To pull your fork into your environment, run the following commands:
-
-``` bash
-# Set up some helpful variables
-export GOPATH=<your-go-path>
-export USERNAME=<github-username>
-export IBM_DIR="$GOPATH/src/github.com/IBM"
-export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
-
-# Ensure the dir is present then clone.
-mkdir -p ${IBM_DIR}
-cd ${IBM_DIR}
-git clone git@github.com/${USERNAME}/ibm-spectrum-scale-csi-operator.git
-git remote add upstream git@github.com:IBM/ibm-spectrum-scale-csi-operator.git
-```
-
-At this point, you should have a `origin` remote pointing to your forked repo, and a `upstream` remote pointing to the main repository.
-
-Before branching remember the following:
-1. Start your branches from `dev`.
-2. Sync your `dev` branch using `git pull upstream dev`
- * Be sure to push the merged copy to your forked repo using `git push origin dev`
-
-
-## Sign your work for submittal
+### Sign your work for submittal
 
 The sign-off is a simple line at the end of the explanation for the patch. Your signature certifies that you wrote the patch or otherwise have the right to pass it on as an open-source patch. The rules are pretty simple: if you can certify the below (from developercertificate.org):
 

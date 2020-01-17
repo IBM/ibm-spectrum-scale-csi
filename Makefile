@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ###############################################################################
 # Licensed Materials - Property of IBM.
 # Copyright IBM Corporation 2017. All Rights Reserved.
@@ -7,6 +8,9 @@
 # Contributors:
 #  IBM Corporation - initial API and implementation
 ###############################################################################
+#
+# TODO - Merge - Operator Section Below
+#
 SHELL = /bin/bash
 STABLE_BUILD_DIR = repo/stable
 STABLE_REPO_URL ?= https://raw.githubusercontent.com/IBM/charts/master/repo/stable/
@@ -39,4 +43,23 @@ repo-stable: $(STABLE_CHARTS) $(STABLE_BUILD_DIR)
 .PHONY: all
 all: repo-stable
 
+#
+# TODO - Merge - Driver Section Below
+#
+NAME=ibm-spectrum-scale-csi
 
+.PHONY: all $NAME
+
+IMAGE_VERSION=v1.0.1
+IMAGE_NAME=$(NAME)
+
+all: $NAME
+
+$NAME:
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/ibm-spectrum-scale-csi
+
+build-image: $NAME
+	docker build --network=host -t $(IMAGE_NAME):$(IMAGE_VERSION) .
+
+save-image: build-image
+	docker save $(IMAGE_NAME):$(IMAGE_VERSION) -o _output/$(IMAGE_NAME)_$(IMAGE_VERSION).tar

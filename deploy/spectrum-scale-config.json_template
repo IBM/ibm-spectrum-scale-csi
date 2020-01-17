@@ -1,0 +1,20 @@
+{
+"clusters": [
+  {"id":"$clusterid",
+   "primary":
+     {$inodelimitstr
+      "primaryFs":"$primaryfs",
+      "primaryFset":"$primaryfset"
+     },
+   "secureSslMode":$securesslmode,
+   $cacertstr
+   "secrets":"guisecret",
+   "restApi": [
+     {"guiHost":"$guihost",
+      "guiPort":$guiport
+     }
+   ]
+  }
+
+]
+}
