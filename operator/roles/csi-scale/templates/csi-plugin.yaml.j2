@@ -1,0 +1,160 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: "{{ opName }}"
+  namespace: '{{ namespace }}'
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+spec:
+  selector:
+    matchLabels:
+      app: "{{ opName }}"
+      product: '{{ productName }}'
+  template:
+    metadata:
+      labels:
+        app: "{{ opName }}"
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
+        product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
+    spec:
+{% if pluginNodeSelector|length > 0 %}
+      nodeSelector:
+{% for pluginNodeSelect in pluginNodeSelector %}
+        {{ pluginNodeSelect.key }}: "{{ pluginNodeSelect.value }}"
+{% endfor %}
+{% endif %}
+      serviceAccount: "{{ productName }}-node"
+      hostNetwork: true
+      containers:
+        - name: driver-registrar
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
+          image: "{{ driverRegistrar }}"
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+            - name: CHECKSUM
+              value: "{{cluster_checksum}}"
+            - name: DRIVER_REG_SOCK_PATH
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            - name: registration-dir
+              mountPath: /registration
+        - name: ibm-spectrum-scale-csi
+          image: "{{ spectrumScale }}"
+          args :
+            - "--nodeid=$(NODE_ID)"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--v=5"
+            - "--drivername=ibm-spectrum-scale-csi"
+          env:
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            - name: CHECKSUM
+              value: "{{cluster_checksum}}"
+            - name: CSI_ENDPOINT
+              value: unix:/var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+            - name: SCALE_HOSTPATH
+              value: "{{ scaleHostpath }}"
+            - name: SKIP_MOUNT_UNMOUNT
+              value: "yes"
+            - name: SECRET_CHECKSUM
+              value: "{{secret_checksum}}"
+{% if nodeMapping|length > 0 %}
+{% for nodemap in nodeMapping %}
+            - name: "{{ nodemap.k8sNode }}"
+              value: "{{ nodemap.spectrumscaleNode }}"
+{% endfor %}
+{% endif %}
+            # Get refs to the secrets so we can trigger a refresh
+          imagePullPolicy: "IfNotPresent" # "Always"
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet
+            - mountPath: /dev
+              name: host-dev
+            - name: "spectrum-scale-config"
+              mountPath: /var/lib/ibm/config
+            - name: gpfs-classic
+              mountPath: "{{ scaleHostpath }}"
+
+            # Grab user clusters
+{% for cluster in clustersCamelCase %}
+{% if cluster.secrets is defined %}
+            - name: "{{ cluster.secrets }}"
+              mountPath: "/var/lib/ibm/{{ cluster.secrets }}"
+{% endif %}
+
+{% if cluster.cacert is defined %}
+            - name: "{{ cluster.cacert }}"
+              mountPath: "/var/lib/ibm/ssl/public/{{ cluster.cacert }}"
+{% endif %}
+{% endfor %}
+      volumes:
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet
+            type: Directory
+        - name: host-dev
+          hostPath:
+            path: /dev
+        - name: "spectrum-scale-config"
+          configMap:
+            name: "spectrum-scale-config"
+        - name: gpfs-classic
+          hostPath:
+            path: "{{ scaleHostpath }}"
+            type: Directory
+
+# Grab user clusters
+{% for cluster in clustersCamelCase %}
+
+{% if cluster.secrets is defined %}
+        - name: "{{ cluster.secrets }}"
+          secret:
+            secretName: "{{ cluster.secrets }}"
+{% endif %}
+
+{% if cluster.cacert is defined %}
+        - name: "{{ cluster.cacert }}"
+          configMap:
+            name: "{{ cluster.cacert }}"
+{% endif %}
+{% endfor %}
+
