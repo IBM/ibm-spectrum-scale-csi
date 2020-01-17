@@ -1,0 +1,63 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: '{{ opName }}-provisioner'
+  namespace: '{{ namespace }}'
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+spec:
+  serviceName: '{{ opName }}-provisioner'
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ opName }}-provisioner"
+      product: '{{ productName }}'
+  template:
+    metadata:
+      labels:
+        app: '{{ opName }}-provisioner'
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
+        product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
+    spec:
+{% if provisionerNodeSelector|length > 0 %}
+      nodeSelector:
+{% for provisionerNodeSelect in provisionerNodeSelector %}
+        {{ provisionerNodeSelect.key }}: "{{ provisionerNodeSelect.value }}"
+{% endfor %}
+{% endif %}
+      serviceAccount: "{{ productName }}-provisioner"
+      containers:
+        - name: csi-provisioner
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
+          image: '{{ provisioner }}'
+          args:
+            - "--provisioner=spectrumscale.csi.ibm.com"
+            - "--csi-address=$(ADDRESS)"
+            - "--connection-timeout=2m"
+            - "--v=5" # Debugging
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            type: DirectoryOrCreate
