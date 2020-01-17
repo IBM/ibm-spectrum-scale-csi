@@ -25,7 +25,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
-	"github.com/operator-framework/operator-sdk/pkg/metrics"
+	//"github.com/operator-framework/operator-sdk/pkg/metrics"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
@@ -34,11 +34,11 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
-	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
-	v1 "k8s.io/api/core/v1"
+	//kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
+	//v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	//"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -166,21 +166,21 @@ func main() {
 
 	// -------------------------------------
 
-	err = kubemetrics.GenerateAndServeCRMetrics(cfg, []string{namespace}, gvks, metricsHost, operatorMetricsPort)
-	if err != nil {
-		log.Info("Could not generate and serve custom resource metrics", "error", err.Error())
-	}
-	servicePorts := []v1.ServicePort{
-		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
-	}
+	//err = kubemetrics.GenerateAndServeCRMetrics(cfg, []string{namespace}, gvks, metricsHost, operatorMetricsPort)
+	//if err != nil {
+	//	log.Info("Could not generate and serve custom resource metrics", "error", err.Error())
+	//}
+	//servicePorts := []v1.ServicePort{
+	//	{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
+	//}
 
-	// Create Service object to expose the metrics port(s).
-	// TODO: probably should expose the port as an environment variable
-	_, err = metrics.CreateMetricsService(context.TODO(), cfg, servicePorts)
-	if err != nil {
-		log.Error(err, "Exposing metrics port failed.")
-		os.Exit(1)
-	}
+	//// Create Service object to expose the metrics port(s).
+	//// TODO: probably should expose the port as an environment variable
+	//_, err = metrics.CreateMetricsService(context.TODO(), cfg, servicePorts)
+	//if err != nil {
+	//	log.Error(err, "Exposing metrics port failed.")
+	//	os.Exit(1)
+	//}
 
 	done := make(chan error)
 
