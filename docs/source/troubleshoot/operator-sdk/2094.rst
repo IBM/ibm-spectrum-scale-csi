@@ -7,9 +7,10 @@ In cases where deleting the operators ``Custom Resource`` fails, the following c
 
     # This may need to be customized in OLM environments:
     NAMESPACE=ibm-spectrum-scale-csi-driver
-    kubectl get csiscaleoperators -n ${NAMESPACE} -o json | jq '.spec = {"finalizers":[]}' >temp.json
-    curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json 127.0.0.1:8001/api/v1/namespaces/$NAMESPACE/finalize
+    kubectl get CSIScaleOperator  -n ${NAMESPACE} -o json | jq '.items[].metadata.finalizers=[] | .items[].status.conditions=[]' > tmp.json
+    kubectl  apply -f tmp.json
     rm -f temp.json
+  
 
 Typically this happens when deleting the ``Custom Resource Definition`` before removing all of the ``Custom Resources``.
 
