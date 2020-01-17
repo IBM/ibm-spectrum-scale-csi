@@ -11,7 +11,7 @@
   include_tasks: password_label.yml
   when: item.metadata.label is not defined or
     item.metadata.label["app.kubernetes.io/name"] is not defined or
-    item.metadata.label["app.kubernetes.io/name"] != "csi-scale-operator"
+    item.metadata.label["app.kubernetes.io/name"] != "ibm-spectrum-scale-csi-operator"
   loop:  "{{ results.resources }}"
 
 # Hash using a salted 

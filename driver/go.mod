@@ -1,4 +1,4 @@
-module github.com/IBM/ibm-spectrum-scale-csi-driver
+module github.com/IBM/ibm-spectrum-scale-csi/driver
 
 go 1.13
 
