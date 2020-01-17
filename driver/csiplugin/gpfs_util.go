@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
