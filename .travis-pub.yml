@@ -53,7 +53,7 @@ jobs:
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip install operator-courier
         - cd ${CSI_OP_BUILD_DIR}
-        - python operator/hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
+        - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
 
     - stage: build
@@ -91,11 +91,11 @@ jobs:
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
-        - python operator/hacks/clear_finalizers.py
-        - python operator/hacks/change_deploy_image.py -i ${DOCKER_REPO} --ifnotpresent
+        - python hacks/clear_finalizers.py
+        - python hacks/change_deploy_image.py -i ${DOCKER_REPO} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml
-        - python  operator/hacks/clear_finalizers.py --restore
+        - python hacks/clear_finalizers.py --restore
         
     - before_install:
         - sudo pip install docker
@@ -110,7 +110,7 @@ jobs:
       name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
-        - python operator/hacks/change_deploy_image.py -i ${LOCAL_IMAGE} --ifnotpresent
+        - python hacks/change_deploy_image.py -i ${LOCAL_IMAGE} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
 
