@@ -18,7 +18,7 @@ env:
     - LOCAL_IMAGE="csi.ibm.com/csi-scale-operator:testing"
 
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
-    - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+    - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/operator"
 
 
     - OPERATOR_NAME=ibm-spectrum-scale-csi-operator
