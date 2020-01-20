@@ -25,7 +25,7 @@ export IBM_DIR="$GOPATH/src/github.com/IBM"
 # Ensure the dir is present then clone.
 mkdir -p ${IBM_DIR}
 cd ${IBM_DIR}
-git clone https://github.com/IBM/ibm-spectrum-scale-csi-operator.git
+git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
 ```
 
 ### Development environment setup
@@ -33,7 +33,7 @@ git clone https://github.com/IBM/ibm-spectrum-scale-csi-operator.git
 To help configure and resolve dependencies to build the csi-operator, a ansible playbook is provided.  You can run the following to invoke the playbook:
 
 ``` bash
-ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-operator/ansible/dev-env-playbook.yaml
+ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi/tools/ansible/dev-env-playbook.yaml
 ```
 
 ### Building the image
@@ -42,8 +42,8 @@ To build the image the user must navigate to the operator directory (This direct
 
 ``` bash
 # IBM_DIR is defined in the previous step
-export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi-operator"
-cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi/operator"
+cd ${OPERATOR_DIR}
 
 export GO111MODULE="on"
 operator-sdk build csi-scale-operator
@@ -90,7 +90,7 @@ hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-opera
 If you've built the image as outlined above and tagged it, you can easily run the following to deploy the operator manually, for openshift use "oc" instead of "kubectl"
 
 ``` bash
-cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+cd ${OPERATOR_DIR}/
 
 kubectl apply -f deploy/namespace.yaml
 kubectl apply -f deploy/service_account.yaml
@@ -115,13 +115,13 @@ At this point the operator is running and ready for use!
 The following will subscribe the [quay.io](quay.io) version of the operator assuming OLM is installed.
 
 ``` bash
-cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+cd ${OPERATOR_DIR}/
 
 kubectl apply -f deploy/olm-scripts/operator-source.yaml
 ```
 > **NOTE**: Kubernetes use `kubectl` command, replace with `oc` if deploying in OpenShift.
 ```
-cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
+cd ${OPERATOR_DIR}/
 
 oc apply -f deploy/olm-scripts/operator-source-oc.yaml
 ```
@@ -139,12 +139,12 @@ Before starting the plugin, add any secrets to the appropriate namespace.  The S
 kubectl apply -f secrets.yaml -n ibm-spectrum-scale-csi-driver
 ```
 
-A sample of the file is provided [deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml](stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml). 
+A sample of the file is provided [operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml](operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml). 
 
 Modify this file to match the properties in your environment, then:
 
-  * To start the CSI plugin, run: `kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
-  * To stop the CSI plugin, run: `kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
+  * To start the CSI plugin, run: `kubectl apply -f operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
+  * To stop the CSI plugin, run: `kubectl delete -f operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml` 
 
 ## Uninstalling the CSI Operator
 

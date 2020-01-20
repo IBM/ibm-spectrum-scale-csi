@@ -3,8 +3,8 @@
   gather_facts: false
 
   vars:
-    repo_root_dir: "{{ playbook_dir }}/../"
-    operator_dir: "{{ repo_root_dir }}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+    repo_root_dir: "{{ playbook_dir }}/../../"
+    operator_dir: "{{ repo_root_dir }}/operator"
 
     generated_dir: "{{ repo_root_dir }}/generated/installer"
   
