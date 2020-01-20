@@ -25,7 +25,7 @@ import (
 
 	"github.com/golang/glog"
 
-	driver "github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin"
+	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
 var (

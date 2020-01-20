@@ -18,7 +18,7 @@ env:
     - LOCAL_IMAGE="csi.ibm.com/csi-scale-operator:testing"
 
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
-    - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+    - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/operator"
 
 
     - OPERATOR_NAME=ibm-spectrum-scale-csi-operator
@@ -50,7 +50,7 @@ jobs:
       script:
         - pip install ansible
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
-        - ansible-playbook ${TRAVIS_BUILD_DIR}/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
+        - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip install operator-courier
         - cd ${CSI_OP_BUILD_DIR}
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
@@ -61,7 +61,7 @@ jobs:
       script:
         - sudo pip install docker
         - docker version
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk version
         - go version
@@ -81,8 +81,8 @@ jobs:
       before_install:
         - sudo pip install docker
         - pip install openshift
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
@@ -95,13 +95,13 @@ jobs:
         - python hacks/change_deploy_image.py -i ${DOCKER_REPO} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml
-        - python  hacks/clear_finalizers.py --restore
+        - python hacks/clear_finalizers.py --restore
         
     - before_install:
         - sudo pip install docker
         - pip install pyyaml molecule openshift docker jmespath kubernetes-validate
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_minikube.sh
-        - ${TRAVIS_BUILD_DIR}/scripts/ci/install_operator-sdk.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
@@ -114,7 +114,7 @@ jobs:
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
 
-          #- ${TRAVIS_BUILD_DIR}/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
+          #- ${TRAVIS_BUILD_DIR}/tools/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
 notifications:
   email:
     - jdunham@us.ibm.com

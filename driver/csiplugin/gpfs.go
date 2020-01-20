@@ -21,9 +21,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/connectors"
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/settings"
-	"github.com/IBM/ibm-spectrum-scale-csi-driver/csiplugin/utils"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
