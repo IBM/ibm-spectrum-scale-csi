@@ -1,7 +1,7 @@
 # MULTI-STAGE BUILD for IBM Spectrum Scale CSI Driver
 
 FROM golang:1.13.1 AS builder
-WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi-driver/
+WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
 COPY . .
 ARG GOFLAGS
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
@@ -17,5 +17,5 @@ LABEL name="IBM Spectrum Scale CSI driver" \
       description="CSI Plugin for IBM Spectrum Scale"\
       maintainers="IBM Spectrum Scale"
 COPY licenses /licenses
-COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi-driver/_output/ibm-spectrum-scale-csi /ibm-spectrum-scale-csi
+COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/_output/ibm-spectrum-scale-csi /ibm-spectrum-scale-csi
 ENTRYPOINT ["/ibm-spectrum-scale-csi"]

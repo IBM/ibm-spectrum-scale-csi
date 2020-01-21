@@ -184,7 +184,7 @@ jobs:
 
     # Install minikube, build the image and run the scorecard.
     - stage: test
-      name: "Test - Opeartor: scorecard"
+      name: "Test - Operator: scorecard"
       before_install:
         - sudo pip install docker
         - pip install openshift
