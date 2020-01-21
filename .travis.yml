@@ -145,8 +145,8 @@ jobs:
       env:
         - GOFLAGS="-mod=vendor" #this should not be required in Go 1.14, see https://github.com/golang/go/issues/33848
       before_script:
-        - go mod vendor
         - cd ${BUILD_DIR_DRIVER}
+        - go mod vendor
       script:
         - go test -v -race ./...
         - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME} .
