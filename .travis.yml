@@ -171,8 +171,15 @@ jobs:
         - cd ${BUILD_DIR_OPERATOR}
         - operator-sdk build csi-scale-operator
       before_deploy:
+        - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
         - docker tag ${REPO_NAME} ${IMAGE_FQN_OPERATOR}
-    
+      deploy:
+        - provider: script
+          script: docker push ${IMAGE_FQN_OPERATOR}
+          on:
+            all_branches: true
+            condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
+
     # stage: build
     - name: "Build - Operator: docs"
       script:
