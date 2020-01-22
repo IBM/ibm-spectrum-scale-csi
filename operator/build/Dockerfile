@@ -1,5 +1,5 @@
-#FROM quay.io/operator-framework/ansible-operator:v0.11.0
-FROM quay.io/mew2057/ansible-operator:dev
+FROM quay.io/operator-framework/ansible-operator:v0.11.0
+#FROM quay.io/mew2057/ansible-operator:dev
 MAINTAINER jdunham@us.ibm.com
 
 LABEL name="IBM Spectrum Scale CSI Operator" \
