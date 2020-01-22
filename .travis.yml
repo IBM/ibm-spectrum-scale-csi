@@ -26,7 +26,8 @@ env:
         fi
       )
     # Add image repo and tag
-    - IMAGE_FQN=${IMAGE_REPO}:${IMAGE_TAG}
+    - IMAGE_FQN_DRIVER=${IMAGE_REPO_DRIVER}:${IMAGE_TAG}
+    - IMAGE_FQN_OPERATOR=${IMAGE_REPO_OPERATOR}:${IMAGE_TAG}
     - IMAGE_VERSION=${IMAGE_TAG}
     # Add image label to expire nightlies
     - IMAGE_LABEL=$(
@@ -152,10 +153,10 @@ jobs:
         - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker tag ${REPO_NAME} ${IMAGE_FQN}
+        - docker tag ${REPO_NAME} ${IMAGE_FQN_DRIVER}
       deploy:
         - provider: script
-          script: docker push ${IMAGE_FQN}
+          script: docker push ${IMAGE_FQN_DRIVER}
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
