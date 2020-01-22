@@ -46,7 +46,7 @@ export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi/operator"
 cd ${OPERATOR_DIR}
 
 export GO111MODULE="on"
-operator-sdk build csi-scale-operator
+operator-sdk build ibm-spectrum-scale-csi-operator
 ```
 
 >**NOTE** This requires `docker`.
@@ -72,7 +72,7 @@ Once you have a repository ready:
 docker login <credentials> quay.io
 
 # Tag the build 
-docker tag csi-scale-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+docker tag ibm-spectrum-scale-csi-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
 
 # push the image
 docker push quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1

@@ -30,7 +30,7 @@ Once you have a repository ready:
   docker login <credentials> quay.io
 
   # Tag the build 
-  docker tag csi-scale-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+  docker tag ibm-spectrum-scale-csi-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
 
   # push the image
   docker push quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
