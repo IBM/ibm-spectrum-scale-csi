@@ -11,12 +11,14 @@ env:
     - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
     # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
+    - REPO_NAME_DRIVER="${REPO_NAME}-driver"
+    - REPO_NAME_OPERATOR="${REPO_NAME}-operator"
    
     # Grab quay username from 'user+bot_token'
     - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
     # Format quay image target
-    - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME}-driver
-    - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME}-operator
+    - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_DRIVER}
+    - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_OPERATOR}
     # Add image tag
     - IMAGE_TAG=$( 
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
@@ -50,11 +52,10 @@ env:
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.11.0"
   
-    - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME}:testing"
+    - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
 
-    - OPERATOR_NAME="${REPO_NAME}-operator"
-    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${OPERATOR_NAME}/"
+    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${REPO_NAME_OPERATOR}/"
 
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -148,10 +149,10 @@ jobs:
         - go mod vendor
       script:
         - go test -v -race ./...
-        - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME} .
+        - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME_DRIVER} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker tag ${REPO_NAME} ${IMAGE_FQN_DRIVER}
+        - docker tag ${REPO_NAME_DRIVER} ${IMAGE_FQN_DRIVER}
       deploy:
         - provider: script
           script: docker push ${IMAGE_FQN_DRIVER}
@@ -170,10 +171,10 @@ jobs:
         - go version
       script:       
         - cd ${BUILD_DIR_OPERATOR}
-        - operator-sdk build ${REPO_NAME}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker tag ${REPO_NAME} ${IMAGE_FQN_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
       deploy:
         - provider: script
           script: docker push ${IMAGE_FQN_OPERATOR}
@@ -201,8 +202,8 @@ jobs:
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build ${REPO_NAME}
-        - docker tag ${REPO_NAME} ${IMAGE_FQN_OPERATOR}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
@@ -222,8 +223,8 @@ jobs:
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build ${REPO_NAME}
-        - docker tag ${REPO_NAME} ${OPERATOR_LOCAL_IMAGE}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script: 
         #  This needs to be built before we can test with molecule for reasons.
         - python hacks/change_deploy_image.py -i ${OPERATOR_LOCAL_IMAGE} --ifnotpresent
