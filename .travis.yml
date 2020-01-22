@@ -162,17 +162,19 @@ jobs:
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
     
     # stage: build
-    - name: "Build - Operator: image and tag"
-      script:
+    - name: "Build - Operator: image and push to registry"
+      install:
         - sudo pip install docker
         - docker version
+      before_script:
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
-        - cd ${BUILD_DIR_OPERATOR}
-        - operator-sdk version
+        - ${BUILD_DIR_OPERATOR}/operator-sdk version
         - go version
+      script:       
+        - cd ${BUILD_DIR_OPERATOR}
         - operator-sdk build csi-scale-operator
+      before_deploy:
         - docker tag csi-scale-operator ${DOCKER_REPO}
-          #- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io; docker push ${DOCKER_REPO}; fi'
     
     # stage: build
     - name: "Build - Operator: docs"
