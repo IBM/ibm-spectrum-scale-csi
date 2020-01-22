@@ -8,21 +8,51 @@ go:
 
 env:
   global:
+    - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
+    # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
+    - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
+    - REPO_NAME_DRIVER="${REPO_NAME}-driver"
+    - REPO_NAME_OPERATOR="${REPO_NAME}-operator"
+   
+    # Grab quay username from 'user+bot_token'
+    - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
+    # Format quay image target
+    - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_DRIVER}
+    - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_OPERATOR}
+    # Add image tag
+    - IMAGE_TAG=$( 
+        if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
+        then 
+            echo "nightly-${TRAVIS_BUILD_ID}-`date -u +%F`"; 
+        else
+            echo $TRAVIS_BRANCH; 
+        fi
+      )
+    # Add image repo and tag
+    - IMAGE_FQN_DRIVER=${IMAGE_REPO_DRIVER}:${IMAGE_TAG}
+    - IMAGE_FQN_OPERATOR=${IMAGE_REPO_OPERATOR}:${IMAGE_TAG}
+    - IMAGE_VERSION=${IMAGE_TAG}
+    # Add image label to expire nightlies
+    - IMAGE_LABEL=$(
+        if [[ $TRAVIS_EVENT_TYPE == 'cron' ]];
+        then
+            echo "--label version=${IMAGE_VERSION} --label quay.expires-after=2w";
+        else
+            echo "--label version=${IMAGE_VERSION}";
+        fi
+      )
+    - BUILD_DIR_OPERATOR="${TRAVIS_BUILD_DIR}/operator"
+    - BUILD_DIR_DRIVER="${TRAVIS_BUILD_DIR}/driver"
+
+
     - PATH=/opt/python/3.6.7/bin:$PATH
     - GO111MODULE=on
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.11.0"
-    - CSI_OP_VER="${TRAVIS_BRANCH}.${TRAVIS_OS_NAME}"
-    - QUAY_USERNAME="mew2057"
-    - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator-test:${CSI_OP_VER}"
-    - LOCAL_IMAGE="csi.ibm.com/csi-scale-operator:testing"
-
+  
+    - LOCAL_IMAGE="csi.ibm.com/ibm-spectrum-scale-csi-operator:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
-    - CSI_OP_BUILD_DIR="${TRAVIS_BUILD_DIR}/operator"
-
-
-    - OPERATOR_NAME=ibm-spectrum-scale-csi-operator
-    - OLM_MANIFEST="${CSI_OP_BUILD_DIR}/deploy/olm-catalog/${OPERATOR_NAME}/"
+    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${REPO_NAME_OPERATOR}/"
 
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -65,8 +95,8 @@ jobs:
         - cd ${CSI_OP_BUILD_DIR}
         - operator-sdk version
         - go version
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${DOCKER_REPO}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
           #- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io; docker push ${DOCKER_REPO}; fi'
     - name: "Build: docs"
       script:
@@ -86,13 +116,13 @@ jobs:
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${DOCKER_REPO}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
         - python hacks/clear_finalizers.py
-        - python hacks/change_deploy_image.py -i ${DOCKER_REPO} --ifnotpresent
+        - python hacks/change_deploy_image.py -i ${IMAGE_FQN_OPERATOR} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml
         - python hacks/clear_finalizers.py --restore
@@ -105,8 +135,8 @@ jobs:
         - kubectl version
         - cd ${CSI_OP_BUILD_DIR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${LOCAL_IMAGE}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${LOCAL_IMAGE}
       name: "Test: molecule"
       script: 
         #  This needs to be built before we can test with molecule for reasons.
@@ -116,5 +146,4 @@ jobs:
 
           #- ${TRAVIS_BUILD_DIR}/tools/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
 notifications:
-  email:
-    - jdunham@us.ibm.com
+  email: false
