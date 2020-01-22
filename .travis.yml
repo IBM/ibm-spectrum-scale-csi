@@ -202,12 +202,12 @@ jobs:
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
         - operator-sdk build ${REPO_NAME_OPERATOR}
-        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
         - python hacks/clear_finalizers.py
-        - python hacks/change_deploy_image.py -i ${IMAGE_FQN_OPERATOR} --ifnotpresent
+        - python hacks/change_deploy_image.py -i ${OPERATOR_LOCAL_IMAGE} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml
         - python  hacks/clear_finalizers.py --restore
