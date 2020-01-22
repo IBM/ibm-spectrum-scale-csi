@@ -9,6 +9,7 @@ env:
   global:
 # Shared ENV
     - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
+    # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
    
     # Grab quay username from 'user+bot_token'
@@ -49,7 +50,7 @@ env:
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.11.0"
   
-    - OPERATOR_LOCAL_IMAGE="csi.ibm.com/csi-scale-operator:testing"
+    - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
 
     - OPERATOR_NAME="${REPO_NAME}-operator"
@@ -169,7 +170,7 @@ jobs:
         - go version
       script:       
         - cd ${BUILD_DIR_OPERATOR}
-        - operator-sdk build csi-scale-operator
+        - operator-sdk build ${REPO_NAME}
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
         - docker tag ${REPO_NAME} ${IMAGE_FQN_OPERATOR}
@@ -200,7 +201,7 @@ jobs:
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build csi-scale-operator
+        - operator-sdk build ${REPO_NAME}
         - docker tag ${REPO_NAME} ${IMAGE_FQN_OPERATOR}
       script: 
         # Print environment 
@@ -221,7 +222,7 @@ jobs:
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build csi-scale-operator
+        - operator-sdk build ${REPO_NAME}
         - docker tag ${REPO_NAME} ${OPERATOR_LOCAL_IMAGE}
       script: 
         #  This needs to be built before we can test with molecule for reasons.
