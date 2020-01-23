@@ -428,12 +428,32 @@ func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName stri
 	return true, nil
 }
 
-func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath string, uid int, gid int) error {
-	glog.V(4).Infof("rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %d, gid: %d", filesystemName, relativePath, uid, gid)
+func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error {
+	glog.V(4).Infof("rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %s, gid: %s", filesystemName, relativePath, uid, gid)
 
 	dirreq := CreateMakeDirRequest{}
-	dirreq.UID = strconv.Itoa(uid)
-	dirreq.GID = strconv.Itoa(gid)
+
+	if uid != "" {
+		_, err := strconv.Atoi(uid)
+		if err != nil {
+			dirreq.USER = uid
+		} else {
+			dirreq.UID = uid
+		}
+	} else {
+		dirreq.UID = "0"
+	}
+
+	if gid != "" {
+		_, err := strconv.Atoi(gid)
+		if err != nil {
+			dirreq.GROUP = gid
+		} else {
+			dirreq.GID = gid
+		}
+	} else {
+		dirreq.GID = "0"
+	}
 
 	formattedPath := strings.ReplaceAll(relativePath, "/", "%2F")
 	makeDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, formattedPath))

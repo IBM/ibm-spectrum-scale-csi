@@ -129,23 +129,6 @@ func (cs *ScaleControllerServer) IfLwVolExist(scVol *scaleVolume) (bool, error) 
 
 func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
 	var err error
-	var Uid int
-	var Gid int
-
-	if scVol.VolUid != "" {
-		Uid, err = strconv.Atoi(scVol.VolUid)
-	}
-
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Unable to convert UID %v to int", scVol.VolUid))
-	}
-
-	if scVol.VolGid != "" {
-		Gid, err = strconv.Atoi(scVol.VolGid)
-	}
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Unable to convert GID %v to int", scVol.VolGid))
-	}
 
 	baseDirExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.VolBackendFs, scVol.VolDirBasePath)
 
@@ -159,10 +142,10 @@ func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
 
 	dirPath := fmt.Sprintf("%s/%s", scVol.VolDirBasePath, scVol.VolName)
 	/* FS from sc */
-	err = scVol.PrimaryConnector.MakeDirectory(scVol.VolBackendFs, dirPath, Uid, Gid)
+	err = scVol.PrimaryConnector.MakeDirectory(scVol.VolBackendFs, dirPath, scVol.VolUid, scVol.VolGid)
 
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Unable to create dir [%v] in FS [%v] with uid:gid [%v:%v]. Error [%v]", dirPath, scVol.VolBackendFs, Uid, Gid, err))
+		return status.Error(codes.Internal, fmt.Sprintf("Unable to create dir [%v] in FS [%v] with uid:gid [%v:%v]. Error [%v]", dirPath, scVol.VolBackendFs, scVol.VolUid, scVol.VolGid, err))
 	}
 	return nil
 }
@@ -235,9 +218,6 @@ func (cs *ScaleControllerServer) GetTargetPathforFset(scVol *scaleVolume) (strin
 }
 
 func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
-	var Uid int
-	var Gid int
-
 	opt := make(map[string]interface{})
 
 	isFsMounted, err := scVol.Connector.IsFilesystemMounted(scVol.VolBackendFs)
@@ -273,9 +253,9 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 		opt[connectors.UserSpecifiedParentFset] = scVol.ParentFileset
 	}
 
-	err = scVol.Connector.CreateFileset(scVol.VolBackendFs, scVol.VolName, opt)
+	fseterr := scVol.Connector.CreateFileset(scVol.VolBackendFs, scVol.VolName, opt)
 
-	if err != nil {
+	if fseterr != nil {
 		/* Fileset creation failed, but in some cases GUI returns failure when fileset was created but not linked. So delete a incomplete created fileset, so that in next iteration we can create fresh one. */
 
 		_, err := scVol.Connector.ListFileset(scVol.VolBackendFs, scVol.VolName)
@@ -284,7 +264,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 			_ = cs.Cleanup(scVol)
 		}
 
-		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to create fileset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err))
+		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to create fileset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, fseterr))
 	}
 
 	isFilesetLinked, err := scVol.Connector.IsFilesetLinked(scVol.VolBackendFs, scVol.VolName)
@@ -319,22 +299,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 		return "", err
 	}
 
-	if scVol.VolUid != "" {
-		Uid, err = strconv.Atoi(scVol.VolUid)
-	}
-
-	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to convert UID %v to int", scVol.VolUid))
-	}
-
-	if scVol.VolGid != "" {
-		Gid, err = strconv.Atoi(scVol.VolGid)
-	}
-	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to convert GID %v to int", scVol.VolGid))
-	}
-
-	err = scVol.Connector.MakeDirectory(scVol.VolBackendFs, targetBasePath, Uid, Gid)
+	err = scVol.Connector.MakeDirectory(scVol.VolBackendFs, targetBasePath, scVol.VolUid, scVol.VolGid)
 
 	if err != nil {
 		_ = cs.Cleanup(scVol)
@@ -831,9 +796,9 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		return &csi.ControllerPublishVolumeResponse{}, nil
 	}
 
-	if skipMountUnmount == yes && (!isFsMounted || !ispFsMounted) {
-		glog.Errorf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s in not mounted on node %s", primaryfsName, fsName, scalenodeID)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s in not mounted on node %s.", primaryfsName, fsName, scalenodeID))
+	if skipMountUnmount == "yes" && (!isFsMounted || !ispFsMounted) {
+		glog.Errorf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s", primaryfsName, fsName, scalenodeID)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s.", primaryfsName, fsName, scalenodeID))
 	}
 
 	//mount the primary filesystem if not mounted

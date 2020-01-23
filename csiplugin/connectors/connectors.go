@@ -44,7 +44,7 @@ type SpectrumScaleConnector interface {
 	SetFilesetQuota(filesystemName string, filesetName string, quota string) error
 	CheckIfFSQuotaEnabled(filesystem string) error
 	//Directory operations
-	MakeDirectory(filesystemName string, relativePath string, uid int, gid int) error
+	MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error
 	MountFilesystem(filesystemName string, nodeName string) error
 	UnmountFilesystem(filesystemName string, nodeName string) error
 	GetFilesystemName(filesystemUUID string) (string, error)
