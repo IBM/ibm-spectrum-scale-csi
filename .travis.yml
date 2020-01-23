@@ -9,13 +9,16 @@ env:
   global:
 # Shared ENV
     - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
+    # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
+    - REPO_NAME_DRIVER="${REPO_NAME}-driver"
+    - REPO_NAME_OPERATOR="${REPO_NAME}-operator"
    
     # Grab quay username from 'user+bot_token'
     - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
     # Format quay image target
-    - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME}-driver
-    - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME}-operator
+    - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_DRIVER}
+    - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_OPERATOR}
     # Add image tag
     - IMAGE_TAG=$( 
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
@@ -26,7 +29,8 @@ env:
         fi
       )
     # Add image repo and tag
-    - IMAGE_FQN=${IMAGE_REPO}:${IMAGE_TAG}
+    - IMAGE_FQN_DRIVER=${IMAGE_REPO_DRIVER}:${IMAGE_TAG}
+    - IMAGE_FQN_OPERATOR=${IMAGE_REPO_OPERATOR}:${IMAGE_TAG}
     - IMAGE_VERSION=${IMAGE_TAG}
     # Add image label to expire nightlies
     - IMAGE_LABEL=$(
@@ -47,15 +51,11 @@ env:
     - GO111MODULE=on
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.11.0"
-    - CSI_OP_VER="${TRAVIS_BRANCH}.${TRAVIS_OS_NAME}"
-    - QUAY_USERNAME="mew2057"
-    - DOCKER_REPO="quay.io/${QUAY_USERNAME}/ibm-spectrum-scale-csi-operator-test:${CSI_OP_VER}"
-    - LOCAL_IMAGE="csi.ibm.com/csi-scale-operator:testing"
-
+  
+    - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
 
-    - OPERATOR_NAME=ibm-spectrum-scale-csi-operator
-    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${OPERATOR_NAME}/"
+    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${REPO_NAME_OPERATOR}/"
 
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -149,30 +149,37 @@ jobs:
         - go mod vendor
       script:
         - go test -v -race ./...
-        - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME} .
+        - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME_DRIVER} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker tag ${REPO_NAME} ${IMAGE_FQN}
+        - docker tag ${REPO_NAME_DRIVER} ${IMAGE_FQN_DRIVER}
       deploy:
         - provider: script
-          script: docker push ${IMAGE_FQN}
+          script: docker push ${IMAGE_FQN_DRIVER}
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
     
     # stage: build
-    - name: "Build - Operator: image and tag"
-      script:
-        - sudo pip install docker
+    - name: "Build - Operator: image and push to registry"
+      install:
         - docker version
+      before_script:
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
-        - cd ${BUILD_DIR_OPERATOR}
         - operator-sdk version
-        - go version
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${DOCKER_REPO}
-          #- 'if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin  quay.io; docker push ${DOCKER_REPO}; fi'
-    
+      script:       
+        - cd ${BUILD_DIR_OPERATOR}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+      before_deploy:
+        - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
+      deploy:
+        - provider: script
+          script: docker push ${IMAGE_FQN_OPERATOR}
+          on:
+            all_branches: true
+            condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
+
     # stage: build
     - name: "Build - Operator: docs"
       script:
@@ -186,20 +193,19 @@ jobs:
     - stage: test
       name: "Test - Operator: scorecard"
       before_install:
-        - sudo pip install docker
         - pip install openshift
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${DOCKER_REPO}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script: 
         # Print environment 
         # Build the image, clear and restore the finalizers.
         - python hacks/clear_finalizers.py
-        - python hacks/change_deploy_image.py -i ${DOCKER_REPO} --ifnotpresent
+        - python hacks/change_deploy_image.py -i ${OPERATOR_LOCAL_IMAGE} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml
         - python  hacks/clear_finalizers.py --restore
@@ -207,22 +213,20 @@ jobs:
     # stage: test
     - name: "Test - Operator: molecule"
       before_install:
-        - sudo pip install docker
         - pip install pyyaml molecule openshift docker jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-        - operator-sdk build csi-scale-operator
-        - docker tag csi-scale-operator ${LOCAL_IMAGE}
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script: 
         #  This needs to be built before we can test with molecule for reasons.
-        - python hacks/change_deploy_image.py -i ${LOCAL_IMAGE} --ifnotpresent
+        - python hacks/change_deploy_image.py -i ${OPERATOR_LOCAL_IMAGE} --ifnotpresent
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
     # end stage: test
 
-          #- ${TRAVIS_BUILD_DIR}/tools/scripts/ci/fold_ouput.sh cluster.info.2 "cluster information"  kubectl cluster-info dump
 notifications:
   email: false

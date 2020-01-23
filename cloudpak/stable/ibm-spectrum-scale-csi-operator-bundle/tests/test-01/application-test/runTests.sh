@@ -53,10 +53,10 @@ else
          exit 1;
 fi
 
-echo "Check the csi-scale-operator status"
-output=$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}" | grep "csi-scale-operator*"  | awk '{ print $3 }' | sed -n '1p')
+echo "Check the ibm-spectrum-scale-csi-operator status"
+output=$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}" | grep "ibm-spectrum-scale-csi-operator*"  | awk '{ print $3 }' | sed -n '1p')
 if [[ "$output" == "Running" ]]; then
-         echo "csi-scale-operator pods running ok."
+         echo "ibm-spectrum-scale-csi-operator pods running ok."
 else
          exit 1;
 fi

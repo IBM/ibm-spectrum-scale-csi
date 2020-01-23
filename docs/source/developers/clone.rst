@@ -46,6 +46,6 @@ Navigate to the operator directory and use ``operator-sdk`` to build the contain
   cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
 
   export GO111MODULE="on"
-  operator-sdk build csi-scale-operator
+  operator-sdk build ibm-spectrum-scale-csi-operator
 
 .. note:: This requires ``docker``
