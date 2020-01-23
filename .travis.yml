@@ -51,10 +51,9 @@ env:
     - GO111MODULE=on
     - KUBE_VERSION="v1.16.2"
     - OP_VER="v0.11.0"
-    
+
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
-
     - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${REPO_NAME_OPERATOR}/"
 
     - CHANGE_MINIKUBE_NONE_USER=true
