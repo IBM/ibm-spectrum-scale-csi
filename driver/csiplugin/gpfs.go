@@ -322,7 +322,7 @@ func (driver *ScaleDriver) CreateSymlinkPath(sc connectors.SpectrumScaleConnecto
 	dirpath = fmt.Sprintf("%s/.volumes", dirpath)
 	symlinkpath := fmt.Sprintf("%s/.volumes", fsetlinkpath)
 
-	err := sc.MakeDirectory(fs, dirpath, 0, 0)
+	err := sc.MakeDirectory(fs, dirpath, "0", "0")
 	if err != nil {
 		glog.Errorf("Make directory failed on filesystem %s, path = %s", fs, dirpath)
 		return symlinkpath, dirpath, err
