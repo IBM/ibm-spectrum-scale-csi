@@ -163,7 +163,6 @@ jobs:
     # stage: build
     - name: "Build - Operator: image and push to registry"
       install:
-        - sudo pip install docker
         - docker version
       before_script:
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
@@ -194,7 +193,6 @@ jobs:
     - stage: test
       name: "Test - Operator: scorecard"
       before_install:
-        - sudo pip install docker
         - pip install openshift
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
@@ -215,7 +213,6 @@ jobs:
     # stage: test
     - name: "Test - Operator: molecule"
       before_install:
-        - sudo pip install docker
         - pip install pyyaml molecule openshift docker jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
