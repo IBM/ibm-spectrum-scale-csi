@@ -555,8 +555,10 @@ type CreateFilesetRequest struct {
 }
 
 type CreateMakeDirRequest struct {
-	UID string `json:"uid,omitempty"`
-	GID string `json:"gid,omitempty"`
+	UID   string `json:"uid,omitempty"`   //uidnumber
+	GID   string `json:"gid,omitempty"`   //gidnumber
+	USER  string `json:"user,omitempty"`  //username
+	GROUP string `json:"group,omitempty"` //groupname
 }
 
 type SymLnkRequest struct {
