@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/IBM/ibm-spectrum-scale-csi-operator/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/pkg/apis/ibm/v1"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/pkg/apis/ibm/v1"
 )
 
 func init() {
