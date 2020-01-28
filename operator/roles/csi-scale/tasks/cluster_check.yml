@@ -5,7 +5,7 @@
     namespace: "{{ lookup( 'vars','namespace' ) }}"
     name : "{{ item.secrets }}"
   register: results
-  failed_when: results is not defined
+  failed_when: results is not defined or results.results is not defined or (results.results|length==0)
 
 - name: "Label unlabled secrets"
   include_tasks: password_label.yml
