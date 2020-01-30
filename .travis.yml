@@ -166,7 +166,7 @@ jobs:
         - operator-sdk version
       script:       
         - cd ${BUILD_DIR_OPERATOR}
-        - operator-sdk build ${REPO_NAME_OPERATOR} --image-build-args '${IMAGE_LABEL}'
+        - operator-sdk build ${REPO_NAME_OPERATOR} --image-build-args ${IMAGE_LABEL}
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
         - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
