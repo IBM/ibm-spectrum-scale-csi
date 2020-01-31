@@ -1,4 +1,4 @@
-FROM quay.io/operator-framework/ansible-operator:v0.15.1
+FROM quay.io/operator-framework/ansible-operator:v0.14.0
 MAINTAINER jdunham@us.ibm.com
 
 LABEL name="IBM Spectrum Scale CSI Operator" \
@@ -12,7 +12,7 @@ LABEL name="IBM Spectrum Scale CSI Operator" \
 COPY build/health_check.sh .
 COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
-COPY build/_output/bin/operator ${OPERATOR}
+#COPY build/_output/bin/operator ${OPERATOR}
 COPY roles/ ${HOME}/roles/
 
 
