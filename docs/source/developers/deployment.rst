@@ -5,13 +5,13 @@ Deployment
 Container Repository
 --------------------
 
-In order to use the container image that you just built in the previous step, the image needs to be pushed to some container repository.
+In order to more easily consume the container image that you just built, the images needs to be pushed to some container repository.
 
 * **Quay.io (recommended)**
 
   Follow this tutorial to configure `quay.io <https://quay.io/tutorial/>`_.
   
-  Create a repository called ``ibm-spectrum-scale-csi-operator``.
+  Create two repositories: ``ibm-spectrum-scale-csi-operator`` and ``ibm-spectrum-scale-csi-driver``.
 
 * **Docker** 
 
@@ -20,7 +20,7 @@ In order to use the container image that you just built in the previous step, th
 The documentation will assume that the quay.io path is being used. 
 
 Pushing the image
-`````````````````
+-----------------
 
 Once you have a repository ready:
 
@@ -29,74 +29,81 @@ Once you have a repository ready:
   # Authenticate to quay.io
   docker login <credentials> quay.io
 
-  # Tag the build 
-  docker tag ibm-spectrum-scale-csi-operator quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+  # Configure some variables
+  VERSION="v0.9.1"
+  MYUSER="<your-user>"
 
-  # push the image
-  docker push quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+  # Tag and push the operator image 
+  docker tag ibm-spectrum-scale-csi-operator quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}
+  docker push quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}
 
-  # Update your deployment to point at your image.
-  hacks/change_deploy_image.py -i quay.io/<your-user>/ibm-spectrum-scale-csi-operator:v0.9.1
+  # Tag and push the driver image
+  docker tag ibm-spectrum-scale-csi-driver quay.io/${MYUSER}/ibm-spectrum-scale-csi-driver:${VERSION}
+  docker push quay.io/${MYUSER}/ibm-spectrum-scale-csi-driver:${VERSION}
+
+  # OPERATOR_DIR has been defined in previous steps
+  cd ${OPERATOR_DIR}
+  # Use a helper script to update your deployment to point at your operator image
+  hacks/change_deploy_image.py -i quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}
   
 
-Installing Operator
-```````````````````
+Installing the CSI Operator
+---------------------------
 
 .. note:: For OpenShift environments, replace ``kubectl`` with  ``oc``
 
-Run the following to deploy the operator manually:
+Run the following to deploy the IBM Spectrum Scale CSI operator manually:
 
 .. code-block:: bash
 
-  cd ${OPERATOR_DIR}/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
-
-  kubectl apply -f deploy/namespace.yaml
-  kubectl apply -f deploy/operator.yaml
-  kubectl apply -f deploy/role.yaml
-  kubectl apply -f deploy/role_binding.yaml
-  kubectl apply -f deploy/service_account.yaml
-  kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+  # OPERATOR_DIR has been defined in the previous steps
+  kubectl apply -f ${OPERATOR_DIR}/deploy/namespace.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/operator.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/role.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/role_binding.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/service_account.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
   
   
-Starting the CSI Driver
-```````````````````````
+Installing the CSI Driver
+-------------------------
 
-.. note:: Before starting the plugin, add any GUI secrets to the appropriate namespace. 
+.. tip:: Before starting the plugin, ensure that any GUI secrets have been added to the appropriate namespace. 
 
-A Custom Resource (CR) file is provided `deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi-operator/master/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_. Modify this file to match the properties in your environment.
+A Custom Resource (CR) file is provided `ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_. Modify this file to match the properties in your environment.
 
 To start: 
 
 .. code-block:: bash
 
-  kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 
 
 To stop:
 
 .. code-block:: bash
 
-  kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 
-Removing the CSI Operator
-`````````````````````````
+Removing the CSI Operator and Driver
+------------------------------------
 
-To remove the operator:
+To remove the IBM Spectrum Scale CSI Operator and Driver:
 
 .. code-block:: bash
 
   # The following removes the csi-driver
-  kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
 
   # The following removes the csi-operator
-  kubectl delete -f deploy/operator.yaml
-  kubectl delete -f deploy/role.yaml
-  kubectl delete -f deploy/role_binding.yaml
-  kubectl delete -f deploy/service_account.yaml
-  kubectl delete -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/operator.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/role.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/role_binding.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/service_account.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
 
   # The following removes the namespace 
-  kubectl delete -f deploy/namespace.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/namespace.yaml
 
 
-This will completely destroy the operator and all associated resources.
+This will completely destroy the operator, driver, and all associated resources.
