@@ -2,8 +2,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/ibm-spectrum-scale-csi-operator/badge/?version=latest)](https://ibm-spectrum-scale-csi-operator.readthedocs.io/en/latest/?badge=latest)
 
-An Ansible based operator to run and manage the deployment of the 
-[IBM Spectrum Scale CSI Driver](https://github.com/IBM/ibm-spectrum-scale-csi-driver)
+An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Plugin.
 
 This project was originally generated using [operator-sdk](https://github.com/operator-framework/operator-sdk).
 
