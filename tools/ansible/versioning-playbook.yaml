@@ -39,7 +39,6 @@
       - "{{OLM_DIR}}/ibm-spectrum-scale-csi-operator.package.yaml"
       - deploy/operator.yaml
       - .osdk-scorecard.yaml
-      - version/version.go
       - hacks/package_operator.py
       - hacks/change_deploy_image.py
       - hacks/csv_copy_cr.py
