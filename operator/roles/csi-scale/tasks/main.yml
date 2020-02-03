@@ -34,7 +34,7 @@
   when: '"apps.openshift.io" in api_groups'
   block:
   - name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
-    k8s_facts:
+    k8s_info:
       kind:  "SecurityContextConstraints"
       name : "csiaccess"
     register: csiaccess_results

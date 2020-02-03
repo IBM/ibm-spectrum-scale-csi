@@ -1,6 +1,6 @@
 --- 
 - name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
-  k8s_facts:
+  k8s_info:
     kind: secrets
     namespace: "{{ lookup( 'vars','namespace' ) }}"
     name : "{{ item.secrets }}"
@@ -9,9 +9,9 @@
 
 - name: "Label unlabled secrets"
   include_tasks: password_label.yml
-  when: item.metadata.label is not defined or
-    item.metadata.label["app.kubernetes.io/name"] is not defined or
-    item.metadata.label["app.kubernetes.io/name"] != "ibm-spectrum-scale-csi-operator"
+  when: item.metadata.labels is not defined or
+    item.metadata.labels["app.kubernetes.io/name"] is not defined or
+    item.metadata.labels["app.kubernetes.io/name"] != "ibm-spectrum-scale-csi-operator"
   loop:  "{{ results.resources }}"
 
 # Hash using a salted 
@@ -20,6 +20,14 @@
     secret_checksums: "{{ secret_checksums +  [ (results.resources[0].data | default(' ')) | to_json | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) ] }}"
 
 
+#- name: "Get data from the cluster id."
+#  uri: 
+#  user: results.resources[0].data.username
+#  password: results.resources[0].data.password
+#  headers:
+#    content-type: application/json
+#    accept: application/json
+  
 
 
 
