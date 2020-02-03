@@ -4,13 +4,10 @@ Clone and Build
 Clone
 -----
 
+Clone down the repository. This repository needs to be accessible in your ``GOPATH``. The examples below utilize the ``root`` user with ``GOPATH=/root/go``
 
-.. warning:: This repository needs to be accessible in your ``GOPATH``. The examples use the ``root`` user and ``GOPATH=/root/go``
-
-.. warning:: Due to current constraints in golang, relative paths are not supported.  You **must** clone this repository under your ``GOPATH``.  If not, the ``operator-sdk`` build operation may fail.
 
 .. code-block:: bash
-  :linenos:
 
   # Set up some helpful variables
   export GOPATH="/root/go"
@@ -21,31 +18,51 @@ Clone
   cd ${IBM_DIR}
   git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
 
+.. warning:: Due to current constraints in golang, relative paths are not supported.  You **must** clone this repository under your ``GOPATH``.
+
+
 Build
 -----
 
-Environment
-```````````
-
-To assist in proper configuration of the build environment, a playbook is provided:
-
-.. code-block:: bash
-
-  ansible-playbook $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi/tools/ansible/dev-env-playbook.yaml
+.. note:: Builds requires ``docker`` 17.05 and later. 
 
 
-Create the the Image
-````````````````````
+Operator
+````````
 
-Navigate to the operator directory and use ``operator-sdk`` to build the container image.
+The operator build requires ``operator-sdk``.  
+
+.. tip:: To assist in proper configuration of the build environment, a playbook is provided.  ``ansible-playbook ${IBM_DIR}/ibm-spectrum-scale-csi/tools/ansible/dev-env-playbook.yaml``
+
+1. Navigate to the ``operator`` directory and use ``operator-sdk`` to build the operator container image.
 
 .. code-block:: bash
 
-  # IBM_DIR is defined in the previous step
+  # IBM_DIR is defined in the previous steps
   export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi/operator"
   cd ${OPERATOR_DIR}
 
   export GO111MODULE="on"
+
+  # Build the container image
   operator-sdk build ibm-spectrum-scale-csi-operator
 
-.. note:: This requires ``docker``
+
+Driver
+``````
+
+1. Navigate to the ``driver`` directory and use ``docker`` to build the driver container image. 
+
+.. code-block:: bash
+
+  # IBM_DIR is defined in the previous steps
+  export DRIVER_DIR="$IBM_DIR/ibm-spectrum-scale-csi/driver"
+  cd ${DRIVER_DIR}
+
+  # Build the container image 
+  VERSION="v1.0.0"
+  docker build -t ibm-spectrum-scale-csi:${VERSION} -f Dockerfile.msb .
+
+  # Save the image into a .tar file
+  docker save ibm-spectrum-scale-csi:${VERSION} -o ibm-spectrum-scale-csi_${VERSION}.tar
+
