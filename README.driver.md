@@ -101,8 +101,8 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
 2. Deploy CSI driver
 
-   Follow the instructions from [ibm-spectrum-scale-csi-operator](https://github.com/IBM/ibm-spectrum-scale-csi-operator) for deployment of CSI driver
-
+   <TODO>
+   
    For Advance configuration, Cleanup, Troubleshooting etc. refer [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html)
 
 
