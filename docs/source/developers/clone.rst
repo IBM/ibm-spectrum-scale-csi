@@ -39,7 +39,8 @@ The operator build requires ``operator-sdk``.
 .. code-block:: bash
 
   # IBM_DIR is defined in the previous steps
-  export OPERATOR_DIR="$IBM_DIR/ibm-spectrum-scale-csi/operator"
+  export REPO_DIR="${IBM_DIR}/ibm-spectrum-scale-csi"
+  export OPERATOR_DIR="${REPO_DIR}/operator"
   cd ${OPERATOR_DIR}
 
   export GO111MODULE="on"
@@ -56,7 +57,8 @@ Driver
 .. code-block:: bash
 
   # IBM_DIR is defined in the previous steps
-  export DRIVER_DIR="$IBM_DIR/ibm-spectrum-scale-csi/driver"
+  export REPO_DIR="${IBM_DIR}/ibm-spectrum-scale-csi"
+  export DRIVER_DIR="${REPO_DIR}/driver"
   cd ${DRIVER_DIR}
 
   # Build the container image 
