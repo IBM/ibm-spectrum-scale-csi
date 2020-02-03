@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'IBM Spectrum Scale CSI Operator'
+project = 'IBM Spectrum Scale CSI'
 copyright = '2019, IBM'
 author = 'John Dunham'
 

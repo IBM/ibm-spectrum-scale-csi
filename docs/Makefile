@@ -7,7 +7,7 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = _build
-SPHINXPROJ    = IBM Spectrum Scale CSI Operator
+SPHINXPROJ    = IBM Spectrum Scale CSI 
 
 # Put it first so that "make" without argument is like "make help".
 help:
