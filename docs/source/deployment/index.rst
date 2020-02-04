@@ -6,4 +6,3 @@ Deployment
 
     manual.rst
     olm.rst
-    operator-spec.rst
