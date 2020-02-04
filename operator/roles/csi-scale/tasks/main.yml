@@ -15,6 +15,21 @@
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
     cluster_checksum: "{{ clustersCamelCase | to_json | checksum }}"
     secret_checksums: []
+    deploy_list:
+    - name: "cluster-role-attacher.yaml.j2"
+    - name: "cluster-role-node.yaml.j2"
+    - name: "cluster-role-provisioner.yaml.j2"
+    - name: "sa-attacher.yaml.j2"
+    - name: "sa-node.yaml.j2"
+    - name: "sa-provisioner.yaml.j2"
+    - name: "crb-attacher.yaml.j2"
+    - name: "crb-node.yaml.j2"
+    - name: "crb-provisioner.yaml.j2"
+    - name: "spectrum_scale.yaml.j2"
+    - name: "csi-plugin-attacher.yaml.j2"
+    - name: "csi-plugin-provisioner.yaml.j2"
+    - name: "csi-plugin.yaml.j2"
+
 
 - name: "Test Clusters"
   block:
@@ -69,23 +84,15 @@
       namespace: "{{namespace}}"
       definition: "{{ lookup('template', 'scc.yaml.j2') | from_yaml }}"
 
+- name: "Reverse order when not present"
+  set_fact:
+    deploy_list: "{{deploy_list|reverse|list}}"
+  when:
+    when: 'state != "present"'
+
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
     state: "{{ state }}"
     namespace: "{{namespace}}"
     definition: "{{ lookup('template', item.name) | from_yaml }}"
-  loop:
-    - name: "cluster-role-attacher.yaml.j2"
-    - name: "cluster-role-node.yaml.j2"
-    - name: "cluster-role-provisioner.yaml.j2"
-    - name: "sa-attacher.yaml.j2"
-    - name: "sa-node.yaml.j2"
-    - name: "sa-provisioner.yaml.j2"
-    - name: "crb-attacher.yaml.j2"
-    - name: "crb-node.yaml.j2"
-    - name: "crb-provisioner.yaml.j2"
-    - name: "spectrum_scale.yaml.j2"
-    - name: "csi-plugin-attacher.yaml.j2"
-    - name: "csi-plugin-provisioner.yaml.j2"
-    - name: "csi-plugin.yaml.j2"
-
+  loop: "{{ deploy_list }}"
