@@ -86,7 +86,7 @@
           strict: yes
           fail_on_error: yes
 
-    - name: Wait 120s for reconciliation to run
+    - name: Wait 240s for reconciliation to run
       k8s_facts:
         api_version: '{{ custom_resource.apiVersion }}'
         kind: '{{ custom_resource.kind }}'
@@ -96,7 +96,7 @@
       until:
       - "'Successful' in (cr | json_query('resources[].status.conditions[].reason'))"
       delay: 6
-      retries: 20
+      retries: 40
 
 
     rescue:
