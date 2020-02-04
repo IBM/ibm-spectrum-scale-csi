@@ -21,13 +21,6 @@
 Please refer to the IBM Spectrum Scale Container Storage Interface Driver documentation on knowledge center for detailed documentation. See the IBM Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
 
   
-### Limitations of the CSI driver
-
-Please refer to [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html) for limitations.
-
-### Pre-requisites for installing and running the CSI driver
-
-Please refer to [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html) for install pre-requisites.
 
 ## Building the docker image
 
