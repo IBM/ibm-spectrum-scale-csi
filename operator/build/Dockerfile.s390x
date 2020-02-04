@@ -12,7 +12,7 @@ LABEL name="IBM Spectrum Scale CSI Operator" \
 COPY build/health_check.sh .
 COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
-COPY build/_output/bin/operator ${OPERATOR}
+COPY build/_output/bin/ibm-spectrum-scale-csi-operator ${OPERATOR}
 COPY roles/ ${HOME}/roles/
 
 
