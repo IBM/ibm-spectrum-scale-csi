@@ -11,12 +11,14 @@ OpenShift
     .. image:: images/operatorhub-driver-tab.png
         :alt: IBM Spectrum Scale CSI Operator Tabs
 
-2. Modify the Custom Resource to match your IBM Spectrum Scale install properties, then click **"Create"**. 
+2. Modify the Custom Resource (CR) to match your running IBM Spectrum Scale properties, then click **"Create"**. 
 
     .. image:: images/operatorhub-custom-resource.png
         :alt: IBM Spectrum Scale CSI Operator Tabs
 
-   For a complete sample of valid options, see `ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_
+   For a complete sample of valid CR options, see `ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_
 
 Kubernetes
 ----------
+
+TODO

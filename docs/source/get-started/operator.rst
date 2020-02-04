@@ -27,5 +27,5 @@ Kubernetes
 ----------
 
 1.  Navigate to `ibm-spectrum-scale-csi-operator <https://operatorhub.io/operator/ibm-spectrum-scale-csi-operator>`_ and follow 
-the instructions that appear when you click on the 'Install' button. 
+the instructions that appear when you click on the **"Install"** button. 
 
