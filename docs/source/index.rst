@@ -7,6 +7,7 @@ Table of Contents
 .. toctree::
    :maxdepth: 2
 
+   introduction/index.rst
    get-started/index.md
    deployment/index.rst
    troubleshoot/index.md
