@@ -16,66 +16,6 @@
 
   
 
-# IBM Spectrum Scale Container Storage Interface (CSI) Driver
-
-Please refer to the IBM Spectrum Scale Container Storage Interface Driver documentation on knowledge center for detailed documentation. See the IBM Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
-
-  
-
-## Building the docker image
-
-**Using multi-stage build**
-
-Pre-requisite: Docker 17.05 or higher is installed on local build machine.
-
-
-1. Clone the code
-
-   ```
-   git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
-   cd ibm-spectrum-scale-csi/driver
-   ```
-
-2. Invoke multi-stage build
-
-   ```
-   docker build -t ibm-spectrum-scale-csi:v1.0.0 -f Dockerfile.msb .
-   ```
-
-   On podman setup, use *podman* command instead of *docker*
-
-3. save the docker image
-
-   ```
-   docker save ibm-spectrum-scale-csi:v1.0.0 -o ibm-spectrum-scale-csi_v1.0.0.tar
-   ```
-
-   On podman setup, use *podman* command instead of *docker*
-
-      A tar file of docker image will be created.
-
-
-
-
-## Install and Deploy the IBM Spectrum Scale CSI driver
-
-
-1. Copy and load the docker image on all Kubernetes worker nodes
-
-   ```
-   docker image load -i ibm-spectrum-scale-csi_v1.0.0.tar
-   ```
-
-   On podman setup, use *podman* command instead of *docker*
-
-
-2. Deploy CSI driver
-
-   <TODO>
-   
-   For Advance configuration, Cleanup, Troubleshooting etc. refer [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html)
-
-
 ## Static Provisioning
 
 In static provisioning, the backend storage volumes and PVs are created by the administrator. Static provisioning can be used to provision a directory or fileset with existing data.
