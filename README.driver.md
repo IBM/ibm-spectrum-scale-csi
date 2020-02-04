@@ -1,20 +1,4 @@
-
-   * [IBM Spectrum Scale Container Storage Interface (CSI) Driver](#ibm-spectrum-scale-container-storage-interface-csi-driver)
-      * [IBM Spectrum Scale Introduction](#ibm-spectrum-scale-introduction)
-      * [IBM Spectrum Scale Container Storage Interface (CSI) driver](#ibm-spectrum-scale-container-storage-interface-csi-driver)
-         * [Supported Features of the CSI driver](#supported-features-of-the-csi-driver)
-         * [Limitations of the CSI driver](#limitations-of-the-csi-driver)
-         * [Pre-requisites for installing and running the CSI driver](#pre-requisites-for-installing-and-running-the-csi-driver)
-      * [Building the docker image](#building-the-docker-image)
-      * [Install and Deploy the IBM Spectrum Scale CSI driver](#install-and-deploy-the-spectrum-scale-csi-driver)
-      * [Static Provisioning](#static-provisioning)
-      * [Dynamic Provisioning](#dynamic-provisioning)
-         * [Storageclass](#storageClass)
-      * [Environments in Test](TESTCONFIG.md#environments-in-test)
-      * [Example Hardware Configs](TESTCONFIG.md#example-hardware-configs)
-      * [Links](#links)
-
-  
+ 
 
 ## Static Provisioning
 
