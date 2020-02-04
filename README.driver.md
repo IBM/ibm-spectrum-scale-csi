@@ -21,29 +21,6 @@
 Please refer to the IBM Spectrum Scale Container Storage Interface Driver documentation on knowledge center for detailed documentation. See the IBM Spectrum Scale Users Group links at the very bottom for a community to share and discuss test efforts.
 
   
-## IBM Spectrum Scale Introduction
-
-IBM Spectrum Scale is a clustered file system providing concurrent access to a single file system or set of file systems from multiple nodes. The nodes can be SAN attached, network attached, a mixture of SAN attached and network attached, or in a shared nothing cluster configuration. This enables high performance access to this common set of data to support a scale-out solution or to provide a high availability platform.
-
-IBM Spectrum Scale has many features beyond common data access including data replication, policy based storage management, and multi-site operations. You can create a cluster of AIX® nodes, Linux nodes, Windows server nodes, or a mix of all three. IBM Spectrum Scale can run on virtualized instances providing common data access in environments, leverage logical partitioning, or other hypervisors. Multiple IBM Spectrum Scale clusters can share data within a location or across wide area network (WAN) connections. For more information on IBM Spectrum Scale features, see the Product overview section in the IBM Spectrum Scale: Concepts, Planning, and Installation Guide.
-
-Please refer to the [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html) for more information.
-  
-
-## IBM Spectrum Scale Container Storage Interface (CSI) driver
-
-The IBM Spectrum Scale Container Storage Interface (CSI) driver allows IBM Spectrum Scale to be used as persistent storage for stateful application running in Kubernetes clusters. Through this CSI Driver, Kubernetes persistent volumes (PVs) can be provisioned from IBM Spectrum Scale. Thus, containers can be used with stateful microservices, such as database applications (MongoDB, PostgreSQL etc), web servers (nginx, apache), or any number of other containerized applications needing provisioned storage.
-
-### Supported Features of the CSI driver
-
-IBM Spectrum Scale Container Storage Interface (CSI) driver supports the following features:
-
-- **Static provisioning:** Ability to use existing directories as persistent volumes
-- **Lightweight dynamic provisioning:** Ability to create directory-based volumes dynamically
-- **Fileset-based dynamic provisioning:** Ability to create fileset-based volumes dynamically
-- **Multiple file systems support:** Volumes can be created across multiple file systems
-- **Remote mount support:** Volumes can be created on a remotely mounted file system
-  
 ### Limitations of the CSI driver
 
 Please refer to [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html) for limitations.
