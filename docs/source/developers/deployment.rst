@@ -26,12 +26,16 @@ Once you have a repository ready:
 
 .. code-block:: bash
 
+  #
+  # Configure some variables
+  #
+  # VERSION - a tag version for your image
+  VERSION="v0.0.1"
+  # MYUSER  - A user or organization for your container registry
+  MYUSER="<your-user>"
+
   # Authenticate to quay.io
   docker login <credentials> quay.io
-
-  # Configure some variables
-  VERSION="v0.9.1"
-  MYUSER="<your-user>"
 
   # Tag and push the operator image 
   docker tag ibm-spectrum-scale-csi-operator quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}
