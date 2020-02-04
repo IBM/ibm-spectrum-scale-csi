@@ -87,8 +87,7 @@
 - name: "Reverse order when not present"
   set_fact:
     deploy_list: "{{deploy_list|reverse|list}}"
-  when:
-    when: 'state != "present"'
+  when:  'state != "present"'
 
 - name: "Ensure csi-scale objects are {{ state }}"
   k8s:
