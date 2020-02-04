@@ -20,7 +20,7 @@ metadata:
           "spec": {
             "clusters": [
               {
-                "id": "\u003c Primary Cluster ID - WARNING: THIS IS A STRING NEEDS YAML QUOTES!\u003e",
+                "id": "\u003c Primary Cluster ID - WARNING - THIS IS A STRING NEEDS YAML QUOTES! \u003e",
                 "primary": {
                   "primaryFs": "\u003c Primary Filesystem \u003e",
                   "primaryFset": "\u003c Fileset in Primary Filesystem \u003e"
