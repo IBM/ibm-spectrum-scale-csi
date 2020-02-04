@@ -5,7 +5,7 @@ Deployment
 Container Repository
 --------------------
 
-In order to more easily consume the container image that you just built, the images needs to be pushed to some container repository.
+In order to consume the csi-driver and csi-operator container images built in the previous steps, the images should be pushed to a container repository.
 
 * **Quay.io (recommended)**
 
