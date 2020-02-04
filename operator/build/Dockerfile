@@ -9,10 +9,9 @@ LABEL name="IBM Spectrum Scale CSI Operator" \
       summary="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
       description="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." 
 
-COPY build/health_check.sh .
+COPY hacks/health_check.sh .
 COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
-#COPY build/_output/bin/operator ${OPERATOR}
 COPY roles/ ${HOME}/roles/
 
 
