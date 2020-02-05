@@ -5,8 +5,7 @@ set -x
 
 if [[ $1 == "-b" ]]
 then
-    export GO111MODULE="on"
-    operator-sdk build ibm-spectrum-scale-csi-operator
+    docker build . -t ibm-spectrum-scale-csi-operator
     shift
 
     export REPO="$(hostname -f):5000/"
