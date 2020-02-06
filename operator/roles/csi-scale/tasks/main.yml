@@ -89,9 +89,10 @@
     deploy_list: "{{deploy_list|reverse|list}}"
   when:  'state != "present"'
 
-- name: "Ensure csi-scale objects are {{ state }}"
-  k8s:
-    state: "{{ state }}"
-    namespace: "{{namespace}}"
-    definition: "{{ lookup('template', item.name) | from_yaml }}"
+- debug:
+    var: state
+
+
+- name: "Handlecsi-scale objects"
+  include_tasks: template_applicator.yml
   loop: "{{ deploy_list }}"
