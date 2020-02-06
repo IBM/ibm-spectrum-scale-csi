@@ -1,6 +1,6 @@
 ---
 - name: Verify RBAC present
-  k8s_facts:
+  k8s_info:
     kind: "{{item.kind}}"
     name: "{{item.name}}"
     api_version:  v1
@@ -35,7 +35,7 @@
 
 
 - name: Verify RBAC absent
-  k8s_facts:
+  k8s_info:
     kind: "{{item.kind}}"
     name: "{{item.name}}"
     api_version:  v1

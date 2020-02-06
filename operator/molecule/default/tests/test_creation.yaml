@@ -37,7 +37,7 @@
         fail_on_error: yes
 
   - name: Wait 60s for reconciliation to run and failure to be detected.
-    k8s_facts:
+    k8s_info:
       api_version: '{{ custom_resource.apiVersion }}'
       kind: '{{ custom_resource.kind }}'
       namespace: '{{ namespace }}'
