@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'IBM Spectrum Scale CSI Operator'
+project = 'IBM Spectrum Scale CSI'
 copyright = '2019, IBM'
 author = 'John Dunham'
 
@@ -76,6 +76,5 @@ source_parsers = { '.md' : 'recommonmark.parser.CommonMarkParser' }
 rst_epilog="""
 .. |driver-repo| replace:: GitHubDriver_
 .. |operator-repo| replace:: GitHubOperator_
-.. _GitHubDriver: https://github.com/IBM/ibm-spectrum-scale-csi-driver
 .. _GitHubOperator: https://github.com/IBM/
 """

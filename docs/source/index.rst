@@ -1,5 +1,5 @@
-IBM Spectrum Scale CSI Operator 
-===============================
+IBM Spectrum Scale CSI 
+======================
 
 Table of Contents
 -----------------

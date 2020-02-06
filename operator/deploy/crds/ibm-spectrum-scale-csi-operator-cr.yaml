@@ -15,8 +15,7 @@ spec:
   scaleHostpath: "< GPFS FileSystem Path >"
 
 # Below specifies the details of a SpectrumScale cluster configuration used by the 
-# plugin. It can have multiple values. For more details, refer to the cluster 
-# configuration for the plugin. https://github.com/IBM/ibm-spectrum-scale-csi-driver
+# plugin. It can have multiple values. 
 # ==================================================================================
   clusters:
     - id: "< Primary Cluster ID - WARNING: THIS IS A STRING NEEDS YAML QUOTES!>"
