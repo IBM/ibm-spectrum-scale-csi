@@ -9,6 +9,7 @@ Table of Contents
 
    get-started/index.md
    deployment/index.rst
+   maintenance/index.rst
    troubleshoot/index.md
    developers/index.rst
 
