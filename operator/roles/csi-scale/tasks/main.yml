@@ -93,6 +93,6 @@
     var: state
 
 
-- name: "Handlecsi-scale objects"
+- name: "Handle csi-scale objects"
   include_tasks: template_applicator.yml
   loop: "{{ deploy_list }}"

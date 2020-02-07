@@ -1,5 +1,5 @@
 --- 
-- name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
+- name: "Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}"
   k8s_info:
     kind: secrets
     namespace: "{{ lookup( 'vars','namespace' ) }}"
