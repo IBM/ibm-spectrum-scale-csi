@@ -19,7 +19,7 @@ ibm-spectrum-scale-csi-operator-cr.yaml
 Create the Operator
 ===================
 
-1. Download and extract a ``.tar.gz`` file from `ibm-spectrum-scale-csi-operator/releases <https://github.com/IBM/ibm-spectrum-scale-csi-operator/releases/>`_ page.
+1. Download and extract a ``.tar.gz`` file from `ibm-spectrum-scale-csi/releases <https://github.com/IBM/ibm-spectrum-scale-csi/releases/>`_ page.
 
 2. Apply the namespace and operator configuration files.
 

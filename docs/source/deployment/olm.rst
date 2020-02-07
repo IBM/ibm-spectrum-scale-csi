@@ -10,11 +10,11 @@ Operator Lifecycle Manager (OLM)
     curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.11.0/install.sh | bash -s 0.11.0
 
 
-2. Download the CSI Operator ``.yaml`` and apply
+2. Download the IBM Spectrum Scale CSI Operator ``.yaml`` and apply
 
 .. code-block:: bash
 
-    curl https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi-operator/master/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/olm-scripts/operator-source.yaml > operator-source.yaml
+    curl https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/tools/scripts/olm-scripts/operator-source.yaml > operator-source.yaml
 
     kubectl apply -f operator-source.yaml
 

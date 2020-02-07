@@ -62,8 +62,8 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 1. Clone the code
 
    ```
-   git clone https://github.com/IBM/ibm-spectrum-scale-csi-driver.git
-   cd ibm-spectrum-scale-csi-driver
+   git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
+   cd ibm-spectrum-scale-csi/driver
    ```
 
 2. Invoke multi-stage build
@@ -101,8 +101,8 @@ Pre-requisite: Docker 17.05 or higher is installed on local build machine.
 
 2. Deploy CSI driver
 
-   Follow the instructions from [ibm-spectrum-scale-csi-operator](https://github.com/IBM/ibm-spectrum-scale-csi-operator) for deployment of CSI driver
-
+   <TODO>
+   
    For Advance configuration, Cleanup, Troubleshooting etc. refer [IBM Spectrum Scale Knowledge Center](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html)
 
 
@@ -167,7 +167,7 @@ Main starting page for all IBM Spectrum Scale compatibility information.
 Guide showing how to quickly install a IBM Spectrum Scale cluster. Information similar to the above Install Toolkit example.
 
 [IBM Block CSI driver](https://github.com/IBM/ibm-block-csi-driver)
-CSI driver supporting multiple IBM storage systems.
+IBM Block CSI driver supporting multiple IBM storage systems.
 
 [Installing kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 Main Kubernetes site detailing how to install kubeadm and create a cluster.
