@@ -14,7 +14,7 @@ then
         export REPO="$1/"
     fi 
 
-    docker tag ibm-spectrum-scale-csi-operator ${REPO}csi-scale-operator
+    docker tag ibm-spectrum-scale-csi-operator ${REPO}csi-scale-operator:latest
     docker push ${REPO}csi-scale-operator:latest
 
     #operator-sdk generate k8s
