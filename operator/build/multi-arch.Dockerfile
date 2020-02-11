@@ -16,3 +16,8 @@ COPY hacks/health_check.sh .
 COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
 COPY roles/ ${HOME}/roles/
+
+ENV CSI_ATTACHER_IMAGE=registry.scale-peach.fyre.ibm.com/external-attacher:latest
+ENV CSI_PROVISIONER_IMAGE=registry.scale-peach.fyre.ibm.com/external-provisioner:latest
+ENV CSI_NODE_REGISTRAR_IMAGE=registry.scale-peach.fyre.ibm.com/node-driver-registrar:latest
+ENV CSI_DRIVER_IMAGE=registry.scale-peach.fyre.ibm.com/ibm-spectrum-scale-csi-driver:latest
