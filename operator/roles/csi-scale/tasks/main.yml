@@ -31,15 +31,12 @@
     - name: "csi-plugin.yaml.j2"
 
 
-- name: "Test Clusters"
+- name: "Test clusters when setting to present"
   block:
   - name: "Ensure the clusters are valid"
     include_tasks: cluster_check.yml
     loop: "{{ clustersCamelCase }}"
     when: 'state == "present"'
-  rescue:
-    - name: "Cluster check failed when setting state to present, exiting"
-      meta: end_play
 
 - name: "Generate final secret checksum"
   set_fact:
@@ -48,7 +45,7 @@
 - name: "Ensure SCC"
   when: '"apps.openshift.io" in api_groups'
   block:
-  - name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
+  - name: "Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}"
     k8s_info:
       kind:  "SecurityContextConstraints"
       name : "csiaccess"

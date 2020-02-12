@@ -5,7 +5,10 @@
     namespace: "{{ lookup( 'vars','namespace' ) }}"
     name : "{{ item.secrets }}"
   register: results
-  failed_when: results is not defined or results.resources is not defined or (results.resources|length==0)
+
+- name: "Cluster check failed when setting state to present, exiting"
+  meta: end_play
+  when: results is not defined or results.resources is not defined or (results.resources|length==0)
 
 - name: "Label unlabled secrets"
   include_tasks: password_label.yml
