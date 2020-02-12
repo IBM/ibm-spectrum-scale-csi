@@ -1,6 +1,6 @@
 ---
 - name: Assert Custom Resource has been created
-  k8s_facts:
+  k8s_info:
     api_version: '{{ custom_resource.apiVersion }}'
     kind: '{{ custom_resource.kind }}'
     namespace: '{{ namespace }}'
@@ -44,7 +44,7 @@
 - block:
     # We know that the provisioner will have this name
     - name: Wait 60s for provisioner reconciliation to run 
-      k8s_facts:
+      k8s_info:
         kind:       Statefulset
         api_version: v1
         namespace:  '{{ namespace }}'
@@ -56,7 +56,7 @@
       retries: 10
 
     - name: Wait 60s for attacher reconciliation to run 
-      k8s_facts:
+      k8s_info:
         kind:        Statefulset
         api_version: v1
         namespace:  '{{ namespace }}'
@@ -68,7 +68,7 @@
       retries: 10
 
     - name: Wait 60s for driver reconciliation to run 
-      k8s_facts:
+      k8s_info:
         kind:       Daemonset
         api_version: v1
         namespace:  '{{ namespace }}'

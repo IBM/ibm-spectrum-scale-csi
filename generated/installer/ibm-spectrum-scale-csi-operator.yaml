@@ -57,13 +57,6 @@ spec:
             - ./health_check.sh
           initialDelaySeconds: 3
           periodSeconds: 1
-        resources:
-          limits:
-            cpu: 500m
-            memory: 500Mi
-          requests:
-            cpu: 50m
-            memory: 50Mi
         securityContext:
           capabilities:
             drop:
@@ -98,13 +91,6 @@ spec:
             - ./health_check.sh
           initialDelaySeconds: 3
           periodSeconds: 1
-        resources:
-          limits:
-            cpu: 500m
-            memory: 500Mi
-          requests:
-            cpu: 50m
-            memory: 50Mi
         securityContext:
           capabilities:
             drop:
@@ -395,6 +381,9 @@ spec:
               description: An internal counter used by the operator to trigger reloads
                 on secret change.
               type: integer
+            trigger:
+              description: A generic trigger to be used in kickin off the ansible operator.
+              type: string
             spectrumScale:
               description: Image name for the csi spectrum scale plugin container.
               type: string
