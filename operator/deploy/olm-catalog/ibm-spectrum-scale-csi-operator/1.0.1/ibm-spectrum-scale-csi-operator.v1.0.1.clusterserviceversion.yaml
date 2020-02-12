@@ -198,11 +198,6 @@ spec:
         path: nodeMapping.k8sNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: SpectrumScale node name.
-        displayName: Spectrum Scale Node
-        path: nodeMapping.spectrumscaleNode
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: Key for node selector.
         displayName: Key
         path: attacherNodeSelector.key
