@@ -4,6 +4,16 @@
 FROM quay.io/mew2057/ansible-operator:$TARGETARCH
 MAINTAINER jdunham@us.ibm.com
 
+ARG CSI_ATTACHER_IMAGE
+ARG CSI_PROVISIONER_IMAGE
+ARG CSI_NODE_REGISTRAR_IMAGE
+ARG CSI_DRIVER_IMAGE
+
+ENV CSI_ATTACHER_IMAGE $CSI_ATTACHER_IMAGE
+ENV CSI_PROVISIONER_IMAGE $CSI_PROVISIONER_IMAGE
+ENV CSI_NODE_REGISTRAR_IMAGE $CSI_NODE_REGISTRAR_IMAGE
+ENV CSI_DRIVER_IMAGE $CSI_DRIVER_IMAGE
+
 LABEL name="IBM Spectrum Scale CSI Operator" \
       vendor="ibm" \
       version="1.0.1" \
@@ -16,8 +26,3 @@ COPY hacks/health_check.sh .
 COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
 COPY roles/ ${HOME}/roles/
-
-ENV CSI_ATTACHER_IMAGE=registry.scale-peach.fyre.ibm.com/external-attacher:latest
-ENV CSI_PROVISIONER_IMAGE=registry.scale-peach.fyre.ibm.com/external-provisioner:latest
-ENV CSI_NODE_REGISTRAR_IMAGE=registry.scale-peach.fyre.ibm.com/node-driver-registrar:latest
-ENV CSI_DRIVER_IMAGE=registry.scale-peach.fyre.ibm.com/ibm-spectrum-scale-csi-driver:latest
