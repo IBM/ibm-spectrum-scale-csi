@@ -5,7 +5,7 @@
   vars:
     VERSION_OLD: "1.0.0"
     VERSION_NEW: "1.0.1"
-    OPERATOR_DIR: "../stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+    OPERATOR_DIR: "../../operator/"
     OLM_DIR: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/"
     OPERATOR_NAME: "ibm-spectrum-scale-csi-operator"
   tasks:
