@@ -93,7 +93,6 @@
 - name: "Set isRunning - true"
   when:  (state == "present")
   operator_sdk.util.k8s_status:
-    api_version: csi.ibm.com/v1
     kind: CSIScaleOperator
     name: "{{ meta.name }}"
     namespace: "{{ meta.namespace }}"
