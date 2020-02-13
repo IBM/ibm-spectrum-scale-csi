@@ -90,13 +90,13 @@
   include_tasks: template_applicator.yml
   loop: "{{ deploy_list }}"
 
-- name: "Set isRunning - true"
-  when:  (state == "present")
-  operator_sdk.util.k8s_status:
-    kind: CSIScaleOperator
-    name: "{{ meta.name }}"
-    namespace: "{{ meta.namespace }}"
-    status:
-      conditions:
-        - isRunning: true
-
+#- name: "Set isRunning - true"
+#  when:  (state == "present")
+#  operator_sdk.util.k8s_status:
+#    kind: CSIScaleOperator
+#    name: "{{ meta.name }}"
+#    namespace: "{{ meta.namespace }}"
+#    status:
+#      conditions:
+#        - isRunning: true
+#
