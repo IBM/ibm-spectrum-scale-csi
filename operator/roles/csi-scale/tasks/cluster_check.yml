@@ -6,9 +6,20 @@
     name : "{{ item.secrets }}"
   register: results
 
-- name: "Cluster check failed when setting state to present, exiting"
-  meta: end_play
-  when: results is not defined or results.resources is not defined or (results.resources|length==0)
+- when: results is not defined or results.resources is not defined or (results.resources|length==0)
+  block:
+    - name: "Cluster check failed, exiting"
+      operator_sdk.util.k8s_status:
+        api_version: csi.ibm.com/v1
+        kind: CSIScaleOperator
+        name: "{{ meta.name }}"
+        namespace: "{{ meta.namespace }}"
+        status:
+          conditions:
+            - isRunning: false
+
+    - name: "Ending Operator Run."
+      meta: end_play
 
 - name: "Label unlabled secrets"
   include_tasks: password_label.yml

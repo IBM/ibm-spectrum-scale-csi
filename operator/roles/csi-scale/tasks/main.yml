@@ -86,10 +86,18 @@
     deploy_list: "{{deploy_list|reverse|list}}"
   when:  'state != "present"'
 
-- debug:
-    var: state
-
-
 - name: "Handle csi-scale objects"
   include_tasks: template_applicator.yml
   loop: "{{ deploy_list }}"
+
+- name: "Set isRunning - true"
+  when:  (state == "present")
+  operator_sdk.util.k8s_status:
+    api_version: csi.ibm.com/v1
+    kind: CSIScaleOperator
+    name: "{{ meta.name }}"
+    namespace: "{{ meta.namespace }}"
+    status:
+      conditions:
+        - isRunning: true
+
