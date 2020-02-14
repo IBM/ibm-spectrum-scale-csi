@@ -6,7 +6,7 @@ set -x
 if [[ $1 == "-b" ]]
 then
     export GO111MODULE="on"
-    operator-sdk build csi-scale-operator
+    operator-sdk build ibm-spectrum-scale-csi-operator
     shift
 
     export REPO="$(hostname -f):5000/"
@@ -15,7 +15,7 @@ then
         export REPO="$1/"
     fi 
 
-    docker tag csi-scale-operator ${REPO}csi-scale-operator
+    docker tag ibm-spectrum-scale-csi-operator ${REPO}csi-scale-operator
     docker push ${REPO}csi-scale-operator:latest
 
     #operator-sdk generate k8s

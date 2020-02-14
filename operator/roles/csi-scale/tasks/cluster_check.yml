@@ -5,13 +5,13 @@
     namespace: "{{ lookup( 'vars','namespace' ) }}"
     name : "{{ item.secrets }}"
   register: results
-  failed_when: results is not defined
+  failed_when: results is not defined or results.resources is not defined or (results.resources|length==0)
 
 - name: "Label unlabled secrets"
   include_tasks: password_label.yml
   when: item.metadata.label is not defined or
     item.metadata.label["app.kubernetes.io/name"] is not defined or
-    item.metadata.label["app.kubernetes.io/name"] != "csi-scale-operator"
+    item.metadata.label["app.kubernetes.io/name"] != "ibm-spectrum-scale-csi-operator"
   loop:  "{{ results.resources }}"
 
 # Hash using a salted 

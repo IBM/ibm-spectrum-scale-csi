@@ -41,15 +41,15 @@ echo "Checking the ibm-spectrum-scale-csi-operator status..."
   done
 echo "Successfully check the status for ibm-spectrum-scale-csi-operator in namespace \"$CV_TEST_NAMESPACE\""
 
-echo "Checking the csi-scale-operator status..."
+echo "Checking the ibm-spectrum-scale-csi-operator status..."
   retries=20 # 10 minute timeout
-  while [[ "$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}" | grep "csi-scale-operator*"  | awk '{ print $3 }' | sed -n '1p')" != "Running" ]]; do
+  while [[ "$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}" | grep "ibm-spectrum-scale-csi-operator*"  | awk '{ print $3 }' | sed -n '1p')" != "Running" ]]; do
     sleep 30
     retries=$((retries - 1))
     if [[ $retries == 0 ]]; then
-      echo "FAIL: Failed to check the status for csi-scale-operator"
+      echo "FAIL: Failed to check the status for ibm-spectrum-scale-csi-operator"
       exit 1
     fi
-    echo "retrying check the status for csi-scale-operator"
+    echo "retrying check the status for ibm-spectrum-scale-csi-operator"
   done
-echo "Successfully check the status for csi-scale-operator in namespace \"$CV_TEST_NAMESPACE\""
+echo "Successfully check the status for ibm-spectrum-scale-csi-operator in namespace \"$CV_TEST_NAMESPACE\""

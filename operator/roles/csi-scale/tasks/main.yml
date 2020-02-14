@@ -21,13 +21,10 @@
   - name: "Ensure the clusters are valid"
     include_tasks: cluster_check.yml
     loop: "{{ clustersCamelCase }}"
+    when: 'state == "present"'
   rescue:
-  - name: "Assert cluster check failure is legal"
-    assert: 
-      that:
-        - state != "present"
-      fail_msg: "Cluster check failed when setting state to present, exiting"
-      success_msg: "Cluster check failed when setting state to absent, continuing"
+    - name: "Cluster check failed when setting state to present, exiting"
+      meta: end_play
 
 - name: "Generate final secret checksum"
   set_fact:

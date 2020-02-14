@@ -1,5 +1,5 @@
-IBM Spectrum Scale CSI Operator 
-===============================
+IBM Spectrum Scale CSI 
+======================
 
 Table of Contents
 -----------------
@@ -7,8 +7,8 @@ Table of Contents
 .. toctree::
    :maxdepth: 2
 
+   introduction/index.rst
    get-started/index.md
-   deployment/index.rst
    troubleshoot/index.md
    developers/index.rst
 
