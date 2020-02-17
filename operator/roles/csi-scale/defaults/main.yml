@@ -16,12 +16,11 @@ namespace: '{{ meta.namespace | default("default") }}'
 storage-class: "ibm-spectrum-scale-csi"
 
 # Image defaults
-attacher:    "quay.io/k8scsi/csi-attacher:v1.0.0"
-provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
-
+attacher:    "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('quay.io/k8scsi/csi-attacher:v1.0.0', true) }}"
+provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('quay.io/k8scsi/csi-provisioner:v1.0.0', true) }}"
 # Due to camelCase these get loaded differently in the operator.
-driverRegistrar: "{{ driver_registrar | default('quay.io/k8scsi/csi-node-driver-registrar:v1.0.1') }}"
-spectrumScale:   "{{ spectrum_scale   | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.0.1') }}"
+driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('quay.io/k8scsi/csi-node-driver-registrar:v1.0.1', true) }}"
+spectrumScale:   "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.0.1', true) }}"
 
 # Set defaults for the secret counter and hostpath.
 secretCounter: "{{ secret_counter |  default(-1) }}"
@@ -46,4 +45,3 @@ nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 # State of driver in the cluster (might not be needed).
 #state: absent
 state: present
-
