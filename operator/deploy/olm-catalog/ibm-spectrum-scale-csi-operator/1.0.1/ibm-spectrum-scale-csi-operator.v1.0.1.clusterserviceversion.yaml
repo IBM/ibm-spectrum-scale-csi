@@ -249,7 +249,7 @@ spec:
     \ ```\n\nCustom Resource Configuration\n-----------------------------\n\nThe bundled\
     \ Custom Resource example represents the minimum settings needed to run the operator.\n\
     If your environment needs more advanced settings (e.g. remote clusters, node mapping,\
-    \ etc.) please\nrefer to the sample [Custom Resource](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.1/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml).\n\
+    \ etc.) please\nrefer to the sample [Custom Resource](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.1/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml).\n\
     \n\n"
   displayName: IBM Spectrum Scale CSI Plugin Operator
   icon:
