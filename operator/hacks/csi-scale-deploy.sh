@@ -5,7 +5,7 @@ set -x
 
 if [[ $1 == "-b" ]]
 then
-    docker build . -t ibm-spectrum-scale-csi-operator
+    operator-sdk build . -t ibm-spectrum-scale-csi-operator
     shift
 
     export REPO="$(hostname -f):5000/"
