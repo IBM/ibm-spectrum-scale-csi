@@ -6,20 +6,27 @@ repository hosting the most up to date Cluster Service Version (CSV). There are 
 achieve this and they vary depending on your OLM experience being on raw k8s or Openshift.
 
 Through the CI/CD Pipeline two application registries are maintained:  
-  * `Master https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-master`_
-  * `Dev https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-dev`_
+
+* `Master https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-master`_
+* `Dev https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-dev`_
 
 These subscriptions maintain the latest iteration of the CSV on the dev and master branches respectively.
 To subscribe to these applicaions via OLM the repository provides three YAML files:
-  * `tools/olm/operator-source-openshift.yaml`
-    * Used for both applications on openshift.
-    * Created in the `openshift-marketplace` namespace.
-  * `tools/olm/operator-source-k8s-master.yaml`
-    * Used for OLM subscription to the master stream in raw k8s.
-    * Created in the `marketplace` namespace.
-  * `tools/olm/operator-source-k8s-dev.yaml`
-    * Used for OLM subscription to the master stream in raw k8s.
-    * Created in the `marketplace` namespace.
+
+`tools/olm/operator-source-openshift.yaml`
+
+* Used for both applications on openshift.
+* Created in the `openshift-marketplace` namespace.
+
+`tools/olm/operator-source-k8s-master.yaml`
+
+* Used for OLM subscription to the master stream in raw k8s.
+* Created in the `marketplace` namespace.
+
+`tools/olm/operator-source-k8s-dev.yaml`
+
+* Used for OLM subscription to the master stream in raw k8s.
+* Created in the `marketplace` namespace.
 
 This yaml files should be applied against your kubernetes or openshift cluster:
 
