@@ -21,7 +21,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 1.0.1
+        productVersion: 1.1.0
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -42,7 +42,7 @@ spec:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -76,7 +76,7 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.0.1
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -227,7 +227,7 @@ metadata:
   namespace: ibm-spectrum-scale-csi-driver
 # END deploy/service_account.yaml
 ---
-# BEGIN deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+# BEGIN deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -408,5 +408,5 @@ spec:
   - name: v1
     served: true
     storage: true
-# END deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+# END deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
 ---

@@ -16,7 +16,7 @@ OpenShift
     .. image:: images/operatorhub-custom-resource.png
         :alt: IBM Spectrum Scale CSI Operator Tabs
 
-   For a complete sample of valid CR options, see `ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_
+   For a complete sample of valid CR options, see `csiscaleoperators.csi.ibm.com.cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml>`_
 
 Kubernetes
 ----------
