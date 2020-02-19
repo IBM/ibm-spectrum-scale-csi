@@ -34,8 +34,8 @@ rules:
   - nodes
   verbs:
   - get
-  - list
   - watch
+  - list
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -45,3 +45,13 @@ rules:
   - list
   - watch
   - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csinodes
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - watch
