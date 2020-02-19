@@ -1,58 +1,63 @@
+OLM
+===
+
 Using Test Versions of CSV
 --------------------------
 
 Due to the nature of Operator Lifecycle Manager (OLM) it is necessary to maintain an application 
-repository hosting the most up to date Cluster Service Version (CSV). There are a number of ways to 
-achieve this and they vary depending on your OLM experience being on raw k8s or Openshift.
+repository to host the most up to date Cluster Service Version (CSV). To assist, two application registries 
+are maintained by the development team:  
 
-Through the CI/CD Pipeline two application registries are maintained:  
+* `Master - https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-master <https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-master>`_
+* `Dev - https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-dev <https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-dev>`_
 
-* `Master https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-master`_
-* `Dev https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-dev`_
+These subscriptions maintain the latest iteration of the CSV on the `dev <https://github.com/IBM/ibm-spectrum-scale-csi/tree/dev>`_ and `master <https://github.com/IBM/ibm-spectrum-scale-csi/tree/master>`_ branches respectively.
+To subscribe to these applicaions via OLM, the code repository provides three YAML files:
 
-These subscriptions maintain the latest iteration of the CSV on the dev and master branches respectively.
-To subscribe to these applicaions via OLM the repository provides three YAML files:
+``tools/olm/operator-source-openshift.yaml``
 
-`tools/olm/operator-source-openshift.yaml`
-
-* Used for both applications on openshift.
+* Used for both applications on OpenShift.
 * Created in the `openshift-marketplace` namespace.
 
-`tools/olm/operator-source-k8s-master.yaml`
+``tools/olm/operator-source-k8s-master.yaml``
 
 * Used for OLM subscription to the master stream in raw k8s.
 * Created in the `marketplace` namespace.
 
-`tools/olm/operator-source-k8s-dev.yaml`
+``tools/olm/operator-source-k8s-dev.yaml``
 
 * Used for OLM subscription to the master stream in raw k8s.
 * Created in the `marketplace` namespace.
 
-This yaml files should be applied against your kubernetes or openshift cluster:
+This yaml files should be applied against your Kubernetes or OpenShift cluster:
 
 .. code-block:: bash
   
-    kubectl apply  -f  <operator-source-file.yaml>
+    kubectl apply -f <operator-source-____.yaml>
 
+.. note:: For OpenShift environments, replace ``kubectl`` with  ``oc``
 
 Testing an in development CSV
 -----------------------------
 
 While modifying a CSV it is conceivable that a developer would want to test their CSV in a local environment.
-One method for achieving this is to host the CSV on `quay.io`_.
+One method for achieving this is to host the CSV on `quay.io <https://quay.io>`_.
 
-1. Create a new `Application Repository` in quay on`https://quay.io/new/`_.
+1. Create a new `Application Repository` in `quay.io/new <https://quay.io/new/>`_.
+
 .. tip:: Save the name of this repository, because you'll need it in the next steps.
 
 2. Install helm and helm registry:
-.. code-block::  bash
+
+  .. code-block::  bash
     
     curl -L https://git.io/get_helm.sh | bash
     helm init
     cd ~/.helm/plugins/ && git clone https://github.com/app-registry/appr-helm-plugin.git registry
 
 3. Create a helm project for your application and push it to quay:
-.. code-block::  bash
+
+  .. code-block::  bash
   
     # Set your variables
     REPO_NAME="<Your Repo Name>"
@@ -70,7 +75,8 @@ One method for achieving this is to host the CSV on `quay.io`_.
     helm registry push --namespace ${QUAY_USER} --channel ${CHANNEL_NAME} quay.io
 
 4. Using the helper script, sync the latest csv.
-.. code-block:: bash
+
+  .. code-block:: bash
     
     # Assumed to be relative to this repositories root.
     export OPERATOR_DIR="operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator"
@@ -81,11 +87,10 @@ One method for achieving this is to host the CSV on `quay.io`_.
 
     tools/scripts/push_app.sh
 
-At this point your application is  ready to be subscribed to. Use the following templates for 
-k8s and openshift respectively.
+At this point your application is ready to be subscribed to.  Use the following templates for k8s and OpenShift respectively.
 
-k8s subscription template
-+++++++++++++++++++++++++
+Kubernetes subscription template
+++++++++++++++++++++++++++++++++
 
 .. code-block:: yaml
 
@@ -135,8 +140,7 @@ k8s subscription template
     source: {{ REPO_NAME }}
     sourceNamespace: marketplace 
 
-
-openshift subscription template
+OpenShift subscription template
 +++++++++++++++++++++++++++++++
 
 .. code-block:: yaml
@@ -152,4 +156,3 @@ openshift subscription template
     registryNamespace:  {{ QUAY_USER }}
     displayName: "CSI Scale Operator"
     publisher: "IBM"
-
