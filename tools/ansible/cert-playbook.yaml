@@ -8,8 +8,8 @@
     OPERATOR_DIR: ../../operator/
     OP_PKG: ibm-spectrum-scale-csi-operator-app.zip
     ADDITIONAL_RESOURCES: ["service_account.yaml", "role_binding.yaml"]
-    CRD_LIST: ["ibm-spectrum-scale-csi-operator-crd.yaml"]
-    CR_LIST: ["ibm-spectrum-scale-csi-operator-cr.yaml"]
+    CRD_LIST: ["csiscaleoperators.csi.ibm.com.crd.yaml"]
+    CR_LIST: ["csiscaleoperators.csi.ibm.com.cr.yaml"]
     SC_VARS: "--config .osdk-scorecard.yaml"
 
   tasks:
