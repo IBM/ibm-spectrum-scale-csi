@@ -36,7 +36,8 @@ spec:
               - key: beta.kubernetes.io/arch
                 operator: Exists
       containers:
-      - command:
+      - name: ansible
+        command:
         - /usr/local/bin/ao-logs
         - /tmp/ansible-operator/runner
         - stdout
@@ -48,7 +49,6 @@ spec:
             - ./health_check.sh
           initialDelaySeconds: 10
           periodSeconds: 30
-        name: ansible
         readinessProbe:
           exec:
             command:
@@ -63,7 +63,11 @@ spec:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
           readOnly: true
-      - env:
+        env:
+        - name: CSI_DRIVER_IMAGE
+          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0 
+      - name: operator
+        env:
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
@@ -74,6 +78,8 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: ibm-spectrum-scale-csi-operator
+        - name: CSI_DRIVER_IMAGE
+          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0 
         image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
