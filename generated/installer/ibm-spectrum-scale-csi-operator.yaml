@@ -34,74 +34,76 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: beta.kubernetes.io/arch
-                operator: Exists
+              - matchExpressions:
+                  - key: beta.kubernetes.io/arch
+                    operator: Exists
       containers:
-      - command:
-        - /usr/local/bin/ao-logs
-        - /tmp/ansible-operator/runner
-        - stdout
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        name: ansible
-        readinessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 3
-          periodSeconds: 1
-        securityContext:
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - mountPath: /tmp/ansible-operator/runner
-          name: runner
-          readOnly: true
-      - env:
-        - name: WATCH_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: OPERATOR_NAME
-          value: ibm-spectrum-scale-csi-operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        name: operator
-        readinessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 3
-          periodSeconds: 1
-        securityContext:
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - mountPath: /tmp/ansible-operator/runner
-          name: runner
+        - command:
+            - /usr/local/bin/ao-logs
+            - /tmp/ansible-operator/runner
+            - stdout
+          image:
+            - quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+                - ./health_check.sh
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          name: ansible
+          readinessProbe:
+            exec:
+              command:
+                - ./health_check.sh
+            initialDelaySeconds: 3
+            periodSeconds: 1
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
+              readOnly: true
+        - env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: ibm-spectrum-scale-csi-operator
+          image:
+            - quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+                - ./health_check.sh
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          name: operator
+          readinessProbe:
+            exec:
+              command:
+                - ./health_check.sh
+            initialDelaySeconds: 3
+            periodSeconds: 1
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
       serviceAccountName: ibm-spectrum-scale-csi-operator
       volumes:
-      - emptyDir: {}
-        name: runner
+        - emptyDir: {}
+          name: runner
 # END deploy/operator.yaml
 ---
 # BEGIN deploy/role.yaml
@@ -118,77 +120,77 @@ metadata:
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
 rules:
-- apiGroups:
-  - ''
-  resources:
-  - pods
-  - persistentvolumeclaims
-  - services
-  - endpoints
-  - events
-  - configmaps
-  - secrets
-  - secrets/status
-  - services/finalizers
-  - serviceaccounts
-  verbs:
-  - '*'
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  verbs:
-  - '*'
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - '*'
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
-  - servicemonitors
-  verbs:
-  - get
-  - create
-- apiGroups:
-  - apps
-  resourceNames:
-  - ibm-spectrum-scale-csi-operator
-  resources:
-  - deployments/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - get
-- apiGroups:
-  - csi.ibm.com
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
-  - security.openshift.io
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - '*'
-- apiGroups:
-  - storage.k8s.io
-  resources:
-  - volumeattachments
-  - storageclasses
-  verbs:
-  - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - persistentvolumeclaims
+      - services
+      - endpoints
+      - events
+      - configmaps
+      - secrets
+      - secrets/status
+      - services/finalizers
+      - serviceaccounts
+    verbs:
+      - "*"
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - clusterrolebindings
+    verbs:
+      - "*"
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - daemonsets
+      - replicasets
+      - statefulsets
+    verbs:
+      - "*"
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - get
+      - create
+  - apiGroups:
+      - apps
+    resourceNames:
+      - ibm-spectrum-scale-csi-operator
+    resources:
+      - deployments/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - apps
+    resources:
+      - replicasets
+    verbs:
+      - get
+  - apiGroups:
+      - csi.ibm.com
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  - apiGroups:
+      - security.openshift.io
+    resources:
+      - securitycontextconstraints
+    verbs:
+      - "*"
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - volumeattachments
+      - storageclasses
+    verbs:
+      - "*"
 # END deploy/role.yaml
 ---
 # BEGIN deploy/role_binding.yaml
@@ -208,9 +210,9 @@ roleRef:
   kind: ClusterRole
   name: ibm-spectrum-scale-csi-operator
 subjects:
-- kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
+  - kind: ServiceAccount
+    name: ibm-spectrum-scale-csi-operator
+    namespace: ibm-spectrum-scale-csi-driver
 # END deploy/role_binding.yaml
 ---
 # BEGIN deploy/service_account.yaml
@@ -251,14 +253,16 @@ spec:
     openAPIV3Schema:
       properties:
         apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
+          description:
+            "APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources"
           type: string
         kind:
-          description: 'Kind is a string value representing the REST resource this
+          description:
+            "Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds"
           type: string
         metadata:
           type: object
@@ -280,7 +284,8 @@ spec:
                 type: object
               type: array
             clusters:
-              description: A collection of gpfs cluster properties for the csi driver
+              description:
+                A collection of gpfs cluster properties for the csi driver
                 to mount.
               items:
                 properties:
@@ -329,10 +334,11 @@ spec:
                     type: boolean
                 type: object
               required:
-              - id
+                - id
               type: array
             driverRegistrar:
-              description: Sidecar container image for the csi spectrum scale plugin
+              description:
+                Sidecar container image for the csi spectrum scale plugin
                 pods.
               type: string
             nodeMapping:
@@ -378,7 +384,8 @@ spec:
               description: The path to the gpfs file system mounted on the host machine.
               type: string
             secretCounter:
-              description: An internal counter used by the operator to trigger reloads
+              description:
+                An internal counter used by the operator to trigger reloads
                 on secret change.
               type: integer
             trigger:
@@ -388,7 +395,7 @@ spec:
               description: Image name for the csi spectrum scale plugin container.
               type: string
           required:
-          - scaleHostpath
+            - scaleHostpath
           type: object
         status:
           properties:
@@ -405,8 +412,8 @@ spec:
       type: object
   version: v1
   versions:
-  - name: v1
-    served: true
-    storage: true
+    - name: v1
+      served: true
+      storage: true
 # END deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
 ---
