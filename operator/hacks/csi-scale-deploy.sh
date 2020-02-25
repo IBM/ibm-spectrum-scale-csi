@@ -5,7 +5,7 @@ set -x
 
 if [[ $1 == "-b" ]]
 then
-    docker build . -t ibm-spectrum-scale-csi-operator
+    operator-sdk build . -t ibm-spectrum-scale-csi-operator
     shift
 
     export REPO="$(hostname -f):5000/"
@@ -25,6 +25,6 @@ kubectl apply -f deploy/namespace.yaml
 kubectl apply -f deploy/role.yaml
 kubectl apply -f deploy/service_account.yaml
 kubectl apply -f deploy/role_binding.yaml
-kubectl apply -f deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+kubectl apply -f deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
 kubectl apply -f deploy/operator.yaml
 

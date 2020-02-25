@@ -20,7 +20,7 @@ metadata:
 spec:
   type: appregistry
   endpoint: https://quay.io/cnr
-  registryNamespace: mew2057
+  registryNamespace:  ibm-spectrum-scale-dev
 
 ---
 apiVersion: operators.coreos.com/v1alpha2
@@ -40,7 +40,7 @@ metadata:
   namespace: marketplace
 spec:
   channel: stable
-  name: ibm-spectrum-scale-csi
-  source: ibm-spectrum-scale-csi
+  name: ibm-spectrum-scale-csi-master
+  source: ibm-spectrum-scale-csi-master
   sourceNamespace: marketplace
 

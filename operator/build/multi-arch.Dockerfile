@@ -1,4 +1,7 @@
-FROM quay.io/operator-framework/ansible-operator:master
+# Multi-arch build for IBM Spectrum Scale CSI Operator
+# usage: docker buildx build --platform=linux/amd64 -t my_image_tag .
+
+FROM quay.io/mew2057/ansible-operator:$TARGETARCH
 MAINTAINER jdunham@us.ibm.com
 
 ARG CSI_ATTACHER_IMAGE
