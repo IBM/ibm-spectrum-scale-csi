@@ -89,4 +89,3 @@ spec:
 #  nodeMapping:
 #    - k8sNode: "< K8s Node Name >"
 #      spectrumscaleNode: "< SpectrumScale Node Name >"
-

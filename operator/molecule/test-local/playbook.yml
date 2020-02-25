@@ -4,7 +4,7 @@
   vars:
     image_name: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
   tasks:
-  # using command so we don't need to install any dependencies
+    # using command so we don't need to install any dependencies
     - name: Get existing image hash
       command: docker images -q {{ image_name }}
       register: prev_hash
