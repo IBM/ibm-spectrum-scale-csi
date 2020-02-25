@@ -1,3 +1,4 @@
+---
 galaxy_info:
   author: John Dunham
   description: An operator for managing and deploying Scale CSI drivers.
