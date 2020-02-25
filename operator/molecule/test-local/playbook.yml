@@ -5,19 +5,20 @@
     image_name: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
   tasks:
   # using command so we don't need to install any dependencies
-  - name: Get existing image hash
-    command: docker images -q {{ image_name }}
-    register: prev_hash
-    changed_when: false
+    - name: Get existing image hash
+      command: docker images -q {{ image_name }}
+      register: prev_hash
+      changed_when: false
 
-  - name: Check if CI
-    set_fact:
-      CI: lookup('env', 'CI')
+    - name: Check if CI
+      set_fact:
+        CI: lookup('env', 'CI')
 
-  - name: Build Operator Image
-    command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
-    register: build_cmd
-    changed_when: not prev_hash.stdout or (prev_hash.stdout and prev_hash.stdout not in ''.join(build_cmd.stdout_lines[-2:]))
+    - name: Build Operator Image
+      command: docker build -f /build/build/Dockerfile -t {{ image_name }} /build
+      register: build_cmd
+      changed_when: not prev_hash.stdout or 
+        (prev_hash.stdout and prev_hash.stdout not in ''.join(build_cmd.stdout_lines[-2:]))
 
 - name: Converge
   hosts: localhost
@@ -27,7 +28,8 @@
     deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
     pull_policy: Never
     REPLACE_IMAGE: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
-    custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com.cr.yaml'])) | from_yaml }}"
+    custom_resource:
+      - "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com.cr.yaml'])) | from_yaml }}"
   tasks:
   - block:
     - name: Delete the Operator Deployment
@@ -60,7 +62,7 @@
     - name: Create the operator secret
       k8s:
         state:  present
-        definition: 
+        definition:
           apiVersion: "v1"
           kind:  "Secret"
           metadata:
@@ -172,5 +174,3 @@
   - include_tasks: '{{ playbook_dir }}/../default/tests/basic_tests.yaml'
 
 - import_playbook: '{{ playbook_dir }}/../default/asserts.yml'
-
-

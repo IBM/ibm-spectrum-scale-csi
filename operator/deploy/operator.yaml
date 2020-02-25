@@ -40,7 +40,8 @@ spec:
             - /usr/local/bin/ao-logs
             - /tmp/ansible-operator/runner
             - stdout
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
+          image:
+            - quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
@@ -74,7 +75,8 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: ibm-spectrum-scale-csi-operator
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
+          image:
+            - quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:

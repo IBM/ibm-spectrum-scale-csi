@@ -7,13 +7,13 @@
   tasks:
     - name: delete the kubeconfig if present
       file:
-        path: '{{ kubeconfig }}'
+        path: "{{ kubeconfig }}"
         state: absent
       delegate_to: localhost
 
     - name: Fetch the kubeconfig
       fetch:
-        dest: '{{ kubeconfig }}'
+        dest: "{{ kubeconfig }}"
         flat: yes
         src: /root/.kube/config
 
@@ -21,7 +21,7 @@
       replace:
         regexp: "8443"
         replace: "{{ lookup('env', 'KIND_PORT') }}"
-        path: '{{ kubeconfig }}'
+        path: "{{ kubeconfig }}"
       delegate_to: localhost
 
     - name: Wait for the Kubernetes API to become available (this could take a minute)
@@ -33,6 +33,3 @@
       until: (result.status|default(-1)) == 200
       retries: 60
       delay: 5
-
-
-  

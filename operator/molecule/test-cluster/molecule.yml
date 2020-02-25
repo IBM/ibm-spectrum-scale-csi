@@ -12,9 +12,9 @@ lint: |
   ansible-lint
   flake8
 platforms:
-- name: test-cluster
-  groups:
-  - k8s
+  - name: test-cluster
+    groups:
+      - k8s
 provisioner:
   name: ansible
   inventory:

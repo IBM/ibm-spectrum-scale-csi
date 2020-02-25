@@ -13,12 +13,10 @@ galaxy_info:
       versions:
         - all
 
-
-  galaxy_tags: 
+  galaxy_tags:
     - kubernetes
     - k8s
     - openshift
     - CSI
 
 dependencies: []
-  
