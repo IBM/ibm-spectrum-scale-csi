@@ -41,15 +41,15 @@ spec:
 
 # Attacher image name, in case we do not want to use default image.
 # ==================================================================================
-#  attacher: "quay.io/k8scsi/csi-attacher:v1.0.0"
+#  attacher: "quay.io/k8scsi/csi-attacher:v2.1.1"
 
 # Provisioner image name, in case we do not want to use default image.
 # ==================================================================================
-#  provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
+#  provisioner: "quay.io/k8scsi/csi-provisioner:v1.5.0"
 
 # Driver Registrar image name, in case we do not want to use default image.
 # ==================================================================================
-#  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.0.1'"
+#  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.2.0"
 
 # SpectrumScale CSI Plugin image name, in case we do not want to use default image.
 # ==================================================================================
