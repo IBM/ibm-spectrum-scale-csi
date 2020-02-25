@@ -18,7 +18,7 @@
         kind: Namespace
         name: "{{ namespace }}"
 
-    #- name: Modify the RoleBinding for this namespace
+    # - name: Modify the RoleBinding for this namespace
     #  replace:
     #    path:  "{{ '/'.join([deploy_dir, 'role_binding.yaml']) }}"
     #    regexp: "(.*)ibm-spectrum-scale-csi-driver(.*)"

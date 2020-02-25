@@ -8,7 +8,7 @@
 
 - when: results is not defined or results.resources is not defined or (results.resources|length==0)
   block:
-    #- name: "Cluster check failed, exiting"
+    # - name: "Cluster check failed, exiting"
     #  operator_sdk.util.k8s_status:
     #    kind: CSIScaleOperator
     #    name: "{{ meta.name }}"

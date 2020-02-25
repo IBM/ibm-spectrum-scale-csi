@@ -1,3 +1,4 @@
+---
 scorecard:
   init-timeout: 120
   output: json

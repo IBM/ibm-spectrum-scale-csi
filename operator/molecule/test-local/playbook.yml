@@ -73,8 +73,8 @@
           labels:
             app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
       vars:
-        secret_pass: "cGFzc3dvcMq=" # "password"
-        secret_user: "dXNlcm5hbwu=" # "username"
+        secret_pass: "cGFzc3dvcMq="  # "password"
+        secret_user: "dXNlcm5hbwu="  # "username"
         secret_name: "secret1"
 
     - name: Create the csi.ibm.com/v1.CSIScaleOperator

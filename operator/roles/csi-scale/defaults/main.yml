@@ -25,7 +25,7 @@ secretCounter: "{{ secret_counter |  default(-1) }}"
 scaleHostpath: "{{ scale_hostpath | default('/') }}"
 
 # This needs a default for molecule, also the clusters version does weird stuff to the object?
-#clusters: []
+# clusters: []
 clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperator.spec.clusters | default([])}}"
 
 # Node Selector for Attacher sidecar.
@@ -41,5 +41,4 @@ pluginNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.pluginNodeSelector | 
 nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 
 # State of driver in the cluster (might not be needed).
-#state: absent
 state: present

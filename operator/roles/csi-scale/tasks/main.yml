@@ -1,5 +1,5 @@
 ---
-#- debug:
+# - debug:
 #    msg:
 #      - "scaleHostpath - {{ scaleHostpath }}"
 #      - "secretCounter - {{ secretCounter }}"
@@ -87,7 +87,7 @@
 - name: "Handle csi-scale objects"
   include_tasks: template_applicator.yml
   loop: "{{ deploy_list }}"
-#- name: "Set isRunning - true"
+# - name: "Set isRunning - true"
 #  when:  (state == "present")
 #  operator_sdk.util.k8s_status:
 #    kind: CSIScaleOperator
@@ -96,4 +96,4 @@
 #    status:
 #      conditions:
 #        - isRunning: true
-#
+
