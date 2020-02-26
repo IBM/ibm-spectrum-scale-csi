@@ -15,7 +15,7 @@ spec:
     listKind: CSIScaleOperatorList
     plural: csiscaleoperators
     singular: csiscaleoperator
-  scope: Namespacedß
+  scope: Namespaced
   subresources:
     status: {}
   validation:
