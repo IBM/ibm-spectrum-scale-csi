@@ -1,10 +1,9 @@
 ---
-
 - name: Change deploy image
   hosts: localhost
-  vars: 
-     image_pull_policy: "IfNotPresent"
-     operator_yaml: "{{ lookup('env','PWD') }}/deploy/operator.yaml"
+  vars:
+    image_pull_policy: "IfNotPresent"
+    operator_yaml: "{{ lookup('env','PWD') }}/deploy/operator.yaml"
 
   tasks:
     - name: "Modify the imagePullPolicy to: {{ image_pull_policy }}"
