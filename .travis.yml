@@ -190,11 +190,11 @@ jobs:
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD" && -n "$QUAY_APP"
 
     # stage: build
-    # - name: "Build - Operator: docs"
-    #   script:
-    #     - pip install sphinx sphinx_rtd_theme recommonmark 
-    #     - cd ${TRAVIS_BUILD_DIR}/docs
-    #     - make html
+    - name: "Build - Operator: docs"
+      script:
+        - pip install sphinx sphinx_rtd_theme recommonmark 
+        - cd ${TRAVIS_BUILD_DIR}/docs
+        - make html
     # end stage: build
 
 
