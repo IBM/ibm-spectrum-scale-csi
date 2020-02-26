@@ -212,7 +212,7 @@ jobs:
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script:        
         # molecule
-        - python hacks/change_deploy_image.py -i ${OPERATOR_LOCAL_IMAGE} --ifnotpresent
+        - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
         # sc
