@@ -4,8 +4,8 @@ metadata:
   annotations:
     kubernetes.io/description: allow hostpath and host network to be accessible
   generation: 1
-  name: csiaccess
-  selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/csiaccess
+  name: spectrum-scale-csiaccess
+  selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/spectrum-scale-csiaccess
 readOnlyRootFilesystem: false
 requiredDropCapabilities:
 - KILL
@@ -37,8 +37,6 @@ allowedCapabilities: []
 defaultAddCapabilities: null
 fsGroup:
   type: MustRunAs
-groups:
-- system:authenticated
 {% if csiaccess_users|length > 0 %}
 users:
 {% for user in csiaccess_users %}
