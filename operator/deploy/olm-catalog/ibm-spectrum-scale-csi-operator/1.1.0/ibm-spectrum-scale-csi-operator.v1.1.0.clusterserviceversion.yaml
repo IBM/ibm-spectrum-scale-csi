@@ -243,8 +243,9 @@ spec:
   description:
     "\nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster
     providing a means to \ndeploy and manage the CSI plugin for spectrum scale. For
-    more in depth documentation please refer\nto the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.1.0/README.md).\n\nThis
-    operator should be used to deploy the CSI plugin.\n\nThe configuration process
+    more in depth documentation please refer\nto the [github repository](https://github.com/IBM/ibm-spectrum-scale-csi) 
+    which has links to official documentation.\n\nThis operator should be used to deploy 
+    the CSI plugin.\n\nThe configuration process
     is as follows:\n\n1. [Spectrum Scale GUI Setup](#spectrum-scale-gui-setup)\n2.
     [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum Scale
     GUI Setup \n------------------------\n> **NOTE:** This step only needs to be preformed
