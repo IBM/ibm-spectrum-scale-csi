@@ -15,5 +15,5 @@
     - name: "Modify the operator image to {{ quay_operator_endpoint }}"
       replace:
         path: "{{ operator_yaml }}"
-        regexp: '^(\s+)- quay.io(.*)'
-        replace: "\\1- {{ quay_operator_endpoint }}"
+        regexp: '^(\s+)image: quay.io(.*)'
+        replace: "\\1image: {{ quay_operator_endpoint }}"
