@@ -28,32 +28,6 @@
   with_items:
     - "{{ operator_files }}"
 
-- name: "Use lineinfile to add a unique tag between the markers from block in file"
-  lineinfile:
-    dest: "{{ generated_op_yaml }}"
-    insertafter: '\# END {{ item.name }}'
-    state: present
-    line: "REPLACE_WITH_DASHES {{ item.name }}"
-  with_items: 
-    - "{{ operator_files }}"
-
-- name: "Replace all of the REPLACE_WITH_DASHS to be ---, to correctly separate the blocks"
-  replace:
-    path: "{{ generated_op_yaml }}"
-    regexp: 'REPLACE_WITH_DASHES.*'
-    replace: '---'
-
-- name: "Copy generated file to dev file"
-  copy:
-    src: "{{ generated_op_yaml }}"
-    dest: "{{ generated_op_dev_yaml }}"
-
-- name: "Replace  ibm-spectrum-scale/ with ibm-spectrum-scale-dev/"
-  replace:
-    path:  "{{ generated_op_dev_yaml }}"
-    regexp: "ibm-spectrum-scale/"
-    replace: "ibm-spectrum-scale-dev/"
-
 - name: copy over the files that are not modified
   copy:
     src: "{{ operator_dir }}/{{ item }}"

@@ -1,14 +1,14 @@
---- 
+---
 - name: "Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}"
   k8s_info:
     kind: secrets
     namespace: "{{ lookup( 'vars','namespace' ) }}"
-    name : "{{ item.secrets }}"
+    name: "{{ item.secrets }}"
   register: results
 
 - when: results is not defined or results.resources is not defined or (results.resources|length==0)
   block:
-    #- name: "Cluster check failed, exiting"
+    # - name: "Cluster check failed, exiting"
     #  operator_sdk.util.k8s_status:
     #    kind: CSIScaleOperator
     #    name: "{{ meta.name }}"
@@ -25,22 +25,9 @@
   when: item.metadata.labels is not defined or
     item.metadata.labels["app.kubernetes.io/name"] is not defined or
     item.metadata.labels["app.kubernetes.io/name"] != "ibm-spectrum-scale-csi-operator"
-  loop:  "{{ results.resources }}"
+  loop: "{{ results.resources }}"
 
-# Hash using a salted 
+# Hash using a salted
 - name: "Build Secret Checksum"
-  set_fact: 
+  set_fact:
     secret_checksums: "{{ secret_checksums +  [ (results.resources[0].data | default(' ')) | to_json | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) ] }}"
-
-
-#- name: "Get data from the cluster id."
-#  uri: 
-#  user: results.resources[0].data.username
-#  password: results.resources[0].data.password
-#  headers:
-#    content-type: application/json
-#    accept: application/json
-  
-
-
-
