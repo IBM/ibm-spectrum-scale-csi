@@ -11,6 +11,5 @@ scorecard:
         namespace: "ibm-spectrum-scale-csi-driver"
         cr-manifest:
           - "deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml"
-        csv-path:
-          - "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/1.1.0/ibm-spectrum-scale-csi-operator.v1.1.0.clusterserviceversion.yaml"
+        csv-path: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/1.1.0/ibm-spectrum-scale-csi-operator.v1.1.0.clusterserviceversion.yaml"
 # TODO add custom test.
