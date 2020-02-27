@@ -1,3 +1,4 @@
+---
 - name: Run tests
   hosts: all
   become: yes
@@ -6,13 +7,11 @@
   vars:
     custom_resource:
       apiVersion: csi.ibm.com/v1
-      kind:       CSIScaleOperator
+      kind: CSIScaleOperator
       metadata:
         name: "ibm-spectrum-scale-csi"
     namespace: ibm-spectrum-scale-csi-driver
 
-
   tasks:
-    
     - name: Run tests
       include_tasks: ../default/tests/basic_tests.yaml
