@@ -66,8 +66,7 @@ spec:
               readOnly: true
           env:
             - name: CSI_DRIVER_IMAGE
-              value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0 
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
+              value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0
         - env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -80,7 +79,7 @@ spec:
             - name: OPERATOR_NAME
               value: ibm-spectrum-scale-csi-operator
             - name: CSI_DRIVER_IMAGE
-              value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0 
+              value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0
           image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
