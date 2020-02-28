@@ -39,10 +39,6 @@ spec:
       serviceAccount: "{{ productName }}-attacher"
       containers:
         - name: "{{ opName }}-attacher"
-{% if 'apps.openshift.io' in api_groups %}
-          securityContext:
-            privileged: true
-{% endif %}
           image: "{{ attacher }}"
           args:
             - "--v=5"
