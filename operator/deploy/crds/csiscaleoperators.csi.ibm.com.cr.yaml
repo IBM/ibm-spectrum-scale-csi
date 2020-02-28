@@ -1,22 +1,23 @@
+---
 apiVersion: csi.ibm.com/v1
-kind: 'CSIScaleOperator'
+kind: "CSIScaleOperator"
 metadata:
-    name: 'ibm-spectrum-scale-csi'
-    namespace: 'ibm-spectrum-scale-csi-driver'
-    labels:
-      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-      app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-      app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-      release: ibm-spectrum-scale-csi-operator
+  name: "ibm-spectrum-scale-csi"
+  namespace: "ibm-spectrum-scale-csi-driver"
+  labels:
+    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+    release: ibm-spectrum-scale-csi-operator
 status: {}
 spec:
-# The path to the GPFS file system mounted on the host machine. 
-# ==================================================================================
+  # The path to the GPFS file system mounted on the host machine.
+  # ==================================================================================
   scaleHostpath: "< GPFS FileSystem Path >"
 
-# Below specifies the details of a SpectrumScale cluster configuration used by the 
-# plugin. It can have multiple values. 
-# ==================================================================================
+  # Below specifies the details of a SpectrumScale cluster configuration used by the
+  # plugin. It can have multiple values.
+  # ==================================================================================
   clusters:
     - id: "< Primary Cluster ID - WARNING - THIS IS A STRING NEEDS YAML QUOTES! >"
       secrets: "secret1"
@@ -24,19 +25,19 @@ spec:
       primary:
         primaryFs: "< Primary Filesystem >"
         primaryFset: "< Fileset in Primary Filesystem >"
-#        inodeLimit: "< node limit for Primary Fileset >" # Optional
-#        remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
-#        remoteFs: "< Remote Filesystem >"                # Optional
-#      cacert: "< CA cert configmap for GUI >"            # Optional
-      restApi: 
-      - guiHost: "< Primary cluster GUI IP/Hostname >" 
+      #        inodeLimit: "< node limit for Primary Fileset >" # Optional
+      #        remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
+      #        remoteFs: "< Remote Filesystem >"                # Optional
+      #      cacert: "< CA cert configmap for GUI >"            # Optional
+      restApi:
+        - guiHost: "< Primary cluster GUI IP/Hostname >"
 #
 # In the case we have multiple clusters, specify their configuration below.
 # ==================================================================================
 #    - id: "< Cluster ID >"
 #      secrets: "< Secret for Cluster >"
 #      secureSslMode: false
-#      restApi: 
+#      restApi:
 #      - guiHost: "< Cluster GUI IP/Hostname >"
 
 # Attacher image name, in case we do not want to use default image.
@@ -89,5 +90,3 @@ spec:
 #  nodeMapping:
 #    - k8sNode: "< K8s Node Name >"
 #      spectrumscaleNode: "< SpectrumScale Node Name >"
-
-

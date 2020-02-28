@@ -40,7 +40,6 @@
       - deploy/operator.yaml
       - .osdk-scorecard.yaml
       - hacks/package_operator.py
-      - hacks/change_deploy_image.py
       - hacks/csv_copy_cr.py
       - hacks/csv_copy_crd_descriptions.py
       - hacks/csv_copy_docs.py
