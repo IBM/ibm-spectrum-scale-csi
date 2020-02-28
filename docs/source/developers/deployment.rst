@@ -48,7 +48,7 @@ Once you have a repository ready:
   # OPERATOR_DIR has been defined in previous steps
   cd ${OPERATOR_DIR}
   # Use a helper script to update your deployment to point at your operator image
-  hacks/change_deploy_image.py -i quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}
+  ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}"
   
 
 Installing the CSI Operator
