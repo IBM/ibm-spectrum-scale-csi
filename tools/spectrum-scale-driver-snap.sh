@@ -72,8 +72,11 @@ fi
 out=$($cmd -n $ns describe StatefulSet ibm-spectrum-scale-csi-attacher 2>&1 | grep 'Namespace' | awk 'BEGIN { FS="[[:space:]]+" } ; { print $2 }')
 if [[ $out != $ns ]]
 then
-  echo "ibm-spectrum-scale-csi is not running in namespace $ns. Please provide a valid namespace"
-  exit 1
+  operator=`$cmd get deployment -l product=ibm-spectrum-scale-csi --namespace $ns  |grep -v NAME |awk '{print $1}'`
+  if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
+        echo "ibm-spectrum-scale-csi driver and operator is not running in namespace $ns. Please provide a valid namespace"
+        exit 1
+   fi
 fi
 
 time=`date +"%m-%d-%Y-%T"`
