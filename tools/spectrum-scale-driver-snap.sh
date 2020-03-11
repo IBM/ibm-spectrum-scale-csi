@@ -16,7 +16,7 @@
 #
 #USAGE spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
 
-ns="default"
+ns="ibm-spectrum-scale-csi-driver"
 node=""
 outdir="."
 cmd="kubectl"
