@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ###############################################################################
 # Licensed Materials - Property of IBM.
 # Copyright IBM Corporation 2017. All Rights Reserved.
@@ -50,7 +49,7 @@ NAME=ibm-spectrum-scale-csi
 
 .PHONY: all $NAME
 
-IMAGE_VERSION=v1.0.1
+IMAGE_VERSION=v1.1.0
 IMAGE_NAME=$(NAME)
 
 all: $NAME

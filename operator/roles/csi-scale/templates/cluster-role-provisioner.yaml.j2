@@ -45,6 +45,23 @@ rules:
   - list
   - watch
 - apiGroups:
+  - storage.k8s.io
+  resources:
+  - csinodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+
+- apiGroups:
   - ''
   resources:
   - events
