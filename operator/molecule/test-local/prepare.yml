@@ -5,32 +5,31 @@
   hosts: localhost
   connection: local
   vars:
-    ansible_python_interpreter: '{{ ansible_playbook_python }}'
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
     deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
   tasks:
-  - name: Create Custom Resource Definition
-    k8s:
-      definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/ibm-spectrum-scale-csi-operator-crd.yaml'])) }}"
+    - name: Create Custom Resource Definition
+      k8s:
+        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com.crd.yaml'])) }}"
 
-  - name: Ensure specified namespace is present
-    k8s:
-      api_version: v1
-      kind: Namespace
-      name: '{{ namespace }}'
+    - name: Ensure specified namespace is present
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ namespace }}"
 
-  #- name: Modify the RoleBinding for this namespace
-  #  replace:
-  #    path:  "{{ '/'.join([deploy_dir, 'role_binding.yaml']) }}"
-  #    regexp: "(.*)ibm-spectrum-scale-csi-driver(.*)"
-  #    replace: '\1{{ namespace }}\2'
+    # - name: Modify the RoleBinding for this namespace
+    #  replace:
+    #    path:  "{{ '/'.join([deploy_dir, 'role_binding.yaml']) }}"
+    #    regexp: "(.*)ibm-spectrum-scale-csi-driver(.*)"
+    #    replace: '\1{{ namespace }}\2'
 
-  - name: Create RBAC resources
-    k8s:
-      definition: "{{ lookup('template', '/'.join([deploy_dir, item])) }}"
-      namespace: '{{ namespace }}'
-    with_items:
-      - namespace.yaml
-      - role.yaml
-      - role_binding.yaml
-      - service_account.yaml
-
+    - name: Create RBAC resources
+      k8s:
+        definition: "{{ lookup('template', '/'.join([deploy_dir, item])) }}"
+        namespace: "{{ namespace }}"
+      with_items:
+        - namespace.yaml
+        - role.yaml
+        - role_binding.yaml
+        - service_account.yaml

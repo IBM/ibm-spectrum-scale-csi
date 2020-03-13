@@ -1,23 +1,23 @@
 ---
 - name: Assert Custom Resource has been created
-  k8s_facts:
-    api_version: '{{ custom_resource.apiVersion }}'
-    kind: '{{ custom_resource.kind }}'
-    namespace: '{{ namespace }}'
-    name: '{{ custom_resource.metadata.name }}'
+  k8s_info:
+    api_version: "{{ custom_resource.apiVersion }}"
+    kind: "{{ custom_resource.kind }}"
+    namespace: "{{ namespace }}"
+    name: "{{ custom_resource.metadata.name }}"
   register: cr
 
 # Should this be computed?
 - name: Set attacher variables
   set_fact:
-    attacherNodeSelector: 
-      key:  node1
+    attacherNodeSelector:
+      key: node1
       value: infra1
     provisionerNodeSelector:
-      key:  node2
+      key: node2
       value: infra1
     pluginNodeSelector:
-      key:  node3
+      key: node3
       value: infra1
     nodeMapping:
       k8sNode: node1
@@ -25,58 +25,57 @@
 
 - name: Update Custom Resource to have attacher fields
   k8s:
-    state:  present 
-    api_version: '{{ custom_resource.apiVersion }}'
-    kind: '{{ custom_resource.kind }}'
-    namespace: '{{ namespace }}'
-    name: '{{ custom_resource.metadata.name }}'
+    state: present
+    api_version: "{{ custom_resource.apiVersion }}"
+    kind: "{{ custom_resource.kind }}"
+    namespace: "{{ namespace }}"
+    name: "{{ custom_resource.metadata.name }}"
     definition:
       spec:
-        attacherNodeSelector: 
+        attacherNodeSelector:
           - "{{  attacherNodeSelector }}"
-        provisionerNodeSelector: 
-          - "{{ provisionerNodeSelector }}" 
-        pluginNodeSelector:  
+        provisionerNodeSelector:
+          - "{{ provisionerNodeSelector }}"
+        pluginNodeSelector:
           - "{{ pluginNodeSelector }}"
         nodeMapping:
           - "{{ nodeMapping }}"
 
 - block:
     # We know that the provisioner will have this name
-    - name: Wait 60s for provisioner reconciliation to run 
-      k8s_facts:
-        kind:       Statefulset
+    - name: Wait 60s for provisioner reconciliation to run
+      k8s_info:
+        kind: Statefulset
         api_version: v1
-        namespace:  '{{ namespace }}'
+        namespace: "{{ namespace }}"
         name: "{{custom_resource.metadata.name}}-provisioner"
       register: provisioner
-      until: 
-        -  ( provisioner | json_query('resources[].spec.template.spec.containers[].nodeSelector')) is defined
+      until:
+        - ( provisioner | json_query('resources[].spec.template.spec.containers[].nodeSelector')) is defined
       delay: 6
       retries: 10
 
-    - name: Wait 60s for attacher reconciliation to run 
-      k8s_facts:
-        kind:        Statefulset
+    - name: Wait 60s for attacher reconciliation to run
+      k8s_info:
+        kind: Statefulset
         api_version: v1
-        namespace:  '{{ namespace }}'
+        namespace: "{{ namespace }}"
         name: "{{custom_resource.metadata.name}}-attacher"
       register: attacher
       until:
-        -  ( attacher | json_query('resources[].spec.template.spec.containers[].nodeSelector')) is defined
+        - ( attacher | json_query('resources[].spec.template.spec.containers[].nodeSelector')) is defined
       delay: 6
       retries: 10
 
-    - name: Wait 60s for driver reconciliation to run 
-      k8s_facts:
-        kind:       Daemonset
+    - name: Wait 60s for driver reconciliation to run
+      k8s_info:
+        kind: Daemonset
         api_version: v1
-        namespace:  '{{ namespace }}'
+        namespace: "{{ namespace }}"
         name: "{{custom_resource.metadata.name}}"
       register: driver
       until:
-        -  ( driver| json_query('resources[].spec.template.spec.containers[].nodeSelector')) is defined
-        -  (driver | json_query('resources[].spec.template.spec.containers[].env[*][?name==`nodeMapping.k8sNode` && value==`nodeMapping.spectrumscaleNode`]')) is defined
+        - ( driver| json_query('resources[].spec.template.spec.containers[].nodeSelector')) is defined
+        - (driver | json_query('resources[].spec.template.spec.containers[].env[*][?name==`nodeMapping.k8sNode` && value==`nodeMapping.spectrumscaleNode`]')) is defined
       delay: 6
       retries: 10
-
