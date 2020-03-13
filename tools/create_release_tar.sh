@@ -14,7 +14,7 @@ fi
 
 FILES=( './stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/namespace.yaml'
 './generated/installer//ibm-spectrum-scale-csi-operator.yaml'
-'./stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml'
+'./stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml'
 )
 
 TOPLEVEL=`git rev-parse --show-toplevel`

@@ -1,0 +1,6 @@
+---
+- name: "Ensure {{item.name}} is {{state}}"
+  k8s:
+    state: "{{state}}"
+    namespace: "{{namespace}}"
+    definition: "{{ lookup('template', item.name) | from_yaml }}"

@@ -12,18 +12,19 @@
    export PATH=$PATH:<go_install_dir>/bin
    ```
 
-2. Set your GOPATH to a directory where you want to clone the repo
+2. Set your GOPATH to a directory where you want to clone the repo. This examples uses `/root/go`.
 
    ```
-   export GOPATH=<path_to_repo_base>
+   export GOPATH="/root/go"
+   export IBM_DIR="$GOPATH/src/github.com/IBM"
    ```
 
 3. Clone the code
 
    ```
-   mkdir -p $GOPATH/src/github.com/IBM
-   cd $GOPATH/src/github.com/IBM
-   git clone https://github.com/IBM/ibm-spectrum-scale-csi-driver.git
+   mkdir -p ${IBM_DIR}
+   cd ${IBM_DIR}/
+   git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
    ```
 
 4. Build
@@ -38,17 +39,16 @@
      export PATH=$PATH:$GOPATH/bin
      ```
   
-     4.2 Compile:
+     4.2 Compile the driver and build the docker images:
 
      ```
-     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
+     # IBM_DIR is defined in the previous step
+     export DRIVER_DIR="$IBM_DIR/ibm-spectrum-scale-csi/driver"
+     cd ${DRIVER_DIR}
+
+     # Compile the driver
      make
-     ```
-  
-     4.3 Compile/build the docker image:
 
-     ```
-     cd $GOPATH/src/github.com/IBM/ibm-spectrum-scale-csi-driver
+     # Build the docker image
      make build-image
      ```
-

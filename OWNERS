@@ -1,0 +1,18 @@
+filters:
+  ".*":
+    reviewers:
+      - edunn-us
+    approvers:
+      - edunn-us
+
+  "driver/.*":
+    reviewers:
+      - edunn-us
+    approvers:
+      - edunn-us
+
+  "operator/.*":
+    reviewers:
+      - edunn-us
+    approvers:
+      - edunn-us

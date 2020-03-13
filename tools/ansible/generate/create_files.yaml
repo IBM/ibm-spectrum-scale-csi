@@ -28,28 +28,13 @@
   with_items:
     - "{{ operator_files }}"
 
-- name: "Use lineinfile to add a unique tag between the markers from block in file"
-  lineinfile:
-    dest: "{{ generated_op_yaml }}"
-    insertafter: '\# END {{ item.name }}'
-    state: present
-    line: "REPLACE_WITH_DASHES {{ item.name }}"
-  with_items: 
-    - "{{ operator_files }}"
-
-- name: "Replace all of the REPLACE_WITH_DASHS to be ---, to correctly separate the blocks"
-  replace:
-    path: "{{ generated_op_yaml }}"
-    regexp: 'REPLACE_WITH_DASHES.*'
-    replace: '---'
-
 - name: copy over the files that are not modified
   copy:
     src: "{{ operator_dir }}/{{ item }}"
     dest: "{{ generated_dir }}"
   with_items: 
     - "deploy/namespace.yaml"
-    - "deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml"
+    - "deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
   when: non_generated
 
 - name: "[Testing] Comparing the generated operator file with checked in code ..."

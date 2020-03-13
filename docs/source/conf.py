@@ -17,14 +17,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'IBM Spectrum Scale CSI Operator'
+project = 'IBM Spectrum Scale CSI'
 copyright = '2019, IBM'
 author = 'John Dunham'
 
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.1'
+release = '1.1.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -76,6 +76,5 @@ source_parsers = { '.md' : 'recommonmark.parser.CommonMarkParser' }
 rst_epilog="""
 .. |driver-repo| replace:: GitHubDriver_
 .. |operator-repo| replace:: GitHubOperator_
-.. _GitHubDriver: https://github.com/IBM/ibm-spectrum-scale-csi-driver
 .. _GitHubOperator: https://github.com/IBM/
 """
