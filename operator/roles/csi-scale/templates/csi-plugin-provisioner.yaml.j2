@@ -45,9 +45,7 @@ spec:
 {% endif %}
           image: '{{ provisioner }}'
           args:
-            - "--provisioner=spectrumscale.csi.ibm.com"
             - "--csi-address=$(ADDRESS)"
-            - "--connection-timeout=2m"
             - "--v=5" # Debugging
           env:
             - name: ADDRESS
