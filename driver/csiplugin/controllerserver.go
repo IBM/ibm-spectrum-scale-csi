@@ -824,10 +824,12 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 }
 
 func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+        glog.Errorf("***** CreateSnapshot *****")
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
 func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+        glog.Errorf("***** DeleteSnapshot *****")
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
