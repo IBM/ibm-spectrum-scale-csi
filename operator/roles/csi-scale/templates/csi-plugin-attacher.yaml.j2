@@ -48,6 +48,7 @@ spec:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
             - "--resync=10m" # Added
+            - "--timeout=2m"
           env:
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
