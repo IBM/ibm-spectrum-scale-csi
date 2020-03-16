@@ -1,5 +1,5 @@
 # Multi-arch build for IBM Spectrum Scale CSI Driver
-# usage: docker buildx build --platform=linux/amd64 -t my_image_tag .
+# usage: docker buildx build -f build/multi-arch.Dockerfile --platform=linux/amd64 -t my_image_tag .
 
 FROM --platform=$BUILDPLATFORM golang:1.13.1 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
