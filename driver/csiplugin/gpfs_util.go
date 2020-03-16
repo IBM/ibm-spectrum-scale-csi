@@ -17,14 +17,11 @@
 package scale
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
-	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -208,20 +205,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		}
 	}
 	return scaleVol, nil
-}
-
-func executeCmd(command string, args []string) ([]byte, error) {
-	glog.V(5).Infof("gpfs_util executeCmd")
-
-	cmd := exec.Command(command, args...)
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	stdOut := stdout.Bytes()
-	return stdOut, err
 }
 
 func ConvertToBytes(inputStr string) (uint64, error) {

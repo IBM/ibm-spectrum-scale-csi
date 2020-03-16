@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -77,20 +78,17 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 
 	glog.Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath[1])
 
-	if _, err := os.Stat(targetPath); err == nil {
-		args := []string{targetPath}
-		outputBytes, err := executeCmd("rmdir", args)
-		glog.Infof("Cmd rmdir args: %v Output: %v", args, outputBytes)
-		if err != nil {
-			return nil, err
+	//use Lstat as it will not follow the symlink, it is just checking that the symlink file exists
+	if _, err := os.Lstat(targetPath); err == nil {
+		if err := os.Remove(targetPath); err != nil {
+			glog.Infof("cannot publish volume '%v' due to error: %v", volumeID, err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("cannot publish volume '%v' due to error: %v", volumeID, err))
 		}
 	}
 
-	args := []string{"-sf", targetSlnkPath[1], targetPath}
-	outputBytes, err := executeCmd("/bin/ln", args)
-	glog.Infof("Cmd /bin/ln args: %v Output: %v", args, outputBytes)
-	if err != nil {
-		return nil, err
+	if err := os.Symlink(targetSlnkPath[1], targetPath); err != nil {
+		glog.Infof("cannot publish volume '%v' due to error: %v", volumeID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("cannot publish volume '%v' due to error: %v", volumeID, err))
 	}
 
 	glog.V(4).Infof("Successfully mounted %s", targetPath)

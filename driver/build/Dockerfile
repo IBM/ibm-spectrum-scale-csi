@@ -13,7 +13,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _ou
 RUN chmod +x _output/ibm-spectrum-scale-csi
 
 
-FROM registry.access.redhat.com/ubi8-minimal:latest
+FROM scratch
 LABEL name="IBM Spectrum Scale CSI driver" \
       vendor="ibm" \
       version="1.1.0" \
