@@ -74,7 +74,7 @@ spec:
   accessModes:
     - ${accessmode}
   csi:
-    driver: ibm-spectrum-scale-csi
+    driver: spectrumscale.csi.ibm.com
     volumeHandle: ${volhandle}
   ${STORAGECLASS}
 EOL
