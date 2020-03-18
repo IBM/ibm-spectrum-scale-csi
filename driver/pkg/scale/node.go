@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/pkg/scale/connectors"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
@@ -29,13 +30,26 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type ScaleNodeServer struct {
-	Driver *ScaleDriver
+type NodeService struct {
+	id    string
+	fab   connectors.ConnectorFactory
+	nscap []*csi.NodeServiceCapability
+
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
 	mux sync.Mutex
 }
 
-func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+func newNodeService(
+	nodeID string,
+	fab connectors.ConnectorFactory,
+) NodeService {
+	return NodeService{
+		id:  nodeID,
+		fab: fab,
+	}
+}
+
+func (ns *NodeService) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodePublishVolume")
 
 	glog.V(4).Infof("NodePublishVolume called with req: %#v", req)
@@ -97,7 +111,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
-func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (ns *NodeService) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodeUnpublishVolume")
 	glog.V(4).Infof("NodeUnpublishVolume called with args: %v", req)
 	// Validate Arguments
@@ -116,7 +130,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
-func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (
+func (ns *NodeService) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (
 	*csi.NodeStageVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodeStageVolume")
 	ns.mux.Lock()
@@ -139,7 +153,7 @@ func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeSta
 	return &csi.NodeStageVolumeResponse{}, nil
 }
 
-func (ns *ScaleNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (
+func (ns *NodeService) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (
 	*csi.NodeUnstageVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodeUnstageVolume")
 	ns.mux.Lock()
@@ -159,23 +173,23 @@ func (ns *ScaleNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeU
 	return &csi.NodeUnstageVolumeResponse{}, nil
 }
 
-func (ns *ScaleNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
+func (ns *NodeService) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	glog.V(4).Infof("NodeGetCapabilities called with req: %#v", req)
 	return &csi.NodeGetCapabilitiesResponse{
-		Capabilities: ns.Driver.nscap,
+		Capabilities: ns.nscap,
 	}, nil
 }
 
-func (ns *ScaleNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
+func (ns *NodeService) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	glog.V(4).Infof("NodeGetInfo called with req: %#v", req)
 	return &csi.NodeGetInfoResponse{
-		NodeId: ns.Driver.nodeID,
+		NodeId: ns.id,
 	}, nil
 }
 
-func (ns *ScaleNodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
+func (ns *NodeService) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
-func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
+func (ns *NodeService) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }

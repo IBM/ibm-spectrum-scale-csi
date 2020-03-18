@@ -22,8 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/pkg/scale/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/pkg/scale/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/pkg/scale/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -37,13 +38,41 @@ const (
 	notFound = "NOT_FOUND"
 )
 
-type ScaleControllerServer struct {
-	Driver *ScaleDriver
+type ControllerService struct {
+	fab     connectors.ConnectorFactory
+	cscap   []*csi.ControllerServiceCapability
+	primary *settings.Primary
+
+	reqmap map[string]int64
 }
 
-func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
-	cap, volpresent := cs.Driver.reqmap[scVol.VolName]
-	glog.Infof("reqmap: %v", cs.Driver.reqmap)
+func newControllerService(
+	config *settings.ConfigMap,
+	fab connectors.ConnectorFactory,
+) ControllerService {
+	return ControllerService{
+		fab:     fab,
+		primary: config.Primary,
+		reqmap:  make(map[string]int64),
+	}
+}
+
+func (cs *ControllerService) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
+	glog.V(3).Infof("gpfs ValidateControllerServiceRequest")
+	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
+		return nil
+	}
+	for _, cap := range cs.cscap {
+		if c == cap.GetRpc().Type {
+			return nil
+		}
+	}
+	return status.Error(codes.InvalidArgument, "Invalid controller service request")
+}
+
+func (cs *ControllerService) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
+	cap, volpresent := cs.reqmap[scVol.VolName]
+	glog.Infof("reqmap: %v", cs.reqmap)
 	if volpresent {
 		if cap == int64(scVol.VolSize) {
 			return true, nil
@@ -54,25 +83,18 @@ func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool
 	return false, nil
 }
 
-func (cs *ScaleControllerServer) GetPriConnAndSLnkPath() (connectors.SpectrumScaleConnector, string, string, string, string, string, error) {
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+func (cs *ControllerService) IfFileSetBasedVolExist(scVol *scaleVolume) (bool, error) {
+	remote := cs.fab.NewConnector(scVol)
+	primary := cs.fab.NewConnector(cs.primary)
 
-	if isprimaryConnPresent {
-		return primaryConn, cs.Driver.primary.SymlinkRelativePath, cs.Driver.primary.GetPrimaryFs(), cs.Driver.primary.PrimaryFSMount, cs.Driver.primary.SymlinkAbsolutePath, cs.Driver.primary.PrimaryCid, nil
-	}
-
-	return nil, "", "", "", "", "", status.Error(codes.Internal, "Primary connector not present in configMap")
-}
-
-func (cs *ScaleControllerServer) IfFileSetBasedVolExist(scVol *scaleVolume) (bool, error) {
 	/* Check if fileset is there. Check if quota matches and see if symlink exists*/
-	_, err := scVol.Connector.ListFileset(scVol.VolBackendFs, scVol.VolName)
+	_, err := remote.ListFileset(scVol.VolBackendFs, scVol.VolName)
 	if err != nil {
 		return false, nil
 	}
 
 	if scVol.VolSize != 0 {
-		quota, err := scVol.Connector.ListFilesetQuota(scVol.VolBackendFs, scVol.VolName)
+		quota, err := remote.ListFilesetQuota(scVol.VolBackendFs, scVol.VolName)
 		if err != nil {
 			return false, status.Error(codes.Internal, fmt.Sprintf("Unable to list quota for Fset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err))
 		}
@@ -88,7 +110,7 @@ func (cs *ScaleControllerServer) IfFileSetBasedVolExist(scVol *scaleVolume) (boo
 
 	/* Check if Symlink Present */
 	volSlnkPath := fmt.Sprintf("%s/%s", scVol.PrimarySLnkRelPath, scVol.VolName)
-	symLinkExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.PrimaryFS, volSlnkPath)
+	symLinkExists, err := primary.CheckIfFileDirPresent(scVol.PrimaryFS, volSlnkPath)
 	if err != nil {
 		return false, status.Error(codes.Internal, fmt.Sprintf("Unable to check if symlink path [%v] exists in FS [%v]. Error [%v]", volSlnkPath, scVol.PrimaryFS, err))
 	}
@@ -100,10 +122,11 @@ func (cs *ScaleControllerServer) IfFileSetBasedVolExist(scVol *scaleVolume) (boo
 	return false, nil
 }
 
-func (cs *ScaleControllerServer) IfLwVolExist(scVol *scaleVolume) (bool, error) {
+func (cs *ControllerService) IfLwVolExist(scVol *scaleVolume) (bool, error) {
 	/* Check if Dir present and see if symlink exists*/
 	volPath := fmt.Sprintf("%s/%s", scVol.VolDirBasePath, scVol.VolName)
-	dirPresent, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.VolBackendFs, volPath)
+	primary := cs.fab.NewConnector(cs.primary)
+	dirPresent, err := primary.CheckIfFileDirPresent(scVol.VolBackendFs, volPath)
 	if err != nil {
 		return false, status.Error(codes.Internal, fmt.Sprintf("Unable to check if path [%v] exists in FS [%v]. Error [%v]", volPath, scVol.VolBackendFs, err))
 	}
@@ -113,7 +136,7 @@ func (cs *ScaleControllerServer) IfLwVolExist(scVol *scaleVolume) (bool, error) 
 
 		volSlnkPath := fmt.Sprintf("%s/%s", scVol.PrimarySLnkRelPath, scVol.VolName)
 		glog.Infof("Symlink fs [%v] slinkpath [%v]", scVol.PrimaryFS, volSlnkPath)
-		symLinkExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.PrimaryFS, volSlnkPath)
+		symLinkExists, err := primary.CheckIfFileDirPresent(scVol.PrimaryFS, volSlnkPath)
 
 		if err != nil {
 			return false, status.Error(codes.Internal, fmt.Sprintf("Unable to check if symlink [%v] exists in FS [%v]. Error [%v]", volSlnkPath, scVol.PrimaryFS, err))
@@ -127,10 +150,9 @@ func (cs *ScaleControllerServer) IfLwVolExist(scVol *scaleVolume) (bool, error) 
 	return false, nil
 }
 
-func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
-	var err error
-
-	baseDirExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.VolBackendFs, scVol.VolDirBasePath)
+func (cs *ControllerService) CreateLWVol(scVol *scaleVolume) error {
+	primary := cs.fab.NewConnector(cs.primary)
+	baseDirExists, err := primary.CheckIfFileDirPresent(scVol.VolBackendFs, scVol.VolDirBasePath)
 
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("Unable to check if DirBasePath %v is present in FS %v", scVol.VolDirBasePath, scVol.VolBackendFs))
@@ -142,7 +164,7 @@ func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
 
 	dirPath := fmt.Sprintf("%s/%s", scVol.VolDirBasePath, scVol.VolName)
 	/* FS from sc */
-	err = scVol.PrimaryConnector.MakeDirectory(scVol.VolBackendFs, dirPath, scVol.VolUid, scVol.VolGid)
+	err = primary.MakeDirectory(scVol.VolBackendFs, dirPath, scVol.VolUid, scVol.VolGid)
 
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("Unable to create dir [%v] in FS [%v] with uid:gid [%v:%v]. Error [%v]", dirPath, scVol.VolBackendFs, scVol.VolUid, scVol.VolGid, err))
@@ -150,18 +172,20 @@ func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
 	return nil
 }
 
-func (cs *ScaleControllerServer) GenerateVolId(scVol *scaleVolume) (string, error) {
+func (cs *ControllerService) GenerateVolId(scVol *scaleVolume) (string, error) {
 	var volId string
+	primary := cs.fab.NewConnector(cs.primary)
 
 	/* We need to put FSUUID for localFS in volID */
-	uid, err := scVol.PrimaryConnector.GetFsUid(scVol.LocalFS)
+	uid, err := primary.GetFsUid(scVol.LocalFS)
 	glog.Infof("GetFsUID error [%v] uid [%v]", err, uid)
 	if err != nil {
 		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to get FS UUID for FS [%v]. Error [%v]", scVol.VolBackendFs, err))
 	}
 
 	if scVol.IsFilesetBased {
-		fSetuid, err := scVol.Connector.GetFileSetUid(scVol.VolBackendFs, scVol.VolName)
+		remote := cs.fab.NewConnector(scVol)
+		fSetuid, err := remote.GetFileSetUid(scVol.VolBackendFs, scVol.VolName)
 
 		if err != nil {
 			return "", status.Error(codes.Internal, fmt.Sprintf("Unable to get Fset UID for [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err))
@@ -178,8 +202,9 @@ func (cs *ScaleControllerServer) GenerateVolId(scVol *scaleVolume) (string, erro
 	return volId, nil
 }
 
-func (cs *ScaleControllerServer) GetFsMntPt(scVol *scaleVolume) (string, error) {
-	fsMount, err := scVol.Connector.GetFilesystemMountDetails(scVol.VolBackendFs)
+func (cs *ControllerService) GetFsMntPt(scVol *scaleVolume) (string, error) {
+	remote := cs.fab.NewConnector(scVol)
+	fsMount, err := remote.GetFilesystemMountDetails(scVol.VolBackendFs)
 	if err != nil {
 		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to fetch mount details for FS %v", scVol.VolBackendFs))
 	}
@@ -191,18 +216,19 @@ func (cs *ScaleControllerServer) GetFsMntPt(scVol *scaleVolume) (string, error) 
 	return fsMountPt, err
 }
 
-func (cs *ScaleControllerServer) GetFsetLnkPath(scaleVol *scaleVolume) (string, error) {
-	fsetResponse, err := scaleVol.Connector.ListFileset(scaleVol.VolBackendFs, scaleVol.VolName)
+func (cs *ControllerService) GetFsetLnkPath(scVol *scaleVolume) (string, error) {
+	remote := cs.fab.NewConnector(scVol)
+	fsetResponse, err := remote.ListFileset(scVol.VolBackendFs, scVol.VolName)
 	if err != nil {
-		_ = cs.Cleanup(scaleVol)
-		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to list Fset [%v] in FS [%v]. Error [%v]", scaleVol.VolName, scaleVol.VolBackendFs, err))
+		_ = cs.Cleanup(scVol)
+		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to list Fset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err))
 	}
 
 	linkpath := fsetResponse.Config.Path
 	return linkpath, err
 }
 
-func (cs *ScaleControllerServer) GetTargetPathforFset(scVol *scaleVolume) (string, error) {
+func (cs *ControllerService) GetTargetPathforFset(scVol *scaleVolume) (string, error) {
 	linkpath, err := cs.GetFsetLnkPath(scVol)
 	if err != nil {
 		return "", err
@@ -217,10 +243,11 @@ func (cs *ScaleControllerServer) GetTargetPathforFset(scVol *scaleVolume) (strin
 	return targetPath, nil
 }
 
-func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
+func (cs *ControllerService) CreateFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
 	opt := make(map[string]interface{})
 
-	isFsMounted, err := scVol.Connector.IsFilesystemMounted(scVol.VolBackendFs)
+	remote := cs.fab.NewConnector(scVol)
+	isFsMounted, err := remote.IsFilesystemMounted(scVol.VolBackendFs)
 
 	if err != nil {
 		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to check if FS [%v] is mounted. Error [%v]", scVol.VolBackendFs, err))
@@ -231,34 +258,34 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 	}
 
 	if scVol.VolSize != 0 {
-		err = scVol.Connector.CheckIfFSQuotaEnabled(scVol.VolBackendFs)
+		err = remote.CheckIfFSQuotaEnabled(scVol.VolBackendFs)
 		if err != nil {
 			return "", status.Error(codes.Internal, fmt.Sprintf("Quota not enabled for Filesystem %v inside cluster %v", scVol.VolBackendFs, scVol.ClusterId))
 		}
 	}
 
 	if scVol.VolUid != "" {
-		opt[connectors.UserSpecifiedUid] = scVol.VolUid
+		opt[settings.Uid] = scVol.VolUid
 	}
 	if scVol.VolGid != "" {
-		opt[connectors.UserSpecifiedGid] = scVol.VolGid
+		opt[settings.Gid] = scVol.VolGid
 	}
 	if scVol.FilesetType != "" {
-		opt[connectors.UserSpecifiedFilesetType] = scVol.FilesetType
+		opt[settings.FilesetType] = scVol.FilesetType
 	}
 	if scVol.InodeLimit != "" {
-		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
+		opt[settings.InodeLimit] = scVol.InodeLimit
 	}
 	if scVol.ParentFileset != "" {
-		opt[connectors.UserSpecifiedParentFset] = scVol.ParentFileset
+		opt[settings.ParentFset] = scVol.ParentFileset
 	}
 
-	fseterr := scVol.Connector.CreateFileset(scVol.VolBackendFs, scVol.VolName, opt)
+	fseterr := remote.CreateFileset(scVol.VolBackendFs, scVol.VolName, opt)
 
 	if fseterr != nil {
 		/* Fileset creation failed, but in some cases GUI returns failure when fileset was created but not linked. So delete a incomplete created fileset, so that in next iteration we can create fresh one. */
 
-		_, err := scVol.Connector.ListFileset(scVol.VolBackendFs, scVol.VolName)
+		_, err := remote.ListFileset(scVol.VolBackendFs, scVol.VolName)
 
 		if err == nil {
 			_ = cs.Cleanup(scVol)
@@ -267,7 +294,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to create fileset [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, fseterr))
 	}
 
-	isFilesetLinked, err := scVol.Connector.IsFilesetLinked(scVol.VolBackendFs, scVol.VolName)
+	isFilesetLinked, err := remote.IsFilesetLinked(scVol.VolBackendFs, scVol.VolName)
 
 	if err != nil {
 		_ = cs.Cleanup(scVol)
@@ -282,7 +309,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 	if scVol.VolSize != 0 {
 		volsiz := strconv.FormatUint(scVol.VolSize, 10)
 
-		err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz)
+		err = remote.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz)
 
 		if err != nil {
 			_ = cs.Cleanup(scVol)
@@ -299,7 +326,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 		return "", err
 	}
 
-	err = scVol.Connector.MakeDirectory(scVol.VolBackendFs, targetBasePath, scVol.VolUid, scVol.VolGid)
+	err = remote.MakeDirectory(scVol.VolBackendFs, targetBasePath, scVol.VolUid, scVol.VolGid)
 
 	if err != nil {
 		_ = cs.Cleanup(scVol)
@@ -309,36 +336,29 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 	return targetBasePath, err
 }
 
-func (cs *ScaleControllerServer) GetVolumeSizeInBytes(req *csi.CreateVolumeRequest) (int64, error) {
+func (cs *ControllerService) GetVolumeSizeInBytes(req *csi.CreateVolumeRequest) (int64, error) {
 	cap := req.GetCapacityRange()
 	return cap.GetRequiredBytes(), nil
 }
 
-func (cs *ScaleControllerServer) GetConnFromClusterID(cid string) (connectors.SpectrumScaleConnector, error) {
-	connector, isConnPresent := cs.Driver.connmap[cid]
-	if isConnPresent {
-		return connector, nil
-	}
-
-	return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get connector for ClusterID : %v", cid))
-}
-
-func (cs *ScaleControllerServer) Cleanup(scVol *scaleVolume) error {
+func (cs *ControllerService) Cleanup(scVol *scaleVolume) error {
 	var err error
 	if scVol.IsFilesetBased {
-		err = scVol.Connector.DeleteFileset(scVol.VolBackendFs, scVol.VolName)
+		remote := cs.fab.NewConnector(scVol)
+		err = remote.DeleteFileset(scVol.VolBackendFs, scVol.VolName)
 	} else {
+		primary := cs.fab.NewConnector(cs.primary)
 		dirPath := fmt.Sprintf("%s/%s", scVol.VolDirBasePath, scVol.VolName)
 		glog.Infof("Directory path to be deleted [%v]", dirPath)
-		err = scVol.PrimaryConnector.DeleteDirectory(scVol.VolBackendFs, dirPath)
+		err = primary.DeleteDirectory(scVol.VolBackendFs, dirPath)
 	}
 	return err
 }
 
-func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
+func (cs *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
 	glog.V(3).Infof("create volume req: %v", req)
 
-	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
+	if err := cs.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		glog.V(3).Infof("invalid create volume req: %v", req)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume ValidateControllerServiceRequest failed: %v", err))
 	}
@@ -382,24 +402,17 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	scaleVol.VolName = volName
 	scaleVol.VolSize = uint64(volSize)
 
-	/* Get details for Primary Cluster */
-	pConn, PSLnkRelPath, PFS, PFSMount, PSLnkPath, PCid, err := cs.GetPriConnAndSLnkPath()
-
-	if err != nil {
-		return nil, err
-	}
-
-	scaleVol.PrimaryConnector = pConn
-	scaleVol.PrimarySLnkRelPath = PSLnkRelPath
-	scaleVol.PrimaryFS = PFS
-	scaleVol.PrimaryFSMount = PFSMount
-	scaleVol.PrimarySLnkPath = PSLnkPath
+	scaleVol.PrimarySLnkRelPath = cs.primary.SymlinkRelativePath
+	scaleVol.PrimaryFS = cs.primary.GetPrimaryFs()
+	scaleVol.PrimaryFSMount = cs.primary.PrimaryFSMount
+	scaleVol.PrimarySLnkPath = cs.primary.SymlinkAbsolutePath
 
 	/* scaleVol.VolBackendFs will always be local cluster FS. So we need to find a
 	   remote cluster FS in case local cluster FS is remotely mounted. We will find    local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and   create fileset on that FS. */
 
 	if scaleVol.IsFilesetBased {
-		mountInfo, err := scaleVol.PrimaryConnector.GetFilesystemMountDetails(scaleVol.VolBackendFs)
+		remote := cs.fab.NewConnector(scaleVol)
+		mountInfo, err := remote.GetFilesystemMountDetails(scaleVol.VolBackendFs)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Mount Details for FS [%v] in Primary cluster", scaleVol.VolBackendFs))
 		}
@@ -411,20 +424,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.LocalFS = scaleVol.VolBackendFs
 		scaleVol.VolBackendFs = remDevFs
 	} else {
+		scaleVol.ClusterId = cs.primary.PrimaryCid
 		scaleVol.LocalFS = scaleVol.VolBackendFs
-	}
-
-	if scaleVol.IsFilesetBased {
-		conn, err := cs.GetConnFromClusterID(scaleVol.ClusterId)
-
-		if err != nil {
-			return nil, err
-		}
-
-		scaleVol.Connector = conn
-	} else {
-		scaleVol.Connector = scaleVol.PrimaryConnector
-		scaleVol.ClusterId = PCid
 	}
 
 	glog.Infof("Scale vol create params : %v\n", scaleVol)
@@ -440,10 +441,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	/* Update driver map with new volume. Make sure to defer delete */
 
-	cs.Driver.reqmap[scaleVol.VolName] = volSize
-	defer delete(cs.Driver.reqmap, scaleVol.VolName)
+	cs.reqmap[scaleVol.VolName] = volSize
+	defer delete(cs.reqmap, scaleVol.VolName)
 
-	glog.Infof("reqmap After: %v", cs.Driver.reqmap)
+	glog.Infof("reqmap After: %v", cs.reqmap)
 
 	/* Check if Volume already present */
 	var isPresent bool
@@ -496,7 +497,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	glog.Infof("Symlink info FS [%v] TargetFS [%v]  target Path [%v] lnkPath [%v]", scaleVol.PrimaryFS, scaleVol.LocalFS, targetPath, lnkPath)
 
-	err = scaleVol.PrimaryConnector.CreateSymLink(scaleVol.PrimaryFS, scaleVol.LocalFS, targetPath, lnkPath)
+	primary := cs.fab.NewConnector(cs.primary)
+	err = primary.CreateSymLink(scaleVol.PrimaryFS, scaleVol.LocalFS, targetPath, lnkPath)
 
 	if err != nil {
 		_ = cs.Cleanup(scaleVol)
@@ -518,7 +520,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}, nil
 }
 
-func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error) {
+func (cs *ControllerService) GetVolIdMembers(vId string) (scaleVolId, error) {
 	splitVid := strings.Split(vId, ";")
 	var vIdMem scaleVolId
 
@@ -561,8 +563,8 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vId))
 }
 
-func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
+func (cs *ControllerService) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	if err := cs.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		glog.Warningf("invalid delete volume req: %v", req)
 		return nil, status.Error(codes.InvalidArgument,
 			fmt.Sprintf("invalid delete volume req (%v): %v", req, err))
@@ -582,28 +584,24 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 	glog.Infof("Volume Id Members [%v]", volumeIdMembers)
 
-	conn, err := cs.GetConnFromClusterID(volumeIdMembers.ClusterId)
+	remote := cs.fab.NewConnector(volumeIdMembers)
 
 	if err != nil {
 		return nil, err
 	}
 
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-
-	if !isprimaryConnPresent {
-		return nil, status.Error(codes.Internal, "Unable to get connector for Primary cluster")
-	}
+	primary := cs.fab.NewConnector(cs.primary)
 
 	/* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
 	   from Primary cluster */
 
-	FilesystemName, err := primaryConn.GetFilesystemName(volumeIdMembers.FsUUID)
+	FilesystemName, err := primary.GetFilesystemName(volumeIdMembers.FsUUID)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
 	}
 
-	mountInfo, err := primaryConn.GetFilesystemMountDetails(FilesystemName)
+	mountInfo, err := primary.GetFilesystemMountDetails(FilesystemName)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get mount info for FS [%v] in primary cluster", FilesystemName))
@@ -615,11 +613,11 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 	FilesystemName = remDevFs
 
-	sLinkRelPath := strings.Replace(volumeIdMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
+	sLinkRelPath := strings.Replace(volumeIdMembers.SymLnkPath, cs.primary.PrimaryFSMount, "", 1)
 	sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 	if volumeIdMembers.IsFilesetBased {
-		FilesetName, err := conn.GetFileSetNameFromId(FilesystemName, volumeIdMembers.FsetId)
+		FilesetName, err := remote.GetFileSetNameFromId(FilesystemName, volumeIdMembers.FsetId)
 
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
@@ -629,10 +627,10 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(sLinkRelPath)
 			if pvName == FilesetName {
-				err = conn.DeleteFileset(FilesystemName, FilesetName)
+				err = remote.DeleteFileset(FilesystemName, FilesetName)
 
 				if err != nil {
-					return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to Delete Fileset [%v] for FS [%v] and clusterId [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId))
+					return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to Delete Fileset [%v] for FS [%v] and clusterId [%v]: %v", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 				}
 			} else {
 				glog.Infof("PV name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
@@ -640,30 +638,30 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		}
 	} else {
 		/* Delete Dir for Lw volume */
-		err = primaryConn.DeleteDirectory(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
+		err = primary.DeleteDirectory(cs.primary.GetPrimaryFs(), sLinkRelPath)
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to Delete Dir using FS [%v] Relative SymLink [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath))
+			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to Delete Dir using FS [%v] Relative SymLink [%v]: %v", cs.primary.GetPrimaryFs(), sLinkRelPath, err))
 		}
 	}
 
-	err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
+	err = primary.DeleteSymLnk(cs.primary.GetPrimaryFs(), sLinkRelPath)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to delete symlnk [%v:%v] Error [%v]", cs.primary.GetPrimaryFs(), sLinkRelPath, err))
 	}
 
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
 // ControllerGetCapabilities implements the default GRPC callout.
-func (cs *ScaleControllerServer) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
+func (cs *ControllerService) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	glog.V(4).Infof("ControllerGetCapabilities called with req: %#v", req)
 	return &csi.ControllerGetCapabilitiesResponse{
-		Capabilities: cs.Driver.cscap,
+		Capabilities: cs.cscap,
 	}, nil
 }
 
-func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+func (cs *ControllerService) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	volumeID := req.GetVolumeId()
 
 	if volumeID == "" {
@@ -686,11 +684,11 @@ func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context,
 	}, nil
 }
 
-func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
+func (cs *ControllerService) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	glog.V(3).Infof("controllerserver ControllerUnpublishVolume")
 	glog.V(4).Infof("ControllerUnpublishVolume : req %#v", req)
 
-	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
+	if err := cs.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
 		glog.V(3).Infof("invalid Unpublish volume request: %v", req)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume: ValidateControllerServiceRequest failed: %v", err))
 	}
@@ -706,11 +704,11 @@ func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, 
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
 }
 
-func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) { //nolint:gocyclo,funlen
+func (cs *ControllerService) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) { //nolint:gocyclo,funlen
 	glog.V(3).Infof("controllerserver ControllerPublishVolume")
 	glog.V(4).Infof("ControllerPublishVolume : req %#v", req)
 
-	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
+	if err := cs.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
 		glog.V(3).Infof("invalid Publish volume request: %v", req)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume: ValidateControllerServiceRequest failed: %v", err))
 	}
@@ -743,16 +741,18 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	skipMountUnmount := utils.GetEnv("SKIP_MOUNT_UNMOUNT", yes)
 	glog.V(4).Infof("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT is set to %s", skipMountUnmount)
 
+	primary := cs.fab.NewConnector(cs.primary)
+
 	//Get filesystem name from UUID
-	fsName, err := cs.Driver.connmap["primary"].GetFilesystemName(filesystemID)
+	fsName, err := primary.GetFilesystemName(filesystemID)
 	if err != nil {
 		glog.Errorf("ControllerPublishVolume : Error in getting filesystem Name for filesystem ID of %s.", filesystemID)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem Name for filesystem ID of %s. Error [%v]", filesystemID, err))
 	}
 
 	//Check if primary filesystem is mounted.
-	primaryfsName := cs.Driver.primary.GetPrimaryFs()
-	pfsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(primaryfsName)
+	primaryfsName := cs.primary.GetPrimaryFs()
+	pfsMount, err := primary.GetFilesystemMountDetails(primaryfsName)
 	if err != nil {
 		glog.Errorf("ControllerPublishVolume : Error in getting filesystem mount details for %s", primaryfsName)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", primaryfsName, err))
@@ -778,7 +778,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	// Skip if primary filesystem and volume filesystem is same
 	if primaryfsName != fsName {
 		//Check if filesystem is mounted
-		fsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(fsName)
+		fsMount, err := primary.GetFilesystemMountDetails(fsName)
 		if err != nil {
 			glog.Errorf("ControllerPublishVolume : Error in getting filesystem mount details for %s", fsName)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
@@ -804,7 +804,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	//mount the primary filesystem if not mounted
 	if !(ispFsMounted) && skipMountUnmount == no {
 		glog.V(4).Infof("ControllerPublishVolume : mounting Filesystem %s on %s", primaryfsName, scalenodeID)
-		err = cs.Driver.connmap["primary"].MountFilesystem(primaryfsName, scalenodeID)
+		err = primary.MountFilesystem(primaryfsName, scalenodeID)
 		if err != nil {
 			glog.Errorf("ControllerPublishVolume : Error in mounting filesystem %s on node %s", primaryfsName, scalenodeID)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting filesystem %s on node %s. Error [%v]", primaryfsName, scalenodeID, err))
@@ -814,7 +814,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	//mount the volume filesystem if mounted
 	if !(isFsMounted) && skipMountUnmount == no && primaryfsName != fsName {
 		glog.V(4).Infof("ControllerPublishVolume : mounting %s on %s", fsName, scalenodeID)
-		err = cs.Driver.connmap["primary"].MountFilesystem(fsName, scalenodeID)
+		err = primary.MountFilesystem(fsName, scalenodeID)
 		if err != nil {
 			glog.Errorf("ControllerPublishVolume : Error in mounting filesystem %s on node %s", fsName, scalenodeID)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in mounting filesystem %s on node %s. Error [%v]", fsName, scalenodeID, err))
@@ -823,24 +823,24 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	return &csi.ControllerPublishVolumeResponse{}, nil
 }
 
-func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+func (cs *ControllerService) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+func (cs *ControllerService) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (cs *ScaleControllerServer) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
+func (cs *ControllerService) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (cs *ScaleControllerServer) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+func (cs *ControllerService) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
-func (cs *ScaleControllerServer) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
+func (cs *ControllerService) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
-func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+func (cs *ControllerService) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }

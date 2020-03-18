@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/pkg/scale/settings"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,24 +35,28 @@ const (
 )
 
 type scaleVolume struct {
-	VolName            string                            `json:"volName"`
-	VolSize            uint64                            `json:"volSize"`
-	VolBackendFs       string                            `json:"volBackendFs"`
-	IsFilesetBased     bool                              `json:"isFilesetBased"`
-	VolDirBasePath     string                            `json:"volDirBasePath"`
-	VolUid             string                            `json:"volUid"`
-	VolGid             string                            `json:"volGid"`
-	ClusterId          string                            `json:"clusterId"`
-	FilesetType        string                            `json:"filesetType"`
-	InodeLimit         string                            `json:"inodeLimit"`
-	Connector          connectors.SpectrumScaleConnector `json:"connector"`
-	PrimaryConnector   connectors.SpectrumScaleConnector `json:"primaryConnector"`
-	PrimarySLnkRelPath string                            `json:"primarySLnkRelPath"`
-	PrimarySLnkPath    string                            `json:"primarySLnkPath"`
-	PrimaryFS          string                            `json:"primaryFS"`
-	PrimaryFSMount     string                            `json:"primaryFSMount"`
-	ParentFileset      string                            `json:"parentFileset"`
-	LocalFS            string                            `json:"localFS"`
+	VolName        string `json:"volName"`
+	VolSize        uint64 `json:"volSize"`
+	VolBackendFs   string `json:"volBackendFs"`
+	IsFilesetBased bool   `json:"isFilesetBased"`
+	VolDirBasePath string `json:"volDirBasePath"`
+	VolUid         string `json:"volUid"`
+	VolGid         string `json:"volGid"`
+	ClusterId      string `json:"clusterId"`
+	FilesetType    string `json:"filesetType"`
+	InodeLimit     string `json:"inodeLimit"`
+	//Connector          connectors.SpectrumScaleConnector `json:"connector"`
+	//PrimaryConnector   connectors.SpectrumScaleConnector `json:"primaryConnector"`
+	PrimarySLnkRelPath string `json:"primarySLnkRelPath"`
+	PrimarySLnkPath    string `json:"primarySLnkPath"`
+	PrimaryFS          string `json:"primaryFS"`
+	PrimaryFSMount     string `json:"primaryFSMount"`
+	ParentFileset      string `json:"parentFileset"`
+	LocalFS            string `json:"localFS"`
+}
+
+func (vol *scaleVolume) ClusterID() string {
+	return vol.ClusterId
 }
 
 type scaleVolId struct {
@@ -64,18 +68,22 @@ type scaleVolId struct {
 	IsFilesetBased bool
 }
 
+func (vol scaleVolId) ClusterID() string {
+	return vol.ClusterId
+}
+
 func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
 	scaleVol := &scaleVolume{}
 
-	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
-	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
-	clusterId, clusterIdSpecified := volOptions[connectors.UserSpecifiedClusterId]
-	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
-	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
-	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
-	inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
-	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
+	volBckFs, fsSpecified := volOptions[settings.VolBackendFs]
+	volDirPath, volDirPathSpecified := volOptions[settings.VolDirPath]
+	clusterId, clusterIdSpecified := volOptions[settings.ClusterId]
+	uid, uidSpecified := volOptions[settings.Uid]
+	gid, gidSpecified := volOptions[settings.Gid]
+	fsType, fsTypeSpecified := volOptions[settings.FilesetType]
+	inodeLim, inodeLimSpecified := volOptions[settings.InodeLimit]
+	parentFileset, isparentFilesetSpecified := volOptions[settings.ParentFset]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""

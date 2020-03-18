@@ -25,11 +25,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type ScaleIdentityServer struct {
-	Driver *ScaleDriver
+type IdentityService struct {
+	driverName    string
+	vendorVersion string
 }
 
-func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
+func newIdentityService(driverName string, vendorVersion string) IdentityService {
+	return IdentityService{
+		driverName,
+		vendorVersion,
+	}
+}
+
+/*GetPluginCapabilities reports the supported capabilities of this version of this CSI plugin.
+ */
+func (is *IdentityService) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
 	return &csi.GetPluginCapabilitiesResponse{
 		Capabilities: []*csi.PluginCapability{
 			{
@@ -43,20 +53,24 @@ func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *c
 	}, nil
 }
 
-func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	glog.V(4).Infof("Probe called with args: %#v", req)
-	return &csi.ProbeResponse{}, nil
-}
-
-func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
+/*GetPluginInfo identifies this CSI plugin.
+ */
+func (is *IdentityService) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
 	glog.V(5).Infof("Using default GetPluginInfo")
 
-	if is.Driver.name == "" {
+	if is.driverName == "" {
 		return nil, status.Error(codes.Unavailable, "Driver name not configured")
 	}
 
 	return &csi.GetPluginInfoResponse{
-		Name:          is.Driver.name,
-		VendorVersion: is.Driver.vendorVersion,
+		Name:          is.driverName,
+		VendorVersion: is.vendorVersion,
 	}, nil
+}
+
+/*Probe responds that this plugin is healthy & ready
+ */
+func (is *IdentityService) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
+	glog.V(4).Infof("Probe called with args: %#v", req)
+	return &csi.ProbeResponse{}, nil
 }

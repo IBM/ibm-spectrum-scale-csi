@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package connectors
+package api
 
 type GetClusterResponse struct {
 	Cluster Cluster `json:"cluster,omitempty"`
