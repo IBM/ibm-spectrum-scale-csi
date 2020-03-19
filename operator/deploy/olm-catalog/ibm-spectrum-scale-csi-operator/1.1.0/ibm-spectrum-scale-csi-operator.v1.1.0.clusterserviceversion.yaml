@@ -254,7 +254,7 @@ spec:
     correct namespace.\n\n1\\. Ensure the Spectrum Scale GUI is running by pointing
     your browser to the IP hosting the GUI:\n\n    ![](https://user-images.githubusercontent.com/1195452/67230992-6d2d9700-f40c-11e9-96d5-3f0e5bcb2d9a.png)\n\n
     \   > If you do not see a login follow on screen instructions, or review the [GUI
-    Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.3/com.ibm.spectrum.scale.v5r03.doc/bl1ins_quickrefforgui.htm)\n\n\n2\\.
+    Documentation]( https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.v5r04.doc/bl1ins_quickrefforgui.htm)\n\n\n2\\.
     Create a CsiAdmin group account on in the GUI (currently requires a CLI call):\n\n
     \  ```\n\n   export USERNAME=\"SomeUser\"\n   export PASSWORD=\"SomePassword\"\n
     \  /usr/lpp/mmfs/gui/cli/mkuser ${USERNAME} -p ${PASSWORD} -g CsiAdmin\n\n   ```\n\n3\\.
@@ -472,8 +472,6 @@ spec:
   maintainers:
     - email: jdunham@us.ibm.com
       name: John Dunham
-    - email: yadayada@in.ibm.com
-      name: Yadavendra Yadav
   maturity: alpha
   provider:
     name: IBM
