@@ -244,7 +244,7 @@ spec:
     "\nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster
     providing a means to \ndeploy and manage the CSI plugin for spectrum scale. For
     more in depth documentation please refer\nto the [knowledge center]( https://www.ibm.com/support/knowledgecenter/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html)
-    \n\nThis operator should be used to deploy 
+    \n\nThis operator should be used to deploy
     the CSI plugin.\n\nThe configuration process
     is as follows:\n\n1. [Spectrum Scale GUI Setup](#spectrum-scale-gui-setup)\n2.
     [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum Scale
@@ -465,8 +465,8 @@ spec:
   labels:
     operator: ibm-spectrum-scale-csi-operator
   links:
-    - name: IBM CSI Spectrum Scale Knowledge Center 
-      url:  https://www.ibm.com/support/knowledgecenter/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html
+    - name: IBM CSI Spectrum Scale Knowledge Center
+      url: https://www.ibm.com/support/knowledgecenter/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html
     - name: CSI Developer Documentation
       url: https://kubernetes-csi.github.io/docs/
   maintainers:
