@@ -18,7 +18,11 @@ IBM Spectrum Scale CSI driver is part of the IBM Spectrum Scale offering. Please
 
 ## Report Bugs 
 
-To file issues, suggestions, new features, etc., Open an [Issue](https://github.com/IBM/ibm-spectrum-scale-csi/issues).
+For help with urgent situations, please use the IBM PMR process.  All Spectrum Scale customers using CSI, 
+who also have ongoing support contracts, are entitled to the PMR process.  Feature requests through the official RFE channels are also encouraged.
+
+For non-urgent issues, suggestions, recommendations, feel free to open an issue in [github](https://github.com/IBM/ibm-spectrum-scale-csi/issues).
+Issues will be addressed as team availability permits.
 
 ## Contributing
 
