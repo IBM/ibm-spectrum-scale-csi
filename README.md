@@ -20,16 +20,9 @@ IBM Spectrum Scale CSI driver is part of the IBM Spectrum Scale offering. Please
 
 To file issues, suggestions, new features, etc., Open an [Issue](https://github.com/IBM/ibm-spectrum-scale-csi/issues).
 
-## Developer Getting Started 
-
-To get started, see our [Developer Documentation](https://ibm-spectrum-scale-csi.rtfd.io/)
-
 ## Contributing
 
 We welcome contributions to this project, see [Contributing](CONTRIBUTING.md) for more details.
 
-## Troubleshooting
-
-See the [Troubleshooting](https://ibm-spectrum-scale-csi.readthedocs.io/en/latest/troubleshoot/index.html) section for more information.
 
 
