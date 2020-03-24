@@ -230,7 +230,7 @@ type CreateFilesetResquest struct {
 }
 
 type CreateSnapshotRequest struct {
-        SnapshotName         string `json:"snapshotName,omitempty"`
+        SnapshotName      string `json:"snapshotName,omitempty"`
 }
 
 type GenericResponse struct {
@@ -450,6 +450,20 @@ type Node_v2 struct {
 	Roles         NodeRoles  `json:"roles,omitempty"`
 	CNFSInfo      CNFSNode   `json:"cnfsInfo,omitempty"`
 	CESInfo       CESNode    `json:"cesInfo,omitempty"`
+}
+
+type Snapshot_v2 struct {
+        SnapshotName   string     `json:"snapshotName,omitempty"`
+        FilesystemName string     `json:"filesystemName,omitempty"`
+        FilesetName    string     `json:"filesetName,omitempty"`
+        SnapID         int        `json:"snapID,omitempty"`
+        Status         string     `json:"status,omitempty"`
+}
+
+type GetSnapshotResponse_v2 struct {
+        Snapshots []Snapshot_v2  `json:"snapshots,omitempty"`
+        Status    Status         `json:"status,omitempty"`
+        Paging    Pages          `json:"paging,omitempty"`
 }
 
 type Fileset_v2 struct {
