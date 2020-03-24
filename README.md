@@ -1,6 +1,7 @@
 # IBM Spectrum Scale CSI (Container Storage Interface)
 
-[![Documentation Status](https://readthedocs.org/projects/ibm-spectrum-scale-csi/badge/?version=latest)](https://ibm-spectrum-scale-csi.readthedocs.io/en/latest/?badge=latest)
+[Official Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_kc_landing.html)
+
 
 The IBM Spectrum Scale Container Storage Interface (CSI) project enables container orchestrators, such as Kubernetes and OpenShift, to manage the life-cycle of persistent storage.
 
@@ -11,20 +12,21 @@ If you are looking to deploy released versions of the IBM Spectrum Scale CSI Ope
   * OpenShift - Under Operator -> OperatorHub in the OpenShift Console, search 'IBM Spectrum Scale CSI" and install
   * Kubernetes -  See the project on [OperatorHub.io - ibm-spectrum-scale-csi-operator](https://operatorhub.io/operator/ibm-spectrum-scale-csi-operator)
 
+## Support
+
+IBM Spectrum Scale CSI driver is part of the IBM Spectrum Scale offering. Please follow the [IBM support procedure](https://www.ibm.com/mysupport/s/) for any issues with the driver.
+
 ## Report Bugs 
 
-To file issues, suggestions, new features, etc., Open an [Issue](https://github.com/IBM/ibm-spectrum-scale-csi/issues).
+For help with urgent situations, please use the IBM PMR process.  All Spectrum Scale customers using CSI, 
+who also have ongoing support contracts, are entitled to the PMR process.  Feature requests through the official RFE channels are also encouraged.
 
-## Getting Started and Documentation 
-
-To get started, see our [Documentation](https://ibm-spectrum-scale-csi.rtfd.io/)
+For non-urgent issues, suggestions, recommendations, feel free to open an issue in [github](https://github.com/IBM/ibm-spectrum-scale-csi/issues).
+Issues will be addressed as team availability permits.
 
 ## Contributing
 
 We welcome contributions to this project, see [Contributing](CONTRIBUTING.md) for more details.
 
-## Troubleshooting
-
-See the [Troubleshooting](https://ibm-spectrum-scale-csi.readthedocs.io/en/latest/troubleshoot/index.html) section for more information.
 
 
