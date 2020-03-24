@@ -849,6 +849,10 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
         glog.Infof("Volume Id Members [%v]", volumeIdMembers)
 
+        if !volumeIdMembers.IsFilesetBased {
+                return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Source Volume %v is not fileset based", volId, err))
+	}
+
         conn, err := cs.GetConnFromClusterID(volumeIdMembers.ClusterId)
 
         if err != nil {
@@ -861,12 +865,33 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
                 return nil, status.Error(codes.Internal, "Unable to get connector for Primary cluster")
         }
 
+        /* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
+           from Primary cluster */
+
+        FilesystemName, err := primaryConn.GetFilesystemName(volumeIdMembers.FsUUID)
+
+        if err != nil {
+                return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
+        }
+
+        mountInfo, err := primaryConn.GetFilesystemMountDetails(FilesystemName)
+
+        if err != nil {
+                return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get mount info for FS [%v] in primary cluster", FilesystemName))
+        }
+
+        remoteDeviceName := mountInfo.RemoteDeviceName
+        splitDevName := strings.Split(remoteDeviceName, ":")
+        remDevFs := splitDevName[len(splitDevName)-1]
+
+        FilesystemName = remDevFs
+
+        sLinkRelPath := strings.Replace(volumeIdMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
+        sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 	snapName := req.GetName()
 
-	primaryConn := cs.Driver.connmap["primary"]
-
-        fseterr := primaryConn.CreateSnapshot("fs1", "pvc-4d1428ab-9da0-4522-9ed0-6f684096c731", snapName)
+        fseterr := primaryConn.CreateSnapshot(FilesystemName, "pvc-4d1428ab-9da0-4522-9ed0-6f684096c731", snapName)
 
         if fseterr != nil {
                 return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to create snapshot. Error [%v]", fseterr))
