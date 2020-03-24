@@ -90,3 +90,6 @@ spec:
 #  nodeMapping:
 #    - k8sNode: "< K8s Node Name >"
 #      spectrumscaleNode: "< SpectrumScale Node Name >"
+# In case K8s node name start with number then use following node mapping format.
+#    - k8sNode: "K8sNodePrefix_< K8s Node Name >"
+#      spectrumscaleNode: "< SpectrumScale Node Name >"
