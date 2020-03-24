@@ -208,6 +208,7 @@ type FilesetConfig struct {
 	PermissionChangeMode string `json:"permissionChangeMode,omitempty"`
 	Permissions          string `json:"permissions,omitempty"`
 }
+
 type FilesetState struct {
 	AFMState          string `json:"afmState,omitempty"`
 	Created           string `json:"created,omitempty"`
@@ -227,6 +228,11 @@ type CreateFilesetResquest struct {
 	AFM    AFM           `json:"afm,omitempty"`
 	Config FilesetConfig `json:"config,omitempty"`
 }
+
+type CreateSnapshotRequest struct {
+        SnapshotName         string `json:"snapshotName,omitempty"`
+}
+
 type GenericResponse struct {
 	Status Status `json:"status,omitempty"`
 	Jobs   []Job  `json:"jobs,omitempty"`

@@ -235,6 +235,40 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	}
 }
 
+func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
+        glog.V(4).Infof("rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
+
+        snapshotreq := CreateSnapshotRequest{}
+        snapshotreq.SnapshotName = snapshotName
+
+        createSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName))
+        createSnapshotResponse := GenericResponse{}
+
+        err := s.doHTTP(createSnapshotURL, "POST", &createSnapshotResponse, snapshotreq)
+        if err != nil {
+                glog.Errorf("Error in create snapshot request: %v", err)
+                return err
+        }
+
+        err = s.isRequestAccepted(createSnapshotResponse, createSnapshotURL)
+        if err != nil {
+                glog.Errorf("Request not accepted for processing: %v", err)
+                return err
+        }
+
+        err = s.waitForJobCompletion(createSnapshotResponse.Status.Code, createSnapshotResponse.Jobs[0].JobID)
+        if err != nil {
+               // if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
+               //         fmt.Println(err)
+               //         return nil
+               // }
+                glog.Errorf("Unable to create fileset %s: %v", filesetName, err)
+                return err
+        }
+
+	return nil
+}
+
 func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
 	glog.V(4).Infof("rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
 

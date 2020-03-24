@@ -825,6 +825,61 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
         glog.Errorf("***** CreateSnapshot *****")
+        glog.V(3).Infof("create snapshot req: %v", req)
+
+        if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
+                glog.V(3).Infof("invalid create snapshot req: %v", req)
+                return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot ValidateControllerServiceRequest failed: %v", err))
+        }
+
+        if req == nil {
+                return nil, status.Error(codes.InvalidArgument, "Request cannot be empty")
+        }
+
+        volId := req.GetSourceVolumeId()
+        if volId == "" {
+                return nil, status.Error(codes.InvalidArgument, "Source Volume ID is a required field")
+        }
+
+        volumeIdMembers, err := cs.GetVolIdMembers(volID)
+
+        if err != nil {
+                return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Error in source Volume ID %v: %v", volId, err))
+        }
+
+        glog.Infof("Volume Id Members [%v]", volumeIdMembers)
+
+        conn, err := cs.GetConnFromClusterID(volumeIdMembers.ClusterId)
+
+        if err != nil {
+                return nil, err
+        }
+
+        primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+
+        if !isprimaryConnPresent {
+                return nil, status.Error(codes.Internal, "Unable to get connector for Primary cluster")
+        }
+
+
+	snapName := req.GetName()
+
+	primaryConn := cs.Driver.connmap["primary"]
+
+        fseterr := primaryConn.CreateSnapshot("fs1", "pvc-4d1428ab-9da0-4522-9ed0-6f684096c731", snapName)
+
+        if fseterr != nil {
+                return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to create snapshot. Error [%v]", fseterr))
+        }
+
+        return &csi.CreateSnapshotResponse{
+                Snapshot: &csi.Snapshot{
+                        SnapshotId:      snapName,
+                        SourceVolumeId:  volId,
+			ReadyToUse:      true,
+                },
+        }, nil
+
 	return nil, status.Error(codes.Unimplemented, "")
 }
 

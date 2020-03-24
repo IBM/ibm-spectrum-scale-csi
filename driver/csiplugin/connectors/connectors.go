@@ -55,6 +55,9 @@ type SpectrumScaleConnector interface {
 	GetFileSetUid(filesystemName string, filesetName string) (string, error)
 	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
 	DeleteSymLnk(filesystemName string, LnkName string) error
+
+	//Snapshot operations
+	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
 }
 
 const (
