@@ -116,7 +116,7 @@ done
 
 
 # kubectl logs on operator pods
-operatorName=`$cmd get deployment -l product=ibm-spectrum-scale-csi --namespace $ns  |grep -v NAME |awk '{print $1}'`
+operatorName=`$cmd get deployment ibm-spectrum-scale-csi-operator  --namespace $ns  |grep -v NAME |awk '{print $1}'`
 if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
    describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
    echo "$describeCSIScaleOperator"
