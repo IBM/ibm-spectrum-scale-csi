@@ -27,9 +27,10 @@ If you do not see a login or on-screen instructions, review the `GUI Documentati
 
   export USERNAME_B64=$(echo $USERNAME | base64)
   export PASSWORD_B64=$(echo $PASSWORD | base64)
-  export OPERATOR_NAMESPACE="ibm-spectrum-scale-csi-driver"  # Set this to the namespace you deploy the operator in.
-  
 
+  # Set the following to the target namespace to deploy the operator in.
+  export OPERATOR_NAMESPACE="SomeNamespace" 
+  
   cat << EOF > /tmp/csisecret.yaml
   apiVersion: v1
   data:

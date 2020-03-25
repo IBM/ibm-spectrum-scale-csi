@@ -27,7 +27,7 @@ setNamespace ${CV_TEST_USER} ${CV_TEST_NAMESPACE}
 
 $APP_TEST_LIBRARY_FUNCTIONS/operatorDeployment.sh \
     --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
-    --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml \
+    --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml \
     --role $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml \
     --rolebinding $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml \
     --operator $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml

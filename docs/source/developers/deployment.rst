@@ -48,7 +48,7 @@ Once you have a repository ready:
   # OPERATOR_DIR has been defined in previous steps
   cd ${OPERATOR_DIR}
   # Use a helper script to update your deployment to point at your operator image
-  hacks/change_deploy_image.py -i quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}
+  ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=quay.io/${MYUSER}/ibm-spectrum-scale-csi-operator:${VERSION}"
   
 
 Installing the CSI Operator
@@ -66,7 +66,7 @@ Run the following to deploy the IBM Spectrum Scale CSI operator manually:
   kubectl apply -f ${OPERATOR_DIR}/deploy/role.yaml
   kubectl apply -f ${OPERATOR_DIR}/deploy/role_binding.yaml
   kubectl apply -f ${OPERATOR_DIR}/deploy/service_account.yaml
-  kubectl apply -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
   
   
 Installing the CSI Driver
@@ -74,20 +74,20 @@ Installing the CSI Driver
 
 .. tip:: Before starting the plugin, ensure that any GUI secrets have been added to the appropriate namespace. 
 
-A Custom Resource (CR) file is provided `ibm-spectrum-scale-csi-operator-cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml>`_. Modify this file to match the properties in your environment.
+A Custom Resource (CR) file is provided `csiscaleoperators.csi.ibm.com.cr.yaml <https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/master/operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml>`_. Modify this file to match the properties in your environment.
 
 To start: 
 
 .. code-block:: bash
 
-  kubectl apply -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+  kubectl apply -f ${OPERATOR_DIR}/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml
 
 
 To stop:
 
 .. code-block:: bash
 
-  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml
 
 Removing the CSI Operator and Driver
 ------------------------------------
@@ -97,14 +97,14 @@ To remove the IBM Spectrum Scale CSI Operator and Driver:
 .. code-block:: bash
 
   # The following removes the csi-driver
-  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-cr.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml
 
   # The following removes the csi-operator
   kubectl delete -f ${OPERATOR_DIR}/deploy/operator.yaml
   kubectl delete -f ${OPERATOR_DIR}/deploy/role.yaml
   kubectl delete -f ${OPERATOR_DIR}/deploy/role_binding.yaml
   kubectl delete -f ${OPERATOR_DIR}/deploy/service_account.yaml
-  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+  kubectl delete -f ${OPERATOR_DIR}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
 
   # The following removes the namespace 
   kubectl delete -f ${OPERATOR_DIR}/deploy/namespace.yaml

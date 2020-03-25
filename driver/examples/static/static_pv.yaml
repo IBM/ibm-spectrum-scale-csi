@@ -8,6 +8,6 @@ spec:
   accessModes:
     - ReadWriteMany
   csi:
-    driver: ibm-spectrum-scale-csi
+    driver: spectrumscale.csi.ibm.com
     volumeHandle: "clusterID;FSUID;path=/gpfs/fs1/staticdir"
 

@@ -19,6 +19,7 @@ env:
     # Format quay image target
     - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_DRIVER}
     - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_OPERATOR}
+    
     # Add image tag
     - IMAGE_TAG=$( 
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
@@ -44,6 +45,11 @@ env:
     - BUILD_DIR_OPERATOR="${TRAVIS_BUILD_DIR}/operator"
     - BUILD_DIR_DRIVER="${TRAVIS_BUILD_DIR}/driver"
 
+    # For the quay app
+    - BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+    - OPERATOR_DIR=deploy/olm-catalog/ibm-spectrum-scale-csi-operator
+    - QUAY_NAMESPACE=${IMAGE_REPO_OWNER}
+    - PACKAGE_NAME=${REPO_NAME}-${BRANCH}
 
 # Operator ENV
     - OCTOKIT_API_ENDPOINT="https://github.ibm.com/api/v3/"
@@ -72,6 +78,7 @@ stages:
   - test
 jobs:
   fast_finish: true
+
   include:
     
     # Install operator-courier and run the lint on the manifest.
@@ -156,7 +163,7 @@ jobs:
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
-    
+              
     # stage: build
     - name: "Build - Operator: image and push to registry"
       install:
@@ -172,10 +179,15 @@ jobs:
         - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
       deploy:
         - provider: script
-          script: docker push ${IMAGE_FQN_OPERATOR}
+          script:  docker push ${IMAGE_FQN_OPERATOR}
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
+        - provider: script
+          script: ../tools/scripts/push_app.sh
+          on:
+            all_branches: true
+            condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD" && -n "$QUAY_APP"
 
     # stage: build
     - name: "Build - Operator: docs"
@@ -200,7 +212,7 @@ jobs:
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script:        
         # molecule
-        - python hacks/change_deploy_image.py -i ${OPERATOR_LOCAL_IMAGE} --ifnotpresent
+        - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
         # sc

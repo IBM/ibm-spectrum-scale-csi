@@ -1,0 +1,19 @@
+---
+- name: Change deploy image
+  hosts: localhost
+  vars:
+    image_pull_policy: "IfNotPresent"
+    operator_yaml: "{{ lookup('env','PWD') }}/deploy/operator.yaml"
+
+  tasks:
+    - name: "Modify the imagePullPolicy to: {{ image_pull_policy }}"
+      replace:
+        path: "{{ operator_yaml }}"
+        regexp: '^(\s+)imagePullPolicy: (.*)'
+        replace: "\\1imagePullPolicy: {{ image_pull_policy }}"
+
+    - name: "Modify the operator image to {{ quay_operator_endpoint }}"
+      replace:
+        path: "{{ operator_yaml }}"
+        regexp: '^(\s+)image: quay.io(.*)'
+        replace: "\\1image: {{ quay_operator_endpoint }}"
