@@ -9,3 +9,4 @@ This section is to help those interested in contributing to the project.
    clone.rst
    deployment.rst 
    olm.rst
+   cert.rst
