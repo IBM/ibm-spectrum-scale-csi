@@ -1,0 +1,43 @@
+- name: Run OLM test
+  hosts: localhost
+  become: yes
+  gather_facts: false
+  vars:
+    QUAY_USER: ibm-spectrum-scale-dev
+    QUAY_NAMESPACE: ibm-spectrum-scale-dev 
+    REPO_NAME: ibm-spectrum-scale-csi-dev
+    CHANNEL_NAME: test
+    
+    OPERATOR_DIR:  ~/demo
+    OPERATOR_VERSIONS:
+      - 1.0.0
+      - 1.1.0
+    PACKAGE_NAME: ibm-spectrum-scale-csi-operator
+
+
+    QUAY_USERNAME: ibm-spectrum-scale-dev+builder
+    # ansible-playbook olm-test-playbook.yaml --extra-vars '{"QUAY_PASSWORD":"TOKEN"}'
+    QUAY_PASSWORD: "DEADB33F"
+    NAMESPACE: "marketplace"
+    INTERACTABLE: true
+
+
+  tasks:
+    - name: Quay password set
+      meta: end_play
+      when: 'QUAY_PASSWORD == "DEADB33F"'
+
+    - debug:
+        msg: "{{ lookup('template','./olm-test/k8s-sub.yaml.j2' )}}"
+
+    # Lazy workaround for k8s module problem.
+    - name: "Ensure subscription is present"
+  #    shell: "echo '{{definition}}' > temp"
+      shell: "echo '{{definition}}' > /tmp/sub; kubectl apply -f /tmp/sub; rm -f /tmp/sub"
+      vars:
+        definition: "{{ lookup('template','./olm-test/k8s-sub.yaml.j2' ) }}"
+
+
+    - name: "Iterate  over the operator versions."
+      include_tasks: "./olm-test/check-version-play.yaml"
+      loop: "{{ OPERATOR_VERSIONS }}" 

@@ -119,7 +119,7 @@ Kubernetes subscription template
     registryNamespace:  {{ QUAY_USER }}
   
   ---
-  apiVersion: operators.coreos.com/v1alpha2
+  apiVersion: operators.coreos.com/v1
   kind: OperatorGroup
   metadata:
     name: operator-group
