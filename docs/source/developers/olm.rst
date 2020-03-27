@@ -23,6 +23,7 @@ To subscribe to these applicaions via OLM, the code repository provides three YA
 
 * Used for OLM subscription to the master stream in raw k8s.
 * Created in the `marketplace` namespace.
+* **WARNING** : Currently disabled, as master has some issues for upgrade.
 
 ``tools/olm/operator-source-k8s-dev.yaml``
 
