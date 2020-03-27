@@ -10,7 +10,7 @@
     PACKAGE_NAME: ibm-spectrum-scale-csi-dev
 
     # Name of Channel in Quay
-    CHANNEL_NAME: test
+    CHANNEL_NAME: stable
     
     # Contains the CSV directories for all of the versions to be tested.
     # This  can  be a  copy of https://github.com/operator-framework/community-operators/tree/master/community-operators/ibm-spectrum-scale-csi-operator
@@ -36,9 +36,9 @@
     # If set to true, will pause execution and wait for input before moving to next version.
     INTERACTABLE: true
 
+    # Subscription options.
     K8S_SUB: "./olm-test/k8s-sub.yaml.j2"
     OC_SUB: "./olm-test/oc-sub.yaml.j2"
-    
 
   tasks:
     - name: "Quay password set"
@@ -49,10 +49,18 @@
       shell: "which oc"
       register: result
       ignore_errors: true
+    - debug: 
+        var: result
     - set_fact:
         subscription: "{{ K8S_SUB }}"
     - set_fact:
         subscription: "{{ OC_SUB }}"
+      when: result.rc == 0
+    - name: "Ensure subscription is present"
+      shell: "echo '{{definition}}' > temp"
+      vars:
+        definition: "{{ lookup('template', subscription ) }}"
+
       
     # Lazy workaround for k8s module problem.
     - name: "Ensure subscription is present"

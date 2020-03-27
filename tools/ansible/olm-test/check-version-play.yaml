@@ -36,7 +36,7 @@
   shell:  'operator-courier  push "{{OPERATOR_DIR}}" "{{QUAY_NAMESPACE}}" "{{PACKAGE_NAME}}" "{{nver}}" "{{ltok}}"'
 
 - name: "Patch the operator source status to {} to pull the latest"
-  shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale-csi -p '[{\"op\":\"replace\",\"path\":\"/status\",\"value\":{}}]'  --type json"
+  shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale -p '[{\"op\":\"replace\",\"path\":\"/status\",\"value\":{}}]'  --type json"
 
 - pause:
     prompt: "OLM configured to use {{item}}, press any key to continue"
