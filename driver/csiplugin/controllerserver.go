@@ -868,6 +868,10 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
                 return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Source Volume %v is not fileset based", volId, err))
     	}
 
+        if !volumeIdMembers.IsFilesetBased {
+                return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Source Volume %v is not fileset based", volId, err))
+	}
+
         conn, err := cs.GetConnFromClusterID(volumeIdMembers.ClusterId)
 
         if err != nil {
