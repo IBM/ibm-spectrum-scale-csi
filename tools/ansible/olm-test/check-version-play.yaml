@@ -1,4 +1,3 @@
-
 - name: "Write the updated package"
   template: 
     src: "ibm-spectrum-scale-csi-operator.package.yaml.j2"
@@ -31,13 +30,13 @@
     return_content: yes
   register: login
 - set_fact:
-    ltok: "{{ login.json.token.split(' ')[1]}}"
+    ltok: "{{ login.json.token }}"
 
 - name: "Push operator to quay"
-  shell:  'operator-courier push "{{OPERATOR_DIR}}" "{{QUAY_NAMESPACE}}" "{{PACKAGE_NAME}}" "{{nver}}" "{{ltok}}"'
+  shell:  'operator-courier  push "{{OPERATOR_DIR}}" "{{QUAY_NAMESPACE}}" "{{PACKAGE_NAME}}" "{{nver}}" "{{ltok}}"'
 
-- name: "Patch the operator source status to pull the latest"
-  shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale-csi -p '{\'status\':{}}'"
+- name: "Patch the operator source status to {} to pull the latest"
+  shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale-csi -p '[{\"op\":\"replace\",\"path\":\"/status\",\"value\":{}}]'  --type json"
 
 - pause:
     prompt: "OLM configured to use {{item}}, press any key to continue"

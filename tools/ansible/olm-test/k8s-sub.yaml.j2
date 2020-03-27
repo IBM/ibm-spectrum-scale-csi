@@ -20,7 +20,7 @@ metadata:
 spec:
   type: appregistry
   endpoint: https://quay.io/cnr
-  registryNamespace:  {{ QUAY_USER }}
+  registryNamespace: {{ QUAY_NAMESPACE }}
 
 ---
 apiVersion: operators.coreos.com/v1
@@ -30,16 +30,16 @@ metadata:
   namespace: {{ NAMESPACE }}
 spec:
   targetNamespaces:
-  - {{ NAMESPACE   }} 
+  - {{ NAMESPACE }} 
 
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: oper-sub
+  name: ibm-spectrum-scale-csi-sub
   namespace: {{ NAMESPACE }}
 spec:
-  channel: stable
-  name: {{ REPO_NAME }}
-  source: {{ REPO_NAME }}
+  channel: {{CHANNEL_NAME}}
+  name: {{ PACKAGE_NAME }}
+  source: ibm-spectrum-scale-csi
   sourceNamespace: {{ NAMESPACE }}
