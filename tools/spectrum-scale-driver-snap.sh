@@ -98,6 +98,7 @@ describe_all_per_label=${logdir}/ibm-spectrum-scale-csi-describe-all-by-label
 get_all_per_label=${logdir}/ibm-spectrum-scale-csi-get-all-by-label
 get_configmap=${logdir}/ibm-spectrum-scale-csi-configmap
 get_k8snodes=${logdir}/ibm-spectrum-scale-csi-k8snodes
+get_spectrum=${logdir}/${CSI_SPECTRUM_SCALE_LABEL}
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 
 echo "$klog StatefulSet/ibm-spectrum-scale-csi-attacher"
@@ -156,6 +157,11 @@ $get_k8snodes_cmd > $get_k8snodes 2>&1 || :
 get_k8snodes_cmd="$cmd describe nodes"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd >> $get_k8snodes 2>&1 || :
+
+
+get_spectrum_cmd="$cmd describe ds ${CSI_SPECTRUM_SCALE_LABEL} -n $ns"
+echo "$get_spectrum_cmd"
+$get_spectrum_cmd >> $get_spectrum 2>&1 || :
 
 if [[ "$cmd" == "oc" ]]
 then
