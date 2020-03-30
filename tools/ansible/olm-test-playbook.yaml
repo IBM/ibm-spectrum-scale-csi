@@ -49,8 +49,10 @@
       shell: "date +%s"
       register: tstamp
 
-    - set_fact: 
+    - name: "Determing directory for temporary package"
+      set_fact: 
         olm_dir: "/tmp/{{PACKAGE_NAME}}-{{tstamp.stdout}}"
+
     - name: "Create the directory {{ olm_dir }}"
       file:
         path: "{{ olm_dir }}"
@@ -61,14 +63,17 @@
       shell: "which oc"
       register: result
       ignore_errors: true
-    - debug: 
-        var: result
-    - set_fact:
+
+    - name: "Kubernetes detected using {{ K8S_SUB }} for subscription"
+      set_fact:
         subscription: "{{ K8S_SUB }}"
-    - set_fact:
+
+    - name: "Openshift detected using {{ OC_SUB }} for subscription"
+      set_fact:
         subscription: "{{ OC_SUB }}"
       when: result.rc == 0
-    - name: "Ensure subscription is present"
+
+    - name: "Cache templatized subscription"
       shell: "echo '{{definition}}' > temp"
       vars:
         definition: "{{ lookup('template', subscription ) }}"

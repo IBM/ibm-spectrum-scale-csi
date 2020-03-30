@@ -13,13 +13,18 @@
   shell: "helm registry list quay.io -o {{ QUAY_NAMESPACE }} --output json "
   register: registry_out
 
-- set_fact:
+- name: "Parse registry output"
+  set_fact:
     registry: "{{ registry_out.stdout  | from_json }}"
-- set_fact:
+
+- name: "Split latest version"
+  set_fact:
     maj: "{{ registry[0].releases[0].split('.')[0]  }}"
     min: "{{ registry[0].releases[0].split('.')[1]  }}"
     ptf: "{{ registry[0].releases[0].split('.')[2] | int + 1 }}"
-- set_fact:
+
+- name: "Get version to push"
+  set_fact:
     nver: "{{maj}}.{{min}}.{{ptf}}"
 
 # TODO need to hide  password somehow.
@@ -34,7 +39,9 @@
         password: "{{QUAY_PASSWORD}}"
     return_content: yes
   register: login
-- set_fact:
+
+- name:  "Cache login token"
+  set_fact:
     ltok: "{{ login.json.token }}"
 
 - name: "Push operator to quay"
