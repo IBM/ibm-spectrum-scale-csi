@@ -854,15 +854,12 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
         if volId == "" {
                 return nil, status.Error(codes.InvalidArgument, "Source Volume ID is a required field")
         }
-        glog.V(3).Infof("****** volId: %s ******", volId)
 
         volumeIdMembers, err := cs.GetVolIdMembers(volId)
 
         if err != nil {
                 return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Error in source Volume ID %v: %v", volId, err))
         }
-
-        glog.V(3).Infof("****** Volume Id Members [%v] ******", volumeIdMembers)
 
         if !volumeIdMembers.IsFilesetBased {
                 return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Source Volume %v is not fileset based", volId, err))
@@ -892,28 +889,24 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
         if err != nil {
                 return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
         }
-        glog.V(3).Infof("****** FilesystemName: %s ******", FilesystemName)
 
         mountInfo, err := primaryConn.GetFilesystemMountDetails(FilesystemName)
 
         if err != nil {
                 return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get mount info for FS [%v] in primary cluster", FilesystemName))
         }
-        glog.V(3).Infof("****** Mountinfo: %v ******", mountInfo)
 
         remoteDeviceName := mountInfo.RemoteDeviceName
         splitDevName := strings.Split(remoteDeviceName, ":")
         remDevFs := splitDevName[len(splitDevName)-1]
 
         FilesystemName = remDevFs
-        glog.V(3).Infof("****** Remote FilesystemName: %s ******", FilesystemName)
 
         FilesetName, err := conn.GetFileSetNameFromId(FilesystemName, volumeIdMembers.FsetId)
 
         if err != nil {
                 return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
         }
-        glog.V(3).Infof("****** FilesetName: %s ******", FilesetName)
 
         if FilesetName != "" {
                 sLinkRelPath := strings.Replace(volumeIdMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
@@ -927,7 +920,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
         }
 
 	snapName := req.GetName()
-        glog.V(3).Infof("****** Snap name: %s ****", snapName)
 
         snaperr := conn.CreateSnapshot(FilesystemName, FilesetName, snapName)
 
@@ -939,10 +931,15 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
         if err != nil {
                 return nil, err
         }
-        glog.V(3).Infof("****** Snap ID: %s ******", snapId)
+        glog.V(3).Infof("Snapshot ID: %s ", snapId)
 
-	const longForm = "2020-03-27 00:40:02,000"
-	t, _ := time.Parse(longForm, "2020-03-27 00:40:02,000")
+        createTS, err := conn.GetSnapshotCreateTimestamp(FilesystemName, FilesetName, snapName)
+        if err != nil {
+                return nil, err
+        }
+
+	const longForm = "2020-03-27 00:40:02,000" // This is the format in which REST API return creation timestamp
+	t, _ := time.Parse(longForm, createTS)
 	var timestamp timestamp.Timestamp
 	timestamp.Seconds = t.Unix()
 	timestamp.Nanos = 0

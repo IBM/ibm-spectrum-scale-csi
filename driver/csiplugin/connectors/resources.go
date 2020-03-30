@@ -458,6 +458,7 @@ type Snapshot_v2 struct {
         FilesetName    string     `json:"filesetName,omitempty"`
         SnapID         int        `json:"snapID,omitempty"`
         Status         string     `json:"status,omitempty"`
+	Created	       string     `json:"created,omitempty"`
 }
 
 type GetSnapshotResponse_v2 struct {

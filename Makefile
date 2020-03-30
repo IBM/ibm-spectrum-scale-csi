@@ -7,9 +7,7 @@
 # Contributors:
 #  IBM Corporation - initial API and implementation
 ###############################################################################
-#
-# TODO - Merge - Operator Section Below
-#
+
 SHELL = /bin/bash
 STABLE_BUILD_DIR = repo/stable
 STABLE_REPO_URL ?= https://raw.githubusercontent.com/IBM/charts/master/repo/stable/
@@ -40,25 +38,16 @@ repo-stable: $(STABLE_CHARTS) $(STABLE_BUILD_DIR)
 	helm repo index $(STABLE_BUILD_DIR) --url $(STABLE_REPO_URL)
 
 .PHONY: all
-all: repo-stable
+all: repo-stable build-driver-image
 
 #
-# TODO - Merge - Driver Section Below
+# CSI Driver section
 #
-NAME=ibm-spectrum-scale-csi
-
-.PHONY: all $NAME
-
 IMAGE_VERSION=v1.1.0
-IMAGE_NAME=$(NAME)
+DRIVER_IMAGE_NAME=ibm-spectrum-scale-csi-driver
 
-all: $NAME
+build-driver-image:
+	docker build -t $(DRIVER_IMAGE_NAME):$(IMAGE_VERSION) -f ./driver/build/Dockerfile ./driver/
 
-$NAME:
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o  _output/$(NAME) ./cmd/ibm-spectrum-scale-csi
-
-build-image: $NAME
-	docker build --network=host -t $(IMAGE_NAME):$(IMAGE_VERSION) .
-
-save-image: build-image
-	docker save $(IMAGE_NAME):$(IMAGE_VERSION) -o _output/$(IMAGE_NAME)_$(IMAGE_VERSION).tar
+save-driver-image: build-image
+	docker save $(DRIVER_IMAGE_NAME):$(IMAGE_VERSION) -o _output/$(DRIVER_IMAGE_NAME)_$(IMAGE_VERSION).tar

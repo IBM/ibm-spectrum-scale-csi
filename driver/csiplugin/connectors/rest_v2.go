@@ -794,6 +794,22 @@ func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) 
 	return getFilesetResponse.Filesets[0].FilesetName, nil
 }
 
+func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error) {
+        getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
+        getSnapshotResponse := GetSnapshotResponse_v2{}
+
+        err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+        if err != nil {
+                return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+        }
+
+        if len(getSnapshotResponse.Snapshots) == 0 {
+                return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+        }
+
+        return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].Created), nil
+}
+
 func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error) {
         getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
         getSnapshotResponse := GetSnapshotResponse_v2{}
