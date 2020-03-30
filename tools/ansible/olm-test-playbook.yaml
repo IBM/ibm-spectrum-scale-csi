@@ -39,6 +39,7 @@
     # Subscription options.
     K8S_SUB: "./olm-test/k8s-sub.yaml.j2"
     OC_SUB: "./olm-test/oc-sub.yaml.j2"
+    SUB: "/tmp/sub"
 
   tasks:
     - name: "Quay password set"
@@ -73,17 +74,10 @@
         subscription: "{{ OC_SUB }}"
       when: result.rc == 0
 
-    - name: "Cache templatized subscription"
-      shell: "echo '{{definition}}' > temp"
-      vars:
-        definition: "{{ lookup('template', subscription ) }}"
-
-      
-    # Lazy workaround for k8s module problem.
-    - name: "Ensure subscription is present"
-      shell: "echo '{{definition}}' > /tmp/sub; kubectl apply -f /tmp/sub; rm -f /tmp/sub"
-      vars:
-        definition: "{{ lookup('template', subscription ) }}"
+    - name: "Ensure subscription file is defined for consumption"
+      template: 
+        src: "{{subscription}}"
+        dest: "{{ SUB }}"
 
     - name: "Iterate  over the operator versions."
       include_tasks: "./olm-test/check-version-play.yaml"
