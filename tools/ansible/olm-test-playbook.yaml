@@ -45,6 +45,18 @@
       meta: end_play
       when: 'QUAY_PASSWORD == "DEADB33F"'
 
+    - name: "Get timestamp"
+      shell: "date +%s"
+      register: tstamp
+
+    - set_fact: 
+        olm_dir: "/tmp/{{PACKAGE_NAME}}-{{tstamp.stdout}}"
+    - name: "Create the directory {{ olm_dir }}"
+      file:
+        path: "{{ olm_dir }}"
+        state: directory
+        mode: '0755'
+
     - name: "Check for openshift"
       shell: "which oc"
       register: result
@@ -71,3 +83,10 @@
     - name: "Iterate  over the operator versions."
       include_tasks: "./olm-test/check-version-play.yaml"
       loop: "{{ OPERATOR_VERSIONS }}" 
+
+    - name: "Remove the directory {{ olm_dir }}"
+      file:
+        path: "{{ olm_dir }}"
+        state: absent
+        mode: '0755'
+
