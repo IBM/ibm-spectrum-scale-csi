@@ -21,7 +21,7 @@ LABEL name="IBM Spectrum Scale CSI driver" \
       release="1" \
       run='docker run ibm-spectrum-scale-csi-driver' \
       summary="An implementation of CSI Plugin for the IBM Spectrum Scale product."\
-      description="CSI Plugin for IBM Spectrum Scale"\
+      description="An implementation of CSI Plugin for the IBM Spectrum Scale product."\
       maintainers="IBM Spectrum Scale"\
       git_commit=$GIT_COMMIT
 
