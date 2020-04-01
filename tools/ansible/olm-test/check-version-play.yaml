@@ -55,7 +55,14 @@
 - name: "Patch the operator source status to {} to pull the latest"
   shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale-csi -p '[{\"op\":\"replace\",\"path\":\"/status\",\"value\":{}}]'  --type json"
 
-
+# TODO break this out into a role/playbook
+#- name : "Wait 60s for new CSV"
+#  shell: "kubectl get csv -n  {{NAMESPACE}} ibm-spectrum-scale-csi-operator.v{{item}}"
+#  register: csv_out
+#  until:
+#    - csv_out.rc == 0
+#  delay: 6
+#  retries: 10
 
 - pause:
     prompt: "OLM configured to use {{item}}, press enter to continue"
