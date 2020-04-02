@@ -30,7 +30,7 @@
 
     - name:  "Archive the bundle: {{OUTPUT}}/{{package_name}}.zip"
       archive:
-        path: "{{olm_dir}}"
+        path: "{{olm_dir}}/*"
         format: zip
         dest: "{{OUTPUT}}/{{package_name}}.zip"
 
@@ -55,13 +55,12 @@
     - name: "Find all of the CSV in the OLM directory" 
       find:
         paths: "{{OLM_BASE}}"
-        contains:  ".*clusterserviceversion.*"
+        patterns:  ".*clusterserviceversion.yaml"
+        use_regex: yes
         depth: 2
         recurse: yes
       register: csvs
 
-    - debug:
-        var: csvs
     - name: "Copy CSVs to  {{olm_dir}}"
       copy:
         src: "{{item.path}}"
@@ -73,23 +72,45 @@
         paths: "{{OLM_BASE}}/{{currentVersion}}"
       register: configs
 
-    - debug: 
-        var: configs
     - name: "Copy configs to  {{olm_dir}}"
       copy:
         src: "{{item.path}}"
         dest: "{{olm_dir}}"
       with_items: "{{ configs.files }}"
 
+    # TODO need to make this smarter
+    - name: "Get all the file names"
+      find:
+        patterns:  ".*{{OH_PKG}}.*"
+        use_regex: yes
+        paths: "{{olm_dir}}"
+        recurse: yes
+      register: files
+
+    - name: "Rename files to match  package standard"
+      copy:
+        src: "{{item.path}}"
+        dest: "{{ item.path | regex_replace(OH_PKG, package_name)}}"
+      with_items: "{{ files.files }}"
+
+
+    - name: "Remove  old file names"
+      file:
+        path: "{{ item.path }}"
+        state: absent
+        mode: '0755'
+      with_items: "{{ files.files }}"
+    
+
     - name:  "Archive the bundle: {{OUTPUT}}/{{package_name}}.zip"
       archive:
-        path: "{{olm_dir}}"
+        path: "{{olm_dir}}/*"
         format: zip
         dest: "{{OUTPUT}}/{{package_name}}.zip"
-
 
 - name: "Remove the directory {{ olm_dir }}"
   file:
     path: "{{ olm_dir }}"
     state: absent
     mode: '0755'
+

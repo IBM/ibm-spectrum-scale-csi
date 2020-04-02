@@ -1,4 +1,3 @@
----
 channels:
   - currentCSV: ibm-spectrum-scale-csi-operator.v1.1.0
     name: stable
