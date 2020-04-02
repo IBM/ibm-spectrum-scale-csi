@@ -98,14 +98,12 @@
         regexp: '{{CERT_PATH}}'
         replace: '{{QUAY_PATH}}'
       with_items: "{{ repos.files }}"
-- meta: "end_play"
 
 - name: Run the 'operator-courier'
   shell: "operator-courier verify --ui_validate_io {{OP_PKG}}"
   register: ocOut
   args:
     chdir: "{{OPERATOR_DIR}}" 
-
 
 
 - name: Create namespace
