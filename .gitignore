@@ -1,4 +1,5 @@
 # Temporary Build Files
+build
 build/_output
 build/_test
 .DS_Store
