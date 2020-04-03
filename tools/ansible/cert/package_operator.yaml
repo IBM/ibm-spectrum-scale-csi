@@ -55,8 +55,8 @@
     - name: "Find all of the CSV in the OLM directory" 
       find:
         paths: "{{OLM_BASE}}"
-        patterns:  ".*clusterserviceversion.yaml"
-        use_regex: yes
+        #patterns:  ".*clusterserviceversion.yaml"
+        #use_regex: yes
         depth: 2
         recurse: yes
       register: csvs

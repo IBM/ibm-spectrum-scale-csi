@@ -8,11 +8,11 @@
     OPERATOR_DIR: ../../operator/
     OLM_BASE: "{{OPERATOR_DIR}}deploy/olm-catalog/{{OPERATOR_NAME}}"
 
-    QUAY_PATH: "quay.io/ibm-spectrum-scale/{{OPERATOR_NAME}}:{{OPERATOR_VERSION}}"
+    QUAY_PATH: "quay.io/ibm-spectrum-scale/{{OPERATOR_NAME}}"
     OH_PKG: "ibm-spectrum-scale-csi-operator"
     OP_PKG: ibm-spectrum-scale-csi-operator.zip
 
-    CERT_PATH: "registry.connect.redhat.com/ibm/{{OPERATOR_NAME}}:{{OPERATOR_VERSION}}"
+    CERT_PATH: "registry.connect.redhat.com/ibm/{{OPERATOR_NAME}}"
     CERT_PKG: "ibm-spectrum-scale-csi"
     OP_PKG_RH: ibm-spectrum-scale-csi-operator-redhat.zip
 
