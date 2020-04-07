@@ -29,4 +29,3 @@ This operator does not require any pod  security requirements.
 
 # SecurityContextConstraints Requirements
 The operator maintains the Security Context Constraints, removing the required restraints when the operator is uninstalled.
-
