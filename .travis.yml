@@ -11,8 +11,8 @@ env:
     - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
     # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
-    - REPO_NAME_DRIVER="${REPO_NAME}-driver"
-    - REPO_NAME_OPERATOR="${REPO_NAME}-operator"
+    - REPO_NAME_DRIVER="ibm-spectrum-scale-csi-driver"
+    - REPO_NAME_OPERATOR="ibm-spectrum-scale-csi-operator"
    
     # Grab quay username from 'user+bot_token'
     - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
