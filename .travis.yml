@@ -114,6 +114,7 @@ jobs:
       before_install:
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
       install:
+        - cd cloudpak
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
