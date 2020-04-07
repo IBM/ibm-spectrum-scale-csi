@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify
-#
 # Wait script for resouces to become available in the cluster
 #
 set -o errexit

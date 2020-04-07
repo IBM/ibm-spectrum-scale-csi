@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify
-#
 # Pre-install script REQUIRED ONLY IF additional setup is required prior to
 # operator install for this test path.
 #
