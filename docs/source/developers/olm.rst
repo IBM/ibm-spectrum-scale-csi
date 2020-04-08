@@ -23,6 +23,7 @@ To subscribe to these applicaions via OLM, the code repository provides three YA
 
 * Used for OLM subscription to the master stream in raw k8s.
 * Created in the `marketplace` namespace.
+* **WARNING** : Currently disabled, as master has some issues for upgrade.
 
 ``tools/olm/operator-source-k8s-dev.yaml``
 
@@ -119,7 +120,7 @@ Kubernetes subscription template
     registryNamespace:  {{ QUAY_USER }}
   
   ---
-  apiVersion: operators.coreos.com/v1alpha2
+  apiVersion: operators.coreos.com/v1
   kind: OperatorGroup
   metadata:
     name: operator-group
