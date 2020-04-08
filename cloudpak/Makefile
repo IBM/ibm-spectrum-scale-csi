@@ -38,5 +38,5 @@ repo-stable: $(STABLE_CHARTS) $(STABLE_BUILD_DIR)
 	helm repo index $(STABLE_BUILD_DIR) --url $(STABLE_REPO_URL)
 
 .PHONY: all
-all: repo-stable build-driver-image
+all: repo-stable 
 
