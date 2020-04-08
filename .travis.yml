@@ -117,6 +117,7 @@ jobs:
         # Resolve symlinks for testing.
         - cp -R -L cloudpak/ cloudpak-static
         - cd cloudpak-static
+        - ls -ltra  stable/ibm-spectrum-scale-csi-operator-bundle/case/ibm-spectrum-scale-csi-operator/inventory/ibmCSIScaleOperator/files
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
