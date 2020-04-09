@@ -20,8 +20,8 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 . $APP_TEST_LIBRARY_FUNCTIONS/createNamespace.sh
 toolrepositoryroot=$APP_TEST_LIBRARY_FUNCTIONS/../../
 
-#createNamespace ${CV_TEST_NAMESPACE}
-setNamespace  ${CV_TEST_USER} ${CV_TEST_NAMESPACE}
+createNamespace ${CV_TEST_NAMESPACE}
+#setNamespace  ${CV_TEST_USER} ${CV_TEST_NAMESPACE}
 
 $APP_TEST_LIBRARY_FUNCTIONS/operatorDeployment.sh \
     --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
