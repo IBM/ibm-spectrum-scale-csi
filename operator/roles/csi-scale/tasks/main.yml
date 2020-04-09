@@ -46,7 +46,7 @@
     - name: "Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}"
       k8s_info:
         kind: "SecurityContextConstraints"
-        name: "csiaccess"
+        name: "spectrum-scale-csiaccess"
       register: csiaccess_results
 
     - name: "Ensure the csiaccess_users list"
