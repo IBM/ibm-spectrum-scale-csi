@@ -18,5 +18,5 @@ $APP_TEST_LIBRARY_FUNCTIONS/operatorDelete.sh \
     --rolebinding $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml \
     --operator $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml \
 
-deleteNamespace ${CV_TEST_NAMESPACE}
+#deleteNamespace ${CV_TEST_NAMESPACE}
 
