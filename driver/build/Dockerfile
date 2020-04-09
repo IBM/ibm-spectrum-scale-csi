@@ -1,5 +1,5 @@
-# Multi-arch build for IBM Spectrum Scale CSI Driver
-# usage: docker buildx build --platform=linux/amd64 -t my_image_tag .
+# Legacy docker build for IBM Spectrum Scale CSI Driver
+# usage: docker build -f build/Dockerfile -t my_image_tag .
 
 FROM golang:1.13.1 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
@@ -9,6 +9,7 @@ RUN go mod download
 
 COPY . .
 ARG GOFLAGS
+ARG GIT_COMMIT
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 RUN chmod +x _output/ibm-spectrum-scale-csi
 
@@ -20,8 +21,10 @@ LABEL name="IBM Spectrum Scale CSI driver" \
       release="1" \
       run='docker run ibm-spectrum-scale-csi-driver' \
       summary="An implementation of CSI Plugin for the IBM Spectrum Scale product."\
-      description="CSI Plugin for IBM Spectrum Scale"\
-      maintainers="IBM Spectrum Scale"
+      description="An implementation of CSI Plugin for the IBM Spectrum Scale product."\
+      maintainers="IBM Spectrum Scale"\
+      git_commit=$GIT_COMMIT
+
 COPY licenses /licenses
 COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/_output/ibm-spectrum-scale-csi /ibm-spectrum-scale-csi
 ENTRYPOINT ["/ibm-spectrum-scale-csi"]
