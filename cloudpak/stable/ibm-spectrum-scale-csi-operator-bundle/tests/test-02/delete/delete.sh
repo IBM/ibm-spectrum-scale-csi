@@ -10,7 +10,7 @@ operator=ibm-spectrum-scale-csi-operator
 deleteDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 echo "deleteDir is "
 echo $deleteDir
-set -x
+
 $APP_TEST_LIBRARY_FUNCTIONS/operatorDelete.sh \
     --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
     --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml \
