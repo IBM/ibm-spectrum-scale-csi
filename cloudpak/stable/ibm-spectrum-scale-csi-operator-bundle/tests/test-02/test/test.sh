@@ -15,3 +15,7 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 echo "Check the ibm-spectrum-scale-csi-operator status"
 output=$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}")
 echo $output
+
+pod="$(cut -d' ' -f6 <<< $output)"
+
+kubectl logs -n "${CV_TEST_NAMESPACE:-default}" $pod operator
