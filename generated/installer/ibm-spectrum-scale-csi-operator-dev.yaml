@@ -43,7 +43,7 @@ spec:
             - /usr/local/bin/ao-logs
             - /tmp/ansible-operator/runner
             - stdout
-          image: quay.io/mew2057/ibm-spectrum-scale-csi-driver
+          image: quay.io/mew2057/ibm-spectrum-scale-csi-driver::v1.1.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
@@ -89,7 +89,7 @@ spec:
               value: ibm-spectrum-scale-csi-operator
             - name: CSI_DRIVER_IMAGE
               value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:v1.1.0
-          image: quay.io/mew2057/ibm-spectrum-scale-csi-driver
+          image: quay.io/mew2057/ibm-spectrum-scale-csi-driver:v1.1.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
