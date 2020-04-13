@@ -431,7 +431,6 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 	if !primaryClusterFound {
 		issueFound = true
 		glog.Errorf("No primary clusters specified")
-
 	}
 
 	if rClusterForPrimaryFS != "" && !utils.StringInSlice(rClusterForPrimaryFS, cl) {
@@ -439,8 +438,8 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 		glog.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS)
 	}
 
-	if issueFound == true {
-		return false, fmt.Errorf("one or more issue found in Spectum scale csi driver configuration")
+	if issueFound {
+		return false, fmt.Errorf("one or more issue found in Spectrum scale csi driver configuration, check Spectrum Scale csi driver logs")
 	}
 
 	return true, nil
