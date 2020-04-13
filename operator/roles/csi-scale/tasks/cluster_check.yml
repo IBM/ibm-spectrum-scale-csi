@@ -5,6 +5,7 @@
     namespace: "{{ lookup( 'vars','namespace' ) }}"
     name: "{{ item.secrets }}"
   register: results
+  ignore_errors: yes
 
 - when: results is not defined or results.resources is not defined or (results.resources|length==0)
   block:
