@@ -367,6 +367,7 @@ func (driver *ScaleDriver) ValidateHostpath(mountpath string, linkpath string) e
 	return nil
 }
 
+// ValidateScaleConfigParameters : Validating the Configuration provided for Spectrum Scale CSI Driver
 func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.ScaleSettingsConfigMap) (bool, error) {
 	glog.V(4).Infof("gpfs ValidateScaleConfigParameters.")
 	if len(scaleConfig.Clusters) == 0 {
@@ -375,24 +376,40 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 
 	primaryClusterFound := false
 	rClusterForPrimaryFS := ""
-	var cl []string = make([]string, len(scaleConfig.Clusters))
+	var cl = make([]string, len(scaleConfig.Clusters))
+	issueFound := false
 
 	for i := 0; i < len(scaleConfig.Clusters); i++ {
 		cluster := scaleConfig.Clusters[i]
 
-		if cluster.ID == "" || len(cluster.RestAPI) == 0 || cluster.RestAPI[0].GuiHost == "" {
-			return false, fmt.Errorf("Mandatory parameters not specified for cluster %v", cluster.ID)
+		if cluster.ID == "" {
+			issueFound = true
+			glog.Errorf("Mandatory parameter 'id' is not specified")
+		}
+		if len(cluster.RestAPI) == 0 {
+			issueFound = true
+			glog.Errorf("Mandatory section 'restApi' is not specified for cluster %v", cluster.ID)
+		}
+		if len(cluster.RestAPI) != 0 && cluster.RestAPI[0].GuiHost == "" {
+			issueFound = true
+			glog.Errorf("Mandatory parameter 'guiHost' is not specified for cluster %v", cluster.ID)
 		}
 
 		if cluster.Primary != (settings.Primary{}) {
 			if primaryClusterFound {
-				return false, fmt.Errorf("More than one primary clusters specified")
+				issueFound = true
+				glog.Errorf("More than one primary clusters specified")
 			}
 
 			primaryClusterFound = true
 
-			if cluster.Primary.GetPrimaryFs() == "" || cluster.Primary.PrimaryFset == "" {
-				return false, fmt.Errorf("Mandatory parameters not specified for primary cluster %v", cluster.ID)
+			if cluster.Primary.GetPrimaryFs() == "" {
+				issueFound = true
+				glog.Errorf("Mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.ID)
+			}
+			if cluster.Primary.PrimaryFset == "" {
+				issueFound = true
+				glog.Errorf("Mandatory parameter 'primaryFset' is not specified for primary cluster %v", cluster.ID)
 			}
 
 			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
@@ -400,21 +417,30 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 			cl[i] = cluster.ID
 		}
 
-		if cluster.Secrets == "" || cluster.MgmtUsername == "" || cluster.MgmtPassword == "" {
-			return false, fmt.Errorf("Invalid secret specified for cluster %v", cluster.ID)
+		if cluster.Secrets == "" {
+			issueFound = true
+			glog.Errorf("Mandatory parameter 'secrets' is not specified for cluster %v", cluster.ID)
 		}
 
 		if cluster.SecureSslMode && cluster.CacertValue == nil {
-			return false, fmt.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.ID)
+			issueFound = true
+			glog.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.ID)
 		}
 	}
 
 	if !primaryClusterFound {
-		return false, fmt.Errorf("No primary clusters specified")
+		issueFound = true
+		glog.Errorf("No primary clusters specified")
+
 	}
 
 	if rClusterForPrimaryFS != "" && !utils.StringInSlice(rClusterForPrimaryFS, cl) {
-		return false, fmt.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS)
+		issueFound = true
+		glog.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS)
+	}
+
+	if issueFound == true {
+		return false, fmt.Errorf("one or more issue found in Spectum scale csi driver configuration")
 	}
 
 	return true, nil
