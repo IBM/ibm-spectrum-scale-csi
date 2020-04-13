@@ -29,8 +29,10 @@ kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml
 kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml 
 kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml
 kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
+
+
+kubectl patch Deployment/ibm-spectrum-scale-csi-operator -p '{"metadata":{"finalizers":[]}}' --type=merge --namespace=ibm-spectrum-scale-csi-driver
 kubectl apply -f  $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
-cat  $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
 
 
 #$APP_TEST_LIBRARY_FUNCTIONS/operatorDeployment.sh \
