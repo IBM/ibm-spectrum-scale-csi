@@ -12,12 +12,12 @@ echo "Start wait.sh file...."
 
 dep="ibm-spectrum-scale-csi-operator"
 retries=20 # 10 minute timeout
-kubectl get deployment -A 
+kubectl get deployment 
 echo "here"
 while ! kubectl rollout status -w "deployment/${dep}" --namespace=$CV_TEST_NAMESPACE; do
     sleep 30
     echo "here"
-    kubectl get deployment -A 
+    kubectl get deployment -n $CV_TEST_NAMESPACE
     kubectl describe deployment -n $CV_TEST_NAMESPACE $dep
     kubectl rollout status -w "deployment/${dep}" --namespace=$CV_TEST_NAMESPACE
     retries=$((retries - 1))
