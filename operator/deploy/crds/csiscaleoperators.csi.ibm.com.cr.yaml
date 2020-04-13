@@ -24,7 +24,7 @@ spec:
       secureSslMode: false
       primary:
         primaryFs: "< Primary Filesystem >"
-        primaryFset: "< Fileset in Primary Filesystem >"
+      #  primaryFset: "< Fileset in Primary Filesystem >"       # Optional - default:spectrum-scale-csi-volume-store
       #        inodeLimit: "< node limit for Primary Fileset >" # Optional
       #        remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
       #        remoteFs: "< Remote Filesystem >"                # Optional
