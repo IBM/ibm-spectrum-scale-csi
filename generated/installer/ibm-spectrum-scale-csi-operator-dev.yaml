@@ -314,9 +314,6 @@ spec:
                       remoteCluster:
                         description: Remote cluster ID.
                         type: string
-                      remoteFs:
-                        description: Filesystem name on remote cluster.
-                        type: string
                     type: object
                   restApi:
                     description: A collection of targets for REST calls.
