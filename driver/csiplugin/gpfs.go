@@ -414,7 +414,6 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 			}
 
 			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
-
 		} else {
 			cl[i] = cluster.ID
 		}
