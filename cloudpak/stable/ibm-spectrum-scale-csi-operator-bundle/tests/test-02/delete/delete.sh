@@ -18,6 +18,9 @@ kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.
 kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml
 kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml 
 kubectl delete namespace ${CV_TEST_NAMESPACE}
+set +o errexit
+kubectl patch namespace ibm-spectrum-scale-csi-driver -p '{"metadata":{"finalizers":[]}}' --type=merge
+set -o errexit
 
 #$APP_TEST_LIBRARY_FUNCTIONS/operatorDelete.sh \
 #    --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
