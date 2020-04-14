@@ -16,14 +16,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Just try and see what's happening in  the log.
-output=$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}")
-echo $output
-
-pod="$(cut -d' ' -f6 <<< $output)"
-
-kubectl logs -n "${CV_TEST_NAMESPACE:-default}" $pod operator
-
 [[ `dirname $0 | cut -c1` = '/' ]] && preinstallDir=`dirname $0`/ || preinstallDir=`pwd`/`dirname $0`/
 
 # Optional - set tool repo and source library for creating/configuring and removing namespace
