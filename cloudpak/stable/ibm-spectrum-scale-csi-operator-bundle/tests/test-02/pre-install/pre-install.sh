@@ -20,7 +20,7 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 #. $APP_TEST_LIBRARY_FUNCTIONS/createNamespace.sh
 #toolrepositoryroot=$APP_TEST_LIBRARY_FUNCTIONS/../../
 
-if [ kubectl get namespace ${CV_TEST_NAMESPACE} -ne 0 ]
+if kubectl get namespace ${CV_TEST_NAMESPACE} -ne 0 
 then
   kubectl create namespace ${CV_TEST_NAMESPACE}
 fi
