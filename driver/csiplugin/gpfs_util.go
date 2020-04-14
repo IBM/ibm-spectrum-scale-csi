@@ -70,7 +70,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
-	clusterId, clusterIdSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
 	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
@@ -103,10 +102,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if !fsTypeSpecified && !volDirPathSpecified {
 		fsTypeSpecified = true
 		fsType = independentFileset
-	}
-
-	if clusterIdSpecified && clusterId == "" {
-		clusterIdSpecified = false
 	}
 
 	if uidSpecified && uid == "" {
