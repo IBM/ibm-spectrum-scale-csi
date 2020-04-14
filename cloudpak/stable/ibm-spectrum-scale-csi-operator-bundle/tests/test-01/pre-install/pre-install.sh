@@ -17,8 +17,8 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 
 # Optional - set tool repo and source library for creating/configuring namespace
 # NOTE: toolrepositoryroot needed for setting Policy Security Policy
-. $APP_TEST_LIBRARY_FUNCTIONS/createNamespace.sh
-toolrepositoryroot=$APP_TEST_LIBRARY_FUNCTIONS/../../
+#. $APP_TEST_LIBRARY_FUNCTIONS/createNamespace.sh
+#toolrepositoryroot=$APP_TEST_LIBRARY_FUNCTIONS/../../
 
 kubectl create namespace ${CV_TEST_NAMESPACE}
 
