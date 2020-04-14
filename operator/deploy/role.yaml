@@ -25,6 +25,7 @@ rules:
       - secrets/status
       - services/finalizers
       - serviceaccounts
+      - securitycontextconstraints
     verbs:
       - "*"
   - apiGroups:
