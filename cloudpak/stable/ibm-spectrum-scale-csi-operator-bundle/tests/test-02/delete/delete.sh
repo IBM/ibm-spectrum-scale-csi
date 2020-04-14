@@ -11,8 +11,10 @@ deleteDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 echo "deleteDir is "
 echo $deleteDir
 
+set +o errexit
 kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml &
 kubectl patch CSIScaleOperator -n ibm-spectrum-scale-csi-driver  ibm-spectrum-scale-csi -p '{"metadata":{"finalizers":[]}}' --type=merge
+set -o errexit
 kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
 kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml
 kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml
