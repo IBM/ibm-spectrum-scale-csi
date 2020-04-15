@@ -74,9 +74,9 @@ addons:
       - "python3-dev"
       - "python3-pip"
 stages:
-  - test
   - lint
   - build
+  - test
 jobs:
   fast_finish: true
 
