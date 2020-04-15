@@ -38,8 +38,7 @@ var _ testsuites.TestDriver = &scaleDriver{}
 //var _ testsuites.PreprovisionedPVTestDriver = &scaleDriver{}
 var _ testsuites.DynamicPVTestDriver = &scaleDriver{}
 
-type filesetVolume struct {
-}
+//type filesetVolume struct {}
 
 func NewTestDriver() testsuites.TestDriver {
 	return &scaleDriver{
@@ -114,7 +113,6 @@ func (d *filesetVolume) DeleteVolume() {
  * It will return nil, if the TestDriver doesn't support it.
  */
 func (d *scaleDriver) GetDynamicProvisionStorageClass(config *testsuites.PerTestConfig, fsType string) *storagev1.StorageClass {
-
 	provisioner := config.GetUniqueDriverName()
 	parameters := map[string]string{
 		settings.FilesetType:  "independent",

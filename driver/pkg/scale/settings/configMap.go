@@ -226,7 +226,6 @@ func (config *ConfigMap) Validate() error {
 	issueFound := false
 
 	for i, cluster := range config.Clusters {
-
 		if cluster.ID == "" {
 			issueFound = true
 			glog.Errorf("Mandatory parameter 'id' is not specified")
@@ -278,7 +277,6 @@ func (config *ConfigMap) Validate() error {
 		if cluster.SecureSslMode && cluster.Cacert == "" {
 			issueFound = true
 			glog.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.ID)
-
 		}
 	}
 

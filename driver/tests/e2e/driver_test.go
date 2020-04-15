@@ -59,6 +59,7 @@ var _ = utils.SIGDescribe("CSI Volumes", func() {
 	})
 })
 
+//nolint gochecknoinits TODO: make this not init
 func init() {
 	// k8s.io/kubernetes/test/e2e/framework requires env KUBECONFIG to be set
 	// it does not fall back to defaults

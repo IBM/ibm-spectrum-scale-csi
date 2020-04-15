@@ -67,7 +67,7 @@ func NewSpectrumV2(scaleConfig *settings.ConfigMap) SpectrumRestV2 {
 	httpTrans := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			RootCAs:            scaleConfig.RootCAs,
-			InsecureSkipVerify: scaleConfig.InsecureSkipTLSVerify,
+			InsecureSkipVerify: scaleConfig.InsecureSkipTLSVerify, //nolint gosec: TLS InsecureSkipVerify may be true. (This is by design.)
 		},
 	}
 	httpClient := &http.Client{
@@ -177,7 +177,6 @@ func (s *Connector) doHTTP(method httpMethod, urlPath string, requestParam inter
 	//we for loop instead of map here because we expect clusters to be 1 or 2, max maybe 10
 	for _, cluster := range s.HttpClient.configMap.Clusters {
 		if cluster.ID == s.ClusterID() {
-
 			request, err := newRequest(method, "/"+urlPath, requestParam)
 			if err != nil {
 				return fmt.Errorf("could not create request for %v: %#v", urlPath, err)

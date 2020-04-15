@@ -118,7 +118,6 @@ func (d *Driver) ForceStop() {
 	d.gRPC.Stop()
 }
 
-//TODO
 func (driver *Driver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) {
 	glog.V(3).Infof("gpfs AddVolumeCapabilityAccessModes")
 	var vca []*csi.VolumeCapability_AccessMode
@@ -126,7 +125,7 @@ func (driver *Driver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_A
 		glog.V(3).Infof("Enabling volume access mode: %v", c.String())
 		vca = append(vca, NewVolumeCapabilityAccessMode(c))
 	}
-	//driver.vcap = vca
+	driver.ControllerService.vcap = vca
 }
 
 func (driver *Driver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) {
@@ -161,6 +160,7 @@ func (driver *Driver) PluginInitialize(config *settings.ConfigMap) error {
 	}
 
 	for _, cluster := range config.Clusters {
+		cluster := cluster
 		remote := driver.ControllerService.fab.NewConnector(&cluster)
 
 		// validate cluster ID

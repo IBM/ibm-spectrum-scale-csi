@@ -35,12 +35,12 @@ var (
 )
 
 var (
-	cid         = "123"
-	fsName      = "fs_test"
-	primaryFset = ".csi"
-	nodeName    = "edunn-master.fyre.ibm.com"
-	basePath    = "volumes"
-	parentFset  = ".csi"
+	cid    = "123"
+	fsName = "fs_test"
+	//primaryFset = ".csi"
+	nodeName   = "edunn-master.fyre.ibm.com"
+	basePath   = "volumes"
+	parentFset = ".csi"
 )
 
 const (
@@ -48,7 +48,6 @@ const (
 )
 
 var _ = BeforeSuite(func() {
-	nodeID := "unittest"
 
 	//not the best way to mock, but w/e
 	os.Setenv("SCALE_HOSTPATH", "/ibm/"+fsName)
@@ -81,7 +80,7 @@ var _ = BeforeSuite(func() {
 
 	fab := newFakeConnectorFactory()
 	primary := fab.NewConnector(configMap.Primary)
-	primary.MountFilesystem(configMap.Primary.PrimaryFs, nodeID)
+	primary.MountFilesystem(configMap.Primary.PrimaryFs, nodeName)
 
 	//make basePath for directory volume
 	primary.MakeDirectory(fsName, basePath, "0", "0")
@@ -89,7 +88,7 @@ var _ = BeforeSuite(func() {
 	driver = scale.NewFakeDriver(
 		"csi-sanity",
 		"0.0.0",
-		nodeID,
+		nodeName,
 		configMap,
 		fab,
 	)

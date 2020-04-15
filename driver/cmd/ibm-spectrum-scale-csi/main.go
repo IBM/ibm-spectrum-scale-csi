@@ -37,7 +37,7 @@ var (
 )
 
 func main() {
-	flag.Set("logtostderr", "true")
+	_ = flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	rand.Seed(time.Now().UnixNano())
@@ -62,5 +62,8 @@ func main() {
 		klog.Fatalf("Failed to initialize Scale CSI Driver: %v", err)
 	}
 
-	driver.Run(*endpoint)
+	err = driver.Run(*endpoint)
+	if err != nil {
+		klog.Fatalf("Failed running Scale CSI Driver: %v", err)
+	}
 }

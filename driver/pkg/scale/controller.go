@@ -41,6 +41,7 @@ const (
 type ControllerService struct {
 	fab     connectors.ConnectorFactory
 	cscap   []*csi.ControllerServiceCapability
+	vcap    []*csi.VolumeCapability_AccessMode //this is currently unused
 	primary *settings.Primary
 
 	reqmap map[string]int64
