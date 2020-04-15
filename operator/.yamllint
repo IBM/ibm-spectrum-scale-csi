@@ -18,7 +18,7 @@ rules:
   empty-lines: enable
   empty-values: disable
   hyphens: enable
-  indentation: 
+  indentation:
     indent-sequences: whatever
   key-duplicates: enable
   key-ordering: disable
