@@ -28,7 +28,7 @@
     "uid_name":"user1",
     "gid_number":"1000",
     "uid_number":"1000",
-    "inodeLimit":"1024",
+    "inodeLimit":"1024"
 
 //    "deployment_driver_image":"quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0",
 //    "deployment_driverregistrar_image":"quay.io/k8scsi/csi-node-driver-registrar:v1.2.0",
@@ -37,4 +37,3 @@
     
 
 }
-

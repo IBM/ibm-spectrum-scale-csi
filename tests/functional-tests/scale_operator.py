@@ -295,13 +295,11 @@ class Driver:
 
         config.load_kube_config(config_file=kubeconfig_value)
         d.set_test_namespace_value(self.test_ns)
+        sc_name=""
         if sc_value is not False:
             sc_name = d.get_random_name("sc")
             d.create_storage_class(sc_value, self.config_file, sc_name)
             d.check_storage_class(sc_name)
-        else:
-            sc_name = "notusingsc"
-
         FSUID = get_FSUID(self.config_file)
         cluster_id = self.config_file["id"]
         if wrong is not None:
@@ -324,7 +322,7 @@ class Driver:
         num_final = len(pvc_value)
         for num in range(0, num_final):
             pv_name = d.get_random_name("pv")
-            d.create_pv(pv_value, pv_name)
+            d.create_pv(pv_value, pv_name, sc_name)
             d.check_pv(pv_name)
 
             value_pvc_pass = copy.deepcopy(pvc_value[num])

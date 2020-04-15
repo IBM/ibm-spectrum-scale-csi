@@ -207,88 +207,162 @@ def test_driver_static_12():
     driver_object.test_static(value_pv, value_pvc_custom)
 
 
-"""
 def test_driver_static_sc_13():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteMany","storage":"1Gi",
-                "reclaim_policy":"Retain"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
+                "reclaim_policy": "Retain"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_14():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteMany","storage":"1Gi",
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes":"ReadWriteMany", "storage":"1Gi",
                 "reclaim_policy":"Delete"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_15():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteMany","storage":"1Gi",
-                "reclaim_policy":"Recycle"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
+                "reclaim_policy": "Recycle"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_16():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteOnce","storage":"1Gi",
-                "reclaim_policy":"Retain"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                "reclaim_policy": "Retain"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_17():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteOnce","storage":"1Gi",
-                "reclaim_policy":"Delete"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                "reclaim_policy": "Delete"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_18():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteOnce","storage":"1Gi",
-                "reclaim_policy":"Recycle"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                "reclaim_policy": "Recycle"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_19():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi",
-                "reclaim_policy":"Retain"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                "reclaim_policy": "Retain"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
+                        ]
+    driver_object.test_static(value_pv,value_pvc_custom,value_sc)
+
 
 def test_driver_static_sc_20():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi",
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                 "reclaim_policy":"Delete"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_21():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi","reclaim_policy":"Recycle"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                "reclaim_policy": "Recycle"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_22():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteOnce","storage":"1Gi","reclaim_policy":"Default"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
+                "reclaim_policy": "Default"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_23():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadWriteOnce","storage":"1Gi","reclaim_policy":"Default"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes":"ReadWriteOnce", "storage":"1Gi",
+                "reclaim_policy":"Default"}
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                            "reason": "incompatible accessMode"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
+
 
 def test_driver_static_sc_24():
     value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
     value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi","reclaim_policy":"Default"}
-    value_pvc="Default"
-    driver_object.test_static(value_pv,value_pvc,value_sc)
+    value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                         "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                            "reason": "incompatible accessMode"},
+                        {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
+                        ]
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
 
+"""
 def test_driver_static_26():
     LOGGER.info("wrong VolumeHandel -> FSUID")
     LOGGER.info("EXPECTED TO FAIL")
@@ -296,8 +370,6 @@ def test_driver_static_26():
     value_pv = {"access_modes":"ReadWriteMany","storage":"1Gi","reclaim_policy":"Default"}
     wrong={"id_wrong":False,"FSUID_wrong":True}
     driver_object.test_static(value_pv,value_pvc_custom,wrong=wrong)
-
-
 """
 
 

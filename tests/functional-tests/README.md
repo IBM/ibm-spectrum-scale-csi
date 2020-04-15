@@ -27,7 +27,7 @@ Install Python (3.7.4 or higher) and below mentioned pip modules:
 ### How to run IBM Spectrum Scale CSI test automation
 - Clone the source code from [git](https://github.com/IBM/ibm-spectrum-scale-csi/) repository.
 
-- Configure parameters in [csi-automation/scale_operator/config.json](https://github.com/IBM/ibm-spectrum-scale-csi/tests/functional-tests/config.json) file. 
+- Configure parameters in [tests/functional-tests/config.json](https://github.com/IBM/ibm-spectrum-scale-csi/blob/dev/tests/functional-tests/config.json) file. 
 
 - Set node labels for "attacherNodeSelector","provisionerNodeSelector","pluginNodeSelector" in config.json file
 

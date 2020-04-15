@@ -114,6 +114,8 @@ def check_storage_class(sc_name):
         None
 
     """
+    if sc_name=="":
+        return False
     api_instance = client.StorageV1Api()
     try:
         LOGGER.info(f'Storage class {sc_name} does exists on the cluster')
@@ -127,7 +129,7 @@ def check_storage_class(sc_name):
         return False
 
 
-def create_pv(pv_values, pv_name):
+def create_pv(pv_values, pv_name, sc_name=""):
     """
     creates persistent volume
 
@@ -152,14 +154,16 @@ def create_pv(pv_values, pv_name):
         pv_spec = client.V1PersistentVolumeSpec(
             access_modes=[pv_values["access_modes"]],
             capacity={"storage": pv_values["storage"]},
-            csi=pv_csi
+            csi=pv_csi,
+            storage_class_name = sc_name
         )
     else:
         pv_spec = client.V1PersistentVolumeSpec(
             access_modes=[pv_values["access_modes"]],
             capacity={"storage": pv_values["storage"]},
             csi=pv_csi,
-            persistent_volume_reclaim_policy=pv_values["reclaim_policy"]
+            persistent_volume_reclaim_policy=pv_values["reclaim_policy"],
+            storage_class_name = sc_name
         )
 
     pv_body = client.V1PersistentVolume(
@@ -233,10 +237,9 @@ def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
     pvc_metadata = client.V1ObjectMeta(name=pvc_name)
     pvc_resources = client.V1ResourceRequirements(
         requests={"storage": pvc_values["storage"]})
-    if sc_name == "notusingsc":
+    if sc_name == "":
         global test
         test = config_value
-        sc_name = ""
 
     pvc_spec = client.V1PersistentVolumeClaimSpec(
         access_modes=[pvc_values["access_modes"]],
@@ -291,7 +294,6 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
         str(minutes[0]) + 'minutes', str(minutes[1]) + 'seconds'
     LOGGER.info(f'PVC Check : {pvc_name} is BOUND succesfully {msg}')
     volume_name = api_response.spec.volume_name
-
     if volume_name == pv_name:
         LOGGER.info("It should be case of static pvc")
         return True
@@ -651,6 +653,8 @@ def check_pv_deleted(pv_name):
 
 def delete_storage_class(sc_name):
     """deletes storage class sc_name"""
+    if sc_name == "":
+        return
     api_instance = client.StorageV1Api()
     try:
         LOGGER.info(f'deleting storage class {sc_name}')
@@ -671,6 +675,8 @@ def check_storage_class_deleted(sc_name):
     checks storage class sc_name deleted
     if sc not deleted , asserts
     """
+    if sc_name == "":
+        return
     var = True
     count = 12
     api_instance = client.StorageV1Api()
