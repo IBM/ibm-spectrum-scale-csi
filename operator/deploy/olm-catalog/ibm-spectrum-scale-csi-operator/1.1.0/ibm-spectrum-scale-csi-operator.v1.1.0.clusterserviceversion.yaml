@@ -443,13 +443,13 @@ spec:
   labels:
     operator: ibm-spectrum-scale-csi-operator
   links:
-    - name: IBM CSI Spectrum Scale Knowledge Center
-      url: https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR
-    - name: CSI Developer Documentation
-      url: https://kubernetes-csi.github.io/docs/
+  - name: IBM CSI Spectrum Scale Knowledge Center
+    url: https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR
+  - name: CSI Developer Documentation
+    url: https://kubernetes-csi.github.io/docs/
   maintainers:
-    - email: jdunham@us.ibm.com
-      name: John Dunham
+  - email: jdunham@us.ibm.com
+    name: John Dunham
   maturity: alpha
   provider:
     name: IBM

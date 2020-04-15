@@ -10,10 +10,10 @@ metadata:
   name: csiscaleoperators.csi.ibm.com
 spec:
   additionalPrinterColumns:
-  - JSONPath: .status.conditions[?(@.type="Ready")].status
-    description: The Nginx Status
-    name: Ready
-    type: string
+    - JSONPath: .status.conditions[?(@.type="Ready")].status
+      description: The Nginx Status
+      name: Ready
+      type: string
   group: csi.ibm.com
   names:
     kind: CSIScaleOperator
