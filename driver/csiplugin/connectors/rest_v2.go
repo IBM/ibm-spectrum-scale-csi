@@ -236,35 +236,62 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 }
 
 func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
-        glog.V(4).Infof("rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
+	glog.V(4).Infof("rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
 
-        snapshotreq := CreateSnapshotRequest{}
-        snapshotreq.SnapshotName = snapshotName
+	snapshotreq := CreateSnapshotRequest{}
+	snapshotreq.SnapshotName = snapshotName
 
-        createSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName))
-        createSnapshotResponse := GenericResponse{}
+	createSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName))
+	createSnapshotResponse := GenericResponse{}
 
-        err := s.doHTTP(createSnapshotURL, "POST", &createSnapshotResponse, snapshotreq)
-        if err != nil {
-                glog.Errorf("Error in create snapshot request: %v", err)
-                return err
-        }
+	err := s.doHTTP(createSnapshotURL, "POST", &createSnapshotResponse, snapshotreq)
+	if err != nil {
+		glog.Errorf("Error in create snapshot request: %v", err)
+		return err
+	}
 
-        err = s.isRequestAccepted(createSnapshotResponse, createSnapshotURL)
-        if err != nil {
-                glog.Errorf("Request not accepted for processing: %v", err)
-                return err
-        }
+	err = s.isRequestAccepted(createSnapshotResponse, createSnapshotURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return err
+	}
 
-        err = s.waitForJobCompletion(createSnapshotResponse.Status.Code, createSnapshotResponse.Jobs[0].JobID)
-        if err != nil {
-                if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as snapshot already exists
-                        fmt.Println(err)
-                        return nil
-                }
-                glog.Errorf("Unable to create snapshot %s: %v", snapshotName, err)
-                return err
-        }
+	err = s.waitForJobCompletion(createSnapshotResponse.Status.Code, createSnapshotResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as snapshot already exists
+			fmt.Println(err)
+			return nil
+		}
+		glog.Errorf("Unable to create snapshot %s: %v", snapshotName, err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error {
+	glog.V(4).Infof("rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
+
+	deleteSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName))
+	deleteSnapshotResponse := GenericResponse{}
+
+	err := s.doHTTP(deleteSnapshotURL, "DELETE", &deleteSnapshotResponse, nil)
+	if err != nil {
+		glog.Errorf("Error in delete snapshot request: %v", err)
+		return err
+	}
+
+	err = s.isRequestAccepted(deleteSnapshotResponse, deleteSnapshotURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return err
+	}
+
+	err = s.waitForJobCompletion(deleteSnapshotResponse.Status.Code, deleteSnapshotResponse.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("Unable to delete snapshot %s: %v", snapshotName, err)
+		return err
+	}
 
 	return nil
 }
@@ -795,52 +822,52 @@ func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) 
 }
 
 func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error) {
-        getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
-        getSnapshotResponse := GetSnapshotResponse_v2{}
+	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
+	getSnapshotResponse := GetSnapshotResponse_v2{}
 
-        err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
-        if err != nil {
-                return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
-        }
+	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	if err != nil {
+		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+	}
 
-        if len(getSnapshotResponse.Snapshots) == 0 {
-                return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
-        }
+	if len(getSnapshotResponse.Snapshots) == 0 {
+		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+	}
 
-        return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].Created), nil
+	return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].Created), nil
 }
 
 func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error) {
-        getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
-        getSnapshotResponse := GetSnapshotResponse_v2{}
+	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
+	getSnapshotResponse := GetSnapshotResponse_v2{}
 
-        err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
-        if err != nil {
-                return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
-        }
+	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	if err != nil {
+		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+	}
 
-        if len(getSnapshotResponse.Snapshots) == 0 {
-                return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
-        }
+	if len(getSnapshotResponse.Snapshots) == 0 {
+		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+	}
 
-        return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].SnapID), nil
+	return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].SnapID), nil
 }
 
 func (s *spectrumRestV2) GetSnapshotNameFromId(filesystemName string, filesetName string, Id string) (string, error) {
-        getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots?filter=config.snapID=%s", filesystemName, filesetName, Id))
+	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots?filter=snapID=%s", filesystemName, filesetName, Id))
 
-        getSnapshotResponse := GetSnapshotResponse_v2{}
+	getSnapshotResponse := GetSnapshotResponse_v2{}
 
-        err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
-        if err != nil {
-                return "", fmt.Errorf("Unable to get name for filesystem: %v, fileset: %v and snapshot Id: %v.", filesystemName, filesetName, Id)
-        }
+	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	if err != nil {
+		return "", fmt.Errorf("Unable to get name for filesystem: %v, fileset: %v and snapshot Id: %v.", filesystemName, filesetName, Id)
+	}
 
-        if len(getSnapshotResponse.Snapshots) == 0 {
-                return "", fmt.Errorf("Unable to list snapshot %v.", Id)
-        }
+	if len(getSnapshotResponse.Snapshots) == 0 {
+		return "", fmt.Errorf("Unable to list snapshot %v.", Id)
+	}
 
-        return getSnapshotResponse.Snapshots[0].SnapshotName, nil
+	return getSnapshotResponse.Snapshots[0].SnapshotName, nil
 }
 
 func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
