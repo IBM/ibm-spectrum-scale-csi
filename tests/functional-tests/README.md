@@ -1,11 +1,8 @@
-# IBM Spectrum Scale CSI - Automation
+# Functional Test Automation Suite
 
-The IBM Spectrum Scale Container Storage Interface (CSI) project enables container orchestrators, such as Kubernetes and OpenShift, to manage the life-cycle of persistent storage.
+This Functional Test Automation Suite should be exercise and test the IBM Spectrum Scale CSI driver & operator functionality 
 
-This project contains an automation framework to exercise the IBM Spectrum Scale CSI Driver and Operator functionality .
-
-
-### Testbed environment 
+### Tested Testbed environment
 
 - IBM Spectrum Scale Cluster - 5.0.4.1+ Version  (**IBM Spectrum Scale supported kernel version**)
 - Kubernetes Cluster Version 1.14 - 1.18
@@ -16,62 +13,60 @@ This project contains an automation framework to exercise the IBM Spectrum Scale
 
 Install Python (3.7.4 or higher) and below mentioned pip modules:
 
-  ``` 
-        python3.7 -m pip install kubernetes
-        python3.7 -m pip install pytest
-        python3.7 -m pip install pytest-html
-        python3.7 -m pip install jsmin
-  ```
-       
+``` 
+python3.7 -m pip install kubernetes
+python3.7 -m pip install pytest
+python3.7 -m pip install pytest-html
+python3.7 -m pip install jsmin
+```
 
 ### How to run IBM Spectrum Scale CSI test automation
-- Clone the source code from [git](https://github.com/IBM/ibm-spectrum-scale-csi/) repository.
 
-- Configure parameters in [tests/functional-tests/config.json](https://github.com/IBM/ibm-spectrum-scale-csi/blob/dev/tests/functional-tests/config.json) file. 
+- Configure parameters in [config.json](./tests/functional-test/config.json) file.
 
-- Set node labels for "attacherNodeSelector","provisionerNodeSelector","pluginNodeSelector" in config.json file
+- Define kubernetes/Openshift Spectrum Scale node labels for `attacherNodeSelector`,`provisionerNodeSelector`,`pluginNodeSelector` in config.json file
 
+- `--clusterconfig` parameter is mandatory to pass IBM Spectrum Scale API Credentials & CSI Operator/Driver image specific configuration as input.
+```
+For example :
+  pytest  driver_test.py --clusterconfig config.json
+```                   
+- If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional)
+```
+For example :
+  pytest  driver_test.py --clusterconfig config.json --kubeconfig <kubeconfig_file_path>
+```
+- For generating the report in html format, pass the `--html` (optional)
+```
+For example :
+  pytest  driver_test.py --clusterconfig config.json --html report.html
+```
 
-- cluster-config parameter is mandatory to pass the SpectrumScale & CSI Operator/Driver images configuration as input.
-
-                For example :
-                   pytest  driver_test.py --clusterconfig config.json
-                   
-- If kubeconfig file is at not at ~/.kube/config location, pass the correct location with --kubeconfig (optional)               
-                
-                For example :
-                   pytest  driver_test.py --clusterconfig config.json --kubeconfig <kubeconfig_file_path>
-
-- For generating the report in html format, pass the --html (optional)               
-                
-                For example :
-                   pytest  driver_test.py --clusterconfig config.json --html report.html
-                   
-                
 ### Run driver tests using driver_test.py as shown below -
-       
-                cd csi-automation/scale_operator
+```
+cd ./tests/functional-tests/
 
-                #Run all testcases in driver testsuite using:
-                pytest  driver_test.py --clusterconfig config.json
+#Run all testcases in driver testsuite using:
+pytest  driver_test.py --clusterconfig config.json
 
-                #Run any specific testcase in testsuite using:
-                pytest  driver_test.py::<test_name> --clusterconfig config.json
+#Run any specific testcase in testsuite using:
+pytest  driver_test.py::<test_name> --clusterconfig config.json
 
-                eg. pytest  driver_test.py::test_driver_pass_1 --clusterconfig config.json
+eg. pytest  driver_test.py::test_driver_pass_1 --clusterconfig config.json
+```
                 
 ### Run operator tests using operator_test.py as shown below -
-       
-                cd csi-automation/scale_operator
-                
-                #Run all testcases in operator testsuite using:
-                pytest  operator_test.py --clusterconfig config.json
-                
-                #cluster-config parameter is mandatory to pass the spectrum scale configuration as input.
-                pytest  operator_test.py --clusterconfig config.json
+```       
+cd ./tests/functional-tests
 
-                #Run any specific testcase in testsuite using:
-                pytest  operator_test.py::<test_name> --clusterconfig config.json
+#Run all testcases in operator testsuite using:
+pytest  operator_test.py --clusterconfig config.json
 
-                eg. pytest  operator_test.py::test_operator_deploy --clusterconfig config.json
+#cluster-config parameter is mandatory to pass the spectrum scale configuration as input.
+pytest  operator_test.py --clusterconfig config.json
 
+#Run any specific testcase in testsuite using:
+pytest  operator_test.py::<test_name> --clusterconfig config.json
+
+eg. pytest  operator_test.py::test_operator_deploy --clusterconfig config.json
+```

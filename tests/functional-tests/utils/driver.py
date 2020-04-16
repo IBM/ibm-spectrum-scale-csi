@@ -549,7 +549,7 @@ def delete_pod(pod_name):
     """ deletes pod pod_name """
     api_instance = client.CoreV1Api()
     try:
-        LOGGER.info(f'deleteing pod {pod_name}')
+        LOGGER.info(f'Deleting pod {pod_name}')
         api_response = api_instance.delete_namespaced_pod(
             name=pod_name, namespace=namespace_value, pretty=True, grace_period_seconds=0)
         LOGGER.debug(str(api_response))
@@ -620,7 +620,7 @@ def delete_pv(pv_name):
     """ delete pv pv_name """
     api_instance = client.CoreV1Api()
     try:
-        LOGGER.info(f'deleteing pv {pv_name}')
+        LOGGER.info(f'Deleting pv {pv_name}')
         api_response = api_instance.delete_persistent_volume(
             name=pv_name, pretty=True, grace_period_seconds=0)
         LOGGER.debug(str(api_response))
@@ -643,11 +643,11 @@ def check_pv_deleted(pv_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'pv {pv_name} deleted')
+            LOGGER.info(f'PV {pv_name} has been deleted')
             var = False
 
     if count <= 0:
-        LOGGER.info(f'pv {pv_name} is not deleted')
+        LOGGER.info(f'PV {pv_name} is still not deleted')
         assert False
 
 
@@ -688,9 +688,9 @@ def check_storage_class_deleted(sc_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'storage class {sc_name} deleted')
+            LOGGER.info(f'StorageClass {sc_name} has been deleted')
             var = False
 
     if count <= 0:
-        LOGGER.info(f'storage class {sc_name} is not deleted')
+        LOGGER.info(f'StorageClass {sc_name} is not deleted')
         assert False
