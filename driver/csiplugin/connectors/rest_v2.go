@@ -722,6 +722,8 @@ func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error
 }
 
 func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetFsUid. filesystem: %s", filesystemName)
+
 	getFilesystemURL := fmt.Sprintf("%s%s%s", s.endpoint, "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
@@ -739,6 +741,8 @@ func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
 }
 
 func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) error {
+	glog.V(4).Infof("rest_v2 DeleteSymLnk. filesystem: %s, link: %s", filesystemName, LnkName)
+
 	LnkName = strings.ReplaceAll(LnkName, "/", "%2F")
 	deleteLnkURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/symlink/%s", filesystemName, LnkName))
 	deleteLnkResponse := GenericResponse{}
@@ -766,6 +770,8 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 }
 
 func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) error {
+	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
+
 	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
 	deleteDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, NdirName))
 	deleteDirResponse := GenericResponse{}
@@ -789,6 +795,8 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) 
 }
 
 func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetFileSetUid. filesytem: %s, fileset: %s", filesystemName, filesetName)
+
 	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName))
 	getFilesetResponse := GetFilesetResponse_v2{}
 
@@ -804,14 +812,33 @@ func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string
 	return fmt.Sprintf("%d", getFilesetResponse.Filesets[0].Config.Id), nil
 }
 
-func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
-	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id))
+// CheckIfFilesetExist Checking if fileset exist in filesystem
+func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error) {
+	glog.V(4).Infof("rest_v2 CheckIfFilesetExist. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
+	checkFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName))
+	getFilesetResponse := GetFilesetResponse_v2{}
+
+	err := s.doHTTP(checkFilesetURL, "GET", &getFilesetResponse, nil)
+	if err != nil {
+		if strings.Contains(getFilesetResponse.Status.Message, "Invalid value in 'filesetName'") {
+			// snapshot is not present
+			return false, nil
+		}
+		return false, fmt.Errorf("unable to get fileset details for filesystem: %v, fileset: %v", filesystemName, filesetName)
+	}
+	return true, nil
+}
+
+func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
+
+	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id))
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		return "", fmt.Errorf("Unable to get name for fileset Id %v:%v.", filesystemName, Id)
+		return "", fmt.Errorf("unable to get name for fileset Id %v:%v", filesystemName, Id)
 	}
 
 	if len(getFilesetResponse.Filesets) == 0 {
@@ -822,58 +849,66 @@ func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) 
 }
 
 func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetSnapshotCreateTimestamp. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapName)
+
 	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
 	getSnapshotResponse := GetSnapshotResponse_v2{}
 
 	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
 	if err != nil {
-		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
 	if len(getSnapshotResponse.Snapshots) == 0 {
-		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
 	return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].Created), nil
 }
 
 func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetSnapshotUid. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapName)
+
 	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName))
 	getSnapshotResponse := GetSnapshotResponse_v2{}
 
 	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
 	if err != nil {
-		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
 	if len(getSnapshotResponse.Snapshots) == 0 {
-		return "", fmt.Errorf("Unable to list snapshot %v.", snapName)
+		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
 	return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].SnapID), nil
 }
 
-func (s *spectrumRestV2) GetSnapshotNameFromId(filesystemName string, filesetName string, Id string) (string, error) {
-	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots?filter=snapID=%s", filesystemName, filesetName, Id))
+// CheckIfSnapshotExist Checking if snapshot exist in fileset
+func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error) {
+	glog.V(4).Infof("rest_v2 CheckIfSnapshotExist. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapshotName)
 
+	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName))
 	getSnapshotResponse := GetSnapshotResponse_v2{}
 
 	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
 	if err != nil {
-		return "", fmt.Errorf("Unable to get name for filesystem: %v, fileset: %v and snapshot Id: %v.", filesystemName, filesetName, Id)
+		if strings.Contains(getSnapshotResponse.Status.Message, "Invalid value in 'snapshotName'") && len(getSnapshotResponse.Snapshots) == 0 {
+			// snapshot is not present
+			return false, nil
+		}
+		return false, fmt.Errorf("unable to get snapshot details for filesystem: %v, fileset: %v and snapshot: %v", filesystemName, filesetName, snapshotName)
 	}
-
-	if len(getSnapshotResponse.Snapshots) == 0 {
-		return "", fmt.Errorf("Unable to list snapshot %v.", Id)
-	}
-
-	return getSnapshotResponse.Snapshots[0].SnapshotName, nil
+	return true, nil
 }
 
 func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
+	glog.V(4).Infof("rest_v2 CheckIfFileDirPresent. filesystem: %s, path: %s", filesystemName, relPath)
+
 	RelPath := strings.ReplaceAll(relPath, "/", "%2F")
 	checkFilDirUrl := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/owner/%s", filesystemName, RelPath))
 	ownerResp := OwnerResp_v2{}
+
 	err := s.doHTTP(checkFilDirUrl, "GET", &ownerResp, nil)
 	if err != nil {
 		if strings.Contains(ownerResp.Status.Message, "File not found") {
@@ -885,6 +920,8 @@ func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath st
 }
 
 func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error {
+	glog.V(4).Infof("rest_v2 CreateSymLink. SlnkfilesystemName: %s, TargetFs: %s, relativePath: %s, LnkPath: %s", SlnkfilesystemName, TargetFs, relativePath, LnkPath)
+
 	symLnkReq := SymLnkRequest{}
 	symLnkReq.FilesystemName = TargetFs
 	symLnkReq.RelativePath = relativePath
