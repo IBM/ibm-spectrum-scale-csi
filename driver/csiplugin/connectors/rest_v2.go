@@ -804,6 +804,23 @@ func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string
 	return fmt.Sprintf("%d", getFilesetResponse.Filesets[0].Config.Id), nil
 }
 
+// CheckIfFilesetExist Checking if fileset exist in filesystem
+func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error) {
+	checkFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName))
+
+	getFilesetResponse := GetFilesetResponse_v2{}
+
+	err := s.doHTTP(checkFilesetURL, "GET", &getFilesetResponse, nil)
+	if err != nil {
+		if strings.Contains(getFilesetResponse.Status.Message, "Invalid value in 'filesetName'") {
+			// snapshot is not present
+			return false, nil
+		}
+		return false, fmt.Errorf("unable to get fileset details for filesystem: %v, fileset: %v", filesystemName, filesetName)
+	}
+	return true, nil
+}
+
 func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
 	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id))
 
@@ -868,6 +885,23 @@ func (s *spectrumRestV2) GetSnapshotNameFromId(filesystemName string, filesetNam
 	}
 
 	return getSnapshotResponse.Snapshots[0].SnapshotName, nil
+}
+
+// CheckIfSnapshotExist Checking if snapshot exist in fileset
+func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error) {
+	getSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName))
+
+	getSnapshotResponse := GetSnapshotResponse_v2{}
+
+	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	if err != nil {
+		if strings.Contains(getSnapshotResponse.Status.Message, "Invalid value in 'snapshotName'") && len(getSnapshotResponse.Snapshots) == 0 {
+			// snapshot is not present
+			return false, nil
+		}
+		return false, fmt.Errorf("unable to get snapshot details for filesystem: %v, fileset: %v and snapshot: %v", filesystemName, filesetName, snapshotName)
+	}
+	return true, nil
 }
 
 func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
