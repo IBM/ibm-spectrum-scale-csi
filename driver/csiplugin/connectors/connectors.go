@@ -62,7 +62,6 @@ type SpectrumScaleConnector interface {
 	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
-	GetSnapshotNameFromId(filesystemName string, filesetName string, Id string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
 }
 
