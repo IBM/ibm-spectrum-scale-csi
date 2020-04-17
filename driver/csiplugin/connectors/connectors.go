@@ -63,6 +63,7 @@ type SpectrumScaleConnector interface {
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
+	ListFilesetSnapshot(filesystemName string, filesetName string) ([]Snapshot_v2, error)
 }
 
 const (

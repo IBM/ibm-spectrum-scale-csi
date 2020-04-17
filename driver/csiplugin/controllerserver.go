@@ -586,42 +586,37 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	volumeID := req.GetVolumeId()
 
 	if volumeID == "" {
-		return nil, status.Error(codes.InvalidArgument, "Volume Id is a required field")
+		return nil, status.Error(codes.InvalidArgument, "volume Id is missing")
 	}
 
 	volumeIdMembers, err := cs.GetVolIdMembers(volumeID)
-
 	if err != nil {
 		return &csi.DeleteVolumeResponse{}, nil
 	}
-
-	glog.Infof("Volume Id Members [%v]", volumeIdMembers)
+	glog.V(4).Infof("volume Id Members [%v]", volumeIdMembers)
 
 	conn, err := cs.GetConnFromClusterID(volumeIdMembers.ClusterId)
-
 	if err != nil {
 		return nil, err
 	}
 
 	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-
 	if !isprimaryConnPresent {
-		return nil, status.Error(codes.Internal, "Unable to get connector for Primary cluster")
+		return nil, status.Error(codes.Internal, "unable to get connector for Primary cluster")
 	}
 
 	/* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
 	   from Primary cluster */
-
 	FilesystemName, err := primaryConn.GetFilesystemName(volumeIdMembers.FsUUID)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
 	}
 
 	mountInfo, err := primaryConn.GetFilesystemMountDetails(FilesystemName)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get mount info for FS [%v] in primary cluster", FilesystemName))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
 	}
 
 	remoteDeviceName := mountInfo.RemoteDeviceName
@@ -637,17 +632,27 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		FilesetName, err := conn.GetFileSetNameFromId(FilesystemName, volumeIdMembers.FsetId)
 
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
 		}
 
 		if FilesetName != "" {
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(sLinkRelPath)
 			if pvName == FilesetName {
-				err = conn.DeleteFileset(FilesystemName, FilesetName)
-
+				//Check if fileset exist has any snapshot
+				snapshotList, err := conn.ListFilesetSnapshot(FilesystemName, FilesetName)
 				if err != nil {
-					return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to Delete Fileset [%v] for FS [%v] and clusterId [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId))
+					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+				}
+
+				if len(snapshotList) != 0 {
+					return nil, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+				}
+				glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteVolume")
+
+				err = conn.DeleteFileset(FilesystemName, FilesetName)
+				if err != nil {
+					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 				}
 			} else {
 				glog.Infof("PV name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
@@ -657,14 +662,14 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		/* Delete Dir for Lw volume */
 		err = primaryConn.DeleteDirectory(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to Delete Dir using FS [%v] Relative SymLink [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath))
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] Relative SymLink [%v]. Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
 		}
 	}
 
 	err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
 	}
 
 	return &csi.DeleteVolumeResponse{}, nil
