@@ -70,7 +70,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
-	clusterId, clusterIdSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
 	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
@@ -81,7 +80,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
 	scaleVol.FilesetType = ""
-	scaleVol.ClusterId = ""
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false
@@ -104,10 +102,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if !fsTypeSpecified && !volDirPathSpecified {
 		fsTypeSpecified = true
 		fsType = independentFileset
-	}
-
-	if clusterIdSpecified && clusterId == "" {
-		clusterIdSpecified = false
 	}
 
 	if uidSpecified && uid == "" {
@@ -175,16 +169,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 	if fsTypeSpecified {
 		scaleVol.IsFilesetBased = true
-	}
-
-	/* cluster Id not mandatory for LW volumes */
-
-	if scaleVol.IsFilesetBased {
-		if clusterIdSpecified {
-			scaleVol.ClusterId = clusterId
-		} else {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "clusterId must be specified in storageClass")
-		}
 	}
 
 	/* Get UID/GID */
