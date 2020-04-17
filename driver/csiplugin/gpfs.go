@@ -32,7 +32,8 @@ import (
 
 // PluginFolder defines the location of scaleplugin
 const (
-	PluginFolder = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
+	PluginFolder          = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
+	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 )
 
 type ScaleDriver struct {
@@ -214,7 +215,11 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
 				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem not mounted on any node")
 			}
-
+			// In case primary fset value is not specified in configuation then use default
+			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
+				scaleConfig.Clusters[i].Primary.PrimaryFset = DefaultPrimaryFileset
+				glog.Infof("primaryFset is not specified in configuration using default %s", DefaultPrimaryFileset)
+			}
 			scaleConfig.Clusters[i].Primary.PrimaryFSMount = fsMount.MountPoint
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
 
@@ -406,10 +411,6 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 			if cluster.Primary.GetPrimaryFs() == "" {
 				issueFound = true
 				glog.Errorf("Mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.ID)
-			}
-			if cluster.Primary.PrimaryFset == "" {
-				issueFound = true
-				glog.Errorf("Mandatory parameter 'primaryFset' is not specified for primary cluster %v", cluster.ID)
 			}
 
 			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
