@@ -27,7 +27,6 @@ spec:
       #  primaryFset: "< Fileset in Primary Filesystem >"       # Optional - default:spectrum-scale-csi-volume-store
       #        inodeLimit: "< node limit for Primary Fileset >" # Optional
       #        remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
-      #        remoteFs: "< Remote Filesystem >"                # Optional
       #      cacert: "< CA cert configmap for GUI >"            # Optional
       restApi:
         - guiHost: "< Primary cluster GUI IP/Hostname >"

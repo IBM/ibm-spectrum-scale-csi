@@ -180,6 +180,7 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
 	primaryInfo := settings.Primary{}
+	remoteFilesystemName := ""
 
 	for i := 0; i < len(scaleConfig.Clusters); i++ {
 		cluster := scaleConfig.Clusters[i]
@@ -224,6 +225,10 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
 
 			primaryInfo = scaleConfig.Clusters[i].Primary
+
+			// RemoteFS name from Local Filesystem details
+			remoteDeviceName := strings.Split(fsMount.RemoteDeviceName, ":")
+			remoteFilesystemName = remoteDeviceName[len(remoteDeviceName)-1]
 		}
 	}
 
@@ -232,21 +237,22 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 	fsmount := primaryInfo.PrimaryFSMount
 	if primaryInfo.RemoteCluster != "" {
 		sconn = scaleConnMap[primaryInfo.RemoteCluster]
-		if primaryInfo.GetRemoteFs() != "" {
-			fs = primaryInfo.GetRemoteFs()
-
-			// check if primary filesystem exists on remote cluster and mounted on atleast one node
-			fsMount, err := sconn.GetFilesystemMountDetails(fs)
-			if err != nil {
-				glog.Errorf("Error in getting filesystem details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
-				return scaleConnMap, scaleConfig, primaryInfo, err
-			}
-			glog.Infof("remote fsMount = %v", fsMount)
-			if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
-				return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Primary filesystem not mounted on any node on cluster %s", primaryInfo.RemoteCluster)
-			}
-			fsmount = fsMount.MountPoint
+		if remoteFilesystemName == "" {
+			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Failed to get the name of remote Filesystem")
 		}
+		fs = remoteFilesystemName
+		// check if primary filesystem exists on remote cluster and mounted on atleast one node
+		fsMount, err := sconn.GetFilesystemMountDetails(fs)
+		if err != nil {
+			glog.Errorf("Error in getting filesystem details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
+			return scaleConnMap, scaleConfig, primaryInfo, err
+		}
+
+		glog.Infof("remote fsMount = %v", fsMount)
+		if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
+			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Primary filesystem not mounted on any node on cluster %s", primaryInfo.RemoteCluster)
+		}
+		fsmount = fsMount.MountPoint
 	}
 
 	fsetlinkpath, err := driver.CreatePrimaryFileset(sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())
