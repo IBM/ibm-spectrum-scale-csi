@@ -1,6 +1,6 @@
 # Functional Test Automation Suite
 
-This Functional Test Automation Suite should be exercise and test the IBM Spectrum Scale CSI driver & operator functionality 
+This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale CSI functionality.
 
 ### Tested Testbed environment
 
@@ -11,13 +11,10 @@ This Functional Test Automation Suite should be exercise and test the IBM Spectr
 
 ### Pre-requesite for automation framework
 
-Install Python (3.7.4 or higher) and below mentioned pip modules:
+Install Python (3.7.4 or higher) and use below command to install required python plugins from requirements.txt:
 
 ``` 
-python3.7 -m pip install kubernetes
-python3.7 -m pip install pytest
-python3.7 -m pip install pytest-html
-python3.7 -m pip install jsmin
+python3.7 -m pip install -r requirements.txt
 ```
 
 ### How to run IBM Spectrum Scale CSI test automation
@@ -26,20 +23,17 @@ python3.7 -m pip install jsmin
 
 - Define kubernetes/Openshift Spectrum Scale node labels for `attacherNodeSelector`,`provisionerNodeSelector`,`pluginNodeSelector` in config.json file
 
-- `--clusterconfig` parameter is mandatory to pass IBM Spectrum Scale API Credentials & CSI Operator/Driver image specific configuration as input.
+- `--clusterconfig` parameter is mandatory to pass IBM Spectrum Scale API Credentials & CSI Operator/Driver image specific configuration as input.For example :
 ```
-For example :
-  pytest  driver_test.py --clusterconfig config.json
+pytest  driver_test.py --clusterconfig config.json
 ```                   
-- If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional)
+- If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional).For example :
 ```
-For example :
-  pytest  driver_test.py --clusterconfig config.json --kubeconfig <kubeconfig_file_path>
+pytest  driver_test.py --clusterconfig config.json --kubeconfig <kubeconfig_file_path>
 ```
-- For generating the report in html format, pass the `--html` (optional)
+- For generating the report in html format, pass the `--html` (optional).For example :
 ```
-For example :
-  pytest  driver_test.py --clusterconfig config.json --html report.html
+pytest  driver_test.py --clusterconfig config.json --html report.html
 ```
 
 ### Run driver tests using driver_test.py as shown below -
@@ -57,12 +51,9 @@ eg. pytest  driver_test.py::test_driver_pass_1 --clusterconfig config.json
                 
 ### Run operator tests using operator_test.py as shown below -
 ```       
-cd ./tests/functional-tests
+cd ./tests/functional-tests/
 
 #Run all testcases in operator testsuite using:
-pytest  operator_test.py --clusterconfig config.json
-
-#cluster-config parameter is mandatory to pass the spectrum scale configuration as input.
 pytest  operator_test.py --clusterconfig config.json
 
 #Run any specific testcase in testsuite using:
