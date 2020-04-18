@@ -121,12 +121,13 @@ if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
    describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
    echo "$describeCSIScaleOperator"
    $describeCSIScaleOperator > ${describe_CSIScaleOperator} 2>&1 || :
-   opPodName=`$cmd get pods --namespace $ns |grep operator |awk '{print $1}'`
-   echo "$klog pod/${opPodName}"
-   $klog pod/${opPodName} -c ansible > ${logdir}/${opPodName}-ansible.log 2>&1 || :
-   $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
-   $klog pod/${opPodName} -c ansible --previous > ${logdir}/${opPodName}-ansible-previous.log 2>&1 || :
-   $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+   for opPodName in `$cmd get pods --namespace $ns |grep operator |awk '{print $1}'`; do
+     echo "$klog pod/${opPodName}"
+     $klog pod/${opPodName} -c ansible > ${logdir}/${opPodName}-ansible.log 2>&1 || :
+     $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
+     $klog pod/${opPodName} -c ansible --previous > ${logdir}/${opPodName}-ansible-previous.log 2>&1 || :
+     $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+  done
 fi
 
 describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
