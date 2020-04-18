@@ -61,3 +61,8 @@ pytest  operator_test.py::<test_name> --clusterconfig config.json
 
 eg. pytest  operator_test.py::test_operator_deploy --clusterconfig config.json
 ```
+### List available Driver & Operator tests 
+Available functional tests list for driver & operator can be collected using following command
+```
+pytest --collect-only
+```

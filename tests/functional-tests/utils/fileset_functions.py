@@ -403,7 +403,7 @@ def create_dir(test, dir_name):
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(username, password))
     LOGGER.debug(response.text)
-    LOGGER.info(f' Created directory {dir_name} in {test["scaleHostpath"]}')
+    LOGGER.info(f'Created directory {dir_name} in {test["scaleHostpath"]}')
     time.sleep(5)
 
 

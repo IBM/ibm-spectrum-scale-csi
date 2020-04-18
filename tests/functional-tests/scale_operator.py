@@ -308,17 +308,20 @@ class Driver:
                 cluster_id = str(cluster_id)
             if wrong["FSUID_wrong"] is True:
                 FSUID = "AAAA"
-        dir_name = d.get_random_name("dir")
-        create_dir(self.config_file, dir_name)
+
         if root_volume is False:
+            dir_name = d.get_random_name("dir")
+            create_dir(self.config_file, dir_name)
             pv_value["volumeHandle"] = cluster_id+";"+FSUID + \
                 ";path="+self.config_file["scaleHostpath"]+"/"+dir_name
         elif root_volume is True:
             pv_value["volumeHandle"] = cluster_id+";"+FSUID + \
                 ";path="+self.config_file["scaleHostpath"]
+            dir_name = "nodiravailable"
 
         if pvc_value == "Default":
             pvc_value = copy.deepcopy(self.value_pvc)
+
         num_final = len(pvc_value)
         for num in range(0, num_final):
             pv_name = d.get_random_name("pv")

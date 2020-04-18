@@ -1,5 +1,6 @@
 import time
 import json
+import yaml
 import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -354,8 +355,14 @@ def create_crd():
     crd_subresources = client.V1beta1CustomResourceSubresources(status={})
 
     # input to crd_validation     json input
-    with open("utils/crd_properties.json", "r") as f:
-        properties = json.load(f)
+    filepath = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
+    try:
+        with open(filepath, "r") as f:
+            loadcrd_yaml = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print ("Error in configuration file:", exc)
+        assert False 
+    properties   = loadcrd_yaml['spec']['validation']['openAPIV3Schema']['properties']
 
     crd_open_apiv3_schema = client.V1beta1JSONSchemaProps(
         properties=properties, type="object")

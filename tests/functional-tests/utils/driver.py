@@ -460,6 +460,7 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
         None
     """
     api_instance = client.CoreV1Api()
+    LOGGER.info("POD Check : Trying to create testfile on SpectrumScale mount point inside the pod")
     exec_command1 = "touch "+value_pod["mount_path"]+"/testfile"
     exec_command = [
         '/bin/sh',
@@ -472,7 +473,19 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
                   stderr=True, stdin=False,
                   stdout=True, tty=False)
     if resp == "":
-        LOGGER.info("execution of pod is successful")
+        LOGGER.info("POD Check : Create testfile operation completed successfully")
+        LOGGER.info("POD Check : Deleting testfile from pod's SpectrumScale mount point")
+        exec_command1 = "rm -rvf "+value_pod["mount_path"]+"/testfile"
+        exec_command = [
+            '/bin/sh',
+            '-c',
+            exec_command1]
+        resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  namespace_value,
+                  command=exec_command,
+                  stderr=True, stdin=False,
+                  stdout=True, tty=False)
         return
     if not(check_key(value_pod, "reason")):
         clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
@@ -526,12 +539,12 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
                 con = False
             else:
                 var += 1
-                if(var > 12):
+                if(var > 20):
                     LOGGER.info(f'POD {pod_name} is not running')
                     field = "involvedObject.name="+pod_name
                     reason = api_instance.list_namespaced_event(
                         namespace=namespace_value, pretty=True, field_selector=field)
-                    LOGGER.info(f"POD Check :Reason of failure is : {str(reason)}")
+                    LOGGER.info(f"POD Check : Reason of failure is : {str(reason)}")
                     con = False
                     clean_pod_fail(sc_name, pvc_name, pv_name,
                                    dir_name, pod_name)
@@ -572,11 +585,11 @@ def check_pod_deleted(pod_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'pod {pod_name} deleted')
+            LOGGER.info(f'Pod {pod_name} has been deleted')
             var = False
 
     if count <= 0:
-        LOGGER.info(f'pod {pod_name} is not deleted')
+        LOGGER.info(f'Pod {pod_name} is still not deleted')
         assert False
 
 
