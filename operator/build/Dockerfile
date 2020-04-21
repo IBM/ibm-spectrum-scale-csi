@@ -1,7 +1,7 @@
 # Multi-arch build for IBM Spectrum Scale CSI Operator
 # usage: docker buildx build -f build/Dockerfile --platform=linux/amd64 -t my_image_tag .
 
-FROM quay.io/operator-framework/ansible-operator:v0.16.0
+FROM quay.io/operator-framework/ansible-operator:v0.17.0
 MAINTAINER jdunham@us.ibm.com
 
 ARG CSI_ATTACHER_IMAGE
@@ -24,6 +24,10 @@ LABEL name="IBM Spectrum Scale CSI Operator" \
       summary="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
       description="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
       git_commit=$GIT_COMMIT
+
+#COPY requirements.yml ${HOME}/requirements.yml
+#RUN ansible-galaxy collection install -r ${HOME}/requirements.yml \
+# && chmod -R ug+rwx ${HOME}/.ansible
 
 COPY hacks/health_check.sh .
 COPY licenses /licenses
