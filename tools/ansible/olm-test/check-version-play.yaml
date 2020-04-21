@@ -1,0 +1,70 @@
+- name: "Copy directory {{item}}"
+  copy: 
+    src: "{{OPERATOR_DIR}}/{{item}}"
+    dest: "{{ olm_dir }}"
+
+- name: "Write the updated package"
+  template: 
+    src: "ibm-spectrum-scale-csi-operator.package.yaml.j2"
+    dest: "{{ olm_dir }}/ibm-spectrum-scale-csi-operator.package.yaml"
+
+# TODO does a module do this?
+- name: "Get Registry version and increment"
+  shell: "helm registry list quay.io -o {{ QUAY_NAMESPACE }} --output json "
+  register: registry_out
+
+- name: "Parse registry output"
+  set_fact:
+    registry: "{{ registry_out.stdout  | from_json }}"
+
+- name: "Split latest version"
+  set_fact:
+    maj: "{{ registry[0].releases[0].split('.')[0]  }}"
+    min: "{{ registry[0].releases[0].split('.')[1]  }}"
+    ptf: "{{ registry[0].releases[0].split('.')[2] | int + 1 }}"
+
+- name: "Get version to push"
+  set_fact:
+    nver: "{{maj}}.{{min}}.{{ptf}}"
+
+# TODO need to hide  password somehow.
+- name: "Login to Quay"
+  uri:
+    url: https://quay.io/cnr/api/v1/users/login
+    method: "POST"
+    body_format: json
+    body:
+      user:
+        username: "{{QUAY_USERNAME}}"
+        password: "{{QUAY_PASSWORD}}"
+    return_content: yes
+  register: login
+
+- name:  "Cache login token"
+  set_fact:
+    ltok: "{{ login.json.token }}"
+
+- name: "Push operator to quay"
+  shell:  'operator-courier  push "{{olm_dir}}" "{{QUAY_NAMESPACE}}" "{{PACKAGE_NAME}}" "{{nver}}" "{{ltok}}"; sleep 5'
+
+- name: "Consume subscription"
+  shell: 
+    cmd: " kubectl apply -f {{SUB}}; rm -f {{SUB}} "
+    removes: "{{SUB}}"
+
+- name: "Patch the operator source status to {} to pull the latest"
+  shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale-csi -p '[{\"op\":\"replace\",\"path\":\"/status\",\"value\":{}}]'  --type json"
+
+# TODO break this out into a role/playbook
+#- name : "Wait 60s for new CSV"
+#  shell: "kubectl get csv -n  {{NAMESPACE}} ibm-spectrum-scale-csi-operator.v{{item}}"
+#  register: csv_out
+#  until:
+#    - csv_out.rc == 0
+#  delay: 6
+#  retries: 10
+
+- pause:
+    prompt: "OLM configured to use {{item}}, press enter to continue"
+    echo: no
+  when: INTERACTABLE

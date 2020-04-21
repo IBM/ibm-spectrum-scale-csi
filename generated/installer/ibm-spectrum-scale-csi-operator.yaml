@@ -58,6 +58,13 @@ spec:
                 - ./health_check.sh
             initialDelaySeconds: 3
             periodSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           securityContext:
             capabilities:
               drop:
@@ -97,6 +104,13 @@ spec:
                 - ./health_check.sh
             initialDelaySeconds: 3
             periodSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           securityContext:
             capabilities:
               drop:
@@ -137,6 +151,7 @@ rules:
       - secrets/status
       - services/finalizers
       - serviceaccounts
+      - securitycontextconstraints
     verbs:
       - "*"
   - apiGroups:
@@ -244,6 +259,11 @@ metadata:
     release: ibm-spectrum-scale-csi-operator
   name: csiscaleoperators.csi.ibm.com
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.conditions[?(@.type="Ready")].status
+      description: The Nginx Status
+      name: Ready
+      type: string
   group: csi.ibm.com
   names:
     kind: CSIScaleOperator
@@ -404,13 +424,12 @@ spec:
               description: The active status of the operator
               items:
                 properties:
-                  isRunning:
+                  Ready:
                     description: Indicates that the plugin is running.
                     type: boolean
                 type: object
               type: array
           type: object
-      type: object
   version: v1
   versions:
     - name: v1
