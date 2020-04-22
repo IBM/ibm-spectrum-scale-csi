@@ -16,7 +16,7 @@
 #
 #USAGE spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
 
-ns="default"
+ns="ibm-spectrum-scale-csi-driver"
 node=""
 outdir="."
 cmd="kubectl"
@@ -72,8 +72,11 @@ fi
 out=$($cmd -n $ns describe StatefulSet ibm-spectrum-scale-csi-attacher 2>&1 | grep 'Namespace' | awk 'BEGIN { FS="[[:space:]]+" } ; { print $2 }')
 if [[ $out != $ns ]]
 then
-  echo "ibm-spectrum-scale-csi is not running in namespace $ns. Please provide a valid namespace"
-  exit 1
+  operator=`$cmd get deployment -l product=ibm-spectrum-scale-csi --namespace $ns  |grep -v NAME |awk '{print $1}'`
+  if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
+        echo "ibm-spectrum-scale-csi driver and operator is not running in namespace $ns. Please provide a valid namespace"
+        exit 1
+   fi
 fi
 
 time=`date +"%m-%d-%Y-%T"`
@@ -113,17 +116,18 @@ done
 
 
 # kubectl logs on operator pods
-operatorName=`$cmd get deployment -l product=ibm-spectrum-scale-csi --namespace $ns  |grep -v NAME |awk '{print $1}'`
+operatorName=`$cmd get deployment ibm-spectrum-scale-csi-operator  --namespace $ns  | grep -v NAME | awk '{print $1}'`
 if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
    describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
    echo "$describeCSIScaleOperator"
    $describeCSIScaleOperator > ${describe_CSIScaleOperator} 2>&1 || :
-   opPodName=`$cmd get pods --namespace $ns |grep operator |awk '{print $1}'`
-   echo "$klog pod/${opPodName}"
-   $klog pod/${opPodName} -c ansible > ${logdir}/${opPodName}-ansible.log 2>&1 || :
-   $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
-   $klog pod/${opPodName} -c ansible --previous > ${logdir}/${opPodName}-ansible-previous.log 2>&1 || :
-   $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+   for opPodName in `$cmd get pods --namespace $ns | grep 'ibm-spectrum-scale-csi-operator' | awk '{print $1}'`; do
+     echo "$klog pod/${opPodName}"
+     $klog pod/${opPodName} -c ansible > ${logdir}/${opPodName}-ansible.log 2>&1 || :
+     $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
+     $klog pod/${opPodName} -c ansible --previous > ${logdir}/${opPodName}-ansible-previous.log 2>&1 || :
+     $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+  done
 fi
 
 describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"

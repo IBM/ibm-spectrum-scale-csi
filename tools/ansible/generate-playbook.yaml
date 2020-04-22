@@ -9,7 +9,9 @@
     generated_dir: "{{ repo_root_dir }}/generated/installer"
   
     filename: "{{ 'ibm-spectrum-scale-csi-operator.test.yaml' if travis_testing else 'ibm-spectrum-scale-csi-operator.yaml' }}"
+    filename_dev: 'ibm-spectrum-scale-csi-operator-dev.yaml'
     generated_op_yaml: "{{ generated_dir }}/{{ filename }}"
+    generated_op_dev_yaml: "{{ generated_dir }}/{{ filename_dev }}"
     operator_files: 
       - name: "deploy/operator.yaml"
       - name: "deploy/role.yaml"

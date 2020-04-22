@@ -70,7 +70,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
-	clusterId, clusterIdSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
 	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
@@ -81,7 +80,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
 	scaleVol.FilesetType = ""
-	scaleVol.ClusterId = ""
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false
@@ -104,10 +102,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if !fsTypeSpecified && !volDirPathSpecified {
 		fsTypeSpecified = true
 		fsType = independentFileset
-	}
-
-	if clusterIdSpecified && clusterId == "" {
-		clusterIdSpecified = false
 	}
 
 	if uidSpecified && uid == "" {
@@ -133,7 +127,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	if volDirPathSpecified {
 		if fsTypeSpecified {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "fileType and volDirBasePath must not be specified together in storageClass")
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and volDirBasePath must not be specified together in storageClass")
 		}
 		if isparentFilesetSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and volDirBasePath must not be specified together in storageClass")
@@ -146,11 +140,11 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if fsTypeSpecified {
 		if fsType == dependentFileset {
 			if inodeLimSpecified {
-				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and fileseType=dependent must not be specified together in storageClass")
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and filesetType=dependent must not be specified together in storageClass")
 			}
 		} else if fsType == independentFileset {
 			if isparentFilesetSpecified {
-				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and fileseType=independent(Default) must not be specified together in storageClass")
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and filesetType=independent(Default) must not be specified together in storageClass")
 			}
 		} else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Invalid value specified for filesetType in storageClass")
@@ -175,16 +169,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 	if fsTypeSpecified {
 		scaleVol.IsFilesetBased = true
-	}
-
-	/* cluster Id not mandatory for LW volumes */
-
-	if scaleVol.IsFilesetBased {
-		if clusterIdSpecified {
-			scaleVol.ClusterId = clusterId
-		} else {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "clusterId must be specified in storageClass")
-		}
 	}
 
 	/* Get UID/GID */
