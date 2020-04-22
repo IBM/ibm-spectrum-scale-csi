@@ -415,6 +415,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if scaleVol.IsFilesetBased {
+		if scaleVol.ClusterId == "" {
+			scaleVol.ClusterId = PCid
+		}
 		conn, err := cs.GetConnFromClusterID(scaleVol.ClusterId)
 
 		if err != nil {

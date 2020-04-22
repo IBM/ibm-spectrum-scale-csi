@@ -7,5 +7,5 @@ parameters:
     volBackendFs: "gpfs0"
     clusterId: "7118073361626808055"
     filesetType: "dependent"
-    parentFileset: "pvc-9c93ffc6-b113-47b4-bbb4-29306f567f2b"
+    parentFileset: "independent-fileset-gpfs0-fset1"
 reclaimPolicy: Delete
