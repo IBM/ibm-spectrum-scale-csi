@@ -40,3 +40,7 @@ scenario:
     - destroy
 verifier:
   name: testinfra
+  options:
+    clusterconfig: config.json
+  additional_files_or_dirs:
+    - ../../../tests/functional-tests/operator_test.py
