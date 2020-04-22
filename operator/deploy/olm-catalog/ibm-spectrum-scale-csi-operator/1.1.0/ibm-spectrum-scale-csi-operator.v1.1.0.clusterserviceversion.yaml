@@ -66,6 +66,9 @@ spec:
         kind: CSIScaleOperator
         name: csiscaleoperators.csi.ibm.com
         resources:
+          - kind: services
+            name: ""
+            version: v1
           - kind: replicasets
             name: ""
             version: v1
