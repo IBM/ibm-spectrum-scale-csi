@@ -31,8 +31,8 @@ provisioner:
       all:
         namespace: ibm-spectrum-scale-csi-driver
   env:
-    K8S_AUTH_KUBECONFIG: /tmp/molecule/kind-test-local/kubeconfig
     KUBECONFIG: /tmp/molecule/kind-test-local/kubeconfig
+    K8S_AUTH_KUBECONFIG: /tmp/molecule/kind-test-local/kubeconfig
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/roles
     KIND_PORT: "${TEST_CLUSTER_PORT:-10443}"
 scenario:

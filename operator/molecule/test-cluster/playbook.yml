@@ -6,34 +6,126 @@
   vars:
     ansible_python_interpreter: '{{ ansible_playbook_python }}'
     deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
-    image_name: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
+    pull_policy: Never
+    REPLACE_IMAGE: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
     custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com.cr.yaml'])) | from_yaml }}"
   tasks:
-    - name: Ensure specified namespace is present
-      k8s:
-        api_version: v1
-        kind: Namespace
-        name: '{{ namespace }}'
+    - name: Testing Block
+      block:
+        - name: Create the Operator Deployment
+          k8s:
+            namespace: '{{ namespace }}'
+            definition: "{{ lookup('template', '/'.join([deploy_dir, 'operator.yaml'])) }}"
 
-    - name: Create the csi.ibm.com/v1.CSIScaleOperator
-      k8s:
-        namespace: '{{ namespace }}'
-        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com.cr.yaml'])) }}"
+        - name: Create the operator secret
+          k8s:
+            state: present
+            definition:
+              apiVersion: "v1"
+              kind: "Secret"
+              metadata:
+                name: "{{ secret_name }}"
+                namespace: "{{ namespace }}"
+              data:
+                password: "{{ secret_pass }}"
+                username: "{{ secret_user }}"
+              type: "Opaque"
+              labels:
+                app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+          vars:
+            secret_pass: "cGFzc3dvcMq="  # "password"
+            secret_user: "dXNlcm5hbwu="  # "username"
+            secret_name: "secret1"
 
-    - name: Get the newly created Custom Resource
-      debug:
-        msg: "{{ lookup('k8s', group='csi.ibm.com', api_version='v1', kind='CSIScaleOperator', namespace=namespace, resource_name=custom_resource.metadata.name) }}"
+        - name: Create the csi.ibm.com/v1.CSIScaleOperator
+          k8s:
+            state: present
+            namespace: '{{ namespace }}'
+            definition: '{{ custom_resource }}'
+            validate:
+              strict: yes
+              fail_on_error: yes
 
-    - name: Wait 60s for reconciliation to run
-      k8s_facts:
-        api_version: 'v1'
-        kind: 'CSIScaleOperator'
-        namespace: '{{ namespace }}'
-        name: '{{ custom_resource.metadata.name }}'
-      register: reconcile_cr
-      until:
-        - "'Successful' in (reconcile_cr | json_query('resources[].status.conditions[].reason'))"
-      delay: 6
-      retries: 10
+        - name: Wait 240s for reconciliation to run
+          k8s_info:
+            api_version: '{{ custom_resource.apiVersion }}'
+            kind: '{{ custom_resource.kind }}'
+            namespace: '{{ namespace }}'
+            name: '{{ custom_resource.metadata.name }}'
+          register: cr
+          until:
+            - "'Successful' in (cr | json_query('resources[].status.conditions[].reason'))"
+          delay: 6
+          retries: 40
+      rescue:
+        - name: debug cr
+          ignore_errors: yes
+          failed_when: false
+          debug:
+            var: debug_cr
+          vars:
+            debug_cr: '{{ lookup("k8s",
+              kind=custom_resource.kind,
+              api_version=custom_resource.apiVersion,
+              namespace=namespace,
+              resource_name=custom_resource.metadata.name
+            )}}'
+
+        - name: Get Operator Pod
+          set_fact:
+            op_pod: '{{ lookup("k8s",
+              kind="pods",
+              namespace=namespace,
+              label_selector="app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
+            )}}'
+
+        - name: Get Pods
+          set_fact:
+            pods: '{{ lookup("k8s",
+              kind="pods",
+              namespace=namespace
+            )}}'
+
+        - name: debug pods lookup
+          ignore_errors: yes
+          failed_when: false
+          debug:
+            var: pods
+
+        - name: Get operator pod's ansible logs
+          ignore_errors: yes
+          failed_when: false
+          command: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
+          environment:
+            KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
+          register: ansible_log
+
+        - debug: var=ansible_log.stdout_lines
+
+        - name: Get operator pod's operator logs
+          ignore_errors: yes
+          failed_when: false
+          command: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} operator"
+          environment:
+            KUBECONFIG: '{{ lookup("env", "KUBECONFIG") }}'
+          register: oper_log
+
+        - debug: var=oper_log.stdout_lines
+
+        - name: debug api_groups
+          ignore_errors: yes
+          failed_when: false
+          debug:
+            var: debug_api_groups
+          vars:
+            debug_api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+
+        - debug:
+            msg: "kubectl logs {{ op_pod.metadata.name }} -n {{ namespace }} ansible"
+
+        - fail:
+            msg: "Failed on action: converge"
+
+    - include_tasks: '{{ playbook_dir }}/../default/tests/basic_tests.yaml'
 
 - import_playbook: '{{ playbook_dir }}/../default/asserts.yml'

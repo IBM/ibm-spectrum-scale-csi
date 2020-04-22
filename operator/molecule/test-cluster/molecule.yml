@@ -20,8 +20,10 @@ provisioner:
   inventory:
     group_vars:
       all:
-        namespace: ${TEST_NAMESPACE:-osdk-test}
+        namespace: ibm-spectrum-scale-csi-driver
   env:
+    KUBECONFIG: ${KUBECONFIG:-$HOME/.kube/config}
+    K8S_AUTH_KUBECONFIG: ${KUBECONFIG:-$HOME/.kube/config}
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/roles
 scenario:
   name: test-cluster
