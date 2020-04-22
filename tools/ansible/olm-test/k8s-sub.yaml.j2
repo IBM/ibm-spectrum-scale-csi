@@ -16,31 +16,30 @@ apiVersion: operators.coreos.com/v1
 kind: OperatorSource
 metadata:
   name: ibm-spectrum-scale-csi
-  namespace: marketplace
+  namespace: {{ NAMESPACE }}
 spec:
   type: appregistry
   endpoint: https://quay.io/cnr
-  registryNamespace:  ibm-spectrum-scale-dev
+  registryNamespace: {{ QUAY_NAMESPACE }}
 
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: operator-group
-  namespace: marketplace
+  namespace: {{ NAMESPACE }}
 spec:
   targetNamespaces:
-  - marketplace
+  - {{ NAMESPACE }} 
 
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: ibm-spectrum-scale-csi-master-sub
-  namespace: marketplace
+  name: ibm-spectrum-scale-csi-sub
+  namespace: {{ NAMESPACE }}
 spec:
-  channel: stable
-  name: ibm-spectrum-scale-csi-master
+  channel: {{CHANNEL_NAME}}
+  name: {{ PACKAGE_NAME }}
   source: ibm-spectrum-scale-csi
-  sourceNamespace: marketplace
-
+  sourceNamespace: {{ NAMESPACE }}
