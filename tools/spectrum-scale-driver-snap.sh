@@ -123,9 +123,7 @@ if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
    $describeCSIScaleOperator > ${describe_CSIScaleOperator} 2>&1 || :
    opPodName=`$cmd get pods --namespace $ns |grep operator |awk '{print $1}'`
    echo "$klog pod/${opPodName}"
-   $klog pod/${opPodName} -c ansible > ${logdir}/${opPodName}-ansible.log 2>&1 || :
    $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
-   $klog pod/${opPodName} -c ansible --previous > ${logdir}/${opPodName}-ansible-previous.log 2>&1 || :
    $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
 fi
 
