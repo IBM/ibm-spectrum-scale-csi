@@ -574,10 +574,9 @@ def delete_pod(pod_name):
 
 def check_pod_deleted(pod_name):
     """ checks pod deleted or not , if not deleted , asserts """
-    var = True
     count = 12
     api_instance = client.CoreV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
@@ -586,11 +585,10 @@ def check_pod_deleted(pod_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'Pod {pod_name} has been deleted')
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.info(f'Pod {pod_name} is still not deleted')
-        assert False
+    LOGGER.info(f'Pod {pod_name} is still not deleted')
+    assert False
 
 
 def delete_pvc(pvc_name):
@@ -609,10 +607,9 @@ def delete_pvc(pvc_name):
 
 def check_pvc_deleted(pvc_name):
     """ check pvc deleted or not , if not deleted , asserts """
-    var = True
     count = 12
     api_instance = client.CoreV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_namespaced_persistent_volume_claim(
                 name=pvc_name, namespace=namespace_value, pretty=True)
@@ -622,11 +619,10 @@ def check_pvc_deleted(pvc_name):
         except ApiException:
             LOGGER.info(f'pvc {pvc_name} deleted')
             ff.delete_created_fileset(test, volume_name)
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.info(f'pvc {pvc_name} is not deleted')
-        assert False
+    LOGGER.info(f'pvc {pvc_name} is not deleted')
+    assert False
 
 
 def delete_pv(pv_name):
@@ -645,10 +641,9 @@ def delete_pv(pv_name):
 
 def check_pv_deleted(pv_name):
     """ checks pv is deleted or not , if not deleted ,asserts"""
-    var = True
     count = 12
     api_instance = client.CoreV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_persistent_volume(
                 name=pv_name, pretty=True)
@@ -657,11 +652,10 @@ def check_pv_deleted(pv_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'PV {pv_name} has been deleted')
-            var = False
-
-    if count <= 0:
-        LOGGER.info(f'PV {pv_name} is still not deleted')
-        assert False
+            return
+        
+    LOGGER.info(f'PV {pv_name} is still not deleted')
+    assert False
 
 
 def delete_storage_class(sc_name):
@@ -690,10 +684,9 @@ def check_storage_class_deleted(sc_name):
     """
     if sc_name == "":
         return
-    var = True
     count = 12
     api_instance = client.StorageV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_storage_class(
                 name=sc_name, pretty=True)
@@ -702,8 +695,7 @@ def check_storage_class_deleted(sc_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'StorageClass {sc_name} has been deleted')
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.info(f'StorageClass {sc_name} is not deleted')
-        assert False
+    LOGGER.info(f'StorageClass {sc_name} is not deleted')
+    assert False

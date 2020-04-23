@@ -2,12 +2,14 @@ import copy
 import multiprocessing
 import logging
 import json
+import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from jsmin import jsmin
 import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
+from conftest import input_params
 from utils.fileset_functions import get_FSUID, create_dir, delete_dir
 LOGGER = logging.getLogger()
 
@@ -422,10 +424,52 @@ class Driver:
 
 def read_scale_config_file(clusterconfig, namespace):
 
-    with open(clusterconfig, "r") as f:
-        data = json.loads(jsmin(f.read()))
+    data = copy.deepcopy(input_params)
     data["secureSslMode"] = False
     data["namespace"] = namespace
+
+    try:
+        with open(clusterconfig, "r") as f:
+            loadcr_yaml = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print ("Error in cr file:", exc)
+        assert False
+
+    data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]
+    data["id"] = loadcr_yaml["spec"]["clusters"][0]["id"]
+    data["secrets"] = loadcr_yaml["spec"]["clusters"][0]["secrets"]
+    data["primaryFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFs"]
+    data["primaryFset"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFset"]
+    data["guiHost"] = loadcr_yaml["spec"]["clusters"][0]["restApi"][0]["guiHost"]
+    if check_key(loadcr_yaml["spec"],"nodeMapping"):
+        data["nodeMapping"] = loadcr_yaml["spec"]["nodeMapping"]
+    else:
+        data["nodeMapping"] = []
+
+    if check_key(loadcr_yaml["spec"],"attacherNodeSelector"):
+        data["attacherNodeSelector"] = loadcr_yaml["spec"]["attacherNodeSelector"]
+    else:
+        data["attacherNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"],"provisionerNodeSelector"):
+        data["provisionerNodeSelector"] = loadcr_yaml["spec"]["provisionerNodeSelector"]
+    else:
+        data["provisionerNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"],"pluginNodeSelector"):
+        data["pluginNodeSelector"] = loadcr_yaml["spec"]["pluginNodeSelector"]
+    else:
+        data["pluginNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"],"spectrumScale"):
+        data["deployment_driver_image"] = loadcr_yaml["spec"]["spectrumScale"]
+    if check_key(loadcr_yaml["spec"],"driverRegistrar"):
+        data["deployment_driverregistrar_image"] = loadcr_yaml["spec"]["driverRegistrar"]
+    if check_key(loadcr_yaml["spec"],"attacher"):
+        data["deployment_attacher_image"] = loadcr_yaml["spec"]["attacher"] 
+    if check_key(loadcr_yaml["spec"],"provisioner"):
+        data["deployment_provisioner_image"] = loadcr_yaml["spec"]["provisioner"]
+
     return data
 
 

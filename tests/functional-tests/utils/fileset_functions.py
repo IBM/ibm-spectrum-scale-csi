@@ -207,7 +207,7 @@ def unmount_fs(test):
     data = '{"nodes":["'+test["guiHost"]+'"],"force": false}'
     response = requests.put(unmount_link, headers=headers,
                             data=data, verify=False, auth=(username, password))
-    LOGGER.debug(response.text)
+    LOGGER.info(response.text)
     LOGGER.info(f'primaryFS {test["primaryFs"]} unmounted')
     time.sleep(5)
 

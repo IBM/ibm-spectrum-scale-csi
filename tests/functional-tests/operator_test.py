@@ -20,7 +20,7 @@ def _values(request):
         kubeconfig_value = "~/.kube/config"
     clusterconfig_value = request.config.option.clusterconfig
     if clusterconfig_value is None:
-        pytest.fail(" file not provided")
+        clusterconfig_value = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml"
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
@@ -42,6 +42,7 @@ def _values(request):
 
 
 def test_operator_deploy(_values):
+
     LOGGER.info("test_operator_deploy")
     LOGGER.info("Every input is correct should run without any error")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
