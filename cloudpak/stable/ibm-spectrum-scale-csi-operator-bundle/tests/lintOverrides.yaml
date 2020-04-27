@@ -34,3 +34,7 @@ overrides:
   - reason: pull-secret can be provided in CR
     reduceTo: WARNING
     rule: ServiceAccountHasPullSecret
+
+  - reason: File is auto-generated, outside of our control.
+    reduceTo: INFO
+    rule: RequiredMetadataLabelsDefined
