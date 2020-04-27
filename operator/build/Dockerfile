@@ -25,10 +25,6 @@ LABEL name="IBM Spectrum Scale CSI Operator" \
       description="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
       git_commit=$GIT_COMMIT
 
-#COPY requirements.yml ${HOME}/requirements.yml
-#RUN ansible-galaxy collection install -r ${HOME}/requirements.yml \
-# && chmod -R ug+rwx ${HOME}/.ansible
-
 COPY hacks/health_check.sh .
 COPY licenses /licenses
 COPY watches.yaml ${HOME}/watches.yaml
