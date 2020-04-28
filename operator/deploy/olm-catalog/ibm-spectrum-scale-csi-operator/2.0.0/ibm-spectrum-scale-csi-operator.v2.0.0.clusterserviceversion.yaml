@@ -220,8 +220,8 @@ spec:
             x-descriptors:
               - urn:alm:descriptor:io.kubernetes.conditions
           - description: Indicates that the plugin is running.
-            displayName: Is Running
-            path: conditions.isRunning
+            displayName: Ready
+            path: conditions.Ready
             x-descriptors:
               - urn:alm:descriptor:io.kubernetes.phase
         version: v1
@@ -460,5 +460,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v1.0.0
+  replaces: ibm-spectrum-scale-csi-operator.v1.1.0
   version: 2.0.0
