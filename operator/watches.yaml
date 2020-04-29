@@ -11,4 +11,5 @@
 - version: v1
   kind: Secret
   playbook: /opt/ansible/roles/csi-scale/tasks/secret_watch.yml
+  watchDependentResources: false
   manageStatus: false

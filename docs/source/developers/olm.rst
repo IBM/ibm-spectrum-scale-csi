@@ -23,6 +23,7 @@ To subscribe to these applicaions via OLM, the code repository provides three YA
 
 * Used for OLM subscription to the master stream in raw k8s.
 * Created in the `marketplace` namespace.
+* **WARNING** : Currently disabled, as master has some issues for upgrade.
 
 ``tools/olm/operator-source-k8s-dev.yaml``
 
@@ -60,32 +61,32 @@ One method for achieving this is to host the CSV on `quay.io <https://quay.io>`_
   .. code-block::  bash
   
     # Set your variables
-    REPO_NAME="<Your Repo Name>"
+    QUAY_REPO_NAME="<Your Repo Name>"
     QUAY_USER="<Your Quay Username>"
     CHANNEL_NAME="test"
     
     # Create the helm project
     cd ~
-    helm create ${REPO_NAME}
-    cd ${REPO_NAME}
+    helm create ${QUAY_REPO_NAME}
+    cd ${QUAY_REPO_NAME}
     
     # Push to quay
     helm registry login quay.io
     helm registry push --namespace ${QUAY_USER} quay.io
     helm registry push --namespace ${QUAY_USER} --channel ${CHANNEL_NAME} quay.io
 
-4. Using the helper script, sync the latest csv.
+4. Edit the variables for the test playbook (which will push your csv):
 
   .. code-block:: bash
     
-    # Assumed to be relative to this repositories root.
-    export OPERATOR_DIR="operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator"
-    export QUAY_NAMESPACE=${QUAY_USER}
-    export PACKAGE_NAME=${REPO_NAME}
-    export QUAY_USERNAME="<An account with write access to the application>"
-    export QUAY_PASSWORD="<The account password, might want to source from file>"
+    vi tools/ansible/olm-test-playbook.yaml 
+  
 
-    tools/scripts/push_app.sh
+5. Deploy using `olm-test-playbook.yaml`, you'll need to set the user name and password:
+
+  .. code-block:: bash
+    cd tools/ansible/
+    ansible-playbook olm-test-playbook.yaml --extra-vars '{"QUAY_PASSWORD":"A_TOKEN"}'
 
 At this point your application is ready to be subscribed to.  Use the following templates for k8s and OpenShift respectively.
 
@@ -119,7 +120,7 @@ Kubernetes subscription template
     registryNamespace:  {{ QUAY_USER }}
   
   ---
-  apiVersion: operators.coreos.com/v1alpha2
+  apiVersion: operators.coreos.com/v1
   kind: OperatorGroup
   metadata:
     name: operator-group

@@ -33,24 +33,13 @@
       - name: "csi-plugin-snapshotter.yaml.j2"
       - name: "csi-plugin.yaml.j2"
 
-- name: "Test clusters when setting to present"
-  block:
-    - name: "Ensure the clusters are valid"
-      include_tasks: cluster_check.yml
-      loop: "{{ clustersCamelCase }}"
-      when: 'state == "present"'
-
-- name: "Generate final secret checksum"
-  set_fact:
-    secret_checksum: "{{ secret_checksums | join('') | checksum }}"
-
 - name: "Ensure SCC"
   when: '"apps.openshift.io" in api_groups'
   block:
-    - name: "Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}"
+    - name: "Get security context constraint information."
       k8s_info:
         kind: "SecurityContextConstraints"
-        name: "csiaccess"
+        name: "spectrum-scale-csiaccess"
       register: csiaccess_results
 
     - name: "Ensure the csiaccess_users list"
@@ -83,6 +72,17 @@
         state: "{{scc_state}}"
         namespace: "{{namespace}}"
         definition: "{{ lookup('template', 'scc.yaml.j2') | from_yaml }}"
+
+- name: "Test clusters when setting to present"
+  block:
+    - name: "Ensure the clusters are valid"
+      include_tasks: cluster_check.yml
+      loop: "{{ clustersCamelCase }}"
+      when: 'state == "present"'
+
+- name: "Generate final secret checksum"
+  set_fact:
+    secret_checksum: "{{ secret_checksums | join('') | checksum }}"
 
 - name: "Reverse order when not present"
   set_fact:
