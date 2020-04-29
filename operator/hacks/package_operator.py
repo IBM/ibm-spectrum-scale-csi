@@ -24,6 +24,9 @@ A hack to package the operator for release.
     default=OPERATOR,
     help='''The manifest directory, contains a package.yaml and version directories.''')
 
+  parser.add_argument( '-f', '--flat',  dest='flatten', action='store_true',
+      help='''Flatten the bundle (for certified releases).''')
+
   parser.add_argument( '-o', '--output', metavar="ZIP Archive", dest='output',
     default=None,
     help='''The output location of this script. If directory supplied (or not provided) zip file

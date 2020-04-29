@@ -1,0 +1,116 @@
+- name: "Get timestamp"
+  shell: "date +%s"
+  register: tstamp
+
+- name: "Determing directory for temporary package"
+  set_fact:
+    olm_dir: "/tmp/operator-pkg-{{tstamp.stdout}}"
+
+- name: "Create the directory {{ olm_dir }}"
+  file:
+    path: "{{ olm_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: "Create the build dir"
+  file:
+    path: "{{ OUTPUT }}"
+    state: directory
+    mode: '0755'
+
+
+
+- name: "Archive without flattening"
+  when: flatten == false
+  block: 
+    - name: "Copy {{OLM_BASE}} to {{olm_dir}}"
+      copy:
+        src: "{{OLM_BASE}}/"
+        dest: "{{olm_dir}}"
+
+    - name:  "Archive the bundle: {{OUTPUT}}/{{package_name}}.zip"
+      archive:
+        path: "{{olm_dir}}/*"
+        format: zip
+        dest: "{{OUTPUT}}/{{package_name}}.zip"
+
+- name: "Archive with flattening"
+  when: flatten
+  block:
+    - name:  "Copy package"
+      copy:
+        src: "{{OLM_BASE}}/ibm-spectrum-scale-csi-operator.package.yaml"
+        dest: "{{olm_dir}}"
+
+    - name: "Load the package into ansible"
+      include_vars:
+        file: "{{olm_dir}}/ibm-spectrum-scale-csi-operator.package.yaml"
+        name: package
+
+    - name: "Get channel version"
+      set_fact:
+        currentVersion: "{{ package.channels[0].currentCSV.split('.v')[1] }}"
+        #currentCSV: "{{ package.json.data | json_query('channels[*][?name==`package.defaultChannel`][0].currentCSV[0]') }}"
+    
+    - name: "Find all of the CSV in the OLM directory" 
+      find:
+        paths: "{{OLM_BASE}}"
+        #patterns:  ".*clusterserviceversion.yaml"
+        #use_regex: yes
+        depth: 2
+        recurse: yes
+      register: csvs
+
+    - name: "Copy CSVs to  {{olm_dir}}"
+      copy:
+        src: "{{item.path}}"
+        dest: "{{olm_dir}}"
+      with_items: "{{ csvs.files }}"
+
+    - name: "Find all of the configs for the current version"
+      find:
+        paths: "{{OLM_BASE}}/{{currentVersion}}"
+      register: configs
+
+    - name: "Copy configs to  {{olm_dir}}"
+      copy:
+        src: "{{item.path}}"
+        dest: "{{olm_dir}}"
+      with_items: "{{ configs.files }}"
+
+    # TODO need to make this smarter
+    - name: "Get all the file names"
+      find:
+        patterns:  ".*{{OH_PKG}}.*"
+        use_regex: yes
+        paths: "{{olm_dir}}"
+        recurse: yes
+      register: files
+
+    - name: "Rename files to match  package standard"
+      copy:
+        src: "{{item.path}}"
+        dest: "{{ item.path | regex_replace(OH_PKG, package_name)}}"
+      with_items: "{{ files.files }}"
+
+
+    - name: "Remove  old file names"
+      file:
+        path: "{{ item.path }}"
+        state: absent
+        mode: '0755'
+      with_items: "{{ files.files }}"
+    
+
+    - name:  "Archive the bundle: {{OUTPUT}}/{{package_name}}.zip"
+      archive:
+        path: "{{olm_dir}}/*"
+        format: zip
+        dest: "{{OUTPUT}}/{{package_name}}.zip"
+
+- name: "Remove the directory {{ olm_dir }}"
+  file:
+    path: "{{ olm_dir }}"
+    state: absent
+    mode: '0755'
+

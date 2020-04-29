@@ -38,8 +38,6 @@ type Primary struct {
 	InodeLimitDep string `json:"inode-limit"` // Deprecated
 	InodeLimits   string `json:"inodeLimit"`
 	RemoteCluster string `json:"remoteCluster"`
-	RemoteFSDep   string `json:"remoteFS"` // Deprecated
-	RemoteFs      string `json:"remoteFs"`
 
 	PrimaryFSMount      string
 	PrimaryFsetLink     string
@@ -54,15 +52,6 @@ func (primary Primary) GetPrimaryFs() string {
 		return primary.PrimaryFSDep
 	}
 	return primary.PrimaryFs
-}
-
-/* To support backwards compatibility if the RemoteFs field is not defined then
-   use the previous version of the field. */
-func (primary Primary) GetRemoteFs() string {
-	if primary.RemoteFs == "" {
-		return primary.RemoteFSDep
-	}
-	return primary.RemoteFs
 }
 
 /* To support backwards compatibility if the InodeLimit field is not defined then

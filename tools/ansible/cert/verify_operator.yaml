@@ -31,23 +31,80 @@
 #    chdir: "{{OPERATOR_DIR}}"
 #  loop: "{{CR_LIST}}"
 
-- name: Copy documentation for the ClusterServiceVersion
-  shell: "python hacks/csv_copy_docs.py --version {{OPERATOR_VERSION}}"
-  args:
-    chdir: "{{OPERATOR_DIR}}"
+#- name: Copy documentation for the ClusterServiceVersion
+#  shell: "python hacks/csv_copy_docs.py --version {{OPERATOR_VERSION}}"
+#  args:
+#    chdir: "{{OPERATOR_DIR}}"
 
-- name: Package the operator
-  shell: "python hacks/package_operator.py -o {{OP_PKG}}"
-  args:
-    chdir: "{{OPERATOR_DIR}}"
+- name: "Find all of the files inside the olm dir"
+  find:
+    paths: "{{OLM_BASE}}"
+    depth: 2
+    recurse: yes
+  register: repos
+
+- name: "Bundling for operator hub"
+  block:
+    - name: "Set package name to {{OH_PKG}}"
+      set_fact:
+        package_name: "{{OH_PKG}}"
+        flatten: false
+
+    - name: "Set the active package name to match operatorhub"
+      template:
+        src:  "ibm-spectrum-scale-csi-operator.package.yaml.j2"
+        dest: "{{OLM_BASE}}/ibm-spectrum-scale-csi-operator.package.yaml"
+
+
+    - name: "Package the operator for operatorhub"
+      include_tasks: "cert/package_operator.yaml"
+
+- name: "Bundling for redhat certified"
+  block:
+    - name: "Set package name to {{CERT_PKG}}"
+      set_fact:
+        package_name: "{{CERT_PKG}}"
+        flatten: true
+
+    - name: "Set the  active package name to match redhat certified"
+      template:
+        src:  "ibm-spectrum-scale-csi-operator.package.yaml.j2"
+        dest: "{{OLM_BASE}}/ibm-spectrum-scale-csi-operator.package.yaml"
+
+    - name: "Replace {{QUAY_PATH}} with {{CERT_PATH}}"
+      replace:
+        path: "{{ item.path }}"
+        regexp: '{{QUAY_PATH}}'
+        replace: '{{CERT_PATH}}'
+      with_items: "{{ repos.files }}"
+
+    - name: "Package the operator for operatorhub"
+      include_tasks: "cert/package_operator.yaml"
+
+- name: "Reset olm"
+  block:
+    - name: "Set package name to {{OH_PKG}}"
+      set_fact:
+        package_name: "{{OH_PKG}}"
+
+    - name: "Set the active package name to match operatorhub"
+      template:
+        src:  "ibm-spectrum-scale-csi-operator.package.yaml.j2"
+        dest: "{{OLM_BASE}}/ibm-spectrum-scale-csi-operator.package.yaml"
+
+    - name: "Replace {{CERT_PATH}} with {{QUAY_PATH}}"
+      replace:
+        path: "{{ item.path }}"
+        regexp: '{{CERT_PATH}}'
+        replace: '{{QUAY_PATH}}'
+      with_items: "{{ repos.files }}"
 
 - name: Run the 'operator-courier'
   shell: "operator-courier verify --ui_validate_io {{OP_PKG}}"
   register: ocOut
   args:
     chdir: "{{OPERATOR_DIR}}" 
-- debug: var=ocOut.stdout_lines
-- debug: var=ocOut.stderr_lines
+
 
 - name: Create namespace
   shell: "kubectl create -f deploy/namespace.yaml"

@@ -63,7 +63,7 @@ Driver
 
   # Build the container image 
   VERSION="v1.1.0"
-  docker build -t ibm-spectrum-scale-csi:${VERSION} -f Dockerfile.msb .
+  docker build -t ibm-spectrum-scale-csi:${VERSION} .
 
   # Save the image into a .tar file
   docker save ibm-spectrum-scale-csi:${VERSION} -o ibm-spectrum-scale-csi_${VERSION}.tar

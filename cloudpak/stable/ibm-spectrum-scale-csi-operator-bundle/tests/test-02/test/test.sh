@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify
-#
 # Test script REQUIRED to test your operator
 #
 set -o errexit
@@ -17,3 +15,4 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 echo "Check the ibm-spectrum-scale-csi-operator status"
 output=$(kubectl get po -n "${CV_TEST_NAMESPACE:-default}")
 echo $output
+

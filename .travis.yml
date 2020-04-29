@@ -11,8 +11,8 @@ env:
     - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
     # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
-    - REPO_NAME_DRIVER="${REPO_NAME}-driver"
-    - REPO_NAME_OPERATOR="${REPO_NAME}-operator"
+    - REPO_NAME_DRIVER="ibm-spectrum-scale-csi-driver"
+    - REPO_NAME_OPERATOR="ibm-spectrum-scale-csi-operator"
    
     # Grab quay username from 'user+bot_token'
     - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
@@ -34,10 +34,11 @@ env:
     - IMAGE_FQN_OPERATOR=${IMAGE_REPO_OPERATOR}:${IMAGE_TAG}
     - IMAGE_VERSION=${IMAGE_TAG}
     # Add image label to expire nightlies
+    - COMMIT_ARG= "--build-arg GIT_COMMIT=$(git log -1 --format=%h)"
     - IMAGE_LABEL=$(
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]];
         then
-            echo "--label version=${IMAGE_VERSION} --label quay.expires-after=2w";
+            echo "GIT_COMMIT=$(git log -1 --format=%h)  --label version=${IMAGE_VERSION} --label quay.expires-after=2w";
         else
             echo "--label version=${IMAGE_VERSION}";
         fi
@@ -101,6 +102,10 @@ jobs:
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip install operator-courier
         - cd ${BUILD_DIR_OPERATOR}
+        - ls ${OLM_MANIFEST}
+        - echo ${BUILD_DIR_OPERATOR}
+        - ls ${BUILD_DIR_OPERATOR}
+        - ls ${BUILD_DIR_OPERATOR}/deploy/*
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
     
@@ -110,6 +115,10 @@ jobs:
       before_install:
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
       install:
+        # Resolve symlinks for testing.
+        - cp -R -L cloudpak/ cloudpak-static
+        - cd cloudpak-static
+        - ls -ltra  stable/ibm-spectrum-scale-csi-operator-bundle/case/ibm-spectrum-scale-csi-operator/inventory/ibmCSIScaleOperator/files
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
@@ -153,7 +162,7 @@ jobs:
         - go mod vendor
       script:
         - go test -v -race ./...
-        - docker build ${IMAGE_LABEL} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME_DRIVER} .
+        - docker build ${IMAGE_LABEL} ${COMMIT_ARG} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME_DRIVER} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
         - docker tag ${REPO_NAME_DRIVER} ${IMAGE_FQN_DRIVER}
@@ -173,7 +182,7 @@ jobs:
         - operator-sdk version
       script:       
         - cd ${BUILD_DIR_OPERATOR}
-        - operator-sdk build ${REPO_NAME_OPERATOR} --image-build-args "${IMAGE_LABEL}"
+        - operator-sdk build ${REPO_NAME_OPERATOR} --image-build-args "${IMAGE_LABEL} ${COMMIT_ARG}"
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
         - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}

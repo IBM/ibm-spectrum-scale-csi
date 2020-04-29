@@ -56,6 +56,13 @@ spec:
                 - ./health_check.sh
             initialDelaySeconds: 3
             periodSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           securityContext:
             capabilities:
               drop:
@@ -95,6 +102,13 @@ spec:
                 - ./health_check.sh
             initialDelaySeconds: 3
             periodSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           securityContext:
             capabilities:
               drop:
