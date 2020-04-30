@@ -209,7 +209,7 @@ jobs:
 
     # Install minikube, build the image and run the scorecard then execute molecule testing.
     - stage: test
-      name: "Test - Operator: scorecard and molecule"
+      name: "Test - Operator: molecule"
       before_install:
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
@@ -224,10 +224,21 @@ jobs:
         - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
-        # sc
+
+    - stage: test
+      name: "Test - Operator: scorecard"
+      before_install:
+        - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
+        - kubectl version
+        - cd ${BUILD_DIR_OPERATOR}
+        - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
         - python hacks/clear_finalizers.py
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
+      script:        
         - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
-        - python  hacks/clear_finalizers.py --restore
     
 
 notifications:
