@@ -4,6 +4,10 @@
   kind: CSIScaleOperator
   role: /opt/ansible/roles/csi-scale
   version: v1
+  finalizer:
+    name: finalizer.csiscaleoperators.csi.ibm.com
+    vars:
+      state: absent
 - kind: Secret
   manageStatus: false
   playbook: /opt/ansible/roles/csi-scale/tasks/secret_watch.yml
