@@ -75,6 +75,13 @@ spec:
               cpu: 50m
               memory: 50Mi
           securityContext:
+            runAsNonRoot: true
+            hostNetwork: false
+            hostPID: false
+            hostIPC: false
+            runAsUser: 1001
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
             privileged: false
             capabilities:
               drop:
