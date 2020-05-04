@@ -80,7 +80,7 @@ spec:
             hostPID: false
             hostIPC: false
             runAsUser: 1001
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
             allowPrivilegeEscalation: false
             privileged: false
             capabilities:
