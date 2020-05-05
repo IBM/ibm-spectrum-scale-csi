@@ -235,10 +235,11 @@ jobs:
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
+      script:        
         - python hacks/clear_finalizers.py
+        - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - operator-sdk build ${REPO_NAME_OPERATOR}
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
-      script:        
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
     
