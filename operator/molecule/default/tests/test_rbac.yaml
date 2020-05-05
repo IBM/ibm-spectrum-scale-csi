@@ -33,6 +33,10 @@
     definition: "{{ custom_resource }}"
     wait: yes
 
+- name: Wait for finalizers to run
+  wait_for:
+    timeout: 30
+
 - name: Verify RBAC absent
   k8s_info:
     kind: "{{item.kind}}"
