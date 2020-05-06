@@ -4,6 +4,7 @@ import time
 import re
 import urllib3
 import requests
+import json
 LOGGER = logging.getLogger()
 
 
@@ -403,7 +404,7 @@ def create_dir(test, dir_name):
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(username, password))
     LOGGER.debug(response.text)
-    LOGGER.info(f'Created directory {dir_name} in {test["scaleHostpath"]}')
+    LOGGER.info(f'Created directory {dir_name}')
     time.sleep(5)
 
 
@@ -432,7 +433,7 @@ def delete_dir(test, dir_name):
     response = requests.delete(
         dir_link, headers=headers, verify=False, auth=(username, password))
     LOGGER.debug(response.text)
-    LOGGER.info(f'Deleted directory {dir_name} in {test["scaleHostpath"]}')
+    LOGGER.info(f'Deleted directory {dir_name}')
     time.sleep(5)
 
 
@@ -460,3 +461,29 @@ def get_FSUID(test):
     FSUID = str(lst[0][10:27])
     LOGGER.debug(FSUID)
     return FSUID
+
+def get_mount_point(test):
+    """
+    return th mount point of primaryFs
+
+    Args:
+       param1: test : contents of configuration file
+
+    Returns:
+       mount point
+
+    Raises:
+       None
+
+    """
+    username_password_setter(test)
+    info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
+    response = requests.get(info_filesystem, verify=False,
+                            auth=(username, password))
+    LOGGER.debug(response.text)
+    response_dict = json.loads(response.text) 
+    mount_point = response_dict["filesystems"][0]["mount"]["mountPoint"]
+    LOGGER.debug(mount_point)
+    return mount_point
+

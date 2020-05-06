@@ -36,9 +36,9 @@ def _values(request):
         read_file["attacherNodeSelector"], "attacherNodeSelector")
 
     yield
+    operator.delete()
     if(ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
-    operator.delete()
 
 
 def test_operator_deploy(_values):
@@ -757,3 +757,35 @@ def test_pluginNodeSelector(_values):
             assert False
 
     operator_object.delete(kubeconfig_value)
+
+'''
+def test_remote_operator_deploy(_values):
+
+    LOGGER.info("test_remote_operator_deploy")
+    LOGGER.info("should run without any error using remote")
+    test = read_scale_config_file(clusterconfig_value, namespace_value)
+    #if(ff.fileset_exists(test)):
+    #    ff.delete_fileset(test)
+    #test["remote"] = True
+    operator_object = Scaleoperatorobject(test)
+    operator_object.create(kubeconfig_value)
+    if operator_object.check(kubeconfig_value) is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+    else:
+        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
+                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+            LOGGER.error(str(get_logs_api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            operator_object.delete(kubeconfig_value)
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+    operator_object.delete(kubeconfig_value)
+
+'''

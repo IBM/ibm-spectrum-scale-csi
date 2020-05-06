@@ -237,7 +237,7 @@ def create_cluster_role():
     cluster_role_rules.append(client.V1PolicyRule(api_groups=["*"], resources=[
                               'pods', 'persistentvolumeclaims', 'services',
                               'endpoints', 'events', 'configmaps', 'secrets',
-                              'secrets/status', 'services/finalizers', 'serviceaccounts'], verbs=["*"]))
+                              'secrets/status', 'services/finalizers', 'serviceaccounts', 'securitycontextconstraints'], verbs=["*"]))
     cluster_role_rules.append(client.V1PolicyRule(api_groups=['rbac.authorization.k8s.io'], resources=[
                               'clusterroles', 'clusterrolebindings'], verbs=["*"]))
     cluster_role_rules.append(client.V1PolicyRule(api_groups=['apps'], resources=[

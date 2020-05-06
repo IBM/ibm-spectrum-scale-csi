@@ -5,8 +5,12 @@ from py.xml import html
 
 input_params = {
     "username":"Y3NpYWRtaW4=",
-    "password":"YWRtaW4wMDE=",
+    "password":"UGFzc3cwcmQx",
     "port":"443",
+    
+    "remote-username": "Y3NpYWRtaW4=",
+    "remote-password": "YWRtaW4wMDE=",
+    "remote-port": "443",
 
 #   This are input to custom resource defination.
     "deployment_operator_image_for_crd":"quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev",
@@ -22,7 +26,16 @@ input_params = {
     "uid_name":"user1",
     "gid_number":"1000",
     "uid_number":"1000",
-    "inodeLimit":"1024"
+    "inodeLimit":"1024",
+ 
+    "r-volDirBasePath":"LW",
+    "r-parentFileset":"root",
+    "r-gid_name":"grp1",
+    "r-uid_name":"user1",
+    "r-gid_number":"1000",
+    "r-uid_number":"1000",
+    "r-inodeLimit":"1024"
+
 
 }
 

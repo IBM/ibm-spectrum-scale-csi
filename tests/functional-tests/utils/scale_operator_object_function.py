@@ -441,7 +441,7 @@ def check_secret_is_deleted(secret_name):
         assert False
 
 
-def create_configmap(file_path, make_cacert_wrong):
+def create_configmap(file_path, make_cacert_wrong,configmap_name):
     """
     Create configmap with file at file_path
     if make_cacert_wrong==True then it makes cacert wrong
@@ -459,17 +459,19 @@ def create_configmap(file_path, make_cacert_wrong):
     """
     api_instance = client.CoreV1Api()
     metadata = client.V1ObjectMeta(
-        name="cert1",
+        name=configmap_name,
         namespace=namespace_value,
     )
     with open(file_path, 'r') as f:
         file_content = f.read()
     if make_cacert_wrong:
         file_content = file_content[0:50]+file_content[-50:-1]
+    data_dict={}
+    data_dict[configmap_name]=file_content
     configmap = client.V1ConfigMap(
         api_version="v1",
         kind="ConfigMap",
-        data=dict(cert1=file_content),
+        data=data_dict,
         metadata=metadata
     )
     try:
@@ -479,7 +481,7 @@ def create_configmap(file_path, make_cacert_wrong):
             pretty=True,
         )
         LOGGER.debug(str(api_response))
-        LOGGER.info("configmap created")
+        LOGGER.info(f"configmap {configmap_name} created")
 
     except ApiException as e:
         LOGGER.error(
@@ -487,7 +489,7 @@ def create_configmap(file_path, make_cacert_wrong):
         assert False
 
 
-def delete_configmap():
+def delete_configmap(configmap_name):
     """
     deletes configmap
 
@@ -505,11 +507,11 @@ def delete_configmap():
     try:
         api_response = api_instance.delete_namespaced_config_map(
             namespace=namespace_value,
-            name="cert1",
+            name=configmap_name,
             pretty=True,
         )
         LOGGER.debug(str(api_response))
-        LOGGER.info("configmap deleted")
+        LOGGER.info(f"configmap {configmap_name} deleted")
 
     except ApiException as e:
         LOGGER.error(
