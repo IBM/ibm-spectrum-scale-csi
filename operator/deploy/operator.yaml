@@ -75,9 +75,9 @@ spec:
               cpu: 50m
               memory: 50Mi
 
-          hostNetwork: false
-          hostPID: false
-          hostIPC: false
+          #hostNetwork: false
+          #hostPID: false
+          #hostIPC: false
           securityContext:
             runAsNonRoot: true
             runAsUser: 1001
