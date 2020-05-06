@@ -20,7 +20,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 1.1.0
+        productVersion: 2.0.0
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -37,37 +37,9 @@ spec:
                   - key: beta.kubernetes.io/arch
                     operator: Exists
       containers:
-        - command:
-            - /usr/local/bin/ao-logs
-            - /tmp/ansible-operator/runner
-            - stdout
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
-          imagePullPolicy: IfNotPresent
-          livenessProbe:
-            exec:
-              command:
-                - ./health_check.sh
-            initialDelaySeconds: 10
-            periodSeconds: 30
-          name: ansible
-          readinessProbe:
-            exec:
-              command:
-                - ./health_check.sh
-            initialDelaySeconds: 3
-            periodSeconds: 1
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - mountPath: /tmp/ansible-operator/runner
-              name: runner
-              readOnly: true
-          env:
-            - name: CSI_DRIVER_IMAGE
-              value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0
         - env:
+            - name: ANSIBLE_DEBUG_LOGS
+              value: "False"
             - name: WATCH_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -95,7 +67,22 @@ spec:
                 - ./health_check.sh
             initialDelaySeconds: 3
             periodSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           securityContext:
+            runAsNonRoot: true
+            hostNetwork: false
+            hostPID: false
+            hostIPC: false
+            runAsUser: 1001
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            privileged: false
             capabilities:
               drop:
                 - ALL

@@ -1,6 +1,6 @@
 export GO111MODULE=on
 export KUBE_VERSION="v1.16.2"
-export OP_VER="v0.10.0"
+export OP_VER="v0.17.0"
 export QUAY_USERNAME="mew2057"
 
 export OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"

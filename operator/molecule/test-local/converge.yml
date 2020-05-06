@@ -28,7 +28,7 @@
     deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
     pull_policy: Never
     REPLACE_IMAGE: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
-    custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com.cr.yaml'])) | from_yaml }}"
+    custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com_cr.yaml'])) | from_yaml }}"
   tasks:
     - name: Testing Block
       block:
@@ -41,7 +41,7 @@
           when: hostvars[groups.k8s.0].build_cmd.changed
 
         - name: Wait 30s for Operator Deployment to terminate
-          k8s_facts:
+          k8s_info:
             api_version: '{{ definition.apiVersion }}'
             kind: '{{ definition.kind }}'
             namespace: '{{ namespace }}'
@@ -89,7 +89,7 @@
               fail_on_error: yes
 
         - name: Wait 240s for reconciliation to run
-          k8s_facts:
+          k8s_info:
             api_version: '{{ custom_resource.apiVersion }}'
             kind: '{{ custom_resource.kind }}'
             namespace: '{{ namespace }}'

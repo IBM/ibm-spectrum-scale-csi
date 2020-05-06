@@ -11,8 +11,8 @@ env:
     - REPO_OWNER=$(dirname $TRAVIS_REPO_SLUG)
     # REPO_NAME should normally be 'ibm-spectrum-scale-csi'
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
-    - REPO_NAME_DRIVER="${REPO_NAME}-driver"
-    - REPO_NAME_OPERATOR="${REPO_NAME}-operator"
+    - REPO_NAME_DRIVER="ibm-spectrum-scale-csi-driver"
+    - REPO_NAME_OPERATOR="ibm-spectrum-scale-csi-operator"
    
     # Grab quay username from 'user+bot_token'
     - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
@@ -56,8 +56,8 @@ env:
     - OCTOKIT_API_ENDPOINT="https://github.ibm.com/api/v3/"
     - PATH=/opt/python/3.6.7/bin:$PATH
     - GO111MODULE=on
-    - KUBE_VERSION="v1.16.2"
-    - OP_VER="v0.11.0"
+    - KUBE_VERSION="v1.18.0"
+    - OP_VER="v0.17.0"
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
     - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${REPO_NAME_OPERATOR}/"
@@ -73,6 +73,7 @@ addons:
       - "python3"
       - "python3-dev"
       - "python3-pip"
+      - "conntrack"
 stages:
   - lint
   - build
@@ -102,6 +103,10 @@ jobs:
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip install operator-courier
         - cd ${BUILD_DIR_OPERATOR}
+        - ls ${OLM_MANIFEST}
+        - echo ${BUILD_DIR_OPERATOR}
+        - ls ${BUILD_DIR_OPERATOR}
+        - ls ${BUILD_DIR_OPERATOR}/deploy/*
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
     
@@ -111,6 +116,10 @@ jobs:
       before_install:
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
       install:
+        # Resolve symlinks for testing.
+        - cp -R -L cloudpak/ cloudpak-static
+        - cd cloudpak-static
+        - ls -ltra  stable/ibm-spectrum-scale-csi-operator-bundle/case/ibm-spectrum-scale-csi-operator/inventory/ibmCSIScaleOperator/files
         # Clone build tools & set tools path for follow on processing
         # The clone command will use the ssh key from the travis settings to clone the repo from github.ibm.com
         - if [[  -z "$HELM_REPO_SSH_LOCATION" ]] ; then exit 0;fi
@@ -201,9 +210,9 @@ jobs:
 
     # Install minikube, build the image and run the scorecard then execute molecule testing.
     - stage: test
-      name: "Test - Operator: scorecard and molecule"
+      name: "Test - Operator: molecule"
       before_install:
-        - pip install pyyaml molecule openshift docker jmespath kubernetes-validate
+        - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - kubectl version
@@ -216,10 +225,23 @@ jobs:
         - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - kubectl create -f deploy/namespace.yaml
         - molecule test -s test-local
-        # sc
+
+    - stage: test
+      name: "Test - Operator: scorecard"
+      before_install:
+        - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
+        - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
+        - kubectl version
+        - cd ${BUILD_DIR_OPERATOR}
+        - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
+      script:        
         - python hacks/clear_finalizers.py
-        - operator-sdk scorecard --config .osdk-scorecard.yaml
-        - python  hacks/clear_finalizers.py --restore
+        - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
+        - operator-sdk build ${REPO_NAME_OPERATOR}
+        - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
+        - kubectl create -f deploy/namespace.yaml
+        - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
     
 
 notifications:

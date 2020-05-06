@@ -1,0 +1,91 @@
+- name: Run OLM test
+  hosts: localhost
+  become: yes
+  gather_facts: false
+  vars:
+    # https://quay.io/application/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-dev
+    # https://quay.io/application/${QUAY_NAMESPACE}/${PACKAGE_NAME}
+    QUAY_NAMESPACE: ibm-spectrum-scale-dev 
+    # Same as application name in quay.
+    PACKAGE_NAME: ibm-spectrum-scale-csi-dev
+
+    # Name of Channel in Quay
+    CHANNEL_NAME: stable
+    
+    # Contains the CSV directories for all of the versions to be tested.
+    # This  can  be a  copy of https://github.com/operator-framework/community-operators/tree/master/community-operators/ibm-spectrum-scale-csi-operator
+    # To  add dev version just copy the version directory from operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator/
+    # Must be full directory name
+    OPERATOR_DIR:  /root/demo
+
+
+    # Versions you want to test. Playbook will upload  in order and run  tests.
+    OPERATOR_VERSIONS:
+      - 1.0.0
+      - 1.1.0
+
+    # Quay username with write access to the  application
+    QUAY_USERNAME: "ibm-spectrum-scale-dev+builder"
+    # Quay token, note this should not be set in  the config.
+    # ansible-playbook olm-test-playbook.yaml --extra-vars '{"QUAY_PASSWORD":"TOKEN"}'
+    QUAY_PASSWORD: "DEADB33F"
+
+    # Namespace to install the operator.
+    NAMESPACE: "marketplace"
+
+    # If set to true, will pause execution and wait for input before moving to next version.
+    INTERACTABLE: true
+
+    # Subscription options.
+    K8S_SUB: "./olm-test/k8s-sub.yaml.j2"
+    OC_SUB: "./olm-test/oc-sub.yaml.j2"
+    SUB: "/tmp/sub"
+
+  tasks:
+    - name: "Quay password set"
+      meta: end_play
+      when: 'QUAY_PASSWORD == "DEADB33F"'
+
+    - name: "Get timestamp"
+      shell: "date +%s"
+      register: tstamp
+
+    - name: "Determing directory for temporary package"
+      set_fact: 
+        olm_dir: "/tmp/{{PACKAGE_NAME}}-{{tstamp.stdout}}"
+
+    - name: "Create the directory {{ olm_dir }}"
+      file:
+        path: "{{ olm_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: "Check for openshift"
+      shell: "which oc"
+      register: result
+      ignore_errors: true
+
+    - name: "Kubernetes detected using {{ K8S_SUB }} for subscription"
+      set_fact:
+        subscription: "{{ K8S_SUB }}"
+
+    - name: "Openshift detected using {{ OC_SUB }} for subscription"
+      set_fact:
+        subscription: "{{ OC_SUB }}"
+      when: result.rc == 0
+
+    - name: "Ensure subscription file is defined for consumption"
+      template: 
+        src: "{{subscription}}"
+        dest: "{{ SUB }}"
+
+    - name: "Iterate  over the operator versions."
+      include_tasks: "./olm-test/check-version-play.yaml"
+      loop: "{{ OPERATOR_VERSIONS }}" 
+
+    - name: "Remove the directory {{ olm_dir }}"
+      file:
+        path: "{{ olm_dir }}"
+        state: absent
+        mode: '0755'
+
