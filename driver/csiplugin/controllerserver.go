@@ -417,6 +417,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	if scaleVol.IsFilesetBased {
 		if scaleVol.ClusterId == "" {
 			scaleVol.ClusterId = PCid
+			glog.V(3).Infof("clusterID not provided in storage Class using Primary ClusterID. Volume Name [%v]", scaleVol.VolName)
 		}
 		conn, err := cs.GetConnFromClusterID(scaleVol.ClusterId)
 

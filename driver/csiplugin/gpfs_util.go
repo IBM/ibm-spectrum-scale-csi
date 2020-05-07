@@ -70,6 +70,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
+	clusterID, clusterIDSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
 	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
@@ -80,6 +81,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
 	scaleVol.FilesetType = ""
+	scaleVol.ClusterId = ""
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false
@@ -123,6 +125,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	if isparentFilesetSpecified && parentFileset == "" {
 		isparentFilesetSpecified = false
+	}
+	if clusterIDSpecified && clusterID != "" {
+		scaleVol.ClusterId = clusterID
 	}
 
 	if volDirPathSpecified {
@@ -191,6 +196,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 			scaleVol.InodeLimit = inodeLim
 		}
 	}
+
 	return scaleVol, nil
 }
 
