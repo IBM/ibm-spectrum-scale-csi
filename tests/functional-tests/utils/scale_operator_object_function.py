@@ -94,7 +94,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
 
     con = True
     num = 0
-    while (con and num < 24):
+    while (con and num < 124):
         read_statefulset_api_instance = client.AppsV1Api()
         try:
             read_statefulset_api_response = read_statefulset_api_instance.read_namespaced_stateful_set(
@@ -110,7 +110,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
                     assert False
                 else:
                     con = False
-            elif(num > 22):
+            elif(num > 122):
                 if stateful_set_not_created is True:
                     LOGGER.info("Expected Failure ,testcase is passed")
                     con = False
@@ -120,7 +120,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
         except ApiException:
             num = num+1
             time.sleep(5)
-            if(num > 23):
+            if(num > 123):
                 if stateful_set_not_created is True:
                     LOGGER.info("Expected Failure ,testcase is passed")
                     con = False
@@ -245,7 +245,7 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
     read_statefulsets_api_instance = client.AppsV1Api()
     con = True
     num = 0
-    while (num < 24 and con):
+    while (num < 124 and con):
         try:
             read_statefulsets_api_response = read_statefulsets_api_instance.read_namespaced_stateful_set(
                 name=stateful_name, namespace=namespace_value, pretty=True)
@@ -258,7 +258,7 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
             else:
                 num += 1
                 time.sleep(5)
-                if(num > 23):
+                if(num > 123):
                     LOGGER.error("statefulset is not up")
                     assert False
         except ApiException as e:
@@ -290,14 +290,14 @@ def check_scaleoperatorobject_daemonsets_state():
     time.sleep(10)
     con = True
     num = 0
-    while (num < 24 and con):
+    while (num < 124 and con):
         try:
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
                 name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
             LOGGER.debug(read_daemonsets_api_response)
             con = False
         except ApiException as e:
-            if(num > 23):
+            if(num > 123):
                 LOGGER.info("daemonset does not exists")
                 LOGGER.error(str(e))
                 assert False

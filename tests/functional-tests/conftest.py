@@ -22,18 +22,18 @@ input_params = {
 
     "volDirBasePath":"LW",
     "parentFileset":"root",
-    "gid_name":"grp1",
-    "uid_name":"user1",
-    "gid_number":"1000",
-    "uid_number":"1000",
+    "gid_name":"nobody",
+    "uid_name":"nobody",
+    "gid_number":"99",
+    "uid_number":"99",
     "inodeLimit":"1024",
  
     "r-volDirBasePath":"LW",
     "r-parentFileset":"root",
-    "r-gid_name":"grp1",
-    "r-uid_name":"user1",
-    "r-gid_number":"1000",
-    "r-uid_number":"1000",
+    "r-gid_name":"nobody",
+    "r-uid_name":"nobody",
+    "r-gid_number":"99",
+    "r-uid_number":"99",
     "r-inodeLimit":"1024"
 
 

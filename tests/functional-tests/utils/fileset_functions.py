@@ -487,3 +487,32 @@ def get_mount_point(test):
     LOGGER.debug(mount_point)
     return mount_point
 
+def get_remoteFs(test):
+    """ return name of remote filesystem """
+    username_password_setter(test)
+    info_remote = "https://"+test["remoteguiHost"]+":"+test["remote-port"] + \
+        "/scalemgmt/v2/cluster"
+    remote_username = base64.b64decode(test["remote-username"]).decode('utf-8')
+    remote_password = base64.b64decode(test["remote-password"]).decode('utf-8')
+    response_remote = requests.get(info_remote, verify=False,
+                            auth=(remote_username, remote_password))
+    LOGGER.debug(response_remote.text)
+    response_remote_dict = json.loads(response_remote.text)
+    clusterName = response_remote_dict["cluster"]["clusterSummary"]["clusterName"]
+    LOGGER.debug(clusterName)
+
+    info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/?fields=:all:"
+    response = requests.get(info_filesystem, verify=False,
+                            auth=(username, password))
+    LOGGER.debug(response.text)
+    response_dict = json.loads(response.text)
+    for filesystem in response_dict["filesystems"]:
+        if filesystem["type"] == "remote":
+            device_name = filesystem["mount"]["remoteDeviceName"]
+            search_result = re.search(clusterName, device_name)
+            if search_result is not None:
+                LOGGER.debug(search_result)
+                LOGGER.info(filesystem["name"]+" is remoteFs")
+                return filesystem["name"]
+    return None

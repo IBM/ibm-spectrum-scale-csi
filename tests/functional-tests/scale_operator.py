@@ -10,22 +10,21 @@ import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
 from conftest import input_params
-from utils.fileset_functions import get_FSUID, create_dir, delete_dir,get_mount_point
+from utils.fileset_functions import get_FSUID, create_dir, delete_dir, get_mount_point
 import time
 LOGGER = logging.getLogger()
 
 
 class Scaleoperator:
     def __init__(self, kubeconfig):
+
         global kubeconfig_value
         kubeconfig_value = kubeconfig
         self.kubeconfig = kubeconfig
 
     def create(self, namespace_value, conf):
 
-
         config.load_kube_config(config_file=self.kubeconfig)
-
         scale_function.set_global_namespace_value(namespace_value)
 
         if not(scale_function.check_namespace_exists()):
@@ -92,9 +91,11 @@ class Scaleoperator:
 class Scaleoperatorobject:
 
     def __init__(self, test_dict):
+
         LOGGER.info("scale operator object is being created")
         self.temp = test_dict
         self.secret_name = test_dict["secrets"]
+
         if check_key(test_dict,"cacert_name"):
             self.cacert_name = test_dict["cacert_name"]
         else:
@@ -119,8 +120,7 @@ class Scaleoperatorobject:
                     "secrets": test_dict["secrets"],
                     "secureSslMode": test_dict["secureSslMode"],
                     "primary": {
-                        "primaryFs": test_dict["primaryFs"],
-                        "primaryFset": test_dict["primaryFset"]
+                        "primaryFs": test_dict["primaryFs"]
                     },
                     "restApi": [
                         {
@@ -134,6 +134,9 @@ class Scaleoperatorobject:
             "provisionerNodeSelector": test_dict["provisionerNodeSelector"],
             "pluginNodeSelector": test_dict["pluginNodeSelector"]
         }
+
+        if test_dict["primaryFset-default"] is False:
+            self.custom_object_spec["clusters"][0]["primary"]["primaryFset"] = test_dict["primaryFset"]
 
         if check_key(test_dict, "deployment_attacher_image"):
             self.custom_object_spec["attacher"] = test_dict["deployment_attacher_image"]
@@ -149,13 +152,13 @@ class Scaleoperatorobject:
 
         if check_key(test_dict, "cacert_path_final"):
             self.custom_object_spec["clusters"][0]["cacert"] = self.cacert_name
+
         if check_key(test_dict, "stateful_set_not_created"):
             self.stateful_set_not_created = test_dict["stateful_set_not_created"]
         else:
             self.stateful_set_not_created = False
+
         if check_key(test_dict, "remote"):
-            self.custom_object_spec["clusters"][0]["primary"]["remoteCluster"] = test_dict["remoteCluster"]
-            self.custom_object_spec["clusters"][0]["primary"]["remoteFs"]      = test_dict["remoteFs"]       
             self.custom_object_spec["clusters"].append({
                                               "id": test_dict["remoteid"],
                                               "secrets": test_dict["remotesecrets"],
@@ -166,6 +169,11 @@ class Scaleoperatorobject:
                                                       }
                                                          ]
                                              })
+
+        if check_key(test_dict,"remotely-mounted-fs"):
+            self.custom_object_spec["clusters"][0]["primary"]["remoteCluster"] = test_dict["remoteCluster"]
+            #self.custom_object_spec["clusters"][0]["primary"]["remoteFs"]      = test_dict["remoteFs"]
+
         LOGGER.info(str(self.custom_object_spec))
 
     def create(self, kubeconfig):
@@ -469,28 +477,35 @@ def read_scale_config_file(clusterconfig, namespace):
         with open(clusterconfig, "r") as f:
             loadcr_yaml = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        print ("Error in cr file:", exc)
+        Logger.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
         assert False
 
     data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]
     data["id"] = loadcr_yaml["spec"]["clusters"][0]["id"]
     data["secrets"] = loadcr_yaml["spec"]["clusters"][0]["secrets"]
     data["primaryFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFs"]
-    data["primaryFset"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFset"]
+
+    if check_key(loadcr_yaml["spec"]["clusters"][0]["primary"],"primaryFset"):
+        data["primaryFset"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFset"]
+        data["primaryFset-default"] = False
+    else:
+        data["primaryFset"] = "spectrum-scale-csi-volume-store"
+        data["primaryFset-default"] = True
+
     data["guiHost"] = loadcr_yaml["spec"]["clusters"][0]["restApi"][0]["guiHost"]
-    
+
     if check_key(loadcr_yaml["spec"]["clusters"][0]["primary"],"remoteCluster"):
         data["remoteCluster"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["remoteCluster"]
-    
-        data["remoteFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["remoteFs"]
+        #data["remoteFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["remoteFs"]
+        data["remotely-mounted-fs"] = True 
 
-        data["remoteid"] = loadcr_yaml["spec"]["clusters"][1]["id"]   
-    
-        data["remotesecrets"] = loadcr_yaml["spec"]["clusters"][1]["secrets"]
+    if len(loadcr_yaml["spec"]["clusters"])==2:
+        if check_key(loadcr_yaml["spec"]["clusters"][1],"id"):
 
-        data["remoteguiHost"] = loadcr_yaml["spec"]["clusters"][1]["restApi"][0]["guiHost"]
-
-        data["remote"] = True
+            data["remoteid"] = loadcr_yaml["spec"]["clusters"][1]["id"]       
+            data["remotesecrets"] = loadcr_yaml["spec"]["clusters"][1]["secrets"]
+            data["remoteguiHost"] = loadcr_yaml["spec"]["clusters"][1]["restApi"][0]["guiHost"]
+            data["remote"] = True
 
     if check_key(loadcr_yaml["spec"],"nodeMapping"):
         data["nodeMapping"] = loadcr_yaml["spec"]["nodeMapping"]
