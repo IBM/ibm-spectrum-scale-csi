@@ -1,5 +1,6 @@
 import pytest
 from py.xml import html
+from datetime import datetime
 
 input_params = {
 
@@ -50,3 +51,12 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
     report.description = str(item.function.__doc__)
+
+now = datetime.now()
+dt_string = now.strftime("%d-%m-%Y-%H-%M-%S")
+default_html_path = 'report-'+dt_string+'.html'
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config):
+    if not config.option.htmlpath:
+        config.option.htmlpath = default_html_path

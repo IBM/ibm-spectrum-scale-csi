@@ -286,6 +286,9 @@ def test_secureSslMode(_values):
     LOGGER.info("secureSslMode is True while cacert is not available")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
     test["secureSslMode"] = True
+    if check_key(test,"cacert_name"):
+        test.pop("cacert_name") 
+
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
     operator_object = Scaleoperatorobject(test)

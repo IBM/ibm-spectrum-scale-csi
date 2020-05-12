@@ -99,7 +99,7 @@ class Scaleoperatorobject:
         if check_key(test_dict,"cacert_name"):
             self.cacert_name = test_dict["cacert_name"]
             if check_key(test_dict,"secureSslMode_explcit"):
-                test_dict["secureSslMode"] = test["secureSslMode_explcit"]
+                test_dict["secureSslMode"] = test_dict["secureSslMode_explcit"]
             else:
                 test_dict["secureSslMode"] = True
 
