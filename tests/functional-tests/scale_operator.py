@@ -98,8 +98,17 @@ class Scaleoperatorobject:
 
         if check_key(test_dict,"cacert_name"):
             self.cacert_name = test_dict["cacert_name"]
-        else:
-            self.cacert_name = "test-cacert-configmap"
+            if check_key(test_dict,"secureSslMode_explcit"):
+                test_dict["secureSslMode"] = test["secureSslMode_explcit"]
+            else:
+                test_dict["secureSslMode"] = True
+
+        if check_key(test_dict,"remote_cacert_name"):
+            self.remote_cacert_name = test_dict["remote_cacert_name"]
+            if check_key(test_dict,"remote_secureSslMode_explcit"):
+                test_dict["remote_secureSslMode"] = test_dict["remote_secureSslMode_explcit"]
+            else:
+                test_dict["remote_secureSslMode"] = True
 
         if check_key(test_dict, "secrets_name_wrong"):
             test_dict["secrets"] = test_dict["secrets_name_wrong"]
@@ -150,7 +159,7 @@ class Scaleoperatorobject:
         if check_key(test_dict, "deployment_driver_image"):
             self.custom_object_spec["spectrumScale"] = test_dict["deployment_driver_image"]
 
-        if check_key(test_dict, "cacert_path_final"):
+        if check_key(test_dict,"cacert_name"):
             self.custom_object_spec["clusters"][0]["cacert"] = self.cacert_name
 
         if check_key(test_dict, "stateful_set_not_created"):
@@ -162,13 +171,16 @@ class Scaleoperatorobject:
             self.custom_object_spec["clusters"].append({
                                               "id": test_dict["remoteid"],
                                               "secrets": test_dict["remotesecrets"],
-                                              "secureSslMode": False,
+                                              "secureSslMode": test_dict["remote_secureSslMode"],
                                               "restApi": [
                                                       {
                                                        "guiHost": test_dict["remoteguiHost"]
                                                       }
                                                          ]
                                              })
+            if check_key(test_dict,"remote_cacert_name"):
+                self.custom_object_spec["clusters"][1]["cacert"] = self.remote_cacert_name
+
 
         if check_key(test_dict,"remotely-mounted-fs"):
             self.custom_object_spec["clusters"][0]["primary"]["remoteCluster"] = test_dict["remoteCluster"]
@@ -197,12 +209,32 @@ class Scaleoperatorobject:
                 ob.check_secret_is_deleted(self.remote_secret_name)
                 ob.create_secret(self.remote_secret_data, self.remote_secret_name)
 
-        if check_key(self.temp, "cacert_path_final"):
+        if check_key(self.temp,"cacert_name"):
             if not(check_key(self.temp, "make_cacert_wrong")):
                 self.temp["make_cacert_wrong"] = False
-            ob.create_configmap(
-                self.temp["cacert_path_final"], self.temp["make_cacert_wrong"],self.cacert_name)
-        #time.sleep(60)
+
+            if not(ob.check_configmap_exists(self.cacert_name)):
+                ob.create_configmap(
+                    self.temp["cacert_path"], self.temp["make_cacert_wrong"],self.cacert_name)
+            else:
+                ob.delete_configmap(self.cacert_name)
+                ob.check_configmap_is_deleted(self.cacert_name)
+                ob.create_configmap(
+                    self.temp["cacert_path"], self.temp["make_cacert_wrong"],self.cacert_name)
+
+        if check_key(self.temp,"remote_cacert_name"):
+            if not(check_key(self.temp, "make_remote_cacert_wrong")):
+                self.temp["make_remote_cacert_wrong"] = False
+
+            if not(ob.check_configmap_exists(self.remote_cacert_name)):
+                ob.create_configmap(
+                    self.temp["remote_cacert_path"], self.temp["make_remote_cacert_wrong"],self.remote_cacert_name)
+            else:
+                ob.delete_configmap(self.remote_cacert_name)
+                ob.check_configmap_is_deleted(self.remote_cacert_name)
+                ob.create_configmap(
+                    self.temp["remote_cacert_path"], self.temp["make_remote_cacert_wrong"],self.remote_cacert_name)
+
         if not(ob.check_scaleoperatorobject_is_deployed()):
 
             ob.create_custom_object(self.custom_object_spec, self.stateful_set_not_created)
@@ -230,8 +262,17 @@ class Scaleoperatorobject:
             ob.check_secret_is_deleted(self.remote_secret_name)
 
 
-        if check_key(self.temp, "cacert_path_final"):
-            ob.delete_configmap(self.cacert_name)
+        if check_key(self.temp,"cacert_name"):
+            if ob.check_configmap_exists(self.cacert_name):
+                ob.delete_configmap(self.cacert_name)
+            ob.check_configmap_is_deleted(self.cacert_name)
+ 
+        if check_key(self.temp,"remote_cacert_name"):
+            if ob.check_configmap_exists(self.remote_cacert_name):
+                ob.delete_configmap(self.remote_cacert_name)
+            ob.check_configmap_is_deleted(self.remote_cacert_name)
+
+
 
     def check(self, kubeconfig):
 
@@ -471,6 +512,7 @@ def read_scale_config_file(clusterconfig, namespace):
 
     data = copy.deepcopy(input_params)
     data["secureSslMode"] = False
+    data["remote_secureSslMode"] = False
     data["namespace"] = namespace
 
     try:
@@ -499,13 +541,16 @@ def read_scale_config_file(clusterconfig, namespace):
         #data["remoteFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["remoteFs"]
         data["remotely-mounted-fs"] = True 
 
-    if len(loadcr_yaml["spec"]["clusters"])==2:
+    if len(loadcr_yaml["spec"]["clusters"])>1:
         if check_key(loadcr_yaml["spec"]["clusters"][1],"id"):
 
             data["remoteid"] = loadcr_yaml["spec"]["clusters"][1]["id"]       
             data["remotesecrets"] = loadcr_yaml["spec"]["clusters"][1]["secrets"]
             data["remoteguiHost"] = loadcr_yaml["spec"]["clusters"][1]["restApi"][0]["guiHost"]
             data["remote"] = True
+        
+        if check_key(loadcr_yaml["spec"]["clusters"][1],"cacert"):
+            data["remote_cacert_name"] = loadcr_yaml["spec"]["clusters"][1]["cacert"]
 
     if check_key(loadcr_yaml["spec"],"nodeMapping"):
         data["nodeMapping"] = loadcr_yaml["spec"]["nodeMapping"]

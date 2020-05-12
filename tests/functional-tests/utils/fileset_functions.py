@@ -58,7 +58,7 @@ def delete_fileset(test):
     LOGGER.debug(response.text)
     search_format = '"'+test["primaryFset"]+'",'
     search_result = re.search(search_format, str(response.text))
-    LOGGER.info(search_result)
+    LOGGER.debug(search_result)
     if search_result is None:
         LOGGER.info(
             f'Success : Fileset {test["primaryFset"]} has been deleted')

@@ -1,9 +1,8 @@
 import pytest
 from py.xml import html
-#Attributes in the py namespace are dynamically created and pylint fails 
-#is unable to recognise them being a static analysis tool
 
 input_params = {
+
     "username":"Y3NpYWRtaW4=",
     "password":"UGFzc3cwcmQx",
     "port":"443",
@@ -12,11 +11,8 @@ input_params = {
     "remote-password": "YWRtaW4wMDE=",
     "remote-port": "443",
 
-#   This are input to custom resource defination.
-    "deployment_operator_image_for_crd":"quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev",
-    "deployment_driver_image_for_crd":"quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev",
-
     "cacert_path":"/root/spectrumscale-trusted-ca.crt",
+    "remote_cacert_path":"/root/remote-spectrumscale-trusted-ca.crt",
 
     "number_of_parallel_pvc":10,
 
@@ -35,8 +31,6 @@ input_params = {
     "r-gid_number":"99",
     "r-uid_number":"99",
     "r-inodeLimit":"1024"
-
-
 }
 
 
