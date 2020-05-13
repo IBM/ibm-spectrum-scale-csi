@@ -525,10 +525,13 @@ def test_correct_cacert(_values):
     test["secureSslMode"] = True
     if not(check_key(test,"cacert_name")):
         test["cacert_name"] = "test-cacert-configmap"
+    operator_object = Scaleoperatorobject(test)
+    if test["cacert_path"] == "":
+        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        pytest.skip("path of cacert file is not given")
 
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -558,10 +561,13 @@ def test_cacert_with_secureSslMode_false(_values):
     test["secureSslMode_explcit"] = False
     if not(check_key(test,"cacert_name")):
         test["cacert_name"] = "test-cacert-configmap"
+    operator_object = Scaleoperatorobject(test)
+    if test["cacert_path"] == "":
+        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        pytest.skip("path of cacert file is not given")
 
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -592,9 +598,13 @@ def test_wrong_cacert(_values):
     if not(check_key(test,"cacert_name")):
         test["cacert_name"] = "test-cacert-configmap"
     test["make_cacert_wrong"] = True
+    operator_object = Scaleoperatorobject(test)
+    if test["cacert_path"] == "":
+        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        pytest.skip("path of cacert file is not given")
+
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
         LOGGER.error(

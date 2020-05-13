@@ -92,7 +92,7 @@ class Scaleoperatorobject:
 
     def __init__(self, test_dict):
 
-        LOGGER.info("scale operator object is being created")
+        LOGGER.info("scale operator class object is created")
         self.temp = test_dict
         self.secret_name = test_dict["secrets"]
 
@@ -186,13 +186,12 @@ class Scaleoperatorobject:
             self.custom_object_spec["clusters"][0]["primary"]["remoteCluster"] = test_dict["remoteCluster"]
             #self.custom_object_spec["clusters"][0]["primary"]["remoteFs"]      = test_dict["remoteFs"]
 
-        LOGGER.info(str(self.custom_object_spec))
+        ob.set_namespace_value(self.namespace)
 
     def create(self, kubeconfig):
 
         config.load_kube_config(config_file=kubeconfig)
-
-        ob.set_namespace_value(self.namespace)
+        LOGGER.info(str(self.custom_object_spec))
 
         if not(ob.check_secret_exists(self.secret_name)):
             ob.create_secret(self.secret_data, self.secret_name)
@@ -551,6 +550,9 @@ def read_scale_config_file(clusterconfig, namespace):
         
         if check_key(loadcr_yaml["spec"]["clusters"][1],"cacert"):
             data["remote_cacert_name"] = loadcr_yaml["spec"]["clusters"][1]["cacert"]
+            if data["remote_cacert_path"] == "":
+                LOGGER.error("if using cacert , MUST include remote cacert path in conftest.py")
+                assert False
 
     if check_key(loadcr_yaml["spec"],"nodeMapping"):
         data["nodeMapping"] = loadcr_yaml["spec"]["nodeMapping"]
@@ -583,7 +585,10 @@ def read_scale_config_file(clusterconfig, namespace):
  
     if check_key(loadcr_yaml["spec"]["clusters"][0],"cacert"):
         data["cacert_name"] = loadcr_yaml["spec"]["clusters"][0]["cacert"]
-
+        if data["cacert_path"] == "":
+            LOGGER.error("if using cacert , MUST include cacert path in conftest.py")
+            assert False
+ 
     return data
 
 

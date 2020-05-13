@@ -325,7 +325,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
-            LOGGER.info("PVC {pvc_name} does not exists on the cluster")
+            LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
             assert False
 
         if api_response.status.phase == "Bound":

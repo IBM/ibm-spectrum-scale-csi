@@ -12,8 +12,8 @@ input_params = {
     "remote-password": "YWRtaW4wMDE=",
     "remote-port": "443",
 
-    "cacert_path":"/root/spectrumscale-trusted-ca.crt",
-    "remote_cacert_path":"/root/remote-spectrumscale-trusted-ca.crt",
+    "cacert_path" : "",         #edit path of cacert file here
+    "remote_cacert_path":"",    #edit path of cacert file for remote cluster
 
     "number_of_parallel_pvc":10,
 
