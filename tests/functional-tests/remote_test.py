@@ -62,9 +62,11 @@ def values(request):
     remote_data = get_remote_data(data)
  
     driver_object = Driver(value_pvc, value_pod, remote_data, test_namespace)
+    ff.create_dir(remote_data, remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
+    ff.delete_dir(remote_data, remote_data["volDirBasePath"])
     if condition is False:
         operator_object.delete(kubeconfig_value)
         operator.delete()

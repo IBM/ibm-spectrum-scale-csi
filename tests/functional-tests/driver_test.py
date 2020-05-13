@@ -2,7 +2,7 @@ import logging
 import pytest
 from scale_operator import read_scale_config_file, Scaleoperator, check_ns_exists,\
     check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver
-from utils.fileset_functions import fileset_exists, delete_fileset
+from utils.fileset_functions import fileset_exists, delete_fileset, create_dir, delete_dir
 LOGGER = logging.getLogger()
 
 
@@ -51,9 +51,11 @@ def values(request):
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
     driver_object = Driver(value_pvc, value_pod, data, test_namespace)
+    create_dir(data, data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
+    delete_dir(data, data["volDirBasePath"])
     if condition is False:
         operator_object.delete(kubeconfig_value)
         operator.delete()
