@@ -1,6 +1,6 @@
 import logging
-import pytest
 import copy
+import pytest
 from scale_operator import read_scale_config_file, Scaleoperator, check_ns_exists,\
     check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key
 import utils.fileset_functions as ff
@@ -15,7 +15,7 @@ def values(request):
         kubeconfig_value = "~/.kube/config"
     clusterconfig_value = request.config.option.clusterconfig
     if clusterconfig_value is None:
-        clusterconfig_value = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr_yaml"
+        clusterconfig_value = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml"
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
@@ -66,7 +66,7 @@ def values(request):
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
-    ff.delete_dir(remote_data, remote_data["volDirBasePath"])
+    #ff.delete_dir(remote_data, remote_data["volDirBasePath"])
     if condition is False:
         operator_object.delete(kubeconfig_value)
         operator.delete()
@@ -75,8 +75,8 @@ def values(request):
 
 
 
-def get_remote_data(data):
-    remote_data = copy.deepcopy(data)
+def get_remote_data(data_passed):
+    remote_data = copy.deepcopy(data_passed)
     remote_data["username"] = remote_data["remote-username"]
     remote_data["password"] = remote_data["remote-password"]
     remote_data["port"] = remote_data["remote-port"]

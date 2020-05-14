@@ -2,9 +2,9 @@ import logging
 import base64
 import time
 import re
+import json
 import urllib3
 import requests
-import json
 LOGGER = logging.getLogger()
 
 
@@ -513,6 +513,6 @@ def get_remoteFs(test):
             search_result = re.search(clusterName, device_name)
             if search_result is not None:
                 LOGGER.debug(search_result)
-                LOGGER.info(filesystem["name"]+" is remoteFs")
+                LOGGER.info(f'{filesystem["name"]} is remoteFs')
                 return filesystem["name"]
     return None

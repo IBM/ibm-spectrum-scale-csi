@@ -1,7 +1,6 @@
 import time
-import json
-import yaml
 import logging
+import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 LOGGER = logging.getLogger()
@@ -57,14 +56,14 @@ def create_namespace():
         assert False
 
 
-def create_deployment(config_file):
+def create_deployment():
     """
     Create IBM Spectrum Scale CSI Operator deployment object in operator namespace using
     deployment_operator_image_for_crd and deployment_driver_image_for_crd parameters from
     config.json file
 
     Args:
-        param1: config_file - configuration json file
+        None
 
     Returns:
        None

@@ -1,6 +1,6 @@
+from datetime import datetime
 import pytest
 from py.xml import html
-from datetime import datetime
 
 input_params = {
 

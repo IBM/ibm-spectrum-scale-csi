@@ -1,17 +1,14 @@
 import copy
 import multiprocessing
 import logging
-import json
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-from jsmin import jsmin
 import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
 from conftest import input_params
 from utils.fileset_functions import get_FSUID, create_dir, delete_dir, get_mount_point
-import time
 LOGGER = logging.getLogger()
 
 
@@ -31,7 +28,7 @@ class Scaleoperator:
             scale_function.create_namespace()
 
         if not(scale_function.check_deployment_exists()):
-            scale_function.create_deployment(conf)
+            scale_function.create_deployment()
 
         if not(scale_function.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")):
             scale_function.create_cluster_role()
@@ -518,7 +515,7 @@ def read_scale_config_file(clusterconfig, namespace):
         with open(clusterconfig, "r") as f:
             loadcr_yaml = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        Logger.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+        LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
         assert False
 
     data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]

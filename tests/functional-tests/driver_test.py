@@ -55,7 +55,7 @@ def values(request):
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
-    delete_dir(data, data["volDirBasePath"])
+    #delete_dir(data, data["volDirBasePath"])
     if condition is False:
         operator_object.delete(kubeconfig_value)
         operator.delete()
