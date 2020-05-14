@@ -32,7 +32,7 @@
 - name: "Ensure SCC"
   when: '"apps.openshift.io" in api_groups'
   block:
-    - name: "Get security context constraint information."
+    - name: "Get security context constraint information"
       k8s_info:
         kind: "SecurityContextConstraints"
         name: "spectrum-scale-csiaccess"
@@ -67,6 +67,19 @@
         state: "{{scc_state}}"
         namespace: "{{namespace}}"
         definition: "{{ lookup('template', 'scc.yaml.j2') | from_yaml }}"
+    # ==================================
+    # 1.x.x => 2.x.x
+    - name: "Check for old csiaccess"
+      k8s_info:
+        kind: "SecurityContextConstraints"
+        name: "csiaccess"
+      register: csiaccess
+
+    - name: "Ensure old SCC is removed"
+      include_tasks: clear_old_csi_access.yml
+      loop: "{{ csiaccess.resources }}"
+      when: csiaccess is defined
+     # ==================================
 
 - name: "Test clusters when setting to present"
   block:
