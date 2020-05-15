@@ -73,6 +73,11 @@ spec:
             name: ""
             version: v1
         specDescriptors:
+          - description: A list of image pull secrets, applied to pods creeated by operator.
+            displayName: Image Pull Secrets
+            path: imagePullSecrets
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:label
           - description: Node selector for provisioner sidecar.
             displayName: Provisioner Node Selector
             path: provisionerNodeSelector
