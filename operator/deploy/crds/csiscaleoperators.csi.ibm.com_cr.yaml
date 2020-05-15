@@ -11,29 +11,29 @@ metadata:
     release: ibm-spectrum-scale-csi-operator
 status: {}
 spec:
-  # The path to the GPFS file system mounted on the host machine.
-  # ==================================================================================
+# The path to the GPFS file system mounted on the host machine.
+# ==================================================================================
   scaleHostpath: "< GPFS FileSystem Path >"
 
 # Image pull secrets, array is applied to all deployments made by container.
 # ==================================================================================
-# imagePullSecrets:
-#   - APullSecret
-#   - AnotherOptional
+#  imagePullSecrets:
+#    - APullSecret
+#    - AnotherOptional
 
-  # Below specifies the details of a SpectrumScale cluster configuration used by the
-  # plugin. It can have multiple values.
-  # ==================================================================================
+# Below specifies the details of a SpectrumScale cluster configuration used by the
+# plugin. It can have multiple values.
+# ==================================================================================
   clusters:
     - id: "< Primary Cluster ID - WARNING - THIS IS A STRING NEEDS YAML QUOTES! >"
       secrets: "secret1"
       secureSslMode: false
       primary:
         primaryFs: "< Primary Filesystem >"
-      #  primaryFset: "< Fileset in Primary Filesystem >"       # Optional - default:spectrum-scale-csi-volume-store
-      #        inodeLimit: "< node limit for Primary Fileset >" # Optional
-      #        remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
-      #      cacert: "< CA cert configmap for GUI >"            # Optional
+#        primaryFset: "< Fileset in Primary Filesystem >"   # Optional - default:spectrum-scale-csi-volume-store
+#          inodeLimit: "< node limit for Primary Fileset >" # Optional
+#          remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
+#      cacert: "< CA cert configmap for GUI >"              # Optional
       restApi:
         - guiHost: "< Primary cluster GUI IP/Hostname >"
 #
