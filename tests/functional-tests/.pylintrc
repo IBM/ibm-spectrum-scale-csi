@@ -57,6 +57,7 @@ disable=
     attribute-defined-outside-init,
     duplicate-code,
     invalid-name,
+    W0601,
     missing-docstring,
     protected-access,
     too-few-public-methods,
@@ -95,7 +96,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 
 # Format style used to check logging format string. `old` means using %
 # # # formatting, while `new` is for `{}` formatting.
-logging-format-style=fstr
+logging-format-style=new
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format

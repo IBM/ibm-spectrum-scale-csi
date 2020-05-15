@@ -1,7 +1,6 @@
 import time
-import json
-import yaml
 import logging
+import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 LOGGER = logging.getLogger()
@@ -47,7 +46,7 @@ def create_namespace():
     namespace_body = client.V1Namespace(
         api_version="v1", kind="Namespace", metadata=namespace_metadata)
     try:
-        LOGGER.info(f'creating namespace {namespace_value}')
+        LOGGER.info(f'Creating new Namespace {namespace_value}')
         namespace_api_response = namespace_api_instance.create_namespace(
             body=namespace_body, pretty=True)
         LOGGER.debug(str(namespace_api_response))
@@ -57,7 +56,43 @@ def create_namespace():
         assert False
 
 
-def create_deployment(config_file):
+def create_deployment():
+    """
+    Create IBM Spectrum Scale CSI Operator deployment object in operator namespace using
+    deployment_operator_image_for_crd and deployment_driver_image_for_crd parameters from
+    config.json file
+
+    Args:
+        None
+
+    Returns:
+       None
+
+    Raises:
+        Raises an exception on kubernetes client api failure and asserts
+
+    """
+    deployment_apps_api_instance = client.AppsV1Api()
+    filepath = "../../operator/deploy/operator.yaml"
+    try:
+        with open(filepath, "r") as f:
+            loaddep_yaml = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print ("Error in configuration file:", exc)
+        assert False
+
+    try:
+        LOGGER.info("Creating Operator Deployment")
+        deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
+            namespace=namespace_value, body=loaddep_yaml)
+        LOGGER.debug(str(deployment_apps_api_response))
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
+        assert False
+
+
+def create_deployment_old(config_file):
     """
     Create IBM Spectrum Scale CSI Operator deployment object in operator namespace using
     deployment_operator_image_for_crd and deployment_driver_image_for_crd parameters from
@@ -73,7 +108,9 @@ def create_deployment(config_file):
         Raises an exception on kubernetes client api failure and asserts
 
     """
+
     deployment_apps_api_instance = client.AppsV1Api()
+    
     deployment_labels = {
         "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
         "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
@@ -156,6 +193,7 @@ def create_deployment(config_file):
 
     body_dep = client.V1Deployment(
         kind='Deployment', api_version='apps/v1', metadata=deployment_metadata, spec=deployment_spec)
+    
     try:
         LOGGER.info("creating deployment for operator")
         deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
@@ -198,7 +236,7 @@ def create_cluster_role():
     cluster_role_rules.append(client.V1PolicyRule(api_groups=["*"], resources=[
                               'pods', 'persistentvolumeclaims', 'services',
                               'endpoints', 'events', 'configmaps', 'secrets',
-                              'secrets/status', 'services/finalizers', 'serviceaccounts'], verbs=["*"]))
+                              'secrets/status', 'services/finalizers', 'serviceaccounts', 'securitycontextconstraints'], verbs=["*"]))
     cluster_role_rules.append(client.V1PolicyRule(api_groups=['rbac.authorization.k8s.io'], resources=[
                               'clusterroles', 'clusterrolebindings'], verbs=["*"]))
     cluster_role_rules.append(client.V1PolicyRule(api_groups=['apps'], resources=[
@@ -219,7 +257,7 @@ def create_cluster_role():
                                 metadata=cluster_role_metadata, rules=cluster_role_rules)
 
     try:
-        LOGGER.info("creating cluster role ")
+        LOGGER.info("Creating ibm-spectrum-scale-csi-operator ClusterRole ")
         cluster_role_api_response = cluster_role_api_instance.create_cluster_role(
             body, pretty=pretty)
         LOGGER.debug(str(cluster_role_api_response))
@@ -309,7 +347,7 @@ def create_service_account():
         api_version="v1", kind="ServiceAccount", metadata=service_account_metadata)
 
     try:
-        LOGGER.info("creating service account")
+        LOGGER.info("Creating ibm-spectrum-scale-csi-operator ServiceAccount")
         service_account_api_response = service_account_api_instance.create_namespaced_service_account(
             namespace=namespace_value, body=service_account_body, pretty=pretty)
         LOGGER.debug(str(service_account_api_response))
@@ -333,6 +371,42 @@ def create_crd():
         Raises an ValueError exception but it is expected. hence we pass.
 
     """
+    filepath = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
+    try:
+        with open(filepath, "r") as f:
+            loadcrd_yaml = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print ("Error in configuration file:", exc)
+        assert False
+
+    crd_api_instance = client.ApiextensionsV1beta1Api()
+    try:
+        LOGGER.info(
+            "Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
+        crd_api_response = crd_api_instance.create_custom_resource_definition(
+            loadcrd_yaml, pretty=True)
+        LOGGER.debug(str(crd_api_response))
+    except ValueError:
+        LOGGER.info(
+            "while there is valuerror expection,but CRD created successfully")
+
+
+def create_crd_old():
+    """
+    Create IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
+
+    Args:
+       None
+
+    Returns:
+       None
+
+    Raises:
+        Raises an ValueError exception but it is expected. hence we pass.
+
+    """
+
+    
     # input to crd_metadata
     crd_labels = {
         "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
@@ -353,7 +427,7 @@ def create_crd():
     )
 
     crd_subresources = client.V1beta1CustomResourceSubresources(status={})
-
+    
     # input to crd_validation     json input
     filepath = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
     try:
@@ -363,7 +437,7 @@ def create_crd():
         print ("Error in configuration file:", exc)
         assert False 
     properties   = loadcrd_yaml['spec']['validation']['openAPIV3Schema']['properties']
-
+    
     crd_open_apiv3_schema = client.V1beta1JSONSchemaProps(
         properties=properties, type="object")
     crd_validation = client.V1beta1CustomResourceValidation(
@@ -380,12 +454,14 @@ def create_crd():
         version="v1",
         versions=crd_versions
     )
-
+    
+    
     crd_body = client.V1beta1CustomResourceDefinition(
         api_version="apiextensions.k8s.io/v1beta1",
         kind="CustomResourceDefinition",
         metadata=crd_metadata,
         spec=crd_spec)
+    
     crd_api_instance = client.ApiextensionsV1beta1Api()
     try:
         LOGGER.info("creating crd")
