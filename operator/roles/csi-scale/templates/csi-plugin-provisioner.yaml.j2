@@ -50,6 +50,8 @@ spec:
             - "--worker-threads=10"
             - "--v=5" # Debugging
           env:
+            - name: CHECKSUM
+              value: "{{cluster_checksum}}"
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
           imagePullPolicy: "IfNotPresent"
