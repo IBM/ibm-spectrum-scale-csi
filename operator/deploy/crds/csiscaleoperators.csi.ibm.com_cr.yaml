@@ -15,6 +15,12 @@ spec:
   # ==================================================================================
   scaleHostpath: "< GPFS FileSystem Path >"
 
+# Image pull secrets, array is applied to all deployments made by container.
+# ==================================================================================
+# imagePullSecrets:
+#   - APullSecret
+#   - AnotherOptional
+
   # Below specifies the details of a SpectrumScale cluster configuration used by the
   # plugin. It can have multiple values.
   # ==================================================================================

@@ -180,6 +180,10 @@ spec:
                 type: object
               type: array
           type: object
+        imagePullSecrets:
+          type: array
+          items:
+            type: string
   version: v1
   versions:
     - name: v1
