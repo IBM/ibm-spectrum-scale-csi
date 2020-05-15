@@ -94,7 +94,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
 
     con = True
     num = 0
-    while (con and num < 24):
+    while (con and num < 124):
         read_statefulset_api_instance = client.AppsV1Api()
         try:
             read_statefulset_api_response = read_statefulset_api_instance.read_namespaced_stateful_set(
@@ -110,7 +110,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
                     assert False
                 else:
                     con = False
-            elif(num > 22):
+            elif(num > 122):
                 if stateful_set_not_created is True:
                     LOGGER.info("Expected Failure ,testcase is passed")
                     con = False
@@ -120,7 +120,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
         except ApiException:
             num = num+1
             time.sleep(5)
-            if(num > 23):
+            if(num > 123):
                 if stateful_set_not_created is True:
                     LOGGER.info("Expected Failure ,testcase is passed")
                     con = False
@@ -245,7 +245,7 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
     read_statefulsets_api_instance = client.AppsV1Api()
     con = True
     num = 0
-    while (num < 24 and con):
+    while (num < 124 and con):
         try:
             read_statefulsets_api_response = read_statefulsets_api_instance.read_namespaced_stateful_set(
                 name=stateful_name, namespace=namespace_value, pretty=True)
@@ -253,16 +253,16 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
             ready_replicas = read_statefulsets_api_response.status.ready_replicas
             replicas = read_statefulsets_api_response.status.replicas
             if ready_replicas == replicas:
-                LOGGER.info("statefulset is up")
+                LOGGER.info(f"statefulset {stateful_name} is up")
                 con = False
             else:
                 num += 1
                 time.sleep(5)
-                if(num > 23):
-                    LOGGER.error("statefulset is not up")
+                if(num > 123):
+                    LOGGER.error(f"statefulset {stateful_name} is not up")
                     assert False
         except ApiException as e:
-            LOGGER.info("statefulset does not exists")
+            LOGGER.info("statefulset {stateful_name} does not exists")
             LOGGER.error(str(e))
             assert False
 
@@ -290,14 +290,14 @@ def check_scaleoperatorobject_daemonsets_state():
     time.sleep(10)
     con = True
     num = 0
-    while (num < 24 and con):
+    while (num < 124 and con):
         try:
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
                 name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
             LOGGER.debug(read_daemonsets_api_response)
             con = False
         except ApiException as e:
-            if(num > 23):
+            if(num > 123):
                 LOGGER.info("daemonset does not exists")
                 LOGGER.error(str(e))
                 assert False
@@ -345,7 +345,7 @@ def create_secret(secret_data_passed, secret_name):
         data=secret_data
     )
     try:
-        LOGGER.info(f'creating secret {secret_name} with {str(secret_data)}')
+        LOGGER.info(f'creating secret {secret_name}')
         secret_api_response = secret_api_instance.create_namespaced_secret(
             namespace=namespace_value,
             body=secret_body,
@@ -433,15 +433,15 @@ def check_secret_is_deleted(secret_name):
             count = count-1
             time.sleep(10)
         except ApiException:
-            LOGGER.info("secret deleted")
+            LOGGER.info(f"secret {secret_name} deletion confirmed")
             var = False
 
     if count <= 0:
-        LOGGER.error("secret is not deleted")
+        LOGGER.error(f"secret {secret_name} is not deleted")
         assert False
 
 
-def create_configmap(file_path, make_cacert_wrong):
+def create_configmap(file_path, make_cacert_wrong,configmap_name):
     """
     Create configmap with file at file_path
     if make_cacert_wrong==True then it makes cacert wrong
@@ -459,17 +459,19 @@ def create_configmap(file_path, make_cacert_wrong):
     """
     api_instance = client.CoreV1Api()
     metadata = client.V1ObjectMeta(
-        name="cert1",
+        name=configmap_name,
         namespace=namespace_value,
     )
     with open(file_path, 'r') as f:
         file_content = f.read()
     if make_cacert_wrong:
         file_content = file_content[0:50]+file_content[-50:-1]
+    data_dict={}
+    data_dict[configmap_name]=file_content
     configmap = client.V1ConfigMap(
         api_version="v1",
         kind="ConfigMap",
-        data=dict(cert1=file_content),
+        data=data_dict,
         metadata=metadata
     )
     try:
@@ -479,7 +481,7 @@ def create_configmap(file_path, make_cacert_wrong):
             pretty=True,
         )
         LOGGER.debug(str(api_response))
-        LOGGER.info("configmap created")
+        LOGGER.info(f"configmap {configmap_name} created")
 
     except ApiException as e:
         LOGGER.error(
@@ -487,7 +489,7 @@ def create_configmap(file_path, make_cacert_wrong):
         assert False
 
 
-def delete_configmap():
+def delete_configmap(configmap_name):
     """
     deletes configmap
 
@@ -505,15 +507,75 @@ def delete_configmap():
     try:
         api_response = api_instance.delete_namespaced_config_map(
             namespace=namespace_value,
-            name="cert1",
+            name=configmap_name,
             pretty=True,
         )
         LOGGER.debug(str(api_response))
-        LOGGER.info("configmap deleted")
+        LOGGER.info(f"configmap {configmap_name} deleted")
 
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespaced_config_map: {e}")
+        assert False
+
+def check_configmap_exists(configmap_name):
+    """
+    Checks configmap configmap_name exists or not
+
+    Args:
+       param1: configmap_name - name of configmap to be checked
+
+    Returns:
+       return True  , if configmap exists
+       return False , if configmap does not exists
+
+    Raises:
+        None
+
+    """
+
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_config_map(
+            namespace=namespace_value,
+            name=configmap_name,
+            pretty=True,
+        )
+        LOGGER.debug(str(api_response))
+        LOGGER.info(f'configmap {configmap_name} exists')
+        return True
+    except ApiException:
+        LOGGER.info(f'configmap {configmap_name} does not exist')
+        return False
+
+def check_configmap_is_deleted(configmap_name):
+    """
+    checks configmap deleted or not
+    if configmap not deleted in 120 seconds , asserts
+
+    Args:
+       param1: configmap_name - name of configmap to be checked
+    """
+    var = True
+    count = 12
+    api_instance = client.CoreV1Api()
+    while (var and count > 0):
+        try:
+            api_response = api_instance.read_namespaced_config_map(
+            namespace=namespace_value,
+            name=configmap_name,
+            pretty=True,
+        )
+            LOGGER.info("still deleting configmap")
+            LOGGER.debug(str(api_response))
+            count = count-1
+            time.sleep(10)
+        except ApiException:
+            LOGGER.info(f"configmap {configmap_name} deletion confirmed")
+            var = False
+
+    if count <= 0:
+        LOGGER.error(f"configmap {configmap_name} is not deleted")
         assert False
 
 
