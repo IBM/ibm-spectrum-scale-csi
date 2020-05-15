@@ -120,7 +120,7 @@ spec:
 {% if imagePullSecrets | length > 0 %}
       imagePullSecrets:
 {% for pullSecret in imagePullSecrets %}
-        - name:  "{% pullSecret %}
+        - name:  "{{ pullSecret }}"
 {% endfor %}
 {% endif %}
       volumes:
