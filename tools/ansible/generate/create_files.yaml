@@ -39,6 +39,18 @@
     regexp: "ibm-spectrum-scale/"
     replace: "ibm-spectrum-scale-dev/"
 
+- name: "IfNotPresent with Always"
+  replace:
+    path:  "{{ generated_op_dev_yaml }}"
+    regexp: "IfNotPresent"
+    replace: "Always"
+
+- name: "Replace the image version with dev"
+  replace:
+    path:  "{{ generated_op_dev_yaml }}"
+    regexp: 'quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-([^:]*):.+'
+    replace: 'quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-\1:dev'
+
 - name: "Copy over the files that are not modified"
   copy:
     src: "{{ operator_dir }}/{{ item }}"
