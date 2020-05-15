@@ -4,4 +4,3 @@
 kubernetes
 pytest
 pytest-html
-jsmin

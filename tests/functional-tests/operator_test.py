@@ -6,7 +6,7 @@ import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from scale_operator import read_scale_config_file, Scaleoperator, \
-    check_nodes_available, Scaleoperatorobject
+    check_nodes_available, Scaleoperatorobject, check_key
 from utils.scale_operator_object_function import randomStringDigits, base64encoder, randomString
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
@@ -14,13 +14,14 @@ LOGGER = logging.getLogger()
 
 @pytest.fixture(scope='session')
 def _values(request):
+
     global kubeconfig_value, clusterconfig_value, namespace_value
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
         kubeconfig_value = "~/.kube/config"
     clusterconfig_value = request.config.option.clusterconfig
     if clusterconfig_value is None:
-        pytest.fail(" file not provided")
+        clusterconfig_value = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml"
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
@@ -36,12 +37,13 @@ def _values(request):
         read_file["attacherNodeSelector"], "attacherNodeSelector")
 
     yield
+    operator.delete()
     if(ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
-    operator.delete()
 
 
 def test_operator_deploy(_values):
+
     LOGGER.info("test_operator_deploy")
     LOGGER.info("Every input is correct should run without any error")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
@@ -91,7 +93,7 @@ def test_wrong_cluster_id(_values):
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 "Cluster ID doesnt match the cluster", get_logs_api_response)
-            LOGGER.info(search_result)
+            LOGGER.debug(search_result)
             assert search_result is not None
         except ApiException as e:
             LOGGER.error(
@@ -122,7 +124,7 @@ def test_wrong_primaryFS(_values):
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 "Unable to get filesystem", get_logs_api_response)
-            LOGGER.info(search_result)
+            LOGGER.debug(search_result)
             assert search_result is not None
 
         except ApiException as e:
@@ -154,9 +156,9 @@ def test_wrong_guihost(_values):
             LOGGER.debug(str(get_logs_api_response))
             search_result1 = re.search(
                 "connection refused", get_logs_api_response)
-            LOGGER.info(search_result1)
+            LOGGER.debug(search_result1)
             search_result2 = re.search("no such host", get_logs_api_response)
-            LOGGER.info(search_result2)
+            LOGGER.debug(search_result2)
             assert (search_result1 is not None or search_result2 is not None)
         except ApiException as e:
             LOGGER.error(
@@ -218,7 +220,7 @@ def test_wrong_gui_password(_values):
             if search_result is None:
                 time.sleep(5)
             else:
-                LOGGER.info(search_result)
+                LOGGER.debug(search_result)
                 break
             if count > 23:
                 operator_object.delete(kubeconfig_value)
@@ -284,6 +286,9 @@ def test_secureSslMode(_values):
     LOGGER.info("secureSslMode is True while cacert is not available")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
     test["secureSslMode"] = True
+    if check_key(test,"cacert_name"):
+        test.pop("cacert_name") 
+
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
     operator_object = Scaleoperatorobject(test)
@@ -301,7 +306,7 @@ def test_secureSslMode(_values):
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 "CA certificate not specified in secure SSL mode for cluster", str(get_logs_api_response))
-            LOGGER.info(search_result)
+            LOGGER.debug(search_result)
             if(search_result is None):
                 operator_object.delete(kubeconfig_value)
                 LOGGER.error(str(get_logs_api_response))
@@ -340,7 +345,7 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
             LOGGER.debug(str(api_response))
             search_result = re.search(
                 'MountVolume.SetUp failed for volume', str(api_response))
-            LOGGER.info(search_result)
+            LOGGER.debug(search_result)
             assert search_result is not None
         except ApiException as e:
             LOGGER.error(
@@ -439,7 +444,7 @@ def test_unmounted_primaryFS(_values):
                 'Unable to link primary fileset', str(get_logs_api_response))
             if search_result is None:
                 LOGGER.error(str(get_logs_api_response))
-            LOGGER.info(search_result)
+            LOGGER.debug(search_result)
             operator_object.delete(kubeconfig_value)
             ff.mount_fs(test)
             assert search_result is not None
@@ -518,10 +523,15 @@ def test_correct_cacert(_values):
     LOGGER.info("correct cacert file is given")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
     test["secureSslMode"] = True
-    test["cacert_path_final"] = test["cacert_path"]
+    if not(check_key(test,"cacert_name")):
+        test["cacert_name"] = "test-cacert-configmap"
+    operator_object = Scaleoperatorobject(test)
+    if test["cacert_path"] == "":
+        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        pytest.skip("path of cacert file is not given")
+
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -548,11 +558,16 @@ def test_cacert_with_secureSslMode_false(_values):
     LOGGER.info("test_cacert_with_secureSslMode_false")
     LOGGER.info("secureSslMode is false with correct cacert file")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
-    test["secureSslMode"] = False
-    test["cacert_path_final"] = test["cacert_path"]
+    test["secureSslMode_explcit"] = False
+    if not(check_key(test,"cacert_name")):
+        test["cacert_name"] = "test-cacert-configmap"
+    operator_object = Scaleoperatorobject(test)
+    if test["cacert_path"] == "":
+        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        pytest.skip("path of cacert file is not given")
+
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -580,11 +595,16 @@ def test_wrong_cacert(_values):
     LOGGER.info("test_wrong_cacert")
     test = read_scale_config_file(clusterconfig_value, namespace_value)
     test["secureSslMode"] = True
-    test["cacert_path_final"] = test["cacert_path"]
+    if not(check_key(test,"cacert_name")):
+        test["cacert_name"] = "test-cacert-configmap"
     test["make_cacert_wrong"] = True
+    operator_object = Scaleoperatorobject(test)
+    if test["cacert_path"] == "":
+        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        pytest.skip("path of cacert file is not given")
+
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
         LOGGER.error(
@@ -605,7 +625,7 @@ def test_wrong_cacert(_values):
                 if search_result is None:
                     time.sleep(5)
                 else:
-                    LOGGER.info(search_result)
+                    LOGGER.debug(search_result)
                     break
                 if count > 23:
                     operator_object.delete(kubeconfig_value)
@@ -756,3 +776,35 @@ def test_pluginNodeSelector(_values):
             assert False
 
     operator_object.delete(kubeconfig_value)
+
+'''
+def test_remote_operator_deploy(_values):
+
+    LOGGER.info("test_remote_operator_deploy")
+    LOGGER.info("should run without any error using remote")
+    test = read_scale_config_file(clusterconfig_value, namespace_value)
+    #if(ff.fileset_exists(test)):
+    #    ff.delete_fileset(test)
+    #test["remote"] = True
+    operator_object = Scaleoperatorobject(test)
+    operator_object.create(kubeconfig_value)
+    if operator_object.check(kubeconfig_value) is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+    else:
+        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
+                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+            LOGGER.error(str(get_logs_api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            operator_object.delete(kubeconfig_value)
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+    operator_object.delete(kubeconfig_value)
+
+'''
