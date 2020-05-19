@@ -22,7 +22,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.0.0
+        productVersion: 2.0.1
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -365,6 +365,21 @@ spec:
               type: string
             provisionerNodeSelector:
               description: Node selector for provisioner sidecar.
+              items:
+                properties:
+                  key:
+                    description: Key for node selector.
+                    type: string
+                  value:
+                    description: Value for key.
+                    type: string
+                type: object
+              type: array
+            snapshotter:
+              description: Snapshotter image for csi (issues volume snapshot requests).
+              type: string
+            snapshotterNodeSelector:
+              description: Node selector for snapshotter sidecar.
               items:
                 properties:
                   key:
