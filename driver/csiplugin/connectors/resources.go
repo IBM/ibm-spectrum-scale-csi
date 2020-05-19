@@ -208,6 +208,7 @@ type FilesetConfig struct {
 	PermissionChangeMode string `json:"permissionChangeMode,omitempty"`
 	Permissions          string `json:"permissions,omitempty"`
 }
+
 type FilesetState struct {
 	AFMState          string `json:"afmState,omitempty"`
 	Created           string `json:"created,omitempty"`
@@ -227,6 +228,11 @@ type CreateFilesetResquest struct {
 	AFM    AFM           `json:"afm,omitempty"`
 	Config FilesetConfig `json:"config,omitempty"`
 }
+
+type CreateSnapshotRequest struct {
+        SnapshotName      string `json:"snapshotName,omitempty"`
+}
+
 type GenericResponse struct {
 	Status Status `json:"status,omitempty"`
 	Jobs   []Job  `json:"jobs,omitempty"`
@@ -444,6 +450,21 @@ type Node_v2 struct {
 	Roles         NodeRoles  `json:"roles,omitempty"`
 	CNFSInfo      CNFSNode   `json:"cnfsInfo,omitempty"`
 	CESInfo       CESNode    `json:"cesInfo,omitempty"`
+}
+
+type Snapshot_v2 struct {
+        SnapshotName   string     `json:"snapshotName,omitempty"`
+        FilesystemName string     `json:"filesystemName,omitempty"`
+        FilesetName    string     `json:"filesetName,omitempty"`
+        SnapID         int        `json:"snapID,omitempty"`
+        Status         string     `json:"status,omitempty"`
+	Created	       string     `json:"created,omitempty"`
+}
+
+type GetSnapshotResponse_v2 struct {
+        Snapshots []Snapshot_v2  `json:"snapshots,omitempty"`
+        Status    Status         `json:"status,omitempty"`
+        Paging    Pages          `json:"paging,omitempty"`
 }
 
 type Fileset_v2 struct {

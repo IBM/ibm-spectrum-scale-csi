@@ -151,6 +151,21 @@ spec:
                     type: string
                 type: object
               type: array
+            snapshotter:
+              description: Snapshotter image for csi (issues volume snapshot requests).
+              type: string
+            snapshotterNodeSelector:
+              description: Node selector for snapshotter sidecar.
+              items:
+                properties:
+                  key:
+                    description: Key for node selector.
+                    type: string
+                  value:
+                    description: Value for key.
+                    type: string
+                type: object
+              type: array
             scaleHostpath:
               description: The path to the gpfs file system mounted on the host machine.
               type: string
