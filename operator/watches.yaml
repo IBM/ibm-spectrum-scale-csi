@@ -8,8 +8,8 @@
     name: finalizer.csiscaleoperators.csi.ibm.com
     vars:
       state: absent
-- version: v1
-  kind: Secret
-  playbook: /opt/ansible/roles/csi-scale/tasks/secret_watch.yml
-  watchDependentResources: false
+- kind: Secret
   manageStatus: false
+  playbook: /opt/ansible/roles/csi-scale/tasks/secret_watch.yml
+  version: v1
+  watchDependentResources: false

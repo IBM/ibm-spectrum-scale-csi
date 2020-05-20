@@ -1,0 +1,8 @@
+---
+- name: "Remove SCC if ibm-spectrum-scale-csi is present in SCC"
+  k8s:
+    state: absent
+    api_version: security.openshift.io/v1
+    kind: SecurityContextConstraints
+    name: csiaccess
+  when: item.users and item.users[0] is regex(".*ibm-spectrum-scale-csi.*")

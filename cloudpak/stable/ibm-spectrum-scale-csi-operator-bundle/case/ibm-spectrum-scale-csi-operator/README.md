@@ -29,3 +29,56 @@ This operator does not require any pod  security requirements.
 
 # SecurityContextConstraints Requirements
 The operator maintains the Security Context Constraints, removing the required restraints when the operator is uninstalled.
+
+The installed SCC is as follows, please note this is a jinja2 template applied by the operator:
+
+``` YAML
+  kind: SecurityContextConstraints
+  apiVersion: security.openshift.io/v1
+  metadata:
+    annotations:
+      kubernetes.io/description: allow hostpath and host network to be accessible
+    generation: 1
+    name: csiaccess
+    selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/csiaccess
+  readOnlyRootFilesystem: false
+  requiredDropCapabilities:
+  - KILL
+  - MKNOD
+  - SETUID
+  - SETGID
+  runAsUser:
+    type: RunAsAny
+  seLinuxContext:
+    type: RunAsAny
+  supplementalGroups:
+    type: RunAsAny
+  volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - hostPath
+  - persistentVolumeClaim
+  - projected
+  - secret
+  allowHostDirVolumePlugin: true
+  allowHostIPC: false
+  allowHostNetwork: true
+  allowHostPID: false
+  allowHostPorts: false
+  allowPrivilegeEscalation: true
+  allowPrivilegedContainer: true
+  allowedCapabilities: []
+  defaultAddCapabilities: null
+  fsGroup:
+    type: MustRunAs
+  groups:
+  - system:authenticated
+  {% if csiaccess_users|length > 0 %}
+  users:
+  {% for user in csiaccess_users %}
+    - "{{user}}"
+  {% endfor %}
+  {% endif %}
+
+```

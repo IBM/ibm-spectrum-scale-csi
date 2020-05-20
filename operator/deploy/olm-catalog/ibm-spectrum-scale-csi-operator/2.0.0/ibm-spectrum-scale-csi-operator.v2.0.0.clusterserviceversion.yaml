@@ -34,7 +34,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     release: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator.v1.1.0
+  name: ibm-spectrum-scale-csi-operator.v2.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -73,6 +73,11 @@ spec:
             name: ""
             version: v1
         specDescriptors:
+          - description: A list of image pull secrets, applied to pods creeated by operator.
+            displayName: Image Pull Secrets
+            path: imagePullSecrets
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:label
           - description: Node selector for provisioner sidecar.
             displayName: Provisioner Node Selector
             path: provisionerNodeSelector
@@ -220,14 +225,14 @@ spec:
             x-descriptors:
               - urn:alm:descriptor:io.kubernetes.conditions
           - description: Indicates that the plugin is running.
-            displayName: Is Running
-            path: conditions.isRunning
+            displayName: Ready
+            path: conditions.Ready
             x-descriptors:
               - urn:alm:descriptor:io.kubernetes.phase
         version: v1
- description: "\nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster\
+  description: "\nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster\
     \ providing a means to \ndeploy and manage the CSI plugin for spectrum scale.\
-    \ For more in depth documentation please refer\nto the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.1.0/README.md).\n\
+    \ For more in depth documentation please refer\nto the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v2.0.0/README.md).\n\
     \nThis operator should be used to deploy the CSI plugin.\n\nThe configuration\
     \ process is as follows:\n\n1. [Spectrum Scale GUI Setup](#spectrum-scale-gui-setup)\n\
     2. [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum\
@@ -255,7 +260,7 @@ spec:
     \ ```\n\nCustom Resource Configuration\n-----------------------------\n\nThe bundled\
     \ Custom Resource example represents the minimum settings needed to run the operator.\n\
     If your environment needs more advanced settings (e.g. remote clusters, node mapping,\
-    \ etc.) please\nrefer to the sample [Custom Resource](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.1.0/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml).\n\
+    \ etc.) please\nrefer to the sample [Custom Resource](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v2.0.0/stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator/deploy/crds/csiscaleoperators.csi.ibm.com.cr.yaml).\n\
     \n\n"
   displayName: IBM Spectrum Scale CSI Plugin Operator
   icon:
@@ -350,7 +355,7 @@ spec:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
                 productName: IBM Spectrum Scale CSI Operator
-                productVersion: 1.1.0
+                productVersion: 2.0.0
               labels:
                 app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
                 app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -367,34 +372,6 @@ spec:
                       - key: beta.kubernetes.io/arch
                         operator: Exists
               containers:
-              - command:
-                - /usr/local/bin/ao-logs
-                - /tmp/ansible-operator/runner
-                - stdout
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v1.1.0
-                imagePullPolicy: IfNotPresent
-                livenessProbe:
-                  exec:
-                    command:
-                    - ./health_check.sh
-                  initialDelaySeconds: 10
-                  periodSeconds: 30
-                name: ansible
-                readinessProbe:
-                  exec:
-                    command:
-                    - ./health_check.sh
-                  initialDelaySeconds: 3
-                  periodSeconds: 1
-                resources: {}
-                securityContext:
-                  capabilities:
-                    drop:
-                    - ALL
-                volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
-                  readOnly: true
               - env:
                 - name: WATCH_NAMESPACE
                   valueFrom:
@@ -460,5 +437,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v1.0.0
-  version: 1.1.0
+  replaces: ibm-spectrum-scale-csi-operator.v1.1.0
+  version: 2.0.0

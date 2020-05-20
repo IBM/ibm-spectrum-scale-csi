@@ -2,6 +2,7 @@ import logging
 import base64
 import time
 import re
+import json
 import urllib3
 import requests
 LOGGER = logging.getLogger()
@@ -57,7 +58,7 @@ def delete_fileset(test):
     LOGGER.debug(response.text)
     search_format = '"'+test["primaryFset"]+'",'
     search_result = re.search(search_format, str(response.text))
-    LOGGER.info(search_result)
+    LOGGER.debug(search_result)
     if search_result is None:
         LOGGER.info(
             f'Success : Fileset {test["primaryFset"]} has been deleted')
@@ -207,7 +208,7 @@ def unmount_fs(test):
     data = '{"nodes":["'+test["guiHost"]+'"],"force": false}'
     response = requests.put(unmount_link, headers=headers,
                             data=data, verify=False, auth=(username, password))
-    LOGGER.debug(response.text)
+    LOGGER.info(response.text)
     LOGGER.info(f'primaryFS {test["primaryFs"]} unmounted')
     time.sleep(5)
 
@@ -403,7 +404,7 @@ def create_dir(test, dir_name):
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(username, password))
     LOGGER.debug(response.text)
-    LOGGER.info(f'Created directory {dir_name} in {test["scaleHostpath"]}')
+    LOGGER.info(f'Created directory {dir_name}')
     time.sleep(5)
 
 
@@ -432,7 +433,7 @@ def delete_dir(test, dir_name):
     response = requests.delete(
         dir_link, headers=headers, verify=False, auth=(username, password))
     LOGGER.debug(response.text)
-    LOGGER.info(f'Deleted directory {dir_name} in {test["scaleHostpath"]}')
+    LOGGER.info(f'Deleted directory {dir_name}')
     time.sleep(5)
 
 
@@ -460,3 +461,58 @@ def get_FSUID(test):
     FSUID = str(lst[0][10:27])
     LOGGER.debug(FSUID)
     return FSUID
+
+def get_mount_point(test):
+    """
+    return th mount point of primaryFs
+
+    Args:
+       param1: test : contents of configuration file
+
+    Returns:
+       mount point
+
+    Raises:
+       None
+
+    """
+    username_password_setter(test)
+    info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
+    response = requests.get(info_filesystem, verify=False,
+                            auth=(username, password))
+    LOGGER.debug(response.text)
+    response_dict = json.loads(response.text) 
+    mount_point = response_dict["filesystems"][0]["mount"]["mountPoint"]
+    LOGGER.debug(mount_point)
+    return mount_point
+
+def get_remoteFs(test):
+    """ return name of remote filesystem """
+    username_password_setter(test)
+    info_remote = "https://"+test["remoteguiHost"]+":"+test["remote-port"] + \
+        "/scalemgmt/v2/cluster"
+    remote_username = base64.b64decode(test["remote-username"]).decode('utf-8')
+    remote_password = base64.b64decode(test["remote-password"]).decode('utf-8')
+    response_remote = requests.get(info_remote, verify=False,
+                            auth=(remote_username, remote_password))
+    LOGGER.debug(response_remote.text)
+    response_remote_dict = json.loads(response_remote.text)
+    clusterName = response_remote_dict["cluster"]["clusterSummary"]["clusterName"]
+    LOGGER.debug(clusterName)
+
+    info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/?fields=:all:"
+    response = requests.get(info_filesystem, verify=False,
+                            auth=(username, password))
+    LOGGER.debug(response.text)
+    response_dict = json.loads(response.text)
+    for filesystem in response_dict["filesystems"]:
+        if filesystem["type"] == "remote":
+            device_name = filesystem["mount"]["remoteDeviceName"]
+            search_result = re.search(clusterName, device_name)
+            if search_result is not None:
+                LOGGER.debug(search_result)
+                LOGGER.info(f'{filesystem["name"]} is remoteFs')
+                return filesystem["name"]
+    return None
