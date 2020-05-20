@@ -64,21 +64,23 @@ type scaleVolId struct {
 	IsFilesetBased bool
 }
 
+//nolint
 type scaleVolSnapshot struct {
-	SnapName	string		`json:"snapName"`
-	SourceVol	string		`json:"sourceVol"`
-	Filesystem	string		`json:"filesystem"`
-	Fileset		string		`json:"fileset"`
-        ClusterId	string		`json:"clusterId"`
-	SnapSize	uint64		`json:"snapSize"`
-}
+	SnapName   string `json:"snapName"`
+	SourceVol  string `json:"sourceVol"`
+	Filesystem string `json:"filesystem"`
+	Fileset    string `json:"fileset"`
+	ClusterId  string `json:"clusterId"`
+	SnapSize   uint64 `json:"snapSize"`
+} //nolint
 
+//nolint
 type scaleVolSnapId struct {
-        ClusterId      string
-        FsUUID         string
-        FsetId         string
-	SnapId	       string
-}
+	ClusterId string
+	FsUUID    string
+	FsetId    string
+	SnapId    string
+} //nolint
 
 func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
@@ -217,7 +219,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 }
 
 /*
-func getScaleVolSnapOptions(snapOptions map[string]string) (*scaleVolSnap, error) { 
+func getScaleVolSnapOptions(snapOptions map[string]string) (*scaleVolSnap, error) {
         //var err error
         scaleVolSnap := &scaleVolSnap{}
 

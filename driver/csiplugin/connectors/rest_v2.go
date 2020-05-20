@@ -848,6 +848,7 @@ func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) 
 	return getFilesetResponse.Filesets[0].FilesetName, nil
 }
 
+//nolint:dupl
 func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetSnapshotCreateTimestamp. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapName)
 
@@ -863,9 +864,10 @@ func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, files
 		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
-	return fmt.Sprintf("%d", getSnapshotResponse.Snapshots[0].Created), nil
+	return fmt.Sprintf(getSnapshotResponse.Snapshots[0].Created), nil
 }
 
+//nolint:dupl
 func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetSnapshotUid. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapName)
 

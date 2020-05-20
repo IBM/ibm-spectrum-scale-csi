@@ -652,7 +652,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				if len(snapshotList) != 0 {
 					return nil, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
 				}
-				glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteVolume")
+				glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteVolume", FilesetName)
 
 				err = conn.DeleteFileset(FilesystemName, FilesetName)
 				if err != nil {
@@ -871,7 +871,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if !volumeIDMembers.IsFilesetBased {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Source Volume %v is not fileset based", volID, err))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Source Volume %v is not fileset based", volID))
 	}
 
 	conn, err := cs.GetConnFromClusterID(volumeIDMembers.ClusterId)
@@ -928,6 +928,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	const longForm = "2020-03-27 00:40:02,000" // This is the format in which REST API return creation timestamp
+	//nolint::staticcheck
 	t, _ := time.Parse(longForm, createTS)
 	var timestamp timestamp.Timestamp
 	timestamp.Seconds = t.Unix()
@@ -941,7 +942,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			CreationTime:   &timestamp,
 		},
 	}, nil
-
 }
 
 // DeleteSnapshot - Delete snapshot
