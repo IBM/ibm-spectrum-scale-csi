@@ -170,6 +170,11 @@ spec:
             path: snapshotterNodeSelector.key
             x-descriptors:
               - urn:alm:descriptor:com.tectonic.ui:label
+          - description: The path to the gpfs file system mounted on the host machine.
+            displayName: Spectrum Scale Hostpath
+            path: scaleHostpath
+            x-descriptors:
+              - urn:alm:descriptor:com.tectonic.ui:label
           - description: A string specifying a cacert resource name.
             displayName: cacert Resource Name
             path: clusters.cacert
