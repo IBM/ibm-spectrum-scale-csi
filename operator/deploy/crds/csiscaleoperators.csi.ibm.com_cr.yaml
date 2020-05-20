@@ -11,7 +11,7 @@ metadata:
     release: ibm-spectrum-scale-csi-operator
 status: {}
 spec:
-# The path to the GPFS file system mounted on the host machine.
+# The path to the GPFS file system mounted (either remote/local) on the local Spectrum Scale API host machine.
 # ==================================================================================
   scaleHostpath: "< GPFS FileSystem Path >"
 
@@ -31,9 +31,9 @@ spec:
       primary:
         primaryFs: "< Primary Filesystem >"
 #        primaryFset: "< Fileset in Primary Filesystem >"   # Optional - default:spectrum-scale-csi-volume-store
-#          inodeLimit: "< node limit for Primary Fileset >" # Optional
-#          remoteCluster: "< Remote ClusterID >"            # Optional - This ID should have seperate entry in Clusters map.
-#      cacert: "< CA cert configmap for GUI >"              # Optional
+#        nodeLimit: "< node limit for Primary Fileset >" # Optional
+#        remoteCluster: "< Remote ClusterID >"            # Optional - This is only required if primaryFs is remote cluster's filesystem and this ID should have separate entry in Clusters map too.
+#      cacert: "<emoteconf" # Optional
       restApi:
         - guiHost: "< Primary cluster GUI IP/Hostname >"
 #
