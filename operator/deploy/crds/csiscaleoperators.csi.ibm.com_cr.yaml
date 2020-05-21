@@ -33,7 +33,7 @@ spec:
 #        primaryFset: "< Fileset in Primary Filesystem >"   # Optional - default:spectrum-scale-csi-volume-store
 #        nodeLimit: "< node limit for Primary Fileset >" # Optional
 #        remoteCluster: "< Remote ClusterID >"            # Optional - This is only required if primaryFs is remote cluster's filesystem and this ID should have separate entry in Clusters map too.
-#      cacert: "<emoteconf" # Optional
+#      cacert: "remoteconf" # Optional
       restApi:
         - guiHost: "< Primary cluster GUI IP/Hostname >"
 #
@@ -44,6 +44,7 @@ spec:
 #      secureSslMode: false
 #      restApi:
 #      - guiHost: "< Cluster GUI IP/Hostname >"
+#      cacert: "< CA cert configmap for GUI >"              # Optional
 
 # Attacher image name, in case we do not want to use default image.
 # ==================================================================================
