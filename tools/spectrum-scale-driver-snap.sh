@@ -164,7 +164,7 @@ echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd >> $get_k8snodes 2>&1 || :
 
 
-get_spectrum_cmd="$cmd describe ds ${CSI_SPECTRUM_SCALE_LABEL} -n $ns"
+get_spectrum_cmd='$cmd describe ds -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" -n $ns'
 echo "$get_spectrum_cmd"
 $get_spectrum_cmd >> $get_spectrum 2>&1 || :
 
