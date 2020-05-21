@@ -25,6 +25,9 @@ spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) |
 secretCounter: "{{ secret_counter |  default(-1) }}"
 scaleHostpath: "{{ scale_hostpath | default('/') }}"
 
+# List of imagePullSecrets
+imagePullSecrets: "{{ image_pull_secrets | default([])}}"
+
 # This needs a default for molecule, also the clusters version does weird stuff to the object?
 # clusters: []
 clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperator.spec.clusters | default([])}}"

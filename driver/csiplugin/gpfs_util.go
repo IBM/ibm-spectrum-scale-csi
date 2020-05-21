@@ -64,21 +64,23 @@ type scaleVolId struct {
 	IsFilesetBased bool
 }
 
+//nolint
 type scaleVolSnapshot struct {
-	SnapName	string		`json:"snapName"`
-	SourceVol	string		`json:"sourceVol"`
-	Filesystem	string		`json:"filesystem"`
-	Fileset		string		`json:"fileset"`
-        ClusterId	string		`json:"clusterId"`
-	SnapSize	uint64		`json:"snapSize"`
-}
+	SnapName   string `json:"snapName"`
+	SourceVol  string `json:"sourceVol"`
+	Filesystem string `json:"filesystem"`
+	Fileset    string `json:"fileset"`
+	ClusterId  string `json:"clusterId"`
+	SnapSize   uint64 `json:"snapSize"`
+} //nolint
 
+//nolint
 type scaleVolSnapId struct {
-        ClusterId      string
-        FsUUID         string
-        FsetId         string
-	SnapId	       string
-}
+	ClusterId string
+	FsUUID    string
+	FsetId    string
+	SnapId    string
+} //nolint
 
 func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
@@ -86,6 +88,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
+	clusterID, clusterIDSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
 	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
@@ -96,6 +99,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
 	scaleVol.FilesetType = ""
+	scaleVol.ClusterId = ""
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false
@@ -139,6 +143,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	if isparentFilesetSpecified && parentFileset == "" {
 		isparentFilesetSpecified = false
+	}
+	if clusterIDSpecified && clusterID != "" {
+		scaleVol.ClusterId = clusterID
 	}
 
 	if volDirPathSpecified {
@@ -207,11 +214,12 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 			scaleVol.InodeLimit = inodeLim
 		}
 	}
+
 	return scaleVol, nil
 }
 
 /*
-func getScaleVolSnapOptions(snapOptions map[string]string) (*scaleVolSnap, error) { 
+func getScaleVolSnapOptions(snapOptions map[string]string) (*scaleVolSnap, error) {
         //var err error
         scaleVolSnap := &scaleVolSnap{}
 

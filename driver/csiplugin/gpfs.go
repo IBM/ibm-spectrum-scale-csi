@@ -156,7 +156,7 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string) 
 	csc := []csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
-                csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
+		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 	}
 	_ = driver.AddControllerServiceCapabilities(csc)
 

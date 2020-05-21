@@ -22,7 +22,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.0.0
+        productVersion: 2.0.1
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -76,11 +76,12 @@ spec:
             requests:
               cpu: 50m
               memory: 50Mi
+
+          #hostNetwork: false
+          #hostPID: false
+          #hostIPC: false
           securityContext:
             runAsNonRoot: true
-            hostNetwork: false
-            hostPID: false
-            hostIPC: false
             runAsUser: 1001
             readOnlyRootFilesystem: false
             allowPrivilegeEscalation: false
@@ -374,6 +375,21 @@ spec:
                     type: string
                 type: object
               type: array
+            snapshotter:
+              description: Snapshotter image for csi (issues volume snapshot requests).
+              type: string
+            snapshotterNodeSelector:
+              description: Node selector for snapshotter sidecar.
+              items:
+                properties:
+                  key:
+                    description: Key for node selector.
+                    type: string
+                  value:
+                    description: Value for key.
+                    type: string
+                type: object
+              type: array
             scaleHostpath:
               description: The path to the gpfs file system mounted on the host machine.
               type: string
@@ -403,6 +419,10 @@ spec:
                 type: object
               type: array
           type: object
+        imagePullSecrets:
+          type: array
+          items:
+            type: string
   version: v1
   versions:
     - name: v1
