@@ -118,22 +118,22 @@ if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
    describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
    echo "$describeCSIScaleOperator"
    $describeCSIScaleOperator > ${describe_CSIScaleOperator} 2>&1 || :
+ fi
 
-   for opPodName in `$cmd get pods --no-headers --namespace $ns -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" | awk '{print $1}' `; do
-     echo "$klog pod/${opPodName}"
-     $klog pod/${opPodName} --all-containers  > ${logdir}/${opPodName}.log 2>&1 || :
-     $klog pod/${opPodName} --all-containers  --previous > ${logdir}/${opPodName}-previous.log 2>&1 || :
-   done
-fi
-
-# kubectl logs on csi pods
-for csi_pod in `$cmd get pod -l app=ibm-spectrum-scale-csi --namespace $ns | grep -v NAME | awk '{print $1}'`; do
-   echo "$klog pod/${csi_pod}"
-   $klog pod/${csi_pod} -c ibm-spectrum-scale-csi > ${logdir}/${csi_pod}.log 2>&1 || :
-   $klog pod/${csi_pod} -c driver-registrar > ${logdir}/${csi_pod}-driver-registrar.log 2>&1 || :
-   $klog pod/${csi_pod} -c ibm-spectrum-scale-csi --previous > ${logdir}/${csi_pod}-previous.log 2>&1 || :
-   $klog pod/${csi_pod} -c driver-registrar --previous > ${logdir}/${csi_pod}-driver-registrar-previous.log 2>&1 || :
+for opPodName in `$cmd get pods --no-headers --namespace $ns -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}' `; do
+  echo "$klog pod/${opPodName}"
+  $klog pod/${opPodName} --all-containers  > ${logdir}/${opPodName}.log 2>&1 || :
+  $klog pod/${opPodName} --all-containers  --previous > ${logdir}/${opPodName}-previous.log 2>&1 || :
 done
+
+## kubectl logs on csi pods
+#for csi_pod in `$cmd get pods --no-headers -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator --namespace $ns | awk '{print $1}'`; do
+#   echo "$klog pod/${csi_pod}"
+#   $klog pod/${csi_pod} -c ibm-spectrum-scale-csi > ${logdir}/${csi_pod}.log 2>&1 || :
+#   $klog pod/${csi_pod} -c driver-registrar > ${logdir}/${csi_pod}-driver-registrar.log 2>&1 || :
+#   $klog pod/${csi_pod} -c ibm-spectrum-scale-csi --previous > ${logdir}/${csi_pod}-previous.log 2>&1 || :
+#   $klog pod/${csi_pod} -c driver-registrar --previous > ${logdir}/${csi_pod}-driver-registrar-previous.log 2>&1 || :
+#done
 
 
 
