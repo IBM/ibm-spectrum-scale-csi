@@ -121,8 +121,8 @@ if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
 
    for opPodName in `$cmd get pods --no-headers --namespace $ns -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" | awk '{print $1}' `; do
      echo "$klog pod/${opPodName}"
-     $klog pod/${opPodName} --all-containers  > ${logdir}/${opPodName}-operator.log 2>&1 || :
-     $klog pod/${opPodName} --all-containers  --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+     $klog pod/${opPodName} --all-containers  > ${logdir}/${opPodName}.log 2>&1 || :
+     $klog pod/${opPodName} --all-containers  --previous > ${logdir}/${opPodName}-previous.log 2>&1 || :
    done
 fi
 
