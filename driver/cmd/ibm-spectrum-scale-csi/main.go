@@ -50,6 +50,10 @@ func main() {
 		os.Exit(1)
 	}
 
+        if err := deleteStalePluginDir(driver.OldPluginFolder); err != nil {
+                glog.Errorf("failed to delete stale plugin folder %v, please delete manually. %v", driver.OldPluginFolder, err)
+        }
+
 	handle()
 	os.Exit(0)
 }
@@ -71,3 +75,11 @@ func createPersistentStorage(persistentStoragePath string) error {
 	}
 	return nil
 }
+
+func deleteStalePluginDir(stalePluginPath string) error {
+        if err := os.RemoveAll(stalePluginPath); err != nil {
+                return err
+        }
+        return nil
+}
+
