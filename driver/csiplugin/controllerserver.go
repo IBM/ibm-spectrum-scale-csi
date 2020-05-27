@@ -395,6 +395,17 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	scaleVol.PrimaryFSMount = PFSMount
 	scaleVol.PrimarySLnkPath = PSLnkPath
 
+	// Check if Primary Fileset is linked
+	primaryFileset := cs.Driver.primary.PrimaryFset
+	isPrimaryFilesetLinked, err := scaleVol.PrimaryConnector.IsFilesetLinked(scaleVol.PrimaryFS, primaryFileset)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get details of Primary Fileset [%v]. Error : [%v]", primaryFileset, err))
+	}
+
+	if !isPrimaryFilesetLinked {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Primary Fileset [%v] is not linked", primaryFileset))
+	}
+
 	/* scaleVol.VolBackendFs will always be local cluster FS. So we need to find a
 	   remote cluster FS in case local cluster FS is remotely mounted. We will find    local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and   create fileset on that FS. */
 
