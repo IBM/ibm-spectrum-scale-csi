@@ -660,6 +660,25 @@ func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error
 	return getFilesystemNameURLResponse.FileSystems[0].Name, nil
 }
 
+func (s *spectrumRestV2) GetFilesystemType(filesystemName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetFilesystemType. Name: %s", filesystemName)
+
+	getFilesystemTypeURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName))
+	getFilesystemTypeURLResponse := GetFilesystemResponse_v2{}
+
+	err := s.doHTTP(getFilesystemTypeURL, "GET", &getFilesystemTypeURLResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get filesystem type for Name %s: %v", filesystemName, err)
+		return "", err
+	}
+
+	if len(getFilesystemTypeURLResponse.FileSystems) == 0 {
+		glog.Errorf("Unable to fetch filesystem name details for %s", filesystemName)
+		return "", fmt.Errorf("Unable to fetch filesystem name details for %s", filesystemName)
+	}
+	return getFilesystemTypeURLResponse.FileSystems[0].Type, nil
+}
+
 func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
 	getFilesystemURL := fmt.Sprintf("%s%s%s", s.endpoint, "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}

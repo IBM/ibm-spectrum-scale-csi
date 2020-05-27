@@ -48,6 +48,7 @@ type SpectrumScaleConnector interface {
 	MountFilesystem(filesystemName string, nodeName string) error
 	UnmountFilesystem(filesystemName string, nodeName string) error
 	GetFilesystemName(filesystemUUID string) (string, error)
+	GetFilesystemType(filesystemUUID string) (string, error)
 	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
 	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
 	GetFsUid(filesystemName string) (string, error)
