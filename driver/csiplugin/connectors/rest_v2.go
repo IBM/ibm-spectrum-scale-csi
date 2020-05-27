@@ -641,7 +641,7 @@ func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName strin
 	return nil
 }
 
-func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error) {
+func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error) { //nolint:dupl
 	glog.V(4).Infof("rest_v2 GetFilesystemName. UUID: %s", filesystemUUID)
 
 	getFilesystemNameURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems?filter=uuid=%s", filesystemUUID))
