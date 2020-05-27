@@ -79,4 +79,3 @@ func createPersistentStorage(persistentStoragePath string) error {
 func deleteStalePluginDir(stalePluginPath string) error {
 	return os.RemoveAll(stalePluginPath)
 }
-
