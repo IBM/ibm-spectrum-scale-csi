@@ -32,7 +32,8 @@ import (
 
 // PluginFolder defines the location of scaleplugin
 const (
-	PluginFolder = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
+	PluginFolder          = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
+	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 )
 
 type ScaleDriver struct {
@@ -179,6 +180,7 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
 	primaryInfo := settings.Primary{}
+	remoteFilesystemName := ""
 
 	for i := 0; i < len(scaleConfig.Clusters); i++ {
 		cluster := scaleConfig.Clusters[i]
@@ -214,11 +216,19 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
 				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem not mounted on any node")
 			}
-
+			// In case primary fset value is not specified in configuation then use default
+			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
+				scaleConfig.Clusters[i].Primary.PrimaryFset = DefaultPrimaryFileset
+				glog.Infof("primaryFset is not specified in configuration using default %s", DefaultPrimaryFileset)
+			}
 			scaleConfig.Clusters[i].Primary.PrimaryFSMount = fsMount.MountPoint
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
 
 			primaryInfo = scaleConfig.Clusters[i].Primary
+
+			// RemoteFS name from Local Filesystem details
+			remoteDeviceName := strings.Split(fsMount.RemoteDeviceName, ":")
+			remoteFilesystemName = remoteDeviceName[len(remoteDeviceName)-1]
 		}
 	}
 
@@ -227,21 +237,22 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 	fsmount := primaryInfo.PrimaryFSMount
 	if primaryInfo.RemoteCluster != "" {
 		sconn = scaleConnMap[primaryInfo.RemoteCluster]
-		if primaryInfo.GetRemoteFs() != "" {
-			fs = primaryInfo.GetRemoteFs()
-
-			// check if primary filesystem exists on remote cluster and mounted on atleast one node
-			fsMount, err := sconn.GetFilesystemMountDetails(fs)
-			if err != nil {
-				glog.Errorf("Error in getting filesystem details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
-				return scaleConnMap, scaleConfig, primaryInfo, err
-			}
-			glog.Infof("remote fsMount = %v", fsMount)
-			if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
-				return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Primary filesystem not mounted on any node on cluster %s", primaryInfo.RemoteCluster)
-			}
-			fsmount = fsMount.MountPoint
+		if remoteFilesystemName == "" {
+			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Failed to get the name of remote Filesystem")
 		}
+		fs = remoteFilesystemName
+		// check if primary filesystem exists on remote cluster and mounted on atleast one node
+		fsMount, err := sconn.GetFilesystemMountDetails(fs)
+		if err != nil {
+			glog.Errorf("Error in getting filesystem details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
+			return scaleConnMap, scaleConfig, primaryInfo, err
+		}
+
+		glog.Infof("remote fsMount = %v", fsMount)
+		if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
+			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Primary filesystem not mounted on any node on cluster %s", primaryInfo.RemoteCluster)
+		}
+		fsmount = fsMount.MountPoint
 	}
 
 	fsetlinkpath, err := driver.CreatePrimaryFileset(sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())
@@ -322,7 +333,7 @@ func (driver *ScaleDriver) CreateSymlinkPath(sc connectors.SpectrumScaleConnecto
 	dirpath = fmt.Sprintf("%s/.volumes", dirpath)
 	symlinkpath := fmt.Sprintf("%s/.volumes", fsetlinkpath)
 
-	err := sc.MakeDirectory(fs, dirpath, 0, 0)
+	err := sc.MakeDirectory(fs, dirpath, "0", "0")
 	if err != nil {
 		glog.Errorf("Make directory failed on filesystem %s, path = %s", fs, dirpath)
 		return symlinkpath, dirpath, err
@@ -367,6 +378,7 @@ func (driver *ScaleDriver) ValidateHostpath(mountpath string, linkpath string) e
 	return nil
 }
 
+// ValidateScaleConfigParameters : Validating the Configuration provided for Spectrum Scale CSI Driver
 func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.ScaleSettingsConfigMap) (bool, error) {
 	glog.V(4).Infof("gpfs ValidateScaleConfigParameters.")
 	if len(scaleConfig.Clusters) == 0 {
@@ -375,24 +387,36 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 
 	primaryClusterFound := false
 	rClusterForPrimaryFS := ""
-	var cl []string = make([]string, len(scaleConfig.Clusters))
+	var cl = make([]string, len(scaleConfig.Clusters))
+	issueFound := false
 
 	for i := 0; i < len(scaleConfig.Clusters); i++ {
 		cluster := scaleConfig.Clusters[i]
 
-		if cluster.ID == "" || len(cluster.RestAPI) == 0 || cluster.RestAPI[0].GuiHost == "" {
-			return false, fmt.Errorf("Mandatory parameters not specified for cluster %v", cluster.ID)
+		if cluster.ID == "" {
+			issueFound = true
+			glog.Errorf("Mandatory parameter 'id' is not specified")
+		}
+		if len(cluster.RestAPI) == 0 {
+			issueFound = true
+			glog.Errorf("Mandatory section 'restApi' is not specified for cluster %v", cluster.ID)
+		}
+		if len(cluster.RestAPI) != 0 && cluster.RestAPI[0].GuiHost == "" {
+			issueFound = true
+			glog.Errorf("Mandatory parameter 'guiHost' is not specified for cluster %v", cluster.ID)
 		}
 
 		if cluster.Primary != (settings.Primary{}) {
 			if primaryClusterFound {
-				return false, fmt.Errorf("More than one primary clusters specified")
+				issueFound = true
+				glog.Errorf("More than one primary clusters specified")
 			}
 
 			primaryClusterFound = true
 
-			if cluster.Primary.GetPrimaryFs() == "" || cluster.Primary.PrimaryFset == "" {
-				return false, fmt.Errorf("Mandatory parameters not specified for primary cluster %v", cluster.ID)
+			if cluster.Primary.GetPrimaryFs() == "" {
+				issueFound = true
+				glog.Errorf("Mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.ID)
 			}
 
 			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
@@ -400,21 +424,29 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 			cl[i] = cluster.ID
 		}
 
-		if cluster.Secrets == "" || cluster.MgmtUsername == "" || cluster.MgmtPassword == "" {
-			return false, fmt.Errorf("Invalid secret specified for cluster %v", cluster.ID)
+		if cluster.Secrets == "" {
+			issueFound = true
+			glog.Errorf("Mandatory parameter 'secrets' is not specified for cluster %v", cluster.ID)
 		}
 
 		if cluster.SecureSslMode && cluster.CacertValue == nil {
-			return false, fmt.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.ID)
+			issueFound = true
+			glog.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.ID)
 		}
 	}
 
 	if !primaryClusterFound {
-		return false, fmt.Errorf("No primary clusters specified")
+		issueFound = true
+		glog.Errorf("No primary clusters specified")
 	}
 
 	if rClusterForPrimaryFS != "" && !utils.StringInSlice(rClusterForPrimaryFS, cl) {
-		return false, fmt.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS)
+		issueFound = true
+		glog.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS)
+	}
+
+	if issueFound {
+		return false, fmt.Errorf("one or more issue found in Spectrum scale csi driver configuration, check Spectrum Scale csi driver logs")
 	}
 
 	return true, nil

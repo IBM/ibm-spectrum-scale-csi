@@ -16,7 +16,7 @@
 #
 #USAGE spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
 
-ns="default"
+ns="ibm-spectrum-scale-csi-driver"
 node=""
 outdir="."
 cmd="kubectl"
@@ -72,8 +72,11 @@ fi
 out=$($cmd -n $ns describe StatefulSet ibm-spectrum-scale-csi-attacher 2>&1 | grep 'Namespace' | awk 'BEGIN { FS="[[:space:]]+" } ; { print $2 }')
 if [[ $out != $ns ]]
 then
-  echo "ibm-spectrum-scale-csi is not running in namespace $ns. Please provide a valid namespace"
-  exit 1
+  operator=`$cmd get deployment -l product=ibm-spectrum-scale-csi --namespace $ns  |grep -v NAME |awk '{print $1}'`
+  if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
+        echo "ibm-spectrum-scale-csi driver and operator is not running in namespace $ns. Please provide a valid namespace"
+        exit 1
+   fi
 fi
 
 time=`date +"%m-%d-%Y-%T"`
@@ -95,6 +98,7 @@ describe_all_per_label=${logdir}/ibm-spectrum-scale-csi-describe-all-by-label
 get_all_per_label=${logdir}/ibm-spectrum-scale-csi-get-all-by-label
 get_configmap=${logdir}/ibm-spectrum-scale-csi-configmap
 get_k8snodes=${logdir}/ibm-spectrum-scale-csi-k8snodes
+get_spectrum=${logdir}/${CSI_SPECTRUM_SCALE_LABEL}
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 
 echo "$klog StatefulSet/ibm-spectrum-scale-csi-attacher"
@@ -113,17 +117,16 @@ done
 
 
 # kubectl logs on operator pods
-operatorName=`$cmd get deployment -l product=ibm-spectrum-scale-csi --namespace $ns  |grep -v NAME |awk '{print $1}'`
+operatorName=`$cmd get deployment ibm-spectrum-scale-csi-operator  --namespace $ns  | grep -v NAME | awk '{print $1}'`
 if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
    describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
    echo "$describeCSIScaleOperator"
    $describeCSIScaleOperator > ${describe_CSIScaleOperator} 2>&1 || :
-   opPodName=`$cmd get pods --namespace $ns |grep operator |awk '{print $1}'`
-   echo "$klog pod/${opPodName}"
-   $klog pod/${opPodName} -c ansible > ${logdir}/${opPodName}-ansible.log 2>&1 || :
-   $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
-   $klog pod/${opPodName} -c ansible --previous > ${logdir}/${opPodName}-ansible-previous.log 2>&1 || :
-   $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+   for opPodName in `$cmd get pods --namespace $ns | grep 'ibm-spectrum-scale-csi-operator' | awk '{print $1}'`; do
+     echo "$klog pod/${opPodName}"
+     $klog pod/${opPodName} -c operator > ${logdir}/${opPodName}-operator.log 2>&1 || :
+     $klog pod/${opPodName} -c operator --previous > ${logdir}/${opPodName}-operator-previous.log 2>&1 || :
+   done
 fi
 
 describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
@@ -154,9 +157,14 @@ get_k8snodes_cmd="$cmd describe nodes"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd >> $get_k8snodes 2>&1 || :
 
+
+get_spectrum_cmd="$cmd describe ds ${CSI_SPECTRUM_SCALE_LABEL} -n $ns"
+echo "$get_spectrum_cmd"
+$get_spectrum_cmd >> $get_spectrum 2>&1 || :
+
 if [[ "$cmd" == "oc" ]]
 then
-   get_scc_cmd="$cmd describe scc csiaccess"
+   get_scc_cmd="$cmd describe scc spectrum-scale-csiaccess"
    echo "$get_scc_cmd"
    $get_scc_cmd > ${logdir}/${PRODUCT_NAME}-scc.log 2>&1 || :
 fi

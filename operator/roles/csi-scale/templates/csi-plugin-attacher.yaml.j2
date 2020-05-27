@@ -47,8 +47,8 @@ spec:
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
-            - "--connection-timeout=2m" # Added
             - "--resync=10m" # Added
+            - "--timeout=2m"
           env:
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
@@ -56,6 +56,12 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+{% if imagePullSecrets | length > 0 %}
+      imagePullSecrets:
+{% for pullSecret in imagePullSecrets %}
+        - name:  "{{ pullSecret }}"
+{% endfor %}
+{% endif %}
       volumes:
         - name: socket-dir
           hostPath:

@@ -1,0 +1,39 @@
+---
+
+- name: Converge
+  hosts: localhost
+  connection: local
+  vars:
+    ansible_python_interpreter: '{{ ansible_playbook_python }}'
+    deploy_dir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
+    image_name: csi.ibm.com/ibm-spectrum-scale-csi-operator:testing
+    custom_resource: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com_cr.yaml'])) | from_yaml }}"
+  tasks:
+    - name: Ensure specified namespace is present
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ namespace }}'
+
+    - name: Create the csi.ibm.com/v1.CSIScaleOperator
+      k8s:
+        namespace: '{{ namespace }}'
+        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/csiscaleoperators.csi.ibm.com_cr.yaml'])) }}"
+
+    - name: Get the newly created Custom Resource
+      debug:
+        msg: "{{ lookup('k8s', group='csi.ibm.com', api_version='v1', kind='CSIScaleOperator', namespace=namespace, resource_name=custom_resource.metadata.name) }}"
+
+    - name: Wait 60s for reconciliation to run
+      k8s_info:
+        api_version: 'v1'
+        kind: 'CSIScaleOperator'
+        namespace: '{{ namespace }}'
+        name: '{{ custom_resource.metadata.name }}'
+      register: reconcile_cr
+      until:
+        - "'Successful' in (reconcile_cr | json_query('resources[].status.conditions[].reason'))"
+      delay: 6
+      retries: 10
+
+- import_playbook: '{{ playbook_dir }}/../default/asserts.yml'

@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify
-#
 # Test script REQUIRED to test your operator
 #
 set -o errexit

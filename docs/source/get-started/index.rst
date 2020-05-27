@@ -4,4 +4,6 @@ Getting Started
 .. toctree::
    :maxdepth: 2
 
-   quickstart.md
+   prereq.rst
+   operator.rst
+   driver.rst

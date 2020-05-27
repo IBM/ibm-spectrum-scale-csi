@@ -69,7 +69,6 @@ spec:
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--v=5"
-            - "--drivername=ibm-spectrum-scale-csi"
           env:
             - name: NODE_ID
               valueFrom:
@@ -118,6 +117,12 @@ spec:
               mountPath: "/var/lib/ibm/ssl/public/{{ cluster.cacert }}"
 {% endif %}
 {% endfor %}
+{% if imagePullSecrets | length > 0 %}
+      imagePullSecrets:
+{% for pullSecret in imagePullSecrets %}
+        - name:  "{{ pullSecret }}"
+{% endfor %}
+{% endif %}
       volumes:
         - name: plugin-dir
           hostPath:

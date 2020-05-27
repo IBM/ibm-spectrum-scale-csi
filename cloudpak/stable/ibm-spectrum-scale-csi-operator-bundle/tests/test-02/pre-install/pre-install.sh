@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify
-#
 # Pre-install script REQUIRED ONLY IF additional setup is required prior to
 # operator install for this test path.
 #
@@ -19,18 +17,29 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 
 # Optional - set tool repo and source library for creating/configuring namespace
 # NOTE: toolrepositoryroot needed for setting Policy Security Policy
-. $APP_TEST_LIBRARY_FUNCTIONS/createNamespace.sh
-toolrepositoryroot=$APP_TEST_LIBRARY_FUNCTIONS/../../
+#. $APP_TEST_LIBRARY_FUNCTIONS/createNamespace.sh
+#toolrepositoryroot=$APP_TEST_LIBRARY_FUNCTIONS/../../
 
-#createNamespace ${CV_TEST_NAMESPACE}
-setNamespace ${CV_TEST_USER} ${CV_TEST_NAMESPACE}
+set +o errexit
+kubectl create namespace ${CV_TEST_NAMESPACE}
+set -o errexit
 
-$APP_TEST_LIBRARY_FUNCTIONS/operatorDeployment.sh \
-    --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
-    --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml \
-    --role $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml \
-    --rolebinding $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml \
-    --operator $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml 
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
+
+#kubectl get CSIScaleOperator --namespace=ibm-spectrum-scale-csi-driver
+#kubectl patch CSIScaleOperator ibm-spectrum-scale-csi-operator -p '{"metadata":{"finalizers":[]}}' --type=merge --namespace=ibm-spectrum-scale-csi-driver
+kubectl apply -f  $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
+
+
+#$APP_TEST_LIBRARY_FUNCTIONS/operatorDeployment.sh \
+#    --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
+#    --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml \
+#    --role $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml \
+#    --rolebinding $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml \
+#    --operator $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
     # --secretname FIXME \
     # --imagename FIXME
 

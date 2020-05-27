@@ -4,13 +4,25 @@
   gather_facts: true
   vars:
     OPERATOR_NAME: ibm-spectrum-scale-csi-operator
-    OPERATOR_VERSION: 1.0.0
-    OPERATOR_DIR: ../stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator
-    OP_PKG: ibm-spectrum-scale-csi-operator-app.zip
+    OPERATOR_VERSION: 1.1.0
+    OPERATOR_DIR: ../../operator/
+    OLM_BASE: "{{OPERATOR_DIR}}deploy/olm-catalog/{{OPERATOR_NAME}}"
+
+    QUAY_PATH: "quay.io/ibm-spectrum-scale/{{OPERATOR_NAME}}"
+    OH_PKG: "ibm-spectrum-scale-csi-operator"
+    OP_PKG: ibm-spectrum-scale-csi-operator.zip
+
+    CERT_PATH: "registry.connect.redhat.com/ibm/{{OPERATOR_NAME}}"
+    CERT_PKG: "ibm-spectrum-scale-csi"
+    OP_PKG_RH: ibm-spectrum-scale-csi-operator-redhat.zip
+
+      
     ADDITIONAL_RESOURCES: ["service_account.yaml", "role_binding.yaml"]
-    CRD_LIST: ["ibm-spectrum-scale-csi-operator-crd.yaml"]
-    CR_LIST: ["ibm-spectrum-scale-csi-operator-cr.yaml"]
+    CRD_LIST: ["csiscaleoperators.csi.ibm.com.crd.yaml"]
+    CR_LIST: ["csiscaleoperators.csi.ibm.com.cr.yaml"]
     SC_VARS: "--config .osdk-scorecard.yaml"
+
+    OUTPUT: ../../build
 
   tasks:
     - name: Ensure Operator is verified

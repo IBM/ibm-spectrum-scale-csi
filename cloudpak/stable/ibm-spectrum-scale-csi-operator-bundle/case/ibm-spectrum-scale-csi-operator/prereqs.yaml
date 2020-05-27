@@ -1,35 +1,33 @@
 
-# USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own CASE information
-
 prereqs:
   prereqDefs:
     ibmCoreServices: {}
     k8sDistros: {}
-      #      ibmCloud:
-      #        distribution: ibmCloud
-      #        semver: '>=1.11.3'
-      #      ibmCloudPrivate:
-      #        distribution: ibmCloudPrivate
-      #        semver: '>=1.11.3'
-      #      kubernetes:
-      #        distribution: kubernetes
-      #        semver: '>=1.11.3'
-      #      openshift:
-      #        distribution: openshift
-      #        semver: '>=1.11.3'
+      #ibmCloud:
+      #  distribution: ibmCloud
+      #  semver: '>=1.11.3'
+      #ibmCloudPrivate:
+      #  distribution: ibmCloudPrivate
+      #  semver: '>=1.11.3'
+      #kubernetes:
+      #  distribution: kubernetes
+      #  semver: '>=1.14'
+      #openshift:
+      #  distribution: openshift
+      #  semver: '>=4.2'
     k8sResources:  {}
-      #      ibmRestrictedPSP:
-      #        apiGroup: policy
-      #        kind: PodSecurityPolicy
-      #        name: ibm-restricted-psp
-      #        selector:
-      #          matchExpressions: []
-      #        version: v1beta1
-      #      ibmRestrictedSCC:
-      #        apiGroup: security.openshift.io
-      #        kind: SecurityContextConstraints
-      #        name: ibm-restricted-scc
-      #        selector:
-      #          matchExpressions: []
-      #        version: v1
+    #  ibmRestrictedPSP:
+    #    apiGroup: policy
+    #    kind: PodSecurityPolicy
+    #    name: ibm-restricted-psp
+    #    selector:
+    #      matchExpressions: []
+    #    version: v1beta1
+    #  ibmRestrictedSCC:
+    #    apiGroup: security.openshift.io
+    #    kind: SecurityContextConstraints
+    #    name: ibm-restricted-scc
+    #    selector:
+    #      matchExpressions: []
+    #    version: v1
     k8sResourceVersions: {}

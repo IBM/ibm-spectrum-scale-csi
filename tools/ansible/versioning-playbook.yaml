@@ -3,9 +3,9 @@
   become: yes
   gather_facts: true
   vars:
-    VERSION_OLD: "1.0.0"
-    VERSION_NEW: "1.0.1"
-    OPERATOR_DIR: "../stable/ibm-spectrum-scale-csi-operator-bundle/operators/ibm-spectrum-scale-csi-operator"
+    VERSION_OLD: "1.1.0"
+    VERSION_NEW: "2.0.0"
+    OPERATOR_DIR: "../../operator/"
     OLM_DIR: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/"
     OPERATOR_NAME: "ibm-spectrum-scale-csi-operator"
   tasks:
@@ -39,17 +39,15 @@
       - "{{OLM_DIR}}/ibm-spectrum-scale-csi-operator.package.yaml"
       - deploy/operator.yaml
       - .osdk-scorecard.yaml
-      - version/version.go
       - hacks/package_operator.py
-      - hacks/change_deploy_image.py
       - hacks/csv_copy_cr.py
       - hacks/csv_copy_crd_descriptions.py
       - hacks/csv_copy_docs.py
       - hacks/csv_prep.py
-      - ../../../../docs/source/conf.py
+        # - ../../docs/source/conf.py
 
   - name: "Rebuild operator 'ClusterServiceVersion'"
-    shell: "GO111MODULE=on operator-sdk olm-catalog gen-csv --operator-name {{OPERATOR_NAME}} --csv-version {{VERSION_NEW}} --update-crds"
+    shell: "GO111MODULE=on operator-sdk generate csv --operator-name {{OPERATOR_NAME}} --csv-version {{VERSION_NEW}} --update-crds"
     args:
       chdir: "{{OPERATOR_DIR}}"
   

@@ -1,25 +1,25 @@
---- 
-- name: Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}
-  k8s_facts:
+---
+- name: "Ensure secret {{ item.secrets }} defined in {{ lookup( 'vars','namespace' ) }}"
+  k8s_info:
     kind: secrets
     namespace: "{{ lookup( 'vars','namespace' ) }}"
-    name : "{{ item.secrets }}"
+    name: "{{ item.secrets }}"
   register: results
-  failed_when: results is not defined
+  ignore_errors: yes
+
+- when: results is not defined or results.resources is not defined or (results.resources|length==0)
+  block:
+    - name: "Ending Operator Run."
+      meta: end_play
 
 - name: "Label unlabled secrets"
   include_tasks: password_label.yml
-  when: item.metadata.label is not defined or
-    item.metadata.label["app.kubernetes.io/name"] is not defined or
-    item.metadata.label["app.kubernetes.io/name"] != "csi-scale-operator"
-  loop:  "{{ results.resources }}"
+  when: item.metadata.labels is not defined or
+    item.metadata.labels["app.kubernetes.io/name"] is not defined or
+    item.metadata.labels["app.kubernetes.io/name"] != "ibm-spectrum-scale-csi-operator"
+  loop: "{{ results.resources }}"
 
-# Hash using a salted 
+# Hash using a salted
 - name: "Build Secret Checksum"
-  set_fact: 
+  set_fact:
     secret_checksums: "{{ secret_checksums +  [ (results.resources[0].data | default(' ')) | to_json | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) ] }}"
-
-
-
-
-

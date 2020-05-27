@@ -1,8 +1,8 @@
 ---
 - name: Set environment facts
   set_fact:
-    OPERATOR_SDK_VER: "v0.10.0"
-    OPERATOR_VERSION: "1.0.0"
+    OPERATOR_SDK_VER: "v0.17.0"
+    OPERATOR_VERSION: "1.1.0"
     GO_VERSION:       "go1.13"
 
 # Something is wrong with this bit.
@@ -14,43 +14,43 @@
 #    - python36
 #    - python36-pip
 
-- name: Ensure 'python3' requirements are installed
-  pip: 
-    requirements: "{{playbook_dir}}/common/requirements-dev.txt"
-    executable: pip3
+#- name: Ensure 'python3' requirements are installed
+#  pip: 
+#    requirements: "{{playbook_dir}}/common/requirements-dev.txt"
+#    executable: pip3
 
-- name: Ensure that the docker is installed
-  package:
-    name: "{{ item }}"
-    state: present
-  with_items:
-    - docker
+#- name: Ensure that the docker is installed
+#  package:
+#    name: "{{ item }}"
+#    state: present
+#  with_items:
+#    - docker
+#
+#- name: Ensure 'operator-sdk' is installed
+#  get_url:  
+#    url: "https://github.com/operator-framework/operator-sdk/releases/download/{{release}}/operator-sdk-{{release}}-x86_64-linux-gnu"
+#    dest: /usr/local/bin/operator-sdk
+#    mode: '0755'
+#  vars:
+#    release: "{{OPERATOR_SDK_VER}}"
 
-- name: Ensure 'operator-sdk' is installed
-  get_url:  
-    url: "https://github.com/operator-framework/operator-sdk/releases/download/{{release}}/operator-sdk-{{release}}-x86_64-linux-gnu"
-    dest: /usr/local/bin/operator-sdk
-    mode: '0755'
-  vars:
-    release: "{{OPERATOR_SDK_VER}}"
-
-- name: "Ensure '{{GO_VERSION}}' is installed; Gather Facts"
-  shell: "go version | grep -q {{GO_VERSION}}"
-  register: go_version
-  changed_when: false
-
-- name: "Ensure '{{GO_VERSION}}' is installed; Install"
-  unarchive:
-    src: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
-    dest: /usr/local
-    remote_src: yes
-  when: go_version.rc != 0
-
-
-- name: Expose Go to the global path
-  copy:
-    dest: /etc/profile.d/custom-path.sh
-    content: 'PATH=$PATH:/usr/local/go/bin'
+#- name: "Ensure '{{GO_VERSION}}' is installed; Gather Facts"
+#  shell: "go version | grep -q {{GO_VERSION}}"
+#  register: go_version
+#  changed_when: false
+#
+#- name: "Ensure '{{GO_VERSION}}' is installed; Install"
+#  unarchive:
+#    src: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
+#    dest: /usr/local
+#    remote_src: yes
+#  when: go_version.rc != 0
+#
+#
+#- name: Expose Go to the global path
+#  copy:
+#    dest: /etc/profile.d/custom-path.sh
+#    content: 'PATH=$PATH:/usr/local/go/bin'
 
 
 

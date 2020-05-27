@@ -1,4 +1,5 @@
-apiVersion: operators.coreos.com/v1
+---
+apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
@@ -30,7 +31,6 @@ metadata:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-    release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v1.0.0
   namespace: placeholder
 spec:
@@ -213,10 +213,10 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.phase
       version: v1
-  description: "Quickstart Guide\n================\n\nThe IBM Spectrum Scale CSI Operator\
-    \ runs within a Kubernetes cluster providing a means to \ndeploy and manage the\
-    \ CSI plugin for spectrum scale. For more in depth documentation please refer\n\
-    to the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.0/README.md).\n\
+  description: "IBM Spectrum Scale CSI Operator Quickstart\n==========================================\n\
+    \nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster providing\
+    \ a means to \ndeploy and manage the CSI plugin for spectrum scale. For more in\
+    \ depth documentation please refer\nto the [README](https://github.com/IBM/ibm-spectrum-scale-csi-operator/blob/v1.0.0/README.md).\n\
     \nThis operator should be used to deploy the CSI plugin.\n\nThe configuration\
     \ process is as follows:\n\n1. [Spectrum Scale GUI Setup](#spectrum-scale-gui-setup)\n\
     2. [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum\
@@ -413,7 +413,6 @@ spec:
                 app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
                 name: ibm-spectrum-scale-csi-operator
                 product: ibm-spectrum-scale-csi
-                release: ibm-spectrum-scale-csi-operator
             spec:
               affinity:
                 nodeAffinity:

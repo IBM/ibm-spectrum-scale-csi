@@ -1,0 +1,101 @@
+---
+apiVersion: csi.ibm.com/v1
+kind: "CSIScaleOperator"
+metadata:
+  name: "ibm-spectrum-scale-csi"
+  namespace: "ibm-spectrum-scale-csi-driver"
+  labels:
+    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+    release: ibm-spectrum-scale-csi-operator
+status: {}
+spec:
+# The path to the GPFS file system mounted (either remote/local) on the local Spectrum Scale API host machine.
+# ==================================================================================
+  scaleHostpath: "< GPFS FileSystem Path >"
+
+# Image pull secrets, array is applied to all deployments made by container.
+# ==================================================================================
+#  imagePullSecrets:
+#    - APullSecret
+#    - AnotherOptional
+
+# Below specifies the details of a SpectrumScale cluster configuration used by the
+# plugin. It can have multiple values.
+# ==================================================================================
+  clusters:
+    - id: "< Primary Cluster ID - WARNING - THIS IS A STRING NEEDS YAML QUOTES! >"
+      secrets: "secret1"
+      secureSslMode: false
+      primary:
+        primaryFs: "< Primary Filesystem >"
+#        primaryFset: "< Fileset in Primary Filesystem >"   # Optional - default:spectrum-scale-csi-volume-store
+#        inodeLimit: "< inode limit for Primary Fileset >" # Optional
+#        remoteCluster: "< Remote ClusterID >"            # Optional - This is only required if primaryFs is remote cluster's filesystem and this ID should have separate entry in Clusters map too.
+#      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
+      restApi:
+        - guiHost: "< Primary cluster GUI IP/Hostname >"
+#
+# In the case we have multiple clusters, specify their configuration below.
+# ==================================================================================
+#    - id: "< Cluster ID >"
+#      secrets: "< Secret for Cluster >"
+#      secureSslMode: false
+#      restApi:
+#      - guiHost: "< Cluster GUI IP/Hostname >"
+#      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
+
+# Attacher image name, in case we do not want to use default image.
+# ==================================================================================
+#  attacher: "quay.io/k8scsi/csi-attacher:v2.1.1"
+
+# Provisioner image name, in case we do not want to use default image.
+# ==================================================================================
+#  provisioner: "quay.io/k8scsi/csi-provisioner:v1.5.0"
+
+# Driver Registrar image name, in case we do not want to use default image.
+# ==================================================================================
+#  driverRegistrar: "quay.io/k8scsi/csi-node-driver-registrar:v1.2.0"
+
+# SpectrumScale CSI Plugin image name, in case we do not want to use default image.
+# ==================================================================================
+#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0"
+
+# attacherNodeSelector specifies on which nodes we want to run attacher sidecar
+# In below example attacher will run on nodes which have label as "scale=true"
+# and "infranode=2". Can have multiple entries.
+# ==================================================================================
+#  attacherNodeSelector:
+#    - key: "scale"
+#      value: "true"
+#    - key: "infranode"
+#      value: "2"
+
+# provisionerNodeSelector specifies on which nodes we want to run provisioner
+# sidecar. In below example provisioner will run on nodes which have label as
+# "scale=true" and "infranode=1". Can have multiple entries.
+# ==================================================================================
+#  provisionerNodeSelector:
+#    - key: "scale"
+#      value: "true"
+#    - key: "infranode"
+#      value: "1"
+
+# pluginNodeSelector specifies nodes on which we want to run plugin daemoset
+# In below example plugin daemonset will run on nodes which have label as
+# "scale=true". Can have multiple entries.
+# ==================================================================================
+#  pluginNodeSelector:
+#    - key: "scale"
+#      value: "true"
+
+# In case K8s nodes name differs from SpectrumScale nodes name, we can provide
+# node mapping using nodeMapping attribute. Can have multiple entries.
+# ==================================================================================
+#  nodeMapping:
+#    - k8sNode: "< K8s Node Name >"
+#      spectrumscaleNode: "< SpectrumScale Node Name >"
+# In case K8s node name start with number then use following node mapping format.
+#    - k8sNode: "K8sNodePrefix_< K8s Node Name >"
+#      spectrumscaleNode: "< SpectrumScale Node Name >"

@@ -45,9 +45,9 @@ spec:
 {% endif %}
           image: '{{ provisioner }}'
           args:
-            - "--provisioner=spectrumscale.csi.ibm.com"
             - "--csi-address=$(ADDRESS)"
-            - "--connection-timeout=2m"
+            - "--timeout=2m"
+            - "--worker-threads=10"
             - "--v=5" # Debugging
           env:
             - name: ADDRESS
@@ -56,6 +56,12 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+{% if imagePullSecrets | length > 0 %}
+      imagePullSecrets:
+{% for pullSecret in imagePullSecrets %}
+        - name:  "{{ pullSecret }}"
+{% endfor %}
+{% endif %}
       volumes:
         - name: socket-dir
           hostPath:

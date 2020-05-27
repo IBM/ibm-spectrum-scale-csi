@@ -29,6 +29,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	dependentFileset   = "dependent"
+	independentFileset = "independent"
+)
+
 type scaleVolume struct {
 	VolName            string                            `json:"volName"`
 	VolSize            uint64                            `json:"volSize"`
@@ -59,74 +64,139 @@ type scaleVolId struct {
 	IsFilesetBased bool
 }
 
-func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
+func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
 	scaleVol := &scaleVolume{}
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
+	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
+	clusterID, clusterIDSpecified := volOptions[connectors.UserSpecifiedClusterId]
+	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
+	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
+	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
+	inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
+	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
+
+	// Handling empty values
+	scaleVol.VolDirBasePath = ""
+	scaleVol.InodeLimit = ""
+	scaleVol.FilesetType = ""
+	scaleVol.ClusterId = ""
+
+	if fsSpecified && volBckFs == "" {
+		fsSpecified = false
+	}
+
 	if fsSpecified {
 		scaleVol.VolBackendFs = volBckFs
 	} else {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "Volume Backend Filesystem not specified in request parameters")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volBackendFs must be specified in storageClass")
+	}
+
+	if fsTypeSpecified && fsType == "" {
+		fsTypeSpecified = false
+	}
+
+	if volDirPathSpecified && volDirPath == "" {
+		volDirPathSpecified = false
+	}
+
+	if !fsTypeSpecified && !volDirPathSpecified {
+		fsTypeSpecified = true
+		fsType = independentFileset
+	}
+
+	if uidSpecified && uid == "" {
+		uidSpecified = false
+	}
+
+	if gidSpecified && gid == "" {
+		gidSpecified = false
+	}
+
+	if gidSpecified && !uidSpecified {
+		uidSpecified = true
+		uid = "0"
+	}
+
+	if inodeLimSpecified && inodeLim == "" {
+		inodeLimSpecified = false
+	}
+
+	if isparentFilesetSpecified && parentFileset == "" {
+		isparentFilesetSpecified = false
+	}
+	if clusterIDSpecified && clusterID != "" {
+		scaleVol.ClusterId = clusterID
+	}
+
+	if volDirPathSpecified {
+		if fsTypeSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and volDirBasePath must not be specified together in storageClass")
+		}
+		if isparentFilesetSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and volDirBasePath must not be specified together in storageClass")
+		}
+		if inodeLimSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and volDirBasePath must not be specified together in storageClass")
+		}
+	}
+
+	if fsTypeSpecified {
+		if fsType == dependentFileset {
+			if inodeLimSpecified {
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and filesetType=dependent must not be specified together in storageClass")
+			}
+		} else if fsType == independentFileset {
+			if isparentFilesetSpecified {
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and filesetType=independent(Default) must not be specified together in storageClass")
+			}
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Invalid value specified for filesetType in storageClass")
+		}
+	}
+
+	if fsTypeSpecified && inodeLimSpecified {
+		inodelimit, err := strconv.Atoi(inodeLim)
+		if err != nil {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Invalid value specified for inodeLimit in storageClass")
+		}
+		if inodelimit < 1024 {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit specified in storageClass must be equal to or greater than 1024")
+		}
 	}
 
 	/* Check if either fileset based or LW volume. */
-	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
+
 	if volDirPathSpecified {
 		scaleVol.VolDirBasePath = volDirPath
 		scaleVol.IsFilesetBased = false
-	} else {
-		scaleVol.VolDirBasePath = ""
+	}
+	if fsTypeSpecified {
 		scaleVol.IsFilesetBased = true
 	}
 
-	/* cluster Id not mandatory for LW volumes */
-
-	if scaleVol.IsFilesetBased {
-		clusterId, clusterIdSpecified := volOptions[connectors.UserSpecifiedClusterId]
-		if clusterIdSpecified {
-			scaleVol.ClusterId = clusterId
-		} else {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "clusterId not specified in request parameters")
-		}
-	}
-
 	/* Get UID/GID */
-	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	if uidSpecified {
 		scaleVol.VolUid = uid
-	} else {
-		scaleVol.VolUid = ""
 	}
 
-	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
 	if gidSpecified {
 		scaleVol.VolGid = gid
-	} else {
-		scaleVol.VolGid = ""
 	}
 
 	if scaleVol.IsFilesetBased {
-		fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
 		if fsTypeSpecified {
 			scaleVol.FilesetType = fsType
-		} else {
-			scaleVol.FilesetType = ""
 		}
-		inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
-		if inodeLimSpecified {
-			scaleVol.InodeLimit = inodeLim
-		} else {
-			scaleVol.InodeLimit = ""
-		}
-
-		parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 		if isparentFilesetSpecified {
 			scaleVol.ParentFileset = parentFileset
-		} else {
-			scaleVol.ParentFileset = ""
+		}
+		if inodeLimSpecified {
+			scaleVol.InodeLimit = inodeLim
 		}
 	}
+
 	return scaleVol, nil
 }
 

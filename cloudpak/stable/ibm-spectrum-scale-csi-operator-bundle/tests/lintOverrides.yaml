@@ -7,7 +7,7 @@ overrides:
     reduceTo: WARNING
     rule: NoPrivilegedContainers
 
-  - reason: Using default values and DROP ALL capabilities. Did not make GA time for explicit defitinition.
+  - reason: Using default values and DROP ALL capabilities. 
     reduceTo: WARNING
     rule: PodSecurityContextDefined
 
@@ -32,5 +32,9 @@ overrides:
     rule: ContainerHasLivenessProbe
 
   - reason: pull-secret can be provided in CR
-    reduceTo: WARNING
+    reduceTo: INFO
     rule: ServiceAccountHasPullSecret
+
+  - reason: File is auto-generated, outside of our control.
+    reduceTo: INFO
+    rule: RequiredMetadataLabelsDefined

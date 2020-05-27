@@ -1,0 +1,51 @@
+---
+- name: Set secret values
+  set_fact:
+    secret_pass: "cGFzc3dvcmQ=" # "password"
+    secret_user: "dXNlcm5hbWU=" # "username"
+    secret_name: "secret1" # TODO move this code to global for the molecule test.
+
+- name: Ensure environment is ready
+  block:
+    - name: Delete the csi.ibm.com/v1.CSIScaleOperator
+      k8s:
+        state: absent
+        namespace: "{{ namespace }}"
+        definition: "{{ custom_resource }}"
+        validate:
+          strict: yes
+          fail_on_error: yes
+    - name: Clear the secret if present
+      k8s:
+        state: absent
+        namespace: "{{ namespace }}"
+        definition:
+          apiVersion: "v1"
+          kind: "Secret"
+          metadata:
+            name: "{{ secret_name }}"
+
+- name: Test creation
+  block:
+    - name: Create the csi.ibm.com/v1.CSIScaleOperator without a valid secret
+      k8s:
+        state: present
+        namespace: "{{ namespace }}"
+        definition: "{{ custom_resource }}"
+        validate:
+          strict: yes
+          fail_on_error: yes
+
+    - name: Wait 60s for reconciliation to run and failure to be detected.
+      k8s_info:
+        api_version: "{{ custom_resource.apiVersion }}"
+        kind: "{{ custom_resource.kind }}"
+        namespace: "{{ namespace }}"
+        name: "{{ custom_resource.metadata.name }}"
+      register: cr
+      until:
+        - "Successful in (cr | json_query('resources[].status.conditions[].reason')) AND
+          !(cr | json_query('resources[].status.conditions[].isRunning))"
+        -
+      delay: 6
+      retries: 10

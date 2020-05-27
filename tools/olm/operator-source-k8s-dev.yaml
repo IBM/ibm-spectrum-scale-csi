@@ -1,0 +1,46 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: olm-crb
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: ""
+
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+  name: ibm-spectrum-scale-csi
+  namespace: marketplace
+spec:
+  type: appregistry
+  endpoint: https://quay.io/cnr
+  registryNamespace: ibm-spectrum-scale-dev
+
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: operator-group
+  namespace: marketplace
+spec:
+  targetNamespaces:
+  - marketplace
+
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ibm-spectrum-scale-csi-sub
+  namespace: marketplace
+spec:
+  channel: stable
+  name: ibm-spectrum-scale-csi-dev
+  source: ibm-spectrum-scale-csi
+  sourceNamespace: marketplace
+

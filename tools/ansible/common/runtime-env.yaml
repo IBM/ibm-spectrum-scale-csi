@@ -1,19 +1,19 @@
 ---
 - name: Set environment facts
   set_fact:
-    OPERATOR_SDK_VER: "v0.10.0"
-    OPERATOR_VERSION: "1.0.0"
+    OPERATOR_SDK_VER: "v0.17.0"
+    OPERATOR_VERSION: "1.1.0"
 
-- name: Ensure 'python3' is installed
-  package:
-    name: "{{packages}}"
-  vars:
-    packages:
-    - python36
-    - python36-pip
-
-- name: Ensure 'python3' requirements are installed
-  pip: 
-    requirements: "{{playbook_dir}}/common/requirements.txt"
-    executable: pip3
+#- name: Ensure 'python3' is installed
+#  package:
+#    name: "{{packages}}"
+#  vars:
+#    packages:
+#    - python36
+#    - python36-pip
+#
+#- name: Ensure 'python3' requirements are installed
+#  pip: 
+#    requirements: "{{playbook_dir}}/common/requirements.txt"
+#    executable: pip3
 

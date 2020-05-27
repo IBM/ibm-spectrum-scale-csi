@@ -7,7 +7,7 @@ import yaml
 import json
 
 BASE_DIR="{0}/../".format(os.path.dirname(os.path.realpath(__file__)))
-DEFAULT_VERSION="1.0.1"
+DEFAULT_VERSION="2.0.0"
 CSV_PATH="{0}deploy/olm-catalog/ibm-spectrum-scale-csi-operator/{1}/ibm-spectrum-scale-csi-operator.v{1}.clusterserviceversion.yaml"
 CR="{0}/deploy/crds/{1}"
 

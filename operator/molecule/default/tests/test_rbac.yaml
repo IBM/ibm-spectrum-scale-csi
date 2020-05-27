@@ -1,64 +1,66 @@
 ---
 - name: Verify RBAC present
-  k8s_facts:
+  k8s_info:
     kind: "{{item.kind}}"
     name: "{{item.name}}"
-    api_version:  v1
-    namespace: '{{ namespace }}'
+    api_version: v1
+    namespace: "{{ namespace }}"
   register: ref
   loop:
-  - kind: ClusterRole
-    name: ibm-spectrum-scale-csi-attacher
-  - kind: ClusterRole
-    name: ibm-spectrum-scale-csi-node
-  - kind: ClusterRole
-    name: ibm-spectrum-scale-csi-provisioner
-  - kind: ClusterRoleBinding
-    name: ibm-spectrum-scale-csi-attacher
-  - kind: ClusterRoleBinding
-    name: ibm-spectrum-scale-csi-node
-  - kind: ClusterRoleBinding
-    name: ibm-spectrum-scale-csi-provisioner
-  - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-attacher
-  - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-node
-  - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-provisioner
+    - kind: ClusterRole
+      name: ibm-spectrum-scale-csi-attacher
+    - kind: ClusterRole
+      name: ibm-spectrum-scale-csi-node
+    - kind: ClusterRole
+      name: ibm-spectrum-scale-csi-provisioner
+    - kind: ClusterRoleBinding
+      name: ibm-spectrum-scale-csi-attacher
+    - kind: ClusterRoleBinding
+      name: ibm-spectrum-scale-csi-node
+    - kind: ClusterRoleBinding
+      name: ibm-spectrum-scale-csi-provisioner
+    - kind: ServiceAccount
+      name: ibm-spectrum-scale-csi-attacher
+    - kind: ServiceAccount
+      name: ibm-spectrum-scale-csi-node
+    - kind: ServiceAccount
+      name: ibm-spectrum-scale-csi-provisioner
 
-- name: Delete csi.ibm.com/v1.CSIScaleOperator 
+- name: Delete csi.ibm.com/v1.CSIScaleOperator
   k8s:
     state: absent
-    namespace: '{{ namespace }}'
-    definition: '{{ custom_resource }}'
+    namespace: "{{ namespace }}"
+    definition: "{{ custom_resource }}"
     wait: yes
 
+- name: Wait for finalizers to run
+  wait_for:
+    timeout: 30
 
 - name: Verify RBAC absent
-  k8s_facts:
+  k8s_info:
     kind: "{{item.kind}}"
     name: "{{item.name}}"
-    api_version:  v1
-    namespace: '{{ namespace }}'
+    api_version: v1
+    namespace: "{{ namespace }}"
   register: ref_abs
   failed_when: ref_abs.resources
   loop:
-  - kind: ClusterRole
-    name: ibm-spectrum-scale-csi-attacher
-  - kind: ClusterRole
-    name: ibm-spectrum-scale-csi-node
-  - kind: ClusterRole
-    name: ibm-spectrum-scale-csi-provisioner
-  - kind: ClusterRoleBinding
-    name: ibm-spectrum-scale-csi-attacher
-  - kind: ClusterRoleBinding
-    name: ibm-spectrum-scale-csi-node
-  - kind: ClusterRoleBinding
-    name: ibm-spectrum-scale-csi-provisioner
-  - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-attacher
-  - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-node
-  - kind: ServiceAccount
-    name: ibm-spectrum-scale-csi-provisioner
-
+    - kind: ClusterRole
+      name: ibm-spectrum-scale-csi-attacher
+    - kind: ClusterRole
+      name: ibm-spectrum-scale-csi-node
+    - kind: ClusterRole
+      name: ibm-spectrum-scale-csi-provisioner
+    - kind: ClusterRoleBinding
+      name: ibm-spectrum-scale-csi-attacher
+    - kind: ClusterRoleBinding
+      name: ibm-spectrum-scale-csi-node
+    - kind: ClusterRoleBinding
+      name: ibm-spectrum-scale-csi-provisioner
+    - kind: ServiceAccount
+      name: ibm-spectrum-scale-csi-attacher
+    - kind: ServiceAccount
+      name: ibm-spectrum-scale-csi-node
+    - kind: ServiceAccount
+      name: ibm-spectrum-scale-csi-provisioner

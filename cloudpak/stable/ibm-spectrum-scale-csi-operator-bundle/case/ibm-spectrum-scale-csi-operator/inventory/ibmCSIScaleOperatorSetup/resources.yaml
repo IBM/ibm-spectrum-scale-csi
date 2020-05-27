@@ -7,7 +7,7 @@ resources:
   resourceDefs:
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml
+      ref: deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
       ref: deploy/operator.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml

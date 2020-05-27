@@ -28,28 +28,36 @@
   with_items:
     - "{{ operator_files }}"
 
-- name: "Use lineinfile to add a unique tag between the markers from block in file"
-  lineinfile:
-    dest: "{{ generated_op_yaml }}"
-    insertafter: '\# END {{ item.name }}'
-    state: present
-    line: "REPLACE_WITH_DASHES {{ item.name }}"
-  with_items: 
-    - "{{ operator_files }}"
+- name: "Copy generated file to dev file"
+  copy:
+    src: "{{ generated_op_yaml }}"
+    dest: "{{ generated_op_dev_yaml }}"
 
-- name: "Replace all of the REPLACE_WITH_DASHS to be ---, to correctly separate the blocks"
+- name: "Replace ibm-spectrum-scale/ with ibm-spectrum-scale-dev/"
   replace:
-    path: "{{ generated_op_yaml }}"
-    regexp: 'REPLACE_WITH_DASHES.*'
-    replace: '---'
+    path:  "{{ generated_op_dev_yaml }}"
+    regexp: "ibm-spectrum-scale/"
+    replace: "ibm-spectrum-scale-dev/"
 
-- name: copy over the files that are not modified
+- name: "IfNotPresent with Always"
+  replace:
+    path:  "{{ generated_op_dev_yaml }}"
+    regexp: "IfNotPresent"
+    replace: "Always"
+
+- name: "Replace the image version with dev"
+  replace:
+    path:  "{{ generated_op_dev_yaml }}"
+    regexp: 'quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-([^:]*):.+'
+    replace: 'quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-\1:dev'
+
+- name: "Copy over the files that are not modified"
   copy:
     src: "{{ operator_dir }}/{{ item }}"
     dest: "{{ generated_dir }}"
   with_items: 
     - "deploy/namespace.yaml"
-    - "deploy/crds/ibm-spectrum-scale-csi-operator-crd.yaml"
+    - "deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
   when: non_generated
 
 - name: "[Testing] Comparing the generated operator file with checked in code ..."

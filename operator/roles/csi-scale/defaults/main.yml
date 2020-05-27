@@ -2,33 +2,33 @@
 # defaults file for ansible-role-csi-scale
 opName: '{{ meta.name | default("ibm-spectrum-scale-csi") }}'
 productName: '{{ meta.product | default("ibm-spectrum-scale-csi") }}'
-labelInstance: 'ibm-spectrum-scale-csi-operator'
-labelManage: 'ibm-spectrum-scale-csi-operator'
-labelName: 'ibm-spectrum-scale-csi-operator'
-labelRelease: 'ibm-spectrum-scale-csi-operator'
+labelInstance: "ibm-spectrum-scale-csi-operator"
+labelManage: "ibm-spectrum-scale-csi-operator"
+labelName: "ibm-spectrum-scale-csi-operator"
+labelRelease: "ibm-spectrum-scale-csi-operator"
 annotationProductID: "ibm-spectrum-scale-csi-operator"
 annotationProductName: "IBM Spectrum Scale CSI Operator"
-annotationProductVersion: "1.0.1"
-
-
+annotationProductVersion: "1.1.0"
 
 namespace: '{{ meta.namespace | default("default") }}'
 storage-class: "ibm-spectrum-scale-csi"
 
 # Image defaults
-attacher:    "quay.io/k8scsi/csi-attacher:v1.0.0"
-provisioner: "quay.io/k8scsi/csi-provisioner:v1.0.0"
-
+attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('quay.io/k8scsi/csi-attacher:v2.1.1', true) }}"
+provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('quay.io/k8scsi/csi-provisioner:v1.5.0', true) }}"
 # Due to camelCase these get loaded differently in the operator.
-driverRegistrar: "{{ driver_registrar | default('quay.io/k8scsi/csi-node-driver-registrar:v1.0.1') }}"
-spectrumScale:   "{{ spectrum_scale   | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.0.0') }}"
+driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('quay.io/k8scsi/csi-node-driver-registrar:v1.2.0', true) }}"
+spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0', true) }}"
 
 # Set defaults for the secret counter and hostpath.
 secretCounter: "{{ secret_counter |  default(-1) }}"
 scaleHostpath: "{{ scale_hostpath | default('/') }}"
 
+# List of imagePullSecrets
+imagePullSecrets: "{{ image_pull_secrets | default([])}}"
+
 # This needs a default for molecule, also the clusters version does weird stuff to the object?
-#clusters: []
+# clusters: []
 clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperator.spec.clusters | default([])}}"
 
 # Node Selector for Attacher sidecar.
@@ -44,6 +44,4 @@ pluginNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.pluginNodeSelector | 
 nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 
 # State of driver in the cluster (might not be needed).
-#state: absent
 state: present
-
