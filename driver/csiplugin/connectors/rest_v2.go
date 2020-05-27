@@ -660,7 +660,7 @@ func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error
 	return getFilesystemNameURLResponse.FileSystems[0].Name, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemType(filesystemName string) (string, error) {
+func (s *spectrumRestV2) GetFilesystemType(filesystemName string) (string, error) { //nolint:dupl
 	glog.V(4).Infof("rest_v2 GetFilesystemType. Name: %s", filesystemName)
 
 	getFilesystemTypeURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName))
