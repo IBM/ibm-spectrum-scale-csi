@@ -35,7 +35,6 @@ const (
 	no                   = "no"
 	yes                  = "yes"
 	notFound             = "NOT_FOUND"
-	filesystemTypeLocal  = "local"
 	filesystemTypeRemote = "remote"
 )
 

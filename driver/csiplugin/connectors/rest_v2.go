@@ -676,6 +676,7 @@ func (s *spectrumRestV2) GetFilesystemType(filesystemName string) (string, error
 		glog.Errorf("Unable to fetch filesystem name details for %s", filesystemName)
 		return "", fmt.Errorf("Unable to fetch filesystem name details for %s", filesystemName)
 	}
+
 	return getFilesystemTypeURLResponse.FileSystems[0].Type, nil
 }
 
