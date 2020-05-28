@@ -30,11 +30,11 @@ pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.ya
 
 - If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional).For example :
 ```
-pytest  driver_test.py --clusterconfig config.json --kubeconfig <kubeconfig_file_path>
+pytest  driver_test.py --kubeconfig <kubeconfig_file_path>
 ```
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :
 ```
-pytest  driver_test.py --clusterconfig config.json --html report.html
+pytest  driver_test.py  --html report.html
 ```
 
 ### Run driver tests on primary cluster using driver_test.py as shown below -
