@@ -32,9 +32,10 @@ import (
 )
 
 const (
-	no       = "no"
-	yes      = "yes"
-	notFound = "NOT_FOUND"
+	no                   = "no"
+	yes                  = "yes"
+	notFound             = "NOT_FOUND"
+	filesystemTypeRemote = "remote"
 )
 
 type ScaleControllerServer struct {
@@ -219,6 +220,16 @@ func (cs *ScaleControllerServer) GetTargetPathforFset(scVol *scaleVolume) (strin
 
 func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
 	opt := make(map[string]interface{})
+
+	//Fileset can not be created if filesystem is remote.
+	fsType, err := scVol.Connector.GetFilesystemType(scVol.VolBackendFs)
+	if err != nil {
+		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to check filesystem type of [%v]. Error [%v]", scVol.VolBackendFs, err))
+	}
+
+	if fsType == filesystemTypeRemote {
+		return "", status.Error(codes.Internal, fmt.Sprintf("filesystem [%v] is not local to cluster [%v]", scVol.VolBackendFs, scVol.ClusterId))
+	}
 
 	isFsMounted, err := scVol.Connector.IsFilesystemMounted(scVol.VolBackendFs)
 
@@ -431,7 +442,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			glog.V(3).Infof("clusterID not provided in storage Class using Primary ClusterID. Volume Name [%v]", scaleVol.VolName)
 		}
 		conn, err := cs.GetConnFromClusterID(scaleVol.ClusterId)
-
 		if err != nil {
 			return nil, err
 		}
