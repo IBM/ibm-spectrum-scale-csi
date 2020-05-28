@@ -18,7 +18,7 @@ ENV CSI_DRIVER_IMAGE $CSI_DRIVER_IMAGE
 
 LABEL name="IBM Spectrum Scale CSI Operator" \
       vendor="ibm" \
-      version="1.1.0" \
+      version="2.0.0" \
       release="1" \
       run='docker run ibm-spectrum-scale-csi-operator' \
       summary="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \

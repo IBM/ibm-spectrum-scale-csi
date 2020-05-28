@@ -2,7 +2,7 @@
 - name: Set environment facts
   set_fact:
     OPERATOR_SDK_VER: "v0.17.0"
-    OPERATOR_VERSION: "1.1.0"
+    OPERATOR_VERSION: "2.0.0"
     GO_VERSION:       "go1.13"
 
 # Something is wrong with this bit.

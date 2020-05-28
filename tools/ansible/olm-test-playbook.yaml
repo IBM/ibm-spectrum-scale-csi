@@ -23,6 +23,7 @@
     OPERATOR_VERSIONS:
       - 1.0.0
       - 1.1.0
+      - 2.0.0
 
     # Quay username with write access to the  application
     QUAY_USERNAME: "ibm-spectrum-scale-dev+builder"

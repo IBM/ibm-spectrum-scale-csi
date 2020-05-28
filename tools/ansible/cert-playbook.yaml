@@ -4,7 +4,7 @@
   gather_facts: true
   vars:
     OPERATOR_NAME: ibm-spectrum-scale-csi-operator
-    OPERATOR_VERSION: 1.1.0
+    OPERATOR_VERSION: 2.0.0
     OPERATOR_DIR: ../../operator/
     OLM_BASE: "{{OPERATOR_DIR}}deploy/olm-catalog/{{OPERATOR_NAME}}"
 
