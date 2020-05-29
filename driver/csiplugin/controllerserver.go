@@ -235,7 +235,6 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 	}
 
 	// if filesystem is remote, check it is mounted on remote GUI node.
-	glog.V(4).Infof("DEEBUG cs.Driver.primary.PrimaryCid [%v]; scVol.ClusterId [%v]", cs.Driver.primary.PrimaryCid, scVol.ClusterId)
 	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
 		glog.V(4).Infof("check if volumes filesystem [%v] is mounted on remote GUI of cluster [%v]", scVol.PrimaryFS, scVol.ClusterId)
 		isFsMounted, err := scVol.Connector.IsFilesystemMountedOnGUINode(scVol.VolBackendFs)
