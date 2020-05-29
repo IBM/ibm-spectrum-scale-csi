@@ -183,8 +183,8 @@ func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (Mount
 	}
 }
 
-func (s *spectrumRestV2) IsFilesystemMounted(filesystemName string) (bool, error) {
-	glog.V(4).Infof("rest_v2 IsFilesystemMounted. filesystemName: %s", filesystemName)
+func (s *spectrumRestV2) IsFilesystemMountedOnGUINode(filesystemName string) (bool, error) {
+	glog.V(4).Infof("rest_v2 IsFilesystemMountedOnGUINode. filesystemName: %s", filesystemName)
 
 	mountURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName))
 	mountResponse := GetFilesystemResponse_v2{}

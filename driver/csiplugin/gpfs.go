@@ -216,7 +216,7 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			}
 
 			// check if filesystem is mounted on GUI node
-			isFsMounted, err := sc.IsFilesystemMounted(cluster.Primary.GetPrimaryFs())
+			isFsMounted, err := sc.IsFilesystemMountedOnGUINode(cluster.Primary.GetPrimaryFs())
 			if err != nil {
 				glog.Errorf("Error in getting filesystem mount details for %s on Primary cluster", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
@@ -262,7 +262,7 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		fsmount = fsMount.MountPoint
 
 		// check if filesystem is mounted on GUI node
-		isPfsMounted, err := sconn.IsFilesystemMounted(fs)
+		isPfsMounted, err := sconn.IsFilesystemMountedOnGUINode(fs)
 		if err != nil {
 			glog.Errorf("Error in getting filesystem mount details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
 			return scaleConnMap, scaleConfig, primaryInfo, err
