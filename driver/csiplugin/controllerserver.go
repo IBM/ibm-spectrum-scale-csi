@@ -220,39 +220,36 @@ func (cs *ScaleControllerServer) GetTargetPathforFset(scVol *scaleVolume) (strin
 	return targetPath, nil
 }
 
+// CreateFilesetBasedVol = Create Fileset based volumes
 func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
 	opt := make(map[string]interface{})
 
 	// fileset can not be created if filesystem is remote.
-	glog.V(4).Infof("check if volumes filesystem [%v] is remote or local for cluster [%v]", scVol.PrimaryFS, scVol.ClusterId)
-	fsType, err := scVol.Connector.GetFilesystemType(scVol.VolBackendFs)
+	glog.V(4).Infof("check if volumes filesystem [%v] is remote or local for cluster [%v]", scVol.VolBackendFs, scVol.ClusterId)
+	fsDetails, err := scVol.Connector.GetFilesystemDetails(scVol.VolBackendFs)
 	if err != nil {
 		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to check filesystem type of [%v]. Error [%v]", scVol.VolBackendFs, err))
 	}
 
-	if fsType == filesystemTypeRemote {
+	if fsDetails.Type == filesystemTypeRemote {
 		return "", status.Error(codes.Internal, fmt.Sprintf("filesystem [%v] is not local to cluster [%v]", scVol.VolBackendFs, scVol.ClusterId))
 	}
 
 	// if filesystem is remote, check it is mounted on remote GUI node.
 	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
-		glog.V(4).Infof("check if volumes filesystem [%v] is mounted on remote GUI of cluster [%v]", scVol.PrimaryFS, scVol.ClusterId)
-		isFsMounted, err := scVol.Connector.IsFilesystemMountedOnGUINode(scVol.VolBackendFs)
-		if err != nil {
-			return "", status.Error(codes.Internal, fmt.Sprintf("Unable to check if FS [%v] is mounted. Error [%v]", scVol.VolBackendFs, err))
-		}
-
-		if !isFsMounted {
+		glog.V(4).Infof("check if volumes filesystem [%v] is mounted on remote GUI of cluster [%v]", scVol.VolBackendFs, scVol.ClusterId)
+		if fsDetails.Mount.Status != "mounted" {
+			glog.Errorf(" filesystem [%v] is [%v] on remote GUI of cluster [%v]", scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
 			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
 		}
 	}
 
 	// check if quota is enabled on volume filesystem
-	glog.V(4).Infof("check if volumes filesystem [%v] is mounted on remote GUI of cluster [%v]", scVol.PrimaryFS, scVol.ClusterId)
+	glog.V(4).Infof("check if quota is enabled on filesystem [%v] ", scVol.VolBackendFs)
 	if scVol.VolSize != 0 {
 		err = scVol.Connector.CheckIfFSQuotaEnabled(scVol.VolBackendFs)
 		if err != nil {
-			return "", status.Error(codes.Internal, fmt.Sprintf("Quota not enabled for Filesystem %v inside cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+			return "", status.Error(codes.Internal, fmt.Sprintf("Quota not enabled for Filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
 		}
 	}
 
@@ -439,14 +436,13 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.PrimaryFS))
 	}
 
-	// Check if Local Volume Filesystem is mounted on GUI node Primary cluster. If not mounted softlink/directory creation will fail
 	glog.V(4).Infof("check if volume filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolBackendFs)
-	isVfsMounted, err := scaleVol.PrimaryConnector.IsFilesystemMountedOnGUINode(scaleVol.VolBackendFs)
+	mountInfo, err := scaleVol.PrimaryConnector.GetFilesystemMountDetails(scaleVol.VolBackendFs)
 	if err != nil {
-		glog.Errorf("Error in getting filesystem mount details for %s on Primary cluster", (scaleVol.VolBackendFs))
-		return nil, status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s on Primary cluster", scaleVol.VolBackendFs))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Mount Details for FS [%v] in Primary cluster", scaleVol.VolBackendFs))
 	}
-	if !isVfsMounted {
+
+	if mountInfo.Status != "mounted" {
 		glog.Errorf("volume filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.VolBackendFs)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("volume filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.VolBackendFs))
 	}
@@ -455,11 +451,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	   remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and   create fileset on that FS. */
 
 	if scaleVol.IsFilesetBased {
-		mountInfo, err := scaleVol.PrimaryConnector.GetFilesystemMountDetails(scaleVol.VolBackendFs)
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Mount Details for FS [%v] in Primary cluster", scaleVol.VolBackendFs))
-		}
-
 		remoteDeviceName := mountInfo.RemoteDeviceName
 		splitDevName := strings.Split(remoteDeviceName, ":")
 		remDevFs := splitDevName[len(splitDevName)-1]

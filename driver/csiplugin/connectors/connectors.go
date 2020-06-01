@@ -29,6 +29,7 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
 	ListFilesystems() ([]string, error)
+	GetFilesystemDetails(filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
@@ -48,7 +49,6 @@ type SpectrumScaleConnector interface {
 	MountFilesystem(filesystemName string, nodeName string) error
 	UnmountFilesystem(filesystemName string, nodeName string) error
 	GetFilesystemName(filesystemUUID string) (string, error)
-	GetFilesystemType(filesystemUUID string) (string, error)
 	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
 	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
 	GetFsUid(filesystemName string) (string, error)

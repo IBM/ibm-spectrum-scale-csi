@@ -671,24 +671,24 @@ func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error
 	return getFilesystemNameURLResponse.FileSystems[0].Name, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemType(filesystemName string) (string, error) { //nolint:dupl
-	glog.V(4).Infof("rest_v2 GetFilesystemType. Name: %s", filesystemName)
+func (s *spectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem_v2, error) { //nolint:dupl
+	glog.V(4).Infof("rest_v2 GetFilesystemDetails. Name: %s", filesystemName)
 
-	getFilesystemTypeURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName))
-	getFilesystemTypeURLResponse := GetFilesystemResponse_v2{}
+	getFilesystemDetailsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName))
+	getFilesystemDetailsURLResponse := GetFilesystemResponse_v2{}
 
-	err := s.doHTTP(getFilesystemTypeURL, "GET", &getFilesystemTypeURLResponse, nil)
+	err := s.doHTTP(getFilesystemDetailsURL, "GET", &getFilesystemDetailsURLResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get filesystem type for Name %s: %v", filesystemName, err)
-		return "", err
+		glog.Errorf("Unable to get filesystem details for filesystem %s: %v", filesystemName, err)
+		return FileSystem_v2{}, err
 	}
 
-	if len(getFilesystemTypeURLResponse.FileSystems) == 0 {
-		glog.Errorf("Unable to fetch filesystem name details for %s", filesystemName)
-		return "", fmt.Errorf("Unable to fetch filesystem name details for %s", filesystemName)
+	if len(getFilesystemDetailsURLResponse.FileSystems) == 0 {
+		glog.Errorf("Unable to fetch filesystem details for %s", filesystemName)
+		return FileSystem_v2{}, fmt.Errorf("Unable to fetch filesystem details for %s", filesystemName)
 	}
 
-	return getFilesystemTypeURLResponse.FileSystems[0].Type, nil
+	return getFilesystemDetailsURLResponse.FileSystems[0], nil
 }
 
 func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
