@@ -36,6 +36,7 @@ const (
 	yes                  = "yes"
 	notFound             = "NOT_FOUND"
 	filesystemTypeRemote = "remote"
+	filesystemMounted    = "mounted"
 )
 
 type ScaleControllerServer struct {
@@ -238,7 +239,7 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 	// if filesystem is remote, check it is mounted on remote GUI node.
 	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
 		glog.V(4).Infof("check if volumes filesystem [%v] is mounted on remote GUI of cluster [%v]", scVol.VolBackendFs, scVol.ClusterId)
-		if fsDetails.Mount.Status != "mounted" {
+		if fsDetails.Mount.Status != filesystemMounted {
 			glog.Errorf(" filesystem [%v] is [%v] on remote GUI of cluster [%v]", scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
 			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
 		}
@@ -442,7 +443,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Mount Details for FS [%v] in Primary cluster", scaleVol.VolBackendFs))
 	}
 
-	if mountInfo.Status != "mounted" {
+	if mountInfo.Status != filesystemMounted {
 		glog.Errorf("volume filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.VolBackendFs)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("volume filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.VolBackendFs))
 	}
