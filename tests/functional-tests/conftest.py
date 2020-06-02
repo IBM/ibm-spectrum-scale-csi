@@ -13,10 +13,10 @@ input_params = {
     "remote-port": "443",
 
     "cacert_path" : "",                #Path of cacert file for primary fileset cluster API cert
-    "remote_cacert_path":"",    #Path of cacert file for remote cluster API cert
+    "remote_cacert_path":"",           #Path of cacert file for remote cluster API cert
 
     "number_of_parallel_pvc":10,
-    "remoteFs":"remotefs",        # Must provide remote filesystem name on Primary clsuter in case of remote_test.py
+    "remoteFs":"",                # Must provide remote filesystem name on Primary clsuter in case of remote_test.py
 
     "volBackendFs":"",            # OPTIONAL : Should be given in case of driver_test.py and want to use filesytem other than the primartFs
     "volDirBasePath":"LW", 
