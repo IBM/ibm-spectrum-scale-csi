@@ -328,7 +328,13 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
             LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
             assert False
 
-        if api_response.status.phase == "Bound":
+        if api_response.status.phase == "Bound":   
+            if(check_key(pvc_values, "reason")):
+                LOGGER.error(f'PVC Check : {pvc_name} is BOUND but as the failure reason is provided so\
+                asserting the test')
+                volume_name = api_response.spec.volume_name
+                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                assert False
             if(pvc_bound_fileset_check(api_response, pv_name, pvc_name)):
                 return True
             clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
@@ -486,6 +492,10 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
                   command=exec_command,
                   stderr=True, stdin=False,
                   stdout=True, tty=False)
+        if check_key(value_pod, "reason"):
+            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+            LOGGER.error("Pod should not be able to create file inside the pod as failure REASON provided, so asserting")
+            assert False
         return
     if not(check_key(value_pod, "reason")):
         clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
@@ -501,7 +511,7 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
     else:
         clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
         LOGGER.error(str(resp))
-        LOGGER.info(
+        LOGGER.error(
             "execution of pod failed unexpected , reason does not match")
         assert False
 

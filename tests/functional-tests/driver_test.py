@@ -52,6 +52,8 @@ def values(request):
                  ]
     driver_object = Driver(value_pvc, value_pod, data, test_namespace)
     create_dir(data, data["volDirBasePath"])
+    if not(data["volBackendFs"]==""):
+        data["primaryFs"] = data["volBackendFs"]
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)

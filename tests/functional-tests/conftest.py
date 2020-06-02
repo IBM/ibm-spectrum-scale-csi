@@ -17,7 +17,11 @@ input_params = {
 
     "number_of_parallel_pvc":10,
 
-    "volDirBasePath":"LW",
+    "remoteFs":"remotefs",                                   # must provide in case of remote_test.py
+   
+    "volBackendFs":"",                                       # OPTIONAL can be given for local cases
+                                                             # if not given primaryFs will be taken as volBackendFs
+    "volDirBasePath":"LW", 
     "parentFileset":"root",
     "gid_name":"nobody",
     "uid_name":"nobody",
@@ -42,7 +46,6 @@ def pytest_addoption(parser):
 
 
 def pytest_html_results_table_header(cells):
-    cells.insert(2, html.th('Description'))
     cells.pop()
 
 
