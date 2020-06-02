@@ -482,9 +482,9 @@ def get_mount_point(test):
 
     username_password_setter(test)
     if "type_remote" in test:
-        remote_username = base64.b64decode(test["is_it_remote"]["username"]).decode('utf-8')
-        remote_password = base64.b64decode(test["is_it_remote"]["password"]).decode('utf-8')
-        info_filesystem = "https://"+test["is_it_remote"]["guiHost"]+":"+test["is_it_remote"]["port"] + \
+        remote_username = base64.b64decode(test["type_remote"]["username"]).decode('utf-8')
+        remote_password = base64.b64decode(test["type_remote"]["password"]).decode('utf-8')
+        info_filesystem = "https://"+test["type_remote"]["guiHost"]+":"+test["type_remote"]["port"] + \
         "/scalemgmt/v2/filesystems/"+test["remoteFs"]+"?fields=:all:"
         response = requests.get(info_filesystem, verify=False,
                             auth=(remote_username, remote_password))
