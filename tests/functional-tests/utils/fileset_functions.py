@@ -316,8 +316,9 @@ def delete_created_fileset(test, volume_name):
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
     response = requests.get(get_link, verify=False, auth=(username, password))
-    LOGGER.debug(response.text)
+    LOGGER.debug(response.text) 
     search_result = re.search(volume_name, str(response.text))
+    LOGGER.debug(search_result)
     if search_result is None:
         LOGGER.info(f'Fileset {volume_name} has already been deleted')
     else:
@@ -335,18 +336,22 @@ def delete_created_fileset(test, volume_name):
         response = requests.delete(
             delete_link, verify=False, auth=(username, password))
         LOGGER.debug(response.text)
-        time.sleep(10)
-        get_link = "https://"+test["guiHost"]+":"+test["port"] + \
+
+        for _ in range(0,24):
+            get_link = "https://"+test["guiHost"]+":"+test["port"] + \
             "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
-        response = requests.get(get_link, verify=False,
+            response = requests.get(get_link, verify=False,
                                 auth=(username, password))
-        LOGGER.debug(response.text)
-        search_result = re.search(volume_name, str(response.text))
-        if search_result is None:
-            LOGGER.info(f'Fileset {volume_name} has been deleted successfully')
-        else:
-            LOGGER.error(f'Fileset {volume_name} deletion operation failed')
-            assert False
+            LOGGER.debug(response.text)
+            search_result = re.search(volume_name, str(response.text))
+            LOGGER.debug(search_result)
+            if search_result is None:
+                LOGGER.info(f'Fileset {volume_name} has been deleted successfully')
+                return
+            else:
+                time.sleep(5)
+        LOGGER.error(f'Fileset {volume_name} deletion operation failed')
+        assert False
 
 
 def created_fileset_exists(test, volume_name):
