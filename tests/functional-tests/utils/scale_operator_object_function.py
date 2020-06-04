@@ -255,7 +255,10 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
                     LOGGER.error(f"statefulset {stateful_name} is not up")
                     assert False
         except ApiException as e:
-            LOGGER.info("statefulset {stateful_name} does not exists")
+            if(num < 123):
+                num += 1
+                time.sleep(5)
+            LOGGER.info(f"statefulset {stateful_name} does not exists")
             LOGGER.error(str(e))
             assert False
 
