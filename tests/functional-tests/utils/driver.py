@@ -406,7 +406,7 @@ def create_pod(value_pod, pvc_name, pod_name):
         name="mypvc", mount_path=value_pod["mount_path"])
     pod_ports = client.V1ContainerPort(container_port=80)
     pod_containers = client.V1Container(
-        name="web-server", image="nginx", volume_mounts=[pod_volume_mounts], ports=[pod_ports])
+        name="web-server", image="nginx:1.19.0", volume_mounts=[pod_volume_mounts], ports=[pod_ports])
     pod_persistent_volume_claim = client.V1PersistentVolumeClaimVolumeSource(
         claim_name=pvc_name, read_only=value_pod["read_only"])
     pod_volumes = client.V1Volume(

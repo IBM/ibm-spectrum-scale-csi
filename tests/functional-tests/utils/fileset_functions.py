@@ -1,5 +1,4 @@
 import logging
-import base64
 import time
 import re
 import json
@@ -7,25 +6,6 @@ import urllib3
 import requests
 LOGGER = logging.getLogger()
 
-
-def username_password_setter(test):
-    """
-    Decodes username and password from base 64 and make them global.
-
-    Args:
-        param1: test : contents of configuration file
-
-    Returns:
-       None
-
-    Raises:
-       None
-
-    """
-    global username, password
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    username = base64.b64decode(test["username"]).decode('utf-8')
-    password = base64.b64decode(test["password"]).decode('utf-8')
 
 
 def delete_fileset(test):
@@ -43,18 +23,18 @@ def delete_fileset(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     unlink_fileset(test)
     delete_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/" + \
         test["primaryFs"]+"/filesets/"+test["primaryFset"]
     response = requests.delete(
-        delete_link, verify=False, auth=(username, password))
+        delete_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     time.sleep(10)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
-    response = requests.get(get_link, verify=False, auth=(username, password))
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     search_format = '"'+test["primaryFset"]+'",'
     search_result = re.search(search_format, str(response.text))
@@ -83,12 +63,12 @@ def unlink_fileset(test):
 
     """
     time.sleep(10)
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     unlink_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/" + \
         test["primaryFs"]+"/filesets/"+test["primaryFset"]+"/link"
     response = requests.delete(
-        unlink_link, verify=False, auth=(username, password))
+        unlink_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'Fileset {test["primaryFset"]} unlinked')
     time.sleep(10)
@@ -110,11 +90,11 @@ def fileset_exists(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
     time.sleep(10)
-    response = requests.get(get_link, verify=False, auth=(username, password))
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     if str(response) != "<Response [200]>":
         LOGGER.error("API response is ")
@@ -143,12 +123,12 @@ def link_fileset(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     fileset_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/" + \
         test["primaryFs"]+"/filesets/"+test["primaryFset"]+"/link"
     response = requests.post(fileset_link, verify=False,
-                             auth=(username, password))
+                             auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'Fileset {test["primaryFset"]} linked')
     time.sleep(5)
@@ -168,7 +148,7 @@ def create_fileset(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     create_fileset_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets"
     headers = {
@@ -178,7 +158,7 @@ def create_fileset(test):
     data = '{"filesetName":"'+test["primaryFset"]+'","path":"' + \
         test["scaleHostpath"]+'/'+test["primaryFset"]+'"}'
     response = requests.post(create_fileset_link, headers=headers,
-                             data=data, verify=False, auth=(username, password))
+                             data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'Fileset {test["primaryFset"]} created and linked')
     time.sleep(5)
@@ -198,7 +178,7 @@ def unmount_fs(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     unmount_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/unmount"
     LOGGER.debug(unmount_link)
@@ -208,7 +188,7 @@ def unmount_fs(test):
     }
     data = '{"nodes":["'+test["guiHost"]+'"],"force": false}'
     response = requests.put(unmount_link, headers=headers,
-                            data=data, verify=False, auth=(username, password))
+                            data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.info(response.text)
     LOGGER.info(f'primaryFS {test["primaryFs"]} unmounted')
     time.sleep(5)
@@ -228,7 +208,7 @@ def mount_fs(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     mount_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/mount"
     LOGGER.debug(mount_link)
@@ -238,7 +218,7 @@ def mount_fs(test):
     }
     data = '{"nodes":["'+test["guiHost"]+'"]}'
     response = requests.put(mount_link, headers=headers,
-                            data=data, verify=False, auth=(username, password))
+                            data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'primaryFS {test["primaryFs"]} mounted')
     time.sleep(5)
@@ -259,10 +239,10 @@ def cleanup(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
-    response = requests.get(get_link, verify=False, auth=(username, password))
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     lst = re.findall(r'\S+pvc-\S+', response.text)
     lst2 = []
     for l in lst:
@@ -273,7 +253,7 @@ def cleanup(test):
             "/scalemgmt/v2/filesystems/" + \
             test["primaryFs"]+"/filesets/"+volume_name+"/link"
         response = requests.delete(
-            unlink_link, verify=False, auth=(username, password))
+            unlink_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         LOGGER.info(f"Fileset {volume_name} unlinked")
         time.sleep(5)
@@ -281,13 +261,13 @@ def cleanup(test):
             "/scalemgmt/v2/filesystems/" + \
             test["primaryFs"]+"/filesets/"+volume_name
         response = requests.delete(
-            delete_link, verify=False, auth=(username, password))
+            delete_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         time.sleep(10)
         get_link = "https://"+test["guiHost"]+":"+test["port"] + \
             "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
         response = requests.get(get_link, verify=False,
-                                auth=(username, password))
+                                auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         search_result = re.search(volume_name, str(response.text))
         if search_result is None:
@@ -312,10 +292,10 @@ def delete_created_fileset(test, volume_name):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
-    response = requests.get(get_link, verify=False, auth=(username, password))
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text) 
     search_result = re.search(volume_name, str(response.text))
     LOGGER.debug(search_result)
@@ -326,7 +306,7 @@ def delete_created_fileset(test, volume_name):
             "/scalemgmt/v2/filesystems/" + \
             test["primaryFs"]+"/filesets/"+volume_name+"/link"
         response = requests.delete(
-            unlink_link, verify=False, auth=(username, password))
+            unlink_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         LOGGER.info(f'Fileset {volume_name} has been unlinked')
         time.sleep(5)
@@ -334,14 +314,14 @@ def delete_created_fileset(test, volume_name):
             "/scalemgmt/v2/filesystems/" + \
             test["primaryFs"]+"/filesets/"+volume_name
         response = requests.delete(
-            delete_link, verify=False, auth=(username, password))
+            delete_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
 
         for _ in range(0,24):
             get_link = "https://"+test["guiHost"]+":"+test["port"] + \
             "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
             response = requests.get(get_link, verify=False,
-                                auth=(username, password))
+                                auth=(test["username"], test["password"]))
             LOGGER.debug(response.text)
             search_result = re.search(volume_name, str(response.text))
             LOGGER.debug(search_result)
@@ -370,11 +350,11 @@ def created_fileset_exists(test, volume_name):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
     time.sleep(10)
-    response = requests.get(get_link, verify=False, auth=(username, password))
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     search_format = '"'+volume_name+'",'
     search_result = re.search(search_format, str(response.text))
@@ -398,7 +378,7 @@ def create_dir(test, dir_name):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/directory/"+dir_name
     LOGGER.debug(dir_link)
@@ -409,7 +389,7 @@ def create_dir(test, dir_name):
     data = '{ "user":"' + test["uid_name"]+'", "uid":'+test["uid_number"] + \
         ', "group":"'+test["gid_name"]+'", "gid":' + test["gid_number"]+' }'
     response = requests.post(dir_link, headers=headers,
-                             data=data, verify=False, auth=(username, password))
+                             data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'Created directory {dir_name}')
     time.sleep(5)
@@ -430,7 +410,7 @@ def delete_dir(test, dir_name):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/directory/"+dir_name
     LOGGER.debug(dir_link)
@@ -438,7 +418,7 @@ def delete_dir(test, dir_name):
         'content-type': 'application/json',
     }
     response = requests.delete(
-        dir_link, headers=headers, verify=False, auth=(username, password))
+        dir_link, headers=headers, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'Deleted directory {dir_name}')
     time.sleep(5)
@@ -458,11 +438,11 @@ def get_FSUID(test):
        None
 
     """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
     response = requests.get(info_filesystem, verify=False,
-                            auth=(username, password))
+                            auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     lst = re.findall(r'\S+uuid[\S.\s]+', response.text)
     FSUID = str(lst[0][10:27])
@@ -485,19 +465,17 @@ def get_mount_point(test):
     """
 
 
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     if "type_remote" in test:
-        remote_username = base64.b64decode(test["type_remote"]["username"]).decode('utf-8')
-        remote_password = base64.b64decode(test["type_remote"]["password"]).decode('utf-8')
         info_filesystem = "https://"+test["type_remote"]["guiHost"]+":"+test["type_remote"]["port"] + \
         "/scalemgmt/v2/filesystems/"+test["remoteFs"]+"?fields=:all:"
         response = requests.get(info_filesystem, verify=False,
-                            auth=(remote_username, remote_password))
+                            auth=(test["type_remote"]["username"], test["type_remote"]["password"]))
     else:
         info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
         response = requests.get(info_filesystem, verify=False,
-                            auth=(username, password))
+                            auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     response_dict = json.loads(response.text) 
     mount_point = response_dict["filesystems"][0]["mount"]["mountPoint"]
@@ -507,12 +485,12 @@ def get_mount_point(test):
 
 def get_remoteFs_remotename(test):
     """ return name of remote filesystem's remote name """
-    username_password_setter(test)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["remoteFs"]
     response = requests.get(info_filesystem, verify=False,
-                            auth=(username, password))
+                            auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     
     response_dict = json.loads(response.text)

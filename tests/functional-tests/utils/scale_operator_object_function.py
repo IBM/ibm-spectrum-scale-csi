@@ -1,4 +1,5 @@
 import time
+import copy
 import logging
 import string
 import random
@@ -92,41 +93,33 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
         assert False
 
-    con = True
     num = 0
-    while (con and num < 124):
+    while (num < 124):
         read_statefulset_api_instance = client.AppsV1Api()
         try:
             read_statefulset_api_response = read_statefulset_api_instance.read_namespaced_stateful_set(
                 name="ibm-spectrum-scale-csi-attacher", namespace=namespace_value, pretty=True)
             LOGGER.debug(str(read_statefulset_api_response))
-            time.sleep(5)
             ready_replicas = read_statefulset_api_response.status.ready_replicas
             replicas = read_statefulset_api_response.status.replicas
             if ready_replicas == replicas:
                 if stateful_set_not_created is True:
                     LOGGER.error("Stateful sets should not have been created")
-                    con = False
                     assert False
                 else:
-                    con = False
-            elif(num > 122):
-                if stateful_set_not_created is True:
-                    LOGGER.info("Expected Failure ,testcase is passed")
-                    con = False
-                else:
-                    LOGGER.error("problem while creating custom object")
-                    assert False
+                    return
+            num = num + 1
+            time.sleep(5)
         except ApiException:
             num = num+1
             time.sleep(5)
-            if(num > 123):
-                if stateful_set_not_created is True:
-                    LOGGER.info("Expected Failure ,testcase is passed")
-                    con = False
-                else:
-                    LOGGER.error("problem while creating custom object")
-                    assert False
+
+    if stateful_set_not_created is True:
+        LOGGER.info("Expected Failure ,testcase is passed")
+        return
+    else:
+        LOGGER.error("problem while creating custom object, (statefulsets are not created)")
+        assert False
 
 
 def delete_custom_object():
@@ -333,7 +326,9 @@ def create_secret(secret_data_passed, secret_name):
 
     """
     secret_api_instance = client.CoreV1Api()
-    secret_data = secret_data_passed
+    secret_data = copy.deepcopy(secret_data_passed)
+    secret_data["username"] = base64encoder(secret_data["username"])
+    secret_data["password"] = base64encoder(secret_data["password"])
     secret_metadata = client.V1ObjectMeta(
         name=secret_name,
         labels={"product": "ibm-spectrum-scale-csi"}
