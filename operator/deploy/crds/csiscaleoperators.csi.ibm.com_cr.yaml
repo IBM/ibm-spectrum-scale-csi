@@ -30,8 +30,8 @@ spec:
     - id: "< Primary Cluster ID - WARNING - THIS IS A STRING NEEDS YAML QUOTES! >"
       secrets: "secret1"
       secureSslMode: false
-#      primary:
-#        primaryFs: "< Primary Filesystem >"
+      primary:
+        primaryFs: "< Primary Filesystem >"
 #        primaryFset: "< Fileset in Primary Filesystem >"   # Optional - default:spectrum-scale-csi-volume-store
 #        inodeLimit: "< inode limit for Primary Fileset >" # Optional
 #        remoteCluster: "< Remote ClusterID >"            # Optional - This is only required if primaryFs is remote cluster's filesystem and this ID should have separate entry in Clusters map too.
