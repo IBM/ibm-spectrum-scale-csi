@@ -587,7 +587,7 @@ func (s *spectrumRestV2) doHTTP(endpoint string, method string, responseObject i
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return fmt.Errorf("Remote call completed with error [%v]", response.Status)
+		return fmt.Errorf("Remote call completed with error [%v]. Error in response [%v]", response.Status, responseObject)
 	}
 
 	return nil
