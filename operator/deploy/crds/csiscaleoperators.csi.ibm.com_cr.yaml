@@ -68,29 +68,29 @@ spec:
 # In below example attacher will run on nodes which have label as "scale=true"
 # and "infranode=2". Can have multiple entries.
 # ==================================================================================
-#  attacherNodeSelector:
-#    - key: "scale"
-#      value: "true"
-#    - key: "infranode"
-#      value: "2"
+  attacherNodeSelector:
+    - key: "scale"
+      value: "true"
+    - key: "infranode"
+      value: "2"
 
 # provisionerNodeSelector specifies on which nodes we want to run provisioner
 # sidecar. In below example provisioner will run on nodes which have label as
 # "scale=true" and "infranode=1". Can have multiple entries.
 # ==================================================================================
-#  provisionerNodeSelector:
-#    - key: "scale"
-#      value: "true"
-#    - key: "infranode"
-#      value: "1"
+  provisionerNodeSelector:
+    - key: "scale"
+      value: "true"
+    - key: "infranode"
+      value: "1"
 
 # pluginNodeSelector specifies nodes on which we want to run plugin daemoset
 # In below example plugin daemonset will run on nodes which have label as
 # "scale=true". Can have multiple entries.
 # ==================================================================================
-#  pluginNodeSelector:
-#    - key: "scale"
-#      value: "true"
+  pluginNodeSelector:
+    - key: "scale"
+      value: "true"
 
 # In case K8s nodes name differs from SpectrumScale nodes name, we can provide
 # node mapping using nodeMapping attribute. Can have multiple entries.

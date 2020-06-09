@@ -43,6 +43,10 @@
 - name:  "Cache login token"
   set_fact:
     ltok: "{{ login.json.token }}"
+- name: "Check for operator-courier"
+  shell: "which operator-courier"
+  register: operatorcourier
+  failed_when: operatorcourier.rc !=0
 
 - name: "Push operator to quay"
   shell:  'operator-courier  push "{{olm_dir}}" "{{QUAY_NAMESPACE}}" "{{PACKAGE_NAME}}" "{{nver}}" "{{ltok}}"; sleep 5'
@@ -55,14 +59,6 @@
 - name: "Patch the operator source status to {} to pull the latest"
   shell: "kubectl patch operatorsource -n {{NAMESPACE}} ibm-spectrum-scale-csi -p '[{\"op\":\"replace\",\"path\":\"/status\",\"value\":{}}]'  --type json"
 
-# TODO break this out into a role/playbook
-#- name : "Wait 60s for new CSV"
-#  shell: "kubectl get csv -n  {{NAMESPACE}} ibm-spectrum-scale-csi-operator.v{{item}}"
-#  register: csv_out
-#  until:
-#    - csv_out.rc == 0
-#  delay: 6
-#  retries: 10
 
 - pause:
     prompt: "OLM configured to use {{item}}, press enter to continue"
