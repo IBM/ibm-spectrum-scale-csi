@@ -32,7 +32,8 @@ import (
 
 // PluginFolder defines the location of scaleplugin
 const (
-	PluginFolder          = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
+	PluginFolder          = "/var/lib/kubelet/plugins/spectrumscale.csi.ibm.com"
+	OldPluginFolder       = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
 	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 )
 
@@ -207,15 +208,24 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		if cluster.Primary != (settings.Primary{}) {
 			scaleConnMap["primary"] = sc
 
-			// check if primary filesystem exists and mounted on atleast one node
+			// check if primary filesystem exists
 			fsMount, err := sc.GetFilesystemMountDetails(cluster.Primary.GetPrimaryFs())
 			if err != nil {
 				glog.Errorf("Error in getting filesystem details for %s", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
-			if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
-				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem not mounted on any node")
+
+			// check if filesystem is mounted on GUI node
+			isFsMounted, err := sc.IsFilesystemMountedOnGUINode(cluster.Primary.GetPrimaryFs())
+			if err != nil {
+				glog.Errorf("Error in getting filesystem mount details for %s on Primary cluster", cluster.Primary.GetPrimaryFs())
+				return nil, scaleConfig, cluster.Primary, err
 			}
+			if !isFsMounted {
+				glog.Errorf("Primary filesystem %s is not mounted on GUI node of Primary cluster", cluster.Primary.GetPrimaryFs())
+				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())
+			}
+
 			// In case primary fset value is not specified in configuation then use default
 			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
 				scaleConfig.Clusters[i].Primary.PrimaryFset = DefaultPrimaryFileset
@@ -249,10 +259,19 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		}
 
 		glog.Infof("remote fsMount = %v", fsMount)
-		if fsMount.NodesMounted == nil || len(fsMount.NodesMounted) == 0 {
-			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Primary filesystem not mounted on any node on cluster %s", primaryInfo.RemoteCluster)
-		}
 		fsmount = fsMount.MountPoint
+
+		// check if filesystem is mounted on GUI node
+		isPfsMounted, err := sconn.IsFilesystemMountedOnGUINode(fs)
+		if err != nil {
+			glog.Errorf("Error in getting filesystem mount details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
+			return scaleConnMap, scaleConfig, primaryInfo, err
+		}
+
+		if !isPfsMounted {
+			glog.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
+			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
+		}
 	}
 
 	fsetlinkpath, err := driver.CreatePrimaryFileset(sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())

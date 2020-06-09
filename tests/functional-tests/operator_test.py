@@ -7,7 +7,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 from scale_operator import read_scale_config_file, Scaleoperator, \
     check_nodes_available, Scaleoperatorobject, check_key
-from utils.scale_operator_object_function import randomStringDigits, base64encoder, randomString
+from utils.scale_operator_object_function import randomStringDigits, randomString
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -173,7 +173,7 @@ def test_wrong_gui_username(_values):
     test = read_scale_config_file(clusterconfig_value, namespace_value)
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    test["username"] = base64encoder(randomStringDigits())
+    test["username"] = randomStringDigits()
     operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     if operator_object.check(kubeconfig_value) is True:
@@ -203,7 +203,7 @@ def test_wrong_gui_password(_values):
     test = read_scale_config_file(clusterconfig_value, namespace_value)
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
-    test["password"] = base64encoder(randomStringDigits())
+    test["password"] = randomStringDigits()
     operator_object = Scaleoperatorobject(test)
     operator_object.create(kubeconfig_value)
     operator_object.check(kubeconfig_value)

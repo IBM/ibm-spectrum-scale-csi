@@ -8,7 +8,7 @@ labelName: "ibm-spectrum-scale-csi-operator"
 labelRelease: "ibm-spectrum-scale-csi-operator"
 annotationProductID: "ibm-spectrum-scale-csi-operator"
 annotationProductName: "IBM Spectrum Scale CSI Operator"
-annotationProductVersion: "1.1.0"
+annotationProductVersion: "2.0.0"
 
 namespace: '{{ meta.namespace | default("default") }}'
 storage-class: "ibm-spectrum-scale-csi"
@@ -18,7 +18,7 @@ attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('quay.io/k8scsi/csi-
 provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('quay.io/k8scsi/csi-provisioner:v1.5.0', true) }}"
 # Due to camelCase these get loaded differently in the operator.
 driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('quay.io/k8scsi/csi-node-driver-registrar:v1.2.0', true) }}"
-spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v1.1.0', true) }}"
+spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.0.0', true) }}"
 
 # Set defaults for the secret counter and hostpath.
 secretCounter: "{{ secret_counter |  default(-1) }}"

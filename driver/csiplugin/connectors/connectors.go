@@ -27,8 +27,9 @@ type SpectrumScaleConnector interface {
 	GetClusterId() (string, error)
 	//Filesystem operations
 	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
-	IsFilesystemMounted(filesystemName string) (bool, error)
+	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
 	ListFilesystems() ([]string, error)
+	GetFilesystemDetails(filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error

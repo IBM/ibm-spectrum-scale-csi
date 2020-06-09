@@ -4,20 +4,23 @@ from py.xml import html
 
 input_params = {
 
-    "username":"Y3NpYWRtaW4=",
-    "password":"UGFzc3cwcmQx",
+    "username":"",     #Pass username for primary cluster SpectrumScale GUI (in plain text)
+    "password":"",     #Pass password for primary cluster SpectrumScale GUI (in plain text) 
     "port":"443",
     
-    "remote-username": "Y3NpYWRtaW4=",
-    "remote-password": "YWRtaW4wMDE=",
+    "remote-username": "",
+    "remote-password": "",
     "remote-port": "443",
 
-    "cacert_path" : "",         #Path of cacert file for primary fileset cluster
-    "remote_cacert_path":"",    #Path of cacert file for remote cluster
+    "cacert_path" : "",                #Path of cacert file for primary fileset cluster API cert
+    "remote_cacert_path":"",           #Path of cacert file for remote cluster API cert
 
     "number_of_parallel_pvc":10,
 
-    "volDirBasePath":"LW",
+    "remoteFs":"",                # Must provide remote filesystem name on Primary cluster in case of remote_test.py
+
+    "volBackendFs":"",            # OPTIONAL : Should be given in case of driver_test.py and want to use filesytem other than the primartFs
+    "volDirBasePath":"LW", 
     "parentFileset":"root",
     "gid_name":"nobody",
     "uid_name":"nobody",
@@ -42,7 +45,6 @@ def pytest_addoption(parser):
 
 
 def pytest_html_results_table_header(cells):
-    cells.insert(2, html.th('Description'))
     cells.pop()
 
 

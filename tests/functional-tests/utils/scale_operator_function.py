@@ -122,7 +122,7 @@ def create_deployment_old(config_file):
     deployment_annotations = {
         "productID": "ibm-spectrum-scale-csi-operator",
         "productName": "IBM Spectrum Scale CSI Operator",
-        "productVersion": "1.1.0"
+        "productVersion": "2.0.0"
     }
 
     deployment_metadata = client.V1ObjectMeta(

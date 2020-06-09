@@ -3,7 +3,7 @@
   become: yes
   gather_facts: true
   vars:
-    VERSION_OLD: "1.1.0"
+    VERSION_OLD: "2.0.0"
     VERSION_NEW: "2.0.0"
     OPERATOR_DIR: "../../operator/"
     OLM_DIR: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/"
@@ -44,7 +44,10 @@
       - hacks/csv_copy_crd_descriptions.py
       - hacks/csv_copy_docs.py
       - hacks/csv_prep.py
-        # - ../../docs/source/conf.py
+      # Driver files.
+      - ../driver/build/Dockerfile
+      - ../driver/build/multi-arch.Dockerfile
+      - ../driver/cmd/ibm-spectrum-scale-csi/main.go
 
   - name: "Rebuild operator 'ClusterServiceVersion'"
     shell: "GO111MODULE=on operator-sdk generate csv --operator-name {{OPERATOR_NAME}} --csv-version {{VERSION_NEW}} --update-crds"

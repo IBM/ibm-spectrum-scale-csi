@@ -49,18 +49,18 @@ spec:
             - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
             - name: CHECKSUM
               value: "{{cluster_checksum}}"
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
             - name: registration-dir
               mountPath: /registration
         - name: ibm-spectrum-scale-csi
@@ -78,7 +78,7 @@ spec:
             - name: CHECKSUM
               value: "{{cluster_checksum}}"
             - name: CSI_ENDPOINT
-              value: unix:/var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+              value: unix:/var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
             - name: SCALE_HOSTPATH
               value: "{{ scaleHostpath }}"
             - name: SKIP_MOUNT_UNMOUNT
@@ -95,7 +95,7 @@ spec:
           imagePullPolicy: "IfNotPresent" # "Always"
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet
             - mountPath: /dev
@@ -126,7 +126,7 @@ spec:
       volumes:
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            path: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
             type: DirectoryOrCreate
         - name: registration-dir
           hostPath:

@@ -32,7 +32,7 @@ var (
 	endpoint      = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName    = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 	nodeID        = flag.String("nodeid", "", "node id")
-	vendorVersion = "1.1.0"
+	vendorVersion = "2.0.0"
 )
 
 func main() {
@@ -48,6 +48,10 @@ func main() {
 	if err := createPersistentStorage(path.Join(driver.PluginFolder, "node")); err != nil {
 		glog.Errorf("failed to create persistent storage for node %v", err)
 		os.Exit(1)
+	}
+
+	if err := deleteStalePluginDir(driver.OldPluginFolder); err != nil {
+		glog.Errorf("failed to delete stale plugin folder %v, please delete manually. %v", driver.OldPluginFolder, err)
 	}
 
 	handle()
@@ -70,4 +74,8 @@ func createPersistentStorage(persistentStoragePath string) error {
 		}
 	}
 	return nil
+}
+
+func deleteStalePluginDir(stalePluginPath string) error {
+	return os.RemoveAll(stalePluginPath)
 }
