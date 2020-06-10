@@ -71,8 +71,8 @@ spec:
   attacherNodeSelector:
     - key: "scale"
       value: "true"
-    - key: "infranode"
-      value: "2"
+#    - key: "infranode"
+#      value: "2"
 
 # provisionerNodeSelector specifies on which nodes we want to run provisioner
 # sidecar. In below example provisioner will run on nodes which have label as
@@ -81,8 +81,8 @@ spec:
   provisionerNodeSelector:
     - key: "scale"
       value: "true"
-    - key: "infranode"
-      value: "1"
+#    - key: "infranode"
+#      value: "1"
 
 # pluginNodeSelector specifies nodes on which we want to run plugin daemoset
 # In below example plugin daemonset will run on nodes which have label as
