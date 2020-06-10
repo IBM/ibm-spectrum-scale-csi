@@ -141,7 +141,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 	return &spectrumRestV2{
 		httpClient: &http.Client{
 			Transport: tr,
-			Timeout:   time.Second * 10,
+			Timeout:   time.Second * 60,
 		},
 		endpoint: endpoint,
 		user:     guiUser,
