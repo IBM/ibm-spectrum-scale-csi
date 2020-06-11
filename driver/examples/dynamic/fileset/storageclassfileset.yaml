@@ -4,7 +4,7 @@ metadata:
    name: ibm-spectrum-scale-csi-fileset
 provisioner: spectrumscale.csi.ibm.com
 parameters:
-    volBackendFs: "fs1"
-    clusterId: "17797813605352210071"
+    volBackendFs: "gpfs0"
+    clusterId: "7118073361626808055"
 reclaimPolicy: Delete
 
