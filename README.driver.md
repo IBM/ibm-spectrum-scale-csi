@@ -13,12 +13,11 @@ For static provisioning of existing directories perform the following steps:
    --linkpath /ibm/gpfs0/pvfileset/static-pv --pvname static-pv
    ```
 
-- Use sample static_pvc and pod files for sanity test under `examples/static`
+- Use sample pvc and pod files for sanity test under `examples/static`
 
    ```
-   kubectl apply -f examples/static/static_pv.yaml
-   kubectl apply -f examples/static/static_pvc.yaml
-   kubectl apply -f examples/static/static_pod.yaml
+   driver/examples/static/static_pvc.yaml
+   driver/examples/static/static_pod.yaml
    ```
   
 
@@ -43,9 +42,9 @@ For dynamic provisioning, use sample storageClass, pvc and pod files for sanity 
 Example:
 
    ```
-   kubectl apply -f examples/dynamic/fileset/storageclassfileset.yaml
-   kubectl apply -f examples/dynamic/fileset/pvcfset.yaml
-   kubectl apply -f examples/dynamic/fileset/podfset.yaml
+   driver/examples/dynamic/fileset/storageclassfileset.yaml
+   driver/examples/dynamic/fileset/pvcfileset.yaml
+   driver/examples/dynamic/fileset/podfileset.yaml
    ```
 
 
@@ -56,9 +55,6 @@ The Knowledge Center contains all official IBM Spectrum Scale information and gu
 
 [IBM Spectrum Scale FAQ](https://www.ibm.com/support/knowledgecenter/en/STXKQY/gpfsclustersfaq.html)
 Main starting page for all IBM Spectrum Scale compatibility information.
-
-[IBM Spectrum Scale Protocols Quick Overview](https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/fa32927c-e904-49cc-a4cc-870bcc8e307c/page/Protocols%20Quick%20Overview%20for%20IBM%20Spectrum%20Scale)
-Guide showing how to quickly install a IBM Spectrum Scale cluster. Information similar to the above Install Toolkit example.
 
 [IBM Block CSI driver](https://github.com/IBM/ibm-block-csi-driver)
 IBM Block CSI driver supporting multiple IBM storage systems.
