@@ -88,6 +88,10 @@ One method for achieving this is to host the CSV on `quay.io <https://quay.io>`_
     cd tools/ansible/
     ansible-playbook olm-test-playbook.yaml --extra-vars '{"QUAY_PASSWORD":"A_TOKEN"}'
 
+ 6. Install operator-courier.
+  .. code-block:: bash
+    pip3 install operator-courier
+
 At this point your application is ready to be subscribed to.  Use the following templates for k8s and OpenShift respectively.
 
 Kubernetes subscription template

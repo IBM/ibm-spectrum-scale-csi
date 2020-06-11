@@ -141,7 +141,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 	return &spectrumRestV2{
 		httpClient: &http.Client{
 			Transport: tr,
-			Timeout:   time.Second * 10,
+			Timeout:   time.Second * 60,
 		},
 		endpoint: endpoint,
 		user:     guiUser,
@@ -587,7 +587,7 @@ func (s *spectrumRestV2) doHTTP(endpoint string, method string, responseObject i
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return fmt.Errorf("Remote call completed with error [%v]", response.Status)
+		return fmt.Errorf("Remote call completed with error [%v]. Error in response [%v]", response.Status, responseObject)
 	}
 
 	return nil
