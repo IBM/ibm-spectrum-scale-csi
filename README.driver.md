@@ -13,7 +13,7 @@ For static provisioning of existing directories perform the following steps:
    --linkpath /ibm/gpfs0/pvfileset/static-pv --pvname static-pv
    ```
 
-- Use sample pvc and pod files for sanity test under `examples/static`
+- For static provisioning, refer following sample pvc and pod files for sanity test
 
    ```
    driver/examples/static/static_pvc.yaml
@@ -37,7 +37,7 @@ Storageclass defines what type of backend volume should be created by dynamic pr
  - **parentFileset**: Specifies the parent fileset under which dependent fileset should be created.
  - **inodeLimit**: Inode limit for fileset based volumes. If not specified, default IBM Spectrum Scale inode limit of 1 million is used.
  
-For dynamic provisioning, use sample storageClass, pvc and pod files for sanity test under examples/dynamic
+For dynamic provisioning, refer following sample storageClass, pvc and pod files for sanity test
 
 Example:
 
