@@ -238,9 +238,10 @@ func (cs *ScaleControllerServer) CreateFilesetBasedVol(scVol *scaleVolume) (stri
 
 	// We are here means fileset is present
 	if (filesetInfo.Config.Path == "") || (filesetInfo.Config.Path == "--") {
-		// Fileset exist from previous call but not linked we should cleanup
-		_ = cs.Cleanup(scVol)
-		return "", status.Error(codes.Internal, fmt.Sprintf("deleting fileset created in last attempt [%v] in filesystem [%v] because it unlinked", scVol.VolName, scVol.VolBackendFs))
+		err := scVol.Connector.LinkFileset(scVol.VolBackendFs, scVol.VolName, junctionPath)
+		if err != nil {
+			return "", status.Error(codes.Internal, fmt.Sprintf("Linking fileset [%v] in filesystem [%v] at path [%v] failed", scVol.VolName, scVol.VolBackendFs, junctionPath))
+		}
 	}
 
 	if scVol.VolSize != 0 {
@@ -389,11 +390,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	   remote cluster FS in case local cluster FS is remotely mounted. We will find    local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and   create fileset on that FS. */
 
 	if scaleVol.IsFilesetBased {
-		mountInfo, err := scaleVol.PrimaryConnector.GetFilesystemMountDetails(scaleVol.VolBackendFs)
+		filesystemInfo, err := scaleVol.PrimaryConnector.GetFilesystemDetails(scaleVol.VolBackendFs)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Mount Details for FS [%v] in Primary cluster", scaleVol.VolBackendFs))
 		}
-
+		mountInfo := filesystemInfo.Mount
 		remoteDeviceName := mountInfo.RemoteDeviceName
 		splitDevName := strings.Split(remoteDeviceName, ":")
 		remDevFs := splitDevName[len(splitDevName)-1]

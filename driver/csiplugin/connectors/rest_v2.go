@@ -165,8 +165,8 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	return cid_str, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
-	glog.V(4).Infof("rest_v2 GetFilesystemMountDetails. filesystemName: %s", filesystemName)
+func (s *spectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem_v2, error) {
+	glog.V(4).Infof("rest_v2 GetFilesystemDetails. filesystemName: %s", filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s%s", s.endpoint, "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
@@ -174,13 +174,13 @@ func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (Mount
 	err := s.doHTTP(getFilesystemURL, "GET", &getFilesystemResponse, nil)
 	if err != nil {
 		glog.Errorf("Unable to get filesystem details for %s: %v", filesystemName, err)
-		return MountInfo{}, err
+		return FileSystem_v2{}, err
 	}
 
 	if len(getFilesystemResponse.FileSystems) > 0 {
-		return getFilesystemResponse.FileSystems[0].Mount, nil
+		return getFilesystemResponse.FileSystems[0], nil
 	} else {
-		return MountInfo{}, fmt.Errorf("Unable to fetch mount details for %s", filesystemName)
+		return FileSystem_v2{}, fmt.Errorf("Unable to fetch filesystem details for %s", filesystemName)
 	}
 }
 
