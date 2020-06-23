@@ -6,7 +6,7 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 - IBM Spectrum Scale Cluster - 5.0.4.1+ Version  (**IBM Spectrum Scale supported kernel version**)
 - Kubernetes Cluster Version 1.14 - 1.18
-- Openshift Version 4.2.x, 4.3.x, 4.4.x
+- Openshift Version 4.3.x, 4.4.x
 - IBM Spectrum Scale Cluster CSI Version - 2.0.0+
 
 ### Pre-requesite for automation framework
@@ -26,15 +26,15 @@ python3.7 -m pip install -r requirements.txt
 ```
 pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
 ```
-- For configuring parameters such as uid/gid, secret username/password, cacert files path, you must modify relevant fields in [conftest.py](./tests/functional-tests/conftest.py) file.
+- For configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [conftest.py](./tests/functional-tests/conftest.py) file.
 
 - If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional).For example :
 ```
-pytest  driver_test.py --clusterconfig config.json --kubeconfig <kubeconfig_file_path>
+pytest  driver_test.py --kubeconfig <kubeconfig_file_path>
 ```
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :
 ```
-pytest  driver_test.py --clusterconfig config.json --html report.html
+pytest  driver_test.py --html report.html
 ```
 
 ### Run driver tests on primary cluster using driver_test.py as shown below -
@@ -47,7 +47,7 @@ pytest  driver_test.py
 #Run any specific testcase in testsuite using:
 pytest  driver_test.py::<test_name> 
 
-eg. pytest  driver_test.py::test_driver_pass_1 
+eg. pytest  driver_test.py::test_driver_dynamic_pass_1 
 ```
                 
 ### Run operator tests using operator_test.py as shown below -
@@ -73,7 +73,7 @@ pytest  remote_test.py
 #Run any specific testcase in testsuite using:
 pytest  remote_test.py::<test_name> 
 
-eg. pytest  remote_test.py::test_driver_pass_1 
+eg. pytest  remote_test.py::test_driver_dynamic_pass_1
 ```
 
 ### List available Driver & Operator tests 

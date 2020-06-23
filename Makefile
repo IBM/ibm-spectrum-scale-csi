@@ -43,7 +43,7 @@ all: repo-stable build-driver-image
 #
 # CSI Driver section
 #
-IMAGE_VERSION=v1.1.0
+IMAGE_VERSION=v2.0.0
 DRIVER_IMAGE_NAME=ibm-spectrum-scale-csi-driver
 
 build-driver-image:

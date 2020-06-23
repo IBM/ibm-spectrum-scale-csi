@@ -1,4 +1,5 @@
 import time
+import copy
 import logging
 import string
 import random
@@ -92,41 +93,33 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
         assert False
 
-    con = True
     num = 0
-    while (con and num < 124):
+    while (num < 124):
         read_statefulset_api_instance = client.AppsV1Api()
         try:
             read_statefulset_api_response = read_statefulset_api_instance.read_namespaced_stateful_set(
                 name="ibm-spectrum-scale-csi-attacher", namespace=namespace_value, pretty=True)
             LOGGER.debug(str(read_statefulset_api_response))
-            time.sleep(5)
             ready_replicas = read_statefulset_api_response.status.ready_replicas
             replicas = read_statefulset_api_response.status.replicas
             if ready_replicas == replicas:
                 if stateful_set_not_created is True:
                     LOGGER.error("Stateful sets should not have been created")
-                    con = False
                     assert False
                 else:
-                    con = False
-            elif(num > 122):
-                if stateful_set_not_created is True:
-                    LOGGER.info("Expected Failure ,testcase is passed")
-                    con = False
-                else:
-                    LOGGER.error("problem while creating custom object")
-                    assert False
+                    return
+            num = num + 1
+            time.sleep(5)
         except ApiException:
             num = num+1
             time.sleep(5)
-            if(num > 123):
-                if stateful_set_not_created is True:
-                    LOGGER.info("Expected Failure ,testcase is passed")
-                    con = False
-                else:
-                    LOGGER.error("problem while creating custom object")
-                    assert False
+
+    if stateful_set_not_created is True:
+        LOGGER.info("Expected Failure ,testcase is passed")
+        return
+    else:
+        LOGGER.error("problem while creating custom object, (statefulsets are not created)")
+        assert False
 
 
 def delete_custom_object():
@@ -201,7 +194,7 @@ def check_scaleoperatorobject_is_deployed():
 
     Returns:
        return True  , if csiscaleoperator exists
-       return False , if csiscaleoperator does not exists
+       return False , if csiscaleoperator does not exist
 
     Raises:
         None
@@ -217,20 +210,20 @@ def check_scaleoperatorobject_is_deployed():
                                                                                  name="ibm-spectrum-scale-csi"
                                                                                  )
         LOGGER.debug(str(read_co_api_response))
-        LOGGER.info("custom object exists")
+        LOGGER.info("Spectrum Scale custom object exists")
         return True
     except ApiException:
-        LOGGER.info("custom object does not exists")
+        LOGGER.info("Spectrum Scale custom object doesn't exist")
         return False
 
 
 def check_scaleoperatorobject_statefulsets_state(stateful_name):
     """
     Checks statefulset exists or not
-    if not exists , It asserts
+    if not exist, asserts
     if exists :
         Checks statfulset is up or not
-        if statefulsets not up in 120 seconds , it asserts
+        if not up in 120 seconds,it asserts
 
     Args:
        param1: stateful_name - statefulset name to check
@@ -243,9 +236,8 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
 
     """
     read_statefulsets_api_instance = client.AppsV1Api()
-    con = True
     num = 0
-    while (num < 124 and con):
+    while (num < 124):
         try:
             read_statefulsets_api_response = read_statefulsets_api_instance.read_namespaced_stateful_set(
                 name=stateful_name, namespace=namespace_value, pretty=True)
@@ -253,18 +245,16 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
             ready_replicas = read_statefulsets_api_response.status.ready_replicas
             replicas = read_statefulsets_api_response.status.replicas
             if ready_replicas == replicas:
-                LOGGER.info(f"statefulset {stateful_name} is up")
-                con = False
+                LOGGER.info(f"CSI driver statefulset {stateful_name} is up")
+                return
             else:
                 num += 1
                 time.sleep(5)
-                if(num > 123):
-                    LOGGER.error(f"statefulset {stateful_name} is not up")
-                    assert False
         except ApiException as e:
-            LOGGER.info("statefulset {stateful_name} does not exists")
-            LOGGER.error(str(e))
-            assert False
+            num += 1
+            time.sleep(5)
+    LOGGER.info(f"CSI driver statefulset {stateful_name} does not exist")
+    assert False
 
 
 def check_scaleoperatorobject_daemonsets_state():
@@ -298,7 +288,7 @@ def check_scaleoperatorobject_daemonsets_state():
             con = False
         except ApiException as e:
             if(num > 123):
-                LOGGER.info("daemonset does not exists")
+                LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi does not exist")
                 LOGGER.error(str(e))
                 assert False
             else:
@@ -309,11 +299,11 @@ def check_scaleoperatorobject_daemonsets_state():
     desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
     number_available = read_daemonsets_api_response.status.number_available
     if number_available == current_number_scheduled == desired_number_scheduled:
-        LOGGER.info("Daemonset ibm-spectrum-scale-csi's pods are Running")
+        LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi's pods are Running")
         return True, desired_number_scheduled
 
     LOGGER.info(
-            "Expected Daemonset ibm-spectrum-scale-csi's pods are not Running")
+            "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
     return False, desired_number_scheduled
 
 
@@ -333,7 +323,9 @@ def create_secret(secret_data_passed, secret_name):
 
     """
     secret_api_instance = client.CoreV1Api()
-    secret_data = secret_data_passed
+    secret_data = copy.deepcopy(secret_data_passed)
+    secret_data["username"] = base64encoder(secret_data["username"])
+    secret_data["password"] = base64encoder(secret_data["password"])
     secret_metadata = client.V1ObjectMeta(
         name=secret_name,
         labels={"product": "ibm-spectrum-scale-csi"}
@@ -345,7 +337,7 @@ def create_secret(secret_data_passed, secret_name):
         data=secret_data
     )
     try:
-        LOGGER.info(f'creating secret {secret_name}')
+        LOGGER.info(f'Creating secret {secret_name}')
         secret_api_response = secret_api_instance.create_namespaced_secret(
             namespace=namespace_value,
             body=secret_body,
@@ -377,7 +369,7 @@ def delete_secret(secret_name):
     try:
         delete_secret_api_response = delete_secret_api_instance.delete_namespaced_secret(
             name=secret_name, namespace=namespace_value, pretty=True)
-        LOGGER.info(f'secret {secret_name} deleted')
+        LOGGER.info(f'Secret {secret_name} has been deleted')
         LOGGER.debug(str(delete_secret_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -394,7 +386,7 @@ def check_secret_exists(secret_name):
 
     Returns:
        return True  , if secret exists
-       return False , if secret does not exists
+       return False , if secret does not exist
 
     Raises:
         None
@@ -406,7 +398,7 @@ def check_secret_exists(secret_name):
         api_response = api_instance.read_namespaced_secret(
             name=secret_name, namespace=namespace_value, pretty=True)
         LOGGER.debug(str(api_response))
-        LOGGER.info(f'secret {secret_name} exists')
+        LOGGER.info(f'Secret {secret_name} does exist')
         return True
     except ApiException:
         LOGGER.info(f'secret {secret_name} does not exist')
@@ -433,7 +425,7 @@ def check_secret_is_deleted(secret_name):
             count = count-1
             time.sleep(10)
         except ApiException:
-            LOGGER.info(f"secret {secret_name} deletion confirmed")
+            LOGGER.info(f"Secret {secret_name} has been deleted")
             var = False
 
     if count <= 0:
@@ -481,7 +473,7 @@ def create_configmap(file_path, make_cacert_wrong,configmap_name):
             pretty=True,
         )
         LOGGER.debug(str(api_response))
-        LOGGER.info(f"configmap {configmap_name} created")
+        LOGGER.info(f"configmap {configmap_name} has been created")
 
     except ApiException as e:
         LOGGER.error(
@@ -511,7 +503,7 @@ def delete_configmap(configmap_name):
             pretty=True,
         )
         LOGGER.debug(str(api_response))
-        LOGGER.info(f"configmap {configmap_name} deleted")
+        LOGGER.info(f"configmap {configmap_name} has been deleted")
 
     except ApiException as e:
         LOGGER.error(

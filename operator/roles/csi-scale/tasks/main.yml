@@ -78,12 +78,12 @@
       k8s_info:
         kind: "SecurityContextConstraints"
         name: "csiaccess"
-      register: csiaccess
+      register: csiaccess_old
 
     - name: "Ensure old SCC is removed"
       include_tasks: clear_old_csi_access.yml
-      loop: "{{ csiaccess.resources }}"
-      when: csiaccess is defined
+      loop: "{{ csiaccess_old.resources }}"
+      when: csiaccess_old is defined
      # ==================================
 
 - name: "Test clusters when setting to present"
