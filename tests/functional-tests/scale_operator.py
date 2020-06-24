@@ -13,17 +13,15 @@ LOGGER = logging.getLogger()
 
 
 class Scaleoperator:
-    def __init__(self, kubeconfig):
+    def __init__(self, kubeconfig_value,namespace_value):
 
-        global kubeconfig_value
-        kubeconfig_value = kubeconfig
-        self.kubeconfig = kubeconfig
-
-    def create(self, namespace_value, conf):
-
-        config.load_kube_config(config_file=self.kubeconfig)
+        self.kubeconfig = kubeconfig_value
         scale_function.set_global_namespace_value(namespace_value)
 
+    def create(self):
+
+        config.load_kube_config(config_file=self.kubeconfig)
+        
         if not(scale_function.check_namespace_exists()):
             scale_function.create_namespace()
 
@@ -87,108 +85,28 @@ class Scaleoperator:
 
 class Scaleoperatorobject:
 
-    def __init__(self, test_dict):
+    def __init__(self, test_dict,kubeconfig_value):
 
         LOGGER.info("scale operator class object is created")
+        self.kubeconfig = kubeconfig_value
         self.temp = test_dict
-        self.secret_name = test_dict["secrets"]
-
-        if check_key(test_dict,"cacert_name"):
-            self.cacert_name = test_dict["cacert_name"]
-            if check_key(test_dict,"secureSslMode_explcit"):
-                test_dict["secureSslMode"] = test_dict["secureSslMode_explcit"]
-            else:
-                test_dict["secureSslMode"] = True
-
-        if check_key(test_dict,"remote_cacert_name"):
-            self.remote_cacert_name = test_dict["remote_cacert_name"]
-            if check_key(test_dict,"remote_secureSslMode_explcit"):
-                test_dict["remote_secureSslMode"] = test_dict["remote_secureSslMode_explcit"]
-            else:
-                test_dict["remote_secureSslMode"] = True
-
-        if check_key(test_dict, "secrets_name_wrong"):
-            test_dict["secrets"] = test_dict["secrets_name_wrong"]
+        self.secret_name = test_dict["local_secret_name"]
+        self.namespace = test_dict["namespace"]
         self.secret_data = {
             "username": test_dict["username"], "password": test_dict["password"]}
-
-        if check_key(test_dict, "remote"):
-            self.remote_secret_name = test_dict["remotesecrets"]
-            self.remote_secret_data = {
-            "username": test_dict["remote-username"], "password": test_dict["remote-password"]}
-
-        self.namespace = test_dict["namespace"]
-        self.custom_object_spec = {
-            "scaleHostpath": test_dict["scaleHostpath"],
-            "clusters": [
-                {
-                    "id": test_dict["id"],
-                    "secrets": test_dict["secrets"],
-                    "secureSslMode": test_dict["secureSslMode"],
-                    "primary": {
-                        "primaryFs": test_dict["primaryFs"]
-                    },
-                    "restApi": [
-                        {
-                            "guiHost": test_dict["guiHost"]
-                        }
-                    ]
-                }
-            ],
-            "nodeMapping": test_dict["nodeMapping"],
-            "attacherNodeSelector": test_dict["attacherNodeSelector"],
-            "provisionerNodeSelector": test_dict["provisionerNodeSelector"],
-            "pluginNodeSelector": test_dict["pluginNodeSelector"]
-        }
-
-        if test_dict["primaryFset-default"] is False:
-            self.custom_object_spec["clusters"][0]["primary"]["primaryFset"] = test_dict["primaryFset"]
-
-        if check_key(test_dict, "deployment_attacher_image"):
-            self.custom_object_spec["attacher"] = test_dict["deployment_attacher_image"]
-
-        if check_key(test_dict, "deployment_provisioner_image"):
-            self.custom_object_spec["provisioner"] = test_dict["deployment_provisioner_image"]
-
-        if check_key(test_dict, "deployment_driverregistrar_image"):
-            self.custom_object_spec["driverRegistrar"] = test_dict["deployment_driverregistrar_image"]
-
-        if check_key(test_dict, "deployment_driver_image"):
-            self.custom_object_spec["spectrumScale"] = test_dict["deployment_driver_image"]
-
-        if check_key(test_dict,"cacert_name"):
-            self.custom_object_spec["clusters"][0]["cacert"] = self.cacert_name
+        
 
         if check_key(test_dict, "stateful_set_not_created"):
             self.stateful_set_not_created = test_dict["stateful_set_not_created"]
         else:
             self.stateful_set_not_created = False
 
-        if check_key(test_dict, "remote"):
-            self.custom_object_spec["clusters"].append({
-                                              "id": test_dict["remoteid"],
-                                              "secrets": test_dict["remotesecrets"],
-                                              "secureSslMode": test_dict["remote_secureSslMode"],
-                                              "restApi": [
-                                                      {
-                                                       "guiHost": test_dict["remoteguiHost"]
-                                                      }
-                                                         ]
-                                             })
-            if check_key(test_dict,"remote_cacert_name"):
-                self.custom_object_spec["clusters"][1]["cacert"] = self.remote_cacert_name
-
-
-        if check_key(test_dict,"remotely-mounted-fs"):
-            self.custom_object_spec["clusters"][0]["primary"]["remoteCluster"] = test_dict["remoteCluster"]
-            #self.custom_object_spec["clusters"][0]["primary"]["remoteFs"]      = test_dict["remoteFs"]
-
         ob.set_namespace_value(self.namespace)
 
-    def create(self, kubeconfig):
+    def create(self):
 
-        config.load_kube_config(config_file=kubeconfig)
-        LOGGER.info(str(self.custom_object_spec))
+        config.load_kube_config(config_file=self.kubeconfig)
+        LOGGER.info(str(self.temp["custom_object_body"]["spec"]))
 
         if not(ob.check_secret_exists(self.secret_name)):
             ob.create_secret(self.secret_data, self.secret_name)
@@ -197,52 +115,56 @@ class Scaleoperatorobject:
             ob.check_secret_is_deleted(self.secret_name)
             ob.create_secret(self.secret_data, self.secret_name)
 
-        if check_key(self.temp, "remote"):
-            if not(ob.check_secret_exists(self.remote_secret_name)):
-                ob.create_secret(self.remote_secret_data, self.remote_secret_name)
+        for remote_secret_name in self.temp["remote_secret_names"]:
+            remote_secret_data = {"username": self.temp["remote-username"][remote_secret_name],
+                                  "password": self.temp["remote-password"][remote_secret_name]}
+            if not(ob.check_secret_exists(remote_secret_name)):
+                ob.create_secret(remote_secret_data, remote_secret_name)
             else:
-                ob.delete_secret(self.remote_secret_name)
-                ob.check_secret_is_deleted(self.remote_secret_name)
-                ob.create_secret(self.remote_secret_data, self.remote_secret_name)
+                ob.delete_secret(remote_secret_name)
+                ob.check_secret_is_deleted(remote_secret_name)
+                ob.create_secret(remote_secret_data, remote_secret_name)
 
-        if check_key(self.temp,"cacert_name"):
+        if check_key(self.temp,"local_cacert_name"):
+            cacert_name = self.temp["local_cacert_name"]
             if not(check_key(self.temp, "make_cacert_wrong")):
                 self.temp["make_cacert_wrong"] = False
 
-            if not(ob.check_configmap_exists(self.cacert_name)):
+            if not(ob.check_configmap_exists(cacert_name)):
                 ob.create_configmap(
-                    self.temp["cacert_path"], self.temp["make_cacert_wrong"],self.cacert_name)
+                    self.temp["cacert_path"], self.temp["make_cacert_wrong"],cacert_name)
             else:
-                ob.delete_configmap(self.cacert_name)
-                ob.check_configmap_is_deleted(self.cacert_name)
+                ob.delete_configmap(cacert_name)
+                ob.check_configmap_is_deleted(cacert_name)
                 ob.create_configmap(
-                    self.temp["cacert_path"], self.temp["make_cacert_wrong"],self.cacert_name)
+                    self.temp["cacert_path"], self.temp["make_cacert_wrong"],cacert_name)
 
-        if check_key(self.temp,"remote_cacert_name"):
+        for remote_cacert_name in self.temp["remote_cacert_names"]:
+
             if not(check_key(self.temp, "make_remote_cacert_wrong")):
                 self.temp["make_remote_cacert_wrong"] = False
 
-            if not(ob.check_configmap_exists(self.remote_cacert_name)):
+            if not(ob.check_configmap_exists(remote_cacert_name)):
                 ob.create_configmap(
-                    self.temp["remote_cacert_path"], self.temp["make_remote_cacert_wrong"],self.remote_cacert_name)
+                    self.temp["remote_cacert_path"][remote_cacert_name], self.temp["make_remote_cacert_wrong"],remote_cacert_name)
             else:
-                ob.delete_configmap(self.remote_cacert_name)
-                ob.check_configmap_is_deleted(self.remote_cacert_name)
+                ob.delete_configmap(remote_cacert_name)
+                ob.check_configmap_is_deleted(remote_cacert_name)
                 ob.create_configmap(
-                    self.temp["remote_cacert_path"], self.temp["make_remote_cacert_wrong"],self.remote_cacert_name)
+                    self.temp["remote_cacert_path"][remote_cacert_name], self.temp["make_remote_cacert_wrong"],remote_cacert_name)
 
         if not(ob.check_scaleoperatorobject_is_deployed()):
 
-            ob.create_custom_object(self.custom_object_spec, self.stateful_set_not_created)
+            ob.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
         else:
             ob.delete_custom_object()
             ob.check_scaleoperatorobject_is_deleted()
-            ob.create_custom_object(self.custom_object_spec, self.stateful_set_not_created)
+            ob.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
 
 
-    def delete(self, kubeconfig):
+    def delete(self):
 
-        config.load_kube_config(config_file=kubeconfig)
+        config.load_kube_config(config_file=self.kubeconfig)
 
         if ob.check_scaleoperatorobject_is_deployed():
             ob.delete_custom_object()
@@ -252,27 +174,27 @@ class Scaleoperatorobject:
             ob.delete_secret(self.secret_name)
         ob.check_secret_is_deleted(self.secret_name)
 
-        if check_key(self.temp, "remote"):
-            if ob.check_secret_exists(self.remote_secret_name):
-                ob.delete_secret(self.remote_secret_name)
-            ob.check_secret_is_deleted(self.remote_secret_name)
+        for remote_secret_name in self.temp["remote_secret_names"]:
+            if ob.check_secret_exists(remote_secret_name):
+                ob.delete_secret(remote_secret_name)
+            ob.check_secret_is_deleted(remote_secret_name)
 
 
-        if check_key(self.temp,"cacert_name"):
-            if ob.check_configmap_exists(self.cacert_name):
-                ob.delete_configmap(self.cacert_name)
-            ob.check_configmap_is_deleted(self.cacert_name)
+        if check_key(self.temp,"local_cacert_name"):
+            if ob.check_configmap_exists(self.temp["local_cacert_name"]):
+                ob.delete_configmap(self.temp["local_cacert_name"])
+            ob.check_configmap_is_deleted(self.temp["local_cacert_name"])
  
-        if check_key(self.temp,"remote_cacert_name"):
-            if ob.check_configmap_exists(self.remote_cacert_name):
-                ob.delete_configmap(self.remote_cacert_name)
-            ob.check_configmap_is_deleted(self.remote_cacert_name)
+        for remote_cacert_name in self.temp["remote_cacert_names"]: 
+            if ob.check_configmap_exists(remote_cacert_name):
+                ob.delete_configmap(remote_cacert_name)
+            ob.check_configmap_is_deleted(remote_cacert_name)
 
 
 
-    def check(self, kubeconfig):
+    def check(self):
 
-        config.load_kube_config(config_file=kubeconfig)
+        config.load_kube_config(config_file=self.kubeconfig)
 
         ob.check_scaleoperatorobject_is_deployed()
 
@@ -322,11 +244,12 @@ class Scaleoperatorobject:
 
 class Driver:
 
-    def __init__(self, value_pvc, value_pod, config_file, test_ns):
+    def __init__(self, kubeconfig_value,value_pvc, value_pod, config_file, test_ns):
         self.value_pvc = value_pvc
         self.value_pod = value_pod
         self.config_file = config_file
         self.test_ns = test_ns
+        self.kubeconfig = kubeconfig_value
 
     def create_test_ns(self, kubeconfig):
         config.load_kube_config(config_file=kubeconfig)
@@ -346,7 +269,7 @@ class Driver:
             f"Testing Dynamic Provisioning with following PVC parameters {str(self.value_pvc)}")
         d.set_test_namespace_value(self.test_ns)
         sc_name = d.get_random_name("sc")
-        config.load_kube_config(config_file=kubeconfig_value)
+        config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
         d.check_storage_class(sc_name)
         for num in range(0, len(self.value_pvc)):
@@ -376,7 +299,7 @@ class Driver:
 
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
-        config.load_kube_config(config_file=kubeconfig_value)
+        config.load_kube_config(config_file=self.kubeconfig)
         d.set_test_namespace_value(self.test_ns)
         sc_name=""
         if sc_value is not False:
@@ -443,7 +366,7 @@ class Driver:
     def one_pvc_two_pod(self, value_sc):
         d.set_test_namespace_value(self.test_ns)
         sc_name = d.get_random_name("sc")
-        config.load_kube_config(config_file=kubeconfig_value)
+        config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
         d.check_storage_class(sc_name)
         value_pvc_pass = copy.deepcopy(self.value_pvc[0])
@@ -486,7 +409,7 @@ class Driver:
     def parallel_pvc(self, value_sc):
         d.set_test_namespace_value(self.test_ns)
         sc_name = d.get_random_name("sc")
-        config.load_kube_config(config_file=kubeconfig_value)
+        config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
         d.check_storage_class(sc_name)
         p = []
@@ -504,11 +427,9 @@ class Driver:
         d.check_storage_class_deleted(sc_name)
 
 
-def read_scale_config_file(clusterconfig, namespace):
+def read_driver_data(clusterconfig, namespace):
 
     data = copy.deepcopy(input_params)
-    data["secureSslMode"] = False
-    data["remote_secureSslMode"] = False
     data["namespace"] = namespace
 
     try:
@@ -519,73 +440,21 @@ def read_scale_config_file(clusterconfig, namespace):
         assert False
 
     data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]
-    data["id"] = loadcr_yaml["spec"]["clusters"][0]["id"]
-    data["secrets"] = loadcr_yaml["spec"]["clusters"][0]["secrets"]
-    data["primaryFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFs"]
+    for cluster in loadcr_yaml["spec"]["clusters"]:
+        if "primary" in cluster.keys():    
+            data["primaryFs"] = cluster["primary"]["primaryFs"]
+            data["guiHost"] = cluster["restApi"][0]["guiHost"]
+            if check_key(cluster["primary"],"primaryFset"):
+                data["primaryFset"] = cluster["primary"]["primaryFset"]
+            else:
+                data["primaryFset"] = "spectrum-scale-csi-volume-store"
+            data["id"] = cluster["id"]
 
-    if check_key(loadcr_yaml["spec"]["clusters"][0]["primary"],"primaryFset"):
-        data["primaryFset"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["primaryFset"]
-        data["primaryFset-default"] = False
-    else:
-        data["primaryFset"] = "spectrum-scale-csi-volume-store"
-        data["primaryFset-default"] = True
 
-    data["guiHost"] = loadcr_yaml["spec"]["clusters"][0]["restApi"][0]["guiHost"]
-
-    if check_key(loadcr_yaml["spec"]["clusters"][0]["primary"],"remoteCluster"):
-        data["remoteCluster"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["remoteCluster"]
-        #data["remoteFs"] = loadcr_yaml["spec"]["clusters"][0]["primary"]["remoteFs"]
-        data["remotely-mounted-fs"] = True 
-
+    data["clusters"] = loadcr_yaml["spec"]["clusters"]
     if len(loadcr_yaml["spec"]["clusters"])>1:
-        if check_key(loadcr_yaml["spec"]["clusters"][1],"id"):
-
-            data["remoteid"] = loadcr_yaml["spec"]["clusters"][1]["id"]       
-            data["remotesecrets"] = loadcr_yaml["spec"]["clusters"][1]["secrets"]
-            data["remoteguiHost"] = loadcr_yaml["spec"]["clusters"][1]["restApi"][0]["guiHost"]
-            data["remote"] = True
+        data["remote"] = True
         
-        if check_key(loadcr_yaml["spec"]["clusters"][1],"cacert"):
-            data["remote_cacert_name"] = loadcr_yaml["spec"]["clusters"][1]["cacert"]
-            if data["remote_cacert_path"] == "":
-                LOGGER.error("if using cacert , MUST include remote cacert path in conftest.py")
-                assert False
-
-    if check_key(loadcr_yaml["spec"],"nodeMapping"):
-        data["nodeMapping"] = loadcr_yaml["spec"]["nodeMapping"]
-    else:
-        data["nodeMapping"] = []
-
-    if check_key(loadcr_yaml["spec"],"attacherNodeSelector"):
-        data["attacherNodeSelector"] = loadcr_yaml["spec"]["attacherNodeSelector"]
-    else:
-        data["attacherNodeSelector"] = []
-
-    if check_key(loadcr_yaml["spec"],"provisionerNodeSelector"):
-        data["provisionerNodeSelector"] = loadcr_yaml["spec"]["provisionerNodeSelector"]
-    else:
-        data["provisionerNodeSelector"] = []
-
-    if check_key(loadcr_yaml["spec"],"pluginNodeSelector"):
-        data["pluginNodeSelector"] = loadcr_yaml["spec"]["pluginNodeSelector"]
-    else:
-        data["pluginNodeSelector"] = []
-
-    if check_key(loadcr_yaml["spec"],"spectrumScale"):
-        data["deployment_driver_image"] = loadcr_yaml["spec"]["spectrumScale"]
-    if check_key(loadcr_yaml["spec"],"driverRegistrar"):
-        data["deployment_driverregistrar_image"] = loadcr_yaml["spec"]["driverRegistrar"]
-    if check_key(loadcr_yaml["spec"],"attacher"):
-        data["deployment_attacher_image"] = loadcr_yaml["spec"]["attacher"] 
-    if check_key(loadcr_yaml["spec"],"provisioner"):
-        data["deployment_provisioner_image"] = loadcr_yaml["spec"]["provisioner"]
- 
-    if check_key(loadcr_yaml["spec"]["clusters"][0],"cacert"):
-        data["cacert_name"] = loadcr_yaml["spec"]["clusters"][0]["cacert"]
-        if data["cacert_path"] == "":
-            LOGGER.error("if using cacert , MUST include cacert path in conftest.py")
-            assert False
- 
     return data
 
 
@@ -646,3 +515,73 @@ def check_nodes_available(label, lable_name):
     except ApiException as e:
         LOGGER.error(f"Exception when calling CoreV1Api->list_node: {e}")
         assert False
+
+def read_operator_data(clusterconfig, namespace):
+
+    data = copy.deepcopy(input_params)
+
+    data["namespace"] = namespace
+
+    try:
+        with open(clusterconfig, "r") as f:
+            loadcr_yaml = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+        assert False
+       
+    data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]
+    data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
+    data["custom_object_body"]["metadata"]["namespace"] = namespace
+    data["remote_secret_names"] = []
+    data["remote_cacert_names"] = []
+    for cluster in loadcr_yaml["spec"]["clusters"]:
+        if "primary" in cluster.keys():    
+            data["primaryFs"] = cluster["primary"]["primaryFs"]
+            data["guiHost"] = cluster["restApi"][0]["guiHost"]
+            data["local_secret_name"] = cluster["secrets"]
+            if check_key(cluster["primary"],"primaryFset"):
+                data["primaryFset"] = cluster["primary"]["primaryFset"]
+            else:
+                data["primaryFset"] = "spectrum-scale-csi-volume-store"
+            if check_key(cluster,"cacert"):
+                data["local_cacert_name"] = cluster["cacert"]
+        else:
+            data["remote_secret_names"].append(cluster["secrets"])
+            if check_key(cluster,"cacert"):
+                data["remote_cacert_names"].append(cluster["cacert"])
+
+
+    if check_key(loadcr_yaml["spec"],"attacherNodeSelector"):
+        data["attacherNodeSelector"] = loadcr_yaml["spec"]["attacherNodeSelector"]
+    else:
+        data["attacherNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"],"provisionerNodeSelector"):
+        data["provisionerNodeSelector"] = loadcr_yaml["spec"]["provisionerNodeSelector"]
+    else:
+        data["provisionerNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"],"pluginNodeSelector"):
+        data["pluginNodeSelector"] = loadcr_yaml["spec"]["pluginNodeSelector"]
+    else:
+        data["pluginNodeSelector"] = []
+
+    if check_key(data,"local_cacert_name"):
+        if data["cacert_path"] == "":
+            LOGGER.error("if using cacert , MUST include cacert path in conftest.py")
+            assert False
+
+    for remote_secret_name in data["remote_secret_names"]:
+        if not(remote_secret_name in data["remote-username"].keys()):
+            LOGGER.error(f"Need username for {remote_secret_name} secret in conftest")
+            assert False
+        if not(remote_secret_name in data["remote-password"].keys()):
+            LOGGER.error(f"Need password for {remote_secret_name} secret in conftest")
+            assert False
+
+    for remote_cacert_name in data["remote_cacert_names"]:
+        if not(remote_cacert_name in data["remote_cacert_path"].keys()):
+            LOGGER.error(f"Need cacert path for {remote_cacert_name} in conftest")
+            assert False
+
+    return data

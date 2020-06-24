@@ -27,45 +27,13 @@ def set_namespace_value(namespace_name):
     namespace_value = namespace_name
 
 
-def create_scaleoperatorobject_body(custom_object_spec):
-    """
-    create body for custom object from given specifications
 
-    Args:
-        param1: custom_object_spec - custom object specification
-
-    Returns:
-        Body for custom object
-
-    Raises:
-        None
-
-    """
-    custom_object_body = {
-        "apiVersion": "csi.ibm.com/v1",
-        "kind": "CSIScaleOperator",
-        "metadata": {
-            "name": "ibm-spectrum-scale-csi",
-            "namespace": namespace_value,
-            "labels": {
-                "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
-                "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
-                "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator"
-            },
-            "release": "ibm-spectrum-scale-csi-operator"
-        },
-        "status": {},
-        "spec": custom_object_spec
-    }
-    return custom_object_body
-
-
-def create_custom_object(custom_object_spec, stateful_set_not_created):
+def create_custom_object(custom_object_body, stateful_set_not_created):
     """
     Create custom object and waits until stateful sets are created.
 
     Args:
-       param1: custom_object_spec - custom object specification
+       param1: custom_object_body - custom object body
        param2: stateful_set_not_created - for operator testcases
 
     Returns:
@@ -76,7 +44,6 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
 
     """
     custom_object_api_instance = client.CustomObjectsApi()
-    custom_object_body = create_scaleoperatorobject_body(custom_object_spec)
     try:
         custom_object_api_response = custom_object_api_instance.create_namespaced_custom_object(
             group="csi.ibm.com",
@@ -87,7 +54,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info("custom object created")
+        LOGGER.info("SpectrumScale CSI custom object created")
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -104,7 +71,7 @@ def create_custom_object(custom_object_spec, stateful_set_not_created):
             replicas = read_statefulset_api_response.status.replicas
             if ready_replicas == replicas:
                 if stateful_set_not_created is True:
-                    LOGGER.error("Stateful sets should not have been created")
+                    LOGGER.error("Statefulsets should not have been created")
                     assert False
                 else:
                     return
@@ -177,11 +144,11 @@ def check_scaleoperatorobject_is_deleted():
             count = count-1
             time.sleep(10)
         except ApiException:
-            LOGGER.info("custom object deleted")
+            LOGGER.info("SpectrumScale CSI custom object has been deleted")
             var = False
 
     if count <= 0:
-        LOGGER.error("custom object is not deleted")
+        LOGGER.error("SpectrumScale CSI custom object is not deleted")
         assert False
 
 
@@ -210,20 +177,20 @@ def check_scaleoperatorobject_is_deployed():
                                                                                  name="ibm-spectrum-scale-csi"
                                                                                  )
         LOGGER.debug(str(read_co_api_response))
-        LOGGER.info("Spectrum Scale custom object exists")
+        LOGGER.info("SpectrumScale CSI custom object exists")
         return True
     except ApiException:
-        LOGGER.info("Spectrum Scale custom object doesn't exist")
+        LOGGER.info("SpectrumScale CSI custom object does not exist")
         return False
 
 
 def check_scaleoperatorobject_statefulsets_state(stateful_name):
     """
     Checks statefulset exists or not
-    if not exist, asserts
+    if not exists , It asserts
     if exists :
         Checks statfulset is up or not
-        if not up in 120 seconds,it asserts
+        if statefulsets not up in 120 seconds , it asserts
 
     Args:
        param1: stateful_name - statefulset name to check
@@ -398,10 +365,10 @@ def check_secret_exists(secret_name):
         api_response = api_instance.read_namespaced_secret(
             name=secret_name, namespace=namespace_value, pretty=True)
         LOGGER.debug(str(api_response))
-        LOGGER.info(f'Secret {secret_name} does exist')
+        LOGGER.info(f'Secret {secret_name} exists')
         return True
     except ApiException:
-        LOGGER.info(f'secret {secret_name} does not exist')
+        LOGGER.info(f'Secret {secret_name} does not exist')
         return False
 
 
@@ -429,7 +396,7 @@ def check_secret_is_deleted(secret_name):
             var = False
 
     if count <= 0:
-        LOGGER.error(f"secret {secret_name} is not deleted")
+        LOGGER.error(f"Secret {secret_name} is not deleted")
         assert False
 
 
@@ -519,7 +486,7 @@ def check_configmap_exists(configmap_name):
 
     Returns:
        return True  , if configmap exists
-       return False , if configmap does not exists
+       return False , if configmap does not exist
 
     Raises:
         None

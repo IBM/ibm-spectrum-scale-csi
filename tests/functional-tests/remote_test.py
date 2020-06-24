@@ -1,8 +1,8 @@
 import logging
 import copy
 import pytest
-from scale_operator import read_scale_config_file, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key
+from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
+    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key,read_operator_data
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -19,28 +19,29 @@ def values(request):
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
-    data = read_scale_config_file(clusterconfig_value, namespace_value)
+    data = read_driver_data(clusterconfig_value, namespace_value)
+    operator_data = read_operator_data(clusterconfig_value, namespace_value)
     if not(check_key(data,"remote")):
         LOGGER.error("remote data is not provided in cr file")
         assert False
     test_namespace = namespace_value
 
     ff.fileset_exists(data)
-    operator = Scaleoperator(kubeconfig_value)
+    operator = Scaleoperator(kubeconfig_value,namespace_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
         check_ds_exists(kubeconfig_value, namespace_value)
     else:
-        operator.create(namespace_value, data)
+        operator.create()
         operator.check()
-        check_nodes_available(data["pluginNodeSelector"], "pluginNodeSelector")
+        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
         check_nodes_available(
-            data["provisionerNodeSelector"], "provisionerNodeSelector")
+            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
-            data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(data)
-        operator_object.create(kubeconfig_value)
-        val = operator_object.check(kubeconfig_value)
+            operator_data["attacherNodeSelector"], "attacherNodeSelector")
+        operator_object = Scaleoperatorobject(operator_data,kubeconfig_value)
+        operator_object.create()
+        val = operator_object.check()
         if val is True:
             LOGGER.info("Operator custom object is deployed succesfully")
         else:
@@ -57,14 +58,14 @@ def values(request):
                  ]
 
     remote_data = get_remote_data(data) 
-    driver_object = Driver(value_pvc, value_pod, remote_data, test_namespace)
+    driver_object = Driver(kubeconfig_value,value_pvc, value_pod, remote_data, test_namespace)
     ff.create_dir(remote_data, remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
     #ff.delete_dir(remote_data, remote_data["volDirBasePath"])
     if condition is False:
-        operator_object.delete(kubeconfig_value)
+        operator_object.delete()
         operator.delete()
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
@@ -77,12 +78,17 @@ def get_remote_data(data_passed):
     if remote_data["remoteFs_remote_name"] is None:
         LOGGER.error("Unable to get remoteFs , name on remote cluster")
         assert False
-    remote_data["username"] = remote_data["remote-username"]
-    remote_data["password"] = remote_data["remote-password"]
-    remote_data["port"] = remote_data["remote-port"]
-    remote_data["guiHost"] = remote_data["remoteguiHost"]
-    remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]    
+
+    remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
     remote_data["id"] = remote_data["remoteid"]
+    remote_data["port"] = remote_data["remote-port"]
+    for cluster in remote_data["clusters"]:
+        if cluster["id"] == remote_data["remoteid"]:
+            remote_data["guiHost"] = cluster["restApi"][0]["guiHost"]
+            remote_sec_name = cluster["secrets"]
+            remote_data["username"] = remote_data["remote-username"][remote_sec_name]
+            remote_data["password"] = remote_data["remote-password"][remote_sec_name]
+    
     remote_data["volDirBasePath"] = remote_data["r-volDirBasePath"]
     remote_data["parentFileset"] = remote_data["r-parentFileset"]
     remote_data["gid_name"] = remote_data["r-gid_name"]
@@ -350,7 +356,7 @@ def test_driver_static_sc_20():
 def test_driver_static_sc_21():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                "reclaim_policy": "Recycle"}
+          "reclaim_policy": "Recycle"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",

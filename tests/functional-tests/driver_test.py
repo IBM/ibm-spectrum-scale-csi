@@ -1,7 +1,7 @@
 import logging
 import pytest
-from scale_operator import read_scale_config_file, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver
+from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
+    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, read_operator_data
 from utils.fileset_functions import fileset_exists, delete_fileset, create_dir, delete_dir
 LOGGER = logging.getLogger()
 
@@ -18,24 +18,25 @@ def values(request):
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
-    data = read_scale_config_file(clusterconfig_value, namespace_value)
+    data = read_driver_data(clusterconfig_value, namespace_value)
+    operator_data = read_operator_data(clusterconfig_value, namespace_value)
     test_namespace = namespace_value
     fileset_exists(data)
-    operator = Scaleoperator(kubeconfig_value)
+    operator = Scaleoperator(kubeconfig_value, namespace_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
         check_ds_exists(kubeconfig_value, namespace_value)
     else:
-        operator.create(namespace_value, data)
+        operator.create()
         operator.check()
-        check_nodes_available(data["pluginNodeSelector"], "pluginNodeSelector")
+        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
         check_nodes_available(
-            data["provisionerNodeSelector"], "provisionerNodeSelector")
+            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
-            data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(data)
-        operator_object.create(kubeconfig_value)
-        val = operator_object.check(kubeconfig_value)
+            operator_data["attacherNodeSelector"], "attacherNodeSelector")
+        operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
+        operator_object.create()
+        val = operator_object.check()
         if val is True:
             LOGGER.info("Operator custom object is deployed succesfully")
         else:
@@ -50,7 +51,7 @@ def values(request):
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    driver_object = Driver(value_pvc, value_pod, data, test_namespace)
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data, test_namespace)
     create_dir(data, data["volDirBasePath"])
     if not(data["volBackendFs"]==""):
         data["primaryFs"] = data["volBackendFs"]
@@ -59,7 +60,7 @@ def values(request):
     # driver_object.delete_test_ns(kubeconfig_value)
     #delete_dir(data, data["volDirBasePath"])
     if condition is False:
-        operator_object.delete(kubeconfig_value)
+        operator_object.delete()
         operator.delete()
         if(fileset_exists(data)):
             delete_fileset(data)
