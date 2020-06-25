@@ -58,8 +58,7 @@ spec:
         name: ''
         version: v1
       specDescriptors:
-      - description: Sets the minloglevel of the driver and driver-registrar pods. The severity levels
-          INFO, WARNING, ERROR, and FATAL are 0, 1, 2, and 3, respectively. Defaults to 2, ERROR.
+      - description: Sets the minloglevel of the driver and driver-registrar pods. The severity levels INFO, WARNING, ERROR, and FATAL are 0, 1, 2, and 3, respectively. Defaults to 2, ERROR.
         displayName: Driver Log Level
         path: driverLogLevel
         x-descriptors:
