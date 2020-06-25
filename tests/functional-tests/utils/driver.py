@@ -27,6 +27,10 @@ def set_test_namespace_value(namespace_name=None):
     global namespace_value
     namespace_value = namespace_name
 
+def set_keep_objects(keep_object):                                                            
+    """ sets the keep_objects global for use in later functions"""                            
+    global keep_objects                                                                       
+    keep_objects = keep_object
 
 def get_random_name(type_of):
     """ return random name of type_of"""
@@ -173,7 +177,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
         spec=pv_spec
     )
     try:
-        LOGGER.info(f'Creating PV {pv_name} with {str(pv_name)} parameter')
+        LOGGER.info(f'Creating PV {pv_name} with {pv_values} parameter')
         api_response = api_instance.create_persistent_volume(
             body=pv_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -570,6 +574,8 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
 
 def delete_pod(pod_name):
     """ deletes pod pod_name """
+    if keep_objects:
+        return
     api_instance = client.CoreV1Api()
     try:
         LOGGER.info(f'Deleting pod {pod_name}')
@@ -584,6 +590,8 @@ def delete_pod(pod_name):
 
 def check_pod_deleted(pod_name):
     """ checks pod deleted or not , if not deleted , asserts """
+    if keep_objects:
+        return
     count = 12
     api_instance = client.CoreV1Api()
     while (count > 0):
@@ -603,6 +611,8 @@ def check_pod_deleted(pod_name):
 
 def delete_pvc(pvc_name):
     """ deletes pvc pvc_name """
+    if keep_objects:
+        return
     api_instance = client.CoreV1Api()
     try:
         LOGGER.info(f'Deleting pvc {pvc_name}')
@@ -617,6 +627,8 @@ def delete_pvc(pvc_name):
 
 def check_pvc_deleted(pvc_name):
     """ check pvc deleted or not , if not deleted , asserts """
+    if keep_objects:
+        return
     count = 12
     api_instance = client.CoreV1Api()
     while (count > 0):
@@ -637,6 +649,8 @@ def check_pvc_deleted(pvc_name):
 
 def delete_pv(pv_name):
     """ delete pv pv_name """
+    if keep_objects:
+        return
     api_instance = client.CoreV1Api()
     try:
         LOGGER.info(f'Deleting pv {pv_name}')
@@ -651,6 +665,8 @@ def delete_pv(pv_name):
 
 def check_pv_deleted(pv_name):
     """ checks pv is deleted or not , if not deleted ,asserts"""
+    if keep_objects:
+        return
     count = 12
     api_instance = client.CoreV1Api()
     while (count > 0):
@@ -670,7 +686,7 @@ def check_pv_deleted(pv_name):
 
 def delete_storage_class(sc_name):
     """deletes storage class sc_name"""
-    if sc_name == "":
+    if sc_name == "" or keep_objects:
         return
     api_instance = client.StorageV1Api()
     try:
@@ -692,7 +708,7 @@ def check_storage_class_deleted(sc_name):
     checks storage class sc_name deleted
     if sc not deleted , asserts
     """
-    if sc_name == "":
+    if sc_name == "" or keep_objects:
         return
     count = 12
     api_instance = client.StorageV1Api()

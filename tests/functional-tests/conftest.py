@@ -22,6 +22,8 @@ input_params = {
 
     "volBackendFs":"",            # OPTIONAL : Should be given in case of driver_test.py and want to use filesytem other than the primartFs
 
+    "keepobjects":False,
+
     "volDirBasePath":"LW", 
     "parentFileset":"root",
     "gid_name":"nobody",

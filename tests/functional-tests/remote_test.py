@@ -21,6 +21,7 @@ def values(request):
         namespace_value = "ibm-spectrum-scale-csi-driver"
     data = read_driver_data(clusterconfig_value, namespace_value)
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
+    keep_objects = data["keepobjects"]
     if not(check_key(data,"remote")):
         LOGGER.error("remote data is not provided in cr file")
         assert False
@@ -58,13 +59,13 @@ def values(request):
                  ]
 
     remote_data = get_remote_data(data) 
-    driver_object = Driver(kubeconfig_value,value_pvc, value_pod, remote_data, test_namespace)
+    driver_object = Driver(kubeconfig_value,value_pvc, value_pod, remote_data, test_namespace, keep_objects)
     ff.create_dir(remote_data, remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
     #ff.delete_dir(remote_data, remote_data["volDirBasePath"])
-    if condition is False:
+    if condition is False and not(keep_objects):
         operator_object.delete()
         operator.delete()
         if(ff.fileset_exists(data)):

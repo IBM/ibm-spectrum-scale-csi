@@ -20,6 +20,7 @@ def values(request):
         namespace_value = "ibm-spectrum-scale-csi-driver"
     data = read_driver_data(clusterconfig_value, namespace_value)
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
+    keep_objects = data["keepobjects"]
     test_namespace = namespace_value
     fileset_exists(data)
     operator = Scaleoperator(kubeconfig_value, namespace_value)
@@ -51,7 +52,7 @@ def values(request):
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data, test_namespace)
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data, test_namespace, keep_objects)
     create_dir(data, data["volDirBasePath"])
     if not(data["volBackendFs"]==""):
         data["primaryFs"] = data["volBackendFs"]
@@ -59,7 +60,7 @@ def values(request):
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
     #delete_dir(data, data["volDirBasePath"])
-    if condition is False:
+    if condition is False and not(keep_objects):
         operator_object.delete()
         operator.delete()
         if(fileset_exists(data)):

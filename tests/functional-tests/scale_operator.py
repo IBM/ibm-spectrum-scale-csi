@@ -244,12 +244,15 @@ class Scaleoperatorobject:
 
 class Driver:
 
-    def __init__(self, kubeconfig_value,value_pvc, value_pod, config_file, test_ns):
+    def __init__(self, kubeconfig_value,value_pvc, value_pod, config_file, test_ns,keep_object):
         self.value_pvc = value_pvc
         self.value_pod = value_pod
         self.config_file = config_file
         self.test_ns = test_ns
+        self.keep_objects = keep_object
         self.kubeconfig = kubeconfig_value
+        d.set_test_namespace_value(self.test_ns)
+        d.set_keep_objects(self.keep_objects)
 
     def create_test_ns(self, kubeconfig):
         config.load_kube_config(config_file=kubeconfig)
@@ -267,7 +270,6 @@ class Driver:
     def test_dynamic(self, value_sc):
         LOGGER.info(
             f"Testing Dynamic Provisioning with following PVC parameters {str(self.value_pvc)}")
-        d.set_test_namespace_value(self.test_ns)
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
@@ -289,6 +291,13 @@ class Driver:
                     d.check_pod(self.value_pod[num2], sc_name, pvc_name, pod_name)
                     d.delete_pod(pod_name)
                     d.check_pod_deleted(pod_name)
+                    if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
+                        if num2<(len(self.value_pod)-1):
+                            pvc_name = d.get_random_name("pvc")
+                            d.create_pvc(value_pvc_pass, sc_name, pvc_name)
+                            val = d.check_pvc(value_pvc_pass, sc_name, pvc_name)
+                            if val is not True:
+                                break
                 LOGGER.info(100*"-")
             d.delete_pvc(pvc_name)
             d.check_pvc_deleted(pvc_name)
@@ -300,7 +309,6 @@ class Driver:
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
         config.load_kube_config(config_file=self.kubeconfig)
-        d.set_test_namespace_value(self.test_ns)
         sc_name=""
         if sc_value is not False:
             sc_name = d.get_random_name("sc")
@@ -351,6 +359,8 @@ class Driver:
                     d.check_pod(self.value_pod[num2], sc_name, pvc_name, pod_name, dir_name, pv_name)
                     d.delete_pod(pod_name)
                     d.check_pod_deleted(pod_name)
+                    if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
+                        break
                 LOGGER.info(100*"-")
             d.delete_pvc(pvc_name)
             d.check_pvc_deleted(pvc_name)
@@ -364,7 +374,6 @@ class Driver:
         d.check_storage_class_deleted(sc_name)
 
     def one_pvc_two_pod(self, value_sc):
-        d.set_test_namespace_value(self.test_ns)
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
@@ -407,7 +416,6 @@ class Driver:
         d.check_pvc_deleted(pvc_name)
 
     def parallel_pvc(self, value_sc):
-        d.set_test_namespace_value(self.test_ns)
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
