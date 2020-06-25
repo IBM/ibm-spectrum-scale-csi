@@ -51,4 +51,4 @@ nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 state: present
 
 # The log level of the driver container.
-driverLogLevel : "{{ driver_log_level | 2 }}"
+driverLogLevel: "{{ driver_log_level | 2 }}"
