@@ -49,13 +49,13 @@ spec:
             - "--v=5" # Debugging
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi/csi.sock
+              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: socket-dir
-              mountPath: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/ibm-spectrum-scale-csi
+            path: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
             type: DirectoryOrCreate
