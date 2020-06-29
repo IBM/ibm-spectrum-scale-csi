@@ -864,19 +864,29 @@ func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName 
 func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
 
-	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id))
-	getFilesetResponse := GetFilesetResponse_v2{}
-
-	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
+	filesetResponse, err := s.GetFileSetResponseFromId(filesystemName, Id)
 	if err != nil {
-		return "", fmt.Errorf("unable to get name for fileset Id %v:%v", filesystemName, Id)
+		return "", fmt.Errorf("Fileset response not found for fileset Id %v:%v", filesystemName, Id)
 	}
+	return filesetResponse.FilesetName, nil
+}
 
-	if len(getFilesetResponse.Filesets) == 0 {
-		return "", nil
-	}
+func (s *spectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error) {
+        glog.V(4).Infof("rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
 
-	return getFilesetResponse.Filesets[0].FilesetName, nil
+        getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id))
+        getFilesetResponse := GetFilesetResponse_v2{}
+
+        err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
+        if err != nil {
+                return Fileset_v2{}, fmt.Errorf("unable to get name for fileset Id %v:%v", filesystemName, Id)
+        }
+
+        if len(getFilesetResponse.Filesets) == 0 {
+                return Fileset_v2{}, fmt.Errorf("no filesets found for Id %v:%v", filesystemName, Id)
+        }
+
+        return getFilesetResponse.Filesets[0], nil
 }
 
 //nolint:dupl

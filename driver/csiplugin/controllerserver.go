@@ -696,8 +696,8 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 				}
 
-				if len(snapshotList) != 0 {
-					return nil, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+				if len(snapshotList) > 0 {
+					return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
 				}
 				glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteVolume", FilesetName)
 
@@ -932,20 +932,22 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	glog.V(5).Infof("CreateSnapshot - getting filesystem Name from Filesystem Uid [%s] ", volumeIDMembers.FsetId)
-	filesetName, err := conn.GetFileSetNameFromId(filesystemName, volumeIDMembers.FsetId)
+	filesetResp, err := conn.GetFileSetResponseFromId(filesystemName, volumeIDMembers.FsetId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get Fileset Name for Fileset Id [%v] FS [%v] ClusterId [%v]", volumeIDMembers.FsetId, filesystemName, volumeIDMembers.ClusterId))
 	}
 
-	if filesetName != "" {
-		sLinkRelPath := strings.Replace(volumeIDMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
-		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
+	if filesetResp.Config.ParentId > 0 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Source Volume %v is not independent fileset based", volID))
+	}
+	filesetName := filesetResp.FilesetName
+	sLinkRelPath := strings.Replace(volumeIDMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
+	sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
-		/* Confirm it is same fileset which was created for this PV */
-		pvName := filepath.Base(sLinkRelPath)
-		if pvName != filesetName {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - PV name from path [%v] does not match with filesetName [%v].", pvName, filesetName))
-		}
+	/* Confirm it is same fileset which was created for this PV */
+	pvName := filepath.Base(sLinkRelPath)
+	if pvName != filesetName {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - PV name from path [%v] does not match with filesetName [%v].", pvName, filesetName))
 	}
 
 	snapName := req.GetName()
@@ -974,7 +976,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, err
 	}
 
-	const longForm = "2020-03-27 00:40:02,000" // This is the format in which REST API return creation timestamp
+	const longForm = "2006-01-02 15:04:05,000" // This is the format in which REST API return creation timestamp
 	//nolint::staticcheck
 	t, _ := time.Parse(longForm, createTS)
 	var timestamp timestamp.Timestamp

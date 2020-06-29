@@ -8,24 +8,26 @@
 These are snapshotter beta CRDs. Do this once per cluster
 
    ```
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
    ```
 
 ### Install snapshot controller
 
    ```
-   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
+
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
    ```
 
-Change the namespace in above file to the one that you want to install the snapshot controller in and apply the file-
+Change the namespace in above files to the one that you want to install the snapshot controller in and apply the file-
    ```
    kubectl apply -f rbac-snapshot-controller.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   kubectl apply -f setup-snapshot-controller.yaml
    ```
 
 Do this once per cluster

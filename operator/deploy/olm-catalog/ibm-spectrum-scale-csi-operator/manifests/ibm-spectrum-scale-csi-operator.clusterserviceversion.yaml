@@ -53,7 +53,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     release: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator.v2.0.1
+  name: ibm-spectrum-scale-csi-operator.v2.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -366,7 +366,7 @@ spec:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
                 productName: IBM Spectrum Scale CSI Operator
-                productVersion: 2.0.1
+                productVersion: 2.1.0
               labels:
                 app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
                 app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -463,5 +463,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v2.0.0
-  version: 2.0.1
+  replaces: ibm-spectrum-scale-csi-operator.v2.0.1
+  version: 2.1.0
