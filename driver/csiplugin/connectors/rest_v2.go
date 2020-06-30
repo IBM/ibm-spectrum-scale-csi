@@ -883,7 +883,7 @@ func (s *spectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id stri
 	}
 
 	if len(getFilesetResponse.Filesets) == 0 {
-        	return Fileset_v2{}, fmt.Errorf("no filesets found for Id %v:%v", filesystemName, Id)
+		return Fileset_v2{}, fmt.Errorf("no filesets found for Id %v:%v", filesystemName, Id)
 	}
 
 	return getFilesetResponse.Filesets[0], nil
