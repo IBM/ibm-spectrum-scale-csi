@@ -1,4 +1,4 @@
 sphinx
 sphinx_rtd_theme
 recommonmark
-operator-courier==2.1.0
+operator-courier==2.0.1
