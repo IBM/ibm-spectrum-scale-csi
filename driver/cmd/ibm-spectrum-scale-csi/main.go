@@ -32,7 +32,7 @@ var (
 	endpoint      = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName    = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 	nodeID        = flag.String("nodeid", "", "node id")
-	vendorVersion = "2.0.0"
+	vendorVersion = "2.0.1"
 )
 
 func main() {
