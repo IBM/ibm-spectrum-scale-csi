@@ -12,4 +12,4 @@ scorecard:
         namespace: "ibm-spectrum-scale-csi-driver"
         cr-manifest:
           - "deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml"
-        csv-path: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.0.1/ibm-spectrum-scale-csi-operator.v2.0.1.clusterserviceversion.yaml"
+        csv-path: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.0.0/ibm-spectrum-scale-csi-operator.v2.0.0.clusterserviceversion.yaml"
