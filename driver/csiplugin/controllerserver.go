@@ -156,19 +156,6 @@ func (cs *ScaleControllerServer) CreateLWVol(scVol *scaleVolume) error {
 	return nil
 }
 
-func (cs *ScaleControllerServer) GenerateVolSnapId(conn connectors.SpectrumScaleConnector, scVol scaleVolId, filesystemName string, filesetName string, snapName string) (string, error) {
-	var volSnapId string
-
-	snapid, err := conn.GetSnapshotUid(filesystemName, filesetName, snapName)
-	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to get Snapshot UID for [%v] in filesystem [%v] and fileset [%v]. Error [%v]", snapName, filesystemName, filesetName, err))
-	}
-
-	volSnapId = fmt.Sprintf("%s;%s;%s;%s", scVol.ClusterId, scVol.FsUUID, scVol.FsetId, snapid)
-
-	return volSnapId, nil
-}
-
 func (cs *ScaleControllerServer) GenerateVolId(scVol *scaleVolume) (string, error) {
 	var volId string
 
