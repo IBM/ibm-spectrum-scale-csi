@@ -7,6 +7,7 @@ from kubernetes.client.rest import ApiException
 import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
+import utils.snapshot as snapshot
 from conftest import input_params
 from utils.fileset_functions import get_FSUID, create_dir, delete_dir, get_mount_point
 LOGGER = logging.getLogger()
@@ -434,6 +435,43 @@ class Driver:
             d.delete_storage_class(sc_name)
         d.check_storage_class_deleted(sc_name)
 
+
+class Snapshot():
+    def __init__(self,data,value_pvc):
+        config.load_kube_config()
+        self.config_file = data
+        self.value_pvc=value_pvc
+        d.set_keep_objects(False)
+        d.set_test_namespace_value("ibm-spectrum-scale-csi-driver")
+        snapshot.set_test_namespace_value("ibm-spectrum-scale-csi-driver")        
+
+    def test_dynamic(self,value_sc):
+        sc_name = d.get_random_name("sc")
+        d.create_storage_class(value_sc, self.config_file, sc_name)
+        d.check_storage_class(sc_name)
+
+        pvc_name = d.get_random_name("pvc")
+        d.create_pvc(self.value_pvc, sc_name, pvc_name)
+        val = d.check_pvc(self.value_pvc, sc_name, pvc_name)
+
+        vs_class_name = d.get_random_name("vsclass")
+        snapshot.create_vs_class(vs_class_name,{"deletionPolicy":"Delete"})
+        snapshot.check_vs_class(vs_class_name)
+
+        vs_name = d.get_random_name("vs")
+        snapshot.create_vs(vs_name,vs_class_name,pvc_name)
+        snapshot.check_vs_detail(vs_name,pvc_name,self.config_file)
+
+
+        snapshot.delete_vs(vs_name)
+        snapshot.check_vs_deleted(vs_name)
+        snapshot.delete_vs_class(vs_class_name)
+        snapshot.check_vs_class_deleted(vs_class_name)
+        d.delete_pvc(pvc_name)
+        d.check_pvc_deleted(pvc_name)
+        if d.check_storage_class(sc_name):
+            d.delete_storage_class(sc_name)
+        d.check_storage_class_deleted(sc_name)
 
 def read_driver_data(clusterconfig, namespace):
 
