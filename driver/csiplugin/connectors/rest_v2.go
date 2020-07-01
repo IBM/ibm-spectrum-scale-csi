@@ -826,7 +826,7 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) 
 }
 
 func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {
-	glog.V(4).Infof("rest_v2 GetFileSetUid. filesytem: %s, fileset: %s", filesystemName, filesetName)
+	glog.V(4).Infof("rest_v2 GetFileSetUid. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName))
 	getFilesetResponse := GetFilesetResponse_v2{}

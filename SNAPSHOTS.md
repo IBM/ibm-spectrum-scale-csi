@@ -1,33 +1,27 @@
 # IBM Spectrum Scale CSI driver volume snapshots
+Min Scale version required: 5.0.5.1
 
 ## Installing the external snapshotter
-(eventually this should be done via operator)
+Note: Kubernetes distributions should provide the external snapshotter by default. OpenShift 4.4+ has the snapshot controller installed by default and below steps are not needed. Perform below two steps for Kubernetes cluster.
 
 ### Install external snapshotter CRDs
 
 These are snapshotter beta CRDs. Do this once per cluster
 
    ```
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
    ```
 
 ### Install snapshot controller
 
    ```
-   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 
-   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-2.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
-   ```
-
-Change the namespace in above files to the one that you want to install the snapshot controller in and apply the file-
-   ```
-   kubectl apply -f rbac-snapshot-controller.yaml
-
-   kubectl apply -f setup-snapshot-controller.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
    ```
 
 Do this once per cluster
@@ -47,7 +41,6 @@ Install the operator and driver images with snapshot features. Following resourc
    pod/ibm-spectrum-scale-csi-provisioner-0               1/1     Running   4          10d
    pod/ibm-spectrum-scale-csi-snapshotter-0               1/1     Running   4          10d
    pod/ibm-spectrum-scale-csi-wgtbn                       2/2     Running   0          3m38s
-   pod/snapshot-controller-0                              1/1     Running   2          26d
 
    NAME                                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
    service/ibm-spectrum-scale-csi-operator-metrics   ClusterIP   10.98.116.142   <none>        8383/TCP,8686/TCP   14d
@@ -65,7 +58,6 @@ Install the operator and driver images with snapshot features. Following resourc
    statefulset.apps/ibm-spectrum-scale-csi-attacher      1/1     10d
    statefulset.apps/ibm-spectrum-scale-csi-provisioner   1/1     10d
    statefulset.apps/ibm-spectrum-scale-csi-snapshotter   1/1     10d
-   statefulset.apps/snapshot-controller                  1/1     26d
 
    ```
 

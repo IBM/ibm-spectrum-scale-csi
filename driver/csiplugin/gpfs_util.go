@@ -218,39 +218,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	return scaleVol, nil
 }
 
-/*
-func getScaleVolSnapOptions(snapOptions map[string]string) (*scaleVolSnap, error) {
-        //var err error
-        scaleVolSnap := &scaleVolSnap{}
-
-        volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
-        volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
-        clusterId, clusterIdSpecified := volOptions[connectors.UserSpecifiedClusterId]
-        uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
-        gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
-        fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
-        inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
-        parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
-
-        // Handling empty values
-        scaleVol.VolDirBasePath = ""
-        scaleVol.InodeLimit = ""
-        scaleVol.FilesetType = ""
-        scaleVol.ClusterId = ""
-
-        if fsSpecified && volBckFs == "" {
-                fsSpecified = false
-        }
-
-        if fsSpecified {
-                scaleVol.VolBackendFs = volBckFs
-        } else {
-                return &scaleVolume{}, status.Error(codes.InvalidArgument, "volBackendFs must be specified in storageClass")
-        }
-
-}
-*/
-
 func executeCmd(command string, args []string) ([]byte, error) {
 	glog.V(5).Infof("gpfs_util executeCmd")
 

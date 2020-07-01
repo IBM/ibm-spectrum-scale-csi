@@ -161,7 +161,6 @@ func (cs *ScaleControllerServer) GenerateVolId(scVol *scaleVolume) (string, erro
 
 	/* We need to put FSUUID for localFS in volID */
 	uid, err := scVol.PrimaryConnector.GetFsUid(scVol.LocalFS)
-	glog.Infof("GetFsUID error [%v] uid [%v]", err, uid)
 	if err != nil {
 		return "", status.Error(codes.Internal, fmt.Sprintf("Unable to get FS UUID for FS [%v]. Error [%v]", scVol.LocalFS, err))
 	}
