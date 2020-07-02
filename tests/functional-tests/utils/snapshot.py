@@ -4,12 +4,19 @@ import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import utils.fileset_functions as ff
+import utils.driver as d
 LOGGER = logging.getLogger()
 
 def set_test_namespace_value(namespace_name=None):
     """ sets the test namespace global for use in later functions"""
     global namespace_value
     namespace_value = namespace_name
+
+def set_keep_objects(keep_object):
+    """ sets the keep_objects global for use in later functions"""
+    global keep_objects
+    keep_objects = keep_object
+
 
 def create_vs_class(vs_class_name,body_params):
     class_body =  {
@@ -39,6 +46,8 @@ def create_vs_class(vs_class_name,body_params):
         assert False
 
 def delete_vs_class(vs_class_name):
+    if keep_objects:
+        return
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
@@ -71,6 +80,8 @@ def check_vs_class(vs_class_name):
         return False  
 
 def check_vs_class_deleted(vs_class_name):
+    if keep_objects:
+        return
     api_instance = client.CustomObjectsApi()
     try:
         api_response = api_instance.get_cluster_custom_object(
@@ -121,6 +132,8 @@ def create_vs(vs_name,vs_class_name,pvc_name):
 
 def delete_vs(vs_name):
 
+    if keep_objects:
+        return
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.delete_namespaced_custom_object(
@@ -157,6 +170,8 @@ def check_vs(vs_name):
 
 
 def check_vs_deleted(vs_name):
+    if keep_objects:
+        return
     time.sleep(10)
     api_instance = client.CustomObjectsApi()
     try:
@@ -173,7 +188,19 @@ def check_vs_deleted(vs_name):
     except ApiException as e:
         LOGGER.info(f"volume snapshot {vs_name} deletion confirmed")
 
-def check_vs_detail(vs_name,pvc_name,data):
+def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
+     
+    delete_vs(vs_name)
+    check_vs_deleted(vs_name)
+    delete_vs_class(vs_class_name)
+    check_vs_class_deleted(vs_class_name)    
+    d.delete_pvc(pvc_name)
+    d.check_pvc_deleted(pvc_name)
+    if d.check_storage_class(sc_name):
+        d.delete_storage_class(sc_name)
+        d.check_storage_class_deleted(sc_name)
+
+def check_vs_detail(vs_name,pvc_name,data,vs_class_name,sc_name):
 
     api_instance = client.CustomObjectsApi()
     try:
@@ -205,6 +232,7 @@ def check_vs_detail(vs_name,pvc_name,data):
         LOGGER.info(f"volume snapshot content {snapcontent_name} exists")
     except ApiException as e:
         LOGGER.error(f"volume snapshot content {snapcontent_name} does not exists")
+        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
         assert False
 
     api_instance = client.CoreV1Api()
@@ -216,12 +244,13 @@ def check_vs_detail(vs_name,pvc_name,data):
         LOGGER.error(
             f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
         LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
+        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)   
         assert False
 	
     volume_name = api_response.spec.volume_name
-    time.sleep(5)
     if ff.check_snapshot(data,snapshot_name,volume_name):
         LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
     else:
         LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
+        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
         assert False 

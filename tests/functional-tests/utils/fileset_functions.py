@@ -506,20 +506,23 @@ def get_remoteFs_remotename(test):
 def check_snapshot(test,snapshot_name,volume_name):
     
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
+    val=0
+    while val<12:
+        snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+ \
         volume_name+"/snapshots"
-    response = requests.get(snap_link, verify=False,
+        response = requests.get(snap_link, verify=False,
                             auth=(test["username"], test["password"]))
-    LOGGER.debug(response.text)
+        LOGGER.debug(response.text)
 
-    response_dict = json.loads(response.text)
-    LOGGER.debug(response_dict)
+        response_dict = json.loads(response.text)
+        LOGGER.debug(response_dict)
     
-    for snapshot in response_dict["snapshots"]:
-        if snapshot["snapshotName"] == snapshot_name:
-            return True
+        for snapshot in response_dict["snapshots"]:
+            if snapshot["snapshotName"] == snapshot_name:
+                return True
+        val+=1
+        time.sleep(5)
     return False
     
 

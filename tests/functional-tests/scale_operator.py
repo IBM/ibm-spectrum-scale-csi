@@ -437,41 +437,54 @@ class Driver:
 
 
 class Snapshot():
-    def __init__(self,data,value_pvc):
-        config.load_kube_config()
+    def __init__(self, kubeconfig, test_namespace, keep_objects, data, value_pvc, value_vs_class, number_of_snapshots):
+        config.load_kube_config(config_file=kubeconfig)
         self.config_file = data
-        self.value_pvc=value_pvc
-        d.set_keep_objects(False)
-        d.set_test_namespace_value("ibm-spectrum-scale-csi-driver")
-        snapshot.set_test_namespace_value("ibm-spectrum-scale-csi-driver")        
+        self.value_pvc = value_pvc
+        self.value_vs_class = value_vs_class
+        self.number_of_snapshots = number_of_snapshots
+        d.set_keep_objects(keep_objects)
+        d.set_test_namespace_value(test_namespace)
+        snapshot.set_test_namespace_value(test_namespace)        
+        snapshot.set_keep_objects(keep_objects)
 
-    def test_dynamic(self,value_sc):
-        sc_name = d.get_random_name("sc")
-        d.create_storage_class(value_sc, self.config_file, sc_name)
-        d.check_storage_class(sc_name)
+    def test_dynamic(self, value_sc, value_vs_class=None, number_of_snapshots=None):
+        if value_vs_class is None:
+            value_vs_class=self.value_vs_class
+        if number_of_snapshots is None:
+            number_of_snapshots=self.number_of_snapshots
 
-        pvc_name = d.get_random_name("pvc")
-        d.create_pvc(self.value_pvc, sc_name, pvc_name)
-        val = d.check_pvc(self.value_pvc, sc_name, pvc_name)
+        for pvc_value in self.value_pvc:
+            LOGGER.info("-"*100)
+            sc_name = d.get_random_name("sc")
+            d.create_storage_class(value_sc, self.config_file, sc_name)
+            d.check_storage_class(sc_name)
 
-        vs_class_name = d.get_random_name("vsclass")
-        snapshot.create_vs_class(vs_class_name,{"deletionPolicy":"Delete"})
-        snapshot.check_vs_class(vs_class_name)
+            pvc_name = d.get_random_name("pvc")
+            d.create_pvc(pvc_value, sc_name, pvc_name)
+            val = d.check_pvc(pvc_value, sc_name, pvc_name)
 
-        vs_name = d.get_random_name("vs")
-        snapshot.create_vs(vs_name,vs_class_name,pvc_name)
-        snapshot.check_vs_detail(vs_name,pvc_name,self.config_file)
+            vs_class_name = d.get_random_name("vsclass")
+            snapshot.create_vs_class(vs_class_name, value_vs_class)
+            snapshot.check_vs_class(vs_class_name)
 
-
-        snapshot.delete_vs(vs_name)
-        snapshot.check_vs_deleted(vs_name)
-        snapshot.delete_vs_class(vs_class_name)
-        snapshot.check_vs_class_deleted(vs_class_name)
-        d.delete_pvc(pvc_name)
-        d.check_pvc_deleted(pvc_name)
-        if d.check_storage_class(sc_name):
-            d.delete_storage_class(sc_name)
-        d.check_storage_class_deleted(sc_name)
+            vs_names=[]
+            for _ in range(0,number_of_snapshots):
+                vs_name = d.get_random_name("vs")
+                vs_names.append(vs_name)
+                snapshot.create_vs(vs_name, vs_class_name, pvc_name)
+                snapshot.check_vs_detail(vs_name, pvc_name, self.config_file, vs_class_name, sc_name)
+                
+            for vs_name in vs_names:
+                snapshot.delete_vs(vs_name)
+                snapshot.check_vs_deleted(vs_name)
+            snapshot.delete_vs_class(vs_class_name)
+            snapshot.check_vs_class_deleted(vs_class_name)
+            d.delete_pvc(pvc_name)
+            d.check_pvc_deleted(pvc_name)
+            if d.check_storage_class(sc_name):
+                d.delete_storage_class(sc_name)
+            d.check_storage_class_deleted(sc_name)
 
 def read_driver_data(clusterconfig, namespace):
 
