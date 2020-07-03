@@ -1,11 +1,14 @@
-import pytest
 import copy
+import logging
+import pytest
 import utils.fileset_functions as ff
-from scale_operator import Snapshot,read_driver_data
+from scale_operator import Snapshot, read_driver_data
+LOGGER = logging.getLogger()
+
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
-    global data,snapshot_object  # are required in every testcase
+    global data, snapshot_object  # are required in every testcase
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
         kubeconfig_value = "~/.kube/config"
@@ -20,10 +23,11 @@ def values(request):
     test_namespace = namespace_value
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
-    value_vs_class = {"deletionPolicy":"Delete"}
-    number_of_snapshots = 1 
+    value_vs_class = {"deletionPolicy": "Delete"}
+    number_of_snapshots = 1
     remote_data = get_remote_data(data)
-    snapshot_object= Snapshot(kubeconfig_value, test_namespace, keep_objects, remote_data, value_pvc, value_vs_class, number_of_snapshots)
+    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, remote_data, value_pvc, value_vs_class, number_of_snapshots)
+
 
 def get_remote_data(data_passed):
     remote_data = copy.deepcopy(data_passed)
@@ -49,22 +53,25 @@ def get_remote_data(data_passed):
     remote_data["gid_number"] = remote_data["r-gid_number"]
     remote_data["uid_number"] = remote_data["r-uid_number"]
     remote_data["inodeLimit"] = remote_data["r-inodeLimit"]
-    #for get_mount_point function
-    remote_data["type_remote"] = {"username":data_passed["username"],
-                                   "password":data_passed["password"],
-                                   "port":data_passed["port"],
-                                   "guiHost":data_passed["guiHost"]}
+    # for get_mount_point function
+    remote_data["type_remote"] = {"username": data_passed["username"],
+                                  "password": data_passed["password"],
+                                  "port": data_passed["port"],
+                                  "guiHost": data_passed["guiHost"]}
 
     return remote_data
+
 
 def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc)
 
+
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc,value_vs_class={"deletionPolicy":"Retain"})
+    snapshot_object.test_dynamic(value_sc, value_vs_class={"deletionPolicy": "Retain"})
+
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_2():
@@ -72,15 +79,18 @@ def test_snapshot_dynamic_expected_fail_2():
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc)
 
+
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r-volDirBasePath"]}
-    driver_object.test_dynamic(value_sc)
+    snapshot_object.test_dynamic(value_sc)
+
 
 def test_snapshot_dynamic_multiple_snapshots():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc,number_of_snapshots=3)
+    snapshot_object.test_dynamic(value_sc, number_of_snapshots=3)
+
 
 def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"],
@@ -138,13 +148,13 @@ def test_snapshot_dynamic_pass_29():
                 "filesetType": "independent", "inodeLimit": data["r-inodeLimit"]}
     snapshot_object.test_dynamic(value_sc)
 
-	
+
 def test_snapshot_dynamic_pass_116():
     value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc)
 
-	
+
 def test_snapshot_dynamic_pass_118():
     value_sc = {"clusterId": data["remoteid"], "uid": data["r-uid_number"],
                 "inodeLimit": data["r-inodeLimit"],
@@ -158,10 +168,9 @@ def test_snapshot_dynamic_pass_120():
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc)
 
-	
+
 def test_snapshot_dynamic_pass_188():
     value_sc = {"clusterId": data["remoteid"], "volBackendFs": data["remoteFs"],
                 "gid": data["r-gid_number"], "uid": data["r-uid_number"],
                 "inodeLimit": data["r-inodeLimit"]}
     snapshot_object.test_dynamic(value_sc)
-

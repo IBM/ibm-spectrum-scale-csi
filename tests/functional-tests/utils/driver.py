@@ -27,10 +27,12 @@ def set_test_namespace_value(namespace_name=None):
     global namespace_value
     namespace_value = namespace_name
 
-def set_keep_objects(keep_object):                                                            
-    """ sets the keep_objects global for use in later functions"""                            
-    global keep_objects                                                                       
+
+def set_keep_objects(keep_object):
+    """ sets the keep_objects global for use in later functions"""
+    global keep_objects
     keep_objects = keep_object
+
 
 def get_random_name(type_of):
     """ return random name of type_of"""
@@ -118,7 +120,7 @@ def check_storage_class(sc_name):
         None
 
     """
-    if sc_name=="":
+    if sc_name == "":
         return False
     api_instance = client.StorageV1Api()
     try:
@@ -159,7 +161,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
             access_modes=[pv_values["access_modes"]],
             capacity={"storage": pv_values["storage"]},
             csi=pv_csi,
-            storage_class_name = sc_name
+            storage_class_name=sc_name
         )
     else:
         pv_spec = client.V1PersistentVolumeSpec(
@@ -167,7 +169,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
             capacity={"storage": pv_values["storage"]},
             csi=pv_csi,
             persistent_volume_reclaim_policy=pv_values["reclaim_policy"],
-            storage_class_name = sc_name
+            storage_class_name=sc_name
         )
 
     pv_body = client.V1PersistentVolume(
@@ -332,7 +334,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
             LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
             assert False
 
-        if api_response.status.phase == "Bound":   
+        if api_response.status.phase == "Bound":
             if(check_key(pvc_values, "reason")):
                 LOGGER.error(f'PVC Check : {pvc_name} is BOUND but as the failure reason is provided so\
                 asserting the test')
@@ -491,11 +493,11 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
             '-c',
             exec_command1]
         resp = stream(api_instance.connect_get_namespaced_pod_exec,
-                  pod_name,
-                  namespace_value,
-                  command=exec_command,
-                  stderr=True, stdin=False,
-                  stdout=True, tty=False)
+                      pod_name,
+                      namespace_value,
+                      command=exec_command,
+                      stderr=True, stdin=False,
+                      stdout=True, tty=False)
         if check_key(value_pod, "reason"):
             clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
             LOGGER.error("Pod should not be able to create file inside the pod as failure REASON provided, so asserting")
@@ -679,7 +681,7 @@ def check_pv_deleted(pv_name):
         except ApiException:
             LOGGER.info(f'PV {pv_name} has been deleted')
             return
-        
+
     LOGGER.info(f'PV {pv_name} is still not deleted')
     assert False
 

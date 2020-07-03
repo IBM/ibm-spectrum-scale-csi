@@ -27,7 +27,6 @@ def set_namespace_value(namespace_name):
     namespace_value = namespace_name
 
 
-
 def create_custom_object(custom_object_body, stateful_set_not_created):
     """
     Create custom object and waits until stateful sets are created.
@@ -108,13 +107,13 @@ def delete_custom_object():
 
     try:
         delete_co_api_response = delete_co_api_instance.delete_namespaced_custom_object(
-                group="csi.ibm.com",
-                version="v1",
-                namespace=namespace_value,
-                plural="csiscaleoperators",
-                body=delete_co_body,
-                grace_period_seconds=0,
-                name="ibm-spectrum-scale-csi")
+            group="csi.ibm.com",
+            version="v1",
+            namespace=namespace_value,
+            plural="csiscaleoperators",
+            body=delete_co_body,
+            grace_period_seconds=0,
+            name="ibm-spectrum-scale-csi")
         LOGGER.debug(str(delete_co_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -214,10 +213,9 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
             if ready_replicas == replicas:
                 LOGGER.info(f"CSI driver statefulset {stateful_name} is up")
                 return
-            else:
-                num += 1
-                time.sleep(5)
-        except ApiException as e:
+            num += 1
+            time.sleep(5)
+        except ApiException:
             num += 1
             time.sleep(5)
     LOGGER.info(f"CSI driver statefulset {stateful_name} does not exist")
@@ -270,7 +268,7 @@ def check_scaleoperatorobject_daemonsets_state():
         return True, desired_number_scheduled
 
     LOGGER.info(
-            "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
+        "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
     return False, desired_number_scheduled
 
 
@@ -400,7 +398,7 @@ def check_secret_is_deleted(secret_name):
         assert False
 
 
-def create_configmap(file_path, make_cacert_wrong,configmap_name):
+def create_configmap(file_path, make_cacert_wrong, configmap_name):
     """
     Create configmap with file at file_path
     if make_cacert_wrong==True then it makes cacert wrong
@@ -425,8 +423,8 @@ def create_configmap(file_path, make_cacert_wrong,configmap_name):
         file_content = f.read()
     if make_cacert_wrong:
         file_content = file_content[0:50]+file_content[-50:-1]
-    data_dict={}
-    data_dict[configmap_name]=file_content
+    data_dict = {}
+    data_dict[configmap_name] = file_content
     configmap = client.V1ConfigMap(
         api_version="v1",
         kind="ConfigMap",
@@ -477,6 +475,7 @@ def delete_configmap(configmap_name):
             f"Exception when calling CoreV1Api->create_namespaced_config_map: {e}")
         assert False
 
+
 def check_configmap_exists(configmap_name):
     """
     Checks configmap configmap_name exists or not
@@ -507,6 +506,7 @@ def check_configmap_exists(configmap_name):
         LOGGER.info(f'configmap {configmap_name} does not exist')
         return False
 
+
 def check_configmap_is_deleted(configmap_name):
     """
     checks configmap deleted or not
@@ -521,10 +521,10 @@ def check_configmap_is_deleted(configmap_name):
     while (var and count > 0):
         try:
             api_response = api_instance.read_namespaced_config_map(
-            namespace=namespace_value,
-            name=configmap_name,
-            pretty=True,
-        )
+                namespace=namespace_value,
+                name=configmap_name,
+                pretty=True,
+            )
             LOGGER.info("still deleting configmap")
             LOGGER.debug(str(api_response))
             count = count-1

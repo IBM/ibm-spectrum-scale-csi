@@ -7,7 +7,6 @@ import requests
 LOGGER = logging.getLogger()
 
 
-
 def delete_fileset(test):
     """
     Deletes the primaryFset provided in configuration file
@@ -296,7 +295,7 @@ def delete_created_fileset(test, volume_name):
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
-    LOGGER.debug(response.text) 
+    LOGGER.debug(response.text)
     search_result = re.search(volume_name, str(response.text))
     LOGGER.debug(search_result)
     if search_result is None:
@@ -317,19 +316,18 @@ def delete_created_fileset(test, volume_name):
             delete_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
 
-        for _ in range(0,24):
+        for _ in range(0, 24):
             get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
+                "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
             response = requests.get(get_link, verify=False,
-                                auth=(test["username"], test["password"]))
+                                    auth=(test["username"], test["password"]))
             LOGGER.debug(response.text)
             search_result = re.search(volume_name, str(response.text))
             LOGGER.debug(search_result)
             if search_result is None:
                 LOGGER.info(f'Fileset {volume_name} has been deleted successfully')
                 return
-            else:
-                time.sleep(5)
+            time.sleep(5)
         LOGGER.error(f'Fileset {volume_name} deletion operation failed')
         assert False
 
@@ -449,6 +447,7 @@ def get_FSUID(test):
     LOGGER.debug(FSUID)
     return FSUID
 
+
 def get_mount_point(test):
     """
     return th mount point of primaryFs
@@ -464,20 +463,19 @@ def get_mount_point(test):
 
     """
 
-
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     if "type_remote" in test:
         info_filesystem = "https://"+test["type_remote"]["guiHost"]+":"+test["type_remote"]["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["remoteFs"]+"?fields=:all:"
+            "/scalemgmt/v2/filesystems/"+test["remoteFs"]+"?fields=:all:"
         response = requests.get(info_filesystem, verify=False,
-                            auth=(test["type_remote"]["username"], test["type_remote"]["password"]))
+                                auth=(test["type_remote"]["username"], test["type_remote"]["password"]))
     else:
         info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
+            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
         response = requests.get(info_filesystem, verify=False,
-                            auth=(test["username"], test["password"]))
+                                auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    response_dict = json.loads(response.text) 
+    response_dict = json.loads(response.text)
     mount_point = response_dict["filesystems"][0]["mount"]["mountPoint"]
     LOGGER.debug(mount_point)
     return mount_point
@@ -492,7 +490,7 @@ def get_remoteFs_remotename(test):
     response = requests.get(info_filesystem, verify=False,
                             auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    
+
     response_dict = json.loads(response.text)
     for filesystem in response_dict["filesystems"]:
         if filesystem["name"] == test["remoteFs"]:
@@ -503,26 +501,24 @@ def get_remoteFs_remotename(test):
     return None
 
 
-def check_snapshot(test,snapshot_name,volume_name):
-    
+def check_snapshot(test, snapshot_name, volume_name):
+
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    val=0
-    while val<12:
+    val = 0
+    while val < 12:
         snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+ \
-        volume_name+"/snapshots"
+            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
+            volume_name+"/snapshots"
         response = requests.get(snap_link, verify=False,
-                            auth=(test["username"], test["password"]))
+                                auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
 
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
-    
+
         for snapshot in response_dict["snapshots"]:
             if snapshot["snapshotName"] == snapshot_name:
                 return True
-        val+=1
+        val += 1
         time.sleep(5)
     return False
-    
-

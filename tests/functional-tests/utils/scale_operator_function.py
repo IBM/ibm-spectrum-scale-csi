@@ -78,7 +78,7 @@ def create_deployment():
         with open(filepath, "r") as f:
             loaddep_yaml = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        print ("Error in configuration file:", exc)
+        print("Error in configuration file:", exc)
         assert False
 
     try:
@@ -110,7 +110,7 @@ def create_deployment_old(config_file):
     """
 
     deployment_apps_api_instance = client.AppsV1Api()
-    
+
     deployment_labels = {
         "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
         "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
@@ -193,7 +193,7 @@ def create_deployment_old(config_file):
 
     body_dep = client.V1Deployment(
         kind='Deployment', api_version='apps/v1', metadata=deployment_metadata, spec=deployment_spec)
-    
+
     try:
         LOGGER.info("creating deployment for operator")
         deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
@@ -376,7 +376,7 @@ def create_crd():
         with open(filepath, "r") as f:
             loadcrd_yaml = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        print ("Error in configuration file:", exc)
+        print("Error in configuration file:", exc)
         assert False
 
     crd_api_instance = client.ApiextensionsV1beta1Api()
@@ -406,7 +406,6 @@ def create_crd_old():
 
     """
 
-    
     # input to crd_metadata
     crd_labels = {
         "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
@@ -427,17 +426,17 @@ def create_crd_old():
     )
 
     crd_subresources = client.V1beta1CustomResourceSubresources(status={})
-    
+
     # input to crd_validation     json input
     filepath = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
     try:
         with open(filepath, "r") as f:
             loadcrd_yaml = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        print ("Error in configuration file:", exc)
-        assert False 
-    properties   = loadcrd_yaml['spec']['validation']['openAPIV3Schema']['properties']
-    
+        print("Error in configuration file:", exc)
+        assert False
+    properties = loadcrd_yaml['spec']['validation']['openAPIV3Schema']['properties']
+
     crd_open_apiv3_schema = client.V1beta1JSONSchemaProps(
         properties=properties, type="object")
     crd_validation = client.V1beta1CustomResourceValidation(
@@ -454,14 +453,13 @@ def create_crd_old():
         version="v1",
         versions=crd_versions
     )
-    
-    
+
     crd_body = client.V1beta1CustomResourceDefinition(
         api_version="apiextensions.k8s.io/v1beta1",
         kind="CustomResourceDefinition",
         metadata=crd_metadata,
         spec=crd_spec)
-    
+
     crd_api_instance = client.ApiextensionsV1beta1Api()
     try:
         LOGGER.info("creating crd")
@@ -705,7 +703,7 @@ def check_deployment_deleted():
             api_response = api_instance.read_namespaced_deployment(
                 name="ibm-spectrum-scale-csi-operator", namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
-            LOGGER.info(f'Still Deleting ibm-spectrum-scale-csi-operator deployment')
+            LOGGER.info('Still Deleting ibm-spectrum-scale-csi-operator deployment')
             count = count-1
             time.sleep(5)
         except ApiException:

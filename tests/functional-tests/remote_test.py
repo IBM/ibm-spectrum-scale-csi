@@ -2,7 +2,7 @@ import logging
 import copy
 import pytest
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key,read_operator_data
+    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key, read_operator_data
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -22,13 +22,13 @@ def values(request):
     data = read_driver_data(clusterconfig_value, namespace_value)
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
     keep_objects = data["keepobjects"]
-    if not(check_key(data,"remote")):
+    if not(check_key(data, "remote")):
         LOGGER.error("remote data is not provided in cr file")
         assert False
     test_namespace = namespace_value
 
     ff.fileset_exists(data)
-    operator = Scaleoperator(kubeconfig_value,namespace_value)
+    operator = Scaleoperator(kubeconfig_value, namespace_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
         check_ds_exists(kubeconfig_value, namespace_value)
@@ -40,7 +40,7 @@ def values(request):
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(operator_data,kubeconfig_value)
+        operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
         operator_object.create()
         val = operator_object.check()
         if val is True:
@@ -58,8 +58,8 @@ def values(request):
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    remote_data = get_remote_data(data) 
-    driver_object = Driver(kubeconfig_value,value_pvc, value_pod, remote_data, test_namespace, keep_objects)
+    remote_data = get_remote_data(data)
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, remote_data, test_namespace, keep_objects)
     ff.create_dir(remote_data, remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
@@ -70,7 +70,6 @@ def values(request):
         operator.delete()
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
-
 
 
 def get_remote_data(data_passed):
@@ -89,7 +88,7 @@ def get_remote_data(data_passed):
             remote_sec_name = cluster["secrets"]
             remote_data["username"] = remote_data["remote-username"][remote_sec_name]
             remote_data["password"] = remote_data["remote-password"][remote_sec_name]
-    
+
     remote_data["volDirBasePath"] = remote_data["r-volDirBasePath"]
     remote_data["parentFileset"] = remote_data["r-parentFileset"]
     remote_data["gid_name"] = remote_data["r-gid_name"]
@@ -97,15 +96,16 @@ def get_remote_data(data_passed):
     remote_data["gid_number"] = remote_data["r-gid_number"]
     remote_data["uid_number"] = remote_data["r-uid_number"]
     remote_data["inodeLimit"] = remote_data["r-inodeLimit"]
-    #for get_mount_point function
-    remote_data["type_remote"] = {"username":data_passed["username"],
-                                   "password":data_passed["password"],
-                                   "port":data_passed["port"],
-                                   "guiHost":data_passed["guiHost"]}
-    
+    # for get_mount_point function
+    remote_data["type_remote"] = {"username": data_passed["username"],
+                                  "password": data_passed["password"],
+                                  "port": data_passed["port"],
+                                  "guiHost": data_passed["guiHost"]}
+
     return remote_data
 
 #: Testcase that are expected to pass:
+
 
 def test_driver_static_1():
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -266,8 +266,8 @@ def test_driver_static_sc_13():
 
 def test_driver_static_sc_14():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    value_pv = {"access_modes":"ReadWriteMany", "storage":"1Gi",
-                "reclaim_policy":"Delete"}
+    value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
+                "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                             "reason": "incompatible accessMode"},
@@ -315,6 +315,7 @@ def test_driver_static_sc_17():
                         ]
     driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
+
 def test_driver_static_sc_18():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -338,13 +339,13 @@ def test_driver_static_sc_19():
                             "reason": "incompatible accessMode"},
                         {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
                         ]
-    driver_object.test_static(value_pv,value_pvc_custom,value_sc)
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
 
 def test_driver_static_sc_20():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                "reclaim_policy":"Delete"}
+                "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -357,7 +358,7 @@ def test_driver_static_sc_20():
 def test_driver_static_sc_21():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-          "reclaim_policy": "Recycle"}
+                "reclaim_policy": "Recycle"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -382,10 +383,10 @@ def test_driver_static_sc_22():
 
 def test_driver_static_sc_23():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    value_pv = {"access_modes":"ReadWriteOnce", "storage":"1Gi",
-                "reclaim_policy":"Default"}
+    value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
-                            "reason": "incompatible accessMode"},
+                         "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
                         {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                             "reason": "incompatible accessMode"}
@@ -394,8 +395,8 @@ def test_driver_static_sc_23():
 
 
 def test_driver_static_sc_24():
-    value_sc = {"volBackendFs":data["remoteFs"],"clusterId" : data["remoteid"]}
-    value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi","reclaim_policy":"Default"}
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi", "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -414,6 +415,7 @@ def test_driver_static_26():
     wrong={"id_wrong":False,"FSUID_wrong":True}
     driver_object.test_static(value_pv,value_pvc_custom,wrong=wrong)
 """
+
 
 def test_driver_static_25():
     LOGGER.info("wrong VolumeHandel -> cluster id")
@@ -1933,7 +1935,7 @@ def test_driver_dynamic_fail_202():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "filesetType": "dependent",
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"} 
+                "reason": "clusterId must be specified in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
