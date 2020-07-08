@@ -177,26 +177,30 @@ def check_vs(vs_name):
 def check_vs_deleted(vs_name):
     if keep_objects:
         return
-    time.sleep(10)
     api_instance = client.CustomObjectsApi()
-    try:
-        api_response = api_instance.get_namespaced_custom_object(
+    val=0
+    while val<12:
+        try:
+            api_response = api_instance.get_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
             version="v1beta1",
             plural="volumesnapshots",
             name=vs_name,
             namespace=namespace_value
-        )
-        LOGGER.debug(api_response)
-        LOGGER.error(f"volume snapshot {vs_name} is not deleted , asserting")
-        assert False
-    except ApiException:
-        LOGGER.info(f"volume snapshot {vs_name} deletion confirmed")
+            )
+            LOGGER.debug(api_response)
+            time.sleep(5)
+            val+=1
+        except ApiException:
+            LOGGER.info(f"volume snapshot {vs_name} deletion confirmed")
+            return
+    LOGGER.error(f"volume snapshot {vs_name} is not deleted , asserting")
+    assert False
 
 
 def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
-
-    delete_vs(vs_name)
+    if check_vs(vs_name):
+        delete_vs(vs_name)
     check_vs_deleted(vs_name)
     delete_vs_class(vs_class_name)
     check_vs_class_deleted(vs_class_name)
@@ -207,7 +211,7 @@ def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
         d.check_storage_class_deleted(sc_name)
 
 
-def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name):
+def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name,body_params):
 
     api_instance = client.CustomObjectsApi()
     try:
@@ -222,12 +226,20 @@ def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name):
         LOGGER.info(f"volume snapshot {vs_name} exists")
     except ApiException as e:
         LOGGER.info(f"volume snapshot {vs_name} does not exists")
+        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
+        assert False
+
+    if check_snapshot_status(vs_name):
+        LOGGER.info("ReadyToUse is true")
+    else:
+        LOGGER.error("ReadyToUse is not true")
+        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
         assert False
 
     uid_name = api_response["metadata"]["uid"]
     snapcontent_name = "snapcontent-" + uid_name
     snapshot_name = "snapshot-" + uid_name
-    time.sleep(5)
+    time.sleep(2)
     try:
         api_response = api_instance.get_cluster_custom_object(
             group="snapshot.storage.k8s.io",
@@ -261,3 +273,44 @@ def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name):
         LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
         clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
         assert False
+
+    if body_params["deletionPolicy"] == "Retain" and not(keep_objects):
+        custom_object_api_instance = client.CustomObjectsApi()
+        try:
+            custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
+                group="snapshot.storage.k8s.io",
+                version="v1beta1",
+                plural="volumesnapshotcontents",
+                name=snapcontent_name
+                )
+            LOGGER.debug(custom_object_api_response)
+            LOGGER.info(f"volume snapshot content {snapcontent_name} deleted")
+        except ApiException as e:
+            LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
+            assert False
+
+
+
+def check_snapshot_status(vs_name):
+
+    api_instance = client.CustomObjectsApi()
+    val=0
+    while val<12:
+        try:
+            api_response = api_instance.get_namespaced_custom_object_status(
+            group="snapshot.storage.k8s.io",
+            version="v1beta1",
+            plural="volumesnapshots",
+            name=vs_name,
+            namespace=namespace_value
+            )
+            LOGGER.debug(api_response)
+            if "status" in api_response.keys() and "readyToUse" in api_response["status"].keys():
+                if api_response["status"]["readyToUse"] is True:
+                    return True
+            time.sleep(5)
+            val+=1
+        except ApiException:
+            time.sleep(5)
+            val+=1
+    return False

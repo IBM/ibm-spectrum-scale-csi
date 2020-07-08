@@ -1,5 +1,6 @@
 import copy
 import multiprocessing
+import time
 import logging
 import yaml
 from kubernetes import client, config
@@ -468,7 +469,7 @@ class Snapshot():
                 vs_name = d.get_random_name("vs")
                 vs_names.append(vs_name)
                 snapshot.create_vs(vs_name, vs_class_name, pvc_name)
-                snapshot.check_vs_detail(vs_name, pvc_name, self.config_file, vs_class_name, sc_name)
+                snapshot.check_vs_detail(vs_name, pvc_name, self.config_file, vs_class_name, sc_name,value_vs_class)
 
             for vs_name in vs_names:
                 snapshot.delete_vs(vs_name)
@@ -639,3 +640,26 @@ def read_operator_data(clusterconfig, namespace):
             assert False
 
     return data
+
+def check_pod_running(passed_kubeconfig_value,namespace_value, pod_name):
+    config.load_kube_config(config_file=passed_kubeconfig_value)
+    api_instance = client.CoreV1Api()
+    val = 0
+    while val<12:
+        try:
+            api_response = api_instance.read_namespaced_pod(
+                name=pod_name, namespace=namespace_value, pretty=True)
+            LOGGER.debug(str(api_response))
+            if api_response.status.phase == "Running":
+                LOGGER.info(f'POD Check : POD {pod_name} is Running')
+                return
+            time.sleep(5)
+            val+=1
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
+            LOGGER.info(f"POD Check : POD {pod_name} does not exists on Cluster")
+            assert False
+    LOGGER.error(f'POD Check : POD {pod_name} is not Running')
+    assert False
+
