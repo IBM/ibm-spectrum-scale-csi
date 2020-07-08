@@ -6,6 +6,7 @@ from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
 from utils.fileset_functions import fileset_exists, delete_fileset, create_dir
 LOGGER = logging.getLogger()
 
+
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, snapshot_object  # are required in every testcase
@@ -43,7 +44,7 @@ def values(request):
         else:
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
-    check_pod_running(kubeconfig_value,namespace_value,"ibm-spectrum-scale-csi-snapshotter-0")
+    check_pod_running(kubeconfig_value, namespace_value, "ibm-spectrum-scale-csi-snapshotter-0")
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
@@ -65,16 +66,19 @@ def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc)
 
+
 @pytest.mark.skip
 def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc, value_vs_class={"deletionPolicy": "Retain"})
+
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc)
+
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_2():
@@ -87,10 +91,12 @@ def test_snapshot_dynamic_multiple_snapshots():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc, number_of_snapshots=3)
 
+
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_256():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc, number_of_snapshots=256)
+
 
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_257():
@@ -226,5 +232,3 @@ def test_snapshot_dynamic_pass_23():
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"]}
     snapshot_object.test_dynamic(value_sc)
-
-

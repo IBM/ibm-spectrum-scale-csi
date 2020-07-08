@@ -29,7 +29,7 @@ def name_generator():
     ]
 
     postfix_list = [
-        "elephant", "lion", "deer", "cat", "rat", "peacock", "frogs", "chicken", "zebra", 
+        "elephant", "lion", "deer", "cat", "rat", "peacock", "frogs", "chicken", "zebra",
         "tiger", "horse", "cockroach", "mouse", "peahen", "parrot", "goat", "whales",
         "snake", "fish", "monkey", "fox", "sheep", "duck", "eagle", "wolf", "duck",
         "bats", "dolphin"

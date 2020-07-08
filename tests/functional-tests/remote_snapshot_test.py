@@ -4,7 +4,7 @@ import pytest
 import utils.fileset_functions as ff
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists, \
     check_ds_exists, check_nodes_available, Scaleoperatorobject, Snapshot, check_key, \
-    read_operator_data,check_pod_running      
+    read_operator_data, check_pod_running
 LOGGER = logging.getLogger()
 
 
@@ -21,25 +21,25 @@ def values(request):
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
     data = read_driver_data(clusterconfig_value, namespace_value)
-    operator_data = read_operator_data(clusterconfig_value, namespace_value)                                                                  
-    keep_objects = data["keepobjects"]                                                                                                        
-    if not(check_key(data, "remote")):                                                                                                        
-        LOGGER.error("remote data is not provided in cr file")                                                                                
-        assert False                                                                                                                          
-    test_namespace = namespace_value                                                                                                          
-                                                                                                                                              
-    ff.fileset_exists(data)                                                                                                                   
-    operator = Scaleoperator(kubeconfig_value, namespace_value)                                                                               
-    condition = check_ns_exists(kubeconfig_value, namespace_value)                                                                            
-    if condition is True:                                                                                                                     
-        check_ds_exists(kubeconfig_value, namespace_value)                                                                                    
-    else:                                                                                                                                     
-        operator.create()                                                                                                                     
-        operator.check()                                                                                                                      
-        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")                                                      
-        check_nodes_available(                                                                                                                
-            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")                                                              
-        check_nodes_available(                                                                                                                
+    operator_data = read_operator_data(clusterconfig_value, namespace_value)
+    keep_objects = data["keepobjects"]
+    if not(check_key(data, "remote")):
+        LOGGER.error("remote data is not provided in cr file")
+        assert False
+    test_namespace = namespace_value
+
+    ff.fileset_exists(data)
+    operator = Scaleoperator(kubeconfig_value, namespace_value)
+    condition = check_ns_exists(kubeconfig_value, namespace_value)
+    if condition is True:
+        check_ds_exists(kubeconfig_value, namespace_value)
+    else:
+        operator.create()
+        operator.check()
+        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
+        check_nodes_available(
+            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
+        check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
         operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
         operator_object.create()
@@ -49,7 +49,7 @@ def values(request):
         else:
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
-    check_pod_running(kubeconfig_value,namespace_value,"ibm-spectrum-scale-csi-snapshotter-0")
+    check_pod_running(kubeconfig_value, namespace_value, "ibm-spectrum-scale-csi-snapshotter-0")
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
@@ -102,16 +102,19 @@ def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc)
 
+
 @pytest.mark.skip
 def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, value_vs_class={"deletionPolicy": "Retain"})
+
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc)
+
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_2():
@@ -124,10 +127,12 @@ def test_snapshot_dynamic_multiple_snapshots():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, number_of_snapshots=3)
 
+
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_256():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, number_of_snapshots=256)
+
 
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_257():

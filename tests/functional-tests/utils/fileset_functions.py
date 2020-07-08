@@ -244,8 +244,8 @@ def cleanup(test):
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     lst = re.findall(r'\S+pvc-\S+', response.text)
     lst2 = []
-    for l in lst:
-        lst2.append(l[1:-2])
+    for la in lst:
+        lst2.append(la[1:-2])
     for res in lst2:
         volume_name = res
         unlink_link = "https://"+test["guiHost"]+":"+test["port"] + \

@@ -178,19 +178,19 @@ def check_vs_deleted(vs_name):
     if keep_objects:
         return
     api_instance = client.CustomObjectsApi()
-    val=0
-    while val<12:
+    val = 0
+    while val < 12:
         try:
             api_response = api_instance.get_namespaced_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshots",
-            name=vs_name,
-            namespace=namespace_value
+                group="snapshot.storage.k8s.io",
+                version="v1beta1",
+                plural="volumesnapshots",
+                name=vs_name,
+                namespace=namespace_value
             )
             LOGGER.debug(api_response)
             time.sleep(5)
-            val+=1
+            val += 1
         except ApiException:
             LOGGER.info(f"volume snapshot {vs_name} deletion confirmed")
             return
@@ -211,7 +211,7 @@ def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
         d.check_storage_class_deleted(sc_name)
 
 
-def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name,body_params):
+def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name, body_params):
 
     api_instance = client.CustomObjectsApi()
     try:
@@ -282,7 +282,7 @@ def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name,body_params)
                 version="v1beta1",
                 plural="volumesnapshotcontents",
                 name=snapcontent_name
-                )
+            )
             LOGGER.debug(custom_object_api_response)
             LOGGER.info(f"volume snapshot content {snapcontent_name} deleted")
         except ApiException as e:
@@ -290,27 +290,26 @@ def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name,body_params)
             assert False
 
 
-
 def check_snapshot_status(vs_name):
 
     api_instance = client.CustomObjectsApi()
-    val=0
-    while val<12:
+    val = 0
+    while val < 12:
         try:
             api_response = api_instance.get_namespaced_custom_object_status(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshots",
-            name=vs_name,
-            namespace=namespace_value
+                group="snapshot.storage.k8s.io",
+                version="v1beta1",
+                plural="volumesnapshots",
+                name=vs_name,
+                namespace=namespace_value
             )
             LOGGER.debug(api_response)
             if "status" in api_response.keys() and "readyToUse" in api_response["status"].keys():
                 if api_response["status"]["readyToUse"] is True:
                     return True
             time.sleep(5)
-            val+=1
+            val += 1
         except ApiException:
             time.sleep(5)
-            val+=1
+            val += 1
     return False
