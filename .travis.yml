@@ -108,7 +108,8 @@ jobs:
         - ls ${BUILD_DIR_OPERATOR}
         - ls ${BUILD_DIR_OPERATOR}/deploy/*
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
-        - operator-courier --verbose verify --ui_validate_io /tmp/operator
+          #Disabling for now..
+          #- operator-courier --verbose verify --ui_validate_io /tmp/operator
     
     # stage: lint
     - name: "Lint - Operator: CASE"
