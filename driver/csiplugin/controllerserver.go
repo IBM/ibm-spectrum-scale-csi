@@ -190,7 +190,12 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 
 	filesetQuotaBytes, err := ConvertToBytes(quota)
 	if err != nil {
-		return fmt.Errorf("unable to convirt quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
+		if strings.Contains(err.Error(), "Invalid number specified") {
+			// Invalid number specified means quota is not set
+			filesetQuotaBytes = 0
+		} else {
+			return fmt.Errorf("unable to convirt quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
+		}
 	}
 	if filesetQuotaBytes != scVol.VolSize && filesetQuotaBytes != 0 {
 		// quota does not match and it is not 0 - It might not be fileset created by us
@@ -283,9 +288,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 				glog.Errorf("volume:[%v] - unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolBackendFs, err))
 			}
+		} else {
+			glog.Errorf("volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolBackendFs, err))
 		}
-		glog.Errorf("volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
-		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolBackendFs, err))
 	}
 
 	// fileset is present/created. Confirm if fileset is linked
@@ -414,7 +420,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	// primary filesytem must be mounted on GUI node so that we can create the softlink
-	glog.V(4).Infof("volume:[%v] -  check if primary filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
+	glog.V(4).Infof("volume:[%v] - check if primary filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
 	isPfsMounted, err := scaleVol.PrimaryConnector.IsFilesystemMountedOnGUINode(scaleVol.PrimaryFS)
 	if err != nil {
 		glog.Errorf("volume:[%v] - unable to get filesystem mount details for %s on Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS, err)
@@ -425,6 +431,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.PrimaryFS))
 	}
 
+	// TODO - avoid additional check if primary filesystem is also volume
 	glog.V(4).Infof("volume:[%v] - check if volume filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.VolBackendFs)
 	volFsInfo, err := scaleVol.PrimaryConnector.GetFilesystemDetails(scaleVol.VolBackendFs)
 	if err != nil {
