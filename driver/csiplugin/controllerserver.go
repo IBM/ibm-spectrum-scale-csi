@@ -97,15 +97,9 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 	return dirPath, nil
 }
 
-func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) (string, error) {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volId string
-
-	/* We need to put FSUUID for localFS in volID */
-	uid, err := scVol.PrimaryConnector.GetFsUid(scVol.LocalFS)
-	if err != nil {
-		return "", fmt.Errorf("unable to get FS UUID for FS [%v]. Error [%v]", scVol.LocalFS, err)
-	}
 
 	if scVol.IsFilesetBased {
 		fSetuid, err := scVol.Connector.GetFileSetUid(scVol.VolBackendFs, scVol.VolName)
@@ -206,7 +200,6 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 	return nil
 }
 
-// CreateFilesetBasedVol : Create Fileset based volumes
 func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createFilesetBasedVol", scVol.VolName)
 	opt := make(map[string]interface{})
@@ -409,19 +402,21 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("primary fileset [%v] is not linked", primaryFileset))
 	}
 
-	// primary filesytem must be mounted on GUI node so that we can create the softlink
-	glog.V(4).Infof("volume:[%v] - check if primary filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
-	isPfsMounted, err := scaleVol.PrimaryConnector.IsFilesystemMountedOnGUINode(scaleVol.PrimaryFS)
-	if err != nil {
-		glog.Errorf("volume:[%v] - unable to get filesystem mount details for %s on Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on Primary cluster. Error: %v", scaleVol.PrimaryFS, err))
-	}
-	if !isPfsMounted {
-		glog.Errorf("volume:[%v] - primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.PrimaryFS))
+	if scaleVol.PrimaryFS != scaleVol.VolBackendFs {
+		// primary filesytem must be mounted on GUI node so that we can create the softlink
+		// skip if primary and volume filesystem is same
+		glog.V(4).Infof("volume:[%v] - check if primary filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
+		isPfsMounted, err := scaleVol.PrimaryConnector.IsFilesystemMountedOnGUINode(scaleVol.PrimaryFS)
+		if err != nil {
+			glog.Errorf("volume:[%v] - unable to get filesystem mount details for %s on Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS, err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on Primary cluster. Error: %v", scaleVol.PrimaryFS, err))
+		}
+		if !isPfsMounted {
+			glog.Errorf("volume:[%v] - primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.PrimaryFS))
+		}
 	}
 
-	// TODO - avoid additional check if primary filesystem is also volume
 	glog.V(4).Infof("volume:[%v] - check if volume filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.VolBackendFs)
 	volFsInfo, err := scaleVol.PrimaryConnector.GetFilesystemDetails(scaleVol.VolBackendFs)
 	if err != nil {
@@ -509,7 +504,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	volID, err := cs.generateVolID(scaleVol)
+	volID, err := cs.generateVolID(scaleVol, volFsInfo.UUID)
 	if err != nil {
 		glog.Errorf("volume:[%v] - failed to generate volume id. Error: %v", scaleVol.VolName, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate volume id. Error: %v", err))
