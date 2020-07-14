@@ -155,7 +155,7 @@ func (cs *ScaleControllerServer) createSoftlink(scVol *scaleVolume, target strin
 	volSlnkPath := fmt.Sprintf("%s/%s", scVol.PrimarySLnkRelPath, scVol.VolName)
 	symLinkExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.PrimaryFS, volSlnkPath)
 	if err != nil {
-		glog.Errorf("volume:[%v] - unable to check if symlink path [%v] exists in filesystem [%v]. Error: %v", scVol.VolName, scVol.PrimaryFS, err)
+		glog.Errorf("volume:[%v] - unable to check if symlink path [%v] exists in filesystem [%v]. Error: %v", scVol.VolName, volSlnkPath, scVol.PrimaryFS, err)
 		return fmt.Errorf("unable to check if symlink path [%v] exists in filesystem [%v]. Error: %v", volSlnkPath, scVol.PrimaryFS, err)
 	}
 
@@ -408,7 +408,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		glog.V(4).Infof("volume:[%v] - check if primary filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS)
 		isPfsMounted, err := scaleVol.PrimaryConnector.IsFilesystemMountedOnGUINode(scaleVol.PrimaryFS)
 		if err != nil {
-			glog.Errorf("volume:[%v] - unable to get filesystem mount details for %s on Primary cluster", scaleVol.VolName, scaleVol.PrimaryFS, err)
+			glog.Errorf("volume:[%v] - unable to get filesystem mount details for %s on Primary cluster. Error: %v", scaleVol.VolName, scaleVol.PrimaryFS, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on Primary cluster. Error: %v", scaleVol.PrimaryFS, err))
 		}
 		if !isPfsMounted {
