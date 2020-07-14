@@ -39,6 +39,7 @@ const (
 	notFound             = "NOT_FOUND"
 	filesystemTypeRemote = "remote"
 	filesystemMounted    = "mounted"
+	filesetUnlinkedPath  = "--"
 )
 
 type ScaleControllerServer struct {
@@ -69,7 +70,6 @@ func (cs *ScaleControllerServer) GetPriConnAndSLnkPath() (connectors.SpectrumSca
 }
 
 func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error) {
-
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createLWVol", scVol.VolName)
 	var err error
 
@@ -98,7 +98,6 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 }
 
 func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume) (string, error) {
-
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volId string
 
@@ -127,7 +126,6 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume) (string, erro
 }
 
 func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volumeName string) (string, error) {
-
 	if fsetLinkPath == "" || fsMountPoint == "" {
 		glog.Errorf("volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
@@ -140,7 +138,6 @@ func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volum
 }
 
 func (cs *ScaleControllerServer) createDirectory(scVol *scaleVolume, targetPath string) error {
-
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createDirectory", scVol.VolName)
 	dirExists, err := scVol.Connector.CheckIfFileDirPresent(scVol.VolBackendFs, targetPath)
 	if err != nil {
@@ -160,7 +157,6 @@ func (cs *ScaleControllerServer) createDirectory(scVol *scaleVolume, targetPath 
 }
 
 func (cs *ScaleControllerServer) createSoftlink(scVol *scaleVolume, target string) error {
-
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createSoftlink", scVol.VolName)
 	volSlnkPath := fmt.Sprintf("%s/%s", scVol.PrimarySLnkRelPath, scVol.VolName)
 	symLinkExists, err := scVol.PrimaryConnector.CheckIfFileDirPresent(scVol.PrimaryFS, volSlnkPath)
@@ -181,7 +177,6 @@ func (cs *ScaleControllerServer) createSoftlink(scVol *scaleVolume, target strin
 }
 
 func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
-
 	glog.V(4).Infof("volume: [%v] - ControllerServer:setQuota", scVol.VolName)
 	quota, err := scVol.Connector.ListFilesetQuota(scVol.VolBackendFs, scVol.VolName)
 	if err != nil {
@@ -213,7 +208,6 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 
 // CreateFilesetBasedVol : Create Fileset based volumes
 func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
-
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createFilesetBasedVol", scVol.VolName)
 	opt := make(map[string]interface{})
 
@@ -295,7 +289,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	}
 
 	// fileset is present/created. Confirm if fileset is linked
-	if (filesetInfo.Config.Path == "") || (filesetInfo.Config.Path == "--") {
+	if (filesetInfo.Config.Path == "") || (filesetInfo.Config.Path == filesetUnlinkedPath) {
 		// this means not linked, link it
 		junctionPath := fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, scVol.VolName)
 		err := scVol.Connector.LinkFileset(scVol.VolBackendFs, scVol.VolName, junctionPath)
@@ -331,9 +325,9 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	return targetBasePath, nil
 }
 
-func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeRequest) (int64, error) {
+func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeRequest) int64 {
 	cap := req.GetCapacityRange()
-	return cap.GetRequiredBytes(), nil
+	return cap.GetRequiredBytes()
 }
 
 func (cs *ScaleControllerServer) getConnFromClusterID(cid string) (connectors.SpectrumScaleConnector, error) {
@@ -364,11 +358,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	/* Get volume size in bytes */
-	volSize, err := cs.getVolumeSizeInBytes(req)
-
-	if err != nil {
-		return nil, err
-	}
+	volSize := cs.getVolumeSizeInBytes(req)
 
 	reqCapabilities := req.GetVolumeCapabilities()
 	if reqCapabilities == nil {
