@@ -1,7 +1,7 @@
 # Multi-arch build for IBM Spectrum Scale CSI Operator
 # usage: docker buildx build -f build/Dockerfile --platform=linux/amd64 -t my_image_tag .
 
-FROM quay.io/operator-framework/ansible-operator:v0.18.2
+FROM quay.io/operator-framework/ansible-operator:v0.17.2
 MAINTAINER jdunham@us.ibm.com
 
 ARG CSI_ATTACHER_IMAGE
