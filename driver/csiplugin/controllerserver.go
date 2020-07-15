@@ -186,16 +186,19 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 			return fmt.Errorf("unable to convirt quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
 		}
 	}
+
 	if filesetQuotaBytes != scVol.VolSize && filesetQuotaBytes != 0 {
 		// quota does not match and it is not 0 - It might not be fileset created by us
 		return fmt.Errorf("Fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize)
 	}
 
-	volsiz := strconv.FormatUint(scVol.VolSize, 10)
-	err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz)
-	if err != nil {
-		// failed to set quota, no cleanup, next retry might be able to set quota
-		return fmt.Errorf("unable to set quota [%v] on fileset [%v] of FS [%v]", scVol.VolSize, scVol.VolName, scVol.VolBackendFs)
+	if filesetQuotaBytes == 0 {
+		volsiz := strconv.FormatUint(scVol.VolSize, 10)
+		err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz)
+		if err != nil {
+			// failed to set quota, no cleanup, next retry might be able to set quota
+			return fmt.Errorf("unable to set quota [%v] on fileset [%v] of FS [%v]", scVol.VolSize, scVol.VolName, scVol.VolBackendFs)
+		}
 	}
 	return nil
 }
