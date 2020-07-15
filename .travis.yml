@@ -82,7 +82,6 @@ jobs:
   fast_finish: true
 
   include:
-    
     # Install operator-courier and run the lint on the manifest.
     - stage: lint
       name: "Lint - Driver: run golangci-lint"
