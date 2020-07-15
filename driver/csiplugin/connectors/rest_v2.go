@@ -246,6 +246,37 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	}
 }
 
+func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string) error {
+	glog.V(4).Infof("rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s", filesystemName, filesetName, snapshotName, srcPath, targetPath)
+
+	copySnapReq := CopySnapshotRequest{}
+	copySnapReq.TargetPath = targetPath
+
+	formattedSrcPath := strings.ReplaceAll(srcPath, "/", "%2F")
+	copySnapURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCopy/%s/path/%s", filesystemName, filesetName, snapshotName, formattedSrcPath))
+	copySnapResp := GenericResponse{}
+
+	err := s.doHTTP(copySnapURL, "PUT", &copySnapResp, copySnapReq)
+	if err != nil {
+		glog.Errorf("Error in copy snapshot request: %v", err)
+		return err
+	}
+
+        err = s.isRequestAccepted(copySnapResp, copySnapURL)
+        if err != nil {
+                glog.Errorf("Request not accepted for processing: %v", err)
+                return err
+        }
+
+        err = s.waitForJobCompletion(copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID)
+        if err != nil {
+                glog.Errorf("Unable to copy snapshot %s: %v", snapshotName, err)
+                return err
+        }
+
+	return nil
+}
+
 func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
 	glog.V(4).Infof("rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
 
