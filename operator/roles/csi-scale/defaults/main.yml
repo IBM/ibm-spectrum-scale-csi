@@ -49,3 +49,6 @@ nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 
 # State of driver in the cluster (might not be needed).
 state: present
+
+# The log level of the driver container.
+driverLogLevel : "{{ driver_log_level | 2 }}"

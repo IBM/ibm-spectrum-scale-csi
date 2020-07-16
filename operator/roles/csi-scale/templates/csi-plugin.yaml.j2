@@ -44,7 +44,7 @@ spec:
 {% endif %}
           image: "{{ driverRegistrar }}"
           args:
-            - "--v=5"
+            - "--minloglevel={{driverLogLevel}}"
             - "--csi-address=$(ADDRESS)"
             - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           env:
@@ -68,7 +68,7 @@ spec:
           args :
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
-            - "--v=5"
+            - "--minloglevel={{driverLogLevel}}"
           env:
             - name: NODE_ID
               valueFrom:
