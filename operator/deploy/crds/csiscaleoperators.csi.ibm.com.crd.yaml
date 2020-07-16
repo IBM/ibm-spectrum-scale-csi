@@ -186,3 +186,18 @@ spec:
               type: array
               items:
                 type: string
+            snapshotter:
+              description: Snapshotter image for csi (issues volume snapshot requests).
+              type: string
+            snapshotterNodeSelector:
+              description: Node selector for snapshotter sidecar.
+              items:
+                properties:
+                  key:
+                    description: Key for node selector.
+                    type: string
+                  value:
+                    description: Value for key.
+                    type: string
+                type: object
+              type: array
