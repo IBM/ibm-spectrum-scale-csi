@@ -8,7 +8,7 @@ metadata:
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
-    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.0.1
+    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.1.0
     createdAt: Tue Jun  9 11:18:01 EDT 2020
     description: An operator for deploying and managing the IBM CSI Spectrum Scale
       Driver.
@@ -19,7 +19,7 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     release: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator.v2.0.1
+  name: ibm-spectrum-scale-csi-operator.v2.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -363,7 +363,7 @@ spec:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
                 productName: IBM Spectrum Scale CSI Operator
-                productVersion: 2.0.1
+                productVersion: 2.1.0
               labels:
                 app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
                 app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -391,7 +391,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: ibm-spectrum-scale-csi-operator
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.0.1
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.1.0
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
@@ -440,10 +440,8 @@ spec:
   - name: CSI Developer Documentation
     url: https://kubernetes-csi.github.io/docs/
   maintainers:
-  - email: jdunham@us.ibm.com
-    name: John Dunham
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v2.0.0
-  version: 2.0.1
+  replaces: ibm-spectrum-scale-csi-operator.v2.0.1
+  version: 2.1.0
