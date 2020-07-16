@@ -64,6 +64,26 @@ spec:
         path: driverLogLevel
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Snapshotter image for csi (issues volume snapshot requests).
+        displayName: Snapshotter
+        path: snapshotter
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
+      - description: Node selector for snapshotter sidecar.
+        displayName: Snapshotter Node Selector
+        path: snapshotterNodeSelector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Key for node selector.
+        displayName: Key
+        path: snapshotterNodeSelector.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
+      - description: Value for key.
+        displayName: Value
+        path: snapshotterNodeSelector.value
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
       - description: A list of image pull secrets, applied to pods creeated by operator.
         displayName: Image Pull Secrets
         path: imagePullSecrets
