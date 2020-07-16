@@ -1,9 +1,8 @@
 import logging
 import pytest
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Snapshot, read_operator_data,\
-    check_pod_running
-from utils.fileset_functions import fileset_exists, delete_fileset, create_dir
+    check_nodes_available, Scaleoperatorobject, Snapshot, read_operator_data
+from utils.fileset_functions import fileset_exists, delete_fileset, create_dir,cred_check
 LOGGER = logging.getLogger()
 
 
@@ -23,11 +22,14 @@ def values(request):
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
     keep_objects = data["keepobjects"]
     test_namespace = namespace_value
-    fileset_exists(data)
+    cred_check(data)
     operator = Scaleoperator(kubeconfig_value, namespace_value)
+    operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
-        check_ds_exists(kubeconfig_value, namespace_value)
+        if not(operator_object.check()):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False
     else:
         operator.create()
         operator.check()
@@ -36,7 +38,6 @@ def values(request):
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
         operator_object.create()
         val = operator_object.check()
         if val is True:
@@ -44,7 +45,6 @@ def values(request):
         else:
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
-    check_pod_running(kubeconfig_value, namespace_value, "ibm-spectrum-scale-csi-snapshotter-0")
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}

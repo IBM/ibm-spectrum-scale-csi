@@ -15,7 +15,7 @@ input_params = {
     "cacert_path": " ",  # Path of cacert file for primary fileset cluster API cert
     "remote_cacert_path": {"remoteconf1": ""},  # Path of cacert file for remote cluster API cert eg. { "cacert_name" : "cacert_path" }
 
-    "number_of_parallel_pvc": 10,
+    "number_of_sequential_pvc": 10,
 
     "remoteFs": "",            # Must provide remote filesystem name on Primary cluster in case of remote_test.py
     "remoteid": "",            # Must provide remote cluster id in case of remote_test.py

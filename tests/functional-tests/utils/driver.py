@@ -124,10 +124,10 @@ def check_storage_class(sc_name):
         return False
     api_instance = client.StorageV1Api()
     try:
-        LOGGER.info(f'Storage class {sc_name} does exists on the cluster')
         # TBD: Show StorageClass Parameter in tabular Form
         api_response = api_instance.read_storage_class(
             name=sc_name, pretty=True)
+        LOGGER.info(f'Storage class {sc_name} does exists on the cluster')
         LOGGER.debug(str(api_response))
         return True
     except ApiException:
@@ -275,11 +275,16 @@ def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
         assert False
 
 
-def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name):
+def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names):
     """  cleanup after pvc has failed    """
     LOGGER.info(f'PVC {pvc_name} cleanup operation started')
-    delete_pvc(pvc_name)
-    check_pvc_deleted(pvc_name)
+    if len(pvc_names)>0:
+        for pvc_name in pvc_names:
+            delete_pvc(pvc_name)
+            check_pvc_deleted(pvc_name)
+    else:
+        delete_pvc(pvc_name)
+        check_pvc_deleted(pvc_name)
     if check_pv(pv_name):
         delete_pv(pv_name)
         check_pv_deleted(pv_name)
@@ -315,7 +320,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
     return True
 
 
-def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name="pvnotavailable"):
+def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name="pvnotavailable",pvc_names=[]):
     """ checks pvc is BOUND or not
         need to reduce complextity of this function
     """
@@ -339,11 +344,11 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                 LOGGER.error(f'PVC Check : {pvc_name} is BOUND but as the failure reason is provided so\
                 asserting the test')
                 volume_name = api_response.spec.volume_name
-                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
                 assert False
             if(pvc_bound_fileset_check(api_response, pv_name, pvc_name)):
                 return True
-            clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+            clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
             LOGGER.error(f'PVC Check : Fileset {volume_name} doesn\'t exists')
             assert False
         else:
@@ -364,7 +369,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                 if volume_name is None:
                     volume_name = "sc-ffwe-sdfsdf-gsv"
                 if not(check_key(pvc_values, "reason")):
-                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
                     LOGGER.error(str(reason))
                     LOGGER.error(
                         "FAILED as reason for Failure not provides")
@@ -376,7 +381,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                     if search_result is not None:
                         break
                 if search_result is None:
-                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
                     LOGGER.error(f"Failed reason : {str(reason)}")
                     LOGGER.info("PVC is not Bound but FAILED reason does not match")
                     assert False
@@ -437,12 +442,23 @@ def create_pod(value_pod, pvc_name, pod_name):
         assert False
 
 
-def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name):
+def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names):
     """ cleanup after pod fails """
-    delete_pod(pod_name)
-    check_pod_deleted(pod_name)
-    delete_pvc(pvc_name)
-    check_pvc_deleted(pvc_name)
+    if len(pod_names)>0:
+        for pod_name in pod_names:
+            delete_pod(pod_name)
+            check_pod_deleted(pod_name)
+    else:
+        delete_pod(pod_name)
+        check_pod_deleted(pod_name)
+
+    if len(pvc_names)>0:
+        for pvc_name in pvc_names:
+            delete_pvc(pvc_name)
+            check_pvc_deleted(pvc_name)
+    else:
+        delete_pvc(pvc_name)
+        check_pvc_deleted(pvc_name)
     if check_pv(pv_name):
         delete_pv(pv_name)
         check_pv_deleted(pv_name)
@@ -453,7 +469,7 @@ def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name):
         ff.delete_dir(test, dir_name)
 
 
-def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name):
+def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names):
     """
     checks can file be created in pod
     if file cannot be created , checks reason , if reason does not mathch , asserts
@@ -499,12 +515,12 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
                       stderr=True, stdin=False,
                       stdout=True, tty=False)
         if check_key(value_pod, "reason"):
-            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
             LOGGER.error("Pod should not be able to create file inside the pod as failure REASON provided, so asserting")
             assert False
         return
     if not(check_key(value_pod, "reason")):
-        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
         LOGGER.error(str(resp))
         LOGGER.info("FAILED as reason of failure not provided")
         assert False
@@ -515,14 +531,14 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
     if not(search_result1 is None and search_result2 is None):
         LOGGER.info("execution of pod failed with expected reason")
     else:
-        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
         LOGGER.error(str(resp))
         LOGGER.error(
             "execution of pod failed unexpected , reason does not match")
         assert False
 
 
-def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable", pv_name="pvnotavailable"):
+def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable", pv_name="pvnotavailable",pod_names=[],pvc_names=[]):
     """
     checks pod running or not
 
@@ -551,7 +567,7 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
             if api_response.status.phase == "Running":
                 LOGGER.info(f'POD Check : POD {pod_name} is Running')
                 check_pod_execution(value_pod, sc_name,
-                                    pvc_name, pod_name, dir_name, pv_name)
+                                    pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names)
                 con = False
             else:
                 var += 1
@@ -563,7 +579,7 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
                     LOGGER.info(f"POD Check : Reason of failure is : {str(reason)}")
                     con = False
                     clean_pod_fail(sc_name, pvc_name, pv_name,
-                                   dir_name, pod_name)
+                                   dir_name, pod_name,pod_names,pvc_names)
                     assert False
                 time.sleep(5)
         except ApiException as e:

@@ -3,8 +3,7 @@ import logging
 import pytest
 import utils.fileset_functions as ff
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists, \
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Snapshot, check_key, \
-    read_operator_data, check_pod_running
+    check_nodes_available, Scaleoperatorobject, Snapshot, check_key, read_operator_data
 LOGGER = logging.getLogger()
 
 
@@ -28,11 +27,16 @@ def values(request):
         assert False
     test_namespace = namespace_value
 
-    ff.fileset_exists(data)
+    remote_data = get_remote_data(data)
+    ff.cred_check(data)
+    ff.cred_check(remote_data)
     operator = Scaleoperator(kubeconfig_value, namespace_value)
+    operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
-        check_ds_exists(kubeconfig_value, namespace_value)
+        if not(operator_object.check()):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False
     else:
         operator.create()
         operator.check()
@@ -41,7 +45,6 @@ def values(request):
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
         operator_object.create()
         val = operator_object.check()
         if val is True:
@@ -49,12 +52,10 @@ def values(request):
         else:
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
-    check_pod_running(kubeconfig_value, namespace_value, "ibm-spectrum-scale-csi-snapshotter-0")
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    remote_data = get_remote_data(data)
     snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, remote_data, value_pvc, value_vs_class, number_of_snapshots)
     ff.create_dir(remote_data, remote_data["volDirBasePath"])
     yield

@@ -1,5 +1,5 @@
 import copy
-import multiprocessing
+import threading
 import time
 import logging
 import yaml
@@ -163,7 +163,7 @@ class Scaleoperatorobject:
             ob.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
 
     def delete(self):
-
+   
         config.load_kube_config(config_file=self.kubeconfig)
 
         if ob.check_scaleoperatorobject_is_deployed():
@@ -190,7 +190,6 @@ class Scaleoperatorobject:
             ob.check_configmap_is_deleted(remote_cacert_name)
 
     def check(self):
-
         config.load_kube_config(config_file=self.kubeconfig)
 
         ob.check_scaleoperatorobject_is_deployed()
@@ -201,8 +200,9 @@ class Scaleoperatorobject:
         ob.check_scaleoperatorobject_statefulsets_state(
             "ibm-spectrum-scale-csi-provisioner")
 
-        val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
+        ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
+        val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
         return val
 
     def get_driver_ds_pod_name(self):
@@ -396,41 +396,49 @@ class Driver:
             d.delete_storage_class(sc_name)
         d.check_storage_class_deleted(sc_name)
 
-    def parallel_pvc_process(self, sc_name):
-        value_pvc_pass = copy.deepcopy(self.value_pvc[0])
-        LOGGER.info(100*"-")
-        value_pvc_pass["parallel"] = "True"
-        pvc_name = d.get_random_name("pvc")
-        d.create_pvc(value_pvc_pass, sc_name, pvc_name)
-        val = d.check_pvc(value_pvc_pass, sc_name, pvc_name)
-        if val is True:
-            pod_name = d.get_random_name("pod")
-            d.create_pod(self.value_pod[0], pvc_name, pod_name)
-            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name)
-            d.delete_pod(pod_name)
-            d.check_pod_deleted(pod_name)
-        d.delete_pvc(pvc_name)
-        d.check_pvc_deleted(pvc_name)
-
-    def parallel_pvc(self, value_sc):
+    def sequential_pvc(self, value_sc, num_of_pvc):
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, self.config_file, sc_name)
         d.check_storage_class(sc_name)
-        p = []
-        number_of_pvc = self.config_file["number_of_parallel_pvc"]
+        pvc_names = []
+        number_of_pvc = num_of_pvc 
+        common_pvc_name = d.get_random_name("pvc")
         for num in range(0, number_of_pvc):
-            p.append(multiprocessing.Process(
-                target=self.parallel_pvc_process, args=[sc_name]))
-            p[num].start()
-        for num in range(0, number_of_pvc-1):
-            p[num].join()
-
+            pvc_names.append(common_pvc_name+"-"+str(num))
+        value_pvc_pass = copy.deepcopy(self.value_pvc[0])
         LOGGER.info(100*"-")
+        value_pvc_pass["parallel"] = "True"
+
+        for pvc_name in pvc_names:
+            LOGGER.info(100*"-")
+            d.create_pvc(value_pvc_pass, sc_name, pvc_name)
+
+        for pvc_name in pvc_names:
+            LOGGER.info(100*"-")
+            d.check_pvc(value_pvc_pass, sc_name, pvc_name, pvc_names = pvc_names)
+
+        pod_names = []
+
+        for pvc_name in pvc_names:
+            LOGGER.info(100*"-")
+            pod_name = d.get_random_name("pod")
+            pod_names.append(pod_name)
+            d.create_pod(self.value_pod[0], pvc_name, pod_name)
+            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name, pod_names = pod_names, pvc_names = pvc_names)
+
+        for pod_name in pod_names:
+            d.delete_pod(pod_name)
+            d.check_pod_deleted(pod_name)
+
+        for pvc_name in pvc_names:
+            d.delete_pvc(pvc_name)
+            d.check_pvc_deleted(pvc_name)
+
         if d.check_storage_class(sc_name):
             d.delete_storage_class(sc_name)
         d.check_storage_class_deleted(sc_name)
-
+       
 
 class Snapshot():
     def __init__(self, kubeconfig, test_namespace, keep_objects, data, value_pvc, value_vs_class, number_of_snapshots):
@@ -526,45 +534,23 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
         LOGGER.info("namespace does not exists")
         return False
 
-
-def check_ds_exists(passed_kubeconfig_value, namespace_value):
-    config.load_kube_config(config_file=passed_kubeconfig_value)
-    read_daemonsets_api_instance = client.AppsV1Api()
-    try:
-        read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
-            name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
-        current_number_scheduled = read_daemonsets_api_response.status.current_number_scheduled
-        desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
-        number_available = read_daemonsets_api_response.status.number_available
-        if number_available == current_number_scheduled == desired_number_scheduled:
-            LOGGER.info("Daemon sets are up")
-        else:
-            LOGGER.info("Daemon sets are not available")
-            LOGGER.error("Requirements are not satisfied")
-            assert False
-    except ApiException:
-        LOGGER.error("daemonset does not exists")
-        LOGGER.error("Requirements are not satisfied")
-        assert False
-
-
 def check_key(dict1, key):
     if key in dict1.keys():
         return True
     return False
 
 
-def check_nodes_available(label, lable_name):
+def check_nodes_available(label, label_name):
     api_instance = client.CoreV1Api()
     label_selector = ""
-    for lable_val in label:
-        label_selector += str(lable_val["key"])+"="+str(lable_val["value"])+","
+    for label_val in label:
+        label_selector += str(label_val["key"])+"="+str(label_val["value"])+","
     label_selector = label_selector[0:-1]
     try:
         api_response_2 = api_instance.list_node(
             pretty=True, label_selector=label_selector)
         if len(api_response_2.items) == 0:
-            LOGGER.error(f"0 nodes have provided labels with {lable_name}")
+            LOGGER.error(f"0 nodes matches with {label_name}")
             LOGGER.error("please check labels")
             assert False
     except ApiException as e:
@@ -642,24 +628,3 @@ def read_operator_data(clusterconfig, namespace):
     return data
 
 
-def check_pod_running(passed_kubeconfig_value, namespace_value, pod_name):
-    config.load_kube_config(config_file=passed_kubeconfig_value)
-    api_instance = client.CoreV1Api()
-    val = 0
-    while val < 12:
-        try:
-            api_response = api_instance.read_namespaced_pod(
-                name=pod_name, namespace=namespace_value, pretty=True)
-            LOGGER.debug(str(api_response))
-            if api_response.status.phase == "Running":
-                LOGGER.info(f'POD Check : POD {pod_name} is Running')
-                return
-            time.sleep(5)
-            val += 1
-        except ApiException as e:
-            LOGGER.error(
-                f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
-            LOGGER.info(f"POD Check : POD {pod_name} does not exists on Cluster")
-            assert False
-    LOGGER.error(f'POD Check : POD {pod_name} is not Running')
-    assert False

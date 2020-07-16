@@ -126,10 +126,9 @@ def check_scaleoperatorobject_is_deleted():
     check  csiscaleoperator deleted or not
     if csiscaleoperator not deleted in 300 seconds , asserts
     """
-    var = True
     count = 30
     list_co_api_instance = client.CustomObjectsApi()
-    while (var and count > 0):
+    while (count > 0):
         try:
             list_co_api_response = list_co_api_instance.get_namespaced_custom_object(group="csi.ibm.com",
                                                                                      version="v1",
@@ -144,11 +143,10 @@ def check_scaleoperatorobject_is_deleted():
             time.sleep(10)
         except ApiException:
             LOGGER.info("SpectrumScale CSI custom object has been deleted")
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error("SpectrumScale CSI custom object is not deleted")
-        assert False
+    LOGGER.error("SpectrumScale CSI custom object is not deleted")
+    assert False
 
 
 def check_scaleoperatorobject_is_deployed():
@@ -515,10 +513,9 @@ def check_configmap_is_deleted(configmap_name):
     Args:
        param1: configmap_name - name of configmap to be checked
     """
-    var = True
     count = 12
     api_instance = client.CoreV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_namespaced_config_map(
                 namespace=namespace_value,
@@ -531,11 +528,10 @@ def check_configmap_is_deleted(configmap_name):
             time.sleep(10)
         except ApiException:
             LOGGER.info(f"configmap {configmap_name} deletion confirmed")
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error(f"configmap {configmap_name} is not deleted")
-        assert False
+    LOGGER.error(f"configmap {configmap_name} is not deleted")
+    assert False
 
 
 def randomStringDigits(stringLength=6):
@@ -556,3 +552,26 @@ def randomString(stringLength=10):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
+
+
+def check_pod_running(pod_name):
+    api_instance = client.CoreV1Api()
+    val = 0
+    while val < 12:
+        try:
+            api_response = api_instance.read_namespaced_pod(
+                name=pod_name, namespace=namespace_value, pretty=True)
+            LOGGER.debug(str(api_response))
+            if api_response.status.phase == "Running":
+                LOGGER.info(f'POD Check : POD {pod_name} is Running')
+                return
+            time.sleep(5)
+            val += 1
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
+            LOGGER.info(f"POD Check : POD {pod_name} does not exists on Cluster")
+            assert False
+    LOGGER.error(f'POD Check : POD {pod_name} is not Running')
+    assert False
+

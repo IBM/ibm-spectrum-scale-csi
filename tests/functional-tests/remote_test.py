@@ -2,7 +2,7 @@ import logging
 import copy
 import pytest
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key, read_operator_data
+    check_nodes_available, Scaleoperatorobject, Driver, check_key, read_operator_data
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -27,11 +27,16 @@ def values(request):
         assert False
     test_namespace = namespace_value
 
-    ff.fileset_exists(data)
+    remote_data = get_remote_data(data)
+    ff.cred_check(data)
+    ff.cred_check(remote_data)
     operator = Scaleoperator(kubeconfig_value, namespace_value)
+    operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
-        check_ds_exists(kubeconfig_value, namespace_value)
+        if not(operator_object.check()):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False 
     else:
         operator.create()
         operator.check()
@@ -40,7 +45,6 @@ def values(request):
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
         operator_object.create()
         val = operator_object.check()
         if val is True:
@@ -58,7 +62,6 @@ def values(request):
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    remote_data = get_remote_data(data)
     driver_object = Driver(kubeconfig_value, value_pvc, value_pod, remote_data, test_namespace, keep_objects)
     ff.create_dir(remote_data, remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
@@ -2596,6 +2599,7 @@ def test_driver_one_pvc_two_pod():
     driver_object.one_pvc_two_pod(value_sc)
 
 
-def test_driver_parallel_pvc():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"]}
-    driver_object.parallel_pvc(value_sc)
+@pytest.mark.slow
+def test_driver_sequential_pvc():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    driver_object.sequential_pvc(value_sc,data["number_of_sequential_pvc"])

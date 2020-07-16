@@ -95,18 +95,26 @@ def fileset_exists(test):
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    if str(response) != "<Response [200]>":
-        LOGGER.error("API response is ")
-        LOGGER.error(str(response))
-        LOGGER.error("API resonpse is not 200")
-        LOGGER.error("Recheck parameters of config file")
-        assert False
     search_format = '"'+test["primaryFset"]+'",'
     search_result = re.search(search_format, str(response.text))
     if search_result is None:
         return False
     return True
 
+def cred_check(test):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/cluster"
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+
+    if not(response.status_code==200):
+        LOGGER.error("API response is ")
+        LOGGER.error(str(response))
+        LOGGER.error("not able to use scale REST API")
+        LOGGER.error("Recheck parameters of conftest file")
+        assert False
+    
 
 def link_fileset(test):
     """
@@ -389,8 +397,31 @@ def create_dir(test, dir_name):
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    LOGGER.info(f'Created directory {dir_name}')
-    time.sleep(5)
+    LOGGER.info(f'Creating directory {dir_name}')
+    check_dir(test,dir_name)
+
+def check_dir(test,dir_name):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    val = 0
+    while val<24:
+        check_dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/owner/"+dir_name
+        LOGGER.debug(check_dir_link)
+        headers = {
+        'accept': 'application/json',
+        }
+        response = requests.get(check_dir_link, headers=headers,
+                             verify=False, auth=(test["username"], test["password"]))
+        LOGGER.debug(response.text)
+        if response.status_code==200:
+            LOGGER.info(f'directory {dir_name} created successfully')
+            return
+        time.sleep(5)
+        val+=1
+    LOGGER.error(f'directory {dir_name} not created successfully')
+    LOGGER.error(str(response))
+    LOGGER.error(str(response.text))
+    assert False
 
 
 def delete_dir(test, dir_name):

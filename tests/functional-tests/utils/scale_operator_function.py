@@ -636,10 +636,9 @@ def check_crd_deleted():
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    var = True
     count = 12
     list_crd_api_instance = client.ApiextensionsV1beta1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             list_crd_api_response = list_crd_api_instance.read_custom_resource_definition(
                 pretty=True, name="ibm-spectrum-scale-csi")
@@ -650,11 +649,10 @@ def check_crd_deleted():
 
         except ApiException:
             LOGGER.info("crd deleted")
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error("crd is not deleted")
-        assert False
+    LOGGER.error("crd is not deleted")
+    assert False
 
 
 def check_namespace_deleted():
@@ -666,10 +664,9 @@ def check_namespace_deleted():
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    var = True
     count = 24
     list_namespace_api_instance = client.CoreV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             list_namespace_api_response = list_namespace_api_instance.read_namespace(
                 name=namespace_value, pretty=True)
@@ -679,11 +676,10 @@ def check_namespace_deleted():
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'namespace {namespace_value} is deleted')
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error(f'namespace  {namespace_value} is not deleted')
-        assert False
+    LOGGER.error(f'namespace  {namespace_value} is not deleted')
+    assert False
 
 
 def check_deployment_deleted():
@@ -695,10 +691,9 @@ def check_deployment_deleted():
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    var = True
     count = 6
     api_instance = client.AppsV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_namespaced_deployment(
                 name="ibm-spectrum-scale-csi-operator", namespace=namespace_value, pretty=True)
@@ -708,11 +703,10 @@ def check_deployment_deleted():
             time.sleep(5)
         except ApiException:
             LOGGER.info("Deployment ibm-spectrum-scale-csi-operator is deleted")
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error("deployment is not deleted")
-        assert False
+    LOGGER.error("deployment is not deleted")
+    assert False
 
 
 def check_service_account_deleted(service_account_name):
@@ -727,10 +721,9 @@ def check_service_account_deleted(service_account_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    var = True
     count = 6
     api_instance = client.CoreV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_namespaced_service_account(
                 name=service_account_name, namespace=namespace_value, pretty=True)
@@ -740,11 +733,10 @@ def check_service_account_deleted(service_account_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'ServiceAccount {service_account_name} is deleted')
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error("service account is not deleted")
-        assert False
+    LOGGER.error("service account is not deleted")
+    assert False
 
 
 def check_cluster_role_deleted(cluster_role_name):
@@ -759,10 +751,9 @@ def check_cluster_role_deleted(cluster_role_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    var = True
     count = 6
     api_instance = client.RbacAuthorizationV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_cluster_role(
                 name=cluster_role_name, pretty=True)
@@ -772,11 +763,10 @@ def check_cluster_role_deleted(cluster_role_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'ClusterRole {cluster_role_name} is deleted')
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error(f'ClusterRole {cluster_role_name} is not deleted')
-        assert False
+    LOGGER.error(f'ClusterRole {cluster_role_name} is not deleted')
+    assert False
 
 
 def check_cluster_role_binding_deleted(cluster_role_binding_name):
@@ -791,7 +781,6 @@ def check_cluster_role_binding_deleted(cluster_role_binding_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    var = True
     count = 6
     api_instance = client.RbacAuthorizationV1Api()
     while (var and count > 0):
@@ -804,11 +793,10 @@ def check_cluster_role_binding_deleted(cluster_role_binding_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'ClusterRoleBinding {cluster_role_binding_name} is deleted')
-            var = False
+            return
 
-    if count <= 0:
-        LOGGER.error(f'ClusterRoleBinding {cluster_role_binding_name} is not deleted')
-        assert False
+    LOGGER.error(f'ClusterRoleBinding {cluster_role_binding_name} is not deleted')
+    assert False
 
 
 def check_crd_exists():
@@ -826,15 +814,16 @@ def check_crd_exists():
         None
 
     """
+    crd_name = "csiscaleoperators.csi.ibm.com"
     read_crd_api_instance = client.ApiextensionsV1beta1Api()
     try:
         read_crd_api_response = read_crd_api_instance.read_custom_resource_definition(
-            pretty=True, name="csiscaleoperators.csi.ibm.com")
+            pretty=True, name=crd_name)
         LOGGER.debug(str(read_crd_api_response))
-        LOGGER.info("crd exists")
+        LOGGER.info(f"crd  {crd_name} exists")
         return True
     except ApiException:
-        LOGGER.info("crd does not exist")
+        LOGGER.info(f"crd {crd_name} does not exist")
         return False
 
 
