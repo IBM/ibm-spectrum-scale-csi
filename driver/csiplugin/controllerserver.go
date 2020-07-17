@@ -969,14 +969,37 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	timestamp.Seconds = t.Unix()
 	timestamp.Nanos = 0
 
+	restoreSize, err := cs.getSnapRestoreSize(conn, filesystemName, filesetName)
+        if err != nil {
+		glog.Errorf("Error getting the snapshot restore size for snapshot %s:%s:%s", filesystemName, filesetName, snapName)
+                return nil, err
+        }
+
 	return &csi.CreateSnapshotResponse{
 		Snapshot: &csi.Snapshot{
 			SnapshotId:     snapID,
 			SourceVolumeId: volID,
 			ReadyToUse:     true,
 			CreationTime:   &timestamp,
+			SizeBytes:	restoreSize,
 		},
 	}, nil
+}
+
+func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string) (int64, error) {
+        quotaResp, err := conn.GetFilesetQuotaResponse(filesystemName, filesetName)
+
+        if err != nil {
+                return 0, err
+        }
+
+	if quotaResp.BlockUsage < 0 {
+		glog.Errorf("getSnapRestoreSize: Invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName)
+		return 0, status.Error(codes.Internal, fmt.Sprintf("Invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName))
+	}
+
+	// REST API returns block usage in kb, convert it to bytes and return
+	return int64(quotaResp.BlockUsage * 1024), nil
 }
 
 // DeleteSnapshot - Delete snapshot
