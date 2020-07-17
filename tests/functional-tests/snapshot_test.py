@@ -2,7 +2,7 @@ import logging
 import pytest
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
     check_nodes_available, Scaleoperatorobject, Snapshot, read_operator_data
-from utils.fileset_functions import fileset_exists, delete_fileset, create_dir,cred_check
+import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
 
@@ -22,7 +22,9 @@ def values(request):
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
     keep_objects = data["keepobjects"]
     test_namespace = namespace_value
-    cred_check(data)
+    ff.cred_check(data)
+    ff.set_data(data)
+
     operator = Scaleoperator(kubeconfig_value, namespace_value)
     operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
@@ -52,14 +54,14 @@ def values(request):
     snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, data, value_pvc, value_vs_class, number_of_snapshots)
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
-    create_dir(data, data["volDirBasePath"])
+    ff.create_dir(data["volDirBasePath"])
 
     yield
     if condition is False and not(keep_objects):
         operator_object.delete()
         operator.delete()
-        if(fileset_exists(data)):
-            delete_fileset(data)
+        if(ff.fileset_exists(data)):
+            ff.delete_fileset(data)
 
 
 def test_snapshot_dynamic_pass_1():

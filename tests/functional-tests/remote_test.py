@@ -30,6 +30,8 @@ def values(request):
     remote_data = get_remote_data(data)
     ff.cred_check(data)
     ff.cred_check(remote_data)
+    ff.set_data(remote_data)
+
     operator = Scaleoperator(kubeconfig_value, namespace_value)
     operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
@@ -63,7 +65,7 @@ def values(request):
                  ]
 
     driver_object = Driver(kubeconfig_value, value_pvc, value_pod, remote_data, test_namespace, keep_objects)
-    ff.create_dir(remote_data, remote_data["volDirBasePath"])
+    ff.create_dir(remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)

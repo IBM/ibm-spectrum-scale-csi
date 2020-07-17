@@ -1,16 +1,15 @@
 import copy
-import threading
 import time
 import logging
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+from conftest import input_params
 import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
 import utils.snapshot as snapshot
-from conftest import input_params
-from utils.fileset_functions import get_FSUID, create_dir, delete_dir, get_mount_point
+import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
 
@@ -19,7 +18,7 @@ class Scaleoperator:
 
         self.kubeconfig = kubeconfig_value
         scale_function.set_global_namespace_value(namespace_value)
-
+        ob.set_namespace_value(namespace_value)
     def create(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
@@ -45,7 +44,6 @@ class Scaleoperator:
     def delete(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
-
         if ob.check_scaleoperatorobject_is_deployed():   # for edge cases if custom object is not deleted
             ob.delete_custom_object()
             ob.check_scaleoperatorobject_is_deleted()
@@ -200,9 +198,10 @@ class Scaleoperatorobject:
         ob.check_scaleoperatorobject_statefulsets_state(
             "ibm-spectrum-scale-csi-provisioner")
 
+        val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
+
         ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
-        val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
         return val
 
     def get_driver_ds_pod_name(self):
@@ -269,7 +268,7 @@ class Driver:
             f"Testing Dynamic Provisioning with following PVC parameters {str(self.value_pvc)}")
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
-        d.create_storage_class(value_sc, self.config_file, sc_name)
+        d.create_storage_class(value_sc, sc_name)
         d.check_storage_class(sc_name)
         for num in range(0, len(self.value_pvc)):
             value_pvc_pass = copy.deepcopy(self.value_pvc[num])
@@ -309,9 +308,9 @@ class Driver:
         sc_name = ""
         if sc_value is not False:
             sc_name = d.get_random_name("sc")
-            d.create_storage_class(sc_value, self.config_file, sc_name)
+            d.create_storage_class(sc_value,  sc_name)
             d.check_storage_class(sc_name)
-        FSUID = get_FSUID(self.config_file)
+        FSUID = ff.get_FSUID()
         cluster_id = self.config_file["id"]
         if wrong is not None:
             if wrong["id_wrong"] is True:
@@ -320,10 +319,10 @@ class Driver:
             if wrong["FSUID_wrong"] is True:
                 FSUID = "AAAA"
 
-        mount_point = get_mount_point(self.config_file)
+        mount_point = ff.get_mount_point()
         if root_volume is False:
             dir_name = d.get_random_name("dir")
-            create_dir(self.config_file, dir_name)
+            ff.create_dir(dir_name)
             pv_value["volumeHandle"] = cluster_id+";"+FSUID + \
                 ";path="+mount_point+"/"+dir_name
         elif root_volume is True:
@@ -346,7 +345,7 @@ class Driver:
                     value_pvc_pass["reason"] = pv_value["reason"]
             LOGGER.info(100*"=")
             pvc_name = d.get_random_name("pvc")
-            d.create_pvc(value_pvc_pass, sc_name, pvc_name, self.config_file, pv_name)
+            d.create_pvc(value_pvc_pass, sc_name, pvc_name, pv_name)
             val = d.check_pvc(value_pvc_pass, sc_name, pvc_name, dir_name, pv_name)
             if val is True:
                 for num2 in range(0, len(self.value_pod)):
@@ -364,7 +363,7 @@ class Driver:
             d.delete_pv(pv_name)
             d.check_pv_deleted(pv_name)
         LOGGER.info(100*"=")
-        delete_dir(self.config_file, dir_name)
+        ff.delete_dir(dir_name)
 
         if d.check_storage_class(sc_name):
             d.delete_storage_class(sc_name)
@@ -373,7 +372,7 @@ class Driver:
     def one_pvc_two_pod(self, value_sc):
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
-        d.create_storage_class(value_sc, self.config_file, sc_name)
+        d.create_storage_class(value_sc, sc_name)
         d.check_storage_class(sc_name)
         value_pvc_pass = copy.deepcopy(self.value_pvc[0])
         pvc_name = d.get_random_name("pvc")
@@ -399,7 +398,7 @@ class Driver:
     def sequential_pvc(self, value_sc, num_of_pvc):
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
-        d.create_storage_class(value_sc, self.config_file, sc_name)
+        d.create_storage_class(value_sc, sc_name)
         d.check_storage_class(sc_name)
         pvc_names = []
         number_of_pvc = num_of_pvc 
@@ -443,7 +442,6 @@ class Driver:
 class Snapshot():
     def __init__(self, kubeconfig, test_namespace, keep_objects, data, value_pvc, value_vs_class, number_of_snapshots):
         config.load_kube_config(config_file=kubeconfig)
-        self.config_file = data
         self.value_pvc = value_pvc
         self.value_vs_class = value_vs_class
         self.number_of_snapshots = number_of_snapshots
@@ -461,7 +459,7 @@ class Snapshot():
         for pvc_value in self.value_pvc:
             LOGGER.info("-"*100)
             sc_name = d.get_random_name("sc")
-            d.create_storage_class(value_sc, self.config_file, sc_name)
+            d.create_storage_class(value_sc, sc_name)
             d.check_storage_class(sc_name)
 
             pvc_name = d.get_random_name("pvc")
@@ -477,7 +475,7 @@ class Snapshot():
                 vs_name = d.get_random_name("vs")
                 vs_names.append(vs_name)
                 snapshot.create_vs(vs_name, vs_class_name, pvc_name)
-                snapshot.check_vs_detail(vs_name, pvc_name, self.config_file, vs_class_name, sc_name, value_vs_class)
+                snapshot.check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, value_vs_class)
 
             for vs_name in vs_names:
                 snapshot.delete_vs(vs_name)

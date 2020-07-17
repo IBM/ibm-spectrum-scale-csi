@@ -211,7 +211,7 @@ def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
         d.check_storage_class_deleted(sc_name)
 
 
-def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name, body_params):
+def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
 
     api_instance = client.CustomObjectsApi()
     try:
@@ -267,7 +267,7 @@ def check_vs_detail(vs_name, pvc_name, data, vs_class_name, sc_name, body_params
         assert False
 
     volume_name = api_response.spec.volume_name
-    if ff.check_snapshot(data, snapshot_name, volume_name):
+    if ff.check_snapshot(snapshot_name, volume_name):
         LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
     else:
         LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")

@@ -9,11 +9,6 @@ import utils.fileset_functions as ff
 from utils.namegenerator import name_generator
 
 LOGGER = logging.getLogger()
-"""
-delete_dir
-delete_created_fileset
-"""
-
 
 def check_key(dict1, key):
     """ checks key is in dictionary or not"""
@@ -64,7 +59,7 @@ def get_storage_class_parameters(values):
     return dict_parameters
 
 
-def create_storage_class(values, config_value, sc_name):
+def create_storage_class(values, sc_name):
     """
     creates storage class
 
@@ -80,8 +75,7 @@ def create_storage_class(values, config_value, sc_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    global test, storage_class_parameters
-    test = config_value
+    global storage_class_parameters
     api_instance = client.StorageV1Api()
     storage_class_metadata = client.V1ObjectMeta(name=sc_name)
     storage_class_parameters = get_storage_class_parameters(values)
@@ -219,7 +213,7 @@ def check_pv(pv_name):
         return False
 
 
-def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
+def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
     """
     creates persistent volume claim
 
@@ -243,9 +237,6 @@ def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
     pvc_metadata = client.V1ObjectMeta(name=pvc_name)
     pvc_resources = client.V1ResourceRequirements(
         requests={"storage": pvc_values["storage"]})
-    if sc_name == "":
-        global test
-        test = config_value
 
     pvc_spec = client.V1PersistentVolumeClaimSpec(
         access_modes=[pvc_values["access_modes"]],
@@ -292,7 +283,7 @@ def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names):
         delete_storage_class(sc_name)
         check_storage_class_deleted(sc_name)
     if not(dir_name == "nodiravailable"):
-        ff.delete_dir(test, dir_name)
+        ff.delete_dir(dir_name)
 
 
 def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
@@ -312,7 +303,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
 
-    val = ff.created_fileset_exists(test, volume_name)
+    val = ff.created_fileset_exists(volume_name)
     if val is False:
         return False
 
@@ -466,7 +457,7 @@ def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_
         delete_storage_class(sc_name)
         check_storage_class_deleted(sc_name)
     if not(dir_name == "nodiravailable"):
-        ff.delete_dir(test, dir_name)
+        ff.delete_dir(dir_name)
 
 
 def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names):
@@ -658,7 +649,7 @@ def check_pvc_deleted(pvc_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'pvc {pvc_name} deleted')
-            ff.delete_created_fileset(test, volume_name)
+            ff.delete_created_fileset(volume_name)
             return
 
     LOGGER.info(f'pvc {pvc_name} is not deleted')
@@ -714,7 +705,7 @@ def delete_storage_class(sc_name):
         LOGGER.debug(str(api_response))
         # can use cleanup function if running more than 20 parallel testcases to make
         # sure that every fileset is deleted
-        # ff.cleanup(test)
+        # ff.cleanup()
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling StorageV1Api->delete_storage_class: {e}")
@@ -743,3 +734,45 @@ def check_storage_class_deleted(sc_name):
 
     LOGGER.info(f'StorageClass {sc_name} is not deleted')
     assert False
+
+
+def create_deployment_object():
+
+    deployment_apps_api_instance = client.AppsV1Api()
+
+    deployment_labels = {
+        "product": "ibm-spectrum-scale-csi-test",
+        "app": "nginx"
+    }
+
+    deployment_metadata = client.V1ObjectMeta(
+        name="nginx-deployment", labels=deployment_labels, namespace=namespace_value)
+
+    deployment_selector = client.V1LabelSelector(match_labels={"app": "nginx"})
+
+    podtemplate_metadata = client.V1ObjectMeta(labels=deployment_labels)
+
+    nginx_pod_container = client.V1Container(image="nginx:1.14.2", name="nginx")
+
+    pod_spec = client.V1PodSpec(containers=[nginx_pod_container])
+
+    podtemplate_spec = client.V1PodTemplateSpec(
+        metadata=podtemplate_metadata, spec=pod_spec)
+
+    deployment_spec = client.V1DeploymentSpec(
+        replicas=3, selector=deployment_selector, template=podtemplate_spec)
+
+    body_dep = client.V1Deployment(
+        kind='Deployment', api_version='apps/v1', metadata=deployment_metadata, spec=deployment_spec)
+
+    try:
+        LOGGER.info("creating deployment for nginx")
+        deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
+            namespace=namespace_value, body=body_dep)
+        LOGGER.debug(str(deployment_apps_api_response))
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
+        assert False
+
+

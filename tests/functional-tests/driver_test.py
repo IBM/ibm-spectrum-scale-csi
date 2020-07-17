@@ -2,9 +2,8 @@ import logging
 import pytest
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
     check_nodes_available, Scaleoperatorobject, Driver, read_operator_data
-from utils.fileset_functions import fileset_exists, delete_fileset, create_dir, cred_check
+import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
-
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
@@ -23,7 +22,8 @@ def values(request):
     keep_objects = data["keepobjects"]
     test_namespace = namespace_value
 
-    cred_check(data)
+    ff.cred_check(data)
+    ff.set_data(data)
     operator = Scaleoperator(kubeconfig_value, namespace_value)
     operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
@@ -56,7 +56,7 @@ def values(request):
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
     driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data, test_namespace, keep_objects)
-    create_dir(data, data["volDirBasePath"])
+    ff.create_dir(data["volDirBasePath"])
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
     # driver_object.create_test_ns(kubeconfig_value)
@@ -66,8 +66,8 @@ def values(request):
     if condition is False and not(keep_objects):
         operator_object.delete()
         operator.delete()
-        if(fileset_exists(data)):
-            delete_fileset(data)
+        if(ff.fileset_exists(data)):
+            ff.delete_fileset(data)
 
 
 #: Testcase that are expected to pass:

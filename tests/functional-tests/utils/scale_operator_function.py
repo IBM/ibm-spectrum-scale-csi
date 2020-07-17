@@ -58,9 +58,7 @@ def create_namespace():
 
 def create_deployment():
     """
-    Create IBM Spectrum Scale CSI Operator deployment object in operator namespace using
-    deployment_operator_image_for_crd and deployment_driver_image_for_crd parameters from
-    config.json file
+    Create IBM Spectrum Scale CSI Operator deployment object using operator.yaml file
 
     Args:
         None
@@ -92,122 +90,9 @@ def create_deployment():
         assert False
 
 
-def create_deployment_old(config_file):
-    """
-    Create IBM Spectrum Scale CSI Operator deployment object in operator namespace using
-    deployment_operator_image_for_crd and deployment_driver_image_for_crd parameters from
-    config.json file
-
-    Args:
-        param1: config_file - configuration json file
-
-    Returns:
-       None
-
-    Raises:
-        Raises an exception on kubernetes client api failure and asserts
-
-    """
-
-    deployment_apps_api_instance = client.AppsV1Api()
-
-    deployment_labels = {
-        "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
-        "product": "ibm-spectrum-scale-csi",
-        "release": "ibm-spectrum-scale-csi-operator"
-    }
-
-    deployment_annotations = {
-        "productID": "ibm-spectrum-scale-csi-operator",
-        "productName": "IBM Spectrum Scale CSI Operator",
-        "productVersion": "2.0.0"
-    }
-
-    deployment_metadata = client.V1ObjectMeta(
-        name="ibm-spectrum-scale-csi-operator", labels=deployment_labels, namespace=namespace_value)
-
-    deployment_selector = client.V1LabelSelector(
-        match_labels={"app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator"})
-
-    podtemplate_metadata = client.V1ObjectMeta(
-        labels=deployment_labels, annotations=deployment_annotations)
-
-    pod_affinity = client.V1Affinity(
-        node_affinity=client.V1NodeAffinity(
-            required_during_scheduling_ignored_during_execution=client.V1NodeSelector(
-                node_selector_terms=[client.V1NodeSelectorTerm(
-                    match_expressions=[client.V1NodeSelectorRequirement(
-                        key="beta.kubernetes.io/arch", operator="Exists")]
-                )]
-            )
-        )
-    )
-    ansible_pod_container = client.V1Container(
-        image=config_file["deployment_operator_image_for_crd"],
-        command=["/usr/local/bin/ao-logs",
-                 "/tmp/ansible-operator/runner", "stdout"],
-        liveness_probe=client.V1Probe(_exec=client.V1ExecAction(
-            command=["/health_check.sh"]), initial_delay_seconds=10, period_seconds=30),
-        readiness_probe=client.V1Probe(_exec=client.V1ExecAction(
-            command=["/health_check.sh"]), initial_delay_seconds=3, period_seconds=1),
-        name="ansible", image_pull_policy="IfNotPresent",
-        security_context=client.V1SecurityContext(
-            capabilities=client.V1Capabilities(drop=["ALL"])),
-        volume_mounts=[client.V1VolumeMount(
-            mount_path="/tmp/ansible-operator/runner", name="runner", read_only=True)],
-        env=[client.V1EnvVar(name="CSI_DRIVER_IMAGE", value=config_file["deployment_driver_image_for_crd"])])
-
-    operator_pod_container = client.V1Container(
-        image=config_file["deployment_operator_image_for_crd"],
-        name="operator", image_pull_policy="IfNotPresent",
-        liveness_probe=client.V1Probe(_exec=client.V1ExecAction(
-            command=["/health_check.sh"]), initial_delay_seconds=10, period_seconds=30),
-        readiness_probe=client.V1Probe(_exec=client.V1ExecAction(
-            command=["/health_check.sh"]), initial_delay_seconds=3, period_seconds=1),
-        security_context=client.V1SecurityContext(
-            capabilities=client.V1Capabilities(drop=["ALL"])),
-        env=[client.V1EnvVar(name="WATCH_NAMESPACE",
-                             value_from=client.V1EnvVarSource(field_ref=client.V1ObjectFieldSelector(
-                                 field_path="metadata.namespace"))),
-             client.V1EnvVar(name="POD_NAME", value_from=client.V1EnvVarSource(
-                 field_ref=client.V1ObjectFieldSelector(field_path="metadata.name"))),
-             client.V1EnvVar(name="OPERATOR_NAME",
-                             value="ibm-spectrum-scale-csi-operator"),
-             client.V1EnvVar(name="CSI_DRIVER_IMAGE", value=config_file["deployment_driver_image_for_crd"])],
-        volume_mounts=[client.V1VolumeMount(
-            mount_path="/tmp/ansible-operator/runner", name="runner")]
-    )
-    pod_spec = client.V1PodSpec(affinity=pod_affinity,
-                                containers=[ansible_pod_container,
-                                            operator_pod_container],
-                                service_account_name="ibm-spectrum-scale-csi-operator",
-                                volumes=[client.V1Volume(empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"), name="runner")])
-
-    podtemplate_spec = client.V1PodTemplateSpec(
-        metadata=podtemplate_metadata, spec=pod_spec)
-
-    deployment_spec = client.V1DeploymentSpec(
-        replicas=1, selector=deployment_selector, template=podtemplate_spec)
-
-    body_dep = client.V1Deployment(
-        kind='Deployment', api_version='apps/v1', metadata=deployment_metadata, spec=deployment_spec)
-
-    try:
-        LOGGER.info("creating deployment for operator")
-        deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
-            namespace=namespace_value, body=body_dep)
-        LOGGER.debug(str(deployment_apps_api_response))
-    except ApiException as e:
-        LOGGER.error(
-            f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
-        assert False
-
-
 def create_cluster_role():
     """
-    Create IBM Spectrum Scale CSI Operator cluster role in Operator namespace
+    Create IBM Spectrum Scale CSI Operator cluster role using role.yaml file
 
     Args:
        None
@@ -220,46 +105,17 @@ def create_cluster_role():
 
     """
     cluster_role_api_instance = client.RbacAuthorizationV1Api()
-    pretty = True
-    cluster_role_labels = {
-        "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
-        "product": "ibm-spectrum-scale-csi",
-        "release": "ibm-spectrum-scale-csi-operator"
-    }
-
-    cluster_role_metadata = client.V1ObjectMeta(
-        name="ibm-spectrum-scale-csi-operator", labels=cluster_role_labels, namespace=namespace_value)
-    cluster_role_rules = []
-
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=["*"], resources=[
-                              'pods', 'persistentvolumeclaims', 'services',
-                              'endpoints', 'events', 'configmaps', 'secrets',
-                              'secrets/status', 'services/finalizers', 'serviceaccounts', 'securitycontextconstraints'], verbs=["*"]))
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=['rbac.authorization.k8s.io'], resources=[
-                              'clusterroles', 'clusterrolebindings'], verbs=["*"]))
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=['apps'], resources=[
-                              'deployments', 'daemonsets', 'replicasets', 'statefulsets'], verbs=["*"]))
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=[
-                              'monitoring.coreos.com'], resources=['servicemonitors'], verbs=['get', 'create']))
-    cluster_role_rules.append(client.V1PolicyRule(
-        api_groups=['apps'], resources=['replicasets'], verbs=["get"]))
-    cluster_role_rules.append(client.V1PolicyRule(
-        api_groups=['csi.ibm.com'], resources=['*'], verbs=["*"]))
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=[
-                              'security.openshift.io'], resources=['securitycontextconstraints'], verbs=["*"]))
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=['storage.k8s.io'], resources=[
-                              'volumeattachments', 'storageclasses'], verbs=["*"]))
-    cluster_role_rules.append(client.V1PolicyRule(api_groups=['apps'], resource_names=[
-                              'ibm-spectrum-scale-csi-operator'], resources=['deployments/finalizers'], verbs=['update']))
-    body = client.V1ClusterRole(kind='ClusterRole', api_version='rbac.authorization.k8s.io/v1',
-                                metadata=cluster_role_metadata, rules=cluster_role_rules)
-
+    filepath = "../../operator/deploy/role.yaml"
+    try:
+        with open(filepath, "r") as f:
+            body = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print("Error in configuration file:", exc)
+        assert False
     try:
         LOGGER.info("Creating ibm-spectrum-scale-csi-operator ClusterRole ")
         cluster_role_api_response = cluster_role_api_instance.create_cluster_role(
-            body, pretty=pretty)
+            body, pretty=True)
         LOGGER.debug(str(cluster_role_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -269,7 +125,7 @@ def create_cluster_role():
 
 def create_cluster_role_binding():
     """
-    Create IBM Spectrum Scale CSI Operator ClusterRoleBinding object in Operator namepsace
+    Create IBM Spectrum Scale CSI Operator ClusterRoleBinding object using role_binding.yaml
 
     Args:
        None
@@ -282,34 +138,19 @@ def create_cluster_role_binding():
 
     """
     cluster_role_binding_api_instance = client.RbacAuthorizationV1Api()
-    pretty = True
-    cluster_role_binding_labels = {
-        "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
-                                  "product": "ibm-spectrum-scale-csi",
-                                  "release": "ibm-spectrum-scale-csi-operator"
-    }
-
-    cluster_role_binding_metadata = client.V1ObjectMeta(
-        name="ibm-spectrum-scale-csi-operator", labels=cluster_role_binding_labels, namespace=namespace_value)
-
-    cluster_role_binding_role_ref = client.V1RoleRef(
-        api_group="rbac.authorization.k8s.io", kind="ClusterRole", name="ibm-spectrum-scale-csi-operator")
-
-    cluster_role_binding_subjects = client.V1Subject(
-        kind="ServiceAccount", name="ibm-spectrum-scale-csi-operator", namespace=namespace_value)
-
-    cluster_role_binding_body = client.V1ClusterRoleBinding(kind='ClusterRoleBinding',
-                                                            api_version='rbac.authorization.k8s.io/v1',
-                                                            metadata=cluster_role_binding_metadata,
-                                                            role_ref=cluster_role_binding_role_ref,
-                                                            subjects=[cluster_role_binding_subjects])
-
+    filepath = "../../operator/deploy/role_binding.yaml"
+    try:
+        with open(filepath, "r") as f:
+            body = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print("Error in configuration file:", exc)
+        assert False
+    
+    body["subjects"][0]["namespace"] = namespace_value
     try:
         LOGGER.info("creating cluster role binding")
         cluster_role_binding_api_response = cluster_role_binding_api_instance.create_cluster_role_binding(
-            cluster_role_binding_body, pretty=pretty)
+            body, pretty=True)
         LOGGER.debug(cluster_role_binding_api_response)
     except ApiException as e:
         LOGGER.error(
@@ -319,7 +160,7 @@ def create_cluster_role_binding():
 
 def create_service_account():
     """
-    Create IBM Spectrum Scale CSI Operator ServiceAccount in Operator namespace
+    Create IBM Spectrum Scale CSI Operator ServiceAccount using service_account.yaml
 
     Args:
        None
@@ -331,25 +172,20 @@ def create_service_account():
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    pretty = True
     service_account_api_instance = client.CoreV1Api()
-    service_account_labels = {
-        "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
-        "product": "ibm-spectrum-scale-csi",
-        "release": "ibm-spectrum-scale-csi-operator"
-    }
+    filepath = "../../operator/deploy/service_account.yaml"
+    try:
+        with open(filepath, "r") as f:
+            service_account_body = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print("Error in configuration file:", exc)
+        assert False
 
-    service_account_metadata = client.V1ObjectMeta(
-        name="ibm-spectrum-scale-csi-operator", namespace=namespace_value, labels=service_account_labels)
-    service_account_body = client.V1ServiceAccount(
-        api_version="v1", kind="ServiceAccount", metadata=service_account_metadata)
-
+    service_account_body["metadata"]["namespace"] = namespace_value
     try:
         LOGGER.info("Creating ibm-spectrum-scale-csi-operator ServiceAccount")
         service_account_api_response = service_account_api_instance.create_namespaced_service_account(
-            namespace=namespace_value, body=service_account_body, pretty=pretty)
+            namespace=namespace_value, body=service_account_body, pretty=True)
         LOGGER.debug(str(service_account_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -385,86 +221,6 @@ def create_crd():
             "Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
         crd_api_response = crd_api_instance.create_custom_resource_definition(
             loadcrd_yaml, pretty=True)
-        LOGGER.debug(str(crd_api_response))
-    except ValueError:
-        LOGGER.info(
-            "while there is valuerror expection,but CRD created successfully")
-
-
-def create_crd_old():
-    """
-    Create IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
-
-    Args:
-       None
-
-    Returns:
-       None
-
-    Raises:
-        Raises an ValueError exception but it is expected. hence we pass.
-
-    """
-
-    # input to crd_metadata
-    crd_labels = {
-        "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
-        "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
-        "release": "ibm-spectrum-scale-csi-operator"
-    }
-
-    # input to crd_body
-    crd_metadata = client.V1ObjectMeta(
-        name="csiscaleoperators.csi.ibm.com", labels=crd_labels)
-
-    crd_names = client.V1beta1CustomResourceDefinitionNames(
-        kind="CSIScaleOperator",
-        list_kind="CSIScaleOperatorList",
-        plural="csiscaleoperators",
-        singular="csiscaleoperator"
-    )
-
-    crd_subresources = client.V1beta1CustomResourceSubresources(status={})
-
-    # input to crd_validation     json input
-    filepath = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
-    try:
-        with open(filepath, "r") as f:
-            loadcrd_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        print("Error in configuration file:", exc)
-        assert False
-    properties = loadcrd_yaml['spec']['validation']['openAPIV3Schema']['properties']
-
-    crd_open_apiv3_schema = client.V1beta1JSONSchemaProps(
-        properties=properties, type="object")
-    crd_validation = client.V1beta1CustomResourceValidation(
-        open_apiv3_schema=crd_open_apiv3_schema)
-    crd_versions = [client.V1beta1CustomResourceDefinitionVersion(
-        name="v1", served=True, storage=True)]
-
-    crd_spec = client.V1beta1CustomResourceDefinitionSpec(
-        group="csi.ibm.com",
-        names=crd_names,
-        scope="Namespaced",
-        subresources=crd_subresources,
-        validation=crd_validation,
-        version="v1",
-        versions=crd_versions
-    )
-
-    crd_body = client.V1beta1CustomResourceDefinition(
-        api_version="apiextensions.k8s.io/v1beta1",
-        kind="CustomResourceDefinition",
-        metadata=crd_metadata,
-        spec=crd_spec)
-
-    crd_api_instance = client.ApiextensionsV1beta1Api()
-    try:
-        LOGGER.info("creating crd")
-        crd_api_response = crd_api_instance.create_custom_resource_definition(
-            crd_body, pretty=True)
         LOGGER.debug(str(crd_api_response))
     except ValueError:
         LOGGER.info(
@@ -783,7 +539,7 @@ def check_cluster_role_binding_deleted(cluster_role_binding_name):
     """
     count = 6
     api_instance = client.RbacAuthorizationV1Api()
-    while (var and count > 0):
+    while (count > 0):
         try:
             api_response = api_instance.read_cluster_role_binding(
                 name=cluster_role_binding_name, pretty=True)
