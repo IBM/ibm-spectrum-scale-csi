@@ -332,8 +332,8 @@ func (cs *ScaleControllerServer) getConnFromClusterID(cid string) (connectors.Sp
 	if isConnPresent {
 		return connector, nil
 	}
-
-	return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get connector for ClusterID : %v", cid))
+	glog.Errorf("unable to get connector for cluster ID %v", cid)
+	return nil, status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
 }
 
 // CreateVolume - Create Volume
@@ -594,7 +594,8 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 	if !isprimaryConnPresent {
-		return nil, status.Error(codes.Internal, "unable to get connector for Primary cluster")
+		glog.Errorf("unable to get connector for primary cluster")
+		return nil, status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
 	}
 
 	/* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
