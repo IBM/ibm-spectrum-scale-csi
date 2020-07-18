@@ -35,7 +35,7 @@ import (
 type spectrumRestV2 struct {
 	httpClient *http.Client
 	endpoint   string
-	user       string
+	user	   string
 	password   string
 }
 
@@ -144,7 +144,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 			Timeout:   time.Second * 60,
 		},
 		endpoint: endpoint,
-		user:     guiUser,
+		user:	  guiUser,
 		password: guiPwd,
 	}, nil
 }
@@ -608,16 +608,16 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 }
 
 func (s *spectrumRestV2) GetFilesetQuotaResponse(filesystemName string, filesetName string) (Quota_v2, error) {
-        glog.V(4).Infof("rest_v2 GetFilesetQuotaResponse. filesystem: %s, fileset: %s", filesystemName, filesetName)
+	glog.V(4).Infof("rest_v2 GetFilesetQuotaResponse. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
-        listQuotaURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName))
-        listQuotaResponse := GetQuotaResponse_v2{}
+	listQuotaURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName))
+	listQuotaResponse := GetQuotaResponse_v2{}
 
-        err := s.doHTTP(listQuotaURL, "GET", &listQuotaResponse, nil)
-        if err != nil {
-                glog.Errorf("Unable to fetch quota information for fileset %s:%s: [%v]", filesystemName, filesetName, err)
-                return Quota_v2{}, err
-        }
+	err := s.doHTTP(listQuotaURL, "GET", &listQuotaResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to fetch quota information for fileset %s:%s: [%v]", filesystemName, filesetName, err)
+		return Quota_v2{}, err
+	}
 
 	if len(listQuotaResponse.Quotas) == 0 {
 		glog.Errorf("No quota information found for fileset %s:%s ", filesystemName, filesetName)
