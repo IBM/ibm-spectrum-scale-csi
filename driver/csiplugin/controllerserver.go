@@ -908,7 +908,9 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	conn, err := cs.GetConnFromClusterID(volumeIDMembers.ClusterId)
-	if err != nil { return nil, err	}
+	if err != nil {
+		return nil, err
+	}
 
 	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
 	if err != nil {

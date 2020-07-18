@@ -35,7 +35,7 @@ import (
 type spectrumRestV2 struct {
 	httpClient *http.Client
 	endpoint   string
-	user	   string
+	user       string
 	password   string
 }
 
