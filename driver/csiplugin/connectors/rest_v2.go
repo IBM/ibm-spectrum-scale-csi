@@ -144,7 +144,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 			Timeout:   time.Second * 60,
 		},
 		endpoint: endpoint,
-		user:	  guiUser,
+		user:     guiUser,
 		password: guiPwd,
 	}, nil
 }

@@ -450,7 +450,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	/* scaleVol.VolBackendFs will always be local cluster FS. So we need to find a
-	   remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and   create fileset on that FS. */
+	   remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and	create fileset on that FS. */
 
 	if scaleVol.IsFilesetBased {
 		remoteDeviceName := mountInfo.RemoteDeviceName
@@ -546,7 +546,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	lnkPath := fmt.Sprintf("%s/%s", scaleVol.PrimarySLnkRelPath, scaleVol.VolName)
 
-	glog.Infof("Symlink info FS [%v] TargetFS [%v]  target Path [%v] lnkPath [%v]", scaleVol.PrimaryFS, scaleVol.LocalFS, targetPath, lnkPath)
+	glog.Infof("Symlink info FS [%v] TargetFS [%v]	target Path [%v] lnkPath [%v]", scaleVol.PrimaryFS, scaleVol.LocalFS, targetPath, lnkPath)
 
 	err = scaleVol.PrimaryConnector.CreateSymLink(scaleVol.PrimaryFS, scaleVol.LocalFS, targetPath, lnkPath)
 
@@ -967,28 +967,28 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	timestamp.Nanos = 0
 
 	restoreSize, err := cs.getSnapRestoreSize(conn, filesystemName, filesetName)
-        if err != nil {
+	if err != nil {
 		glog.Errorf("Error getting the snapshot restore size for snapshot %s:%s:%s", filesystemName, filesetName, snapName)
-                return nil, err
-        }
+		return nil, err
+	}
 
 	return &csi.CreateSnapshotResponse{
 		Snapshot: &csi.Snapshot{
-			SnapshotId:     snapID,
+			SnapshotId:	snapID,
 			SourceVolumeId: volID,
-			ReadyToUse:     true,
-			CreationTime:   &timestamp,
+			ReadyToUse:	true,
+			CreationTime:	&timestamp,
 			SizeBytes:	restoreSize,
 		},
 	}, nil
 }
 
 func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string) (int64, error) {
-        quotaResp, err := conn.GetFilesetQuotaResponse(filesystemName, filesetName)
+	quotaResp, err := conn.GetFilesetQuotaResponse(filesystemName, filesetName)
 
-        if err != nil {
-                return 0, err
-        }
+	if err != nil {
+		return 0, err
+	}
 
 	if quotaResp.BlockUsage < 0 {
 		glog.Errorf("getSnapRestoreSize: Invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName)
