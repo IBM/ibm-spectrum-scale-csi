@@ -908,16 +908,13 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	conn, err := cs.GetConnFromClusterID(volumeIDMembers.ClusterId)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err	}
 
 	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
-	glog.V(5).Infof("CreateSnapshot - getting filesystem Name from Filesystem Uid [%s] ", volumeIDMembers.FsetId)
 	filesetResp, err := conn.GetFileSetResponseFromId(filesystemName, volumeIDMembers.FsetId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get Fileset Name for Fileset Id [%v] FS [%v] ClusterId [%v]", volumeIDMembers.FsetId, filesystemName, volumeIDMembers.ClusterId))
@@ -938,14 +935,12 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	snapName := req.GetName()
 
-	glog.V(5).Infof("CreateSnapshot - check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", snapName, filesetName, filesystemName)
 	snapExist, err := conn.CheckIfSnapshotExist(filesystemName, filesetName, snapName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get the snapshot details. Error [%v]", err))
 	}
 
 	if !snapExist {
-		glog.V(5).Infof("CreateSnapshot - creating snapshot [%s] in fileset [%s] under filesystem [%s]", snapName, filesetName, filesystemName)
 		snaperr := conn.CreateSnapshot(filesystemName, filesetName, snapName)
 		if snaperr != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to create snapshot. Error [%v]", snaperr))
