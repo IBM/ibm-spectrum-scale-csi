@@ -974,11 +974,11 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	return &csi.CreateSnapshotResponse{
 		Snapshot: &csi.Snapshot{
-			SnapshotId:	snapID,
+			SnapshotId:     snapID,
 			SourceVolumeId: volID,
-			ReadyToUse:	true,
-			CreationTime:	&timestamp,
-			SizeBytes:	restoreSize,
+			ReadyToUse:     true,
+			CreationTime:   &timestamp,
+			SizeBytes:      restoreSize,
 		},
 	}, nil
 }
