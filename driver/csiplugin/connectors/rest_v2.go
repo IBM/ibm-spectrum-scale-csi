@@ -634,6 +634,7 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 
 	if err != nil {
 		return "", err
+
 	}
 
 	return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
