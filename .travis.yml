@@ -242,7 +242,7 @@ jobs:
         - operator-sdk build ${REPO_NAME_OPERATOR}
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
         - kubectl create -f deploy/namespace.yaml
-          #- operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
+        - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
     
 
 notifications:
