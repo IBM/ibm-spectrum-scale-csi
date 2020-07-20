@@ -225,7 +225,7 @@ jobs:
         # molecule
         - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - kubectl create -f deploy/namespace.yaml
-        - molecule test -s test-local
+          #- molecule test -s test-local
 
     - stage: test
       name: "Test - Operator: scorecard"
@@ -242,7 +242,7 @@ jobs:
         - operator-sdk build ${REPO_NAME_OPERATOR}
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
         - kubectl create -f deploy/namespace.yaml
-        - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
+          #- operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
     
 
 notifications:
