@@ -2,7 +2,7 @@
 scorecard:
   init-timeout: 120
   output: json
-  bundle: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/"
+  bundle: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.0.0"
   plugins:
     - basic:
         namespace: "ibm-spectrum-scale-csi-driver"
