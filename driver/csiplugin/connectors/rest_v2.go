@@ -607,8 +607,8 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	return nil
 }
 
-func (s *spectrumRestV2) GetFilesetQuotaResponse(filesystemName string, filesetName string) (Quota_v2, error) {
-	glog.V(4).Infof("rest_v2 GetFilesetQuotaResponse. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
+	glog.V(4).Infof("rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listQuotaURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName))
 	listQuotaResponse := GetQuotaResponse_v2{}
@@ -630,7 +630,7 @@ func (s *spectrumRestV2) GetFilesetQuotaResponse(filesystemName string, filesetN
 func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName string) (string, error) {
 	glog.V(4).Infof("rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
-	listQuotaResponse, err := s.GetFilesetQuotaResponse(filesystemName, filesetName)
+	listQuotaResponse, err := s.GetFilesetQuotaDetails(filesystemName, filesetName)
 
 	if err != nil {
 		return "", err
