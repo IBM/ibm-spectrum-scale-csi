@@ -636,7 +636,7 @@ def test_driver_dynamic_pass_29():
 
 def test_driver_dynamic_fail_30():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -660,7 +660,7 @@ def test_driver_dynamic_fail_33():
 
 def test_driver_dynamic_fail_34():
     value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -684,19 +684,19 @@ def test_driver_dynamic_fail_37():
 
 def test_driver_dynamic_fail_38():
     value_sc = {"uid": data["r-uid_number"], "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_39():
     value_sc = {"gid": data["r-gid_number"], "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_40():
     value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -710,7 +710,7 @@ def test_driver_dynamic_fail_41():
 def test_driver_dynamic_fail_42():
     value_sc = {"inodeLimit": data["r-inodeLimit"],
                 "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -885,14 +885,14 @@ def test_driver_dynamic_fail_67():
 def test_driver_dynamic_fail_68():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r-uid_number"],
                 "gid": data["r-gid_number"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_69():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r-uid_number"],
                 "filesetType": "dependent",
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -906,14 +906,14 @@ def test_driver_dynamic_fail_70():
 def test_driver_dynamic_fail_71():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r-uid_number"],
                 "inodeLimit": data["r-inodeLimit"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_72():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "filesetType": "dependent",
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -927,14 +927,14 @@ def test_driver_dynamic_fail_73():
 def test_driver_dynamic_fail_74():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "inodeLimit": data["r-inodeLimit"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_75():
     value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1372,7 +1372,7 @@ def test_driver_dynamic_fail_133():
     value_sc = {"gid": data["r-gid_number"], "uid": data["r-uid_number"],
                 "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1386,9 +1386,8 @@ def test_driver_dynamic_fail_134():
 
 def test_driver_dynamic_fail_135():
     value_sc = {"gid": data["r-gid_number"], "uid": data["r-uid_number"],
-                "inodeLimit": data["r-inodeLimit"],
-                "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "inodeLimit": data["r-inodeLimit"], "volBackendFs": data["remoteFs"],
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1396,7 +1395,7 @@ def test_driver_dynamic_fail_136():
     value_sc = {"uid": data["r-uid_number"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1419,7 +1418,7 @@ def test_driver_dynamic_fail_139():
     value_sc = {"gid": data["r-gid_number"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1940,7 +1939,7 @@ def test_driver_dynamic_fail_202():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "filesetType": "dependent",
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2521,14 +2520,14 @@ invaliddata = {
 def test_driver_dynamic_fail_invalid_input_265():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": invaliddata["r-volDirBasePath"],
-                "reason": "Directory base path /invalid not present in FS"}
+                "reason": "Directory base path /invalid not present in"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_invalid_input_266():
     value_sc = {"clusterId":  data["remoteid"], "filesetType": "dependent",
                 "volBackendFs": invaliddata["remoteFs"],
-                "reason": "Unable to get Mount Details for FS"}
+                "reason": "filesystem invalid in not known to primary cluster"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2536,7 +2535,7 @@ def test_driver_dynamic_fail_invalid_input_267():
     value_sc = {"clusterId":  data["remoteid"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
                 "parentFileset": invaliddata["r-parentFileset"],
-                "reason": "Unable to create fileset"}
+                "reason": "unable to create fileset"}
     driver_object.test_dynamic(value_sc)
 
 
