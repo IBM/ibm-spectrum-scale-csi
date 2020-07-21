@@ -222,8 +222,7 @@ def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
         param2: sc_name - name of storage class , pvc associated with
                           if "notusingsc" no storage class
         param3: pvc_name - name of pvc to be created
-        param4: config_value - configuration file
-        param5: pv_name - name of pv , pvc associated with
+        param4: pv_name - name of pv , pvc associated with
                           if None , no pv is associated
 
     Returns:
@@ -243,6 +242,60 @@ def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
         resources=pvc_resources,
         storage_class_name=sc_name,
         volume_name=pv_name
+    )
+
+    pvc_body = client.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata=pvc_metadata,
+        spec=pvc_spec
+    )
+
+    try:
+        LOGGER.info(
+            f'Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
+        api_response = api_instance.create_namespaced_persistent_volume_claim(
+            namespace=namespace_value, body=pvc_body, pretty=True)
+        LOGGER.debug(str(api_response))
+        LOGGER.info(f'PVC {pvc_name} has been created successfully')
+    except ApiException as e:
+        LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
+        assert False
+
+
+def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
+    """
+    creates persistent volume claim
+
+    Args:
+        param1: pvc_values - values required for creation of pvc
+        param2: sc_name - name of storage class , pvc associated with
+        param3: pvc_name - name of pvc to be created
+
+    Returns:
+        None
+
+    Raises:
+        Raises an exception on kubernetes client api failure and asserts
+
+    """
+    api_instance = client.CoreV1Api()
+    pvc_metadata = client.V1ObjectMeta(name=pvc_name)
+    pvc_resources = client.V1ResourceRequirements(
+        requests={"storage": pvc_values["storage"]})
+    pvc_data_source = client.V1TypedLocalObjectReference(
+                        api_group="snapshot.storage.k8s.io",
+                        kind="VolumeSnapshot",
+                        name=snap_name
+                      )
+
+    pvc_spec = client.V1PersistentVolumeClaimSpec(
+        access_modes=[pvc_values["access_modes"]],
+        resources=pvc_resources,
+        storage_class_name=sc_name,
+        data_source=pvc_data_source
     )
 
     pvc_body = client.V1PersistentVolumeClaim(

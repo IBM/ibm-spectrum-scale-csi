@@ -294,7 +294,7 @@ def check_snapshot_status(vs_name):
 
     api_instance = client.CustomObjectsApi()
     val = 0
-    while val < 12:
+    while val < 36:
         try:
             api_response = api_instance.get_namespaced_custom_object_status(
                 group="snapshot.storage.k8s.io",

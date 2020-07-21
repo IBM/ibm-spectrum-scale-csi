@@ -473,9 +473,13 @@ class Snapshot():
             vs_names = []
             for _ in range(0, number_of_snapshots):
                 vs_name = d.get_random_name("vs")
+                restored_pvc_name = "restored-pvc"+vs_name[2:]
                 vs_names.append(vs_name)
                 snapshot.create_vs(vs_name, vs_class_name, pvc_name)
                 snapshot.check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, value_vs_class)
+                d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name)
+                d.check_pvc(pvc_value, sc_name, restored_pvc_name)
+                d.delete_pvc(restored_pvc_name)
 
             for vs_name in vs_names:
                 snapshot.delete_vs(vs_name)

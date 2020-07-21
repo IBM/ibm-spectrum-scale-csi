@@ -240,32 +240,25 @@ def check_scaleoperatorobject_daemonsets_state():
 
     """
     read_daemonsets_api_instance = client.AppsV1Api()
-    time.sleep(10)
-    con = True
     num = 0
-    while (num < 124 and con):
+    while (num < 124):
         try:
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
                 name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
             LOGGER.debug(read_daemonsets_api_response)
-            con = False
+            current_number_scheduled = read_daemonsets_api_response.status.current_number_scheduled
+            desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
+            number_available = read_daemonsets_api_response.status.number_available
+            if number_available == current_number_scheduled == desired_number_scheduled:
+                LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi's pods are Running")
+                return True, desired_number_scheduled
+            time.sleep(5)
+            num+=1
         except ApiException as e:
-            if(num > 123):
-                LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi does not exist")
-                LOGGER.error(str(e))
-                assert False
-            else:
-                time.sleep(5)
-                num += 1
+            time.sleep(5)
+            num += 1
 
-    current_number_scheduled = read_daemonsets_api_response.status.current_number_scheduled
-    desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
-    number_available = read_daemonsets_api_response.status.number_available
-    if number_available == current_number_scheduled == desired_number_scheduled:
-        LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi's pods are Running")
-        return True, desired_number_scheduled
-
-    LOGGER.info(
+    LOGGER.error(
         "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
     return False, desired_number_scheduled
 

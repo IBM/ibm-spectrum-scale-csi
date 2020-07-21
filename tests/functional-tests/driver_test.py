@@ -2465,14 +2465,14 @@ invaliddata = {
 def test_driver_dynamic_fail_invalid_input_265():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": invaliddata["volDirBasePath"],
-                "reason": "Directory base path /invalid not present in FS"}
+                "reason": "Directory base path /invalid not present in"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_invalid_input_266():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
                 "volBackendFs": invaliddata["primaryFs"],
-                "reason": "Unable to get Mount Details for FS"}
+                "reason": "filesystem invalid in not known to primary cluster"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2480,7 +2480,7 @@ def test_driver_dynamic_fail_invalid_input_267():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
                 "volBackendFs": data["primaryFs"],
                 "parentFileset": invaliddata["parentFileset"],
-                "reason": "Unable to create fileset"}
+                "reason": "unable to create fileset"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2500,6 +2500,7 @@ def test_driver_dynamic_fail_invalid_input_269():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.skip
 def test_driver_dynamic_fail_invalid_input_270():
     value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
                 "filesetType": "dependent", "gid": invaliddata["gid_number"],
