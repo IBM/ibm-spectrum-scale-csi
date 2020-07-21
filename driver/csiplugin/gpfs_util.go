@@ -68,12 +68,12 @@ type scaleVolId struct {
 }
 
 type scaleSnapId struct {
-	ClusterId      string
-	FsUUID         string
-	FsetName       string
-	SnapName       string
-	Path           string
-	FsName         string
+	ClusterId string
+	FsUUID    string
+	FsetName  string
+	SnapName  string
+	Path      string
+	FsName    string
 }
 
 //nolint
@@ -94,7 +94,7 @@ type scaleVolSnapId struct {
 	SnapId    string
 } //nolint
 
-func getRemoteFsName(remoteDeviceName string) (string) {
+func getRemoteFsName(remoteDeviceName string) string {
 	splitDevName := strings.Split(remoteDeviceName, ":")
 	remDevFs := splitDevName[len(splitDevName)-1]
 	return remDevFs

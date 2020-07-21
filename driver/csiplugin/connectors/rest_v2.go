@@ -262,17 +262,17 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 		return err
 	}
 
-        err = s.isRequestAccepted(copySnapResp, copySnapURL)
-        if err != nil {
-                glog.Errorf("Request not accepted for processing: %v", err)
-                return err
-        }
+	err = s.isRequestAccepted(copySnapResp, copySnapURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return err
+	}
 
-        err = s.waitForJobCompletion(copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID)
-        if err != nil {
-                glog.Errorf("Unable to copy snapshot %s: %v", snapshotName, err)
-                return err
-        }
+	err = s.waitForJobCompletion(copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("Unable to copy snapshot %s: %v", snapshotName, err)
+		return err
+	}
 
 	return nil
 }

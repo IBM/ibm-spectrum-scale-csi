@@ -413,30 +413,30 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	scaleVol.PrimaryFSMount = PFSMount
 	scaleVol.PrimarySLnkPath = PSLnkPath
 
-  volSrc := req.GetVolumeContentSource()
-  isSnapSource := false
-  snapIdMembers := scaleSnapId{}
-  if volSrc != nil {
-    if volSrc.GetVolume() != nil {
-            return nil, status.Error(codes.Unimplemented, "Volume as volume content source is not supported")
-    }
+	volSrc := req.GetVolumeContentSource()
+	isSnapSource := false
+	snapIdMembers := scaleSnapId{}
+	if volSrc != nil {
+		if volSrc.GetVolume() != nil {
+			return nil, status.Error(codes.Unimplemented, "Volume as volume content source is not supported")
+		}
 
-    srcSnap := volSrc.GetSnapshot()
-    if srcSnap != nil {
-      snapId := srcSnap.GetSnapshotId()
-      snapIdMembers, err = cs.GetSnapIdMembers(snapId)
-      if err != nil {
+		srcSnap := volSrc.GetSnapshot()
+		if srcSnap != nil {
+			snapId := srcSnap.GetSnapshotId()
+			snapIdMembers, err = cs.GetSnapIdMembers(snapId)
+			if err != nil {
 				glog.Errorf("CreateVolume [%s]: Invalid snapshot ID %s [%v]", volName, snapId, err)
-                    return nil, err
-      }
-      err = cs.ValidateSnapId(&snapIdMembers, scaleVol, PCid)
-      if err != nil {
+				return nil, err
+			}
+			err = cs.ValidateSnapId(&snapIdMembers, scaleVol, PCid)
+			if err != nil {
 				glog.Errorf("CreateVolume [%s]: Error in source snapshot validation [%v]", volName, err)
-              return nil, err
-      }
-      isSnapSource = true
-    }
-  }
+				return nil, err
+			}
+			isSnapSource = true
+		}
+	}
 
 	// Check if Primary Fileset is linked
 	primaryFileset := cs.Driver.primary.PrimaryFset
@@ -564,13 +564,13 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate volume id. Error: %v", err))
 	}
 
-  if isSnapSource {
-    err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath)
-    if err != nil {
+	if isSnapSource {
+		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath)
+		if err != nil {
 			glog.Errorf("CreateVolume [%s]: [%v]", volName, err)
-      return nil, err
-    }
-  }
+			return nil, err
+		}
+	}
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
@@ -582,10 +582,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}, nil
 }
 
-func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scaleSnapId, fsDetails connectors.FileSystem_v2, targetPath string) (error) {
+func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scaleSnapId, fsDetails connectors.FileSystem_v2, targetPath string) error {
 	glog.V(3).Infof("copySnapContent snapId: [%v], scaleVolume: [%v]", snapId, scVol)
 	conn, err := cs.getConnFromClusterID(snapId.ClusterId)
-        if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	err = cs.validateRemoteFs(fsDetails, scVol)
 	if err != nil {
@@ -604,7 +606,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	return nil
 }
 
-func (cs *ScaleControllerServer) ValidateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) (error) {
+func (cs *ScaleControllerServer) ValidateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
 	glog.V(3).Infof("ValidateSnapId [%v]", sId)
 	if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
 		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
@@ -612,42 +614,42 @@ func (cs *ScaleControllerServer) ValidateSnapId(sId *scaleSnapId, scVol *scaleVo
 
 	if scVol.ClusterId == "" && sId.ClusterId != pCid {
 		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
-        }
+	}
 
-        conn, err := cs.getConnFromClusterID(sId.ClusterId)
-        if err != nil {
-                return err
-        }
+	conn, err := cs.getConnFromClusterID(sId.ClusterId)
+	if err != nil {
+		return err
+	}
 
-        sId.FsName, err = conn.GetFilesystemName(sId.FsUUID)
+	sId.FsName, err = conn.GetFilesystemName(sId.FsUUID)
 
-        if err != nil {
-                return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sId.FsUUID, sId.ClusterId, err))
-        }
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sId.FsUUID, sId.ClusterId, err))
+	}
 
 	isFsMounted, err := conn.IsFilesystemMountedOnGUINode(sId.FsName)
-        if err != nil {
-                return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s on Primary cluster", sId.FsName))
-        }
-        if !isFsMounted {
-                return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node of Primary cluster", sId.FsName))
-        }
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s on Primary cluster", sId.FsName))
+	}
+	if !isFsMounted {
+		return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node of Primary cluster", sId.FsName))
+	}
 
 	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, sId.FsetName)
-        if err != nil {
-                return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sId.FsetName))
-        }
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sId.FsetName))
+	}
 	if !isFsetLinked {
-                return status.Error(codes.Internal, fmt.Sprintf("Fileset [%v] of source snapshot is not linked", sId.FsetName))
+		return status.Error(codes.Internal, fmt.Sprintf("Fileset [%v] of source snapshot is not linked", sId.FsetName))
 	}
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, sId.FsetName, sId.SnapName)
-        if err != nil {
-                return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sId.SnapName))
-        }
-        if !isSnapExist {
-                return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for dileset [%v]", sId.SnapName, sId.FsetName))
-        }
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sId.SnapName))
+	}
+	if !isSnapExist {
+		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for dileset [%v]", sId.SnapName, sId.FsetName))
+	}
 
 	return nil
 }
@@ -1072,17 +1074,17 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamp.Timestamp, error) {
 	var timestamp timestamp.Timestamp
 
-        createTS, err := conn.GetSnapshotCreateTimestamp(fs, fset, snap)
-        if err != nil {
-                glog.Errorf("CreateSnapshot [%s] - Unable to get snapshot create timestamp", snap)
-                return timestamp, err
-        }
+	createTS, err := conn.GetSnapshotCreateTimestamp(fs, fset, snap)
+	if err != nil {
+		glog.Errorf("CreateSnapshot [%s] - Unable to get snapshot create timestamp", snap)
+		return timestamp, err
+	}
 
-        const longForm = "2006-01-02 15:04:05,000" // This is the format in which REST API return creation timestamp
-        //nolint::staticcheck
-        t, _ := time.Parse(longForm, createTS)
-        timestamp.Seconds = t.Unix()
-        timestamp.Nanos = 0
+	const longForm = "2006-01-02 15:04:05,000" // This is the format in which REST API return creation timestamp
+	//nolint::staticcheck
+	t, _ := time.Parse(longForm, createTS)
+	timestamp.Seconds = t.Unix()
+	timestamp.Nanos = 0
 
 	return timestamp, nil
 }
