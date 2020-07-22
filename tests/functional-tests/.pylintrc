@@ -58,6 +58,7 @@ disable=
     duplicate-code,
     invalid-name,
     W0601,
+    W1203,
     missing-docstring,
     protected-access,
     too-few-public-methods,
