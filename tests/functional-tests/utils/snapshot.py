@@ -128,7 +128,7 @@ def create_vs(vs_name, vs_class_name, pvc_name):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"volume snapshot {vs_name} is created")
+        LOGGER.info(f"VolumeSnapshot Create : volume snapshot {vs_name} is created for {pvc_name}")
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -167,10 +167,10 @@ def check_vs(vs_name):
             namespace=namespace_value
         )
         LOGGER.debug(api_response)
-        LOGGER.info(f"volume snapshot {vs_name} exists")
+        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} has been created")
         return True
     except ApiException:
-        LOGGER.info(f"volume snapshot {vs_name} does not exists")
+        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} does not exists")
         return False
 
 
@@ -223,16 +223,16 @@ def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
             namespace=namespace_value
         )
         LOGGER.debug(api_response)
-        LOGGER.info(f"volume snapshot {vs_name} exists")
+        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} has been created")
     except ApiException as e:
-        LOGGER.info(f"volume snapshot {vs_name} does not exists")
+        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} does not exists")
         clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
         assert False
 
     if check_snapshot_status(vs_name):
-        LOGGER.info("ReadyToUse is true")
+        LOGGER.info("volume snapshot status ReadyToUse is true")
     else:
-        LOGGER.error("ReadyToUse is not true")
+        LOGGER.error("volume snapshot status ReadyToUse is not true")
         clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
         assert False
 

@@ -455,6 +455,7 @@ class Snapshot():
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
             number_of_snapshots = self.number_of_snapshots
+        number_of_restore = 1
 
         for pvc_value in self.value_pvc:
             LOGGER.info("-"*100)
@@ -465,27 +466,42 @@ class Snapshot():
             pvc_name = d.get_random_name("pvc")
             d.create_pvc(pvc_value, sc_name, pvc_name)
             d.check_pvc(pvc_value, sc_name, pvc_name)
+                       
+            pod_name = d.get_random_name("snap-start-pod")
+            value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
+            d.create_pod(value_pod, pvc_name, pod_name)
+            d.check_pod(value_pod, sc_name, pvc_name, pod_name)
+            d.create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name)
 
             vs_class_name = d.get_random_name("vsclass")
             snapshot.create_vs_class(vs_class_name, value_vs_class)
             snapshot.check_vs_class(vs_class_name)
 
-            vs_names = []
-            for _ in range(0, number_of_snapshots):
-                vs_name = d.get_random_name("vs")
-                restored_pvc_name = "restored-pvc"+vs_name[2:]
-                vs_names.append(vs_name)
-                snapshot.create_vs(vs_name, vs_class_name, pvc_name)
-                snapshot.check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, value_vs_class)
-                d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name)
+            vs_name = d.get_random_name("vs")
+            for num in range(0, number_of_snapshots): 
+                snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name)
+                snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, vs_class_name, sc_name, value_vs_class)
+            
+            for num in range(0, number_of_restore): 
+                restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
+                snap_pod_name = "snap-end-pod"+vs_name[2:]
+                d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name+"-"+str(num))
                 d.check_pvc(pvc_value, sc_name, restored_pvc_name)
+                d.create_pod(value_pod, restored_pvc_name, snap_pod_name)
+                d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
+                d.check_file_inside_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
+                d.delete_pod(snap_pod_name)
+                d.check_pod_deleted(snap_pod_name)
                 d.delete_pvc(restored_pvc_name)
 
-            for vs_name in vs_names:
-                snapshot.delete_vs(vs_name)
-                snapshot.check_vs_deleted(vs_name)
+      
+            for num in range(0, number_of_snapshots):
+                snapshot.delete_vs(vs_name+"-"+str(num))
+                snapshot.check_vs_deleted(vs_name+"-"+str(num))
             snapshot.delete_vs_class(vs_class_name)
             snapshot.check_vs_class_deleted(vs_class_name)
+            d.delete_pod(pod_name)
+            d.check_pod_deleted(pod_name)
             d.delete_pvc(pvc_name)
             d.check_pvc_deleted(pvc_name)
             if d.check_storage_class(sc_name):

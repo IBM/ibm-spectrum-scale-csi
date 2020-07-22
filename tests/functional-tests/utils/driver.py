@@ -253,7 +253,7 @@ def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
 
     try:
         LOGGER.info(
-            f'Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
+            f'PVC Create : Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
         api_response = api_instance.create_namespaced_persistent_volume_claim(
             namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -317,7 +317,6 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
         assert False
-
 
 def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names):
     """  cleanup after pvc has failed    """
@@ -476,7 +475,7 @@ def create_pod(value_pod, pvc_name, pod_name):
     )
 
     try:
-        LOGGER.info(f'creating pod {pod_name} with {str(value_pod)}')
+        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name}')
         api_response = api_instance.create_namespaced_pod(
             namespace=namespace_value, body=pod_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -511,6 +510,46 @@ def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_
         check_storage_class_deleted(sc_name)
     if not(dir_name == "nodiravailable"):
         ff.delete_dir(dir_name)
+
+def create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+    api_instance = client.CoreV1Api()
+    LOGGER.info("POD Check : Trying to create snaptestfile on SpectrumScale mount point inside the pod")
+    exec_command1 = "touch "+value_pod["mount_path"]+"/snaptestfile"
+    exec_command = [
+        '/bin/sh',
+        '-c',
+        exec_command1]
+    resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  namespace_value,
+                  command=exec_command,
+                  stderr=True, stdin=False,
+                  stdout=True, tty=False)
+
+    if resp=="":
+        LOGGER.info("file snaptestfile created successfully on SpectrumScale mount point inside the pod")
+        return
+    LOGGER.error("file snaptestfile not created")
+    assert False
+
+def check_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+    api_instance = client.CoreV1Api()
+    exec_command1 = "ls "+value_pod["mount_path"]
+    exec_command = [
+        '/bin/sh',
+        '-c',
+        exec_command1]
+    resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  namespace_value,
+                  command=exec_command,
+                  stderr=True, stdin=False,
+                  stdout=True, tty=False)
+    if resp[0:12]=="snaptestfile":
+        LOGGER.info("POD Check : snaptestfile is succesfully restored from snapshot")
+        return
+    LOGGER.error("snaptestfile is not restored from snapshot")
+    assert False 
 
 
 def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names):
