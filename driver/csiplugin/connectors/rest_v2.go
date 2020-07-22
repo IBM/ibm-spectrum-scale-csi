@@ -607,25 +607,36 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	return nil
 }
 
-func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName string) (string, error) {
-	glog.V(4).Infof("rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
+	glog.V(4).Infof("rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listQuotaURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName))
 	listQuotaResponse := GetQuotaResponse_v2{}
 
 	err := s.doHTTP(listQuotaURL, "GET", &listQuotaResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to fetch quota information: %v", err)
+		glog.Errorf("Unable to fetch quota information for fileset %s:%s: [%v]", filesystemName, filesetName, err)
+		return Quota_v2{}, err
+	}
+
+	if len(listQuotaResponse.Quotas) == 0 {
+		glog.Errorf("No quota information found for fileset %s:%s ", filesystemName, filesetName)
+		return Quota_v2{}, status.Error(codes.NotFound, fmt.Sprintf("No quota information found for fileset %s:%s ", filesystemName, filesetName))
+	}
+
+	return listQuotaResponse.Quotas[0], nil
+}
+
+func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName string) (string, error) {
+	glog.V(4).Infof("rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", filesystemName, filesetName)
+
+	listQuotaResponse, err := s.GetFilesetQuotaDetails(filesystemName, filesetName)
+
+	if err != nil {
 		return "", err
 	}
 
-	//TODO check which quota in quotas[] and which attribute
-	if len(listQuotaResponse.Quotas) > 0 {
-		return fmt.Sprintf("%dK", listQuotaResponse.Quotas[0].BlockLimit), nil
-	} else {
-		glog.Errorf("No quota information found for fileset %s", filesetName)
-		return "", nil
-	}
+	return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
 }
 
 func (s *spectrumRestV2) doHTTP(endpoint string, method string, responseObject interface{}, param interface{}) error {
