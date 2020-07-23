@@ -1,0 +1,61 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: '{{ opName }}-snapshotter'
+  namespace: '{{ namespace }}'
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+spec:
+  serviceName: '{{ opName }}-snapshotter'
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ opName }}-snapshotter"
+      product: '{{ productName }}'
+  template:
+    metadata:
+      labels:
+        app: '{{ opName }}-snapshotter'
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
+        product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
+    spec:
+{% if snapshotterNodeSelector|length > 0 %}
+      nodeSelector:
+{% for snapshotterNodeSelect in snapshotterNodeSelector %}
+        {{ snapshotterNodeSelect.key }}: "{{ snapshotterNodeSelect.value }}"
+{% endfor %}
+{% endif %}
+      serviceAccount: "{{ productName }}-snapshotter"
+      containers:
+        - name: csi-snapshotter
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
+          image: '{{ snapshotter }}'
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5" # Debugging
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+            type: DirectoryOrCreate

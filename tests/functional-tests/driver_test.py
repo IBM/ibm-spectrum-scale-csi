@@ -1,10 +1,9 @@
 import logging
 import pytest
-from scale_operator import read_scale_config_file, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver
-from utils.fileset_functions import fileset_exists, delete_fileset, create_dir, delete_dir
+from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
+    check_nodes_available, Scaleoperatorobject, Driver, read_operator_data
+import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
-
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
@@ -18,24 +17,30 @@ def values(request):
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
-    data = read_scale_config_file(clusterconfig_value, namespace_value)
+    data = read_driver_data(clusterconfig_value, namespace_value)
+    operator_data = read_operator_data(clusterconfig_value, namespace_value)
+    keep_objects = data["keepobjects"]
     test_namespace = namespace_value
-    fileset_exists(data)
-    operator = Scaleoperator(kubeconfig_value)
+
+    ff.cred_check(data)
+    ff.set_data(data)
+    operator = Scaleoperator(kubeconfig_value, namespace_value)
+    operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
-        check_ds_exists(kubeconfig_value, namespace_value)
+        if not(operator_object.check()):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False
     else:
-        operator.create(namespace_value, data)
+        operator.create()
         operator.check()
-        check_nodes_available(data["pluginNodeSelector"], "pluginNodeSelector")
+        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
         check_nodes_available(
-            data["provisionerNodeSelector"], "provisionerNodeSelector")
+            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
-            data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(data)
-        operator_object.create(kubeconfig_value)
-        val = operator_object.check(kubeconfig_value)
+            operator_data["attacherNodeSelector"], "attacherNodeSelector")
+        operator_object.create()
+        val = operator_object.check()
         if val is True:
             LOGGER.info("Operator custom object is deployed succesfully")
         else:
@@ -50,19 +55,19 @@ def values(request):
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    driver_object = Driver(value_pvc, value_pod, data, test_namespace)
-    create_dir(data, data["volDirBasePath"])
-    if not(data["volBackendFs"]==""):
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data, test_namespace, keep_objects)
+    ff.create_dir(data["volDirBasePath"])
+    if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
-    #delete_dir(data, data["volDirBasePath"])
-    if condition is False:
-        operator_object.delete(kubeconfig_value)
+    # delete_dir(data, data["volDirBasePath"])
+    if condition is False and not(keep_objects):
+        operator_object.delete()
         operator.delete()
-        if(fileset_exists(data)):
-            delete_fileset(data)
+        if(ff.fileset_exists(data)):
+            ff.delete_fileset(data)
 
 
 #: Testcase that are expected to pass:
@@ -227,8 +232,8 @@ def test_driver_static_sc_13():
 
 def test_driver_static_sc_14():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
-    value_pv = {"access_modes":"ReadWriteMany", "storage":"1Gi",
-                "reclaim_policy":"Delete"}
+    value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
+                "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                             "reason": "incompatible accessMode"},
@@ -300,13 +305,13 @@ def test_driver_static_sc_19():
                             "reason": "incompatible accessMode"},
                         {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
                         ]
-    driver_object.test_static(value_pv,value_pvc_custom,value_sc)
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
 
 def test_driver_static_sc_20():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                "reclaim_policy":"Delete"}
+                "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -344,10 +349,10 @@ def test_driver_static_sc_22():
 
 def test_driver_static_sc_23():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
-    value_pv = {"access_modes":"ReadWriteOnce", "storage":"1Gi",
-                "reclaim_policy":"Default"}
+    value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
-                            "reason": "incompatible accessMode"},
+                         "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
                         {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                             "reason": "incompatible accessMode"}
@@ -356,8 +361,8 @@ def test_driver_static_sc_23():
 
 
 def test_driver_static_sc_24():
-    value_sc = {"volBackendFs":data["primaryFs"],"clusterId" : data["id"]}
-    value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi","reclaim_policy":"Default"}
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi", "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -2460,14 +2465,14 @@ invaliddata = {
 def test_driver_dynamic_fail_invalid_input_265():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": invaliddata["volDirBasePath"],
-                "reason": "Directory base path /invalid not present in FS"}
+                "reason": "Directory base path /invalid not present in"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_invalid_input_266():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
                 "volBackendFs": invaliddata["primaryFs"],
-                "reason": "Unable to get Mount Details for FS"}
+                "reason": "filesystem invalid in not known to primary cluster"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2475,7 +2480,7 @@ def test_driver_dynamic_fail_invalid_input_267():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
                 "volBackendFs": data["primaryFs"],
                 "parentFileset": invaliddata["parentFileset"],
-                "reason": "Unable to create fileset"}
+                "reason": "unable to create fileset"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2495,6 +2500,7 @@ def test_driver_dynamic_fail_invalid_input_269():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.skip
 def test_driver_dynamic_fail_invalid_input_270():
     value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
                 "filesetType": "dependent", "gid": invaliddata["gid_number"],
@@ -2540,6 +2546,7 @@ def test_driver_one_pvc_two_pod():
     driver_object.one_pvc_two_pod(value_sc)
 
 
-def test_driver_parallel_pvc():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"]}
-    driver_object.parallel_pvc(value_sc)
+@pytest.mark.slow
+def test_driver_sequential_pvc():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    driver_object.sequential_pvc(value_sc,data["number_of_sequential_pvc"])
