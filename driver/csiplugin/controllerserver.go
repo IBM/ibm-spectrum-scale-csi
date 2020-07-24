@@ -189,7 +189,7 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 			// Invalid number specified means quota is not set
 			filesetQuotaBytes = 0
 		} else {
-			return fmt.Errorf("unable to convirt quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
+			return fmt.Errorf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
 		}
 	}
 
@@ -209,36 +209,49 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 	return nil
 }
 
+func (cs *ScaleControllerServer) getFilesystemDetails(scVol *scaleVolume) (connectors.FileSystem_v2, error) {
+	fsDetails, err := scVol.Connector.GetFilesystemDetails(scVol.VolBackendFs)
+	if err != nil {
+		if strings.Contains(err.Error(), "Invalid value in filesystemName") {
+			glog.Errorf("volume:[%v] - filesystem %s in not known to cluster %v. Error: %v", scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
+			return connectors.FileSystem_v2{}, status.Error(codes.Internal, fmt.Sprintf("Filesystem %s in not known to cluster %v. Error: %v", scVol.VolBackendFs, scVol.ClusterId, err))
+		}
+		glog.Errorf("volume:[%v] - unable to check type of filesystem [%v]. Error: %v", scVol.VolName, scVol.VolBackendFs, err)
+		return connectors.FileSystem_v2{}, status.Error(codes.Internal, fmt.Sprintf("unable to check type of filesystem [%v]. Error: %v", scVol.VolBackendFs, err))
+	}
+
+	return fsDetails, nil
+}
+
+func (cs *ScaleControllerServer) validateRemoteFs(fsDetails connectors.FileSystem_v2, scVol *scaleVolume) error {
+	if fsDetails.Type == filesystemTypeRemote {
+		glog.Errorf("volume:[%v] - filesystem [%v] is not local to cluster [%v]", scVol.VolName, scVol.VolBackendFs, scVol.ClusterId)
+		return status.Error(codes.Internal, fmt.Sprintf("filesystem [%v] is not local to cluster [%v]", scVol.VolBackendFs, scVol.ClusterId))
+	}
+
+	// if filesystem is remote, check it is mounted on remote GUI node.
+	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
+		if fsDetails.Mount.Status != filesystemMounted {
+			glog.Errorf("volume:[%v] -  filesystem [%v] is [%v] on remote GUI of cluster [%v]", scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
+			return status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
+		}
+		glog.V(5).Infof("volume:[%v] - mount point of volume filesystem [%v] on owning cluster is %v", scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.MountPoint)
+	}
+
+	return nil
+}
+
 //createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, fsDetails connectors.FileSystem_v2) (string, error) { //nolint:gocyclo,funlen
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createFilesetBasedVol", scVol.VolName)
 	opt := make(map[string]interface{})
 
 	// fileset can not be created if filesystem is remote.
 	glog.V(4).Infof("check if volumes filesystem [%v] is remote or local for cluster [%v]", scVol.VolBackendFs, scVol.ClusterId)
-	fsDetails, err := scVol.Connector.GetFilesystemDetails(scVol.VolBackendFs)
+
+	err := cs.validateRemoteFs(fsDetails, scVol)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid value in filesystemName") {
-			glog.Errorf("volume:[%v] - filesystem %s in not known to cluster %v. Error: %v", scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
-			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %s in not known to cluster %v. Error: %v", scVol.VolBackendFs, scVol.ClusterId, err))
-		}
-		glog.Errorf("volume:[%v] - unable to check type of filesystem [%v]. Error: %v", scVol.VolName, scVol.VolBackendFs, err)
-		return "", status.Error(codes.Internal, fmt.Sprintf("unable to check type of filesystem [%v]. Error: %v", scVol.VolBackendFs, err))
-	}
-
-	if fsDetails.Type == filesystemTypeRemote {
-		glog.Errorf("volume:[%v] - filesystem [%v] is not local to cluster [%v]", scVol.VolName, scVol.VolBackendFs, scVol.ClusterId)
-		return "", status.Error(codes.Internal, fmt.Sprintf("filesystem [%v] is not local to cluster [%v]", scVol.VolBackendFs, scVol.ClusterId))
-	}
-
-	// if filesystem is remote, check it is mounted on remote GUI node.
-	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
-		glog.V(4).Infof("check if volumes filesystem [%v] is mounted on remote GUI of cluster [%v]", scVol.VolBackendFs, scVol.ClusterId)
-		if fsDetails.Mount.Status != filesystemMounted {
-			glog.Errorf("volume:[%v] -  filesystem [%v] is [%v] on remote GUI of cluster [%v]", scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
-			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
-		}
-		glog.V(4).Infof("volume:[%v] - mount point of volume filesystem [%v] on owning cluster is %v", scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.MountPoint)
+		return "", err
 	}
 
 	// check if quota is enabled on volume filesystem
@@ -400,6 +413,26 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	scaleVol.PrimaryFSMount = PFSMount
 	scaleVol.PrimarySLnkPath = PSLnkPath
 
+	volSrc := req.GetVolumeContentSource()
+	isSnapSource := false
+	snapIdMembers := scaleSnapId{}
+	if volSrc != nil {
+		if volSrc.GetVolume() != nil {
+			return nil, status.Error(codes.Unimplemented, "Volume as volume content source is not supported")
+		}
+
+		srcSnap := volSrc.GetSnapshot()
+		if srcSnap != nil {
+			snapId := srcSnap.GetSnapshotId()
+			snapIdMembers, err = cs.GetSnapIdMembers(snapId)
+			if err != nil {
+				glog.Errorf("volume:[%v] - Invalid snapshot ID %s [%v]", volName, snapId, err)
+				return nil, err
+			}
+			isSnapSource = true
+		}
+	}
+
 	// Check if Primary Fileset is linked
 	primaryFileset := cs.Driver.primary.PrimaryFset
 	glog.V(5).Infof("volume:[%v] - check if primary fileset [%v] is linked", scaleVol.VolName, primaryFileset)
@@ -451,11 +484,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	if scaleVol.IsFilesetBased {
 		remoteDeviceName := volFsInfo.Mount.RemoteDeviceName
-		splitDevName := strings.Split(remoteDeviceName, ":")
-		remDevFs := splitDevName[len(splitDevName)-1]
-
 		scaleVol.LocalFS = scaleVol.VolBackendFs
-		scaleVol.VolBackendFs = remDevFs
+		scaleVol.VolBackendFs = getRemoteFsName(remoteDeviceName)
 	} else {
 		scaleVol.LocalFS = scaleVol.VolBackendFs
 	}
@@ -480,6 +510,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.ClusterId = PCid
 	}
 
+	if isSnapSource {
+		err = cs.validateSnapId(&snapIdMembers, scaleVol, PCid)
+		if err != nil {
+			glog.Errorf("volume:[%v] - Error in source snapshot validation [%v]", volName, err)
+			return nil, err
+		}
+	}
+
 	glog.Infof("volume:[%v] -  spectrum scale volume create params : %v\n", scaleVol.VolName, scaleVol)
 
 	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)
@@ -497,10 +535,15 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	cs.Driver.reqmap[scaleVol.VolName] = volSize
 	defer delete(cs.Driver.reqmap, scaleVol.VolName)
 
+	fsDetails, err := cs.getFilesystemDetails(scaleVol)
+	if err != nil {
+		return nil, err
+	}
+
 	var targetPath string
 
 	if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(scaleVol)
+		targetPath, err = cs.createFilesetBasedVol(scaleVol, fsDetails)
 	} else {
 		targetPath, err = cs.createLWVol(scaleVol)
 	}
@@ -521,13 +564,116 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate volume id. Error: %v", err))
 	}
 
+	if isSnapSource {
+		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath)
+		if err != nil {
+			glog.Errorf("CreateVolume [%s]: [%v]", volName, err)
+			return nil, err
+		}
+	}
+
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      volID,
 			CapacityBytes: int64(scaleVol.VolSize),
 			VolumeContext: req.GetParameters(),
+			ContentSource: volSrc,
 		},
 	}, nil
+}
+
+func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scaleSnapId, fsDetails connectors.FileSystem_v2, targetPath string) error {
+	glog.V(3).Infof("copySnapContent snapId: [%v], scaleVolume: [%v]", snapId, scVol)
+	conn, err := cs.getConnFromClusterID(snapId.ClusterId)
+	if err != nil {
+		return err
+	}
+
+	err = cs.validateRemoteFs(fsDetails, scVol)
+	if err != nil {
+		return err
+	}
+
+	fsMntPt := fsDetails.Mount.MountPoint
+	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
+
+	err = conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath)
+	if err != nil {
+		glog.Errorf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err)
+		return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err))
+	}
+
+	return nil
+}
+
+func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
+	glog.V(3).Infof("validateSnapId [%v]", sId)
+	if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
+	}
+
+	if scVol.ClusterId == "" && sId.ClusterId != pCid {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
+	}
+
+	conn, err := cs.getConnFromClusterID(sId.ClusterId)
+	if err != nil {
+		return err
+	}
+
+	sId.FsName, err = conn.GetFilesystemName(sId.FsUUID)
+
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sId.FsUUID, sId.ClusterId, err))
+	}
+
+	if sId.FsName != scVol.VolBackendFs {
+		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(sId.FsName)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sId.FsName))
+		}
+		if !isFsMounted {
+			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sId.FsName))
+		}
+	}
+
+	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, sId.FsetName)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sId.FsetName))
+	}
+	if !isFsetLinked {
+		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", sId.FsetName))
+	}
+
+	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, sId.FsetName, sId.SnapName)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sId.SnapName))
+	}
+	if !isSnapExist {
+		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sId.SnapName, sId.FsetName))
+	}
+
+	return nil
+}
+
+func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, error) {
+	splitSid := strings.Split(sId, ";")
+	var sIdMem scaleSnapId
+
+	if len(splitSid) < 4 {
+		return scaleSnapId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Snapshot Id : [%v]", sId))
+	}
+
+	/* clusterId;FSUUID;filesetName;snapshotName;path */
+	sIdMem.ClusterId = splitSid[0]
+	sIdMem.FsUUID = splitSid[1]
+	sIdMem.FsetName = splitSid[2]
+	sIdMem.SnapName = splitSid[3]
+	if len(splitSid) == 5 {
+		sIdMem.Path = splitSid[4]
+	}
+
+	return sIdMem, nil
 }
 
 func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error) {
@@ -574,6 +720,8 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 }
 
 func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	glog.V(3).Infof("DeleteVolume [%v]", req)
+
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		glog.Warningf("invalid delete volume req: %v", req)
 		return nil, status.Error(codes.InvalidArgument,
@@ -588,9 +736,8 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 	volumeIdMembers, err := cs.GetVolIdMembers(volumeID)
 	if err != nil {
-		return &csi.DeleteVolumeResponse{}, nil
+		return &csi.DeleteVolumeResponse{}, err
 	}
-	glog.V(4).Infof("volume Id Members [%v]", volumeIdMembers)
 
 	conn, err := cs.getConnFromClusterID(volumeIdMembers.ClusterId)
 	if err != nil {
@@ -617,11 +764,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
 	}
 
-	remoteDeviceName := mountInfo.RemoteDeviceName
-	splitDevName := strings.Split(remoteDeviceName, ":")
-	remDevFs := splitDevName[len(splitDevName)-1]
-
-	FilesystemName = remDevFs
+	FilesystemName = getRemoteFsName(mountInfo.RemoteDeviceName)
 
 	sLinkRelPath := strings.Replace(volumeIdMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
 	sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
@@ -638,7 +781,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			pvName := filepath.Base(sLinkRelPath)
 			if pvName == FilesetName {
 				//Check if fileset exist has any snapshot
-				snapshotList, err := conn.ListFilesetSnapshot(FilesystemName, FilesetName)
+				snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
 				if err != nil {
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 				}
@@ -846,7 +989,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	glog.V(3).Infof("CreateSnapshot - create snapshot req: %v", req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
-		glog.V(3).Infof("CreateSnapshot - invalid create snapshot req: %v", req)
+		glog.Errorf("CreateSnapshot - invalid create snapshot req: %v", req)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot ValidateControllerServiceRequest failed: %v", err))
 	}
 
@@ -900,36 +1043,40 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	snapExist, err := conn.CheckIfSnapshotExist(filesystemName, filesetName, snapName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get the snapshot details. Error [%v]", err))
+		glog.Errorf("CreateSnapshot [%s] - Unable to get the snapshot details. Error [%v]", snapName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get the snapshot details for [%s]. Error [%v]", snapName, err))
 	}
 
 	if !snapExist {
+		snapshotList, err := conn.ListFilesetSnapshots(filesystemName, filesetName)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
+		}
+
+		if len(snapshotList) >= 256 {
+			glog.Errorf("CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", snapName, filesystemName, filesetName)
+			return nil, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
+		}
+
 		snaperr := conn.CreateSnapshot(filesystemName, filesetName, snapName)
 		if snaperr != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to create snapshot. Error [%v]", snaperr))
+			glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
 		}
 	}
 
-	//clusterId;FSUUID;filesetName;snapshotName
-	snapID := fmt.Sprintf("%s;%s;%s;%s", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName)
-	glog.V(5).Infof("CreateSnapshot - Snapshot ID: %s ", snapID)
+	//clusterId;FSUUID;filesetName;snapshotName;path
+	snapID := fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
 
-	glog.V(5).Infof("CreateSnapshot - get timestamp of snapshot [%s] in fileset [%s] under filesystem [%s]", snapName, filesetName, filesystemName)
-	createTS, err := conn.GetSnapshotCreateTimestamp(filesystemName, filesetName, snapName)
+	timestamp, err := cs.getSnapshotCreateTimestamp(conn, filesystemName, filesetName, snapName)
 	if err != nil {
+		glog.Errorf("error getting create timestamp for snapshot %s:%s:%s", filesystemName, filesetName, snapName)
 		return nil, err
 	}
 
-	const longForm = "2006-01-02 15:04:05,000" // This is the format in which REST API return creation timestamp
-	//nolint::staticcheck
-	t, _ := time.Parse(longForm, createTS)
-	var timestamp timestamp.Timestamp
-	timestamp.Seconds = t.Unix()
-	timestamp.Nanos = 0
-
 	restoreSize, err := cs.getSnapRestoreSize(conn, filesystemName, filesetName)
 	if err != nil {
-		glog.Errorf("Error getting the snapshot restore size for snapshot %s:%s:%s", filesystemName, filesetName, snapName)
+		glog.Errorf("error getting the snapshot restore size for snapshot %s:%s:%s", filesystemName, filesetName, snapName)
 		return nil, err
 	}
 
@@ -944,6 +1091,24 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}, nil
 }
 
+func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamp.Timestamp, error) {
+	var timestamp timestamp.Timestamp
+
+	createTS, err := conn.GetSnapshotCreateTimestamp(fs, fset, snap)
+	if err != nil {
+		glog.Errorf("snapshot [%s] - Unable to get snapshot create timestamp", snap)
+		return timestamp, err
+	}
+
+	const longForm = "2006-01-02 15:04:05,000" // This is the format in which REST API return creation timestamp
+	//nolint::staticcheck
+	t, _ := time.Parse(longForm, createTS)
+	timestamp.Seconds = t.Unix()
+	timestamp.Nanos = 0
+
+	return timestamp, nil
+}
+
 func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string) (int64, error) {
 	quotaResp, err := conn.GetFilesetQuotaDetails(filesystemName, filesetName)
 
@@ -953,7 +1118,7 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 
 	if quotaResp.BlockUsage < 0 {
 		glog.Errorf("getSnapRestoreSize: Invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName)
-		return 0, status.Error(codes.Internal, fmt.Sprintf("Invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName))
+		return 0, status.Error(codes.Internal, fmt.Sprintf("invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName))
 	}
 
 	// REST API returns block usage in kb, convert it to bytes and return
@@ -965,7 +1130,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 	glog.V(3).Infof("DeleteSnapshot - delete snapshot req: %v", req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
-		glog.V(3).Infof("DeleteSnapshot - invalid create snapshot req: %v", req)
+		glog.Errorf("DeleteSnapshot - invalid delete snapshot req %v: %v", req, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - ValidateControllerServiceRequest failed: %v", err))
 	}
 
@@ -979,8 +1144,8 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 	}
 
 	splitSid := strings.Split(snapID, ";")
-	if len(splitSid) != 4 {
-		return nil, status.Error(codes.InvalidArgument, "DeleteSnapshot - snapshot Id is not in a valid format")
+	if len(splitSid) < 4 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("DeleteSnapshot - snapshot Id [%s] is not in a valid format", snapID))
 	}
 
 	clusterID := splitSid[0]
@@ -993,19 +1158,17 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		return nil, err
 	}
 
-	glog.V(5).Infof("DeleteSnapshot - getting filesystem Name from Filesystem Uid [%s] ", fsUUID)
 	filesystemName, err := conn.GetFilesystemName(fsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get filesystem Name for Filesystem UID [%v] and clusterId [%v]. Error [%v]", fsUUID, clusterID, err))
 	}
 
-	glog.V(5).Infof("DeleteSnapshot - check if fileset [%s] exist in filesystem [%s]", filesetName, filesystemName)
 	filesetExist, err := conn.CheckIfFilesetExist(filesystemName, filesetName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the fileset %s details details. Error [%v]", filesetName, err))
 	}
 
-	//skip delete if fileset not exist, return success
+	//skip delete if snapshot not exist, return success
 	if filesetExist {
 		glog.V(5).Infof("DeleteSnapshot - check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", snapshotName, filesetName, filesystemName)
 		snapExist, err := conn.CheckIfSnapshotExist(filesystemName, filesetName, snapshotName)
@@ -1018,6 +1181,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 			glog.V(5).Infof("DeleteSnapshot - deleting snapshot [%s] from fileset [%s] under filesystem [%s]", snapshotName, filesetName, filesystemName)
 			snaperr := conn.DeleteSnapshot(filesystemName, filesetName, snapshotName)
 			if snaperr != nil {
+				glog.Errorf("DeleteSnapshot - error deleting snapshot %v: %v", snapshotName, snaperr)
 				return nil, err
 			}
 		}

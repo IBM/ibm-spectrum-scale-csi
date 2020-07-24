@@ -957,15 +957,15 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 }
 
 //ListFilesetSnapshot Return list of snapshot under fileset, true if snapshots present
-func (s *spectrumRestV2) ListFilesetSnapshot(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
-	glog.V(4).Infof("rest_v2 ListFilesetSnapshot. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	glog.V(4).Infof("rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listFilesetSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName))
 	listFilesetSnapshotResponse := GetSnapshotResponse_v2{}
 
 	err := s.doHTTP(listFilesetSnapshotURL, "GET", &listFilesetSnapshotResponse, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to list snapshot for fileset %v. Error [%v]", filesetName, err)
+		return nil, fmt.Errorf("unable to list snapshots for fileset %v. Error [%v]", filesetName, err)
 	}
 
 	return listFilesetSnapshotResponse.Snapshots, nil
