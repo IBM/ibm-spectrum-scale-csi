@@ -1049,8 +1049,8 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	if !snapExist {
 		snaperr := conn.CreateSnapshot(filesystemName, filesetName, snapName)
-		glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)
 		if snaperr != nil {
+			glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
 		}
 	}

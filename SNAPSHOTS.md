@@ -124,7 +124,6 @@ Source snapshot should be in the same namespace as the volume being created. Vol
       name: snap1
       kind: VolumeSnapshot
       apiGroup: snapshot.storage.k8s.io
-
     ```
 
 Resultant PVC should contain data from snap1.
