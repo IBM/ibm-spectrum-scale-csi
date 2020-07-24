@@ -87,7 +87,6 @@ Specify the source volume to be used for creating snapshot here. Source PVC shou
      volumeSnapshotClassName: snapclass1
      source:
        persistentVolumeClaimName: pvcfset1
-
    ```
 
 ### Verify that snapshot is created
@@ -106,7 +105,7 @@ snap1   true         pvcfset1                            208Ki             snapc
    ```
 
 ### Create Volume from a source Snapshot
-Source snapshot should be in the same namespace as the volume being created. Volume capacity should be less than or equal to the source snapshot's restore size.
+Source snapshot should be in the same namespace as the volume being created. Volume capacity should be less than or equal to the source snapshot's restore size. Resultant PVC should contain data from snap1.
 
    ```
    apiVersion: v1
@@ -125,5 +124,3 @@ Source snapshot should be in the same namespace as the volume being created. Vol
       kind: VolumeSnapshot
       apiGroup: snapshot.storage.k8s.io
     ```
-
-Resultant PVC should contain data from snap1.
