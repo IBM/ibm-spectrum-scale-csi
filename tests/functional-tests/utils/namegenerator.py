@@ -26,13 +26,14 @@ def name_generator():
         "tender", "thirsty", "trusting", "unruffled", "upbeat",	"vibrant",
         "vigilant", "vigorous", "wizardly", "wonderful", "youthful", "zealous",
         "dreamy", "eager", "sweet", "zen"
-      ]
+    ]
 
     postfix_list = [
-         "deepak", "vrushal", "abhishek", "kausthubh", "sandeep", "praveen",
-         "shailesh", "sachine", "chetan", "smita", "digvijay", "kedar",
-         "prayas", "mandar", "ashish", "arvind"
-         ]
+        "elephant", "lion", "deer", "cat", "rat", "peacock", "frogs", "chicken", "zebra",
+        "tiger", "horse", "cockroach", "mouse", "peahen", "parrot", "goat", "whales",
+        "snake", "fish", "monkey", "fox", "sheep", "duck", "eagle", "wolf", "duck",
+        "bats", "dolphin"
+    ]
 
     name = prefix_list[randint(0, len(prefix_list)-1)]+"-"+postfix_list[randint(0, len(postfix_list)-1)]+"-"+str(randint(100, 999))
     return name
