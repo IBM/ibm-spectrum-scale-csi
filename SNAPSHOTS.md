@@ -118,10 +118,10 @@ Source snapshot should be in the same namespace as the volume being created. Vol
       resources:
          requests:
             storage: 1Gi
-   storageClassName: scfilesetinode
-   dataSource:
-      name: snap1
-      kind: VolumeSnapshot
-      apiGroup: snapshot.storage.k8s.io
+      storageClassName: scfilesetinode
+      dataSource:
+         name: snap1
+         kind: VolumeSnapshot
+         apiGroup: snapshot.storage.k8s.io
     
    ```
