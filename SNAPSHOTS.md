@@ -21,7 +21,14 @@ These are snapshotter beta CRDs. Do this once per cluster
    ```
    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+
+   ```
+
+Edit the setup-snapshot-controller.yaml to change the image to "quay.io/k8scsi/snapshot-controller:v2.2.0-rc1"
+   
+   ```
+   kubectl apply -f setup-snapshot-controller.yaml
    ```
 
 Do this once per cluster
