@@ -21,7 +21,13 @@ These are snapshotter beta CRDs. Do this once per cluster
    ```
    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   ```
+
+Edit setup-snapshot-controller.yaml to ensure the image being used is snapshot-controller:v2.1.1. Then apply the manifest.
+
+   ```
+   kubectl apply -f setup-snapshot-controller.yaml
    ```
 
 Do this once per cluster
@@ -125,3 +131,10 @@ Source snapshot should be in the same namespace as the volume being created. Vol
          apiGroup: snapshot.storage.k8s.io
     
    ```
+
+When creating a volume from a volume snapshot, data from source snapshot is copied to the newly created volume. This copy operation uses multiple Spectrum Scale nodes using mmapplypolicy. By default nodes on which the source filesystem is mounted are used. Users can define their own nodeclass to control the nodes where this copy operation should run based on their current workloads. Nodeclass must be defined on Spectrum Scale (ref. mmcrnodeclass). It can then be specified in the storageclass being used for creating PVC using parameter-
+
+   ```
+   nodeClass: <nodeclass_name>
+   ```
+

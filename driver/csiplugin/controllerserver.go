@@ -189,7 +189,7 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 			// Invalid number specified means quota is not set
 			filesetQuotaBytes = 0
 		} else {
-			return fmt.Errorf("unable to convirt quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
+			return fmt.Errorf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
 		}
 	}
 
@@ -597,7 +597,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	fsMntPt := fsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
-	err = conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath)
+	err = conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
 	if err != nil {
 		glog.Errorf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err)
 		return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err))
@@ -781,7 +781,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			pvName := filepath.Base(sLinkRelPath)
 			if pvName == FilesetName {
 				//Check if fileset exist has any snapshot
-				snapshotList, err := conn.ListFilesetSnapshot(FilesystemName, FilesetName)
+				snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
 				if err != nil {
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 				}
@@ -1048,6 +1048,17 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if !snapExist {
+		snapshotList, err := conn.ListFilesetSnapshots(filesystemName, filesetName)
+		if err != nil {
+			glog.Errorf("CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
+		}
+
+		if len(snapshotList) >= 256 {
+			glog.Errorf("CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", snapName, filesystemName, filesetName)
+			return nil, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
+		}
+
 		snaperr := conn.CreateSnapshot(filesystemName, filesetName, snapName)
 		if snaperr != nil {
 			glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)

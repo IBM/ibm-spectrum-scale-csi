@@ -246,11 +246,15 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	}
 }
 
-func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string) error {
-	glog.V(4).Infof("rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s", filesystemName, filesetName, snapshotName, srcPath, targetPath)
+func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) error {
+	glog.V(4).Infof("rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, snapshotName, srcPath, targetPath, nodeclass)
 
 	copySnapReq := CopySnapshotRequest{}
 	copySnapReq.TargetPath = targetPath
+
+	if nodeclass != "" {
+		copySnapReq.NodeClass = nodeclass
+	}
 
 	formattedSrcPath := strings.ReplaceAll(srcPath, "/", "%2F")
 	copySnapURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCopy/%s/path/%s", filesystemName, filesetName, snapshotName, formattedSrcPath))
@@ -991,16 +995,16 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 	return true, nil
 }
 
-//ListFilesetSnapshot Return list of snapshot under fileset, true if snapshots present
-func (s *spectrumRestV2) ListFilesetSnapshot(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
-	glog.V(4).Infof("rest_v2 ListFilesetSnapshot. filesystem: %s, fileset: %s", filesystemName, filesetName)
+//ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
+func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	glog.V(4).Infof("rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listFilesetSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName))
 	listFilesetSnapshotResponse := GetSnapshotResponse_v2{}
 
 	err := s.doHTTP(listFilesetSnapshotURL, "GET", &listFilesetSnapshotResponse, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to list snapshot for fileset %v. Error [%v]", filesetName, err)
+		return nil, fmt.Errorf("unable to list snapshots for fileset %v. Error [%v]", filesetName, err)
 	}
 
 	return listFilesetSnapshotResponse.Snapshots, nil

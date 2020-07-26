@@ -66,8 +66,8 @@ type SpectrumScaleConnector interface {
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
-	ListFilesetSnapshot(filesystemName string, filesetName string) ([]Snapshot_v2, error)
-	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string) error
+	ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
+	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) error
 }
 
 const (
@@ -81,6 +81,7 @@ const (
 	UserSpecifiedParentFset     string = "parentFileset"
 	UserSpecifiedVolBackendFs   string = "volBackendFs"
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
+	UserSpecifiedNodeClass      string = "nodeClass"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
