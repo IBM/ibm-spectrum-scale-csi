@@ -657,7 +657,6 @@ func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
 		return false, fmt.Errorf("unable to get nodeclass details")
 	}
 	return true, nil
-
 }
 
 func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
