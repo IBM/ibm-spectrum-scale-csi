@@ -53,6 +53,10 @@ type scaleVolume struct {
 	PrimaryFSMount     string                            `json:"primaryFSMount"`
 	ParentFileset      string                            `json:"parentFileset"`
 	LocalFS            string                            `json:"localFS"`
+	TargetPath         string                            `json:"targetPath"`
+	FsetLinkPath       string                            `json:"fsetLinkPath"`
+	FsMountPoint       string                            `json:"fsMountPoint"`
+	NodeClass          string                            `json:"nodeClass"`
 }
 
 type scaleVolId struct {
@@ -62,6 +66,15 @@ type scaleVolId struct {
 	DirPath        string
 	SymLnkPath     string
 	IsFilesetBased bool
+}
+
+type scaleSnapId struct {
+	ClusterId string
+	FsUUID    string
+	FsetName  string
+	SnapName  string
+	Path      string
+	FsName    string
 }
 
 //nolint
@@ -82,6 +95,12 @@ type scaleVolSnapId struct {
 	SnapId    string
 } //nolint
 
+func getRemoteFsName(remoteDeviceName string) string {
+	splitDevName := strings.Split(remoteDeviceName, ":")
+	remDevFs := splitDevName[len(splitDevName)-1]
+	return remDevFs
+}
+
 func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
 	scaleVol := &scaleVolume{}
@@ -94,12 +113,14 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
 	inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
+	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
 	scaleVol.FilesetType = ""
 	scaleVol.ClusterId = ""
+	scaleVol.NodeClass = ""
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false
@@ -213,6 +234,10 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		if inodeLimSpecified {
 			scaleVol.InodeLimit = inodeLim
 		}
+	}
+
+	if isNodeClassSpecified {
+		scaleVol.NodeClass = nodeClass
 	}
 
 	return scaleVol, nil

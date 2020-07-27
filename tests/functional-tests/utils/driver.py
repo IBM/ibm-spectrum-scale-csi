@@ -9,11 +9,6 @@ import utils.fileset_functions as ff
 from utils.namegenerator import name_generator
 
 LOGGER = logging.getLogger()
-"""
-delete_dir
-delete_created_fileset
-"""
-
 
 def check_key(dict1, key):
     """ checks key is in dictionary or not"""
@@ -26,6 +21,12 @@ def set_test_namespace_value(namespace_name=None):
     """ sets the test namespace global for use in later functions"""
     global namespace_value
     namespace_value = namespace_name
+
+
+def set_keep_objects(keep_object):
+    """ sets the keep_objects global for use in later functions"""
+    global keep_objects
+    keep_objects = keep_object
 
 
 def get_random_name(type_of):
@@ -58,7 +59,7 @@ def get_storage_class_parameters(values):
     return dict_parameters
 
 
-def create_storage_class(values, config_value, sc_name):
+def create_storage_class(values, sc_name):
     """
     creates storage class
 
@@ -74,8 +75,7 @@ def create_storage_class(values, config_value, sc_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    global test, storage_class_parameters
-    test = config_value
+    global storage_class_parameters
     api_instance = client.StorageV1Api()
     storage_class_metadata = client.V1ObjectMeta(name=sc_name)
     storage_class_parameters = get_storage_class_parameters(values)
@@ -114,14 +114,14 @@ def check_storage_class(sc_name):
         None
 
     """
-    if sc_name=="":
+    if sc_name == "":
         return False
     api_instance = client.StorageV1Api()
     try:
-        LOGGER.info(f'Storage class {sc_name} does exists on the cluster')
         # TBD: Show StorageClass Parameter in tabular Form
         api_response = api_instance.read_storage_class(
             name=sc_name, pretty=True)
+        LOGGER.info(f'Storage class {sc_name} does exists on the cluster')
         LOGGER.debug(str(api_response))
         return True
     except ApiException:
@@ -155,7 +155,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
             access_modes=[pv_values["access_modes"]],
             capacity={"storage": pv_values["storage"]},
             csi=pv_csi,
-            storage_class_name = sc_name
+            storage_class_name=sc_name
         )
     else:
         pv_spec = client.V1PersistentVolumeSpec(
@@ -163,7 +163,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
             capacity={"storage": pv_values["storage"]},
             csi=pv_csi,
             persistent_volume_reclaim_policy=pv_values["reclaim_policy"],
-            storage_class_name = sc_name
+            storage_class_name=sc_name
         )
 
     pv_body = client.V1PersistentVolume(
@@ -173,7 +173,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
         spec=pv_spec
     )
     try:
-        LOGGER.info(f'Creating PV {pv_name} with {str(pv_name)} parameter')
+        LOGGER.info(f'Creating PV {pv_name} with {pv_values} parameter')
         api_response = api_instance.create_persistent_volume(
             body=pv_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -213,7 +213,7 @@ def check_pv(pv_name):
         return False
 
 
-def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
+def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
     """
     creates persistent volume claim
 
@@ -222,8 +222,7 @@ def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
         param2: sc_name - name of storage class , pvc associated with
                           if "notusingsc" no storage class
         param3: pvc_name - name of pvc to be created
-        param4: config_value - configuration file
-        param5: pv_name - name of pv , pvc associated with
+        param4: pv_name - name of pv , pvc associated with
                           if None , no pv is associated
 
     Returns:
@@ -237,15 +236,66 @@ def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
     pvc_metadata = client.V1ObjectMeta(name=pvc_name)
     pvc_resources = client.V1ResourceRequirements(
         requests={"storage": pvc_values["storage"]})
-    if sc_name == "":
-        global test
-        test = config_value
 
     pvc_spec = client.V1PersistentVolumeClaimSpec(
         access_modes=[pvc_values["access_modes"]],
         resources=pvc_resources,
         storage_class_name=sc_name,
         volume_name=pv_name
+    )
+
+    pvc_body = client.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata=pvc_metadata,
+        spec=pvc_spec
+    )
+
+    try:
+        LOGGER.info(
+            f'PVC Create : Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
+        api_response = api_instance.create_namespaced_persistent_volume_claim(
+            namespace=namespace_value, body=pvc_body, pretty=True)
+        LOGGER.debug(str(api_response))
+        LOGGER.info(f'PVC {pvc_name} has been created successfully')
+    except ApiException as e:
+        LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
+        assert False
+
+
+def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
+    """
+    creates persistent volume claim
+
+    Args:
+        param1: pvc_values - values required for creation of pvc
+        param2: sc_name - name of storage class , pvc associated with
+        param3: pvc_name - name of pvc to be created
+
+    Returns:
+        None
+
+    Raises:
+        Raises an exception on kubernetes client api failure and asserts
+
+    """
+    api_instance = client.CoreV1Api()
+    pvc_metadata = client.V1ObjectMeta(name=pvc_name)
+    pvc_resources = client.V1ResourceRequirements(
+        requests={"storage": pvc_values["storage"]})
+    pvc_data_source = client.V1TypedLocalObjectReference(
+                        api_group="snapshot.storage.k8s.io",
+                        kind="VolumeSnapshot",
+                        name=snap_name
+                      )
+
+    pvc_spec = client.V1PersistentVolumeClaimSpec(
+        access_modes=[pvc_values["access_modes"]],
+        resources=pvc_resources,
+        storage_class_name=sc_name,
+        data_source=pvc_data_source
     )
 
     pvc_body = client.V1PersistentVolumeClaim(
@@ -268,12 +318,16 @@ def create_pvc(pvc_values, sc_name, pvc_name, config_value=None, pv_name=None):
             f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
         assert False
 
-
-def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name):
+def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names):
     """  cleanup after pvc has failed    """
     LOGGER.info(f'PVC {pvc_name} cleanup operation started')
-    delete_pvc(pvc_name)
-    check_pvc_deleted(pvc_name)
+    if len(pvc_names)>0:
+        for pvc_name in pvc_names:
+            delete_pvc(pvc_name)
+            check_pvc_deleted(pvc_name)
+    else:
+        delete_pvc(pvc_name)
+        check_pvc_deleted(pvc_name)
     if check_pv(pv_name):
         delete_pv(pv_name)
         check_pv_deleted(pv_name)
@@ -281,7 +335,7 @@ def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name):
         delete_storage_class(sc_name)
         check_storage_class_deleted(sc_name)
     if not(dir_name == "nodiravailable"):
-        ff.delete_dir(test, dir_name)
+        ff.delete_dir(dir_name)
 
 
 def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
@@ -301,7 +355,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
 
-    val = ff.created_fileset_exists(test, volume_name)
+    val = ff.created_fileset_exists(volume_name)
     if val is False:
         return False
 
@@ -309,7 +363,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
     return True
 
 
-def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name="pvnotavailable"):
+def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name="pvnotavailable",pvc_names=[]):
     """ checks pvc is BOUND or not
         need to reduce complextity of this function
     """
@@ -328,16 +382,16 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
             LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
             assert False
 
-        if api_response.status.phase == "Bound":   
+        if api_response.status.phase == "Bound":
             if(check_key(pvc_values, "reason")):
                 LOGGER.error(f'PVC Check : {pvc_name} is BOUND but as the failure reason is provided so\
                 asserting the test')
                 volume_name = api_response.spec.volume_name
-                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
                 assert False
             if(pvc_bound_fileset_check(api_response, pv_name, pvc_name)):
                 return True
-            clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+            clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
             LOGGER.error(f'PVC Check : Fileset {volume_name} doesn\'t exists')
             assert False
         else:
@@ -358,7 +412,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                 if volume_name is None:
                     volume_name = "sc-ffwe-sdfsdf-gsv"
                 if not(check_key(pvc_values, "reason")):
-                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
                     LOGGER.error(str(reason))
                     LOGGER.error(
                         "FAILED as reason for Failure not provides")
@@ -370,7 +424,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                     if search_result is not None:
                         break
                 if search_result is None:
-                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name)
+                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
                     LOGGER.error(f"Failed reason : {str(reason)}")
                     LOGGER.info("PVC is not Bound but FAILED reason does not match")
                     assert False
@@ -421,7 +475,7 @@ def create_pod(value_pod, pvc_name, pod_name):
     )
 
     try:
-        LOGGER.info(f'creating pod {pod_name} with {str(value_pod)}')
+        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name}')
         api_response = api_instance.create_namespaced_pod(
             namespace=namespace_value, body=pod_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -431,12 +485,23 @@ def create_pod(value_pod, pvc_name, pod_name):
         assert False
 
 
-def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name):
+def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names):
     """ cleanup after pod fails """
-    delete_pod(pod_name)
-    check_pod_deleted(pod_name)
-    delete_pvc(pvc_name)
-    check_pvc_deleted(pvc_name)
+    if len(pod_names)>0:
+        for pod_name in pod_names:
+            delete_pod(pod_name)
+            check_pod_deleted(pod_name)
+    else:
+        delete_pod(pod_name)
+        check_pod_deleted(pod_name)
+
+    if len(pvc_names)>0:
+        for pvc_name in pvc_names:
+            delete_pvc(pvc_name)
+            check_pvc_deleted(pvc_name)
+    else:
+        delete_pvc(pvc_name)
+        check_pvc_deleted(pvc_name)
     if check_pv(pv_name):
         delete_pv(pv_name)
         check_pv_deleted(pv_name)
@@ -444,10 +509,50 @@ def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name):
         delete_storage_class(sc_name)
         check_storage_class_deleted(sc_name)
     if not(dir_name == "nodiravailable"):
-        ff.delete_dir(test, dir_name)
+        ff.delete_dir(dir_name)
+
+def create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+    api_instance = client.CoreV1Api()
+    LOGGER.info("POD Check : Trying to create snaptestfile on SpectrumScale mount point inside the pod")
+    exec_command1 = "touch "+value_pod["mount_path"]+"/snaptestfile"
+    exec_command = [
+        '/bin/sh',
+        '-c',
+        exec_command1]
+    resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  namespace_value,
+                  command=exec_command,
+                  stderr=True, stdin=False,
+                  stdout=True, tty=False)
+
+    if resp=="":
+        LOGGER.info("file snaptestfile created successfully on SpectrumScale mount point inside the pod")
+        return
+    LOGGER.error("file snaptestfile not created")
+    assert False
+
+def check_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+    api_instance = client.CoreV1Api()
+    exec_command1 = "ls "+value_pod["mount_path"]
+    exec_command = [
+        '/bin/sh',
+        '-c',
+        exec_command1]
+    resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  namespace_value,
+                  command=exec_command,
+                  stderr=True, stdin=False,
+                  stdout=True, tty=False)
+    if resp[0:12]=="snaptestfile":
+        LOGGER.info("POD Check : snaptestfile is succesfully restored from snapshot")
+        return
+    LOGGER.error("snaptestfile is not restored from snapshot")
+    assert False 
 
 
-def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name):
+def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names):
     """
     checks can file be created in pod
     if file cannot be created , checks reason , if reason does not mathch , asserts
@@ -487,18 +592,18 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
             '-c',
             exec_command1]
         resp = stream(api_instance.connect_get_namespaced_pod_exec,
-                  pod_name,
-                  namespace_value,
-                  command=exec_command,
-                  stderr=True, stdin=False,
-                  stdout=True, tty=False)
+                      pod_name,
+                      namespace_value,
+                      command=exec_command,
+                      stderr=True, stdin=False,
+                      stdout=True, tty=False)
         if check_key(value_pod, "reason"):
-            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
             LOGGER.error("Pod should not be able to create file inside the pod as failure REASON provided, so asserting")
             assert False
         return
     if not(check_key(value_pod, "reason")):
-        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
         LOGGER.error(str(resp))
         LOGGER.info("FAILED as reason of failure not provided")
         assert False
@@ -509,14 +614,14 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
     if not(search_result1 is None and search_result2 is None):
         LOGGER.info("execution of pod failed with expected reason")
     else:
-        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name)
+        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
         LOGGER.error(str(resp))
         LOGGER.error(
             "execution of pod failed unexpected , reason does not match")
         assert False
 
 
-def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable", pv_name="pvnotavailable"):
+def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable", pv_name="pvnotavailable",pod_names=[],pvc_names=[]):
     """
     checks pod running or not
 
@@ -545,7 +650,7 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
             if api_response.status.phase == "Running":
                 LOGGER.info(f'POD Check : POD {pod_name} is Running')
                 check_pod_execution(value_pod, sc_name,
-                                    pvc_name, pod_name, dir_name, pv_name)
+                                    pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names)
                 con = False
             else:
                 var += 1
@@ -557,7 +662,7 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
                     LOGGER.info(f"POD Check : Reason of failure is : {str(reason)}")
                     con = False
                     clean_pod_fail(sc_name, pvc_name, pv_name,
-                                   dir_name, pod_name)
+                                   dir_name, pod_name,pod_names,pvc_names)
                     assert False
                 time.sleep(5)
         except ApiException as e:
@@ -570,6 +675,8 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
 
 def delete_pod(pod_name):
     """ deletes pod pod_name """
+    if keep_objects:
+        return
     api_instance = client.CoreV1Api()
     try:
         LOGGER.info(f'Deleting pod {pod_name}')
@@ -584,6 +691,8 @@ def delete_pod(pod_name):
 
 def check_pod_deleted(pod_name):
     """ checks pod deleted or not , if not deleted , asserts """
+    if keep_objects:
+        return
     count = 12
     api_instance = client.CoreV1Api()
     while (count > 0):
@@ -603,6 +712,8 @@ def check_pod_deleted(pod_name):
 
 def delete_pvc(pvc_name):
     """ deletes pvc pvc_name """
+    if keep_objects:
+        return
     api_instance = client.CoreV1Api()
     try:
         LOGGER.info(f'Deleting pvc {pvc_name}')
@@ -617,6 +728,8 @@ def delete_pvc(pvc_name):
 
 def check_pvc_deleted(pvc_name):
     """ check pvc deleted or not , if not deleted , asserts """
+    if keep_objects:
+        return
     count = 12
     api_instance = client.CoreV1Api()
     while (count > 0):
@@ -628,7 +741,7 @@ def check_pvc_deleted(pvc_name):
             time.sleep(5)
         except ApiException:
             LOGGER.info(f'pvc {pvc_name} deleted')
-            ff.delete_created_fileset(test, volume_name)
+            ff.delete_created_fileset(volume_name)
             return
 
     LOGGER.info(f'pvc {pvc_name} is not deleted')
@@ -637,6 +750,8 @@ def check_pvc_deleted(pvc_name):
 
 def delete_pv(pv_name):
     """ delete pv pv_name """
+    if keep_objects:
+        return
     api_instance = client.CoreV1Api()
     try:
         LOGGER.info(f'Deleting pv {pv_name}')
@@ -651,6 +766,8 @@ def delete_pv(pv_name):
 
 def check_pv_deleted(pv_name):
     """ checks pv is deleted or not , if not deleted ,asserts"""
+    if keep_objects:
+        return
     count = 12
     api_instance = client.CoreV1Api()
     while (count > 0):
@@ -663,14 +780,14 @@ def check_pv_deleted(pv_name):
         except ApiException:
             LOGGER.info(f'PV {pv_name} has been deleted')
             return
-        
+
     LOGGER.info(f'PV {pv_name} is still not deleted')
     assert False
 
 
 def delete_storage_class(sc_name):
     """deletes storage class sc_name"""
-    if sc_name == "":
+    if sc_name == "" or keep_objects:
         return
     api_instance = client.StorageV1Api()
     try:
@@ -680,7 +797,7 @@ def delete_storage_class(sc_name):
         LOGGER.debug(str(api_response))
         # can use cleanup function if running more than 20 parallel testcases to make
         # sure that every fileset is deleted
-        # ff.cleanup(test)
+        # ff.cleanup()
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling StorageV1Api->delete_storage_class: {e}")
@@ -692,7 +809,7 @@ def check_storage_class_deleted(sc_name):
     checks storage class sc_name deleted
     if sc not deleted , asserts
     """
-    if sc_name == "":
+    if sc_name == "" or keep_objects:
         return
     count = 12
     api_instance = client.StorageV1Api()
@@ -709,3 +826,45 @@ def check_storage_class_deleted(sc_name):
 
     LOGGER.info(f'StorageClass {sc_name} is not deleted')
     assert False
+
+
+def create_deployment_object():
+
+    deployment_apps_api_instance = client.AppsV1Api()
+
+    deployment_labels = {
+        "product": "ibm-spectrum-scale-csi-test",
+        "app": "nginx"
+    }
+
+    deployment_metadata = client.V1ObjectMeta(
+        name="nginx-deployment", labels=deployment_labels, namespace=namespace_value)
+
+    deployment_selector = client.V1LabelSelector(match_labels={"app": "nginx"})
+
+    podtemplate_metadata = client.V1ObjectMeta(labels=deployment_labels)
+
+    nginx_pod_container = client.V1Container(image="nginx:1.14.2", name="nginx")
+
+    pod_spec = client.V1PodSpec(containers=[nginx_pod_container])
+
+    podtemplate_spec = client.V1PodTemplateSpec(
+        metadata=podtemplate_metadata, spec=pod_spec)
+
+    deployment_spec = client.V1DeploymentSpec(
+        replicas=3, selector=deployment_selector, template=podtemplate_spec)
+
+    body_dep = client.V1Deployment(
+        kind='Deployment', api_version='apps/v1', metadata=deployment_metadata, spec=deployment_spec)
+
+    try:
+        LOGGER.info("creating deployment for nginx")
+        deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
+            namespace=namespace_value, body=body_dep)
+        LOGGER.debug(str(deployment_apps_api_response))
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
+        assert False
+
+

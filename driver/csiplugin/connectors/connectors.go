@@ -42,6 +42,7 @@ type SpectrumScaleConnector interface {
 	IsFilesetLinked(filesystemName string, filesetName string) (bool, error)
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(filesystemName string, filesetName string) (string, error)
+	GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error)
 	SetFilesetQuota(filesystemName string, filesetName string, quota string) error
 	CheckIfFSQuotaEnabled(filesystem string) error
 	CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error)
@@ -58,6 +59,7 @@ type SpectrumScaleConnector interface {
 	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
 	DeleteSymLnk(filesystemName string, LnkName string) error
 	GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error)
+	IsValidNodeclass(nodeclass string) (bool, error)
 
 	//Snapshot operations
 	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
@@ -65,7 +67,8 @@ type SpectrumScaleConnector interface {
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
-	ListFilesetSnapshot(filesystemName string, filesetName string) ([]Snapshot_v2, error)
+	ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
+	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) error
 }
 
 const (
@@ -79,6 +82,7 @@ const (
 	UserSpecifiedParentFset     string = "parentFileset"
 	UserSpecifiedVolBackendFs   string = "volBackendFs"
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
+	UserSpecifiedNodeClass      string = "nodeClass"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {

@@ -1,8 +1,8 @@
 import logging
 import copy
 import pytest
-from scale_operator import read_scale_config_file, Scaleoperator, check_ns_exists,\
-    check_ds_exists, check_nodes_available, Scaleoperatorobject, Driver, check_key
+from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
+    check_nodes_available, Scaleoperatorobject, Driver, check_key, read_operator_data
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -19,28 +19,36 @@ def values(request):
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
-    data = read_scale_config_file(clusterconfig_value, namespace_value)
-    if not(check_key(data,"remote")):
+    data = read_driver_data(clusterconfig_value, namespace_value)
+    operator_data = read_operator_data(clusterconfig_value, namespace_value)
+    keep_objects = data["keepobjects"]
+    if not(check_key(data, "remote")):
         LOGGER.error("remote data is not provided in cr file")
         assert False
     test_namespace = namespace_value
 
-    ff.fileset_exists(data)
-    operator = Scaleoperator(kubeconfig_value)
+    remote_data = get_remote_data(data)
+    ff.cred_check(data)
+    ff.cred_check(remote_data)
+    ff.set_data(remote_data)
+
+    operator = Scaleoperator(kubeconfig_value, namespace_value)
+    operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
-        check_ds_exists(kubeconfig_value, namespace_value)
+        if not(operator_object.check()):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False 
     else:
-        operator.create(namespace_value, data)
+        operator.create()
         operator.check()
-        check_nodes_available(data["pluginNodeSelector"], "pluginNodeSelector")
+        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
         check_nodes_available(
-            data["provisionerNodeSelector"], "provisionerNodeSelector")
+            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
         check_nodes_available(
-            data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object = Scaleoperatorobject(data)
-        operator_object.create(kubeconfig_value)
-        val = operator_object.check(kubeconfig_value)
+            operator_data["attacherNodeSelector"], "attacherNodeSelector")
+        operator_object.create()
+        val = operator_object.check()
         if val is True:
             LOGGER.info("Operator custom object is deployed succesfully")
         else:
@@ -56,19 +64,17 @@ def values(request):
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    remote_data = get_remote_data(data) 
-    driver_object = Driver(value_pvc, value_pod, remote_data, test_namespace)
-    ff.create_dir(remote_data, remote_data["volDirBasePath"])
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, remote_data, test_namespace, keep_objects)
+    ff.create_dir(remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
-    #ff.delete_dir(remote_data, remote_data["volDirBasePath"])
-    if condition is False:
-        operator_object.delete(kubeconfig_value)
+    # ff.delete_dir(remote_data, remote_data["volDirBasePath"])
+    if condition is False and not(keep_objects):
+        operator_object.delete()
         operator.delete()
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
-
 
 
 def get_remote_data(data_passed):
@@ -77,12 +83,17 @@ def get_remote_data(data_passed):
     if remote_data["remoteFs_remote_name"] is None:
         LOGGER.error("Unable to get remoteFs , name on remote cluster")
         assert False
-    remote_data["username"] = remote_data["remote-username"]
-    remote_data["password"] = remote_data["remote-password"]
-    remote_data["port"] = remote_data["remote-port"]
-    remote_data["guiHost"] = remote_data["remoteguiHost"]
-    remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]    
+
+    remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
     remote_data["id"] = remote_data["remoteid"]
+    remote_data["port"] = remote_data["remote-port"]
+    for cluster in remote_data["clusters"]:
+        if cluster["id"] == remote_data["remoteid"]:
+            remote_data["guiHost"] = cluster["restApi"][0]["guiHost"]
+            remote_sec_name = cluster["secrets"]
+            remote_data["username"] = remote_data["remote-username"][remote_sec_name]
+            remote_data["password"] = remote_data["remote-password"][remote_sec_name]
+
     remote_data["volDirBasePath"] = remote_data["r-volDirBasePath"]
     remote_data["parentFileset"] = remote_data["r-parentFileset"]
     remote_data["gid_name"] = remote_data["r-gid_name"]
@@ -90,15 +101,16 @@ def get_remote_data(data_passed):
     remote_data["gid_number"] = remote_data["r-gid_number"]
     remote_data["uid_number"] = remote_data["r-uid_number"]
     remote_data["inodeLimit"] = remote_data["r-inodeLimit"]
-    #for get_mount_point function
-    remote_data["type_remote"] = {"username":data_passed["username"],
-                                   "password":data_passed["password"],
-                                   "port":data_passed["port"],
-                                   "guiHost":data_passed["guiHost"]}
-    
+    # for get_mount_point function
+    remote_data["type_remote"] = {"username": data_passed["username"],
+                                  "password": data_passed["password"],
+                                  "port": data_passed["port"],
+                                  "guiHost": data_passed["guiHost"]}
+
     return remote_data
 
 #: Testcase that are expected to pass:
+
 
 def test_driver_static_1():
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -259,8 +271,8 @@ def test_driver_static_sc_13():
 
 def test_driver_static_sc_14():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    value_pv = {"access_modes":"ReadWriteMany", "storage":"1Gi",
-                "reclaim_policy":"Delete"}
+    value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
+                "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                             "reason": "incompatible accessMode"},
@@ -308,6 +320,7 @@ def test_driver_static_sc_17():
                         ]
     driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
+
 def test_driver_static_sc_18():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -331,13 +344,13 @@ def test_driver_static_sc_19():
                             "reason": "incompatible accessMode"},
                         {"access_modes": "ReadOnlyMany", "storage": "1Gi"}
                         ]
-    driver_object.test_static(value_pv,value_pvc_custom,value_sc)
+    driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
 
 def test_driver_static_sc_20():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                "reclaim_policy":"Delete"}
+                "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -375,10 +388,10 @@ def test_driver_static_sc_22():
 
 def test_driver_static_sc_23():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    value_pv = {"access_modes":"ReadWriteOnce", "storage":"1Gi",
-                "reclaim_policy":"Default"}
+    value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
-                            "reason": "incompatible accessMode"},
+                         "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
                         {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                             "reason": "incompatible accessMode"}
@@ -387,8 +400,8 @@ def test_driver_static_sc_23():
 
 
 def test_driver_static_sc_24():
-    value_sc = {"volBackendFs":data["remoteFs"],"clusterId" : data["remoteid"]}
-    value_pv = {"access_modes":"ReadOnlyMany","storage":"1Gi","reclaim_policy":"Default"}
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi", "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -407,6 +420,7 @@ def test_driver_static_26():
     wrong={"id_wrong":False,"FSUID_wrong":True}
     driver_object.test_static(value_pv,value_pvc_custom,wrong=wrong)
 """
+
 
 def test_driver_static_25():
     LOGGER.info("wrong VolumeHandel -> cluster id")
@@ -622,7 +636,7 @@ def test_driver_dynamic_pass_29():
 
 def test_driver_dynamic_fail_30():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -646,7 +660,7 @@ def test_driver_dynamic_fail_33():
 
 def test_driver_dynamic_fail_34():
     value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -670,19 +684,19 @@ def test_driver_dynamic_fail_37():
 
 def test_driver_dynamic_fail_38():
     value_sc = {"uid": data["r-uid_number"], "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_39():
     value_sc = {"gid": data["r-gid_number"], "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_40():
     value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -696,7 +710,7 @@ def test_driver_dynamic_fail_41():
 def test_driver_dynamic_fail_42():
     value_sc = {"inodeLimit": data["r-inodeLimit"],
                 "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -871,14 +885,14 @@ def test_driver_dynamic_fail_67():
 def test_driver_dynamic_fail_68():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r-uid_number"],
                 "gid": data["r-gid_number"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_69():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r-uid_number"],
                 "filesetType": "dependent",
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -892,14 +906,14 @@ def test_driver_dynamic_fail_70():
 def test_driver_dynamic_fail_71():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r-uid_number"],
                 "inodeLimit": data["r-inodeLimit"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_72():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "filesetType": "dependent",
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -913,14 +927,14 @@ def test_driver_dynamic_fail_73():
 def test_driver_dynamic_fail_74():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "inodeLimit": data["r-inodeLimit"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_75():
     value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1358,7 +1372,7 @@ def test_driver_dynamic_fail_133():
     value_sc = {"gid": data["r-gid_number"], "uid": data["r-uid_number"],
                 "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1372,9 +1386,8 @@ def test_driver_dynamic_fail_134():
 
 def test_driver_dynamic_fail_135():
     value_sc = {"gid": data["r-gid_number"], "uid": data["r-uid_number"],
-                "inodeLimit": data["r-inodeLimit"],
-                "volBackendFs": data["remoteFs"],
-                "reason": "clusterId must be specified in storageClass"}
+                "inodeLimit": data["r-inodeLimit"], "volBackendFs": data["remoteFs"],
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1382,7 +1395,7 @@ def test_driver_dynamic_fail_136():
     value_sc = {"uid": data["r-uid_number"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1405,7 +1418,7 @@ def test_driver_dynamic_fail_139():
     value_sc = {"gid": data["r-gid_number"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"}
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1926,7 +1939,7 @@ def test_driver_dynamic_fail_202():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "filesetType": "dependent",
                 "parentFileset": data["r-parentFileset"],
-                "reason": "clusterId must be specified in storageClass"} 
+                "reason": "Specify owning cluster ID in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2507,14 +2520,14 @@ invaliddata = {
 def test_driver_dynamic_fail_invalid_input_265():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": invaliddata["r-volDirBasePath"],
-                "reason": "Directory base path /invalid not present in FS"}
+                "reason": "Directory base path /invalid not present in"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_invalid_input_266():
     value_sc = {"clusterId":  data["remoteid"], "filesetType": "dependent",
                 "volBackendFs": invaliddata["remoteFs"],
-                "reason": "Unable to get Mount Details for FS"}
+                "reason": "filesystem invalid in not known to primary cluster"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2522,7 +2535,7 @@ def test_driver_dynamic_fail_invalid_input_267():
     value_sc = {"clusterId":  data["remoteid"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
                 "parentFileset": invaliddata["r-parentFileset"],
-                "reason": "Unable to create fileset"}
+                "reason": "unable to create fileset"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -2587,6 +2600,7 @@ def test_driver_one_pvc_two_pod():
     driver_object.one_pvc_two_pod(value_sc)
 
 
-def test_driver_parallel_pvc():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"]}
-    driver_object.parallel_pvc(value_sc)
+@pytest.mark.slow
+def test_driver_sequential_pvc():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    driver_object.sequential_pvc(value_sc,data["number_of_sequential_pvc"])
