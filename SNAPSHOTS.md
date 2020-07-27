@@ -24,7 +24,7 @@ These are snapshotter beta CRDs. Do this once per cluster
    curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
    ```
 
-Edit setup-snapshot-controller.yaml to ensure the image being used is snapshot-controller:v2.1.1. Then apply the manifest.
+Edit setup-snapshot-controller.yaml to ensure the image being used is snapshot-controller:v2.2.0-rc1. Then apply the manifest.
 
    ```
    kubectl apply -f setup-snapshot-controller.yaml

@@ -511,6 +511,19 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
+		if scaleVol.NodeClass != "" {
+			isValidNodeclass, err := scaleVol.Connector.IsValidNodeclass(scaleVol.NodeClass)
+			if err != nil {
+				glog.Errorf("volume:[%v] - cannot validate nodeclass [%s]. Error [%v]", volName, scaleVol.NodeClass, err)
+				return nil, err
+			}
+
+			if !isValidNodeclass {
+				glog.Errorf("volume:[%v] - nodeclass [%s] not found on cluster [%v]", volName, scaleVol.NodeClass, scaleVol.ClusterId)
+				return nil, status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scaleVol.NodeClass, scaleVol.ClusterId))
+			}
+		}
+
 		err = cs.validateSnapId(&snapIdMembers, scaleVol, PCid)
 		if err != nil {
 			glog.Errorf("volume:[%v] - Error in source snapshot validation [%v]", volName, err)

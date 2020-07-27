@@ -642,6 +642,24 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	return nil
 }
 
+func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
+	glog.V(4).Infof("rest_v2 IsValidNodeclass. nodeclass: %s", nodeclass)
+
+	checkNodeclassURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/nodeclasses/%s", nodeclass))
+	nodeclassResponse := GenericResponse{}
+
+	err := s.doHTTP(checkNodeclassURL, "GET", &nodeclassResponse, nil)
+	if err != nil {
+		if strings.Contains(nodeclassResponse.Status.Message, "Invalid value in nodeclassName") {
+			// nodeclass is not present
+			return false, nil
+		}
+		return false, fmt.Errorf("unable to get nodeclass details")
+	}
+	return true, nil
+
+}
+
 func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
 	glog.V(4).Infof("rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
