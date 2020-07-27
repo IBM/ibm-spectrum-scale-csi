@@ -985,7 +985,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 }
 
 //CreateSnapshot Create Snapshot
-func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) { //nolint:gocyclo,funlen
 	glog.V(3).Infof("CreateSnapshot - create snapshot req: %v", req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
