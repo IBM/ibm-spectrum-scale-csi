@@ -1,5 +1,5 @@
 # IBM Spectrum Scale CSI driver volume snapshots
-Min Scale version required: 5.0.5.1
+Min Scale version required: 5.0.5.2
 
 ## Installing the external snapshotter
 Note: Kubernetes distributions should provide the external snapshotter by default. OpenShift 4.4+ has the snapshot controller installed by default and below steps are not needed. Perform below two steps for Kubernetes cluster.
@@ -21,7 +21,13 @@ These are snapshotter beta CRDs. Do this once per cluster
    ```
    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   ```
+
+Edit setup-snapshot-controller.yaml to ensure the image being used is snapshot-controller:v2.2.0-rc1. Then apply the manifest.
+
+   ```
+   kubectl apply -f setup-snapshot-controller.yaml
    ```
 
 Do this once per cluster
@@ -87,7 +93,6 @@ Specify the source volume to be used for creating snapshot here. Source PVC shou
      volumeSnapshotClassName: snapclass1
      source:
        persistentVolumeClaimName: pvcfset1
-
    ```
 
 ### Verify that snapshot is created
@@ -96,7 +101,7 @@ Snapshot should be in "readytouse" state and a corresponding fileset snapshot sh
    ```
    # kubectl get volumesnapshot
    NAME    READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS    SNAPSHOTCONTENT                                    CREATIONTIME   AGE
-snap1   true         pvcfset1                            0             snapclass1       snapcontent-2b478910-28d1-4c29-8e12-556149095094   2d23h          2d23h
+snap1   true         pvcfset1                            208Ki             snapclass1       snapcontent-2b478910-28d1-4c29-8e12-556149095094   2d23h          2d23h
 
    # mmlssnapshot fs1 -j pvc-d60f90f2-53ed-4f0e-b7be-4587fbcd0234
    Snapshots in file system fs1:
@@ -104,3 +109,32 @@ snap1   true         pvcfset1                            0             snapclass
    snapshot-2b478910-28d1-4c29-8e12-556149095094 14        Valid   Fri Mar 27 05:35:35 2020  pvc-d60f90f2-53ed-4f0e-b7be-4587fbcd0234
 
    ```
+
+### Create Volume from a source Snapshot
+Source snapshot should be in the same namespace as the volume being created. Volume capacity should be less than or equal to the source snapshot's restore size. Resultant PVC should contain data from snap1.
+
+   ```
+   apiVersion: v1
+   kind: PersistentVolumeClaim
+   metadata:
+      name: pvcfrmsnap1
+   spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+         requests:
+            storage: 1Gi
+      storageClassName: scfilesetinode
+      dataSource:
+         name: snap1
+         kind: VolumeSnapshot
+         apiGroup: snapshot.storage.k8s.io
+    
+   ```
+
+When creating a volume from a volume snapshot, data from source snapshot is copied to the newly created volume. This copy operation uses multiple Spectrum Scale nodes using mmapplypolicy. By default nodes on which the source filesystem is mounted are used. Users can define their own nodeclass to control the nodes where this copy operation should run based on their current workloads. Nodeclass must be defined on Spectrum Scale (ref. mmcrnodeclass). It can then be specified in the storageclass being used for creating PVC using parameter-
+
+   ```
+   nodeClass: <nodeclass_name>
+   ```
+

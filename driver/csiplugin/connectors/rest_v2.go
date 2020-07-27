@@ -246,6 +246,41 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	}
 }
 
+func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) error {
+	glog.V(4).Infof("rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, snapshotName, srcPath, targetPath, nodeclass)
+
+	copySnapReq := CopySnapshotRequest{}
+	copySnapReq.TargetPath = targetPath
+
+	if nodeclass != "" {
+		copySnapReq.NodeClass = nodeclass
+	}
+
+	formattedSrcPath := strings.ReplaceAll(srcPath, "/", "%2F")
+	copySnapURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCopy/%s/path/%s", filesystemName, filesetName, snapshotName, formattedSrcPath))
+	copySnapResp := GenericResponse{}
+
+	err := s.doHTTP(copySnapURL, "PUT", &copySnapResp, copySnapReq)
+	if err != nil {
+		glog.Errorf("Error in copy snapshot request: %v", err)
+		return err
+	}
+
+	err = s.isRequestAccepted(copySnapResp, copySnapURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return err
+	}
+
+	err = s.waitForJobCompletion(copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("Unable to copy snapshot %s: %v", snapshotName, err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
 	glog.V(4).Infof("rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
 
@@ -607,6 +642,23 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	return nil
 }
 
+func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
+	glog.V(4).Infof("rest_v2 IsValidNodeclass. nodeclass: %s", nodeclass)
+
+	checkNodeclassURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/nodeclasses/%s", nodeclass))
+	nodeclassResponse := GenericResponse{}
+
+	err := s.doHTTP(checkNodeclassURL, "GET", &nodeclassResponse, nil)
+	if err != nil {
+		if strings.Contains(nodeclassResponse.Status.Message, "Invalid value in nodeclassName") {
+			// nodeclass is not present
+			return false, nil
+		}
+		return false, fmt.Errorf("unable to get nodeclass details")
+	}
+	return true, nil
+}
+
 func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
 	glog.V(4).Infof("rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
@@ -621,7 +673,7 @@ func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetNa
 
 	if len(listQuotaResponse.Quotas) == 0 {
 		glog.Errorf("No quota information found for fileset %s:%s ", filesystemName, filesetName)
-		return Quota_v2{}, status.Error(codes.NotFound, fmt.Sprintf("No quota information found for fileset %s:%s ", filesystemName, filesetName))
+		return Quota_v2{}, nil
 	}
 
 	return listQuotaResponse.Quotas[0], nil
@@ -636,7 +688,11 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 		return "", err
 	}
 
-	return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
+	if (Quota_v2{}) == listQuotaResponse {
+		return "", nil
+	} else {
+		return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
+	}
 }
 
 func (s *spectrumRestV2) doHTTP(endpoint string, method string, responseObject interface{}, param interface{}) error {
@@ -956,16 +1012,16 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 	return true, nil
 }
 
-//ListFilesetSnapshot Return list of snapshot under fileset, true if snapshots present
-func (s *spectrumRestV2) ListFilesetSnapshot(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
-	glog.V(4).Infof("rest_v2 ListFilesetSnapshot. filesystem: %s, fileset: %s", filesystemName, filesetName)
+//ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
+func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	glog.V(4).Infof("rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listFilesetSnapshotURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName))
 	listFilesetSnapshotResponse := GetSnapshotResponse_v2{}
 
 	err := s.doHTTP(listFilesetSnapshotURL, "GET", &listFilesetSnapshotResponse, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to list snapshot for fileset %v. Error [%v]", filesetName, err)
+		return nil, fmt.Errorf("unable to list snapshots for fileset %v. Error [%v]", filesetName, err)
 	}
 
 	return listFilesetSnapshotResponse.Snapshots, nil

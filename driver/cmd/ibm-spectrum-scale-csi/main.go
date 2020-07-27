@@ -69,7 +69,7 @@ func handle() {
 
 func createPersistentStorage(persistentStoragePath string) error {
 	if _, err := os.Stat(persistentStoragePath); os.IsNotExist(err) {
-		if err := os.MkdirAll(persistentStoragePath, os.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(persistentStoragePath, os.FileMode(0644)); err != nil {
 			return err
 		}
 	}
