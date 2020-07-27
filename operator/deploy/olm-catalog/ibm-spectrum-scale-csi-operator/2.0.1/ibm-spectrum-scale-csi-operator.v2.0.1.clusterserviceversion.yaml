@@ -18,6 +18,9 @@ metadata:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.s390x: supported
+    operatorframework.io/arch.ppc64le: supported
     release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v2.0.1
   namespace: placeholder
