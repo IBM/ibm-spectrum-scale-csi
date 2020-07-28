@@ -659,6 +659,25 @@ func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
 	return true, nil
 }
 
+func (s *spectrumRestV2) IsSnapshotSupported() (bool, error) {
+	glog.V(4).Infof("rest_v2 IsSnapshotSupported")
+
+	getVersionURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/info")
+	getVersionResponse := GetInfoResponse_v2{}
+
+	err := s.doHTTP(getVersionURL, "GET", &getVersionResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get cluster information: [%v]", err)
+		return false, err
+	}
+
+	if len(getVersionResponse.Info.Paths.SnapCopyOp) == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
 	glog.V(4).Infof("rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
