@@ -547,6 +547,11 @@ def randomString(stringLength=10):
 
 
 def check_pod_running(pod_name):
+    """
+    checking phase of pod pod_name to be running
+    if not running then asserts
+    """
+
     api_instance = client.CoreV1Api()
     val = 0
     while val < 12:

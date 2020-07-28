@@ -51,7 +51,7 @@ def values(request):
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, data, value_pvc, value_vs_class, number_of_snapshots)
+    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots,data["image_name"])
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
     ff.create_dir(data["volDirBasePath"])

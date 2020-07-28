@@ -108,6 +108,12 @@ def fileset_exists(test_data):
     return True
 
 def cred_check(test_data):
+    """
+    checks if given parameters in test_data are correct
+    by calling API using that data
+   
+    if API gives any error , It asserts
+    """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
         "/scalemgmt/v2/cluster"
@@ -404,6 +410,10 @@ def create_dir(dir_name):
     check_dir(dir_name)
 
 def check_dir(dir_name):
+    """
+    checks directory dir_name is present or not
+    asserts  if not present
+    """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
     while val<24:
@@ -535,7 +545,12 @@ def get_remoteFs_remotename(test_data):
 
 
 def check_snapshot(snapshot_name, volume_name):
-
+    """
+    checks if snapshot is snapshot_name created for volume_name
+    
+    if created returns True
+    else return False
+    """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
     while val < 12:

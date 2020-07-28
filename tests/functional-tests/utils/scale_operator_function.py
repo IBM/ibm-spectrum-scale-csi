@@ -217,7 +217,7 @@ def create_crd():
 
     version = loadcrd_yaml["apiVersion"].split("/")
     crd_version = version[1]
-    LOGGER.info(f"CRD apiVersion is {crd_version}  {version}")
+    LOGGER.info(f"CRD apiVersion is {crd_version}")
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
