@@ -5,3 +5,4 @@ kubernetes == 11.0.0
 pytest == 5.4.1
 pytest-html == 2.1.1
 PyYAML > 5.1.2
+ansi2html == 1.5.2

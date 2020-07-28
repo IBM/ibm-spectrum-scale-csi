@@ -215,16 +215,26 @@ def create_crd():
         print("Error in configuration file:", exc)
         assert False
 
-    crd_api_instance = client.ApiextensionsV1beta1Api()
+    version = loadcrd_yaml["apiVersion"].split("/")
+    crd_version = version[1]
+    LOGGER.info(f"CRD apiVersion is {crd_version}  {version}")
+    custom_object_api_instance = client.CustomObjectsApi()
     try:
-        LOGGER.info(
-            "Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
-        crd_api_response = crd_api_instance.create_custom_resource_definition(
-            loadcrd_yaml, pretty=True)
-        LOGGER.debug(str(crd_api_response))
-    except ValueError:
+        custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
+            group="apiextensions.k8s.io",
+            version=crd_version,
+            plural="customresourcedefinitions",
+            body=loadcrd_yaml,
+            pretty=True
+        )
+        LOGGER.debug(custom_object_api_response)
+        LOGGER.info(f"Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
+    except ValueError as e:
+        LOGGER.error(
+            f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
         LOGGER.info(
             "while there is valuerror expection,but CRD created successfully")
+        assert False
 
 
 def delete_crd():
