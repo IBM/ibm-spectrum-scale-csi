@@ -440,7 +440,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                     con = False
 
 
-def create_pod(value_pod, pvc_name, pod_name,image_name="nginx:1.19.0")
+def create_pod(value_pod, pvc_name, pod_name,image_name="nginx:1.19.0"):
     """
     creates pod
 
