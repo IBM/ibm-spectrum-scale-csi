@@ -82,7 +82,7 @@ This is like a StorageClass that defines driver specific attributes for the snap
    ```
 
 ### Create VolumeSnapshot
-Specify the source volume to be used for creating snapshot here. Source PVC should be in the same namespace in which the snapshot is being created.
+Specify the source volume to be used for creating snapshot here. Source PVC should be in the same namespace in which the snapshot is being created. Snapshots can be created only from independent fileset based PVCs.
 
    ```
    apiVersion: snapshot.storage.k8s.io/v1beta1
@@ -101,7 +101,7 @@ Snapshot should be in "readytouse" state and a corresponding fileset snapshot sh
    ```
    # kubectl get volumesnapshot
    NAME    READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS    SNAPSHOTCONTENT                                    CREATIONTIME   AGE
-snap1   true         pvcfset1                            208Ki             snapclass1       snapcontent-2b478910-28d1-4c29-8e12-556149095094   2d23h          2d23h
+snap1   true         pvcfset1                            1Gi             snapclass1       snapcontent-2b478910-28d1-4c29-8e12-556149095094   2d23h          2d23h
 
    # mmlssnapshot fs1 -j pvc-d60f90f2-53ed-4f0e-b7be-4587fbcd0234
    Snapshots in file system fs1:
@@ -109,6 +109,8 @@ snap1   true         pvcfset1                            208Ki             snapc
    snapshot-2b478910-28d1-4c29-8e12-556149095094 14        Valid   Fri Mar 27 05:35:35 2020  pvc-d60f90f2-53ed-4f0e-b7be-4587fbcd0234
 
    ```
+
+Note: Volume size of the source PVC is used as the restore size of snapshot. Any volume created from this snapshot must be of the same or larger capacity.
 
 ### Create Volume from a source Snapshot
 Source snapshot should be in the same namespace as the volume being created. Volume capacity should be less than or equal to the source snapshot's restore size. Resultant PVC should contain data from snap1.

@@ -1130,13 +1130,13 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 		return 0, err
 	}
 
-	if quotaResp.BlockUsage < 0 {
-		glog.Errorf("getSnapRestoreSize: Invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName)
-		return 0, status.Error(codes.Internal, fmt.Sprintf("invalid block usage [%v] for fileset [%s:%s] found", quotaResp.BlockUsage, filesystemName, filesetName))
+	if quotaResp.BlockLimit < 0 {
+		glog.Errorf("getSnapRestoreSize: Invalid block limit [%v] for fileset [%s:%s] found", quotaResp.BlockLimit, filesystemName, filesetName)
+		return 0, status.Error(codes.Internal, fmt.Sprintf("invalid block limit [%v] for fileset [%s:%s] found", quotaResp.BlockLimit, filesystemName, filesetName))
 	}
 
-	// REST API returns block usage in kb, convert it to bytes and return
-	return int64(quotaResp.BlockUsage * 1024), nil
+	// REST API returns block limit in kb, convert it to bytes and return
+	return int64(quotaResp.BlockLimit * 1024), nil
 }
 
 // DeleteSnapshot - Delete snapshot
