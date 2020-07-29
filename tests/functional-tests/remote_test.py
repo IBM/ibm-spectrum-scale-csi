@@ -64,7 +64,7 @@ def values(request):
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, remote_data, test_namespace, keep_objects)
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, remote_data["id"], test_namespace, keep_objects, data["image_name"])
     ff.create_dir(remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield

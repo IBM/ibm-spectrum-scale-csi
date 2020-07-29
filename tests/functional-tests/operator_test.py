@@ -93,6 +93,7 @@ def test_wrong_cluster_id(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
@@ -100,6 +101,7 @@ def test_wrong_cluster_id(_values):
                 "Cluster ID doesnt match the cluster", get_logs_api_response)
             LOGGER.debug(search_result)
             assert search_result is not None
+            LOGGER.info("'Cluster ID doesnt match the cluster' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -129,6 +131,7 @@ def test_wrong_primaryFS(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
@@ -136,7 +139,7 @@ def test_wrong_primaryFS(_values):
                 "Unable to get filesystem", get_logs_api_response)
             LOGGER.debug(search_result)
             assert search_result is not None
-
+            LOGGER.info("'Unable to get filesystem' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -166,6 +169,7 @@ def test_wrong_guihost(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
@@ -175,6 +179,7 @@ def test_wrong_guihost(_values):
             search_result2 = re.search("no such host", get_logs_api_response)
             LOGGER.debug(search_result2)
             assert (search_result1 is not None or search_result2 is not None)
+            LOGGER.info("'connection refused' or 'no such host'  failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -199,12 +204,13 @@ def test_wrong_gui_username(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             x = re.search("401 Unauthorized", get_logs_api_response)
-            LOGGER.info(x)
             assert x is not None
+            LOGGER.info("'401 Unauthorized' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -221,33 +227,31 @@ def test_wrong_gui_password(_values):
     test["password"] = randomStringDigits()
     operator_object = Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
-
-    if operator_object.check() is True:
-        LOGGER.error(
-            "Operator custom object is deployed successfully not expected")
-        assert False
-    else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
-        get_logs_api_instance = client.CoreV1Api()
-        count = 0
-        while count < 24:
-            try:
-                get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                    name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
-                LOGGER.debug(str(get_logs_api_response))
-                search_result = re.search(
-                    "Error in authentication request", get_logs_api_response)
-                if search_result is None:
-                    time.sleep(5)
-                    count += 1
-                else:
-                    LOGGER.debug(search_result)
-                    operator_object.delete()
-                    return
-            except ApiException as e:
-                LOGGER.error(
-                    f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
-                assert False
+    operator_object.check()
+    LOGGER.info("Checkig if failure reason matches")
+    demonset_pod_name = operator_object.get_driver_ds_pod_name()
+    LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+    get_logs_api_instance = client.CoreV1Api()
+    count = 0
+    while count < 24:
+        try:
+            get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
+                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+            LOGGER.debug(str(get_logs_api_response))
+            #TODO
+            search_result = re.search("401 Unauthorized", get_logs_api_response)
+            if search_result is None:
+                time.sleep(5)
+                count += 1
+            else:
+                LOGGER.debug(search_result)
+                LOGGER.info("'401 Unauthorized' failure reason matched")
+                operator_object.delete()
+                return
+        except ApiException as e: 
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
 
     operator_object.delete()
     LOGGER.error(str(get_logs_api_response))
@@ -292,6 +296,7 @@ def test_random_gpfs_primaryFset_name(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
@@ -337,6 +342,7 @@ def test_secureSslMode(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
@@ -348,6 +354,7 @@ def test_secureSslMode(_values):
                 LOGGER.error(str(get_logs_api_response))
                 LOGGER.error("Reason of failure does not match")
             assert search_result is not None
+            LOGGER.info("'CA certificate not specified in secure SSL mode for cluster' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -376,6 +383,7 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
         get_logs_api_instance = client.CoreV1Api()
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
@@ -384,6 +392,7 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
                 'MountVolume.SetUp failed for volume', str(api_response))
             LOGGER.debug(search_result)
             assert search_result is not None
+            LOGGER.info("'MountVolume.SetUp failed for volume' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -408,6 +417,7 @@ def test_unlinked_primaryFset(_values):
         get_logs_api_instance = client.CoreV1Api()
         try:
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.error(str(get_logs_api_response))
@@ -474,17 +484,19 @@ def test_unmounted_primaryFS(_values):
         get_logs_api_instance = client.CoreV1Api()
         try:
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
-                'Unable to link primary fileset', str(get_logs_api_response))
+                'not mounted on GUI node Primary cluster', str(get_logs_api_response))
             if search_result is None:
                 LOGGER.error(str(get_logs_api_response))
             LOGGER.debug(search_result)
             operator_object.delete()
             ff.mount_fs(test)
             assert search_result is not None
+            LOGGER.info("'not mounted on GUI node Primary cluster' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -510,6 +522,7 @@ def test_non_deafult_attacher(_values):
         get_logs_api_instance = client.CoreV1Api()
         try:
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
@@ -529,7 +542,7 @@ def test_non_deafult_provisioner(_values):
     LOGGER.info("test_non_deafult_provisioner")
     LOGGER.info("provisioner image name is changed")
     test = read_operator_data(clusterconfig_value, namespace_value)
-    deployment_provisioner_image = "quay.io/k8scsi/csi-provisioner:v1.0.2"
+    deployment_provisioner_image = "quay.io/k8scsi/csi-provisioner:v1.6.0"
     test["custom_object_body"]["spec"]["provisioner"] = deployment_provisioner_image
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
@@ -541,6 +554,7 @@ def test_non_deafult_provisioner(_values):
         get_logs_api_instance = client.CoreV1Api()
         try:
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
@@ -584,6 +598,7 @@ def test_correct_cacert(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.info(str(get_logs_api_response))
@@ -627,6 +642,7 @@ def test_cacert_with_secureSslMode_false(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.info(str(get_logs_api_response))
@@ -672,6 +688,7 @@ def test_wrong_cacert(_values):
         assert False
     else:
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
         get_logs_api_instance = client.CoreV1Api()
         count = 0
         while count < 24:
@@ -711,6 +728,7 @@ def test_nodeMapping(_values):
         get_logs_api_instance = client.CoreV1Api()
         try:
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
@@ -748,6 +766,7 @@ def test_attacherNodeSelector(_values):
         get_logs_api_instance = client.CoreV1Api()
         try:
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
@@ -785,6 +804,7 @@ def test_provisionerNodeSelector(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
@@ -822,6 +842,7 @@ def test_pluginNodeSelector(_values):
         demonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
             field = "involvedObject.name="+demonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)

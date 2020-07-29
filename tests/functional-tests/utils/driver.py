@@ -136,6 +136,7 @@ def create_pv(pv_values, pv_name, sc_name=""):
     Args:
         param1: pv_values - values required for creation of pv
         param2: pv_name - name of pv to be created
+        param3: sc_name - name of storage class pv associated with
 
     Returns:
         None
@@ -267,12 +268,13 @@ def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
 
 def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
     """
-    creates persistent volume claim
+    creates persistent volume claim from snapshot
 
     Args:
         param1: pvc_values - values required for creation of pvc
         param2: sc_name - name of storage class , pvc associated with
         param3: pvc_name - name of pvc to be created
+        param4: snap_name - name of snapshot to recover data from
 
     Returns:
         None
@@ -339,6 +341,10 @@ def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names):
 
 
 def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
+    """
+    calculates bound time for pvc and checks fileset created by
+    pvc on spectrum scale
+    """
     global volume_name
     now1 = api_response.metadata.creation_timestamp
     now = datetime.now(timezone.utc)
@@ -434,7 +440,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                     con = False
 
 
-def create_pod(value_pod, pvc_name, pod_name):
+def create_pod(value_pod, pvc_name, pod_name,image_name="nginx:1.19.0"):
     """
     creates pod
 
@@ -442,6 +448,7 @@ def create_pod(value_pod, pvc_name, pod_name):
         param1: value_pod - values required for creation of pod
         param2: pvc_name - name of pvc , pod associated with
         param3: pod_name - name of pod to be created
+        param4: image_name - name of the pod image (Default:"nginx:1.19.0")
 
     Returns:
         None
@@ -460,7 +467,7 @@ def create_pod(value_pod, pvc_name, pod_name):
         name="mypvc", mount_path=value_pod["mount_path"])
     pod_ports = client.V1ContainerPort(container_port=80)
     pod_containers = client.V1Container(
-        name="web-server", image="nginx:1.19.0", volume_mounts=[pod_volume_mounts], ports=[pod_ports])
+        name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
     pod_persistent_volume_claim = client.V1PersistentVolumeClaimVolumeSource(
         claim_name=pvc_name, read_only=value_pod["read_only"])
     pod_volumes = client.V1Volume(
@@ -475,7 +482,7 @@ def create_pod(value_pod, pvc_name, pod_name):
     )
 
     try:
-        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name}')
+        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name} with {image_name} image')
         api_response = api_instance.create_namespaced_pod(
             namespace=namespace_value, body=pod_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -512,6 +519,9 @@ def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_
         ff.delete_dir(dir_name)
 
 def create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+    """
+    create snaptestfile inside the pod using touch
+    """
     api_instance = client.CoreV1Api()
     LOGGER.info("POD Check : Trying to create snaptestfile on SpectrumScale mount point inside the pod")
     exec_command1 = "touch "+value_pod["mount_path"]+"/snaptestfile"
@@ -533,6 +543,9 @@ def create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
     assert False
 
 def check_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+    """
+    check snaptestfile inside the pod using ls
+    """
     api_instance = client.CoreV1Api()
     exec_command1 = "ls "+value_pod["mount_path"]
     exec_command = [
@@ -609,8 +622,10 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
         assert False
     search_result1 = re.search(value_pod["reason"], str(resp))
     search_result2 = re.search("Permission denied", str(resp))
-    LOGGER.info(str(search_result1))
-    LOGGER.info(str(search_result2))
+    if search_result1 is not None:
+        LOGGER.info(str(search_result1))
+    if search_result2 is not None:
+        LOGGER.info(str(search_result2))
     if not(search_result1 is None and search_result2 is None):
         LOGGER.info("execution of pod failed with expected reason")
     else:

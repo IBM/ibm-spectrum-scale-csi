@@ -55,7 +55,7 @@ def values(request):
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data, test_namespace, keep_objects)
+    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data["id"], test_namespace, keep_objects, data["image_name"])
     ff.create_dir(data["volDirBasePath"])
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
