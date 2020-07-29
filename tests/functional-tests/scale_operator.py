@@ -19,6 +19,7 @@ class Scaleoperator:
         self.kubeconfig = kubeconfig_value
         scale_function.set_global_namespace_value(namespace_value)
         ob.set_namespace_value(namespace_value)
+
     def create(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
@@ -240,13 +241,14 @@ class Scaleoperatorobject:
 
 class Driver:
 
-    def __init__(self, kubeconfig_value, value_pvc, value_pod, config_file, test_ns, keep_object):
+    def __init__(self, kubeconfig_value, value_pvc, value_pod, cluster_id, test_ns, keep_object, image_name):
         self.value_pvc = value_pvc
         self.value_pod = value_pod
-        self.config_file = config_file
+        self.cluster_id = cluster_id
         self.test_ns = test_ns
         self.keep_objects = keep_object
         self.kubeconfig = kubeconfig_value
+        self.image_name = image_name
         d.set_test_namespace_value(self.test_ns)
         d.set_keep_objects(self.keep_objects)
 
@@ -264,6 +266,7 @@ class Driver:
         scale_function.check_namespace_deleted()
 
     def test_dynamic(self, value_sc):
+
         LOGGER.info(
             f"Testing Dynamic Provisioning with following PVC parameters {str(self.value_pvc)}")
         sc_name = d.get_random_name("sc")
@@ -283,7 +286,7 @@ class Driver:
                 for num2 in range(0, len(self.value_pod)):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
-                    d.create_pod(self.value_pod[num2], pvc_name, pod_name)
+                    d.create_pod(self.value_pod[num2], pvc_name, pod_name, self.image_name)
                     d.check_pod(self.value_pod[num2], sc_name, pvc_name, pod_name)
                     d.delete_pod(pod_name)
                     d.check_pod_deleted(pod_name)
@@ -311,7 +314,7 @@ class Driver:
             d.create_storage_class(sc_value,  sc_name)
             d.check_storage_class(sc_name)
         FSUID = ff.get_FSUID()
-        cluster_id = self.config_file["id"]
+        cluster_id = self.cluster_id
         if wrong is not None:
             if wrong["id_wrong"] is True:
                 cluster_id = int(cluster_id)+1
@@ -351,7 +354,7 @@ class Driver:
                 for num2 in range(0, len(self.value_pod)):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
-                    d.create_pod(self.value_pod[num2], pvc_name, pod_name)
+                    d.create_pod(self.value_pod[num2], pvc_name, pod_name,self.image_name)
                     d.check_pod(self.value_pod[num2], sc_name, pvc_name, pod_name, dir_name, pv_name)
                     d.delete_pod(pod_name)
                     d.check_pod_deleted(pod_name)
@@ -380,11 +383,11 @@ class Driver:
         val = d.check_pvc(value_pvc_pass, sc_name, pvc_name)
         if val is True:
             pod_name_1 = d.get_random_name("pod")
-            d.create_pod(self.value_pod[0], pvc_name, pod_name_1)
+            d.create_pod(self.value_pod[0], pvc_name, pod_name_1,self.image_name)
             d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name_1)
             pod_name_2 = d.get_random_name("pod")
             d.create_pod(self.value_pod[0], pvc_name, pod_name_2)
-            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name_2)
+            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name_2,self.image_name)
             d.delete_pod(pod_name_1)
             d.check_pod_deleted(pod_name_1)
             d.delete_pod(pod_name_2)
@@ -423,7 +426,7 @@ class Driver:
             LOGGER.info(100*"-")
             pod_name = d.get_random_name("pod")
             pod_names.append(pod_name)
-            d.create_pod(self.value_pod[0], pvc_name, pod_name)
+            d.create_pod(self.value_pod[0], pvc_name, pod_name, self.image_name)
             d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name, pod_names = pod_names, pvc_names = pvc_names)
 
         for pod_name in pod_names:
@@ -440,11 +443,12 @@ class Driver:
        
 
 class Snapshot():
-    def __init__(self, kubeconfig, test_namespace, keep_objects, data, value_pvc, value_vs_class, number_of_snapshots):
+    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots,image_name):
         config.load_kube_config(config_file=kubeconfig)
         self.value_pvc = value_pvc
         self.value_vs_class = value_vs_class
         self.number_of_snapshots = number_of_snapshots
+        self.image_name=image_name
         d.set_keep_objects(keep_objects)
         d.set_test_namespace_value(test_namespace)
         snapshot.set_test_namespace_value(test_namespace)
@@ -469,7 +473,7 @@ class Snapshot():
                        
             pod_name = d.get_random_name("snap-start-pod")
             value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-            d.create_pod(value_pod, pvc_name, pod_name)
+            d.create_pod(value_pod, pvc_name, pod_name,self.image_name)
             d.check_pod(value_pod, sc_name, pvc_name, pod_name)
             d.create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name)
 
@@ -487,7 +491,7 @@ class Snapshot():
                 snap_pod_name = "snap-end-pod"+vs_name[2:]
                 d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name+"-"+str(num))
                 d.check_pvc(pvc_value, sc_name, restored_pvc_name)
-                d.create_pod(value_pod, restored_pvc_name, snap_pod_name)
+                d.create_pod(value_pod, restored_pvc_name, snap_pod_name,self.image_name)
                 d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
                 d.check_file_inside_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
                 d.delete_pod(snap_pod_name)
@@ -559,6 +563,10 @@ def check_key(dict1, key):
 
 
 def check_nodes_available(label, label_name):
+    """
+    checks number of nodes with label
+    if it is 0 , asserts
+    """
     api_instance = client.CoreV1Api()
     label_selector = ""
     for label_val in label:

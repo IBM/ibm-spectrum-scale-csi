@@ -126,7 +126,7 @@ def check_scaleoperatorobject_is_deleted():
     check  csiscaleoperator deleted or not
     if csiscaleoperator not deleted in 300 seconds , asserts
     """
-    count = 30
+    count = 60
     list_co_api_instance = client.CustomObjectsApi()
     while (count > 0):
         try:
@@ -134,10 +134,9 @@ def check_scaleoperatorobject_is_deleted():
                                                                                      version="v1",
                                                                                      namespace=namespace_value,
                                                                                      plural="csiscaleoperators",
-
                                                                                      name="ibm-spectrum-scale-csi"
                                                                                      )
-            LOGGER.info("still deleting custom object")
+            LOGGER.info("Waiting for custom object deletion")
             LOGGER.debug(str(list_co_api_response))
             count = count-1
             time.sleep(10)
@@ -548,6 +547,11 @@ def randomString(stringLength=10):
 
 
 def check_pod_running(pod_name):
+    """
+    checking phase of pod pod_name to be running
+    if not running then asserts
+    """
+
     api_instance = client.CoreV1Api()
     val = 0
     while val < 12:

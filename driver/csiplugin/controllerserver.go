@@ -511,19 +511,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		if scaleVol.NodeClass != "" {
-			isValidNodeclass, err := scaleVol.Connector.IsValidNodeclass(scaleVol.NodeClass)
-			if err != nil {
-				glog.Errorf("volume:[%v] - cannot validate nodeclass [%s]. Error [%v]", volName, scaleVol.NodeClass, err)
-				return nil, err
-			}
-
-			if !isValidNodeclass {
-				glog.Errorf("volume:[%v] - nodeclass [%s] not found on cluster [%v]", volName, scaleVol.NodeClass, scaleVol.ClusterId)
-				return nil, status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scaleVol.NodeClass, scaleVol.ClusterId))
-			}
-		}
-
 		err = cs.validateSnapId(&snapIdMembers, scaleVol, PCid)
 		if err != nil {
 			glog.Errorf("volume:[%v] - Error in source snapshot validation [%v]", volName, err)
@@ -621,6 +608,20 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 
 func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
 	glog.V(3).Infof("validateSnapId [%v]", sId)
+	conn, err := cs.getConnFromClusterID(sId.ClusterId)
+	if err != nil {
+		return err
+	}
+
+	isSnapSupported, err := conn.IsSnapshotSupported()
+	if err != nil {
+		return err
+	}
+
+	if !isSnapSupported {
+		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster %s does not support this operation. Min required Spectrum Scale version is 5.0.5.2", sId.ClusterId))
+	}
+
 	if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
 		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
 	}
@@ -629,9 +630,15 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
 	}
 
-	conn, err := cs.getConnFromClusterID(sId.ClusterId)
-	if err != nil {
-		return err
+	if scVol.NodeClass != "" {
+		isValidNodeclass, err := conn.IsValidNodeclass(scVol.NodeClass)
+		if err != nil {
+			return err
+		}
+
+		if !isValidNodeclass {
+			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scVol.NodeClass, scVol.ClusterId))
+		}
 	}
 
 	sId.FsName, err = conn.GetFilesystemName(sId.FsUUID)
@@ -1021,7 +1028,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if !volumeIDMembers.IsFilesetBased {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Source Volume %v is not fileset based", volID))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
 	}
 
 	conn, err := cs.getConnFromClusterID(volumeIDMembers.ClusterId)
@@ -1040,7 +1047,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if filesetResp.Config.ParentId > 0 {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Source Volume %v is not independent fileset based", volID))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
 	}
 	filesetName := filesetResp.FilesetName
 	sLinkRelPath := strings.Replace(volumeIDMembers.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)

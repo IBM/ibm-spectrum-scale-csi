@@ -417,6 +417,20 @@ type GetNodesResponse_v2 struct {
 	Paging Pages     `json:"paging,omitempty"`
 }
 
+type GetInfoResponse_v2 struct {
+	Status Status `json:"status,omitempty"`
+	Info   Info   `json:"info,omitempty"`
+}
+
+type Info struct {
+	ServerVersion string `json:"serverVersion,omitempty"`
+	Paths         Path   `json:"paths,omitempty"`
+}
+
+type Path struct {
+	SnapCopyOp []string `json:"/filesystems/{filesystemName}/filesets/{filesetName}/snapshotCopy/{snapshotName},omitempty"`
+}
+
 type NodeConfig struct {
 	AdminLoginName    string `json:"adminLoginName,omitempty"`
 	DesignatedLicense string `json:"designatedLicense,omitempty"`

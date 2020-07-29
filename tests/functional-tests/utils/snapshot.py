@@ -20,6 +20,10 @@ def set_keep_objects(keep_object):
 
 
 def create_vs_class(vs_class_name, body_params):
+    """
+    create volume snapshot class with vs_class_name
+    body_params contains configurable parameters
+    """
     class_body = {
         "apiVersion": "snapshot.storage.k8s.io/v1beta1",
         "kind": "VolumeSnapshotClass",
@@ -48,6 +52,9 @@ def create_vs_class(vs_class_name, body_params):
 
 
 def delete_vs_class(vs_class_name):
+    """
+    deletes volume snapshot class vs_class_name
+    """
     if keep_objects:
         return
     custom_object_api_instance = client.CustomObjectsApi()
@@ -66,7 +73,11 @@ def delete_vs_class(vs_class_name):
 
 
 def check_vs_class(vs_class_name):
-
+    """ 
+    checks volume snapshot class vs_class_name exists or not
+    return True , if vs_class_name exists
+    else return False
+    """
     api_instance = client.CustomObjectsApi()
     try:
         api_response = api_instance.get_cluster_custom_object(
@@ -84,6 +95,9 @@ def check_vs_class(vs_class_name):
 
 
 def check_vs_class_deleted(vs_class_name):
+    """
+    if volume snapshot class vs_class_name  exists ,  assert
+    """
     if keep_objects:
         return
     api_instance = client.CustomObjectsApi()
@@ -102,7 +116,10 @@ def check_vs_class_deleted(vs_class_name):
 
 
 def create_vs(vs_name, vs_class_name, pvc_name):
-
+    """
+    create volume snapshot vs_name using volume snapshot class vs_class_name
+    and pvc pvc_name
+    """
     class_body = {
         "apiVersion": "snapshot.storage.k8s.io/v1beta1",
         "kind": "VolumeSnapshot",
@@ -136,7 +153,9 @@ def create_vs(vs_name, vs_class_name, pvc_name):
 
 
 def delete_vs(vs_name):
-
+    """
+    delete volume snapshot vs_name
+    """
     if keep_objects:
         return
     custom_object_api_instance = client.CustomObjectsApi()
@@ -156,7 +175,11 @@ def delete_vs(vs_name):
 
 
 def check_vs(vs_name):
-
+    """
+    check volume snapshot vs_name exists or not
+    return True , if exists
+    else return False
+    """
     api_instance = client.CustomObjectsApi()
     try:
         api_response = api_instance.get_namespaced_custom_object(
@@ -175,6 +198,9 @@ def check_vs(vs_name):
 
 
 def check_vs_deleted(vs_name):
+    """
+    if volume snapshot vs_name exists , it asserts
+    """
     if keep_objects:
         return
     api_instance = client.CustomObjectsApi()
@@ -199,6 +225,9 @@ def check_vs_deleted(vs_name):
 
 
 def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
+    """
+    cleanup after volumensnapshot fails
+    """
     if check_vs(vs_name):
         delete_vs(vs_name)
     check_vs_deleted(vs_name)
@@ -212,7 +241,11 @@ def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
 
 
 def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
-
+    """
+    checks volume snapshot vs_name exits , 
+    checks volume snapshot content for vs_name is created
+    check snapshot is created on spectrum scale
+    """
     api_instance = client.CustomObjectsApi()
     try:
         api_response = api_instance.get_namespaced_custom_object(
@@ -291,7 +324,11 @@ def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
 
 
 def check_snapshot_status(vs_name):
-
+    """
+    check status of volume snapshot vs_name
+    if status True , return True
+    else return False
+    """
     api_instance = client.CustomObjectsApi()
     val = 0
     while val < 36:
