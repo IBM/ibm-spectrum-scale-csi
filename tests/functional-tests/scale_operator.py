@@ -265,16 +265,19 @@ class Driver:
             scale_function.delete_namespace()
         scale_function.check_namespace_deleted()
 
-    def test_dynamic(self, value_sc):
-
+    def test_dynamic(self, value_sc, value_pvc_passed = None, value_pod_passed = None):
+        if value_pvc_passed == None:
+            value_pvc_passed = self.value_pvc
+        if value_pod_passed == None:
+            value_pod_passed = self.value_pod
         LOGGER.info(
-            f"Testing Dynamic Provisioning with following PVC parameters {str(self.value_pvc)}")
+            f"Testing Dynamic Provisioning with following PVC parameters {str(value_pvc_passed)}")
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, sc_name)
         d.check_storage_class(sc_name)
-        for num in range(0, len(self.value_pvc)):
-            value_pvc_pass = copy.deepcopy(self.value_pvc[num])
+        for num in range(0, len(value_pvc_passed)):
+            value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
             if (check_key(value_sc, "reason")):
                 if not(check_key(value_pvc_pass, "reason")):
                     value_pvc_pass["reason"] = value_sc["reason"]
@@ -283,15 +286,15 @@ class Driver:
             d.create_pvc(value_pvc_pass, sc_name, pvc_name)
             val = d.check_pvc(value_pvc_pass, sc_name, pvc_name)
             if val is True:
-                for num2 in range(0, len(self.value_pod)):
+                for num2 in range(0, len(value_pod_passed)):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
-                    d.create_pod(self.value_pod[num2], pvc_name, pod_name, self.image_name)
-                    d.check_pod(self.value_pod[num2], sc_name, pvc_name, pod_name)
+                    d.create_pod(value_pod_passed[num2], pvc_name, pod_name, self.image_name)
+                    d.check_pod(value_pod_passed[num2], sc_name, pvc_name, pod_name)
                     d.delete_pod(pod_name)
                     d.check_pod_deleted(pod_name)
                     if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
-                        if num2 < (len(self.value_pod)-1):
+                        if num2 < (len(value_pod_passed)-1):
                             pvc_name = d.get_random_name("pvc")
                             d.create_pvc(value_pvc_pass, sc_name, pvc_name)
                             val = d.check_pvc(value_pvc_pass, sc_name, pvc_name)
@@ -454,7 +457,7 @@ class Snapshot():
         snapshot.set_test_namespace_value(test_namespace)
         snapshot.set_keep_objects(keep_objects)
 
-    def test_dynamic(self, value_sc, value_vs_class=None, number_of_snapshots=None):
+    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -486,17 +489,22 @@ class Snapshot():
                 snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name)
                 snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, vs_class_name, sc_name, value_vs_class)
             
-            for num in range(0, number_of_restore): 
-                restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
-                snap_pod_name = "snap-end-pod"+vs_name[2:]
-                d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name+"-"+str(num))
-                d.check_pvc(pvc_value, sc_name, restored_pvc_name)
-                d.create_pod(value_pod, restored_pvc_name, snap_pod_name,self.image_name)
-                d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
-                d.check_file_inside_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
-                d.delete_pod(snap_pod_name)
-                d.check_pod_deleted(snap_pod_name)
-                d.delete_pvc(restored_pvc_name)
+            if not(ff.snapshot_restore_available()): 
+                pvc_value["reason"] = "Min required Spectrum Scale version is 5.0.5.2"
+
+            if test_restore:
+                for num in range(0, number_of_restore): 
+                    restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
+                    snap_pod_name = "snap-end-pod"+vs_name[2:]
+                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name+"-"+str(num))
+                    val = d.check_pvc(pvc_value, sc_name, restored_pvc_name)
+                    if val is True:
+                        d.create_pod(value_pod, restored_pvc_name, snap_pod_name,self.image_name)
+                        d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
+                        d.check_file_inside_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
+                        d.delete_pod(snap_pod_name)
+                        d.check_pod_deleted(snap_pod_name)
+                    d.delete_pvc(restored_pvc_name)
 
       
             for num in range(0, number_of_snapshots):

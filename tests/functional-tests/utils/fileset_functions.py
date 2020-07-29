@@ -570,3 +570,21 @@ def check_snapshot(snapshot_name, volume_name):
         val += 1
         time.sleep(5)
     return False
+
+
+def snapshot_restore_available():
+    """
+    returns True , if snapshot restore feature is available
+    else , returns False
+    """
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test["guiHost"]+":"+test["port"] +"/scalemgmt/v2/info"
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+    
+    response_dict = json.loads(response.text)
+    required_api = "/filesystems/{filesystemName}/filesets/{filesetName}/snapshotCopy/{snapshotName}"
+    if required_api in response_dict["info"]["paths"]:
+        return True
+    LOGGER.warning("Snapshot restore feature is not supported")
+    return False

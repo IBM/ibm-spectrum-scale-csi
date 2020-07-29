@@ -17,6 +17,8 @@ def values(request):
     namespace_value = request.config.option.namespace
     if namespace_value is None:
         namespace_value = "ibm-spectrum-scale-csi-driver"
+    runslow_val = request.config.option.runslow
+
     data = read_driver_data(clusterconfig_value, namespace_value)
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
     keep_objects = data["keepobjects"]
@@ -46,15 +48,20 @@ def values(request):
         else:
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+    if runslow_val:
+        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                      "reason": "ReadOnlyMany is not supported"}
                  ]
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
+        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
+    else:
+        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+
     driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data["id"], test_namespace, keep_objects, data["image_name"])
     ff.create_dir(data["volDirBasePath"])
     if not(data["volBackendFs"] == ""):
@@ -412,9 +419,19 @@ def test_driver_dynamic_pass_2():
 
 
 def test_driver_dynamic_pass_3():
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                     "reason": "ReadOnlyMany is not supported"}
+                 ]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                     "read_only": "True", "reason": "Read-only file system"}
+                 ]
+
     value_sc = {"volBackendFs": data["primaryFs"],
                 "clusterId": data["id"], "gid": data["gid_number"]}
-    driver_object.test_dynamic(value_sc)
+    driver_object.test_dynamic(value_sc,value_pvc,value_pod)
 
 
 def test_driver_dynamic_pass_4():
@@ -449,9 +466,19 @@ def test_driver_dynamic_pass_8():
 
 
 def test_driver_dynamic_pass_9():
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                     "reason": "ReadOnlyMany is not supported"}
+                 ]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                     "read_only": "True", "reason": "Read-only file system"}
+                 ]
+
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": data["volDirBasePath"]}
-    driver_object.test_dynamic(value_sc)
+    driver_object.test_dynamic(value_sc,value_pvc,value_pod)
 
 
 def test_driver_dynamic_pass_10():
@@ -508,10 +535,21 @@ def test_driver_dynamic_pass_17():
 
 
 def test_driver_dynamic_pass_18():
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                     "reason": "ReadOnlyMany is not supported"}
+                 ]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                     "read_only": "True", "reason": "Read-only file system"}
+                 ]
+
+
     value_sc = {"volBackendFs": data["primaryFs"],
                 "parentFileset": data["parentFileset"],
                 "clusterId": data["id"], "filesetType": "dependent"}
-    driver_object.test_dynamic(value_sc)
+    driver_object.test_dynamic(value_sc,value_pvc,value_pod)
 
 
 def test_driver_dynamic_pass_19():

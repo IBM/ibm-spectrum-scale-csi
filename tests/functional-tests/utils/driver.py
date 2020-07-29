@@ -436,7 +436,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                     assert False
                 else:
                     LOGGER.debug(search_result)
-                    LOGGER.info("PVC is not Bound and FAILED with expected error")
+                    LOGGER.info(f"PVC is not Bound and FAILED with expected error {pvc_values['reason']}")
                     con = False
 
 
