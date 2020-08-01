@@ -3,7 +3,6 @@ import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import utils.fileset_functions as ff
-import utils.driver as d
 LOGGER = logging.getLogger()
 
 
@@ -223,24 +222,7 @@ def check_vs_deleted(vs_name):
     LOGGER.error(f"volume snapshot {vs_name} is not deleted , asserting")
     assert False
 
-
-def clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name):
-    """
-    cleanup after volumensnapshot fails
-    """
-    if check_vs(vs_name):
-        delete_vs(vs_name)
-    check_vs_deleted(vs_name)
-    delete_vs_class(vs_class_name)
-    check_vs_class_deleted(vs_class_name)
-    d.delete_pvc(pvc_name)
-    d.check_pvc_deleted(pvc_name)
-    if d.check_storage_class(sc_name):
-        d.delete_storage_class(sc_name)
-        d.check_storage_class_deleted(sc_name)
-
-
-def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
+def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
     """
     checks volume snapshot vs_name exits , 
     checks volume snapshot content for vs_name is created
@@ -259,14 +241,14 @@ def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
         LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} has been created")
     except ApiException as e:
         LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} does not exists")
-        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
+        clean_with_created_objects(created_objects)
         assert False
 
     if check_snapshot_status(vs_name):
         LOGGER.info("volume snapshot status ReadyToUse is true")
     else:
         LOGGER.error("volume snapshot status ReadyToUse is not true")
-        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
+        clean_with_created_objects(created_objects)
         assert False
 
     uid_name = api_response["metadata"]["uid"]
@@ -284,7 +266,7 @@ def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
         LOGGER.info(f"volume snapshot content {snapcontent_name} exists")
     except ApiException as e:
         LOGGER.error(f"volume snapshot content {snapcontent_name} does not exists")
-        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
+        clean_with_created_objects(created_objects)
         assert False
 
     api_instance = client.CoreV1Api()
@@ -296,7 +278,7 @@ def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
         LOGGER.error(
             f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
         LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
-        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
+        clean_with_created_objects(created_objects)
         assert False
 
     volume_name = api_response.spec.volume_name
@@ -304,7 +286,7 @@ def check_vs_detail(vs_name, pvc_name, vs_class_name, sc_name, body_params):
         LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
     else:
         LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
-        clean_vs_fail(sc_name, pvc_name, vs_class_name, vs_name)
+        clean_with_created_objects(created_objects)
         assert False
 
     if body_params["deletionPolicy"] == "Retain" and not(keep_objects):
@@ -350,3 +332,7 @@ def check_snapshot_status(vs_name):
             time.sleep(5)
             val += 1
     return False
+
+
+if __name__ == "__main__":
+    from  utils.driver import  clean_with_created_objects

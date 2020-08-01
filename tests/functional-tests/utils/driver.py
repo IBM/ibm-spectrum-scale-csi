@@ -6,6 +6,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 import utils.fileset_functions as ff
+import utils.snapshot as snap
 from utils.namegenerator import name_generator
 
 LOGGER = logging.getLogger()
@@ -320,9 +321,37 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
             f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
         assert False
 
-def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names):
+
+def clean_with_created_objects(created_objects):
+    for vs_name in created_objects["vs"]:
+        snap.delete_vs(vs_name)
+        snap.check_vs_deleted(vs_name)
+   
+    for vs_class_name in created_objects["vsclass"]:
+        snap.delete_vs_class(vs_class_name)
+        snap.check_vs_class_deleted(vs_class_name)
+   
+    for pod_name in created_objects["pod"]:
+        delete_pod(pod_name)
+        check_pod_deleted(pod_name)
+   
+    for pvc_name in created_objects["pvc"]:
+        delete_pvc(pvc_name)
+        check_pvc_deleted(pvc_name)
+   
+    for sc_name in created_objects["sc"]:
+        if check_storage_class(sc_name):
+            delete_storage_class(sc_name)
+            check_storage_class_deleted(sc_name)
+
+
+def clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names,snap_created_objects):
     """  cleanup after pvc has failed    """
     LOGGER.info(f'PVC {pvc_name} cleanup operation started')
+
+    if snap_created_objects is not None:
+        clean_with_created_objects(snap_created_objects)
+        return
     if len(pvc_names)>0:
         for pvc_name in pvc_names:
             delete_pvc(pvc_name)
@@ -369,7 +398,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
     return True
 
 
-def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name="pvnotavailable",pvc_names=[]):
+def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name="pvnotavailable",pvc_names=[],snap_created_objects = None):
     """ checks pvc is BOUND or not
         need to reduce complextity of this function
     """
@@ -393,11 +422,11 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                 LOGGER.error(f'PVC Check : {pvc_name} is BOUND but as the failure reason is provided so\
                 asserting the test')
                 volume_name = api_response.spec.volume_name
-                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
+                clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names,snap_created_objects)
                 assert False
             if(pvc_bound_fileset_check(api_response, pv_name, pvc_name)):
                 return True
-            clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
+            clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names,snap_created_objects)
             LOGGER.error(f'PVC Check : Fileset {volume_name} doesn\'t exists')
             assert False
         else:
@@ -418,7 +447,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                 if volume_name is None:
                     volume_name = "sc-ffwe-sdfsdf-gsv"
                 if not(check_key(pvc_values, "reason")):
-                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
+                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names,snap_created_objects)
                     LOGGER.error(str(reason))
                     LOGGER.error(
                         "FAILED as reason for Failure not provides")
@@ -430,7 +459,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                     if search_result is not None:
                         break
                 if search_result is None:
-                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names)
+                    clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name,pvc_names,snap_created_objects)
                     LOGGER.error(f"Failed reason : {str(reason)}")
                     LOGGER.info("PVC is not Bound but FAILED reason does not match")
                     assert False
@@ -492,8 +521,13 @@ def create_pod(value_pod, pvc_name, pod_name,image_name="nginx:1.19.0"):
         assert False
 
 
-def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names):
+def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names,snap_created_objects):
     """ cleanup after pod fails """
+
+    if snap_created_objects is not None:
+        clean_with_created_objects(snap_created_objects)
+        return
+
     if len(pod_names)>0:
         for pod_name in pod_names:
             delete_pod(pod_name)
@@ -565,7 +599,7 @@ def check_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
     assert False 
 
 
-def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names):
+def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names,snap_created_objects):
     """
     checks can file be created in pod
     if file cannot be created , checks reason , if reason does not mathch , asserts
@@ -611,12 +645,12 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
                       stderr=True, stdin=False,
                       stdout=True, tty=False)
         if check_key(value_pod, "reason"):
-            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
+            clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names,snap_created_objects)
             LOGGER.error("Pod should not be able to create file inside the pod as failure REASON provided, so asserting")
             assert False
         return
     if not(check_key(value_pod, "reason")):
-        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
+        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names,snap_created_objects)
         LOGGER.error(str(resp))
         LOGGER.info("FAILED as reason of failure not provided")
         assert False
@@ -629,14 +663,14 @@ def check_pod_execution(value_pod, sc_name, pvc_name, pod_name, dir_name, pv_nam
     if not(search_result1 is None and search_result2 is None):
         LOGGER.info("execution of pod failed with expected reason")
     else:
-        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names)
+        clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name,pod_names,pvc_names,snap_created_objects)
         LOGGER.error(str(resp))
         LOGGER.error(
             "execution of pod failed unexpected , reason does not match")
         assert False
 
 
-def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable", pv_name="pvnotavailable",pod_names=[],pvc_names=[]):
+def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable", pv_name="pvnotavailable",pod_names=[],pvc_names=[],snap_created_objects = None):
     """
     checks pod running or not
 
@@ -665,7 +699,7 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
             if api_response.status.phase == "Running":
                 LOGGER.info(f'POD Check : POD {pod_name} is Running')
                 check_pod_execution(value_pod, sc_name,
-                                    pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names)
+                                    pvc_name, pod_name, dir_name, pv_name,pod_names,pvc_names,snap_created_objects)
                 con = False
             else:
                 var += 1
@@ -677,7 +711,7 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
                     LOGGER.info(f"POD Check : Reason of failure is : {str(reason)}")
                     con = False
                     clean_pod_fail(sc_name, pvc_name, pv_name,
-                                   dir_name, pod_name,pod_names,pvc_names)
+                                   dir_name, pod_name,pod_names,pvc_names,snap_created_objects)
                     assert False
                 time.sleep(5)
         except ApiException as e:
