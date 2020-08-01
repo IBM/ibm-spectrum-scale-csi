@@ -5,6 +5,7 @@ from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
+
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, driver_object  # are required in every testcase
@@ -50,14 +51,14 @@ def values(request):
             assert False
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                 {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
-                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                     "reason": "ReadOnlyMany is not supported"}
-                 ]
+                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                     {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                      "reason": "ReadOnlyMany is not supported"}
+                     ]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
-                 {"mount_path": "/usr/share/nginx/html/scale",
-                     "read_only": "True", "reason": "Read-only file system"}
-                 ]
+                     {"mount_path": "/usr/share/nginx/html/scale",
+                      "read_only": "True", "reason": "Read-only file system"}
+                     ]
     else:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
@@ -431,7 +432,7 @@ def test_driver_dynamic_pass_3():
 
     value_sc = {"volBackendFs": data["primaryFs"],
                 "clusterId": data["id"], "gid": data["gid_number"]}
-    driver_object.test_dynamic(value_sc,value_pvc,value_pod)
+    driver_object.test_dynamic(value_sc, value_pvc, value_pod)
 
 
 def test_driver_dynamic_pass_4():
@@ -478,7 +479,7 @@ def test_driver_dynamic_pass_9():
 
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": data["volDirBasePath"]}
-    driver_object.test_dynamic(value_sc,value_pvc,value_pod)
+    driver_object.test_dynamic(value_sc, value_pvc, value_pod)
 
 
 def test_driver_dynamic_pass_10():
@@ -545,11 +546,10 @@ def test_driver_dynamic_pass_18():
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-
     value_sc = {"volBackendFs": data["primaryFs"],
                 "parentFileset": data["parentFileset"],
                 "clusterId": data["id"], "filesetType": "dependent"}
-    driver_object.test_dynamic(value_sc,value_pvc,value_pod)
+    driver_object.test_dynamic(value_sc, value_pvc, value_pod)
 
 
 def test_driver_dynamic_pass_19():
@@ -2587,4 +2587,4 @@ def test_driver_one_pvc_two_pod():
 @pytest.mark.slow
 def test_driver_sequential_pvc():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
-    driver_object.sequential_pvc(value_sc,data["number_of_sequential_pvc"])
+    driver_object.sequential_pvc(value_sc, data["number_of_sequential_pvc"])

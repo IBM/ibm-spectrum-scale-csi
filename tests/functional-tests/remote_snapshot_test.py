@@ -58,7 +58,7 @@ def values(request):
             assert False
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                 {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
+                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     else:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
@@ -108,147 +108,144 @@ def get_remote_data(data_passed):
 
 def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 @pytest.mark.skip
 def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True, value_vs_class={"deletionPolicy": "Retain"})
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class={"deletionPolicy": "Retain"})
 
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r-volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_multiple_snapshots():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True, number_of_snapshots=3)
+    snapshot_object.test_dynamic(value_sc, test_restore=True, number_of_snapshots=3)
 
 
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_256():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True, number_of_snapshots=256)
+    snapshot_object.test_dynamic(value_sc, test_restore=True, number_of_snapshots=256)
 
 
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_257():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True, number_of_snapshots=257)
+    snapshot_object.test_dynamic(value_sc, test_restore=True, number_of_snapshots=257)
 
 
 def test_snapshot_dynamic_pass_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "clusterId": data["remoteid"], "gid": data["r-gid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_4():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "clusterId": data["remoteid"], "inodeLimit": data["r-inodeLimit"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_5():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
                 "inodeLimit": data["r-inodeLimit"], "uid": data["r-uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_6():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
                 "gid": data["r-gid_number"], "uid": data["r-uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_7():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
                 "inodeLimit": data["r-inodeLimit"], "gid": data["r-gid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_8():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
                 "inodeLimit": data["r-inodeLimit"], "uid": data["r-uid_number"],
                 "gid": data["r-gid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_9():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "clusterId": data["remoteid"], "uid": data["r-uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_10():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "inodeLimit": data["r-inodeLimit"],
                 "clusterId": data["remoteid"], "filesetType": "independent"}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_11():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "clusterId": data["remoteid"],
                 "filesetType": "independent", "inodeLimit": data["r-inodeLimit"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_12():
     value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "volBackendFs": data["remoteFs"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_13():
     value_sc = {"clusterId": data["remoteid"], "uid": data["r-uid_number"],
                 "inodeLimit": data["r-inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_14():
     value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
                 "inodeLimit": data["r-inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_15():
     value_sc = {"clusterId": data["remoteid"], "volBackendFs": data["remoteFs"],
                 "gid": data["r-gid_number"], "uid": data["r-uid_number"],
                 "inodeLimit": data["r-inodeLimit"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_16():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = False)
+    snapshot_object.test_dynamic(value_sc, test_restore=False)
 
 
 def test_snapshot_dynamic_pass_17():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
                 "uid": data["r-uid_number"], "clusterId": data["remoteid"],
                 "filesetType": "independent", "inodeLimit": data["r-inodeLimit"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = False)
+    snapshot_object.test_dynamic(value_sc, test_restore=False)
 
 
 def test_snapshot_dynamic_pass_18():
     value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
                 "inodeLimit": data["r-inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
-    snapshot_object.test_dynamic(value_sc, test_restore = False)
-
-
-
+    snapshot_object.test_dynamic(value_sc, test_restore=False)

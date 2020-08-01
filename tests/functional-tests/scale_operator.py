@@ -162,7 +162,7 @@ class Scaleoperatorobject:
             ob.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
 
     def delete(self):
-   
+
         config.load_kube_config(config_file=self.kubeconfig)
 
         if ob.check_scaleoperatorobject_is_deployed():
@@ -265,7 +265,7 @@ class Driver:
             scale_function.delete_namespace()
         scale_function.check_namespace_deleted()
 
-    def test_dynamic(self, value_sc, value_pvc_passed = None, value_pod_passed = None):
+    def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None):
         if value_pvc_passed == None:
             value_pvc_passed = self.value_pvc
         if value_pod_passed == None:
@@ -357,7 +357,7 @@ class Driver:
                 for num2 in range(0, len(self.value_pod)):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
-                    d.create_pod(self.value_pod[num2], pvc_name, pod_name,self.image_name)
+                    d.create_pod(self.value_pod[num2], pvc_name, pod_name, self.image_name)
                     d.check_pod(self.value_pod[num2], sc_name, pvc_name, pod_name, dir_name, pv_name)
                     d.delete_pod(pod_name)
                     d.check_pod_deleted(pod_name)
@@ -386,11 +386,11 @@ class Driver:
         val = d.check_pvc(value_pvc_pass, sc_name, pvc_name)
         if val is True:
             pod_name_1 = d.get_random_name("pod")
-            d.create_pod(self.value_pod[0], pvc_name, pod_name_1,self.image_name)
+            d.create_pod(self.value_pod[0], pvc_name, pod_name_1, self.image_name)
             d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name_1)
             pod_name_2 = d.get_random_name("pod")
             d.create_pod(self.value_pod[0], pvc_name, pod_name_2)
-            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name_2,self.image_name)
+            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name_2, self.image_name)
             d.delete_pod(pod_name_1)
             d.check_pod_deleted(pod_name_1)
             d.delete_pod(pod_name_2)
@@ -407,7 +407,7 @@ class Driver:
         d.create_storage_class(value_sc, sc_name)
         d.check_storage_class(sc_name)
         pvc_names = []
-        number_of_pvc = num_of_pvc 
+        number_of_pvc = num_of_pvc
         common_pvc_name = d.get_random_name("pvc")
         for num in range(0, number_of_pvc):
             pvc_names.append(common_pvc_name+"-"+str(num))
@@ -421,7 +421,7 @@ class Driver:
 
         for pvc_name in pvc_names:
             LOGGER.info(100*"-")
-            d.check_pvc(value_pvc_pass, sc_name, pvc_name, pvc_names = pvc_names)
+            d.check_pvc(value_pvc_pass, sc_name, pvc_name, pvc_names=pvc_names)
 
         pod_names = []
 
@@ -430,7 +430,7 @@ class Driver:
             pod_name = d.get_random_name("pod")
             pod_names.append(pod_name)
             d.create_pod(self.value_pod[0], pvc_name, pod_name, self.image_name)
-            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name, pod_names = pod_names, pvc_names = pvc_names)
+            d.check_pod(self.value_pod[0], sc_name, pvc_name, pod_name, pod_names=pod_names, pvc_names=pvc_names)
 
         for pod_name in pod_names:
             d.delete_pod(pod_name)
@@ -443,15 +443,15 @@ class Driver:
         if d.check_storage_class(sc_name):
             d.delete_storage_class(sc_name)
         d.check_storage_class_deleted(sc_name)
-       
+
 
 class Snapshot():
-    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots,image_name):
+    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name):
         config.load_kube_config(config_file=kubeconfig)
         self.value_pvc = value_pvc
         self.value_vs_class = value_vs_class
         self.number_of_snapshots = number_of_snapshots
-        self.image_name=image_name
+        self.image_name = image_name
         d.set_keep_objects(keep_objects)
         d.set_test_namespace_value(test_namespace)
         snapshot.set_test_namespace_value(test_namespace)
@@ -466,7 +466,7 @@ class Snapshot():
 
         for pvc_value in self.value_pvc:
 
-            created_objects = {"sc":[],"pvc":[],"pod":[],"vs":[],"vsclass":[]}
+            created_objects = {"sc": [], "pvc": [], "pod": [], "vs": [], "vsclass": []}
             LOGGER.info("-"*100)
             sc_name = d.get_random_name("sc")
             created_objects["sc"].append(sc_name)
@@ -477,11 +477,11 @@ class Snapshot():
             created_objects["pvc"].append(pvc_name)
             d.create_pvc(pvc_value, sc_name, pvc_name)
             d.check_pvc(pvc_value, sc_name, pvc_name)
-                       
+
             pod_name = d.get_random_name("snap-start-pod")
             created_objects["pod"].append(pod_name)
             value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-            d.create_pod(value_pod, pvc_name, pod_name,self.image_name)
+            d.create_pod(value_pod, pvc_name, pod_name, self.image_name)
             d.check_pod(value_pod, sc_name, pvc_name, pod_name)
             d.create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name)
 
@@ -491,25 +491,25 @@ class Snapshot():
             snapshot.check_vs_class(vs_class_name)
 
             vs_name = d.get_random_name("vs")
-            for num in range(0, number_of_snapshots): 
+            for num in range(0, number_of_snapshots):
                 created_objects["vs"].append(vs_name+"-"+str(num))
                 snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name)
                 snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, created_objects)
 
-            if not(ff.snapshot_restore_available()): 
+            if not(ff.snapshot_restore_available()):
                 pvc_value["reason"] = "Min required Spectrum Scale version is 5.0.5.2"
 
             if test_restore:
-                for num in range(0, number_of_restore): 
+                for num in range(0, number_of_restore):
                     restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
-                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name,vs_name+"-"+str(num))
+                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num))
                     created_objects["pvc"].append(restored_pvc_name)
-                    val = d.check_pvc(pvc_value, sc_name, restored_pvc_name, snap_created_objects = created_objects)
+                    val = d.check_pvc(pvc_value, sc_name, restored_pvc_name, snap_created_objects=created_objects)
                     if val is True:
-                        d.create_pod(value_pod, restored_pvc_name, snap_pod_name,self.image_name)
+                        d.create_pod(value_pod, restored_pvc_name, snap_pod_name, self.image_name)
                         created_objects["pod"].append(snap_pod_name)
-                        d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name,snap_created_objects = created_objects)
+                        d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name, snap_created_objects=created_objects)
                         d.check_file_inside_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
                         d.delete_pod(snap_pod_name)
                         d.check_pod_deleted(snap_pod_name)
@@ -571,6 +571,7 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
     except ApiException:
         LOGGER.info("namespace does not exists")
         return False
+
 
 def check_key(dict1, key):
     if key in dict1.keys():
@@ -668,5 +669,3 @@ def read_operator_data(clusterconfig, namespace):
             assert False
 
     return data
-
-
