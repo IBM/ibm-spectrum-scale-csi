@@ -140,3 +140,47 @@ When creating a volume from a volume snapshot, data from source snapshot is copi
    nodeClass: <nodeclass_name>
    ```
 
+### Static VolumeSnapshot
+You can expose a pre-existing Spectrum Scale fileset snapshot in Kubernetes by manually creating a VolumeSnapshotContent as below-
+
+   ```
+   apiVersion: snapshot.storage.k8s.io/v1beta1
+   kind: VolumeSnapshotContent
+   metadata:
+      name: mysnapcontent
+   spec:
+      deletionPolicy: Delete
+      driver: spectrumscale.csi.ibm.com
+      source:
+         snapshotHandle: 18133600329030594550;0A1501E9:5F02F150;pvc-79e82f45-1b25-4d83-8ed0-c0d370cad5bd;mysnap
+      volumeSnapshotRef:
+         name: mysnapshot
+         namespace: default
+   ```
+
+Here snapshotHandle is of the format "<clusterID>;<filesystem_UUID>;<filesetname>;<snapshotname>;<relative_path>" where <relative_path> is optional.
+volumeSnapshotRef is the pointer to the VolumeSnapshot object this content should bind to
+
+Once the VolumeSnapshotContent is created, create the VolumeSnapshot pointing to the same VolumeSnapshotContent
+
+   ```
+   apiVersion: snapshot.storage.k8s.io/v1beta1
+   kind: VolumeSnapshot
+   metadata:
+      name: mysnapshot
+   spec:
+      source:
+         volumeSnapshotContentName: mysnapcontent
+   ```
+
+The VolumeSnapshot listing shows as below-
+
+   ```
+   # kubectl get volumesnapshot
+   NAME          READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS   SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+   mysnapshot    true                     mysnapcontent           0                             mysnapcontent                                      73m            72m
+   ```
+
+Note that here SOURCEPVC is empty and SOURCESNAPSHOTCONTENT points to the VolumeSnapshotContent. This snapshot can be normally used as a source while creating a PVC.
+
+

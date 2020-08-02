@@ -689,8 +689,10 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	sIdMem.FsUUID = splitSid[1]
 	sIdMem.FsetName = splitSid[2]
 	sIdMem.SnapName = splitSid[3]
-	if len(splitSid) == 5 {
+	if len(splitSid) == 5 && splitSid[4] != "" {
 		sIdMem.Path = splitSid[4]
+	} else {
+		sIdMem.Path = "/"
 	}
 
 	return sIdMem, nil
