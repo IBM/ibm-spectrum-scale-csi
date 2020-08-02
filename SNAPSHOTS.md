@@ -158,7 +158,7 @@ You can expose a pre-existing Spectrum Scale fileset snapshot in Kubernetes by m
          namespace: default
    ```
 
-Here snapshotHandle is of the format "<clusterID>;<filesystem_UUID>;<filesetname>;<snapshotname>;<relative_path>" where <relative_path> is optional.
+Here snapshotHandle is of the format "clusterID;filesystem_UUID;filesetname;snapshotname;relative_path" where "relative_path" is optional.
 volumeSnapshotRef is the pointer to the VolumeSnapshot object this content should bind to
 
 Once the VolumeSnapshotContent is created, create the VolumeSnapshot pointing to the same VolumeSnapshotContent
