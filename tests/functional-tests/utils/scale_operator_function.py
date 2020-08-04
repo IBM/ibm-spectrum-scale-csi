@@ -145,7 +145,7 @@ def create_cluster_role_binding():
     except yaml.YAMLError as exc:
         print("Error in configuration file:", exc)
         assert False
-    
+
     body["subjects"][0]["namespace"] = namespace_value
     try:
         LOGGER.info("creating cluster role binding")

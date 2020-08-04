@@ -236,9 +236,8 @@ def test_wrong_gui_password(_values):
     while count < 24:
         try:
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
-            #TODO
             search_result = re.search("401 Unauthorized", get_logs_api_response)
             if search_result is None:
                 time.sleep(5)
@@ -248,7 +247,7 @@ def test_wrong_gui_password(_values):
                 LOGGER.info("'401 Unauthorized' failure reason matched")
                 operator_object.delete()
                 return
-        except ApiException as e: 
+        except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
             assert False
