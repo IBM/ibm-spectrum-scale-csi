@@ -6,7 +6,7 @@ import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from scale_operator import read_operator_data, Scaleoperator, \
-    check_nodes_available, Scaleoperatorobject, check_key
+    check_nodes_available, Scaleoperatorobject, check_key, get_kubernetes_version
 from utils.scale_operator_object_function import randomStringDigits, randomString
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
@@ -41,6 +41,10 @@ def _values(request):
     if(ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
 
+def test_get_version(_values):
+    test = read_operator_data(clusterconfig_value, namespace_value)
+    ff.get_scale_version(test)
+    get_kubernetes_version(kubeconfig_value)
 
 def test_operator_deploy(_values):
 
