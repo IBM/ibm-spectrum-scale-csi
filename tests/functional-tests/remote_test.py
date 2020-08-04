@@ -2556,7 +2556,7 @@ invaliddata = {
 def test_driver_dynamic_fail_invalid_input_265():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": invaliddata["r-volDirBasePath"],
-                "reason": "Directory base path /invalid not present in"}
+                "reason": "directory base path /invalid not present in"}
     driver_object.test_dynamic(value_sc)
 
 
