@@ -119,8 +119,12 @@ def get_remote_data(data_passed):
 
 #: Testcase that are expected to pass:
 def test_get_version():
+    LOGGER.info("REMOTE CLUSTER")
     ff.get_scale_version(remote_data)
+    LOGGER.info("LOCAL CLUSTER")
+    ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
+    
 
 
 def test_driver_static_1():

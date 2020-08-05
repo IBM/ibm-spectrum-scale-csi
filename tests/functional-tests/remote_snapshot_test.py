@@ -107,7 +107,10 @@ def get_remote_data(data_passed):
     return remote_data
 
 def test_get_version():
+    LOGGER.info("REMOTE CLUSTER")
     ff.get_scale_version(remote_data)
+    LOGGER.info("LOCAL CLUSTER")
+    ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
 
 def test_snapshot_dynamic_pass_1():
