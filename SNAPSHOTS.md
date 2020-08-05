@@ -89,6 +89,7 @@ Specify the source volume to be used for creating snapshot here. Source PVC shou
    kind: VolumeSnapshot
    metadata:
      name: snap1
+     namespace: default
    spec:
      volumeSnapshotClassName: snapclass1
      source:
@@ -120,6 +121,7 @@ Source snapshot should be in the same namespace as the volume being created. Vol
    kind: PersistentVolumeClaim
    metadata:
       name: pvcfrmsnap1
+      namespace: default
    spec:
       accessModes:
       - ReadWriteMany
@@ -159,7 +161,7 @@ You can expose a pre-existing Spectrum Scale fileset snapshot in Kubernetes by m
    ```
 
 Here snapshotHandle is of the format "clusterID;filesystem_UUID;filesetname;snapshotname;relative_path" where "relative_path" is optional.
-volumeSnapshotRef is the pointer to the VolumeSnapshot object this content should bind to
+volumeSnapshotRef is the pointer to the VolumeSnapshot object this content should bind to.
 
 Once the VolumeSnapshotContent is created, create the VolumeSnapshot pointing to the same VolumeSnapshotContent
 
@@ -168,6 +170,7 @@ Once the VolumeSnapshotContent is created, create the VolumeSnapshot pointing to
    kind: VolumeSnapshot
    metadata:
       name: mysnapshot
+      namespace: default
    spec:
       source:
          volumeSnapshotContentName: mysnapcontent
@@ -183,4 +186,16 @@ The VolumeSnapshot listing shows as below-
 
 Note that here SOURCEPVC is empty and SOURCESNAPSHOTCONTENT points to the VolumeSnapshotContent. This snapshot can be normally used as a source while creating a PVC.
 
+Convenience script tools/generate_volsnapcontent_yaml.sh can be used to generate the volumeSnapshotContent yaml file.
 
+   ```
+   Usage: ./generate_volsnapcontent_yaml.sh
+                -f|--filesystem <Name of Snapshot's Source Filesystem>
+                -F|--fileset <Name of Snapshot's Source Fileset>
+                -s|--snapshot <Name of the Snapshot>
+                [-p|--path <Relative path within the snapshot>]
+                [-c|--snapshotcontentname <name for VolumeSnapshotContent>]
+                [-v|--snapshotname <name for VolumeSnapshot>]
+                [-n|--namespace <namespace for VolumeSnapshot>]
+                [-h|--help] 
+   ```

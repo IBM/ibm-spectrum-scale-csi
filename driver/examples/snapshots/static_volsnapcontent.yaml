@@ -1,0 +1,12 @@
+apiVersion: snapshot.storage.k8s.io/v1beta1
+kind: VolumeSnapshotContent
+metadata:
+  name: mysnapcontent
+spec:
+  deletionPolicy: Delete
+  driver: spectrumscale.csi.ibm.com
+  source:
+    snapshotHandle: 18133600329030594550;0A1501E9:5F02F150;pvc-79e82f45-1b25-4d83-8ed0-c0d370cad5bd;mysnap
+  volumeSnapshotRef:
+    name: mysnapshot
+    namespace: default
