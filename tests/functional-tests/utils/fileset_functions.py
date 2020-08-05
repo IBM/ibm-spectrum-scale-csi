@@ -6,6 +6,7 @@ import urllib3
 import requests
 LOGGER = logging.getLogger()
 
+
 def set_data(data):
     global test
     test = data
@@ -107,11 +108,12 @@ def fileset_exists(test_data):
         return False
     return True
 
+
 def cred_check(test_data):
     """
     checks if given parameters in test_data are correct
     by calling API using that data
-   
+
     if API gives any error , It asserts
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -120,13 +122,13 @@ def cred_check(test_data):
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
 
-    if not(response.status_code==200):
+    if not(response.status_code == 200):
         LOGGER.error("API response is ")
         LOGGER.error(str(response))
         LOGGER.error("not able to use scale REST API")
         LOGGER.error("Recheck parameters of conftest file")
         assert False
-    
+
 
 def link_fileset(test_data):
     """
@@ -409,6 +411,7 @@ def create_dir(dir_name):
     LOGGER.info(f'Creating directory {dir_name}')
     check_dir(dir_name)
 
+
 def check_dir(dir_name):
     """
     checks directory dir_name is present or not
@@ -416,21 +419,21 @@ def check_dir(dir_name):
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
-    while val<24:
+    while val < 24:
         check_dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/owner/"+dir_name
+            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/owner/"+dir_name
         LOGGER.debug(check_dir_link)
         headers = {
-        'accept': 'application/json',
+            'accept': 'application/json',
         }
         response = requests.get(check_dir_link, headers=headers,
-                             verify=False, auth=(test["username"], test["password"]))
+                                verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-        if response.status_code==200:
+        if response.status_code == 200:
             LOGGER.info(f'directory {dir_name} created successfully')
             return
         time.sleep(5)
-        val+=1
+        val += 1
     LOGGER.error(f'directory {dir_name} not created successfully')
     LOGGER.error(str(response))
     LOGGER.error(str(response.text))
@@ -547,7 +550,7 @@ def get_remoteFs_remotename(test_data):
 def check_snapshot(snapshot_name, volume_name):
     """
     checks if snapshot is snapshot_name created for volume_name
-    
+
     if created returns True
     else return False
     """
@@ -569,4 +572,22 @@ def check_snapshot(snapshot_name, volume_name):
                 return True
         val += 1
         time.sleep(5)
+    return False
+
+
+def snapshot_restore_available():
+    """
+    returns True , if snapshot restore feature is available
+    else , returns False
+    """
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test["guiHost"]+":"+test["port"] + "/scalemgmt/v2/info"
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+
+    response_dict = json.loads(response.text)
+    required_api = "/filesystems/{filesystemName}/filesets/{filesetName}/snapshotCopy/{snapshotName}"
+    if required_api in response_dict["info"]["paths"]:
+        return True
+    LOGGER.warning("Snapshot restore feature is not supported")
     return False

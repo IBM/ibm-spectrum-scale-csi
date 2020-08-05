@@ -252,7 +252,7 @@ def check_scaleoperatorobject_daemonsets_state():
                 LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi's pods are Running")
                 return True, desired_number_scheduled
             time.sleep(5)
-            num+=1
+            num += 1
         except ApiException as e:
             time.sleep(5)
             num += 1
@@ -571,4 +571,3 @@ def check_pod_running(pod_name):
             assert False
     LOGGER.error(f'POD Check : POD {pod_name} is not Running')
     assert False
-

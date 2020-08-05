@@ -24,7 +24,7 @@ input_params = {
 
     "keepobjects": False,
 
-    "image_name" : "nginx:1.19.0", # image name that is to be used in pod
+    "image_name": "nginx:1.19.0",  # image name that is to be used in pod
 
     "volDirBasePath": "LW",
     "parentFileset": "root",
