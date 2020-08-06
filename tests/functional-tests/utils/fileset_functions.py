@@ -320,7 +320,7 @@ def delete_created_fileset(volume_name):
     search_result = re.search(volume_name, str(response.text))
     LOGGER.debug(search_result)
     if search_result is None:
-        LOGGER.info(f'Fileset {volume_name} has already been deleted')
+        LOGGER.info(f'Fileset Delete : Fileset {volume_name} has already been deleted')
     else:
         unlink_link = "https://"+test["guiHost"]+":"+test["port"] + \
             "/scalemgmt/v2/filesystems/" + \
@@ -346,10 +346,10 @@ def delete_created_fileset(volume_name):
             search_result = re.search(volume_name, str(response.text))
             LOGGER.debug(search_result)
             if search_result is None:
-                LOGGER.info(f'Fileset {volume_name} has been deleted successfully')
+                LOGGER.info(f'Fileset Delete : Fileset {volume_name} has been deleted successfully')
                 return
             time.sleep(5)
-        LOGGER.error(f'Fileset {volume_name} deletion operation failed')
+        LOGGER.error(f'Fileset Delete : Fileset {volume_name} deletion operation failed')
         assert False
 
 
@@ -408,7 +408,7 @@ def create_dir(dir_name):
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    LOGGER.info(f'Creating directory {dir_name}')
+    LOGGER.info(f'Directory Create : Creating directory {dir_name}')
     check_dir(dir_name)
 
 
@@ -430,7 +430,7 @@ def check_dir(dir_name):
                                 verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         if response.status_code == 200:
-            LOGGER.info(f'directory {dir_name} created successfully')
+            LOGGER.info(f'Directory Check : directory {dir_name} created successfully')
             return
         time.sleep(5)
         val += 1
@@ -591,3 +591,17 @@ def snapshot_restore_available():
         return True
     LOGGER.warning("Snapshot restore feature is not supported")
     return False
+
+def get_scale_version(test_data):
+    """
+    get spectrum scale version and display it
+    """
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + "/scalemgmt/v2/info"
+    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    LOGGER.debug(response.text)
+
+    response_dict = json.loads(response.text)
+    LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
+
+

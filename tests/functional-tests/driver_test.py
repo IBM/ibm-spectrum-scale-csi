@@ -1,14 +1,14 @@
 import logging
 import pytest
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists,\
-    check_nodes_available, Scaleoperatorobject, Driver, read_operator_data
+    check_nodes_available, Scaleoperatorobject, Driver, read_operator_data, get_kubernetes_version
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
-    global data, driver_object  # are required in every testcase
+    global data, driver_object, kubeconfig_value  # are required in every testcase
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
         kubeconfig_value = "~/.kube/config"
@@ -79,6 +79,9 @@ def values(request):
 
 
 #: Testcase that are expected to pass:
+def test_get_version():
+    ff.get_scale_version(data)
+    get_kubernetes_version(kubeconfig_value)
 
 
 def test_driver_static_1():

@@ -43,7 +43,7 @@ def create_vs_class(vs_class_name, body_params):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"volume snapshot class {vs_class_name} is created with {body_params}")
+        LOGGER.info(f"Volume Snapshot Class Create : {vs_class_name} is created with {body_params}")
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -65,7 +65,7 @@ def delete_vs_class(vs_class_name):
             name=vs_class_name
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"volume snapshot class {vs_class_name} deleted")
+        LOGGER.info(f"Volume Snapshot Class Delete : {vs_class_name} deleted")
     except ApiException as e:
         LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object_0: {e}")
         assert False
@@ -86,7 +86,7 @@ def check_vs_class(vs_class_name):
             name=vs_class_name
         )
         LOGGER.debug(api_response)
-        LOGGER.info(f"volume snapshot class {vs_class_name} exists")
+        LOGGER.info(f"Volume Snapshot Class Check : {vs_class_name} exists")
         return True
     except ApiException:
         LOGGER.info(f"volume snapshot class {vs_class_name} does not exists")
@@ -108,10 +108,10 @@ def check_vs_class_deleted(vs_class_name):
             name=vs_class_name
         )
         LOGGER.debug(api_response)
-        LOGGER.error(f"volume snapshot class {vs_class_name} is not deleted , asserting")
+        LOGGER.error(f"Volume Snapshot Class Delete : {vs_class_name} is not deleted , asserting")
         assert False
     except ApiException:
-        LOGGER.info(f"volume snapshot class {vs_class_name} deletion confirmed")
+        LOGGER.info(f"Volume Snapshot Class Delete : {vs_class_name} deletion confirmed")
 
 
 def create_vs(vs_name, vs_class_name, pvc_name):
@@ -144,7 +144,7 @@ def create_vs(vs_name, vs_class_name, pvc_name):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"VolumeSnapshot Create : volume snapshot {vs_name} is created for {pvc_name}")
+        LOGGER.info(f"Volume Snapshot Create : volume snapshot {vs_name} is created for {pvc_name}")
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -167,7 +167,7 @@ def delete_vs(vs_name):
             namespace=namespace_value
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"volume snapshot {vs_name} deleted")
+        LOGGER.info(f"Volume Snapshot Delete : {vs_name} deleted")
     except ApiException as e:
         LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
         assert False
@@ -189,10 +189,10 @@ def check_vs(vs_name):
             namespace=namespace_value
         )
         LOGGER.debug(api_response)
-        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} has been created")
+        LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} has been created")
         return True
     except ApiException:
-        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} does not exists")
+        LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} does not exists")
         return False
 
 
@@ -217,9 +217,9 @@ def check_vs_deleted(vs_name):
             time.sleep(5)
             val += 1
         except ApiException:
-            LOGGER.info(f"volume snapshot {vs_name} deletion confirmed")
+            LOGGER.info(f"Volume Snapshot Delete : {vs_name} deletion confirmed")
             return
-    LOGGER.error(f"volume snapshot {vs_name} is not deleted , asserting")
+    LOGGER.error(f"Volume Snapshot Delete : {vs_name} is not deleted , asserting")
     assert False
 
 
@@ -239,9 +239,9 @@ def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
             namespace=namespace_value
         )
         LOGGER.debug(api_response)
-        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} has been created")
+        LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} has been created")
     except ApiException as e:
-        LOGGER.info(f"VolumeSnapshot Check : volume snapshot {vs_name} does not exists")
+        LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} does not exists")
         clean_with_created_objects(created_objects)
         assert False
 
