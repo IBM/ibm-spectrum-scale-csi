@@ -5,7 +5,6 @@ import yaml
 import json
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-from conftest import input_params
 import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
@@ -529,9 +528,33 @@ class Snapshot():
             d.check_storage_class_deleted(sc_name)
 
 
+def get_test_data():
+    filepath = "config/test.config"
+    try:
+        with open(filepath, "r") as f:
+            data = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print(f"Error in configuration file {filepath} :", exc)
+        assert False
+
+    if data['keepobjects']=="True" or data['keepobjects']=="true":
+        data['keepobjects']=True
+    else:
+        data['keepobjects']=False
+
+    if data['remote-username'] is None:
+        data['remote-username'] = {}
+    if data['remote-password'] is None:
+        data['remote-password'] = {}
+    if data['remote_cacert_path'] is None:
+        data['remote_cacert_path'] = {}
+    
+    return data
+
 def read_driver_data(clusterconfig, namespace):
 
-    data = copy.deepcopy(input_params)
+    data = get_test_data()
+
     data["namespace"] = namespace
 
     try:
@@ -615,7 +638,7 @@ def check_nodes_available(label, label_name):
 
 def read_operator_data(clusterconfig, namespace):
 
-    data = copy.deepcopy(input_params)
+    data = get_test_data()
 
     data["namespace"] = namespace
 
