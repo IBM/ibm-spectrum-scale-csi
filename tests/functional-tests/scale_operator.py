@@ -2,6 +2,7 @@ import copy
 import time
 import logging
 import yaml
+import json
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from conftest import input_params
@@ -88,7 +89,6 @@ class Scaleoperatorobject:
 
     def __init__(self, test_dict, kubeconfig_value):
 
-        LOGGER.info("scale operator class object is created")
         self.kubeconfig = kubeconfig_value
         self.temp = test_dict
         self.secret_name = test_dict["local_secret_name"]
@@ -566,11 +566,23 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
             name=namespace_value, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists checking daemon sets")
+        LOGGER.info("namespace exists checking for operator")
         return True
     except ApiException:
         LOGGER.info("namespace does not exists")
         return False
+
+
+def get_kubernetes_version(passed_kubeconfig_value):
+    config.load_kube_config(config_file=passed_kubeconfig_value)
+    api_instance = client.VersionApi()
+    try:
+        api_response = api_instance.get_code()
+        api_response = api_response.__dict__
+        LOGGER.info(f"kubernetes version is {api_response['_git_version']}")
+        LOGGER.info(f"platform is {api_response['_platform']}")  
+    except ApiException as e:
+        LOGGER.info(f"Kubernetes version cannot be fetched due to {e}")
 
 
 def check_key(dict1, key):

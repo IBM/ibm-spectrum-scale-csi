@@ -91,7 +91,7 @@ def create_storage_class(values, sc_name):
     )
     try:
         LOGGER.info(
-            f'creating storageclass {sc_name} with parameters {str(storage_class_parameters)}')
+            f'SC Create : creating storageclass {sc_name} with parameters {str(storage_class_parameters)}')
         api_response = api_instance.create_storage_class(
             body=storage_class_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -123,7 +123,7 @@ def check_storage_class(sc_name):
         # TBD: Show StorageClass Parameter in tabular Form
         api_response = api_instance.read_storage_class(
             name=sc_name, pretty=True)
-        LOGGER.info(f'Storage class {sc_name} does exists on the cluster')
+        LOGGER.info(f'SC Check : Storage class {sc_name} does exists on the cluster')
         LOGGER.debug(str(api_response))
         return True
     except ApiException:
@@ -176,11 +176,10 @@ def create_pv(pv_values, pv_name, sc_name=""):
         spec=pv_spec
     )
     try:
-        LOGGER.info(f'Creating PV {pv_name} with {pv_values} parameter')
+        LOGGER.info(f'PV Create : Creating PV {pv_name} with {pv_values} parameter')
         api_response = api_instance.create_persistent_volume(
             body=pv_body, pretty=True)
         LOGGER.debug(str(api_response))
-        LOGGER.info(f'PV {pv_name} has been created successfully ')
 
     except ApiException as e:
         LOGGER.error(f'PV {pv_name} creation failed hence failing test case ')
@@ -209,7 +208,7 @@ def check_pv(pv_name):
         api_response = api_instance.read_persistent_volume(
             name=pv_name, pretty=True)
         LOGGER.debug(str(api_response))
-        LOGGER.info(f'Created PV {pv_name} exists on cluster')
+        LOGGER.info(f'PV Check : Created PV {pv_name} exists on cluster')
         return True
     except ApiException:
         LOGGER.info(f'PV {pv_name} does not exists on cluster')
@@ -260,7 +259,6 @@ def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
         api_response = api_instance.create_namespaced_persistent_volume_claim(
             namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
-        LOGGER.info(f'PVC {pvc_name} has been created successfully')
     except ApiException as e:
         LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
         LOGGER.error(
@@ -311,11 +309,10 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
 
     try:
         LOGGER.info(
-            f'Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
+            f'PVC Create from snapshot : Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
         api_response = api_instance.create_namespaced_persistent_volume_claim(
             namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
-        LOGGER.info(f'PVC {pvc_name} has been created successfully')
     except ApiException as e:
         LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
         LOGGER.error(
@@ -385,7 +382,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
     LOGGER.info(f'PVC Check : {pvc_name} is BOUND succesfully {msg}')
     volume_name = api_response.spec.volume_name
     if volume_name == pv_name:
-        LOGGER.info("It should be case of static pvc")
+        LOGGER.info(f"PVC Check : It is case of static pvc , pv {pv_name} is already created")
         return True
     if 'storage_class_parameters' in globals():
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
@@ -415,7 +412,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
-            LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
+            LOGGER.info(f"PVC Check : PVC {pvc_name} does not exists on the cluster")
             assert False
 
         if api_response.status.phase == "Bound":
@@ -440,7 +437,7 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
             else:
                 time_count = 20
             if(var > time_count):
-                LOGGER.info("PVC is not BOUND,checking if failure reason is expected")
+                LOGGER.info("PVC Check : PVC is not BOUND,checking if failure reason is expected")
                 field = "involvedObject.name="+pvc_name
                 reason = api_instance.list_namespaced_event(
                     namespace=namespace_value, pretty=True, field_selector=field)
@@ -462,11 +459,11 @@ def check_pvc(pvc_values, sc_name, pvc_name, dir_name="nodiravailable", pv_name=
                 if search_result is None:
                     clean_pvc_fail(sc_name, pvc_name, pv_name, dir_name, pvc_names, snap_created_objects)
                     LOGGER.error(f"Failed reason : {str(reason)}")
-                    LOGGER.info("PVC is not Bound but FAILED reason does not match")
+                    LOGGER.error("PVC Check : PVC is not Bound but FAILED reason does not match")
                     assert False
                 else:
                     LOGGER.debug(search_result)
-                    LOGGER.info(f"PVC is not Bound and FAILED with expected error {pvc_values['reason']}")
+                    LOGGER.info(f"PVC Check : PVC is not Bound and FAILED with expected error {pvc_values['reason']}")
                     con = False
 
 
@@ -707,12 +704,11 @@ def check_pod(value_pod, sc_name, pvc_name, pod_name, dir_name="nodiravailable",
             else:
                 var += 1
                 if(var > 20):
-                    LOGGER.info(f'POD {pod_name} is not running')
+                    LOGGER.error(f'POD Check : POD {pod_name} is not running')
                     field = "involvedObject.name="+pod_name
                     reason = api_instance.list_namespaced_event(
                         namespace=namespace_value, pretty=True, field_selector=field)
-                    LOGGER.info(f"POD Check : Reason of failure is : {str(reason)}")
-                    con = False
+                    LOGGER.error(f"POD Check : Reason of failure is : {str(reason)}")
                     clean_pod_fail(sc_name, pvc_name, pv_name,
                                    dir_name, pod_name, pod_names, pvc_names, snap_created_objects)
                     assert False
@@ -731,7 +727,7 @@ def delete_pod(pod_name):
         return
     api_instance = client.CoreV1Api()
     try:
-        LOGGER.info(f'Deleting pod {pod_name}')
+        LOGGER.info(f'POD Delete : Deleting pod {pod_name}')
         api_response = api_instance.delete_namespaced_pod(
             name=pod_name, namespace=namespace_value, pretty=True, grace_period_seconds=0)
         LOGGER.debug(str(api_response))
@@ -755,7 +751,7 @@ def check_pod_deleted(pod_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'Pod {pod_name} has been deleted')
+            LOGGER.info(f'POD Delete : Pod {pod_name} has been deleted')
             return
 
     LOGGER.info(f'Pod {pod_name} is still not deleted')
@@ -768,7 +764,7 @@ def delete_pvc(pvc_name):
         return
     api_instance = client.CoreV1Api()
     try:
-        LOGGER.info(f'Deleting pvc {pvc_name}')
+        LOGGER.info(f'PVC Delete : Deleting pvc {pvc_name}')
         api_response = api_instance.delete_namespaced_persistent_volume_claim(
             name=pvc_name, namespace=namespace_value, pretty=True, grace_period_seconds=0)
         LOGGER.debug(str(api_response))
@@ -792,7 +788,7 @@ def check_pvc_deleted(pvc_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'pvc {pvc_name} deleted')
+            LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
             ff.delete_created_fileset(volume_name)
             return
 
@@ -806,7 +802,7 @@ def delete_pv(pv_name):
         return
     api_instance = client.CoreV1Api()
     try:
-        LOGGER.info(f'Deleting pv {pv_name}')
+        LOGGER.info(f'PV Delete : Deleting pv {pv_name}')
         api_response = api_instance.delete_persistent_volume(
             name=pv_name, pretty=True, grace_period_seconds=0)
         LOGGER.debug(str(api_response))
@@ -830,7 +826,7 @@ def check_pv_deleted(pv_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'PV {pv_name} has been deleted')
+            LOGGER.info(f'PV Delete : PV {pv_name} has been deleted')
             return
 
     LOGGER.info(f'PV {pv_name} is still not deleted')
@@ -843,7 +839,7 @@ def delete_storage_class(sc_name):
         return
     api_instance = client.StorageV1Api()
     try:
-        LOGGER.info(f'deleting storage class {sc_name}')
+        LOGGER.info(f'SC Delete : deleting storage class {sc_name}')
         api_response = api_instance.delete_storage_class(
             name=sc_name, pretty=True, grace_period_seconds=0)
         LOGGER.debug(str(api_response))
@@ -873,7 +869,7 @@ def check_storage_class_deleted(sc_name):
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'StorageClass {sc_name} has been deleted')
+            LOGGER.info(f'SC Delete : StorageClass {sc_name} has been deleted')
             return
 
     LOGGER.info(f'StorageClass {sc_name} is not deleted')
