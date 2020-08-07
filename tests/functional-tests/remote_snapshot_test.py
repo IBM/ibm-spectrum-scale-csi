@@ -83,21 +83,21 @@ def get_remote_data(data_passed):
 
     remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
     remote_data["id"] = remote_data["remoteid"]
-    remote_data["port"] = remote_data["remote-port"]
+    remote_data["port"] = remote_data["remote_port"]
     for cluster in remote_data["clusters"]:
         if cluster["id"] == remote_data["remoteid"]:
             remote_data["guiHost"] = cluster["restApi"][0]["guiHost"]
             remote_sec_name = cluster["secrets"]
-            remote_data["username"] = remote_data["remote-username"][remote_sec_name]
-            remote_data["password"] = remote_data["remote-password"][remote_sec_name]
+            remote_data["username"] = remote_data["remote_username"][remote_sec_name]
+            remote_data["password"] = remote_data["remote_password"][remote_sec_name]
 
-    remote_data["volDirBasePath"] = remote_data["r-volDirBasePath"]
-    remote_data["parentFileset"] = remote_data["r-parentFileset"]
-    remote_data["gid_name"] = remote_data["r-gid_name"]
-    remote_data["uid_name"] = remote_data["r-uid_name"]
-    remote_data["gid_number"] = remote_data["r-gid_number"]
-    remote_data["uid_number"] = remote_data["r-uid_number"]
-    remote_data["inodeLimit"] = remote_data["r-inodeLimit"]
+    remote_data["volDirBasePath"] = remote_data["r_volDirBasePath"]
+    remote_data["parentFileset"] = remote_data["r_parentFileset"]
+    remote_data["gid_name"] = remote_data["r_gid_name"]
+    remote_data["uid_name"] = remote_data["r_uid_name"]
+    remote_data["gid_number"] = remote_data["r_gid_number"]
+    remote_data["uid_number"] = remote_data["r_uid_number"]
+    remote_data["inodeLimit"] = remote_data["r_inodeLimit"]
     # for get_mount_point function
     remote_data["type_remote"] = {"username": data_passed["username"],
                                   "password": data_passed["password"],
@@ -134,7 +134,7 @@ def test_snapshot_dynamic_expected_fail_1():
 @pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "volDirBasePath": data["r-volDirBasePath"]}
+                "volDirBasePath": data["r_volDirBasePath"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
@@ -157,85 +157,85 @@ def test_snapshot_dynamic_multiple_snapshots_257():
 
 def test_snapshot_dynamic_pass_3():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "clusterId": data["remoteid"], "gid": data["r-gid_number"]}
+                "clusterId": data["remoteid"], "gid": data["r_gid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_4():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "clusterId": data["remoteid"], "inodeLimit": data["r-inodeLimit"]}
+                "clusterId": data["remoteid"], "inodeLimit": data["r_inodeLimit"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_5():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
-                "inodeLimit": data["r-inodeLimit"], "uid": data["r-uid_number"]}
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_6():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
-                "gid": data["r-gid_number"], "uid": data["r-uid_number"]}
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_7():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
-                "inodeLimit": data["r-inodeLimit"], "gid": data["r-gid_number"]}
+                "inodeLimit": data["r_inodeLimit"], "gid": data["r_gid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_8():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
-                "inodeLimit": data["r-inodeLimit"], "uid": data["r-uid_number"],
-                "gid": data["r-gid_number"]}
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
+                "gid": data["r_gid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_9():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "clusterId": data["remoteid"], "uid": data["r-uid_number"]}
+                "clusterId": data["remoteid"], "uid": data["r_uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_10():
     value_sc = {"volBackendFs": data["remoteFs"],
-                "inodeLimit": data["r-inodeLimit"],
+                "inodeLimit": data["r_inodeLimit"],
                 "clusterId": data["remoteid"], "filesetType": "independent"}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_11():
-    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
-                "uid": data["r-uid_number"], "clusterId": data["remoteid"],
-                "filesetType": "independent", "inodeLimit": data["r-inodeLimit"]}
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "clusterId": data["remoteid"],
+                "filesetType": "independent", "inodeLimit": data["r_inodeLimit"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_12():
-    value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
-                "uid": data["r-uid_number"], "volBackendFs": data["remoteFs"]}
+    value_sc = {"clusterId": data["remoteid"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_13():
-    value_sc = {"clusterId": data["remoteid"], "uid": data["r-uid_number"],
-                "inodeLimit": data["r-inodeLimit"],
+    value_sc = {"clusterId": data["remoteid"], "uid": data["r_uid_number"],
+                "inodeLimit": data["r_inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_14():
-    value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
-                "inodeLimit": data["r-inodeLimit"],
+    value_sc = {"clusterId": data["remoteid"], "gid": data["r_gid_number"],
+                "inodeLimit": data["r_inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_15():
     value_sc = {"clusterId": data["remoteid"], "volBackendFs": data["remoteFs"],
-                "gid": data["r-gid_number"], "uid": data["r-uid_number"],
-                "inodeLimit": data["r-inodeLimit"]}
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"],
+                "inodeLimit": data["r_inodeLimit"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
@@ -245,14 +245,14 @@ def test_snapshot_dynamic_pass_16():
 
 
 def test_snapshot_dynamic_pass_17():
-    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r-gid_number"],
-                "uid": data["r-uid_number"], "clusterId": data["remoteid"],
-                "filesetType": "independent", "inodeLimit": data["r-inodeLimit"]}
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "clusterId": data["remoteid"],
+                "filesetType": "independent", "inodeLimit": data["r_inodeLimit"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False)
 
 
 def test_snapshot_dynamic_pass_18():
-    value_sc = {"clusterId": data["remoteid"], "gid": data["r-gid_number"],
-                "inodeLimit": data["r-inodeLimit"],
+    value_sc = {"clusterId": data["remoteid"], "gid": data["r_gid_number"],
+                "inodeLimit": data["r_inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False)
