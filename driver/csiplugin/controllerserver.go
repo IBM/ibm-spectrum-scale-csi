@@ -1125,7 +1125,7 @@ func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.Spec
 
 	// REST API returns creation timestamp without timezone info
 	// So we parse it with current location and return in UTC as kubernetes
-	// displayes in UTC
+	// displays in UTC
 	const longForm = "2006-01-02 15:04:05"
 	//nolint::staticcheck
 	location := time.Now().Location()
