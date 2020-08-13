@@ -7,4 +7,3 @@ RUN apk --no-cache add curl \
 RUN git clone -b dev https://github.com/IBM/ibm-spectrum-scale-csi.git
 WORKDIR "/ibm-spectrum-scale-csi/tests/functional-tests"
 RUN python3.7 -m pip install -r requirements.txt
-RUN python3.7 -m pip install pytest-parallel
