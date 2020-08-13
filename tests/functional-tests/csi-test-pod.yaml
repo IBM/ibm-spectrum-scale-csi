@@ -1,0 +1,28 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: ibm-spectrum-scale-csi-test-pod  #csi-test-pod name
+spec:
+  containers:
+  - name: csi-test
+    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:dev #container image path for csi tests
+    securityContext:
+      privileged: true
+    command: [ "/bin/sh", "-c", "--" ]
+    args: [ "while true; do sleep 30; done;" ]
+    volumeMounts:
+    - mountPath: /data
+      name: vol1
+    - mountPath: /ibm-spectrum-scale-csi/tests/functional-tests/config
+      name: test-config
+  volumes:
+  - configMap:
+      defaultMode: 420
+      name: test-config  #test-config configmap for configuration files 
+    name: test-config
+  - hostPath:
+      path: /ibm/gpfs0    #hostpath for saving the test reports files
+    name: vol1
+  restartPolicy: "Never"
+  nodeSelector:
+     kubernetes.io/hostname: "Node name"

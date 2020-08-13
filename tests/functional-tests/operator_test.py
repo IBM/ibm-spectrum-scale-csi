@@ -41,10 +41,12 @@ def _values(request):
     if(ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
 
+
 def test_get_version(_values):
     test = read_operator_data(clusterconfig_value, namespace_value)
     ff.get_scale_version(test)
     get_kubernetes_version(kubeconfig_value)
+
 
 def test_operator_deploy(_values):
 

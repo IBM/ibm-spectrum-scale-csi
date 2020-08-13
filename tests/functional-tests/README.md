@@ -26,7 +26,7 @@ python3.7 -m pip install -r requirements.txt
 ```
 pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
 ```
-- For configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [conftest.py](./tests/functional-tests/conftest.py) file.
+- For configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./tests/functional-tests/config/test.config) file.
 
 - If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional).For example :
 ```

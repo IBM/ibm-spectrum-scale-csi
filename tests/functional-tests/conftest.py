@@ -2,47 +2,6 @@ from datetime import datetime
 import pytest
 from py.xml import html
 
-input_params = {
-
-    "username": "",  # Pass username for primary cluster SpectrumScale GUI (in plain text)
-    "password": "",  # Pass password for primary cluster SpectrumScale GUI (in plain text)
-    "port": "443",
-
-    "remote-username": {"guisecretremote": ""},  # eg. { "secret_name" : "RestAPI_username" }
-    "remote-password": {"guisecretremote": ""},  # eg. { "secret_name" : "RestAPI_password" }
-    "remote-port": "443",
-
-    "cacert_path": " ",  # Path of cacert file for primary fileset cluster API cert
-    "remote_cacert_path": {"remoteconf1": ""},  # Path of cacert file for remote cluster API cert eg. { "cacert_name" : "cacert_path" }
-
-    "number_of_sequential_pvc": 10,
-
-    "remoteFs": "",            # Must provide remote filesystem name on Primary cluster in case of remote_test.py
-    "remoteid": "",            # Must provide remote cluster id in case of remote_test.py
-
-    "volBackendFs": "",            # OPTIONAL : Should be given in case of driver_test.py and want to use filesytem other than the primartFs
-
-    "keepobjects": False,
-
-    "image_name": "nginx:1.19.0",  # image name that is to be used in pod
-
-    "volDirBasePath": "LW",
-    "parentFileset": "root",
-    "gid_name": "nobody",
-    "uid_name": "nobody",
-    "gid_number": "99",
-    "uid_number": "99",
-    "inodeLimit": "1024",
-
-    "r-volDirBasePath": "LW",
-    "r-parentFileset": "root",
-    "r-gid_name": "nobody",
-    "r-uid_name": "nobody",
-    "r-gid_number": "99",
-    "r-uid_number": "99",
-    "r-inodeLimit": "1024"
-}
-
 
 def pytest_addoption(parser):
     parser.addoption("--kubeconfig", action="store")
