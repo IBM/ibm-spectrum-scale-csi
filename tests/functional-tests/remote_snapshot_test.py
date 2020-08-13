@@ -64,7 +64,8 @@ def values(request):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, data["image_name"])
+    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
+                               number_of_snapshots, data["image_name"], remote_data["id"])
     ff.create_dir(remote_data["volDirBasePath"])
     yield
     if condition is False and not(keep_objects):
@@ -113,6 +114,11 @@ def test_get_version():
     LOGGER.info("LOCAL CLUSTER")
     ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
+
+
+def test_snapshot_static_pass_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
 
 
 def test_snapshot_dynamic_pass_1():

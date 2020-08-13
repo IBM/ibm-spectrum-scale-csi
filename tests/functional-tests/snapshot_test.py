@@ -57,7 +57,7 @@ def values(request):
 
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, data["image_name"])
+    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, data["image_name"], data["id"])
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
     ff.create_dir(data["volDirBasePath"])
@@ -68,6 +68,11 @@ def values(request):
         operator.delete()
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
+
+
+def test_snapshot_static_pass_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
 
 
 def test_get_version():

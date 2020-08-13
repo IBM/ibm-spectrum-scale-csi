@@ -457,12 +457,13 @@ class Driver:
 
 
 class Snapshot():
-    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name):
+    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name, cluster_id):
         config.load_kube_config(config_file=kubeconfig)
         self.value_pvc = value_pvc
         self.value_vs_class = value_vs_class
         self.number_of_snapshots = number_of_snapshots
         self.image_name = image_name
+        self.cluster_id = cluster_id
         d.set_keep_objects(keep_objects)
         d.set_test_namespace_value(test_namespace)
         snapshot.set_test_namespace_value(test_namespace)
@@ -494,7 +495,7 @@ class Snapshot():
             value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
             d.create_pod(value_pod, pvc_name, pod_name, self.image_name)
             d.check_pod(value_pod, sc_name, pvc_name, pod_name)
-            d.create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name)
+            d.create_file_inside_pod(value_pod, pod_name)
 
             vs_class_name = d.get_random_name("vsclass")
             created_objects["vsclass"].append(vs_class_name)
@@ -521,7 +522,7 @@ class Snapshot():
                         d.create_pod(value_pod, restored_pvc_name, snap_pod_name, self.image_name)
                         created_objects["pod"].append(snap_pod_name)
                         d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name, snap_created_objects=created_objects)
-                        d.check_file_inside_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name)
+                        d.check_file_inside_pod(value_pod, snap_pod_name)
                         d.delete_pod(snap_pod_name)
                         d.check_pod_deleted(snap_pod_name)
                     d.delete_pvc(restored_pvc_name)
@@ -531,6 +532,90 @@ class Snapshot():
                 snapshot.check_vs_deleted(vs_name+"-"+str(num))
             snapshot.delete_vs_class(vs_class_name)
             snapshot.check_vs_class_deleted(vs_class_name)
+            d.delete_pod(pod_name)
+            d.check_pod_deleted(pod_name)
+            d.delete_pvc(pvc_name)
+            d.check_pvc_deleted(pvc_name)
+            if d.check_storage_class(sc_name):
+                d.delete_storage_class(sc_name)
+            d.check_storage_class_deleted(sc_name)
+
+    def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None):
+        if value_vs_class is None:
+            value_vs_class = self.value_vs_class
+        if number_of_snapshots is None:
+            number_of_snapshots = self.number_of_snapshots
+        number_of_restore = 1
+
+        for pvc_value in self.value_pvc:
+
+            created_objects = {"sc": [], "pvc": [], "pod": [], "vs": [], "vsclass": []}
+            LOGGER.info("-"*100)
+            sc_name = d.get_random_name("sc")
+            created_objects["sc"].append(sc_name)
+            d.create_storage_class(value_sc, sc_name)
+            d.check_storage_class(sc_name)
+
+            pvc_name = d.get_random_name("pvc")
+            created_objects["pvc"].append(pvc_name)
+            d.create_pvc(pvc_value, sc_name, pvc_name)
+            d.check_pvc(pvc_value, sc_name, pvc_name)
+
+            pod_name = d.get_random_name("snap-start-pod")
+            created_objects["pod"].append(pod_name)
+            value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
+            d.create_pod(value_pod, pvc_name, pod_name, self.image_name)
+            d.check_pod(value_pod, sc_name, pvc_name, pod_name)
+            d.create_file_inside_pod(value_pod, pod_name)
+
+            snapshot_name = d.get_random_name("snapshot")
+            volume_name = snapshot.get_pv_name(pvc_name, created_objects)
+
+            FSUID = ff.get_FSUID()
+            cluster_id = self.cluster_id
+            vs_content_name = d.get_random_name("vscontent")
+
+            vs_name = d.get_random_name("vs")
+            for num in range(0, number_of_snapshots):
+                ff.create_snapshot(snapshot_name+"-"+str(num), volume_name)
+                if ff.check_snapshot(snapshot_name+"-"+str(num), volume_name):
+                    LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
+                else:
+                    LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
+                    d.clean_with_created_objects(created_objects)
+                    assert False
+
+                snapshot_handle = cluster_id+';'+FSUID+';'+volume_name+';'+snapshot_name+"-"+str(num)
+                body_params = {"deletionPolicy": "Delete", "snapshotHandle": snapshot_handle}
+                snapshot.create_vs_content(vs_content_name+"-"+str(num), vs_name+"-"+str(num), body_params)
+                snapshot.check_vs_content(vs_content_name+"-"+str(num))
+
+                created_objects["vs"].append(vs_name+"-"+str(num))
+                snapshot.create_vs_from_content(vs_name+"-"+str(num), vs_content_name+"-"+str(num))
+                snapshot.check_vs_detail_for_static(vs_name+"-"+str(num), created_objects)
+
+            if not(ff.snapshot_restore_available()):
+                pvc_value["reason"] = "Min required Spectrum Scale version is 5.0.5.2"
+
+            if test_restore:
+                for num in range(0, number_of_restore):
+                    restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
+                    snap_pod_name = "snap-end-pod"+vs_name[2:]
+                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num))
+                    created_objects["pvc"].append(restored_pvc_name)
+                    val = d.check_pvc(pvc_value, sc_name, restored_pvc_name, snap_created_objects=created_objects)
+                    if val is True:
+                        d.create_pod(value_pod, restored_pvc_name, snap_pod_name, self.image_name)
+                        created_objects["pod"].append(snap_pod_name)
+                        d.check_pod(value_pod, sc_name, restored_pvc_name, snap_pod_name, snap_created_objects=created_objects)
+                        d.check_file_inside_pod(value_pod, snap_pod_name, volume_name)
+                        d.delete_pod(snap_pod_name)
+                        d.check_pod_deleted(snap_pod_name)
+                    d.delete_pvc(restored_pvc_name)
+
+            for num in range(0, number_of_snapshots):
+                snapshot.delete_vs(vs_name+"-"+str(num))
+                snapshot.check_vs_deleted(vs_name+"-"+str(num))
             d.delete_pod(pod_name)
             d.check_pod_deleted(pod_name)
             d.delete_pvc(pvc_name)
