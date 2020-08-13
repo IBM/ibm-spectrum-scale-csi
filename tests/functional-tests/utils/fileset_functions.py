@@ -592,6 +592,7 @@ def snapshot_restore_available():
     LOGGER.warning("Snapshot restore feature is not supported")
     return False
 
+
 def get_scale_version(test_data):
     """
     get spectrum scale version and display it
@@ -603,5 +604,3 @@ def get_scale_version(test_data):
 
     response_dict = json.loads(response.text)
     LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
-
-

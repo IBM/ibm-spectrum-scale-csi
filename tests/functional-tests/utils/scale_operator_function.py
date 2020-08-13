@@ -56,7 +56,7 @@ def create_namespace():
         assert False
 
 
-def create_deployment():
+def create_deployment(body):
     """
     Create IBM Spectrum Scale CSI Operator deployment object using operator.yaml file
 
@@ -71,18 +71,10 @@ def create_deployment():
 
     """
     deployment_apps_api_instance = client.AppsV1Api()
-    filepath = "../../operator/deploy/operator.yaml"
-    try:
-        with open(filepath, "r") as f:
-            loaddep_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        print("Error in configuration file:", exc)
-        assert False
-
     try:
         LOGGER.info("Creating Operator Deployment")
         deployment_apps_api_response = deployment_apps_api_instance.create_namespaced_deployment(
-            namespace=namespace_value, body=loaddep_yaml)
+            namespace=namespace_value, body=body)
         LOGGER.debug(str(deployment_apps_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -90,7 +82,7 @@ def create_deployment():
         assert False
 
 
-def create_cluster_role():
+def create_cluster_role(body):
     """
     Create IBM Spectrum Scale CSI Operator cluster role using role.yaml file
 
@@ -105,17 +97,10 @@ def create_cluster_role():
 
     """
     cluster_role_api_instance = client.RbacAuthorizationV1Api()
-    filepath = "../../operator/deploy/role.yaml"
-    try:
-        with open(filepath, "r") as f:
-            body = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        print("Error in configuration file:", exc)
-        assert False
     try:
         LOGGER.info("Creating ibm-spectrum-scale-csi-operator ClusterRole ")
         cluster_role_api_response = cluster_role_api_instance.create_cluster_role(
-            body, pretty=True)
+            body=body, pretty=True)
         LOGGER.debug(str(cluster_role_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -123,7 +108,7 @@ def create_cluster_role():
         assert False
 
 
-def create_cluster_role_binding():
+def create_cluster_role_binding(body):
     """
     Create IBM Spectrum Scale CSI Operator ClusterRoleBinding object using role_binding.yaml
 
@@ -138,19 +123,11 @@ def create_cluster_role_binding():
 
     """
     cluster_role_binding_api_instance = client.RbacAuthorizationV1Api()
-    filepath = "../../operator/deploy/role_binding.yaml"
-    try:
-        with open(filepath, "r") as f:
-            body = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        print("Error in configuration file:", exc)
-        assert False
-
     body["subjects"][0]["namespace"] = namespace_value
     try:
         LOGGER.info("creating cluster role binding")
         cluster_role_binding_api_response = cluster_role_binding_api_instance.create_cluster_role_binding(
-            body, pretty=True)
+            body=body, pretty=True)
         LOGGER.debug(cluster_role_binding_api_response)
     except ApiException as e:
         LOGGER.error(
@@ -158,7 +135,7 @@ def create_cluster_role_binding():
         assert False
 
 
-def create_service_account():
+def create_service_account(body):
     """
     Create IBM Spectrum Scale CSI Operator ServiceAccount using service_account.yaml
 
@@ -173,19 +150,11 @@ def create_service_account():
 
     """
     service_account_api_instance = client.CoreV1Api()
-    filepath = "../../operator/deploy/service_account.yaml"
-    try:
-        with open(filepath, "r") as f:
-            service_account_body = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        print("Error in configuration file:", exc)
-        assert False
-
-    service_account_body["metadata"]["namespace"] = namespace_value
+    body["metadata"]["namespace"] = namespace_value
     try:
         LOGGER.info("Creating ibm-spectrum-scale-csi-operator ServiceAccount")
         service_account_api_response = service_account_api_instance.create_namespaced_service_account(
-            namespace=namespace_value, body=service_account_body, pretty=True)
+            namespace=namespace_value, body=body, pretty=True)
         LOGGER.debug(str(service_account_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -193,7 +162,7 @@ def create_service_account():
         assert False
 
 
-def create_crd():
+def create_crd(body):
     """
     Create IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
 
@@ -207,15 +176,7 @@ def create_crd():
         Raises an ValueError exception but it is expected. hence we pass.
 
     """
-    filepath = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml"
-    try:
-        with open(filepath, "r") as f:
-            loadcrd_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        print("Error in configuration file:", exc)
-        assert False
-
-    version = loadcrd_yaml["apiVersion"].split("/")
+    version = body["apiVersion"].split("/")
     crd_version = version[1]
     LOGGER.info(f"CRD apiVersion is {crd_version}")
     custom_object_api_instance = client.CustomObjectsApi()
@@ -224,7 +185,7 @@ def create_crd():
             group="apiextensions.k8s.io",
             version=crd_version,
             plural="customresourcedefinitions",
-            body=loadcrd_yaml,
+            body=body,
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)

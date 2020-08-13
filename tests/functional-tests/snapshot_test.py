@@ -69,9 +69,11 @@ def values(request):
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
 
+
 def test_get_version():
     ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
+
 
 def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}

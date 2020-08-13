@@ -5,7 +5,6 @@ import yaml
 import json
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-from conftest import input_params
 import utils.scale_operator_function as scale_function
 import utils.scale_operator_object_function as ob
 import utils.driver as d
@@ -25,23 +24,24 @@ class Scaleoperator:
 
         config.load_kube_config(config_file=self.kubeconfig)
 
+        body = self.get_operator_body()
         if not(scale_function.check_namespace_exists()):
             scale_function.create_namespace()
 
         if not(scale_function.check_deployment_exists()):
-            scale_function.create_deployment()
+            scale_function.create_deployment(body['Deployment'])
 
         if not(scale_function.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")):
-            scale_function.create_cluster_role()
+            scale_function.create_cluster_role(body['ClusterRole'])
 
         if not(scale_function.check_service_account_exists("ibm-spectrum-scale-csi-operator")):
-            scale_function.create_service_account()
+            scale_function.create_service_account(body['ServiceAccount'])
 
         if not(scale_function.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")):
-            scale_function.create_cluster_role_binding()
+            scale_function.create_cluster_role_binding(body['ClusterRoleBinding'])
 
         if not(scale_function.check_crd_exists()):
-            scale_function.create_crd()
+            scale_function.create_crd(body['CustomResourceDefinition'])
 
     def delete(self):
 
@@ -84,6 +84,17 @@ class Scaleoperator:
         scale_function.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")
         scale_function.check_crd_exists()
 
+    def get_operator_body(self):
+
+        path = "../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml"
+        body = {}
+        with open(path, 'r') as f:
+            manifests = yaml.load_all(f, Loader=yaml.SafeLoader)
+            for manifest in manifests:
+                kind = manifest['kind']
+                body[kind] = manifest
+        return body
+
 
 class Scaleoperatorobject:
 
@@ -116,8 +127,8 @@ class Scaleoperatorobject:
             ob.create_secret(self.secret_data, self.secret_name)
 
         for remote_secret_name in self.temp["remote_secret_names"]:
-            remote_secret_data = {"username": self.temp["remote-username"][remote_secret_name],
-                                  "password": self.temp["remote-password"][remote_secret_name]}
+            remote_secret_data = {"username": self.temp["remote_username"][remote_secret_name],
+                                  "password": self.temp["remote_password"][remote_secret_name]}
             if not(ob.check_secret_exists(remote_secret_name)):
                 ob.create_secret(remote_secret_data, remote_secret_name)
             else:
@@ -529,9 +540,34 @@ class Snapshot():
             d.check_storage_class_deleted(sc_name)
 
 
+def get_test_data():
+    filepath = "config/test.config"
+    try:
+        with open(filepath, "r") as f:
+            data = yaml.full_load(f.read())
+    except yaml.YAMLError as exc:
+        print(f"Error in configuration file {filepath} :", exc)
+        assert False
+
+    if data['keepobjects'] == "True" or data['keepobjects'] == "true":
+        data['keepobjects'] = True
+    else:
+        data['keepobjects'] = False
+
+    if data['remote_username'] is None:
+        data['remote_username'] = {}
+    if data['remote_password'] is None:
+        data['remote_password'] = {}
+    if data['remote_cacert_path'] is None:
+        data['remote_cacert_path'] = {}
+
+    return data
+
+
 def read_driver_data(clusterconfig, namespace):
 
-    data = copy.deepcopy(input_params)
+    data = get_test_data()
+
     data["namespace"] = namespace
 
     try:
@@ -580,7 +616,7 @@ def get_kubernetes_version(passed_kubeconfig_value):
         api_response = api_instance.get_code()
         api_response = api_response.__dict__
         LOGGER.info(f"kubernetes version is {api_response['_git_version']}")
-        LOGGER.info(f"platform is {api_response['_platform']}")  
+        LOGGER.info(f"platform is {api_response['_platform']}")
     except ApiException as e:
         LOGGER.info(f"Kubernetes version cannot be fetched due to {e}")
 
@@ -615,7 +651,7 @@ def check_nodes_available(label, label_name):
 
 def read_operator_data(clusterconfig, namespace):
 
-    data = copy.deepcopy(input_params)
+    data = get_test_data()
 
     data["namespace"] = namespace
 
@@ -668,10 +704,10 @@ def read_operator_data(clusterconfig, namespace):
             assert False
 
     for remote_secret_name in data["remote_secret_names"]:
-        if not(remote_secret_name in data["remote-username"].keys()):
+        if not(remote_secret_name in data["remote_username"].keys()):
             LOGGER.error(f"Need username for {remote_secret_name} secret in conftest")
             assert False
-        if not(remote_secret_name in data["remote-password"].keys()):
+        if not(remote_secret_name in data["remote_password"].keys()):
             LOGGER.error(f"Need password for {remote_secret_name} secret in conftest")
             assert False
 
