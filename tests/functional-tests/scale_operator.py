@@ -23,8 +23,8 @@ class Scaleoperator:
     def create(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
-        
-        body = self.get_operator_body()      
+
+        body = self.get_operator_body()
         if not(scale_function.check_namespace_exists()):
             scale_function.create_namespace()
 
@@ -85,15 +85,16 @@ class Scaleoperator:
         scale_function.check_crd_exists()
 
     def get_operator_body(self):
-        
+
         path = "../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml"
-        body={}
+        body = {}
         with open(path, 'r') as f:
             manifests = yaml.load_all(f, Loader=yaml.SafeLoader)
             for manifest in manifests:
                 kind = manifest['kind']
                 body[kind] = manifest
         return body
+
 
 class Scaleoperatorobject:
 
@@ -538,6 +539,7 @@ class Snapshot():
                 d.delete_storage_class(sc_name)
             d.check_storage_class_deleted(sc_name)
 
+
 def get_test_data():
     filepath = "config/test.config"
     try:
@@ -547,10 +549,10 @@ def get_test_data():
         print(f"Error in configuration file {filepath} :", exc)
         assert False
 
-    if data['keepobjects']=="True" or data['keepobjects']=="true":
-        data['keepobjects']=True
+    if data['keepobjects'] == "True" or data['keepobjects'] == "true":
+        data['keepobjects'] = True
     else:
-        data['keepobjects']=False
+        data['keepobjects'] = False
 
     if data['remote_username'] is None:
         data['remote_username'] = {}
@@ -558,13 +560,13 @@ def get_test_data():
         data['remote_password'] = {}
     if data['remote_cacert_path'] is None:
         data['remote_cacert_path'] = {}
-    
+
     return data
+
 
 def read_driver_data(clusterconfig, namespace):
 
     data = get_test_data()
-
 
     data["namespace"] = namespace
 
@@ -614,7 +616,7 @@ def get_kubernetes_version(passed_kubeconfig_value):
         api_response = api_instance.get_code()
         api_response = api_response.__dict__
         LOGGER.info(f"kubernetes version is {api_response['_git_version']}")
-        LOGGER.info(f"platform is {api_response['_platform']}")  
+        LOGGER.info(f"platform is {api_response['_platform']}")
     except ApiException as e:
         LOGGER.info(f"Kubernetes version cannot be fetched due to {e}")
 

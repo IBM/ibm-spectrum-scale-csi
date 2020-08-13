@@ -124,7 +124,6 @@ def test_get_version():
     LOGGER.info("LOCAL CLUSTER")
     ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
-    
 
 
 def test_driver_static_1():
