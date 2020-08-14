@@ -6,7 +6,8 @@ import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from scale_operator import read_operator_data, Scaleoperator, get_cmd_values,\
-    check_nodes_available, Scaleoperatorobject, check_key, get_kubernetes_version
+    check_nodes_available, Scaleoperatorobject, check_key, get_kubernetes_version,\
+    check_ns_exists
 from utils.scale_operator_object_function import randomStringDigits, randomString
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
@@ -18,6 +19,7 @@ def _values(request):
     global kubeconfig_value, clusterconfig_value, namespace_value
     kubeconfig_value,clusterconfig_value,namespace_value,runslow_val = get_cmd_values(request)
 
+    condition = check_ns_exists(kubeconfig_value, namespace_value)
     operator = Scaleoperator(kubeconfig_value, namespace_value)
     read_file = read_operator_data(clusterconfig_value, namespace_value)
     operator.create()
@@ -30,7 +32,7 @@ def _values(request):
         read_file["attacherNodeSelector"], "attacherNodeSelector")
 
     yield
-    operator.delete()
+    operator.delete(condition)
     if(ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
 

@@ -44,7 +44,7 @@ class Scaleoperator:
         if not(scale_function.check_crd_exists()):
             scale_function.create_crd(body['CustomResourceDefinition'])
 
-    def delete(self):
+    def delete(self,condition=False):
 
         config.load_kube_config(config_file=self.kubeconfig)
         if ob.check_scaleoperatorobject_is_deployed():   # for edge cases if custom object is not deleted
@@ -71,9 +71,9 @@ class Scaleoperator:
             scale_function.delete_deployment()
         scale_function.check_deployment_deleted()
 
-        if scale_function.check_namespace_exists():
+        if (condition is False) and scale_function.check_namespace_exists():
             scale_function.delete_namespace()
-        scale_function.check_namespace_deleted()
+            scale_function.check_namespace_deleted()
 
     def check(self):
 
@@ -603,7 +603,7 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
             name=namespace_value, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists checking for operator")
+        LOGGER.info("namespace already exists")
         return True
     except ApiException:
         LOGGER.info("namespace does not exists")
