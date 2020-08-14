@@ -65,48 +65,48 @@ spec:
 ```
 
 #Run all testcases in driver testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py --html=/data/<report-name>.html
 
 #Run any specific testcase in testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py::<test_name> --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py::<test_name> --html=/data/<report-name>.html
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py::test_driver_dynamic_pass_1 --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+eg. kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py::test_driver_dynamic_pass_1 --html=/data/<report-name>.html
 ```
                 
 ### Run operator tests using operator_test.py as shown below -
 ```       
 
 #Run all testcases in operator testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py --html=/data/<report-name>.html
 
 #Run any specific testcase in testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py::<test_name> --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py::<test_name>  --html=/data/<report-name>.html
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py::test_operator_deploy --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+eg. kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py::test_operator_deploy --html=/data/<report-name>.html
 ```
 
 ### Run driver tests on remote cluster using remote_test.py as shown below -
 ```
 
 #Run all testcases in driver testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py --html=/data/<report-name>.html
 
 #Run any specific testcase in testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::<test_name> --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::<test_name> --html=/data/<report-name>.html
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::test_driver_dynamic_pass_1 --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+eg. kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::test_driver_dynamic_pass_1 --html=/data/<report-name>.html
 ```
 
 ### List available Driver & Operator tests 
 Available functional tests list for driver & operator can be collected using following command
 ```
-kubectl exec -it <csi-test-pod-name> -- pytest --collect-only --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest --collect-only 
 ```
 ### For running full testsuite with the tests which take long time, use `--runslow` parameter ( these tests are being marked with @pytest.mark.slow).
 For example :
 
 ```
-kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py --runslow  --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
-kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py --runslow --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
+kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --html=/data/<report-name>.html
 ```
 
