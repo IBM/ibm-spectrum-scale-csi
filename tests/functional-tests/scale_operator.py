@@ -722,8 +722,8 @@ def read_operator_data(clusterconfig, namespace):
 def get_cmd_values(request):
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
-        if os.path.isfile('config/config'):
-            kubeconfig_value = 'config/config'
+        if os.path.isfile('config/kubeconfig'):
+            kubeconfig_value = 'config/kubeconfig'
         else:
             kubeconfig_value = '~/.kube/config'
 

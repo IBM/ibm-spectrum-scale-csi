@@ -21,7 +21,7 @@ Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platf
 - Create config map using [test.config](./tests/functional-tests/config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](./operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
 
 ```
-kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=config=<kubeconfig file path>
+kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path>
 
 ```
 
