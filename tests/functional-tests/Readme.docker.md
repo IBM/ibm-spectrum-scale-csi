@@ -16,6 +16,8 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 - Configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./tests/functional-tests/config/test.config) file.
 
+Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platform 
+
 - Create config map using [test.config](./tests/functional-tests/config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](./operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
 
 ```
@@ -33,7 +35,7 @@ metadata:
 spec:
   containers:
   - name: csi-test
-    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:x86 #container image path for csi tests
+    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:x86 #container image for csi tests
     securityContext:
       privileged: true
     command: [ "/bin/sh", "-c", "--" ]
@@ -46,26 +48,19 @@ spec:
   volumes:
   - configMap:
       defaultMode: 420
-      name: test-config  #test-config configmap for configuration files
+      name: test-config  
     name: test-config
   - hostPath:
       path: /ibm/gpfs0    #local path for saving the test reports files on node of running pod
     name: report
   restartPolicy: "Never"
   nodeSelector:
-     kubernetes.io/hostname: "Node name"
+     kubernetes.io/hostname: <Worker Node name> #node selector for scheduling the test pod
 
 ```
 
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :
 
-- For running full testsuite with the tests which take long time, use `--runslow` parameter ( these tests are being marked with @pytest.mark.slow).
-For example :
-
-```
-kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py --runslow  --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
-kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
-```
 ### Run driver tests on primary cluster using driver_test.py as shown below -
 ```
 
@@ -106,5 +101,12 @@ eg. kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::test_driver_
 Available functional tests list for driver & operator can be collected using following command
 ```
 kubectl exec -it <csi-test-pod-name> -- pytest --collect-only --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
+```
+### For running full testsuite with the tests which take long time, use `--runslow` parameter ( these tests are being marked with @pytest.mark.slow).
+For example :
+
+```
+kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py --runslow  --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
+kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --kubeconfig=./config/config --clusterconfig=./config/csiscaleoperators.csi.ibm.com_cr.yaml --html=/data/<report-name>.html
 ```
 

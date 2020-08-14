@@ -3,6 +3,7 @@ import time
 import logging
 import yaml
 import json
+import os.path
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import utils.scale_operator_function as scale_function
@@ -717,3 +718,25 @@ def read_operator_data(clusterconfig, namespace):
             assert False
 
     return data
+
+def get_cmd_values(request):
+    kubeconfig_value = request.config.option.kubeconfig
+    if kubeconfig_value is None:
+        if os.path.isfile('config/config'):
+            kubeconfig_value = 'config/config'
+        else:
+            kubeconfig_value = '~/.kube/config'
+
+    clusterconfig_value = request.config.option.clusterconfig
+    if clusterconfig_value is None:
+        if os.path.isfile('config/csiscaleoperators.csi.ibm.com_cr.yaml'):
+            clusterconfig_value = 'config/csiscaleoperators.csi.ibm.com_cr.yaml'
+        else:
+            clusterconfig_value = '../../operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml'
+
+    namespace_value = request.config.option.namespace
+    if namespace_value is None:
+        namespace_value = 'ibm-spectrum-scale-csi-driver'
+
+    runslow_val = request.config.option.runslow
+    return kubeconfig_value,clusterconfig_value,namespace_value,runslow_val
