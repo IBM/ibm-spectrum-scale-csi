@@ -17,7 +17,7 @@ LOGGER = logging.getLogger()
 def _values(request):
 
     global kubeconfig_value, clusterconfig_value, namespace_value
-    kubeconfig_value,clusterconfig_value,namespace_value,runslow_val = get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = get_cmd_values(request)
 
     condition = check_ns_exists(kubeconfig_value, namespace_value)
     operator = Scaleoperator(kubeconfig_value, namespace_value)

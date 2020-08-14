@@ -9,7 +9,7 @@ LOGGER = logging.getLogger()
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, driver_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value,clusterconfig_value,namespace_value,runslow_val = get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = get_cmd_values(request)
 
     data = read_driver_data(clusterconfig_value, namespace_value)
     operator_data = read_operator_data(clusterconfig_value, namespace_value)

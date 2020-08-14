@@ -44,7 +44,7 @@ class Scaleoperator:
         if not(scale_function.check_crd_exists()):
             scale_function.create_crd(body['CustomResourceDefinition'])
 
-    def delete(self,condition=False):
+    def delete(self, condition=False):
 
         config.load_kube_config(config_file=self.kubeconfig)
         if ob.check_scaleoperatorobject_is_deployed():   # for edge cases if custom object is not deleted
@@ -719,6 +719,7 @@ def read_operator_data(clusterconfig, namespace):
 
     return data
 
+
 def get_cmd_values(request):
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
@@ -739,4 +740,4 @@ def get_cmd_values(request):
         namespace_value = 'ibm-spectrum-scale-csi-driver'
 
     runslow_val = request.config.option.runslow
-    return kubeconfig_value,clusterconfig_value,namespace_value,runslow_val
+    return kubeconfig_value, clusterconfig_value, namespace_value, runslow_val
