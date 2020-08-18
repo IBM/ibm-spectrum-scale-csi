@@ -4,23 +4,14 @@ import pytest
 import utils.fileset_functions as ff
 from scale_operator import read_driver_data, Scaleoperator, check_ns_exists, \
     check_nodes_available, Scaleoperatorobject, Snapshot, check_key, read_operator_data, \
-    get_kubernetes_version
+    get_kubernetes_version, get_cmd_values
 LOGGER = logging.getLogger()
 
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, remote_data, snapshot_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value = request.config.option.kubeconfig
-    if kubeconfig_value is None:
-        kubeconfig_value = "~/.kube/config"
-    clusterconfig_value = request.config.option.clusterconfig
-    if clusterconfig_value is None:
-        clusterconfig_value = "../../operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml"
-    namespace_value = request.config.option.namespace
-    if namespace_value is None:
-        namespace_value = "ibm-spectrum-scale-csi-driver"
-    runslow_val = request.config.option.runslow
+    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = get_cmd_values(request)
 
     data = read_driver_data(clusterconfig_value, namespace_value)
     operator_data = read_operator_data(clusterconfig_value, namespace_value)
