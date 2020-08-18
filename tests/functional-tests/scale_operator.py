@@ -3,6 +3,7 @@ import time
 import logging
 import yaml
 import json
+import os.path
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import utils.scale_operator_function as scale_function
@@ -43,7 +44,7 @@ class Scaleoperator:
         if not(scale_function.check_crd_exists()):
             scale_function.create_crd(body['CustomResourceDefinition'])
 
-    def delete(self):
+    def delete(self, condition=False):
 
         config.load_kube_config(config_file=self.kubeconfig)
         if ob.check_scaleoperatorobject_is_deployed():   # for edge cases if custom object is not deleted
@@ -70,9 +71,9 @@ class Scaleoperator:
             scale_function.delete_deployment()
         scale_function.check_deployment_deleted()
 
-        if scale_function.check_namespace_exists():
+        if (condition is False) and scale_function.check_namespace_exists():
             scale_function.delete_namespace()
-        scale_function.check_namespace_deleted()
+            scale_function.check_namespace_deleted()
 
     def check(self):
 
@@ -602,7 +603,7 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
             name=namespace_value, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists checking for operator")
+        LOGGER.info("namespace already exists")
         return True
     except ApiException:
         LOGGER.info("namespace does not exists")
@@ -717,3 +718,26 @@ def read_operator_data(clusterconfig, namespace):
             assert False
 
     return data
+
+
+def get_cmd_values(request):
+    kubeconfig_value = request.config.option.kubeconfig
+    if kubeconfig_value is None:
+        if os.path.isfile('config/kubeconfig'):
+            kubeconfig_value = 'config/kubeconfig'
+        else:
+            kubeconfig_value = '~/.kube/config'
+
+    clusterconfig_value = request.config.option.clusterconfig
+    if clusterconfig_value is None:
+        if os.path.isfile('config/csiscaleoperators.csi.ibm.com_cr.yaml'):
+            clusterconfig_value = 'config/csiscaleoperators.csi.ibm.com_cr.yaml'
+        else:
+            clusterconfig_value = '../../operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml'
+
+    namespace_value = request.config.option.namespace
+    if namespace_value is None:
+        namespace_value = 'ibm-spectrum-scale-csi-driver'
+
+    runslow_val = request.config.option.runslow
+    return kubeconfig_value, clusterconfig_value, namespace_value, runslow_val
