@@ -60,19 +60,21 @@ def values(request):
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
 
+
 def test_get_version():
     ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
-
 
 
 def test_snapshot_static_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_static(value_sc, test_restore=True)
 
+
 def test_snapshot_static_multiple_snapshots():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_static(value_sc, test_restore=True, number_of_snapshots=3)
+
 
 def test_snapshot_static_pass_3():
     value_sc = {"volBackendFs": data["primaryFs"],
@@ -150,6 +152,7 @@ def test_snapshot_static_pass_15():
     value_sc = {"inodeLimit": data["inodeLimit"],
                 "volBackendFs": data["primaryFs"]}
     snapshot_object.test_static(value_sc, test_restore=True)
+
 
 def test_snapshot_static_pass_16():
     value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],

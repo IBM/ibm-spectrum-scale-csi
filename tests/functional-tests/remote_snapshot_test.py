@@ -111,6 +111,7 @@ def test_snapshot_static_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_static(value_sc, test_restore=True)
 
+
 def test_snapshot_static_multiple_snapshots():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_static(value_sc, test_restore=True, number_of_snapshots=3)
