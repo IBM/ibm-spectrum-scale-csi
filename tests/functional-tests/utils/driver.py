@@ -6,7 +6,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 import utils.fileset_functions as ff
-import utils.snapshot as snap
+from utils.snapshot import delete_vs_class, delete_vs, check_vs_deleted, check_vs_class_deleted
 from utils.namegenerator import name_generator
 
 LOGGER = logging.getLogger()
@@ -322,12 +322,12 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
 
 def clean_with_created_objects(created_objects):
     for vs_name in created_objects["vs"]:
-        snap.delete_vs(vs_name)
-        snap.check_vs_deleted(vs_name)
+        delete_vs(vs_name)
+        check_vs_deleted(vs_name)
 
     for vs_class_name in created_objects["vsclass"]:
-        snap.delete_vs_class(vs_class_name)
-        snap.check_vs_class_deleted(vs_class_name)
+        delete_vs_class(vs_class_name)
+        check_vs_class_deleted(vs_class_name)
 
     for pod_name in created_objects["pod"]:
         delete_pod(pod_name)
@@ -551,7 +551,7 @@ def clean_pod_fail(sc_name, pvc_name, pv_name, dir_name, pod_name, pod_names, pv
         ff.delete_dir(dir_name)
 
 
-def create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+def create_file_inside_pod(value_pod, pod_name):
     """
     create snaptestfile inside the pod using touch
     """
@@ -576,12 +576,15 @@ def create_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
     assert False
 
 
-def check_file_inside_pod(value_pod, sc_name, pvc_name, pod_name):
+def check_file_inside_pod(value_pod, pod_name, volume_name=None):
     """
     check snaptestfile inside the pod using ls
     """
     api_instance = client.CoreV1Api()
-    exec_command1 = "ls "+value_pod["mount_path"]
+    if volume_name is None:
+        exec_command1 = "ls "+value_pod["mount_path"]
+    else:
+        exec_command1 = "ls "+value_pod["mount_path"]+"/"+volume_name+"-data"
     exec_command = [
         '/bin/sh',
         '-c',

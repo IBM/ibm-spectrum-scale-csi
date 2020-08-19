@@ -73,8 +73,7 @@ def test_operator_deploy(_values):
 
 
 def test_wrong_cluster_id(_values):
-    LOGGER.info("test_wrong_cluster_id")
-    LOGGER.info("cluster ID is wrong")
+    LOGGER.info("test_wrong_cluster_id : cluster ID is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     wrong_id = str(random.randint(0, 999999999999999999))
 
@@ -111,8 +110,7 @@ def test_wrong_cluster_id(_values):
 
 
 def test_wrong_primaryFS(_values):
-    LOGGER.info("test_wrong_primaryFS")
-    LOGGER.info("primaryFS is wrong")
+    LOGGER.info("test_wrong_primaryFS : primaryFS is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
@@ -149,8 +147,7 @@ def test_wrong_primaryFS(_values):
 
 
 def test_wrong_guihost(_values):
-    LOGGER.info("test_wrong_guihost")
-    LOGGER.info("gui host is wrong")
+    LOGGER.info("test_wrong_guihost : gui host is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
@@ -189,8 +186,7 @@ def test_wrong_guihost(_values):
 
 
 def test_wrong_gui_username(_values):
-    LOGGER.info("test_wrong_gui_username")
-    LOGGER.info("gui username is wrong")
+    LOGGER.info("test_wrong_gui_username : gui username is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
@@ -220,8 +216,7 @@ def test_wrong_gui_username(_values):
 
 
 def test_wrong_gui_password(_values):
-    LOGGER.info("test_wrong_gui_password")
-    LOGGER.info("gui password is wrong")
+    LOGGER.info("test_wrong_gui_password : gui password is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
@@ -260,8 +255,7 @@ def test_wrong_gui_password(_values):
 
 
 def test_wrong_secret_object_name(_values):
-    LOGGER.info("test_wrong_secret_object_name")
-    LOGGER.info("secret object name is wrong")
+    LOGGER.info("test_wrong_secret_object_name : secret object name is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     secret_name_wrong = randomString()
 
@@ -278,8 +272,7 @@ def test_wrong_secret_object_name(_values):
 
 
 def test_random_gpfs_primaryFset_name(_values):
-    LOGGER.info("test_ramdom_gpfs_primaryFset_name")
-    LOGGER.info("gpfs primary Fset name is wrong")
+    LOGGER.info("test_random_gpfs_primaryFset_name : gpfs primary Fset name is wrong")
     test = read_operator_data(clusterconfig_value, namespace_value)
     random_primaryFset = randomStringDigits()
     test["primaryFset"] = random_primaryFset

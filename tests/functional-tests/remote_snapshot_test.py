@@ -55,7 +55,8 @@ def values(request):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, data["image_name"])
+    snapshot_object = Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
+                               number_of_snapshots, data["image_name"], remote_data["id"])
     ff.create_dir(remote_data["volDirBasePath"])
     yield
     if condition is False and not(keep_objects):
@@ -104,6 +105,119 @@ def test_get_version():
     LOGGER.info("LOCAL CLUSTER")
     ff.get_scale_version(data)
     get_kubernetes_version(kubeconfig_value)
+
+
+def test_snapshot_static_pass_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_multiple_snapshots():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=True, number_of_snapshots=3)
+
+
+def test_snapshot_static_pass_3():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "gid": data["r_gid_number"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_4():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "inodeLimit": data["r_inodeLimit"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_6():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_7():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "gid": data["r_gid_number"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_8():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
+                "gid": data["r_gid_number"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_9():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "uid": data["r_uid_number"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_10():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "inodeLimit": data["r_inodeLimit"],
+                "clusterId": data["remoteid"], "filesetType": "independent"}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_11():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "clusterId": data["remoteid"],
+                "filesetType": "independent", "inodeLimit": data["r_inodeLimit"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_12():
+    value_sc = {"clusterId": data["remoteid"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "volBackendFs": data["remoteFs"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_13():
+    value_sc = {"clusterId": data["remoteid"], "uid": data["r_uid_number"],
+                "inodeLimit": data["r_inodeLimit"],
+                "volBackendFs": data["remoteFs"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_14():
+    value_sc = {"clusterId": data["remoteid"], "gid": data["r_gid_number"],
+                "inodeLimit": data["r_inodeLimit"],
+                "volBackendFs": data["remoteFs"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_15():
+    value_sc = {"clusterId": data["remoteid"], "volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"],
+                "inodeLimit": data["r_inodeLimit"]}
+    snapshot_object.test_static(value_sc, test_restore=True)
+
+
+def test_snapshot_static_pass_16():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=False)
+
+
+def test_snapshot_static_pass_17():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "clusterId": data["remoteid"],
+                "filesetType": "independent", "inodeLimit": data["r_inodeLimit"]}
+    snapshot_object.test_static(value_sc, test_restore=False)
+
+
+def test_snapshot_static_pass_18():
+    value_sc = {"clusterId": data["remoteid"], "gid": data["r_gid_number"],
+                "inodeLimit": data["r_inodeLimit"],
+                "volBackendFs": data["remoteFs"]}
+    snapshot_object.test_static(value_sc, test_restore=False)
 
 
 def test_snapshot_dynamic_pass_1():
