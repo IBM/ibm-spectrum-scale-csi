@@ -60,12 +60,13 @@ def create_custom_object(custom_object_body, stateful_set_not_created):
         assert False
 
     num = 0
-    while (num < 124):
+    while (num < 30):
         read_statefulset_api_instance = client.AppsV1Api()
         try:
             read_statefulset_api_response = read_statefulset_api_instance.read_namespaced_stateful_set(
                 name="ibm-spectrum-scale-csi-attacher", namespace=namespace_value, pretty=True)
             LOGGER.debug(str(read_statefulset_api_response))
+            LOGGER.info("waiting for statefulsets")
             ready_replicas = read_statefulset_api_response.status.ready_replicas
             replicas = read_statefulset_api_response.status.replicas
             if ready_replicas == replicas:
@@ -75,10 +76,11 @@ def create_custom_object(custom_object_body, stateful_set_not_created):
                 else:
                     return
             num = num + 1
-            time.sleep(5)
+            time.sleep(20)
         except ApiException:
+            LOGGER.info("waiting for statefulsets")
             num = num+1
-            time.sleep(5)
+            time.sleep(20)
 
     if stateful_set_not_created is True:
         LOGGER.info("Expected Failure ,testcase is passed")
@@ -126,7 +128,7 @@ def check_scaleoperatorobject_is_deleted():
     check  csiscaleoperator deleted or not
     if csiscaleoperator not deleted in 300 seconds , asserts
     """
-    count = 60
+    count = 30
     list_co_api_instance = client.CustomObjectsApi()
     while (count > 0):
         try:
@@ -139,7 +141,7 @@ def check_scaleoperatorobject_is_deleted():
             LOGGER.info("Waiting for custom object deletion")
             LOGGER.debug(str(list_co_api_response))
             count = count-1
-            time.sleep(10)
+            time.sleep(20)
         except ApiException:
             LOGGER.info("SpectrumScale CSI custom object has been deleted")
             return
