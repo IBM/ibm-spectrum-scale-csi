@@ -242,7 +242,7 @@ def check_scaleoperatorobject_daemonsets_state():
     """
     read_daemonsets_api_instance = client.AppsV1Api()
     num = 0
-    while (num < 124):
+    while (num < 30):
         try:
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
                 name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
@@ -253,11 +253,14 @@ def check_scaleoperatorobject_daemonsets_state():
             if number_available == current_number_scheduled == desired_number_scheduled:
                 LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi's pods are Running")
                 return True, desired_number_scheduled
-            time.sleep(5)
+             
+            time.sleep(20)
             num += 1
+            LOGGER.info("waiting for daemonsets")
         except ApiException as e:
-            time.sleep(5)
+            time.sleep(20)
             num += 1
+            LOGGER.info("waiting for daemonsets")
 
     LOGGER.error(
         "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
