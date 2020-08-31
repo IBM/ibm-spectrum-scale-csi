@@ -14,7 +14,7 @@ def set_test_namespace_value(namespace_name=None):
     namespace_value = namespace_name
 
 
-def create_vs_class(vs_class_name, body_params):
+def create_vs_class(vs_class_name, body_params, created_objects):
     """
     create volume snapshot class with vs_class_name
     body_params contains configurable parameters
@@ -40,9 +40,11 @@ def create_vs_class(vs_class_name, body_params):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(f"Volume Snapshot Class Create : {vs_class_name} is created with {body_params}")
+        created_objects["vsclass"].append(vs_class_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 
@@ -71,7 +73,7 @@ def check_vs_class(vs_class_name):
 
 
 
-def create_vs(vs_name, vs_class_name, pvc_name):
+def create_vs(vs_name, vs_class_name, pvc_name, created_objects):
     """
     create volume snapshot vs_name using volume snapshot class vs_class_name
     and pvc pvc_name
@@ -102,13 +104,15 @@ def create_vs(vs_name, vs_class_name, pvc_name):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(f"Volume Snapshot Create : volume snapshot {vs_name} is created for {pvc_name}")
+        created_objects["vs"].append(vs_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 
-def create_vs_from_content(vs_name, vs_content_name):
+def create_vs_from_content(vs_name, vs_content_name, created_objects):
     """
     create volume snapshot vs_name from volume snapshot content vs_content_name
     """
@@ -137,9 +141,11 @@ def create_vs_from_content(vs_name, vs_content_name):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(f"Volume Snapshot Create : volume snapshot {vs_name} is created from {vs_content_name}")
+        created_objects["vs"].append(vs_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 
@@ -268,7 +274,7 @@ def get_pv_name(pvc_name, created_objects):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
-        LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
+        LOGGER.error(f"PVC {pvc_name} does not exists on the cluster")
         clean_with_created_objects(created_objects)
         assert False
 
@@ -304,7 +310,7 @@ def check_snapshot_status(vs_name):
     return False
 
 
-def create_vs_content(vs_content_name, vs_name, body_params):
+def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
     """
     create volume snapshot content with vs_content_name
     body_params contains configurable parameters
@@ -321,7 +327,7 @@ def create_vs_content(vs_content_name, vs_name, body_params):
             "source": {
                 "snapshotHandle": body_params["snapshotHandle"]
             },
-            "volumeSnapshotRef": {
+             "volumeSnapshotRef": {
                 "name": vs_name,
                 "namespace": namespace_value
             }
@@ -342,6 +348,7 @@ def create_vs_content(vs_content_name, vs_name, body_params):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 

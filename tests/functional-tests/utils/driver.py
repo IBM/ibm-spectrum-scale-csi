@@ -55,7 +55,7 @@ def get_storage_class_parameters(values):
     return dict_parameters
 
 
-def create_storage_class(values, sc_name):
+def create_storage_class(values, sc_name, created_objects):
     """
     creates storage class
 
@@ -89,9 +89,11 @@ def create_storage_class(values, sc_name):
         api_response = api_instance.create_storage_class(
             body=storage_class_body, pretty=True)
         LOGGER.debug(str(api_response))
+        created_objects["sc"].append(sc_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling StorageV1Api->create_storage_class: {e}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -125,7 +127,7 @@ def check_storage_class(sc_name):
         return False
 
 
-def create_pv(pv_values, pv_name, sc_name=""):
+def create_pv(pv_values, pv_name, created_objects, sc_name=""):
     """
     creates persistent volume
 
@@ -174,11 +176,12 @@ def create_pv(pv_values, pv_name, sc_name=""):
         api_response = api_instance.create_persistent_volume(
             body=pv_body, pretty=True)
         LOGGER.debug(str(api_response))
-
+        created_objects["pv"].append(pv_name)
     except ApiException as e:
         LOGGER.error(f'PV {pv_name} creation failed hence failing test case ')
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_persistent_volume: {e}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -209,7 +212,7 @@ def check_pv(pv_name):
         return False
 
 
-def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
+def create_pvc(pvc_values, sc_name, pvc_name, created_objects, pv_name=None):
     """
     creates persistent volume claim
 
@@ -253,14 +256,16 @@ def create_pvc(pvc_values, sc_name, pvc_name, pv_name=None):
         api_response = api_instance.create_namespaced_persistent_volume_claim(
             namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
+        created_objects["pvc"].append(pvc_name)
     except ApiException as e:
         LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
-def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
+def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name, created_objects):
     """
     creates persistent volume claim from snapshot
 
@@ -307,10 +312,12 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name):
         api_response = api_instance.create_namespaced_persistent_volume_claim(
             namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
+        created_objects["restore_pvc"].append(pvc_name)
     except ApiException as e:
         LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -359,6 +366,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
             LOGGER.info(f"PVC Check : PVC {pvc_name} does not exists on the cluster")
+            cleanup.clean_with_created_objects(created_objects)
             assert False
 
         if api_response.status.phase == "Bound":
@@ -408,7 +416,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                     con = False
 
 
-def create_pod(value_pod, pvc_name, pod_name, image_name="nginx:1.19.0"):
+def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx:1.19.0"):
     """
     creates pod
 
@@ -454,13 +462,18 @@ def create_pod(value_pod, pvc_name, pod_name, image_name="nginx:1.19.0"):
         api_response = api_instance.create_namespaced_pod(
             namespace=namespace_value, body=pod_body, pretty=True)
         LOGGER.debug(str(api_response))
+        if pod_name[0:12] == "snap-end-pod":   
+            created_objects["restore_pod"].append(pod_name)
+        else:
+            created_objects["pod"].append(pod_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespaced_pod: {e}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
-def create_file_inside_pod(value_pod, pod_name):
+def create_file_inside_pod(value_pod, pod_name, created_objects):
     """
     create snaptestfile inside the pod using touch
     """
@@ -482,10 +495,11 @@ def create_file_inside_pod(value_pod, pod_name):
         LOGGER.info("file snaptestfile created successfully on SpectrumScale mount point inside the pod")
         return
     LOGGER.error("file snaptestfile not created")
+    cleanup.clean_with_created_objects(created_objects)
     assert False
 
 
-def check_file_inside_pod(value_pod, pod_name, volume_name=None):
+def check_file_inside_pod(value_pod, pod_name, created_objects, volume_name=None):
     """
     check snaptestfile inside the pod using ls
     """
@@ -508,6 +522,7 @@ def check_file_inside_pod(value_pod, pod_name, volume_name=None):
         LOGGER.info("POD Check : snaptestfile is succesfully restored from snapshot")
         return
     LOGGER.error("snaptestfile is not restored from snapshot")
+    cleanup.clean_with_created_objects(created_objects)
     assert False
 
 
@@ -564,7 +579,7 @@ def check_pod_execution(value_pod, pod_name, created_objects):
     if not(check_key(value_pod, "reason")):
         cleanup.clean_with_created_objects(created_objects)
         LOGGER.error(str(resp))
-        LOGGER.info("FAILED as reason of failure not provided")
+        LOGGER.error("FAILED as reason of failure not provided")
         assert False
     search_result1 = re.search(value_pod["reason"], str(resp))
     search_result2 = re.search("Permission denied", str(resp))
@@ -626,7 +641,8 @@ def check_pod(value_pod, pod_name, created_objects):
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
-            LOGGER.info("POD Check : POD does not exists on Cluster")
+            LOGGER.error("POD Check : POD does not exists on Cluster")
+            cleanup.clean_with_created_objects(created_objects)
             assert False
 
 

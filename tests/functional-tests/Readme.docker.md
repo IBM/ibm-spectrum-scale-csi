@@ -24,6 +24,11 @@ Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platf
 kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path>
 
 ```
+- if you want to use SSL=enable, for cacert configmap use following command and change the path in test.config file as `config/local.crt`
+```
+kubectl create configmap  test-config  --from-file=test.config=<test.config filepath>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path> --from-file=local.crt=<local.crt file path>
+```
+Note : for remote crt, pass remote.crt file in the same configmap and user in the test.config file
 
 - Configure sample [csi-test-pod.yaml](./tests/functional-tests/csi-test-pod.yaml) file 
 
@@ -39,7 +44,7 @@ spec:
     securityContext:
       privileged: true
     command: [ "/bin/sh", "-c", "--" ]
-    args: [ "while true; do sleep 30; done;" ]
+    args: [ "while true; do sleep 120; done;" ]
     volumeMounts:
     - mountPath: /data
       name: report
