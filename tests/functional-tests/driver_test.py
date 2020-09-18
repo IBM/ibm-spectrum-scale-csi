@@ -1,7 +1,6 @@
 import logging
 import pytest
-from scale_operator import read_driver_data, Scaleoperator, check_ns_exists, get_cmd_values,\
-    check_nodes_available, Scaleoperatorobject, Driver, read_operator_data, get_kubernetes_version
+import scale_operator as scaleop
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -9,18 +8,18 @@ LOGGER = logging.getLogger()
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, driver_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = scaleop.get_cmd_values(request)
 
-    data = read_driver_data(clusterconfig_value, namespace_value)
-    operator_data = read_operator_data(clusterconfig_value, namespace_value)
+    data = scaleop.read_driver_data(clusterconfig_value, namespace_value)
+    operator_data = scaleop.read_operator_data(clusterconfig_value, namespace_value)
     keep_objects = data["keepobjects"]
     test_namespace = namespace_value
 
     ff.cred_check(data)
     ff.set_data(data)
-    operator = Scaleoperator(kubeconfig_value, namespace_value)
-    operator_object = Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = check_ns_exists(kubeconfig_value, namespace_value)
+    operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
+    operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
+    condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
     if condition is True:
         if not(operator_object.check()):
             LOGGER.error("Operator custom object is not deployed succesfully")
@@ -28,10 +27,10 @@ def values(request):
     else:
         operator.create()
         operator.check()
-        check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
-        check_nodes_available(
+        scaleop.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
+        scaleop.check_nodes_available(
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
-        check_nodes_available(
+        scaleop.check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
         operator_object.create()
         val = operator_object.check()
@@ -54,7 +53,7 @@ def values(request):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
 
-    driver_object = Driver(kubeconfig_value, value_pvc, value_pod, data["id"], test_namespace, keep_objects, data["image_name"])
+    driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod, data["id"], test_namespace, keep_objects, data["image_name"])
     ff.create_dir(data["volDirBasePath"])
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
@@ -72,7 +71,7 @@ def values(request):
 #: Testcase that are expected to pass:
 def test_get_version():
     ff.get_scale_version(data)
-    get_kubernetes_version(kubeconfig_value)
+    scaleop.get_kubernetes_version(kubeconfig_value)
 
 
 def test_driver_static_1():

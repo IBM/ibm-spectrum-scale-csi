@@ -3,9 +3,8 @@ import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import utils.fileset_functions as ff
+from utils.cleanup_functions import clean_with_created_objects
 
-if __name__ == "__main__":
-    from utils.driver import clean_with_created_objects
 LOGGER = logging.getLogger()
 
 
@@ -15,13 +14,7 @@ def set_test_namespace_value(namespace_name=None):
     namespace_value = namespace_name
 
 
-def set_keep_objects(keep_object):
-    """ sets the keep_objects global for use in later functions"""
-    global keep_objects
-    keep_objects = keep_object
-
-
-def create_vs_class(vs_class_name, body_params):
+def create_vs_class(vs_class_name, body_params, created_objects):
     """
     create volume snapshot class with vs_class_name
     body_params contains configurable parameters
@@ -47,31 +40,14 @@ def create_vs_class(vs_class_name, body_params):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(f"Volume Snapshot Class Create : {vs_class_name} is created with {body_params}")
+        created_objects["vsclass"].append(vs_class_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 
-def delete_vs_class(vs_class_name):
-    """
-    deletes volume snapshot class vs_class_name
-    """
-    if keep_objects:
-        return
-    custom_object_api_instance = client.CustomObjectsApi()
-    try:
-        custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshotclasses",
-            name=vs_class_name
-        )
-        LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"Volume Snapshot Class Delete : {vs_class_name} deleted")
-    except ApiException as e:
-        LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object_0: {e}")
-        assert False
 
 
 def check_vs_class(vs_class_name):
@@ -96,28 +72,8 @@ def check_vs_class(vs_class_name):
         return False
 
 
-def check_vs_class_deleted(vs_class_name):
-    """
-    if volume snapshot class vs_class_name  exists ,  assert
-    """
-    if keep_objects:
-        return
-    api_instance = client.CustomObjectsApi()
-    try:
-        api_response = api_instance.get_cluster_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshotclasses",
-            name=vs_class_name
-        )
-        LOGGER.debug(api_response)
-        LOGGER.error(f"Volume Snapshot Class Delete : {vs_class_name} is not deleted , asserting")
-        assert False
-    except ApiException:
-        LOGGER.info(f"Volume Snapshot Class Delete : {vs_class_name} deletion confirmed")
 
-
-def create_vs(vs_name, vs_class_name, pvc_name):
+def create_vs(vs_name, vs_class_name, pvc_name, created_objects):
     """
     create volume snapshot vs_name using volume snapshot class vs_class_name
     and pvc pvc_name
@@ -148,13 +104,15 @@ def create_vs(vs_name, vs_class_name, pvc_name):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(f"Volume Snapshot Create : volume snapshot {vs_name} is created for {pvc_name}")
+        created_objects["vs"].append(vs_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 
-def create_vs_from_content(vs_name, vs_content_name):
+def create_vs_from_content(vs_name, vs_content_name, created_objects):
     """
     create volume snapshot vs_name from volume snapshot content vs_content_name
     """
@@ -183,31 +141,11 @@ def create_vs_from_content(vs_name, vs_content_name):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(f"Volume Snapshot Create : volume snapshot {vs_name} is created from {vs_content_name}")
+        created_objects["vs"].append(vs_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
-        assert False
-
-
-def delete_vs(vs_name):
-    """
-    delete volume snapshot vs_name
-    """
-    if keep_objects:
-        return
-    custom_object_api_instance = client.CustomObjectsApi()
-    try:
-        custom_object_api_response = custom_object_api_instance.delete_namespaced_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshots",
-            name=vs_name,
-            namespace=namespace_value
-        )
-        LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"Volume Snapshot Delete : {vs_name} deleted")
-    except ApiException as e:
-        LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
 
@@ -234,31 +172,6 @@ def check_vs(vs_name):
         return False
 
 
-def check_vs_deleted(vs_name):
-    """
-    if volume snapshot vs_name exists , it asserts
-    """
-    if keep_objects:
-        return
-    api_instance = client.CustomObjectsApi()
-    val = 0
-    while val < 24:
-        try:
-            api_response = api_instance.get_namespaced_custom_object(
-                group="snapshot.storage.k8s.io",
-                version="v1beta1",
-                plural="volumesnapshots",
-                name=vs_name,
-                namespace=namespace_value
-            )
-            LOGGER.debug(api_response)
-            time.sleep(5)
-            val += 1
-        except ApiException:
-            LOGGER.info(f"Volume Snapshot Delete : {vs_name} deletion confirmed")
-            return
-    LOGGER.error(f"Volume Snapshot Delete : {vs_name} is not deleted , asserting")
-    assert False
 
 
 def check_vs_detail_for_static(vs_name, created_objects):
@@ -361,7 +274,7 @@ def get_pv_name(pvc_name, created_objects):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
-        LOGGER.info(f"PVC {pvc_name} does not exists on the cluster")
+        LOGGER.error(f"PVC {pvc_name} does not exists on the cluster")
         clean_with_created_objects(created_objects)
         assert False
 
@@ -397,7 +310,7 @@ def check_snapshot_status(vs_name):
     return False
 
 
-def create_vs_content(vs_content_name, vs_name, body_params):
+def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
     """
     create volume snapshot content with vs_content_name
     body_params contains configurable parameters
@@ -414,7 +327,7 @@ def create_vs_content(vs_content_name, vs_name, body_params):
             "source": {
                 "snapshotHandle": body_params["snapshotHandle"]
             },
-            "volumeSnapshotRef": {
+             "volumeSnapshotRef": {
                 "name": vs_name,
                 "namespace": namespace_value
             }
@@ -435,28 +348,9 @@ def create_vs_content(vs_content_name, vs_name, body_params):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
+        clean_with_created_objects(created_objects)
         assert False
 
-
-def delete_vs_content(vs_content_name):
-    """
-    deletes volume snapshot content vs_content_name
-    """
-    if keep_objects:
-        return
-    custom_object_api_instance = client.CustomObjectsApi()
-    try:
-        custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshotcontents",
-            name=vs_content_name
-        )
-        LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"Volume Snapshot Content Delete : {vs_content_name} deleted")
-    except ApiException as e:
-        LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object_0: {e}")
-        assert False
 
 
 def check_vs_content(vs_content_name):
@@ -481,22 +375,3 @@ def check_vs_content(vs_content_name):
         return False
 
 
-def check_vs_content_deleted(vs_content_name):
-    """
-    if volume snapshot content vs_content_name  exists ,  assert
-    """
-    if keep_objects:
-        return
-    api_instance = client.CustomObjectsApi()
-    try:
-        api_response = api_instance.get_cluster_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshotcontents",
-            name=vs_content_name
-        )
-        LOGGER.debug(api_response)
-        LOGGER.error(f"Volume Snapshot Content Delete : {vs_content_name} is not deleted , asserting")
-        assert False
-    except ApiException:
-        LOGGER.info(f"Volume Snapshot Content Delete : {vs_content_name} deletion confirmed")

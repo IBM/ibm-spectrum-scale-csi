@@ -312,6 +312,8 @@ def delete_created_fileset(volume_name):
        None
 
     """
+    if volume_name is None:
+        return
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
         "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
