@@ -38,8 +38,8 @@ pytest  driver_test.py --html report.html
 ```
 - For running full testsuite with the tests which take long time, use `--runslow` parameter ( these tests are being marked with @pytest.mark.slow).For example :
 ```
-pytest snapshot_test.py --runslow  #This will run all testcases including those marked with slow
-pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow
+pytest driver_test.py --runslow  #This will run all testcases including those marked with slow
+pytest driver_test.py::test_driver_sequential_pvc --runslow
 ```
 ### Run driver tests on primary cluster using driver_test.py as shown below -
 ```
