@@ -97,7 +97,7 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 }
 
 //generateVolID: Generate volume ID
-func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) string {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volID string
 
@@ -110,7 +110,7 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) (
 		slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
 		volID = fmt.Sprintf("%s;%s;path=%s", scVol.ClusterId, uid, slink)
 	}
-	return volID, nil
+	return volID
 }
 
 //getTargetPath: retrun relative volume path from filesystem mount point
@@ -507,11 +507,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	volID, err := cs.generateVolID(scaleVol, volFsInfo.UUID)
-	if err != nil {
-		glog.Errorf("volume:[%v] - failed to generate volume id. Error: %v", scaleVol.VolName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate volume id. Error: %v", err))
-	}
+	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
