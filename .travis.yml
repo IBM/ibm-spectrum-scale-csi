@@ -1,9 +1,8 @@
 services: docker
-sudo: required
-dist: xenial
+dist: focal
 language: go
 go:
-  - 1.13.x
+  - 1.15.x
 
 env:
   global:
@@ -13,13 +12,13 @@ env:
     - REPO_NAME=$(basename $TRAVIS_REPO_SLUG)
     - REPO_NAME_DRIVER="ibm-spectrum-scale-csi-driver"
     - REPO_NAME_OPERATOR="ibm-spectrum-scale-csi-operator"
-   
+
     # Grab quay username from 'user+bot_token'
     - IMAGE_REPO_OWNER=${QUAY_BOT_USERNAME%%\+*}
     # Format quay image target
     - IMAGE_REPO_DRIVER=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_DRIVER}
     - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_OPERATOR}
-    
+
     # Add image tag
     - IMAGE_TAG=$( 
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
@@ -38,13 +37,14 @@ env:
     - IMAGE_LABEL=$(
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]];
         then
-            echo "GIT_COMMIT=$(git log -1 --format=%h)  --label version=${IMAGE_VERSION} --label quay.expires-after=2w";
+            echo "--label version=${IMAGE_VERSION} --label quay.expires-after=2w";
         else
             echo "--label version=${IMAGE_VERSION}";
         fi
       )
     - BUILD_DIR_OPERATOR="${TRAVIS_BUILD_DIR}/operator"
     - BUILD_DIR_DRIVER="${TRAVIS_BUILD_DIR}/driver"
+    - BUILD_PLATFORMS="linux/ppc64le,linux/s390x,linux/amd64"
 
     # For the quay app
     - BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
@@ -67,6 +67,15 @@ env:
     - MINIKUBE_HOME=$HOME
     - KUBECONFIG=$HOME/.kube/config
 
+docker: &docker_buildx
+  before_install:
+    - mkdir -vp ~/.docker/cli-plugins/
+    - curl --silent -L "https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64" > ~/.docker/cli-plugins/docker-buildx
+    - chmod a+x ~/.docker/cli-plugins/docker-buildx
+    - sudo rm -f /etc/docker/daemon.json
+    - sudo service docker restart
+    - docker buildx create --use
+
 addons:
   apt:
     packages:
@@ -82,7 +91,6 @@ jobs:
   fast_finish: true
 
   include:
-    
     # Install operator-courier and run the lint on the manifest.
     - stage: lint
       name: "Lint - Driver: run golangci-lint"
@@ -94,7 +102,7 @@ jobs:
         - cd ${BUILD_DIR_DRIVER}
       script:
         - golangci-lint run
-    
+
     # stage: lint
     - name: "Lint - Operator: run linters and bundle automation."
       script:
@@ -107,10 +115,10 @@ jobs:
         - echo ${BUILD_DIR_OPERATOR}
         - ls ${BUILD_DIR_OPERATOR}
         - ls ${BUILD_DIR_OPERATOR}/deploy/*
-        - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip 
+        - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
           #Disabling for now..
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
-    
+
     # stage: lint
     - name: "Lint - Operator: CASE"
       if: env.HELM_REPO_SSH_LOCATION!=""
@@ -138,59 +146,56 @@ jobs:
         # Lint and install/test charts (if cv-tests exist)
         - $toolsPath/cv-test/bin/validateContent.sh
       deploy:
-          # scp helm repo(s) to location identified (Note: SSHPASS env variable must contain password)
-          - provider: script
-            skip_cleanup: true
-            script:  $toolsPath/build/bin/deployHelmRepo.sh
-            on:
-              all_branches: true
-          # Publish tagged release
-          - provider: releases
-            skip_cleanup: true
-            api_key: $GITHUB_TOKEN
-            file_glob: true
-            file: repo/stable/*
-            on:
-              tags: true
+        # scp helm repo(s) to location identified (Note: SSHPASS env variable must contain password)
+        - provider: script
+          skip_cleanup: true
+          script: $toolsPath/build/bin/deployHelmRepo.sh
+          on:
+            all_branches: true
+        # Publish tagged release
+        - provider: releases
+          skip_cleanup: true
+          api_key: $GITHUB_TOKEN
+          file_glob: true
+          file: repo/stable/*
+          on:
+            tags: true
     # end stage: lint
-
 
     - stage: build
       name: "Build - Driver: image and push to registry"
-      env:
-        - GOFLAGS="-mod=vendor" #this should not be required in Go 1.14, see https://github.com/golang/go/issues/33848
+      <<: *docker_buildx
       before_script:
         - cd ${BUILD_DIR_DRIVER}
         - go mod vendor
       script:
         - go test -v -race ./...
-        - docker build ${IMAGE_LABEL} ${COMMIT_ARG} --build-arg GOFLAGS=${GOFLAGS} -f Dockerfile -t ${REPO_NAME_DRIVER} .
+        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker tag ${REPO_NAME_DRIVER} ${IMAGE_FQN_DRIVER}
       deploy:
         - provider: script
-          script: docker push ${IMAGE_FQN_DRIVER}
+          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile -t ${IMAGE_FQN_DRIVER} --push .
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
-              
+
     # stage: build
     - name: "Build - Operator: image and push to registry"
+      <<: *docker_buildx
       install:
         - docker version
       before_script:
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
         - operator-sdk version
-      script:       
         - cd ${BUILD_DIR_OPERATOR}
-        - operator-sdk build ${REPO_NAME_OPERATOR} --image-build-args "${IMAGE_LABEL} ${COMMIT_ARG}"
+      script:
+        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-        - docker tag ${REPO_NAME_OPERATOR} ${IMAGE_FQN_OPERATOR}
       deploy:
         - provider: script
-          script:  docker push ${IMAGE_FQN_OPERATOR}
+          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -t ${IMAGE_FQN_OPERATOR} --push .
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
@@ -203,15 +208,15 @@ jobs:
     # stage: build
     - name: "Build - Operator: docs"
       script:
-        - pip install sphinx sphinx_rtd_theme recommonmark 
+        - pip install sphinx sphinx_rtd_theme recommonmark
         - cd ${TRAVIS_BUILD_DIR}/docs
         - make html
     # end stage: build
 
-
     # Install minikube, build the image and run the scorecard then execute molecule testing.
     - stage: test
       name: "Test - Operator: molecule"
+      dist: xenial
       before_install:
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
@@ -221,7 +226,7 @@ jobs:
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
         - operator-sdk build ${REPO_NAME_OPERATOR}
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
-      script:        
+      script:
         # molecule
         - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - kubectl create -f deploy/namespace.yaml
@@ -229,6 +234,7 @@ jobs:
 
     - stage: test
       name: "Test - Operator: scorecard"
+      dist: xenial
       before_install:
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
@@ -236,14 +242,13 @@ jobs:
         - kubectl version
         - cd ${BUILD_DIR_OPERATOR}
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
-      script:        
+      script:
         - python hacks/clear_finalizers.py
         - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - operator-sdk build ${REPO_NAME_OPERATOR}
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
         - kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
-    
 
 notifications:
   email: false

@@ -197,7 +197,6 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 		// quota does not match and it is not 0 - It might not be fileset created by us
 		return fmt.Errorf("Fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize)
 	}
-
 	if filesetQuotaBytes == 0 {
 		volsiz := strconv.FormatUint(scVol.VolSize, 10)
 		err = scVol.Connector.SetFilesetQuota(scVol.VolBackendFs, scVol.VolName, volsiz)
