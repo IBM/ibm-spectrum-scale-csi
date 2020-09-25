@@ -397,6 +397,39 @@ spec:
                   type: array
                   items:
                     type: string
+                tolerations:
+                  description: 
+                    Array of tolerations that will be distribued to CSI pods. Please refer to official
+                    k8s documentation for your environment for more details.
+                  type: array
+                  items:
+                    properties:
+                      key:
+                        description: Node taint key name
+                        type: string
+                      operator:
+                        description: Valid values are "Exists" and "Equal". 
+                        type: string
+                        enum: ["Exists", "Equal"]
+                      value:
+                        description: Required if operator is "Equal"
+                        type: string
+                      effect:
+                        description: 
+                          Valid values are "NoSchedule", "PreferNoSchedule" and "NoExecute". An empty 
+                          effect matches all effects with given key.
+                        type: string
+                        enum: ["NoSchedule", "PreferNoSchedule", "NoExecute", ""]
+                      tolerationSeconds:
+                        description: 
+                          Used only when effect is "NoExecute". It determines how long the pod will 
+                          stay bound to the node after the taint is added.
+                        type: integer
+                    type: object
+                    required:
+                      - key
+                      - operator
+                      - effect
               required:
                 - scaleHostpath
               type: object

@@ -43,5 +43,8 @@ pluginNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.pluginNodeSelector | 
 # Node mapping between K8s and spectrumscale node.
 nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 
+# List of tolerations
+tolerations: "{{ _csi_ibm_com_csiscaleoperator.spec.tolerations | default([])}}"
+
 # State of driver in the cluster (might not be needed).
 state: present
