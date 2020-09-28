@@ -9,22 +9,22 @@ Note: Kubernetes distributions should provide the external snapshotter by defaul
 These are snapshotter beta CRDs. Do this once per cluster
 
    ```
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
    ```
 
 ### Install snapshot controller
 
    ```
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 
-   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v2.1.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
    ```
 
-Edit setup-snapshot-controller.yaml to ensure the image being used is snapshot-controller:v2.2.0-rc1. Then apply the manifest.
+Edit setup-snapshot-controller.yaml to ensure the image being used is us.gcr.io/k8s-artifacts-prod/sig-storage/snapshot-controller:v3.0.0. Then apply the manifest.
 
    ```
    kubectl apply -f setup-snapshot-controller.yaml
