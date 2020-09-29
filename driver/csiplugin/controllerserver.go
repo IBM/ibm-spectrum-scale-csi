@@ -1122,8 +1122,20 @@ func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.Spec
 		return timestamp, err
 	}
 
-	const longForm = "2006-01-02 15:04:05,000" // This is the format in which REST API return creation timestamp
+	timezoneOffset, err := conn.GetTimeZoneOffset()
+	if err != nil {
+		glog.Errorf("snapshot [%s] - Unable to get cluster timezone", snap)
+		return timestamp, err
+	}
+
+	// Rest API returns create timestamp in the format 2006-01-02 15:04:05,000
+	// irrespective of the cluster timezone. We replace the last part of this date
+	// with the timezone offset returned by cluster config REST API and then parse
+	// the timestamp with correct zone info
+	const longForm = "2006-01-02 15:04:05-07:00"
 	//nolint::staticcheck
+
+	strings.Replace(createTS, ",000", timezoneOffset, 1)
 	t, _ := time.Parse(longForm, createTS)
 	timestamp.Seconds = t.Unix()
 	timestamp.Nanos = 0
