@@ -28,6 +28,22 @@ type Cluster struct {
 	Nodes          []ClusterNode     `json:"nodes,omitempty"`
 }
 
+type GetConfigResponse struct {
+	Config Config `json:"config,omitempty"`
+	Status Status `json:"status,omitempty"`
+}
+
+type Config struct {
+	ClusterConfig ClusterConfig `json:"clusterConfig,omitempty"`
+}
+
+type ClusterConfig struct {
+	ClusterID       string `json:"clusterId,omitempty"`
+	ClusterName     string `json:"clusterName,omitempty"`
+	MinReleaseLevel string `json:"minReleaseLevel,omitempty"`
+	TimeZoneOffset  string `json:"timeZoneOffset,omitempty"`
+}
+
 type CesSummary struct {
 	EnabledServices string `json:"enabledServices"`
 	AddressPolicy   string `json:"addressPolicy,omitempty"`

@@ -164,6 +164,21 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	return cid_str, nil
 }
 
+func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
+	glog.V(4).Infof("rest_v2 GetTimeZoneOffset")
+
+	getConfigURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/config")
+	getConfigResponse := GetConfigResponse{}
+
+	err := s.doHTTP(getConfigURL, "GET", &getConfigResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get cluster configuration: %v", err)
+		return "", err
+	}
+	timezone := fmt.Sprintf("%v", getConfigResponse.Config.ClusterConfig.TimeZoneOffset)
+	return timezone, nil
+}
+
 func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
 	glog.V(4).Infof("rest_v2 GetFilesystemMountDetails. filesystemName: %s", filesystemName)
 
