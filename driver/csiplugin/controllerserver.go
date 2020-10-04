@@ -254,6 +254,14 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	}
 	if scVol.InodeLimit != "" {
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
+	} else {
+		blockSize := uint64(fsDetails.Block.BlockSize)
+		var inodeLimit uint64
+		inodeLimit = scVol.VolSize / blockSize
+		if inodeLimit < 1024 {
+			inodeLimit = 1024
+		}
+		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
 	}
 	if scVol.ParentFileset != "" {
 		opt[connectors.UserSpecifiedParentFset] = scVol.ParentFileset
