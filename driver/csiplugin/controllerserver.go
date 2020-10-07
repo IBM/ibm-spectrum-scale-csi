@@ -97,26 +97,20 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 }
 
 //generateVolID: Generate volume ID
-func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) string {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
-	var volId string
+	var volID string
 
 	if scVol.IsFilesetBased {
-		fSetuid, err := scVol.Connector.GetFileSetUid(scVol.VolBackendFs, scVol.VolName)
-
-		if err != nil {
-			return "", fmt.Errorf("unable to get Fset UID for [%v] in FS [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
-		}
-
 		/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>; path=<symlink_path> */
 		slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
-		volId = fmt.Sprintf("%s;%s;fileset=%s;path=%s", scVol.ClusterId, uid, fSetuid, slink)
+		volID = fmt.Sprintf("%s;%s;filesetName=%s;path=%s", scVol.ClusterId, uid, scVol.VolName, slink)
 	} else {
 		/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
 		slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
-		volId = fmt.Sprintf("%s;%s;path=%s", scVol.ClusterId, uid, slink)
+		volID = fmt.Sprintf("%s;%s;path=%s", scVol.ClusterId, uid, slink)
 	}
-	return volId, nil
+	return volID
 }
 
 //getTargetPath: retrun relative volume path from filesystem mount point
@@ -260,6 +254,14 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	}
 	if scVol.InodeLimit != "" {
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
+	} else {
+		blockSize := uint64(fsDetails.Block.BlockSize)
+		var inodeLimit uint64
+		inodeLimit = scVol.VolSize / blockSize
+		if inodeLimit < 1024 {
+			inodeLimit = 1024
+		}
+		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
 	}
 	if scVol.ParentFileset != "" {
 		opt[connectors.UserSpecifiedParentFset] = scVol.ParentFileset
@@ -513,11 +515,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	volID, err := cs.generateVolID(scaleVol, volFsInfo.UUID)
-	if err != nil {
-		glog.Errorf("volume:[%v] - failed to generate volume id. Error: %v", scaleVol.VolName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate volume id. Error: %v", err))
-	}
+	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
@@ -557,7 +555,13 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 		if len(fileSetSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vId))
 		}
-		vIdMem.FsetId = fileSetSplit[1]
+
+		if fileSetSplit[0] == "filesetName" {
+			vIdMem.FsetName = fileSetSplit[1]
+		} else {
+			vIdMem.FsetId = fileSetSplit[1]
+		}
+
 		SlnkPart := splitVid[3]
 		slnkSplit := strings.Split(SlnkPart, "=")
 		if len(slnkSplit) < 2 {
@@ -629,10 +633,15 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 	if volumeIdMembers.IsFilesetBased {
-		FilesetName, err := conn.GetFileSetNameFromId(FilesystemName, volumeIdMembers.FsetId)
+		var FilesetName string
 
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
+		if volumeIdMembers.FsetName != "" {
+			FilesetName = volumeIdMembers.FsetName
+		} else {
+			FilesetName, err = conn.GetFileSetNameFromId(FilesystemName, volumeIdMembers.FsetId)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
+			}
 		}
 
 		if FilesetName != "" {
