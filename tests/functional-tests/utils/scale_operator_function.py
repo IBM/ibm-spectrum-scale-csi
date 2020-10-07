@@ -687,3 +687,14 @@ def check_cluster_role_binding_exists(cluster_role_binding_name):
     except ApiException:
         LOGGER.info("cluster role binding does not exists")
         return False
+
+
+def get_operator_image():
+    read_deployment_api_instance = client.AppsV1Api()
+    try:
+        response = read_deployment_api_instance.read_namespaced_deployment(
+            name="ibm-spectrum-scale-csi-operator", namespace=namespace_value, pretty=True)
+        operator_image = response.spec.template.spec.containers[0].image
+        LOGGER.info("CSI operator image : " + str(operator_image))
+    except ApiException:
+        LOGGER.info("Unable to get operator image")
