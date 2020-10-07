@@ -103,8 +103,6 @@ def check_pod_deleted(pod_name, created_objects):
 
 def delete_pvc(pvc_name, created_objects):
     """ deletes pvc pvc_name and return name of pv associated with it"""
-    if keep_objects:
-        return volume_name
 
     api_instance = client.CoreV1Api()
     try:
@@ -119,6 +117,9 @@ def delete_pvc(pvc_name, created_objects):
         assert False
 
     volume_name = api_response.spec.volume_name
+
+    if keep_objects:
+        return volume_name
 
     api_instance = client.CoreV1Api()
     try:

@@ -69,11 +69,14 @@ def values(request):
 
 
 #: Testcase that are expected to pass:
+@pytest.mark.regression
 def test_get_version():
     ff.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
+    scaleop.scale_function.get_operator_image()
+    scaleop.ob.get_driver_image()
 
-
+@pytest.mark.regression
 def test_driver_static_1():
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                         {"access_modes": "ReadWriteOnce", "storage": "1Gi",
@@ -231,6 +234,7 @@ def test_driver_static_sc_13():
     driver_object.test_static(value_pv, value_pvc_custom, value_sc)
 
 
+@pytest.mark.regression
 def test_driver_static_sc_14():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -401,6 +405,7 @@ def test_driver_static_26():
     driver_object.test_static(value_pv, value_pvc_custom, root_volume=True)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     driver_object.test_dynamic(value_sc)
@@ -459,6 +464,7 @@ def test_driver_dynamic_pass_8():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_pass_9():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
@@ -482,6 +488,7 @@ def test_driver_dynamic_pass_10():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_pass_11():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
@@ -654,6 +661,7 @@ def test_driver_dynamic_pass_34():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_fail_35():
     value_sc = {"inodeLimit": data["inodeLimit"],
                 "reason": "volBackendFs must be specified in storageClass"}
@@ -687,6 +695,7 @@ def test_driver_dynamic_pass_40():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_fail_41():
     value_sc = {"parentFileset": data["parentFileset"],
                 "volBackendFs": data["primaryFs"],
@@ -844,6 +853,7 @@ def test_driver_dynamic_fail_64():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_fail_65():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": data["volDirBasePath"],
@@ -1260,6 +1270,7 @@ def test_driver_dynamic_fail_121():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_dynamic_fail_122():
     value_sc = {"clusterId": data["id"], "inodeLimit": data["inodeLimit"],
                 "filesetType": "dependent", "volBackendFs": data["primaryFs"],
@@ -2572,6 +2583,7 @@ def test_driver_dynamic_fail_invalid_input_274():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.regression
 def test_driver_one_pvc_two_pod():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"]}
     driver_object.one_pvc_two_pod(value_sc)

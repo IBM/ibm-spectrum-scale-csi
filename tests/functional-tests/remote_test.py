@@ -107,13 +107,15 @@ def get_remote_data(data_passed):
 
 
 #: Testcase that are expected to pass:
+@pytest.mark.regression
 def test_get_version():
     LOGGER.info("REMOTE CLUSTER")
     ff.get_scale_version(remote_data)
     LOGGER.info("LOCAL CLUSTER")
     ff.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
-
+    scaleop.scale_function.get_operator_image()
+    scaleop.ob.get_driver_image()
 
 def test_driver_static_1():
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},

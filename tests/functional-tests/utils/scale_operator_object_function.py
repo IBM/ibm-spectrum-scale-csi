@@ -576,3 +576,14 @@ def check_pod_running(pod_name):
             assert False
     LOGGER.error(f'POD Check : POD {pod_name} is not Running')
     assert False
+
+
+def get_driver_image():
+    read_daemonsets_api_instance = client.AppsV1Api()
+    try:
+        response = read_daemonsets_api_instance.read_namespaced_daemon_set(
+                name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
+        driver_image = response.spec.template.spec.containers[1].image
+        LOGGER.info("CSI driver   image : " + str(driver_image))
+    except ApiException as e:
+        LOGGER.info("Unable to get driver image")
