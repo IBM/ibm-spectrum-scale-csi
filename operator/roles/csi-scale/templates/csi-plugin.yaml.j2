@@ -35,7 +35,8 @@ spec:
 {% endfor %}
 {% endif %}
       serviceAccount: "{{ productName }}-node"
-      hostNetwork: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: driver-registrar
 {% if 'apps.openshift.io' in api_groups %}
