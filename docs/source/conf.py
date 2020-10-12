@@ -19,12 +19,12 @@
 
 project = 'IBM Spectrum Scale CSI'
 copyright = '2019, IBM'
-author = 'John Dunham'
+author = ''
 
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
-release = '2.0.0'
+release = '2.1.0'
 
 
 # -- General configuration ---------------------------------------------------
