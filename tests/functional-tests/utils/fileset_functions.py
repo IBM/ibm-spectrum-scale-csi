@@ -108,7 +108,6 @@ def fileset_exists(test_data):
         return False
     return True
 
-
 def cred_check(test_data):
     """
     checks if given parameters in test_data are correct
@@ -119,14 +118,19 @@ def cred_check(test_data):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
         "/scalemgmt/v2/cluster"
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
-    LOGGER.debug(response.text)
+    try:
+        response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+        LOGGER.debug(response.text)
+    except:
+        LOGGER.error(f'not able to use Scale REST API , Check cr file (guiHost = {test_data["guiHost"]})')
+        assert False
 
     if not(response.status_code == 200):
         LOGGER.error("API response is ")
         LOGGER.error(str(response))
         LOGGER.error("not able to use scale REST API")
-        LOGGER.error("Recheck parameters of conftest file")
+        LOGGER.error("Recheck parameters of config/test.config file")
+        LOGGER.error(f'must check username and password for {test_data["guiHost"]}')
         assert False
 
 
@@ -210,9 +214,20 @@ def unmount_fs(test_data):
     data = '{"nodes":["'+test_data["guiHost"]+'"],"force": false}'
     response = requests.put(unmount_link, headers=headers,
                             data=data, verify=False, auth=(test_data["username"], test_data["password"]))
-    LOGGER.info(response.text)
-    LOGGER.info(f'primaryFS {test_data["primaryFs"]} unmounted')
+    LOGGER.debug(response.text)
     time.sleep(5)
+
+    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
+        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]
+    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response_dict = json.loads(response.text)
+    mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
+
+    if test_data["guiHost"] in mounted_on:
+        LOGGER.error(f'Unable to unmount {test_data["primaryFs"]} from {test_data["guiHost"]}')
+        assert False
+
+    LOGGER.info(f'primaryFS {test_data["primaryFs"]} unmounted from {test_data["guiHost"]}')
 
 
 def mount_fs(test_data):
@@ -241,9 +256,18 @@ def mount_fs(test_data):
     response = requests.put(mount_link, headers=headers,
                             data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
-    LOGGER.info(f'primaryFS {test_data["primaryFs"]} mounted')
     time.sleep(5)
 
+    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
+        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]
+    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response_dict = json.loads(response.text)
+    mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
+
+    if test_data["guiHost"] not in mounted_on:
+        LOGGER.error(f'Unable to mount {test_data["primaryFs"]} on {test_data["guiHost"]}')
+        assert False
+    LOGGER.info(f'primaryFS {test_data["primaryFs"]} mounted on {test_data["guiHost"]}')
 
 def cleanup():
     """
