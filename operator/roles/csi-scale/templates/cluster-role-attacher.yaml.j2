@@ -63,3 +63,14 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+
