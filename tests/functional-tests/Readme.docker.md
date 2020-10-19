@@ -24,6 +24,12 @@ Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platf
 kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path>
 
 ```
+
+```
+eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml --from-file=kubeconfig=/root/.kube/config
+ 
+```
+
 - if you want to use SSL=enable, for cacert configmap use following command and change the path in test.config file as `config/local.crt`
 ```
 kubectl create configmap  test-config  --from-file=test.config=<test.config filepath>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path> --from-file=local.crt=<local.crt file path>
@@ -62,6 +68,14 @@ spec:
   nodeSelector:
      kubernetes.io/hostname: <Worker Node name> #node selector for scheduling the test pod
 
+```
+
+- Create test pod 
+
+```
+kubectl apply -f <test-pod-yaml-file>
+
+eg. kubectl apply -f csi-test-pod.yaml 
 ```
 
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :

@@ -14,6 +14,8 @@ def values(request):
     operator_data = scaleop.read_operator_data(clusterconfig_value, namespace_value)
     keep_objects = data["keepobjects"]
     test_namespace = namespace_value
+    if not(data["volBackendFs"] == ""):
+        data["primaryFs"] = data["volBackendFs"]
 
     ff.cred_check(data)
     ff.set_data(data)
@@ -55,8 +57,6 @@ def values(request):
 
     driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod, data["id"], test_namespace, keep_objects, data["image_name"])
     ff.create_dir(data["volDirBasePath"])
-    if not(data["volBackendFs"] == ""):
-        data["primaryFs"] = data["volBackendFs"]
     # driver_object.create_test_ns(kubeconfig_value)
     yield
     # driver_object.delete_test_ns(kubeconfig_value)
@@ -878,7 +878,7 @@ def test_driver_dynamic_fail_67():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_pass68():
+def test_driver_dynamic_pass_68():
     value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"]}
     driver_object.test_dynamic(value_sc)
