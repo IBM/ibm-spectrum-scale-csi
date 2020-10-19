@@ -111,6 +111,7 @@ def get_remote_data(data_passed):
 def test_get_version():
     LOGGER.info("REMOTE CLUSTER")
     ff.get_scale_version(remote_data)
+    LOGGER.info("\n")
     LOGGER.info("LOCAL CLUSTER")
     ff.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
@@ -2590,6 +2591,7 @@ def test_driver_dynamic_fail_invalid_input_269():
     driver_object.test_dynamic(value_sc)
 
 
+@pytest.mark.skip
 def test_driver_dynamic_fail_invalid_input_270():
     value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "gid": invaliddata["r_gid_number"],
@@ -2637,5 +2639,5 @@ def test_driver_one_pvc_two_pod():
 
 @pytest.mark.slow
 def test_driver_sequential_pvc():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
     driver_object.sequential_pvc(value_sc, data["number_of_sequential_pvc"])

@@ -204,7 +204,9 @@ class Scaleoperatorobject:
     def check(self):
         config.load_kube_config(config_file=self.kubeconfig)
 
-        ob.check_scaleoperatorobject_is_deployed()
+        is_deployed = ob.check_scaleoperatorobject_is_deployed()
+        if(is_deployed is False):
+            return False
 
         ob.check_scaleoperatorobject_statefulsets_state(
             "ibm-spectrum-scale-csi-attacher")
@@ -740,20 +742,20 @@ def read_operator_data(clusterconfig, namespace):
 
     if check_key(data, "local_cacert_name"):
         if data["cacert_path"] == "":
-            LOGGER.error("if using cacert , MUST include cacert path in conftest.py")
+            LOGGER.error("if using cacert , MUST include cacert path in test.config")
             assert False
 
     for remote_secret_name in data["remote_secret_names"]:
         if not(remote_secret_name in data["remote_username"].keys()):
-            LOGGER.error(f"Need username for {remote_secret_name} secret in conftest")
+            LOGGER.error(f"Need username for {remote_secret_name} secret in test.config")
             assert False
         if not(remote_secret_name in data["remote_password"].keys()):
-            LOGGER.error(f"Need password for {remote_secret_name} secret in conftest")
+            LOGGER.error(f"Need password for {remote_secret_name} secret in test.config")
             assert False
 
     for remote_cacert_name in data["remote_cacert_names"]:
         if not(remote_cacert_name in data["remote_cacert_path"].keys()):
-            LOGGER.error(f"Need cacert path for {remote_cacert_name} in conftest")
+            LOGGER.error(f"Need cacert path for {remote_cacert_name} in test.config")
             assert False
 
     return data
