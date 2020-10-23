@@ -439,6 +439,21 @@ func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName stri
 	return true, nil
 }
 
+func (s *spectrumRestV2) FilesetRefreshTask() error {
+	glog.V(4).Infof("rest_v2 FilesetRefreshTask")
+
+	filesetRefreshURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/refreshTask/enqueue?taskId=FILESETS&maxDelay=0")
+	filesetRefreshResponse := GenericResponse{}
+
+	err := s.doHTTP(filesetRefreshURL, "POST", &filesetRefreshResponse, nil)
+	if err != nil {
+		glog.Errorf("Error in fileset refresh task: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error {
 	glog.V(4).Infof("rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %s, gid: %s", filesystemName, relativePath, uid, gid)
 

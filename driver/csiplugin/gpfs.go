@@ -280,6 +280,15 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		return scaleConnMap, scaleConfig, primaryInfo, err
 	}
 
+	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
+	if primaryInfo.RemoteCluster != "" {
+		err = scaleConnMap["primary"].FilesetRefreshTask()
+		if err != nil {
+			glog.Errorf("Error in fileset refresh task")
+			return scaleConnMap, scaleConfig, primaryInfo, err
+		}
+	}
+
 	if fsmount != primaryInfo.PrimaryFSMount {
 		fsetlinkpath = strings.Replace(fsetlinkpath, fsmount, primaryInfo.PrimaryFSMount, 1)
 	}
