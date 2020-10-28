@@ -40,6 +40,7 @@ type SpectrumScaleConnector interface {
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(filesystemName string, filesetName string) (Fileset_v2, error)
 	IsFilesetLinked(filesystemName string, filesetName string) (bool, error)
+	FilesetRefreshTask() error
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(filesystemName string, filesetName string) (string, error)
 	SetFilesetQuota(filesystemName string, filesetName string, quota string) error
