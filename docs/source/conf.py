@@ -19,7 +19,7 @@
 
 project = 'IBM Spectrum Scale CSI'
 copyright = '2019, IBM'
-author = ''
+author = 'Deepak Ghuge'
 
 master_doc = 'index'
 

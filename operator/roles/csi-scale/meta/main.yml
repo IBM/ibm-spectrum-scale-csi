@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: John Dunham
+  author: Deepak Ghuge
   description: An operator for managing and deploying Scale CSI drivers.
   company: IBM
   license: GPL-2.0-or-later

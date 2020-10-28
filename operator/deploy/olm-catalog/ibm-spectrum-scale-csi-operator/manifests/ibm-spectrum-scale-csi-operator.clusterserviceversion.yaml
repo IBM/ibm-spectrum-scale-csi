@@ -475,8 +475,8 @@ spec:
   - name: CSI Developer Documentation
     url: https://kubernetes-csi.github.io/docs/
   maintainers:
-  - email: jdunham@us.ibm.com
-    name: John Dunham
+  - email: deeghuge@in.ibm.com
+    name: Deepak Ghuge
   maturity: alpha
   provider:
     name: IBM
