@@ -71,6 +71,8 @@ def values(request):
 #: Testcase that are expected to pass:
 @pytest.mark.regression
 def test_get_version():
+    LOGGER.info("Cluster Details:")
+    LOGGER.info("----------------")
     ff.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
     scaleop.scale_function.get_operator_image()

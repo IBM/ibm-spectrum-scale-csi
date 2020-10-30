@@ -597,7 +597,7 @@ def get_driver_image():
     try:
         api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-        LOGGER.info("\nCSI driver image    : " + api_response.status.container_statuses[-1].image)
+        LOGGER.info("CSI driver image : " + api_response.status.container_statuses[-1].image)
         LOGGER.info("CSI driver image id : " + api_response.status.container_statuses[-1].image_id)
 
     except ApiException as e:

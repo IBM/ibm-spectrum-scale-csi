@@ -708,7 +708,7 @@ def get_operator_image():
     try:
         api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-        LOGGER.info("\nCSI operator image    : " + api_response.status.container_statuses[-1].image)
+        LOGGER.info("CSI operator image : " + api_response.status.container_statuses[-1].image)
         LOGGER.info("CSI operator image id : " + api_response.status.container_statuses[-1].image_id)
     except ApiException as e:
         LOGGER.info("Unable to get operator image")
