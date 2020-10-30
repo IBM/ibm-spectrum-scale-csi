@@ -578,12 +578,28 @@ def check_pod_running(pod_name):
     assert False
 
 
-def get_driver_image():
-    read_daemonsets_api_instance = client.AppsV1Api()
+def get_driver_ds_pod_name():
     try:
-        response = read_daemonsets_api_instance.read_namespaced_daemon_set(
-                name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
-        driver_image = response.spec.template.spec.containers[1].image
-        LOGGER.info("CSI driver   image : " + str(driver_image))
+        pod_list_api_instance = client.CoreV1Api()
+        pod_list_api_response = pod_list_api_instance.list_namespaced_pod(
+            namespace=namespace_value, pretty=True, field_selector="spec.serviceAccountName=ibm-spectrum-scale-csi-node")
+        demonset_pod_name = pod_list_api_response.items[0].metadata.name
+        LOGGER.debug(str(pod_list_api_response))
+        return demonset_pod_name
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->list_namespaced_pod: {e}")
+        assert False
+
+def get_driver_image():
+    pod_name = get_driver_ds_pod_name()
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_pod(
+                name=pod_name, namespace=namespace_value, pretty=True)
+        LOGGER.info("CSI driver image : " + api_response.status.container_statuses[-1].image)
+        LOGGER.info("CSI driver image id : " + api_response.status.container_statuses[-1].image_id)
+
     except ApiException as e:
         LOGGER.info("Unable to get driver image")
+
