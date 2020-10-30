@@ -19,8 +19,8 @@ def values(request):
         assert False
     test_namespace = namespace_value
 
-    remote_data = get_remote_data(data)
     ff.cred_check(data)
+    remote_data = get_remote_data(data)
     ff.cred_check(remote_data)
     ff.set_data(remote_data)
 
