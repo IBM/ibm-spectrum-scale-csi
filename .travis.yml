@@ -109,7 +109,7 @@ jobs:
         - pip install ansible
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
-        - pip install operator-courier==2.1.7
+        - pip install operator-courier==2.1.10
         - cd ${BUILD_DIR_OPERATOR}
         - ls ${OLM_MANIFEST}
         - echo ${BUILD_DIR_OPERATOR}
