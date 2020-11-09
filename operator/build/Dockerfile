@@ -2,7 +2,7 @@
 # usage: docker buildx build -f build/Dockerfile --platform=linux/amd64 -t my_image_tag .
 
 FROM quay.io/operator-framework/ansible-operator:v0.19.4
-MAINTAINER jdunham@us.ibm.com
+MAINTAINER deeghuge@in.ibm.com
 
 ARG CSI_ATTACHER_IMAGE
 ARG CSI_PROVISIONER_IMAGE
