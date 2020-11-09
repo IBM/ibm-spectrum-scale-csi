@@ -77,7 +77,6 @@ if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
 time=`date +"%m-%d-%Y-%T"`
 logdir=${outdir%/}/ibm-spectrum-scale-csi-logs_$time
 
-
 klog="$cmd logs --namespace $ns"
 mkdir $logdir
 CSI_SPECTRUM_SCALE_LABEL="ibm-spectrum-scale-csi"
@@ -85,9 +84,6 @@ PRODUCT_NAME="ibm-spectrum-scale-csi"
 
 echo "Collecting \"$PRODUCT_NAME\" logs..."
 echo "The log files will be saved in the folder [$logdir]"
-
-#csi_spectrum_scale_attacher_log_name=${logdir}/ibm-spectrum-scale-csi-attacher.log
-#csi_spectrum_scale_provisioner_log_name=${logdir}/ibm-spectrum-scale-csi-provisioner.log
 
 describe_all_per_label=${logdir}/ibm-spectrum-scale-csi-describe-all-by-label
 get_all_per_label=${logdir}/ibm-spectrum-scale-csi-get-all-by-label
@@ -97,16 +93,12 @@ get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
 get_spectrum=${logdir}/${CSI_SPECTRUM_SCALE_LABEL}
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 
-#echo "$klog StatefulSet/ibm-spectrum-scale-csi-attacher"
-#$klog StatefulSet/ibm-spectrum-scale-csi-attacher > ${csi_spectrum_scale_attacher_log_name} 2>&1 || :
-#echo "$klog StatefulSet/ibm-spectrum-scale-csi-provisioner"
-#$klog StatefulSet/ibm-spectrum-scale-csi-provisioner > ${csi_spectrum_scale_provisioner_log_name} 2>&1 || :
-
 for statefulSetName in `$cmd -n $ns get StatefulSet --no-headers -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" |  awk '{print $1}'`; do
   echo "$klog StatefulSet/${statefulSetName}"
   $klog StatefulSet/${statefulSetName} > ${logdir}/${statefulSetName}.log 2>&1 || :
   $cmd describe --namespace $ns StatefulSet/${statefulSetName} > ${logdir}/${statefulSetName} 2>&1 || :
 done
+
 # kubectl logs on operator pods
 operatorName=`$cmd get deployment ibm-spectrum-scale-csi-operator  --namespace $ns  | grep -v NAME | awk '{print $1}'`
 if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
@@ -120,17 +112,6 @@ for opPodName in `$cmd get pods --no-headers --namespace $ns -l app.kubernetes.i
   $klog pod/${opPodName} --all-containers  > ${logdir}/${opPodName}.log 2>&1 || :
   $klog pod/${opPodName} --all-containers  --previous > ${logdir}/${opPodName}-previous.log 2>&1 || :
 done
-
-## kubectl logs on csi pods
-#for csi_pod in `$cmd get pods --no-headers -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator --namespace $ns | awk '{print $1}'`; do
-#   echo "$klog pod/${csi_pod}"
-#   $klog pod/${csi_pod} -c ibm-spectrum-scale-csi > ${logdir}/${csi_pod}.log 2>&1 || :
-#   $klog pod/${csi_pod} -c driver-registrar > ${logdir}/${csi_pod}-driver-registrar.log 2>&1 || :
-#   $klog pod/${csi_pod} -c ibm-spectrum-scale-csi --previous > ${logdir}/${csi_pod}-previous.log 2>&1 || :
-#   $klog pod/${csi_pod} -c driver-registrar --previous > ${logdir}/${csi_pod}-driver-registrar-previous.log 2>&1 || :
-#done
-
-
 
 describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
 echo "$describe_label_cmd"
