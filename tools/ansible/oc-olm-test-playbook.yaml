@@ -1,0 +1,79 @@
+- name: Run OLM test
+  hosts: localhost
+  become: yes
+  gather_facts: false
+  vars:
+
+    # https://quay.io/repository/vrushch/vrushal-csi-driver-repo-2
+    # In above ${QUAY_NAMESPACE} = vrushch, ${PACKAGE_NAME} = vrushal-csi-driver-repo-2
+    
+    QUAY_NAMESPACE: vrushch
+    PACKAGE_NAME: vrushal-csi-driver-repo-2
+
+    OPERATOR_VERSIONS:
+      - 1.0.0
+      - 1.1.0
+      - 2.0.0
+      - 2.1.0
+
+    QUAY_USERNAME: "vrushch"
+    QUAY_PASSWORD: "XXXXXXXXXXX"
+
+
+    # Need not to be changed
+    CHANNEL_NAME: latest
+
+    OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator
+    #It can also be /root/demo/community-operators/community-operators/ibm-spectrum-scale-csi-operator
+
+    # Do not change following variables
+    NAMESPACE: "openshift-marketplace"
+    INTERACTABLE: true
+    OC_SUB: "./olm-test/oc-sub.yaml.j2"
+    SUB: "/tmp/sub"
+
+  tasks:
+    - name: "Get timestamp"
+      shell: "date +%s"
+      register: tstamp
+
+    - name: "Determing directory for temporary package"
+      set_fact: 
+        olm_dir: "/tmp/{{PACKAGE_NAME}}-{{tstamp.stdout}}"
+
+    - name: "Create the directory {{ olm_dir }}"
+      file:
+        path: "{{ olm_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: "Check for openshift"
+      shell: "which oc"
+      register: result
+      ignore_errors: true
+
+    - name: "Openshift detected using {{ OC_SUB }} for subscription"
+      set_fact:
+        subscription: "{{ OC_SUB }}"
+      when: result.rc == 0
+
+    - name: "Ensure subscription file is defined for consumption"
+      template: 
+        src: "{{subscription}}"
+        dest: "{{ SUB }}"
+    
+    - name: "Iterate  over the operator versions."
+      include_tasks: "./olm-test/check-version-play.yaml"
+      loop: "{{ OPERATOR_VERSIONS }}" 
+
+    - name: "Remove the file {{SUB}}"
+      file:
+        path: "{{ SUB }}"
+        state: absent
+
+    - name: "Remove the directory {{ olm_dir }}"
+      file:
+        path: "{{ olm_dir }}"
+        state: absent
+        mode: '0755'
+
