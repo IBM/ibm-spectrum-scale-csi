@@ -13,7 +13,6 @@
     src: "Dockerfile"
     dest: "{{ olm_dir }}/Dockerfile"
 
-
 - name: "build image"
   shell: 'cd {{ olm_dir }};docker build . --rm -t quay.io/{{QUAY_NAMESPACE}}/{{PACKAGE_NAME}}:{{CHANNEL_NAME}} ; sleep 10'
 

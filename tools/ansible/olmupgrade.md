@@ -24,11 +24,6 @@ ii.  Click the + icon in the top right of the header on any quay.io page and cho
 iii. Select 'Container Image Repository' on the next page
 iv.  Enter repository name , click on public and and then click the 'Create Public Repository' button.
 ```
-5. Clone this repo
-```
-git clone https://github.com/vrushch/auto-olm.git
-cd auto-olm
-```
 
 ### Steps to Follow (openshift)
 
@@ -36,10 +31,10 @@ cd auto-olm
 ```
 oc patch OperatorHub cluster --type json -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'
 ```
-2. Edit required values in olm-test-playbook.yaml
+2. Edit required values in oc-olm-test-playbook.yaml
 ```
-QUAY_NAMESPACE: vrushch                  # this is quay username
-PACKAGE_NAME: vrushal-csi-driver-repo-2  # this is Container Image Repository Repository name
+QUAY_NAMESPACE: "QUAY_NAMESPACE"         # Quay username
+PACKAGE_NAME: "PACKAGE_NAME"             # Quay Container image repository name
 
 # Versions you want to test. Playbook will upload  in order and run  tests.
 OPERATOR_VERSIONS:
@@ -49,15 +44,15 @@ OPERATOR_VERSIONS:
   - 2.1.0
 
 # Quay username with write access to the application and Quay Password
-QUAY_USERNAME: "vrushch"
-QUAY_PASSWORD: "XXXXXXXXXX"
+QUAY_USERNAME: "QUAY_USERNAME"
+QUAY_PASSWORD: "QUAY_PASSWORD"
 
 # Check OPERATOR_DIR location is correct
 OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator
 ```
 3. Run following command
 ```
-ansible-playbook olm-test-playbook.yaml
+ansible-playbook oc-olm-test-playbook.yaml
 ```
 4. Go to operatorhub listing of your Openshift cluster and install operator.
    verify operator installtion using  
@@ -72,9 +67,6 @@ oc patch OperatorHub cluster --type json -p '[{"op": "add", "path": "/spec/disab
 ```
 Repositories -> repository_name -> setting -> delete repository
 ```
-
-
-
 
 ## Following Steps are for kubernetes
 ### Pre-requisite: (kubernetes)
@@ -100,11 +92,6 @@ ii.  Click the + icon in the top right of the header on any quay.io page and cho
 iii. Select 'Container Image Repository' on the next page
 iv.  Enter repository name , click on public and and then click the 'Create Public Repository' button.
 ```
-5. Clone this repo
-```
-git clone https://github.com/vrushch/auto-olm.git
-cd auto-olm
-```
 
 ### Steps to Follow (kubernetes)
 
@@ -127,8 +114,9 @@ kubectl delete catalogsource operatorhubio-catalog -n olm
 ```
 5. Edit required values in k8s-olm-test-playbook.yaml
 ```
-QUAY_NAMESPACE: vrushch                  # this is quay username
-PACKAGE_NAME: vrushal-csi-driver-repo-2  # this is Container Image Repository Repository name
+QUAY_NAMESPACE: "QUAY_NAMESPACE"         # Quay username
+PACKAGE_NAME: "PACKAGE_NAME"             # Quay Container image repository name
+
 
 # Versions you want to test. Playbook will upload  in order and run  tests.
 OPERATOR_VERSIONS:
