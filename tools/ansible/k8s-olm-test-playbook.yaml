@@ -35,7 +35,7 @@
     SUB: "/tmp/olm-sub"
     K8S_NS: "./olm-test/k8s-ns.yaml.j2"
     NS: "/tmp/olm-ns"
-    K8S_CATALOG: "./olm-test/k8s-catalog.yaml.j2"
+    K8S_CATALOG: "./olm-test/catalog.yaml.j2"
     CATALOG: "/tmp/olm-catalog"
 
   tasks:

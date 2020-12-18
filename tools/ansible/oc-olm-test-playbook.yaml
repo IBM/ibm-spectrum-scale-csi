@@ -30,7 +30,7 @@
     # Do not change following variables
     NAMESPACE: "openshift-marketplace"
     INTERACTABLE: true
-    OC_SUB: "./olm-test/oc-sub.yaml.j2"
+    OC_SUB: "./olm-test/catalog.yaml.j2"
     SUB: "/tmp/sub"
 
   tasks:
