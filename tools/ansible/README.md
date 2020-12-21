@@ -28,4 +28,4 @@ Run the versioning playbook after updating `VERSION_NEW` and `VERSION_OLD` respe
 
 ## Testing OLM? 
 
-Follow the instructon on page [olmupgrade.md](./tools/ansible/olmupgrade.md)
+Follow the instructon on page [olmupgrade.md](./olmupgrade.md)
