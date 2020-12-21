@@ -550,6 +550,21 @@ func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName stri
 	return true, nil
 }
 
+func (s *spectrumRestV2) FilesetRefreshTask() error {
+	glog.V(4).Infof("rest_v2 FilesetRefreshTask")
+
+	filesetRefreshURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/refreshTask/enqueue?taskId=FILESETS&maxDelay=0")
+	filesetRefreshResponse := GenericResponse{}
+
+	err := s.doHTTP(filesetRefreshURL, "POST", &filesetRefreshResponse, nil)
+	if err != nil {
+		glog.Errorf("Error in fileset refresh task: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error {
 	glog.V(4).Infof("rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %s, gid: %s", filesystemName, relativePath, uid, gid)
 
@@ -725,7 +740,8 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 	if (Quota_v2{}) == listQuotaResponse {
 		return "", nil
 	} else {
-		return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
+		glog.Errorf("No quota information found for fileset %s", filesetName)
+		return "", nil
 	}
 }
 
@@ -929,19 +945,30 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) 
 func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFileSetUid. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
+	filesetResponse, err := s.GetFileSetResponseFromName(filesystemName, filesetName)
+	if err != nil {
+		return "", fmt.Errorf("Fileset response not found for fileset %v:%v", filesystemName, filesetName)
+	}
+
+	return fmt.Sprintf("%d", filesetResponse.Config.Id), nil
+}
+
+func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error) {
+	glog.V(4).Infof("rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", filesystemName, filesetName)
+
 	getFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName))
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		return "", fmt.Errorf("Unable to list fileset %v.", filesetName)
+		return Fileset_v2{}, fmt.Errorf("Unable to list fileset %v.", filesetName)
 	}
 
 	if len(getFilesetResponse.Filesets) == 0 {
-		return "", fmt.Errorf("Unable to list fileset %v.", filesetName)
+		return Fileset_v2{}, fmt.Errorf("Unable to list fileset %v.", filesetName)
 	}
 
-	return fmt.Sprintf("%d", getFilesetResponse.Filesets[0].Config.Id), nil
+	return getFilesetResponse.Filesets[0], nil
 }
 
 // CheckIfFilesetExist Checking if fileset exist in filesystem

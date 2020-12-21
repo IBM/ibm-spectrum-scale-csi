@@ -65,7 +65,7 @@ then
   exit 1
 fi
 
-operator=$($cmd get deployment -l product=ibm-spectrum-scale-csi --namespace "$ns"  |grep -v NAME |awk '{print $1}')
+operator=`$cmd get deployment --field-selector=metadata.name==ibm-spectrum-scale-csi-operator --namespace $ns  |grep -v NAME |awk '{print $1}'`
 if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
       echo "ibm-spectrum-scale-csi driver and operator is not running in namespace $ns. Please provide a valid namespace"
       exit 1
@@ -89,7 +89,7 @@ get_k8snodes=${logdir}/ibm-spectrum-scale-csi-k8snodes
 get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 
-for statefulSetName in $($cmd -n "$ns" get StatefulSet --no-headers -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" |  awk '{print $1}'); do
+for statefulSetName in `$cmd -n $ns get StatefulSet --no-headers -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" |  awk '{print $1}'`; do
   echo "$klog StatefulSet/${statefulSetName}"
   $klog StatefulSet/"${statefulSetName}" > "${logdir}"/"${statefulSetName}".log 2>&1 || :
   $cmd describe --namespace "$ns" StatefulSet/"${statefulSetName}" > "${logdir}"/"${statefulSetName}" 2>&1 || :

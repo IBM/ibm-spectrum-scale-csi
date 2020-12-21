@@ -2,7 +2,7 @@
 scorecard:
   init-timeout: 120
   output: json
-  bundle: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.0.0"
+  bundle: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.1.0"
   plugins:
     - basic:
         namespace: "ibm-spectrum-scale-csi-driver"
@@ -12,4 +12,4 @@ scorecard:
         namespace: "ibm-spectrum-scale-csi-driver"
         cr-manifest:
           - "deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml"
-        csv-path: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.0.0/ibm-spectrum-scale-csi-operator.v2.0.0.clusterserviceversion.yaml"
+        csv-path: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/2.1.0/ibm-spectrum-scale-csi-operator.v2.1.0.clusterserviceversion.yaml"

@@ -52,6 +52,11 @@ pytest  driver_test.py
 pytest  driver_test.py::<test_name> 
 
 eg. pytest  driver_test.py::test_driver_dynamic_pass_1 
+
+#Run specific testcases using marker 
+pytest driver_test.py -m marker_name
+
+eg. pytest driver_test.py -m regression
 ```
                 
 ### Run operator tests using operator_test.py as shown below -

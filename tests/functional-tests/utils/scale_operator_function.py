@@ -687,3 +687,29 @@ def check_cluster_role_binding_exists(cluster_role_binding_name):
     except ApiException:
         LOGGER.info("cluster role binding does not exists")
         return False
+
+def get_operator_pod_name():
+    try:
+        pod_list_api_instance = client.CoreV1Api()
+        pod_list_api_response = pod_list_api_instance.list_namespaced_pod(
+            namespace=namespace_value, pretty=True, field_selector="spec.serviceAccountName=ibm-spectrum-scale-csi-operator")
+        operator_pod_name = pod_list_api_response.items[0].metadata.name
+        LOGGER.debug(str(pod_list_api_response))
+        return operator_pod_name
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->list_namespaced_pod: {e}")
+        assert False
+
+
+def get_operator_image():
+    pod_name = get_operator_pod_name()
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_pod(
+                name=pod_name, namespace=namespace_value, pretty=True)
+        LOGGER.info("CSI operator image : " + api_response.status.container_statuses[-1].image)
+        LOGGER.info("CSI operator image id : " + api_response.status.container_statuses[-1].image_id)
+    except ApiException as e:
+        LOGGER.info("Unable to get operator image")
+

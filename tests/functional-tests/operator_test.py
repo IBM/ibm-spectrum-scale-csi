@@ -20,6 +20,7 @@ def _values(request):
     condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
     operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
     read_file = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    ff.cred_check(read_file)
     fileset_exist = ff.fileset_exists(read_file)
     operator.create()
     operator.check()
@@ -35,6 +36,12 @@ def _values(request):
     if(not(fileset_exist) and ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
 
+@pytest.mark.regression
+def test_get_version(_values):
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    ff.get_scale_version(test)
+    scaleop.get_kubernetes_version(kubeconfig_value)
+    scaleop.scale_function.get_operator_image()
 
 def test_get_version(_values):
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
@@ -550,7 +557,7 @@ def test_correct_cacert(_values):
 
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     if test["cacert_path"] == "":
-        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        LOGGER.info("skipping the test as cacert file path is not given in test.config")
         pytest.skip("path of cacert file is not given")
 
     operator_object.create()
@@ -592,7 +599,7 @@ def test_cacert_with_secureSslMode_false(_values):
 
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     if test["cacert_path"] == "":
-        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        LOGGER.info("skipping the test as cacert file path is not given in test.config")
         pytest.skip("path of cacert file is not given")
 
     operator_object.create()
@@ -635,7 +642,7 @@ def test_wrong_cacert(_values):
     test["make_cacert_wrong"] = True
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     if test["cacert_path"] == "":
-        LOGGER.info("skipping the test as cacert file path is not given in conftest.py")
+        LOGGER.info("skipping the test as cacert file path is not given in test.config")
         pytest.skip("path of cacert file is not given")
 
     operator_object.create()
