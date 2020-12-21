@@ -3,21 +3,23 @@
 ## Following Steps are for openshift
 ### Pre-requisite: (openshift)
 
-1. ansible
+1. Install ansible package 
 ```
 python3 -m pip install ansible
 ```
-2. podman
+2. Install podman
 ```
 yum install podman
 ```
-3. Get ibm-spectrum-scale-csi repo
+3. Clone ibm-spectrum-scale-csi repository
+
 ```
 cd /root
 git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
 
 ```
 4. Create public Container Image Repository on quay
+
 ```
 i.   Go to quay.io and login.
 ii.  Click the + icon in the top right of the header on any quay.io page and choose 'New Repository'
@@ -27,7 +29,7 @@ iv.  Enter repository name , click on public and and then click the 'Create Publ
 
 ### Steps to Follow (openshift)
 
-1. Disable default operator sources.
+1. Disable default operator sources on OCP platform
 ```
 oc patch OperatorHub cluster --type json -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'
 ```
@@ -50,12 +52,11 @@ QUAY_PASSWORD: "QUAY_PASSWORD"
 # Check OPERATOR_DIR location is correct
 OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator
 ```
-3. Run following command
+3. Run OLM upgrade playbook using following command
 ```
 ansible-playbook oc-olm-test-playbook.yaml
 ```
-4. Go to operatorhub listing of your Openshift cluster and install operator.
-   verify operator installtion using  
+4. Go to operatorhub listing of your OCP cluster and install operator in ibm-spectrum-scale-csi-driver namespace and verify operator installation using 
 ```
 oc get pod -n ibm-spectrum-scale-csi-driver
 ```
@@ -71,15 +72,15 @@ Repositories -> repository_name -> setting -> delete repository
 ## Following Steps are for kubernetes
 ### Pre-requisite: (kubernetes)
 
-1. ansible
+1. Install ansible package 
 ```
 python3 -m pip install ansible
 ```
-2. docker
+2. Install docker
 ```
 yum install docker
 ```
-3. Get ibm-spectrum-scale-csi repo
+3. Clone ibm-spectrum-scale-csi repo
 ```
 cd /root
 git clone https://github.com/IBM/ibm-spectrum-scale-csi.git
@@ -99,16 +100,16 @@ iv.  Enter repository name , click on public and and then click the 'Create Publ
 ```
 docker login quay.io
 ```
-2. Run following commands
+2. Install OLM using following commands
 ```
 kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/crds.yaml
 kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/olm.yaml
 ```
-3. Check for OLM pods 
+3. Check OLM pods status 
 ```
 kubectl get pods -n olm
 ```
-4. Delete catalogsource of all operators
+4. Delete catalogsource of default  operators
 ```
 kubectl delete catalogsource operatorhubio-catalog -n olm
 ```

@@ -27,10 +27,5 @@ Run the versioning playbook after updating `VERSION_NEW` and `VERSION_OLD` respe
 ```
 
 ## Testing OLM? 
-Use the olm test playbook. 
-First setup a [quay application repo](https://ibm-spectrum-scale-csi.readthedocs.io/en/latest/developers/olm.html)
-Then customize `olm-test-playbook.yaml` to your environment (there's inline docs, _don't_ touch the Jinja2 templates).
 
-```
-  ansible-playbook olm-test-playbook.yaml
-```
+Follow the instructon on page [olmupgrade.md](./tools/ansible/olmupgrade.md)
