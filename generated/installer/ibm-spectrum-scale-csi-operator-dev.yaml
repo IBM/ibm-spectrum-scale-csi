@@ -240,13 +240,9 @@ spec:
     plural: csiscaleoperators
     singular: csiscaleoperator
   scope: Namespaced
-  versions:
-    - name: v1
-      served: true
-      storage: true
-      subresources:
-        status: {}
-      schema:
+  subresources:
+    status: {}
+  validation:
         openAPIV3Schema:
           type: object
           properties:
