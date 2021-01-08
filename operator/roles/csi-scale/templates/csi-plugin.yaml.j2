@@ -35,7 +35,8 @@ spec:
 {% endfor %}
 {% endif %}
       serviceAccount: "{{ productName }}-node"
-      hostNetwork: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: driver-registrar
 {% if 'apps.openshift.io' in api_groups %}
@@ -123,6 +124,22 @@ spec:
         - name:  "{{ pullSecret }}"
 {% endfor %}
 {% endif %}
+
+{% if tolerations | length > 0 %}
+      tolerations:
+{% for toleration in tolerations %}
+        - key: "{{ toleration.key }}"
+          operator: "{{ toleration.operator }}"
+{% if 'Equal' == toleration.operator %}
+          value: "{{ toleration.value }}"
+{% endif %}
+          effect: {{ toleration.effect }}
+{% if 'NoExecute' == toleration.effect  and toleration.tolerationSeconds is defined %}
+          tolerationSeconds: "{{ toleration.tolerationSeconds }}"
+{% endif %}
+{% endfor %}
+{% endif %}
+
       volumes:
         - name: plugin-dir
           hostPath:

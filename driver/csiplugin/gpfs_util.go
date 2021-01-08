@@ -62,7 +62,9 @@ type scaleVolume struct {
 type scaleVolId struct {
 	ClusterId      string
 	FsUUID         string
+	FsName         string
 	FsetId         string
+	FsetName       string
 	DirPath        string
 	SymLnkPath     string
 	IsFilesetBased bool
