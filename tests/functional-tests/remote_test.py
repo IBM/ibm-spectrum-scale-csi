@@ -105,6 +105,7 @@ def get_remote_data(data_passed):
 
     return remote_data
 
+
 #: Testcase that are expected to pass:
 @pytest.mark.regression
 def test_get_version():

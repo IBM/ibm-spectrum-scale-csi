@@ -437,6 +437,7 @@ def create_dir(dir_name):
     LOGGER.info(f'Directory Create : Creating directory {dir_name}')
     check_dir(dir_name)
 
+
 def check_dir(dir_name):
     """
     checks directory dir_name is present or not
