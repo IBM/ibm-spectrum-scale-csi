@@ -40,7 +40,7 @@ fi
 
 /usr/bin/cat > ${snapcontentname}.yaml  <<EOL
 # -- ${snapcontentname}.yaml
-apiVersion: snapshot.storage.k8s.io/v1beta1
+apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotContent
 metadata:
         name: ${snapcontentname}

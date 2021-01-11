@@ -9,22 +9,22 @@ Note: Kubernetes distributions should provide the external snapshotter by defaul
 These are snapshotter beta CRDs. Do this once per cluster
 
    ```
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v4.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v4.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
 
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v4.0.0/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
    ```
 
 ### Install snapshot controller
 
    ```
-   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v4.0.0/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 
-   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v3.0.0/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+   curl -O https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v4.0.0/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
    ```
 
-Edit setup-snapshot-controller.yaml to ensure the image being used is us.gcr.io/k8s-artifacts-prod/sig-storage/snapshot-controller:v3.0.0. Then apply the manifest.
+Edit setup-snapshot-controller.yaml to ensure the image being used is us.gcr.io/k8s-artifacts-prod/sig-storage/snapshot-controller:v4.0.0. Then apply the manifest.
 
    ```
    kubectl apply -f setup-snapshot-controller.yaml
@@ -73,7 +73,7 @@ Install the operator and driver images with snapshot features. Following resourc
 This is like a StorageClass that defines driver specific attributes for the snapshot to be created
 
    ```
-   apiVersion: snapshot.storage.k8s.io/v1beta1
+   apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshotClass
    metadata:
      name: snapclass1
@@ -85,7 +85,7 @@ This is like a StorageClass that defines driver specific attributes for the snap
 Specify the source volume to be used for creating snapshot here. Source PVC should be in the same namespace in which the snapshot is being created. Snapshots can be created only from independent fileset based PVCs.
 
    ```
-   apiVersion: snapshot.storage.k8s.io/v1beta1
+   apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshot
    metadata:
      name: snap1
@@ -146,7 +146,7 @@ When creating a volume from a volume snapshot, data from source snapshot is copi
 You can expose a pre-existing Spectrum Scale fileset snapshot in Kubernetes by manually creating a VolumeSnapshotContent as below-
 
    ```
-   apiVersion: snapshot.storage.k8s.io/v1beta1
+   apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshotContent
    metadata:
       name: mysnapcontent
@@ -166,7 +166,7 @@ volumeSnapshotRef is the pointer to the VolumeSnapshot object this content shoul
 Once the VolumeSnapshotContent is created, create the VolumeSnapshot pointing to the same VolumeSnapshotContent
 
    ```
-   apiVersion: snapshot.storage.k8s.io/v1beta1
+   apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshot
    metadata:
       name: mysnapshot
