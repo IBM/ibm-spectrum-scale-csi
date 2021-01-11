@@ -215,7 +215,7 @@ class Scaleoperatorobject:
 
         val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
 
-        ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
+        #ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
         return val
 
