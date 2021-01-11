@@ -1,5 +1,6 @@
 import time
 import logging
+import copy
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import utils.fileset_functions as ff
@@ -21,38 +22,38 @@ def set_keep_objects(keep_object):
 
 def clean_with_created_objects(created_objects):
 
-    for pod_name in created_objects["restore_pod"]:
+    for pod_name in copy.deepcopy(created_objects["restore_pod"]):
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
 
-    for pvc_name in created_objects["restore_pvc"]:
+    for pvc_name in copy.deepcopy(created_objects["restore_pvc"]):
         vol_name=delete_pvc(pvc_name, created_objects)
         check_pvc_deleted(pvc_name,vol_name, created_objects)
 
-    for vs_name in created_objects["vs"]:
+    for vs_name in copy.deepcopy(created_objects["vs"]):
         delete_vs(vs_name, created_objects)
         check_vs_deleted(vs_name, created_objects)
 
-    for vs_class_name in created_objects["vsclass"]:
+    for vs_class_name in copy.deepcopy(created_objects["vsclass"]):
         delete_vs_class(vs_class_name, created_objects)
         check_vs_class_deleted(vs_class_name, created_objects)
 
-    for pod_name in created_objects["pod"]:
+    for pod_name in copy.deepcopy(created_objects["pod"]):
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
 
-    for pvc_name in created_objects["pvc"]:
+    for pvc_name in copy.deepcopy(created_objects["pvc"]):
         vol_name=delete_pvc(pvc_name, created_objects)
         check_pvc_deleted(pvc_name,vol_name, created_objects)
 
-    for pv_name in created_objects["pv"]:
+    for pv_name in copy.deepcopy(created_objects["pv"]):
         delete_pv(pv_name, created_objects)
         check_pv_deleted(pv_name, created_objects)
 
-    for dir_name in created_objects["dir"]:
+    for dir_name in copy.deepcopy(created_objects["dir"]):
         ff.delete_dir(dir_name)
-        
-    for sc_name in created_objects["sc"]:
+
+    for sc_name in copy.deepcopy(created_objects["sc"]):
         delete_storage_class(sc_name, created_objects)
         check_storage_class_deleted(sc_name, created_objects)
 

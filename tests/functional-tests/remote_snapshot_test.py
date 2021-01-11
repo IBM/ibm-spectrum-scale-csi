@@ -98,11 +98,15 @@ def get_remote_data(data_passed):
 
 
 def test_get_version():
-    LOGGER.info("REMOTE CLUSTER")
+    LOGGER.info("Remote Cluster Details:")
+    LOGGER.info("-----------------------")
     ff.get_scale_version(remote_data)
-    LOGGER.info("LOCAL CLUSTER")
+    LOGGER.info("Local Cluster Details:")
+    LOGGER.info("-----------------------")
     ff.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
+    scaleop.scale_function.get_operator_image()
+    scaleop.ob.get_driver_image()
 
 
 def test_snapshot_static_pass_1():
