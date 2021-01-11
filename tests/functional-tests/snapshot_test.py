@@ -60,9 +60,12 @@ def values(request):
             ff.delete_fileset(data)
 
 def test_get_version():
+    LOGGER.info("Cluster Details:")
+    LOGGER.info("----------------")
     ff.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
-
+    scaleop.scale_function.get_operator_image()
+    scaleop.ob.get_driver_image()
 
 
 def test_snapshot_static_pass_1():
