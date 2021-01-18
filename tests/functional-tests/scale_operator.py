@@ -190,6 +190,7 @@ class Scaleoperatorobject:
             if ob.check_secret_exists(remote_secret_name):
                 ob.delete_secret(remote_secret_name)
             ob.check_secret_is_deleted(remote_secret_name)
+
         if check_key(self.temp, "local_cacert_name"):
             if ob.check_configmap_exists(self.temp["local_cacert_name"]):
                 ob.delete_configmap(self.temp["local_cacert_name"])

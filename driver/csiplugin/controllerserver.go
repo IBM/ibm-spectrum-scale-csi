@@ -128,6 +128,7 @@ func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volum
 	return targetPath, nil
 }
 
+
 //createDirectory: Create directory if not present
 func (cs *ScaleControllerServer) createDirectory(scVol *scaleVolume, targetPath string) error {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createDirectory", scVol.VolName)
@@ -472,9 +473,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	if scaleVol.IsFilesetBased {
 		remoteDeviceName := volFsInfo.Mount.RemoteDeviceName
-		//splitDevName := strings.Split(remoteDeviceName, ":")
-		//remDevFs := splitDevName[len(splitDevName)-1]
-
 		scaleVol.LocalFS = scaleVol.VolBackendFs
 		scaleVol.VolBackendFs = getRemoteFsName(remoteDeviceName)
 	} else {
@@ -589,6 +587,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	if err != nil {
 		glog.Errorf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err)
 		return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err))
+
 	}
 
 	return nil
@@ -684,6 +683,7 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	}
 
 	return sIdMem, nil
+
 }
 
 func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error) {
