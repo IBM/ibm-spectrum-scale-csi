@@ -45,9 +45,9 @@ def clean_with_created_objects(created_objects):
     for scale_snap_data in copy.deepcopy(created_objects["scalesnapshot"]):
         ff.delete_snapshot(scale_snap_data[0], scale_snap_data[1], created_objects)
         if ff.check_snapshot_deleted(scale_snap_data[0], scale_snap_data[1]):
-            LOGGER.info(f"Retain testcase : snapshot {scale_snap_data[0]} of volume {scale_snap_data[1]} deleted successfully")
+            LOGGER.info(f"Scale Snapshot Delete : snapshot {scale_snap_data[0]} of volume {scale_snap_data[1]} deleted successfully")
         else:
-            LOGGER.error(f"Retain testcase : snapshot {scale_snap_data[0]} of {scale_snap_data[1]} not deleted, asserting")
+            LOGGER.error(f"Scale Snapshot Delete : snapshot {scale_snap_data[0]} of {scale_snap_data[1]} not deleted, asserting")
             clean_with_created_objects(created_objects)
             assert False
 

@@ -538,7 +538,7 @@ class Snapshot():
 
             vs_name = d.get_random_name("vs")
             for num in range(0, number_of_snapshots):
-                ff.create_snapshot(snapshot_name+"-"+str(num), volume_name)
+                ff.create_snapshot(snapshot_name+"-"+str(num), volume_name, created_objects)
                 if ff.check_snapshot(snapshot_name+"-"+str(num), volume_name):
                     LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
                 else:
@@ -547,7 +547,7 @@ class Snapshot():
                     assert False
 
                 snapshot_handle = cluster_id+';'+FSUID+';'+volume_name+';'+snapshot_name+"-"+str(num)
-                body_params = {"deletionPolicy": "Delete", "snapshotHandle": snapshot_handle}
+                body_params = {"deletionPolicy": "Retain", "snapshotHandle": snapshot_handle}
                 snapshot.create_vs_content(vs_content_name+"-"+str(num), vs_name+"-"+str(num), body_params, created_objects)
                 snapshot.check_vs_content(vs_content_name+"-"+str(num))
 

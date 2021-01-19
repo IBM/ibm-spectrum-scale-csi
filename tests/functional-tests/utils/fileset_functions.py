@@ -601,7 +601,7 @@ def check_snapshot(snapshot_name, volume_name):
     return False
 
 
-def create_snapshot(snapshot_name, volume_name):
+def create_snapshot(snapshot_name, volume_name, created_objects):
     """
     create snapshot snapshot_name for volume_name
     """
@@ -618,6 +618,7 @@ def create_snapshot(snapshot_name, volume_name):
     response = requests.post(snap_link, headers=headers, data=data, verify=False,
                              auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
+    created_objects["scalesnapshot"].append([snapshot_name,volume_name])
     LOGGER.info(f"Static Snapshot Create :snapshot {snapshot_name} created for volume {volume_name}")
 
 def delete_snapshot(snapshot_name, volume_name, created_objects):

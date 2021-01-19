@@ -333,6 +333,7 @@ def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
+        created_objects["vscontent"].append(vs_content_name)
         LOGGER.info(f"Volume Snapshot Content Create : {vs_content_name} is created with {body_params}")
     except ApiException as e:
         LOGGER.error(
