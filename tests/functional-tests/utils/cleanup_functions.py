@@ -1,7 +1,6 @@
 import time
 import logging
 import copy
-
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import utils.fileset_functions as ff
@@ -23,6 +22,10 @@ def set_keep_objects(keep_object):
 
 def clean_with_created_objects(created_objects):
 
+    for ds_name in copy.deepcopy(created_objects["ds"]):
+        delete_ds(ds_name, created_objects)
+        check_ds_deleted(ds_name, created_objects)
+
     for pod_name in copy.deepcopy(created_objects["restore_pod"]):
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
@@ -34,6 +37,19 @@ def clean_with_created_objects(created_objects):
     for vs_name in copy.deepcopy(created_objects["vs"]):
         delete_vs(vs_name, created_objects)
         check_vs_deleted(vs_name, created_objects)
+
+    for vs_content_name in copy.deepcopy(created_objects["vscontent"]):
+        delete_vs_content(vs_content_name, created_objects)
+        check_vs_content_deleted(vs_content_name, created_objects)
+
+    for scale_snap_data in copy.deepcopy(created_objects["scalesnapshot"]):
+        ff.delete_snapshot(scale_snap_data[0], scale_snap_data[1], created_objects)
+        if ff.check_snapshot_deleted(scale_snap_data[0], scale_snap_data[1]):
+            LOGGER.info(f"Retain testcase : snapshot {scale_snap_data[0]} of volume {scale_snap_data[1]} deleted successfully")
+        else:
+            LOGGER.error(f"Retain testcase : snapshot {scale_snap_data[0]} of {scale_snap_data[1]} not deleted, asserting")
+            clean_with_created_objects(created_objects)
+            assert False
 
     for vs_class_name in copy.deepcopy(created_objects["vsclass"]):
         delete_vs_class(vs_class_name, created_objects)
@@ -153,7 +169,7 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
                 name=pvc_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
             count = count-1
-            time.sleep(5)
+            time.sleep(15)
         except ApiException:
             LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
             ff.delete_created_fileset(volume_name)
@@ -257,11 +273,12 @@ def delete_vs_content(vs_content_name, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotcontents",
             name=vs_content_name
         )
         LOGGER.debug(custom_object_api_response)
+        created_objects["vscontent"].remove(vs_content_name)
         LOGGER.info(f"Volume Snapshot Content Delete : {vs_content_name} deleted")
     except ApiException as e:
         LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object_0: {e}")
@@ -276,20 +293,24 @@ def check_vs_content_deleted(vs_content_name, created_objects):
     if keep_objects:
         return
     api_instance = client.CustomObjectsApi()
-    try:
-        api_response = api_instance.get_cluster_custom_object(
+    val = 0
+    while val < 24:
+        try:
+            api_response = api_instance.get_cluster_custom_object(
             group="snapshot.storage.k8s.io",
             version="v1beta1",
             plural="volumesnapshotcontents",
             name=vs_content_name
-        )
-        LOGGER.debug(api_response)
-        LOGGER.error(f"Volume Snapshot Content Delete : {vs_content_name} is not deleted , asserting")
-        clean_with_created_objects(created_objects)
-        assert False
-    except ApiException:
-        LOGGER.info(f"Volume Snapshot Content Delete : {vs_content_name} deletion confirmed")
-
+            )
+            LOGGER.debug(api_response)
+            time.sleep(5)
+            val += 1
+        except ApiException:
+            LOGGER.info(f"Volume Snapshot Content Delete : {vs_content_name} deletion confirmed")
+            return
+    LOGGER.error(f"Volume Snapshot Content Delete : {vs_content_name} is not deleted , asserting")
+    clean_with_created_objects(created_objects)
+    assert False
 
 def delete_vs(vs_name, created_objects):
     """
@@ -301,7 +322,7 @@ def delete_vs(vs_name, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.delete_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshots",
             name=vs_name,
             namespace=namespace_value
@@ -327,7 +348,7 @@ def check_vs_deleted(vs_name, created_objects):
         try:
             api_response = api_instance.get_namespaced_custom_object(
                 group="snapshot.storage.k8s.io",
-                version="v1beta1",
+                version="v1",
                 plural="volumesnapshots",
                 name=vs_name,
                 namespace=namespace_value
@@ -353,7 +374,7 @@ def delete_vs_class(vs_class_name, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotclasses",
             name=vs_class_name
         )
@@ -376,7 +397,7 @@ def check_vs_class_deleted(vs_class_name, created_objects):
     try:
         api_response = api_instance.get_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotclasses",
             name=vs_class_name
         )
@@ -386,4 +407,33 @@ def check_vs_class_deleted(vs_class_name, created_objects):
         assert False
     except ApiException:
         LOGGER.info(f"Volume Snapshot Class Delete : {vs_class_name} deletion confirmed")
+
+def delete_ds(ds_name, created_objects):
+    if keep_objects:
+        return
+    api_instance = client.AppsV1Api()
+
+    try:
+        api_response = api_instance.delete_namespaced_daemon_set(name=ds_name, namespace=namespace_value)
+        LOGGER.debug(api_response)
+        LOGGER.info(f"Daemon Set Delete : {ds_name} deleted")
+        created_objects["ds"].remove(ds_name)
+    except ApiException as e:
+        LOGGER.error(f"Exception when calling AppsV1Api->delete_namespaced_daemon_set: {e}")
+        clean_with_created_objects(created_objects)
+        assert False
+
+def check_ds_deleted(ds_name, created_objects):
+    if keep_objects:
+        return
+
+    api_instance = client.AppsV1Api()
+    try:
+        api_response = api_instance.read_namespaced_daemon_set(name=ds_name, namespace=namespace_value)
+        LOGGER.debug(api_response)
+        LOGGER.error(f"Daemon Set Delete : {ds_name} is not deleted , asserting")
+        clean_with_created_objects(created_objects)
+        assert False
+    except ApiException:
+        LOGGER.info(f"Daemon Set Delete : {ds_name} deletion confirmed")
 

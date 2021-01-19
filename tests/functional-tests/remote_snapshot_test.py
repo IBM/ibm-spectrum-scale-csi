@@ -227,24 +227,21 @@ def test_snapshot_dynamic_pass_1():
     snapshot_object.test_dynamic(value_sc, test_restore=True)
 
 
-@pytest.mark.skip
 def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class={"deletionPolicy": "Retain"})
 
 
-@pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True)
+    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="failure reason to be updated")
 
 
-@pytest.mark.skip
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True)
+    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="failure reason to be updated")
 
 
 def test_snapshot_dynamic_multiple_snapshots():

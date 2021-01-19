@@ -190,7 +190,6 @@ class Scaleoperatorobject:
             if ob.check_secret_exists(remote_secret_name):
                 ob.delete_secret(remote_secret_name)
             ob.check_secret_is_deleted(remote_secret_name)
-
         if check_key(self.temp, "local_cacert_name"):
             if ob.check_configmap_exists(self.temp["local_cacert_name"]):
                 ob.delete_configmap(self.temp["local_cacert_name"])
@@ -388,27 +387,19 @@ class Driver:
         LOGGER.info(100*"=")
         cleanup.clean_with_created_objects(created_objects)
         
-    def one_pvc_two_pod(self, value_sc):
+    def one_pvc_two_pod(self, value_sc, value_pvc_pass, value_ds_pass):
         created_objects = get_cleanup_dict()
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, sc_name, created_objects)
         d.check_storage_class(sc_name)
-        value_pvc_pass = copy.deepcopy(self.value_pvc[0])
         pvc_name = d.get_random_name("pvc")
         d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
         val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
         if val is True:
-            pod_name_1 = d.get_random_name("pod")
-            d.create_pod(self.value_pod[0], pvc_name, pod_name_1, created_objects, self.image_name)
-            d.check_pod(self.value_pod[0], pod_name_1, created_objects)
-            pod_name_2 = d.get_random_name("pod")
-            d.create_pod(self.value_pod[0], pvc_name, pod_name_2, created_objects, self.image_name)
-            d.check_pod(self.value_pod[0], pod_name_2, created_objects)
-            cleanup.delete_pod(pod_name_1, created_objects)
-            cleanup.check_pod_deleted(pod_name_1, created_objects)
-            cleanup.delete_pod(pod_name_2, created_objects)
-            cleanup.check_pod_deleted(pod_name_2, created_objects)
+            ds_name = d.get_random_name("ds")
+            d.create_ds(value_ds_pass,ds_name,pvc_name,created_objects)
+            d.check_ds(ds_name,value_ds_pass,created_objects)
         cleanup.clean_with_created_objects(created_objects)
         
     def sequential_pvc(self, value_sc, num_of_pvc):
@@ -459,7 +450,7 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
-    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None):
+    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -491,7 +482,7 @@ class Snapshot():
             vs_name = d.get_random_name("vs")
             for num in range(0, number_of_snapshots):
                 snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name, created_objects)
-                snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, created_objects)
+                snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
 
             if not(ff.snapshot_restore_available()):
                 pvc_value["reason"] = "Min required Spectrum Scale version is 5.0.5.2"
@@ -792,9 +783,12 @@ def get_cleanup_dict():
                          "pod": [], 
                          "vs": [], 
                          "vsclass": [],
+                         "vscontent":[],
+                         "scalesnapshot":[],
                          "restore_pod":[],
                          "restore_pvc":[],
                          "pv":[],
-                         "dir":[]  
+                         "dir":[],
+                         "ds":[]
                        }
     return created_object

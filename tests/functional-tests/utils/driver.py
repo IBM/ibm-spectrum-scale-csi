@@ -624,8 +624,13 @@ def check_pod(value_pod, pod_name, created_objects):
                 name=pod_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
             if api_response.status.phase == "Running":
-                LOGGER.info(f'POD Check : POD {pod_name} is Running')
-                check_pod_execution(value_pod, pod_name, created_objects)
+                if not(check_key(value_pod, "reason")):
+                    LOGGER.info(f'POD Check : POD {pod_name} is Running')
+                    check_pod_execution(value_pod, pod_name, created_objects)
+                else:
+                    LOGGER.error('POD Check : POD {pod_name} is Running, not expected as reason of failure is provided')
+                    cleanup.clean_with_created_objects(created_objects)
+                    assert False
                 con = False
             else:
                 var += 1
@@ -634,9 +639,20 @@ def check_pod(value_pod, pod_name, created_objects):
                     field = "involvedObject.name="+pod_name
                     reason = api_instance.list_namespaced_event(
                         namespace=namespace_value, pretty=True, field_selector=field)
-                    LOGGER.error(f"POD Check : Reason of failure is : {str(reason)}")
-                    cleanup.clean_with_created_objects(created_objects)
-                    assert False
+                    if not(check_key(value_pod, "reason")):
+                        LOGGER.error(f'FAILED as reason of failure not provided')
+                        LOGGER.error(f"POD Check : Reason of failure is : {str(reason)}")
+                        cleanup.clean_with_created_objects(created_objects)
+                        assert False
+                    search_result = re.search(value_pod["reason"], str(reason))
+                    if search_result is None:
+                        LOGGER.error(f'Failed as reason of failure does not match {value_pod["reason"]}')
+                        LOGGER.error(f"POD Check : Reason of failure is : {str(reason)}")
+                        cleanup.clean_with_created_objects(created_objects)
+                        assert False
+                    else:
+                        LOGGER.info(f'POD failed with expected reason {value_pod["reason"]}')
+                        return
                 time.sleep(5)
         except ApiException as e:
             LOGGER.error(
@@ -645,6 +661,161 @@ def check_pod(value_pod, pod_name, created_objects):
             cleanup.clean_with_created_objects(created_objects)
             assert False
 
+
+def create_ds(ds_values, ds_name, pvc_name, created_objects):
+
+    api_instance = client.AppsV1Api()
+    if ds_values["read_only"] == "True":
+        ds_values["read_only"] = True
+    elif ds_values["read_only"] == "False":
+        ds_values["read_only"] = False
+    ds_body = {
+  "apiVersion": "apps/v1",
+  "kind": "DaemonSet",
+  "metadata": {
+    "name": ds_name,
+    "labels": {
+      "app": "nginx",
+      "ownerReferences":ds_name
+    }
+  },
+  "spec": {
+    "selector": {
+      "matchLabels": {
+        "name": "nginx",
+        "ownerReferences":ds_name
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "name": "nginx",
+          "ownerReferences":ds_name
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "web-server",
+            "image": "nginx",
+            "volumeMounts": [
+              {
+                "name": "mypvc",
+                "mountPath": ds_values["mount_path"]
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "mypvc",
+            "persistentVolumeClaim": {
+              "claimName": pvc_name,
+              "readOnly": ds_values["read_only"]
+            }
+          }
+        ]
+      }
+    }
+  }
+    }
+
+    try:
+        LOGGER.info(
+            f'Daemonset Create : Creating daemonset {ds_name} with parameters {str(ds_values)} and pvc {str(pvc_name)}')
+        api_response = api_instance.create_namespaced_daemon_set(
+            namespace=namespace_value, body=ds_body, pretty=True)
+        LOGGER.debug(str(api_response))
+        created_objects["ds"].append(ds_name)
+    except ApiException as e:
+        LOGGER.info(f'Daemonset Create : Daemonset {ds_name} creation operation has been failed')
+        LOGGER.error(
+            f"Exception when calling AppsV1Api->create_namespaced_daemon_set: {e}")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+
+def check_ds(ds_name,value_ds,created_objects):
+    read_daemonsets_api_instance = client.AppsV1Api()
+    num = 0
+    while (num < 11):
+        try:
+            read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
+                name=ds_name, namespace=namespace_value, pretty=True)
+            LOGGER.debug(read_daemonsets_api_response)
+            current_number_scheduled = read_daemonsets_api_response.status.current_number_scheduled
+            desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
+            number_available = read_daemonsets_api_response.status.number_available
+
+            if number_available == current_number_scheduled == desired_number_scheduled:
+                if desired_number_scheduled<2:
+                    LOGGER.error(f"Not enough nodes for this test, only {desired_number_scheduled} nodes are there")
+                    cleanup.clean_with_created_objects(created_objects)
+                    assert False
+
+                if "reason" in value_ds:
+                    LOGGER.error(f"failure reason provided  {value_ds} , still all pods are running")
+                    cleanup.clean_with_created_objects(created_objects)
+                    assert False
+
+                LOGGER.info(f"Daemonset Check : daemonset {ds_name} all {current_number_scheduled} pods are Running")
+
+                return
+
+            time.sleep(20)
+            num += 1
+            LOGGER.info(f"Daemonset Check : waiting for daemonsets {ds_name}")
+        except ApiException as e:
+            time.sleep(20)
+            num += 1
+            LOGGER.info(f"Daemonset Check : waiting for daemonsets {ds_name}")
+
+    if "reason" not in value_ds:
+       LOGGER.error(
+        f"Daemonset Check : daemonset {ds_name} {number_available}/{desired_number_scheduled} pods are Running, asserting")
+       cleanup.clean_with_created_objects(created_objects)
+       assert False
+
+    if desired_number_scheduled<2:
+        LOGGER.error(f"Not enough nodes for this test, only {desired_number_scheduled} nodes are there")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+    if check_ds_pod(ds_name,value_ds,created_objects):
+        LOGGER.info(f"Daemonset Check : daemonset {ds_name} pods failed with expected reason {value_ds['reason']}")
+        return
+
+    LOGGER.info(f"Daemonset Check : daemonset {ds_name} pods did not fail with expected reason {value_ds['reason']}")
+    cleanup.clean_with_created_objects(created_objects)
+    assert False
+
+def check_ds_pod(ds_name,value_ds,created_objects):
+    api_instance = client.CoreV1Api()
+    selector = "ownerReferences="+ds_name
+    running_pod_list,pod_list = [],[]
+    try:
+        api_response = api_instance.list_namespaced_pod(
+                namespace=namespace_value,pretty=True, label_selector=selector)
+        LOGGER.debug(api_response)
+        for pod in api_response.items:
+            if pod.status.phase=="Running":
+                running_pod_list.append(pod.metadata.name)
+            else:
+                pod_list.append(pod.metadata.name)
+    except ApiException as e:
+        LOGGER.error(
+                f"Exception when calling CoreV1Api->list_node: {e}")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+    if len(running_pod_list)!=1:
+        LOGGER.error(f"running pods are {running_pod_list} , only one pod should be running, asserting")
+        return False
+
+    for pod_name in pod_list:
+        check_pod(value_ds, pod_name, created_objects)
+
+    return True
 
 
 def create_deployment_object():

@@ -199,7 +199,7 @@ def check_vs_detail_for_static(vs_name, created_objects):
         assert False
 
 
-def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
+def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
     """
     checks volume snapshot vs_name exits , 
     checks volume snapshot content for vs_name is created
@@ -225,6 +225,9 @@ def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
         LOGGER.info("volume snapshot status ReadyToUse is true")
     else:
         LOGGER.error("volume snapshot status ReadyToUse is not true")
+        if reason is not None:
+            LOGGER.info("As failure reason is provided , passing the test")
+            return
         clean_with_created_objects(created_objects)
         assert False
     LOGGER.debug(api_response)
@@ -247,23 +250,9 @@ def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
         clean_with_created_objects(created_objects)
         assert False
 
-    """
-    if body_params["deletionPolicy"] == "Retain" and not(keep_objects):
-        custom_object_api_instance = client.CustomObjectsApi()
-        try:
-            custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
-                group="snapshot.storage.k8s.io",
-                version="v1",
-                plural="volumesnapshotcontents",
-                name=snapcontent_name
-            )
-            LOGGER.debug(custom_object_api_response)
-            LOGGER.info(f"volume snapshot content {snapcontent_name} deleted")
-        except ApiException as e:
-            LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
-            assert False
-    """
-
+    if body_params["deletionPolicy"] == "Retain":
+        created_objects["vscontent"].append(snapcontent_name)
+        created_objects["scalesnapshot"].append([snapshot_name,volume_name])
 
 def get_pv_name(pvc_name, created_objects):
     api_instance = client.CoreV1Api()
