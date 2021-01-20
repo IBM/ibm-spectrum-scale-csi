@@ -15,7 +15,7 @@ LOGGER = logging.getLogger()
 def _values(request):
 
     global kubeconfig_value, clusterconfig_value, namespace_value
-    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, namespace_value, _ = scaleop.get_cmd_values(request)
 
     condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
     operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
@@ -35,13 +35,6 @@ def _values(request):
     operator.delete(condition)
     if(not(fileset_exist) and ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
-
-@pytest.mark.regression
-def test_get_version(_values):
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    ff.get_scale_version(test)
-    scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.scale_function.get_operator_image()
 
 @pytest.mark.regression
 def test_get_version(_values):
@@ -281,8 +274,8 @@ def test_random_gpfs_primaryFset_name(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
                 name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))

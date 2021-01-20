@@ -85,9 +85,8 @@ def create_custom_object(custom_object_body, stateful_set_not_created):
     if stateful_set_not_created is True:
         LOGGER.info("Expected Failure ,testcase is passed")
         return
-    else:
-        LOGGER.error("problem while creating custom object, (statefulsets are not created)")
-        assert False
+    LOGGER.error("problem while creating custom object, (statefulsets are not created)")
+    assert False
 
 
 def delete_custom_object():
@@ -257,7 +256,7 @@ def check_scaleoperatorobject_daemonsets_state():
             time.sleep(20)
             num += 1
             LOGGER.info("waiting for daemonsets")
-        except ApiException as e:
+        except ApiException:
             time.sleep(20)
             num += 1
             LOGGER.info("waiting for daemonsets")
@@ -597,9 +596,9 @@ def get_driver_image():
     try:
         api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-        LOGGER.info("CSI driver image : " + api_response.status.container_statuses[-1].image)
-        LOGGER.info("CSI driver image id : " + api_response.status.container_statuses[-1].image_id)
+        LOGGER.info(f"CSI driver image :  {api_response.status.container_statuses[-1].image}")
+        LOGGER.info(f"CSI driver image id : {api_response.status.container_statuses[-1].image_id}")
 
-    except ApiException as e:
+    except ApiException:
         LOGGER.info("Unable to get driver image")
 
