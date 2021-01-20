@@ -1,9 +1,7 @@
 import copy
-import time
 import logging
-import yaml
-import json
 import os.path
+import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import utils.scale_operator_function as scale_function
@@ -292,7 +290,7 @@ class Driver:
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, sc_name, created_objects)
         d.check_storage_class(sc_name)
-        for num in range(0, len(value_pvc_passed)):
+        for num,_ in enumerate(value_pvc_passed):
             value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
             if (check_key(value_sc, "reason")):
                 if not(check_key(value_pvc_pass, "reason")):
@@ -302,20 +300,19 @@ class Driver:
             d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
             val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
             if val is True:
-                for num2 in range(0, len(value_pod_passed)):
+                for num2,_ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
                     d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     d.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
-                    if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
-                        if num2 < (len(value_pod_passed)-1):
-                            pvc_name = d.get_random_name("pvc")
-                            d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
-                            val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
-                            if val is not True:
-                                break
+                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
+                        pvc_name = d.get_random_name("pvc")
+                        d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
+                        val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
+                        if val is not True:
+                            break
                 LOGGER.info(100*"-")
             vol_name=cleanup.delete_pvc(pvc_name, created_objects)
             cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
@@ -543,7 +540,7 @@ class Snapshot():
                     LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
                 else:
                     LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
-                    d.clean_with_created_objects(created_objects)
+                    cleanup.clean_with_created_objects(created_objects)
                     assert False
 
                 snapshot_handle = cluster_id+';'+FSUID+';'+volume_name+';'+snapshot_name+"-"+str(num)

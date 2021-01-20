@@ -640,7 +640,7 @@ def check_pod(value_pod, pod_name, created_objects):
                     reason = api_instance.list_namespaced_event(
                         namespace=namespace_value, pretty=True, field_selector=field)
                     if not(check_key(value_pod, "reason")):
-                        LOGGER.error(f'FAILED as reason of failure not provided')
+                        LOGGER.error('FAILED as reason of failure not provided')
                         LOGGER.error(f"POD Check : Reason of failure is : {str(reason)}")
                         cleanup.clean_with_created_objects(created_objects)
                         assert False
@@ -765,7 +765,7 @@ def check_ds(ds_name,value_ds,created_objects):
             time.sleep(20)
             num += 1
             LOGGER.info(f"Daemonset Check : waiting for daemonsets {ds_name}")
-        except ApiException as e:
+        except ApiException:
             time.sleep(20)
             num += 1
             LOGGER.info(f"Daemonset Check : waiting for daemonsets {ds_name}")

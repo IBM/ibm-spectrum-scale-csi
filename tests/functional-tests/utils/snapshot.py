@@ -216,7 +216,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
         )
         LOGGER.debug(api_response)
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} has been created")
-    except ApiException as e:
+    except ApiException:
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} does not exists")
         clean_with_created_objects(created_objects)
         assert False
