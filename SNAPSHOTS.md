@@ -76,7 +76,7 @@ This is like a StorageClass that defines driver specific attributes for the snap
    apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshotClass
    metadata:
-     name: snapclass1
+     name: ibm-spectrum-scale-snapshot-class
    driver: spectrumscale.csi.ibm.com
    deletionPolicy: Delete
    ```
@@ -88,12 +88,12 @@ Specify the source volume to be used for creating snapshot here. Source PVC shou
    apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshot
    metadata:
-     name: snap1
+     name: ibm-spectrum-scale-snapshot
      namespace: default
    spec:
-     volumeSnapshotClassName: snapclass1
+     volumeSnapshotClassName: ibm-spectrum-scale-snapshot-class
      source:
-       persistentVolumeClaimName: pvcfset1
+       persistentVolumeClaimName: ibm-spectrum-scale-pvc
    ```
 
 ### Verify that snapshot is created
@@ -102,7 +102,7 @@ Snapshot should be in "readytouse" state and a corresponding fileset snapshot sh
    ```
    # kubectl get volumesnapshot
    NAME    READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS    SNAPSHOTCONTENT                                    CREATIONTIME   AGE
-snap1   true         pvcfset1                            1Gi             snapclass1       snapcontent-2b478910-28d1-4c29-8e12-556149095094   2d23h          2d23h
+ibm-spectrum-scale-snapshot   true         ibm-spectrum-scale-pvc                            1Gi             ibm-spectrum-scale-snapshot-class       snapcontent-2b478910-28d1-4c29-8e12-556149095094   2d23h          2d23h
 
    # mmlssnapshot fs1 -j pvc-d60f90f2-53ed-4f0e-b7be-4587fbcd0234
    Snapshots in file system fs1:
@@ -114,13 +114,13 @@ snap1   true         pvcfset1                            1Gi             snapcla
 Note: Volume size of the source PVC is used as the restore size of snapshot. Any volume created from this snapshot must be of the same or larger capacity.
 
 ### Create Volume from a source Snapshot
-Source snapshot should be in the same namespace as the volume being created. Volume capacity should be less than or equal to the source snapshot's restore size. Resultant PVC should contain data from snap1.
+Source snapshot should be in the same namespace as the volume being created. Volume capacity should be greater than or equal to the source snapshot's restore size. Resultant PVC should contain data from ibm-spectrum-scale-snapshot.
 
    ```
    apiVersion: v1
    kind: PersistentVolumeClaim
    metadata:
-      name: pvcfrmsnap1
+      name: ibm-spectrum-scale-pvc-from-snap
       namespace: default
    spec:
       accessModes:
@@ -128,9 +128,9 @@ Source snapshot should be in the same namespace as the volume being created. Vol
       resources:
          requests:
             storage: 1Gi
-      storageClassName: scfilesetinode
+      storageClassName: ibm-spectrum-scale-storageclass
       dataSource:
-         name: snap1
+         name: ibm-spectrum-scale-snapshot
          kind: VolumeSnapshot
          apiGroup: snapshot.storage.k8s.io
     
@@ -149,14 +149,14 @@ You can expose a pre-existing Spectrum Scale fileset snapshot in Kubernetes by m
    apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshotContent
    metadata:
-      name: mysnapcontent
+      name: ibm-spectrum-scale-snapshot-content
    spec:
       deletionPolicy: Delete
       driver: spectrumscale.csi.ibm.com
       source:
          snapshotHandle: 18133600329030594550;0A1501E9:5F02F150;pvc-79e82f45-1b25-4d83-8ed0-c0d370cad5bd;mysnap
       volumeSnapshotRef:
-         name: mysnapshot
+         name: ibm-spectrum-scale-snapshot
          namespace: default
    ```
 
@@ -169,11 +169,11 @@ Once the VolumeSnapshotContent is created, create the VolumeSnapshot pointing to
    apiVersion: snapshot.storage.k8s.io/v1
    kind: VolumeSnapshot
    metadata:
-      name: mysnapshot
+      name: ibm-spectrum-scale-snapshot
       namespace: default
    spec:
       source:
-         volumeSnapshotContentName: mysnapcontent
+         volumeSnapshotContentName: ibm-spectrum-scale-snapshot-content
    ```
 
 The VolumeSnapshot listing shows as below-
@@ -181,7 +181,7 @@ The VolumeSnapshot listing shows as below-
    ```
    # kubectl get volumesnapshot
    NAME          READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS   SNAPSHOTCONTENT                                    CREATIONTIME   AGE
-   mysnapshot    true                     mysnapcontent           0                             mysnapcontent                                      73m            72m
+   ibm-spectrum-scale-snapshot    true                     ibm-spectrum-scale-snapshot-content           0                             ibm-spectrum-scale-snapshot-content                                      73m            72m
    ```
 
 Note that here SOURCEPVC is empty and SOURCESNAPSHOTCONTENT points to the VolumeSnapshotContent. This snapshot can be normally used as a source while creating a PVC.
