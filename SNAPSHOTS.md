@@ -1,5 +1,7 @@
 # IBM Spectrum Scale CSI driver volume snapshots
 Min Scale version required: 5.1.0.1
+Min Kubernetes version: 1.20
+Min OpenShift version: 4.7
 
 ## Installing the external snapshotter
 Note: Kubernetes distributions should provide the external snapshotter by default. OpenShift 4.4+ has the snapshot controller installed by default and below steps are not needed. Perform below two steps for Kubernetes cluster.
