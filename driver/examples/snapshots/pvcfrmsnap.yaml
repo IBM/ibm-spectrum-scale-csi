@@ -9,8 +9,8 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: scfileset
+  storageClassName: ibm-spectrum-scale-storageclass
   dataSource:
-    name: snap1
+    name: ibm-spectrum-scale-snapshot
     kind: VolumeSnapshot
     apiGroup: snapshot.storage.k8s.io
