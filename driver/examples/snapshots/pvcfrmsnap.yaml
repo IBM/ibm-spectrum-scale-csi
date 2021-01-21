@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvcfrmsnap1
+  name: ibm-spectrum-scale-pvc-from-snapshot
   namespace: default
 spec:
   accessModes:
