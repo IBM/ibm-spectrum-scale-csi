@@ -1,6 +1,6 @@
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
-  name: snapclass1
+  name: ibm-spectrum-scale-snapshotclass
 driver: spectrumscale.csi.ibm.com
 deletionPolicy: Delete
