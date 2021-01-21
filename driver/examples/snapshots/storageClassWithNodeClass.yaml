@@ -6,5 +6,5 @@ provisioner: spectrumscale.csi.ibm.com
 parameters:
     volBackendFs: "gpfs0"
     clusterId: "7118073361626808055"
-    nodeClass: "myNodeClass"
+    nodeClass: "ibm-spectrum-scale-NodeClass"
 reclaimPolicy: Delete
