@@ -1,6 +1,5 @@
 import time
 import logging
-import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 LOGGER = logging.getLogger()
@@ -189,7 +188,7 @@ def create_crd(body):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info(f"Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
+        LOGGER.info("Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
     except ValueError as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -708,8 +707,8 @@ def get_operator_image():
     try:
         api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-        LOGGER.info("CSI operator image : " + api_response.status.container_statuses[-1].image)
-        LOGGER.info("CSI operator image id : " + api_response.status.container_statuses[-1].image_id)
-    except ApiException as e:
+        LOGGER.info(f"CSI operator image : {api_response.status.container_statuses[-1].image}")
+        LOGGER.info(f"CSI operator image id : {api_response.status.container_statuses[-1].image_id}")
+    except ApiException:
         LOGGER.info("Unable to get operator image")
 

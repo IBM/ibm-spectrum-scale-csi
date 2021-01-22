@@ -20,7 +20,7 @@ def create_vs_class(vs_class_name, body_params, created_objects):
     body_params contains configurable parameters
     """
     class_body = {
-        "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+        "apiVersion": "snapshot.storage.k8s.io/v1",
         "kind": "VolumeSnapshotClass",
         "metadata": {
             "name": vs_class_name
@@ -33,7 +33,7 @@ def create_vs_class(vs_class_name, body_params, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotclasses",
             body=class_body,
             pretty=True
@@ -60,7 +60,7 @@ def check_vs_class(vs_class_name):
     try:
         api_response = api_instance.get_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotclasses",
             name=vs_class_name
         )
@@ -79,7 +79,7 @@ def create_vs(vs_name, vs_class_name, pvc_name, created_objects):
     and pvc pvc_name
     """
     class_body = {
-        "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+        "apiVersion": "snapshot.storage.k8s.io/v1",
         "kind": "VolumeSnapshot",
         "metadata": {
                       "name": vs_name
@@ -96,7 +96,7 @@ def create_vs(vs_name, vs_class_name, pvc_name, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.create_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshots",
             body=class_body,
             namespace=namespace_value,
@@ -117,7 +117,7 @@ def create_vs_from_content(vs_name, vs_content_name, created_objects):
     create volume snapshot vs_name from volume snapshot content vs_content_name
     """
     class_body = {
-        "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+        "apiVersion": "snapshot.storage.k8s.io/v1",
         "kind": "VolumeSnapshot",
         "metadata": {
                       "name": vs_name
@@ -133,7 +133,7 @@ def create_vs_from_content(vs_name, vs_content_name, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.create_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshots",
             body=class_body,
             namespace=namespace_value,
@@ -159,7 +159,7 @@ def check_vs(vs_name):
     try:
         api_response = api_instance.get_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshots",
             name=vs_name,
             namespace=namespace_value
@@ -179,7 +179,7 @@ def check_vs_detail_for_static(vs_name, created_objects):
     try:
         api_response = api_instance.get_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshots",
             name=vs_name,
             namespace=namespace_value
@@ -199,7 +199,7 @@ def check_vs_detail_for_static(vs_name, created_objects):
         assert False
 
 
-def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
+def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
     """
     checks volume snapshot vs_name exits , 
     checks volume snapshot content for vs_name is created
@@ -209,14 +209,14 @@ def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
     try:
         api_response = api_instance.get_namespaced_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshots",
             name=vs_name,
             namespace=namespace_value
         )
         LOGGER.debug(api_response)
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} has been created")
-    except ApiException as e:
+    except ApiException:
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} does not exists")
         clean_with_created_objects(created_objects)
         assert False
@@ -225,6 +225,9 @@ def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
         LOGGER.info("volume snapshot status ReadyToUse is true")
     else:
         LOGGER.error("volume snapshot status ReadyToUse is not true")
+        if reason is not None:
+            LOGGER.info("As failure reason is provided , passing the test")
+            return
         clean_with_created_objects(created_objects)
         assert False
     LOGGER.debug(api_response)
@@ -247,23 +250,9 @@ def check_vs_detail(vs_name, pvc_name, body_params, created_objects):
         clean_with_created_objects(created_objects)
         assert False
 
-    """
-    if body_params["deletionPolicy"] == "Retain" and not(keep_objects):
-        custom_object_api_instance = client.CustomObjectsApi()
-        try:
-            custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
-                group="snapshot.storage.k8s.io",
-                version="v1beta1",
-                plural="volumesnapshotcontents",
-                name=snapcontent_name
-            )
-            LOGGER.debug(custom_object_api_response)
-            LOGGER.info(f"volume snapshot content {snapcontent_name} deleted")
-        except ApiException as e:
-            LOGGER.error(f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
-            assert False
-    """
-
+    if body_params["deletionPolicy"] == "Retain":
+        created_objects["vscontent"].append(snapcontent_name)
+        created_objects["scalesnapshot"].append([snapshot_name,volume_name])
 
 def get_pv_name(pvc_name, created_objects):
     api_instance = client.CoreV1Api()
@@ -293,7 +282,7 @@ def check_snapshot_status(vs_name):
         try:
             api_response = api_instance.get_namespaced_custom_object_status(
                 group="snapshot.storage.k8s.io",
-                version="v1beta1",
+                version="v1",
                 plural="volumesnapshots",
                 name=vs_name,
                 namespace=namespace_value
@@ -316,7 +305,7 @@ def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
     body_params contains configurable parameters
     """
     content_body = {
-        "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+        "apiVersion": "snapshot.storage.k8s.io/v1",
         "kind": "VolumeSnapshotContent",
         "metadata": {
             "name": vs_content_name
@@ -338,12 +327,13 @@ def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotcontents",
             body=content_body,
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
+        created_objects["vscontent"].append(vs_content_name)
         LOGGER.info(f"Volume Snapshot Content Create : {vs_content_name} is created with {body_params}")
     except ApiException as e:
         LOGGER.error(
@@ -363,7 +353,7 @@ def check_vs_content(vs_content_name):
     try:
         api_response = api_instance.get_cluster_custom_object(
             group="snapshot.storage.k8s.io",
-            version="v1beta1",
+            version="v1",
             plural="volumesnapshotcontents",
             name=vs_content_name
         )

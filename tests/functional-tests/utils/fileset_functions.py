@@ -601,7 +601,7 @@ def check_snapshot(snapshot_name, volume_name):
     return False
 
 
-def create_snapshot(snapshot_name, volume_name):
+def create_snapshot(snapshot_name, volume_name, created_objects):
     """
     create snapshot snapshot_name for volume_name
     """
@@ -618,8 +618,44 @@ def create_snapshot(snapshot_name, volume_name):
     response = requests.post(snap_link, headers=headers, data=data, verify=False,
                              auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
+    created_objects["scalesnapshot"].append([snapshot_name,volume_name])
     LOGGER.info(f"Static Snapshot Create :snapshot {snapshot_name} created for volume {volume_name}")
 
+def delete_snapshot(snapshot_name, volume_name, created_objects):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
+        volume_name+"/snapshots/"+snapshot_name
+    response = requests.delete(snap_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+    created_objects["scalesnapshot"].remove([snapshot_name,volume_name])
+    LOGGER.info(f"Scale Snapshot Delete :snapshot {snapshot_name} of volume {volume_name} is deleted")
+
+
+def check_snapshot_deleted(snapshot_name, volume_name):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    val = 0
+    while val < 12:
+        snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
+            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
+            volume_name+"/snapshots"
+        response = requests.get(snap_link, verify=False,
+                                auth=(test["username"], test["password"]))
+        LOGGER.debug(response.text)
+
+        response_dict = json.loads(response.text)
+        LOGGER.debug(response_dict)
+
+        snapshots_list = []
+        for snapshot in response_dict["snapshots"]:
+            snapshots_list.append(snapshot["snapshotName"])
+
+        if snapshot_name in snapshots_list:
+            val += 1
+            time.sleep(10)
+        else:
+            return True
+    return False
 
 def snapshot_restore_available():
     """

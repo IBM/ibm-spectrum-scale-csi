@@ -28,6 +28,22 @@ type Cluster struct {
 	Nodes          []ClusterNode     `json:"nodes,omitempty"`
 }
 
+type GetConfigResponse struct {
+	Config Config `json:"config,omitempty"`
+	Status Status `json:"status,omitempty"`
+}
+
+type Config struct {
+	ClusterConfig ClusterConfig `json:"clusterConfig,omitempty"`
+}
+
+type ClusterConfig struct {
+	ClusterID       string `json:"clusterId,omitempty"`
+	ClusterName     string `json:"clusterName,omitempty"`
+	MinReleaseLevel string `json:"minReleaseLevel,omitempty"`
+	TimeZoneOffset  string `json:"timeZoneOffset,omitempty"`
+}
+
 type CesSummary struct {
 	EnabledServices string `json:"enabledServices"`
 	AddressPolicy   string `json:"addressPolicy,omitempty"`
@@ -208,6 +224,7 @@ type FilesetConfig struct {
 	PermissionChangeMode string `json:"permissionChangeMode,omitempty"`
 	Permissions          string `json:"permissions,omitempty"`
 }
+
 type FilesetState struct {
 	AFMState          string `json:"afmState,omitempty"`
 	Created           string `json:"created,omitempty"`
@@ -227,6 +244,19 @@ type CreateFilesetResquest struct {
 	AFM    AFM           `json:"afm,omitempty"`
 	Config FilesetConfig `json:"config,omitempty"`
 }
+
+type CreateSnapshotRequest struct {
+	SnapshotName string `json:"snapshotName,omitempty"`
+}
+
+type CopySnapshotRequest struct {
+	TargetFilesystem string `json:"targetFilesystem,omitempty"`
+	TargetFileset    string `json:"targetFileset,omitempty"`
+	TargetPath       string `json:"targetPath,omitempty"`
+	NodeClass        string `json:"nodeclassName,omitempty"`
+	Force            bool   `json:"force,omitempty"`
+}
+
 type GenericResponse struct {
 	Status Status `json:"status,omitempty"`
 	Jobs   []Job  `json:"jobs,omitempty"`
@@ -403,6 +433,20 @@ type GetNodesResponse_v2 struct {
 	Paging Pages     `json:"paging,omitempty"`
 }
 
+type GetInfoResponse_v2 struct {
+	Status Status `json:"status,omitempty"`
+	Info   Info   `json:"info,omitempty"`
+}
+
+type Info struct {
+	ServerVersion string `json:"serverVersion,omitempty"`
+	Paths         Path   `json:"paths,omitempty"`
+}
+
+type Path struct {
+	SnapCopyOp []string `json:"/filesystems/{filesystemName}/filesets/{filesetName}/snapshotCopy/{snapshotName},omitempty"`
+}
+
 type NodeConfig struct {
 	AdminLoginName    string `json:"adminLoginName,omitempty"`
 	DesignatedLicense string `json:"designatedLicense,omitempty"`
@@ -445,6 +489,21 @@ type Node_v2 struct {
 	Roles         NodeRoles  `json:"roles,omitempty"`
 	CNFSInfo      CNFSNode   `json:"cnfsInfo,omitempty"`
 	CESInfo       CESNode    `json:"cesInfo,omitempty"`
+}
+
+type Snapshot_v2 struct {
+	SnapshotName   string `json:"snapshotName,omitempty"`
+	FilesystemName string `json:"filesystemName,omitempty"`
+	FilesetName    string `json:"filesetName,omitempty"`
+	SnapID         int    `json:"snapID,omitempty"`
+	Status         string `json:"status,omitempty"`
+	Created        string `json:"created,omitempty"`
+}
+
+type GetSnapshotResponse_v2 struct {
+	Snapshots []Snapshot_v2 `json:"snapshots,omitempty"`
+	Status    Status        `json:"status,omitempty"`
+	Paging    Pages         `json:"paging,omitempty"`
 }
 
 type Fileset_v2 struct {
