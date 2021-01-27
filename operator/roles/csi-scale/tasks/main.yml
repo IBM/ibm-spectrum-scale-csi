@@ -1,7 +1,6 @@
 ---
 # - debug:
 #    msg:
-#      - "scaleHostpath - {{ scaleHostpath }}"
 #      - "secretCounter - {{ secretCounter }}"
 #      - "attacher - {{ attacher }}"
 #      - "provisioner - {{ provisioner }}"
