@@ -624,13 +624,8 @@ def check_pod(value_pod, pod_name, created_objects):
                 name=pod_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
             if api_response.status.phase == "Running":
-                if not(check_key(value_pod, "reason")):
-                    LOGGER.info(f'POD Check : POD {pod_name} is Running')
-                    check_pod_execution(value_pod, pod_name, created_objects)
-                else:
-                    LOGGER.error('POD Check : POD {pod_name} is Running, not expected as reason of failure is provided')
-                    cleanup.clean_with_created_objects(created_objects)
-                    assert False
+                LOGGER.info(f'POD Check : POD {pod_name} is Running')
+                check_pod_execution(value_pod, pod_name, created_objects)
                 con = False
             else:
                 var += 1
