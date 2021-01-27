@@ -24,7 +24,7 @@ echo $HOME
 
 # Start minikube and chown for minikub.
 sudo chown -R travis: /home/travis/.minikube/
-sudo minikube start --kubernetes-version=${KUBE_VERSION}  --cpus=1
+sudo minikube start --kubernetes-version=${KUBE_VERSION} --extra-config=kubeadm.ignore-preflight-errors=NumCPU --force --cpus 1
 minikube update-context
 eval $(minikube docker-env)
 
