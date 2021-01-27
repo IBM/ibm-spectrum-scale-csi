@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -76,6 +77,11 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	glog.Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath[1])
+
+	isGpfsPath, err := isGPFSPath(targetSlnkPath[1])
+	if !isGpfsPath {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Target path in VolumeID is not a Spectrum Scale path. %v", err))
+	}
 
 	if _, err := os.Stat(targetPath); err == nil {
 		args := []string{targetPath}

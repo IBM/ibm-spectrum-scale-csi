@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/golang/glog"
@@ -257,6 +258,22 @@ func executeCmd(command string, args []string) ([]byte, error) {
 	err := cmd.Run()
 	stdOut := stdout.Bytes()
 	return stdOut, err
+}
+
+func isGPFSPath(path string) (bool, error) {
+	glog.V(5).Infof("gpfs_util isGPFSPath")
+
+	// GPFS_SUPER_MAGIC constant defined in gpfs.h
+	// ref. https://www.karma-group.ru/upload/iblock/d56/IBM%20Spectrum%20Scale%205.0.0%20Administration%20Guide.pdf
+	var GPFS_TYPE int64 = 0x47504653
+
+	buf := new(syscall.Statfs_t)
+	err := syscall.Statfs(path, buf)
+	if GPFS_TYPE == buf.Type {
+		return true, err
+	} else {
+		return false, err
+	}
 }
 
 func ConvertToBytes(inputStr string) (uint64, error) {
