@@ -27,16 +27,7 @@ rules:
   - get
   - list
   - watch
-  - update
   - patch
-- apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -45,7 +36,6 @@ rules:
   - get
   - list
   - watch
-  - update
   - patch
 - apiGroups:
   - storage.k8s.io
@@ -56,21 +46,9 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - storage.k8s.io
   resources:
   - volumeattachments/status
   verbs:
-  - get
-  - list
-  - watch
-  - update
   - patch
 

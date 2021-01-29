@@ -13,13 +13,6 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - secrets
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ''
-  resources:
   - persistentvolumes
   verbs:
   - get
@@ -87,10 +80,6 @@ rules:
   verbs:
   - get
   - list
-  - watch
-  - create
-  - update
-  - delete
 
 - apiGroups:
   - storage.k8s.io
@@ -100,6 +89,4 @@ rules:
   - get
   - list
   - watch
-  - update
-  - patch
 
