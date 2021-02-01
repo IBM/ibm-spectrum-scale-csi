@@ -47,6 +47,7 @@ spec:
           args:
             - "--csi-address=$(ADDRESS)"
             - "--v=5" # Debugging
+            - "--leader-election=false"
           env:
             - name: ADDRESS
               value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
