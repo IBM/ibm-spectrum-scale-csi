@@ -269,7 +269,7 @@ func isGPFSPath(path string) (bool, error) {
 
 	buf := new(syscall.Statfs_t)
 	err := syscall.Statfs(path, buf)
-	if GPFS_TYPE == buf.Type {
+	if GPFS_TYPE == int64(buf.Type) {
 		return true, err
 	} else {
 		return false, err
