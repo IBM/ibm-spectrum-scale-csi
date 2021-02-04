@@ -1,0 +1,98 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+    app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+    product: ibm-spectrum-scale-csi
+    release: ibm-spectrum-scale-csi-operator
+  name: ibm-spectrum-scale-csi-operator
+  namespace: ibm-spectrum-scale-csi-driver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+  template:
+    metadata:
+      annotations:
+        productID: ibm-spectrum-scale-csi-operator
+        productName: IBM Spectrum Scale CSI Operator
+        productVersion: 2.2.0
+      labels:
+        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+        name: ibm-spectrum-scale-csi-operator
+        product: ibm-spectrum-scale-csi
+        release: ibm-spectrum-scale-csi-operator
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: beta.kubernetes.io/arch
+                    operator: Exists
+      containers:
+        - name: operator
+          args:
+            - "--metrics-addr=0.0.0.0:8383"
+            - "--enable-leader-election"
+            - "--leader-election-id=ibm-spectrum-scale-csi-operator"
+          env:
+            - name: MAX_CONCURRENT_RECONCILES_CSISCALEOPERATOR_CSI_IBM_COM
+              value: "1"
+            - name: MAX_CONCURRENT_RECONCILES_SECRET_
+              value: "1"
+            - name: ANSIBLE_DEBUG_LOGS
+              value: "False"
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CSI_DRIVER_IMAGE
+              value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
+          image: quay.io/madhuthorat/ibm-spectrum-scale-csi-operator-dev:csi13operator
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+                - ./health_check.sh
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - ./health_check.sh
+            initialDelaySeconds: 3
+            periodSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
+
+          #hostNetwork: false
+          #hostPID: false
+          #hostIPC: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - mountPath: /tmp/ansible-operator/runner
+              name: runner
+      serviceAccountName: ibm-spectrum-scale-csi-operator
+      volumes:
+        - emptyDir: {}
+          name: runner

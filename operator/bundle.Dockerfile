@@ -7,5 +7,5 @@ LABEL operators.operatorframework.io.bundle.package.v1=operator
 LABEL operators.operatorframework.io.bundle.channels.v1=stable
 LABEL operators.operatorframework.io.bundle.channel.default.v1=stable
 
-COPY deploy/olm-catalog/ibm-spectrum-scale-csi-operator/manifests /manifests/
-COPY deploy/olm-catalog/ibm-spectrum-scale-csi-operator/metadata/annotations.yaml /metadata/annotations.yaml
+COPY config/olm-catalog/ibm-spectrum-scale-csi-operator/manifests /manifests/
+COPY config/olm-catalog/ibm-spectrum-scale-csi-operator/metadata/annotations.yaml /metadata/annotations.yaml

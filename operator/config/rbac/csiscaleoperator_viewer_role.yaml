@@ -1,0 +1,20 @@
+# permissions for end users to view csiscaleoperators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ibm-spectrum-scale-csi-operator
+rules:
+- apiGroups:
+  - csi.ibm.com
+  resources:
+  - csiscaleoperators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - csi.ibm.com
+  resources:
+  - csiscaleoperators/status
+  verbs:
+  - get
