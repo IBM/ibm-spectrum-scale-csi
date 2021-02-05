@@ -47,15 +47,15 @@ spec:
 
 # Attacher image name, in case we do not want to use default image.
 # ==================================================================================
-#  attacher: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.0.0"
+#  attacher: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.1.0"
 
 # Provisioner image name, in case we do not want to use default image.
 # ==================================================================================
-#  provisioner: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v2.0.2"
+#  provisioner: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v2.1.0"
 
 # Driver Registrar image name, in case we do not want to use default image.
 # ==================================================================================
-#  driverRegistrar: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.0.1"
+#  driverRegistrar: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.1.0"
 
 # Snapshotter image name, in case we do not want to use default image.
 # ==================================================================================
@@ -63,7 +63,7 @@ spec:
 
 # SpectrumScale CSI Plugin image name, in case we do not want to use default image.
 # ==================================================================================
-#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.1.0"
+#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.2.0"
 
 # attacherNodeSelector specifies on which nodes we want to run attacher sidecar
 # In below example attacher will run on nodes which have label as "scale=true"
