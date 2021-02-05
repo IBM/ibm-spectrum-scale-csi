@@ -55,7 +55,7 @@ spec:
                   fieldPath: metadata.namespace
             - name: CSI_DRIVER_IMAGE
               value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
-          image: quay.io/madhuthorat/ibm-spectrum-scale-csi-operator-dev:csi13operator
+          image: ibm-spectrum-scale-csi-operator
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
