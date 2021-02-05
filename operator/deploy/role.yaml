@@ -10,7 +10,6 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
 rules:
   - apiGroups:
       - ""
