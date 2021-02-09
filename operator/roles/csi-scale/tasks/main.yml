@@ -101,6 +101,9 @@
     deploy_list: "{{deploy_list|reverse|list}}"
   when: 'state != "present"'
 
+- name: "Delete the daemonset"
+  include_tasks: delete_daemonset.yml
+
 - name: "Handle csi-scale objects"
   include_tasks: template_applicator.yml
   loop: "{{ deploy_list }}"
@@ -113,3 +116,4 @@
 #    status:
 #      conditions:
 #        - isRunning: true
+

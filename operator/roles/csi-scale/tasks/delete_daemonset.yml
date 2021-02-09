@@ -1,0 +1,11 @@
+---
+- name: Remove daemonset
+  k8s:
+    state: absent
+    definition:
+      apiVersion: "v1"
+      kind: "DaemonSet"
+      metadata:
+        name: "ibm-spectrum-scale-csi"
+        namespace: "{{meta.namespace}}"
+
