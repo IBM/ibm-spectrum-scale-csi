@@ -9,7 +9,7 @@ metadata:
     categories: Storage
     certified: 'false'
     containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.2.0
-    createdAt: Tue Nov 10 09:12:57 IST 2020
+    createdAt: Thu Feb 11 18:14:05 IST 2021
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi/
