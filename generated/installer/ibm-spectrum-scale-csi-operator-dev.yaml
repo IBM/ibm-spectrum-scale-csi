@@ -225,6 +225,8 @@ spec:
     type: string
   group: csi.ibm.com
   names:
+    categories:
+    - scale
     kind: CSIScaleOperator
     listKind: CSIScaleOperatorList
     plural: csiscaleoperators
