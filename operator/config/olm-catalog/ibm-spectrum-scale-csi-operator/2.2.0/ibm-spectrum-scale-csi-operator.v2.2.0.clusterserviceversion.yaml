@@ -372,17 +372,22 @@ spec:
                       - key: beta.kubernetes.io/arch
                         operator: Exists
               containers:
-              - env:
+              - name: operator
+                args:
+                  - "--metrics-addr=0.0.0.0:8383"
+                  - "--enable-leader-election"
+                  - "--leader-election-id=ibm-spectrum-scale-csi-operator"
+                env:
+                - name: MAX_CONCURRENT_RECONCILES_CSISCALEOPERATOR_CSI_IBM_COM
+                    value: "1"
+                - name: MAX_CONCURRENT_RECONCILES_SECRET_
+                    value: "1"
+                - name: ANSIBLE_DEBUG_LOGS
+                    value: "False"
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.name
-                - name: OPERATOR_NAME
-                  value: ibm-spectrum-scale-csi-operator
                 image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.2.0
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -391,7 +396,6 @@ spec:
                     - ./health_check.sh
                   initialDelaySeconds: 10
                   periodSeconds: 30
-                name: operator
                 readinessProbe:
                   exec:
                     command:
