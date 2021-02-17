@@ -379,11 +379,11 @@ spec:
                   - "--leader-election-id=ibm-spectrum-scale-csi-operator"
                 env:
                 - name: MAX_CONCURRENT_RECONCILES_CSISCALEOPERATOR_CSI_IBM_COM
-                    value: "1"
+                  value: "1"
                 - name: MAX_CONCURRENT_RECONCILES_SECRET_
-                    value: "1"
+                  value: "1"
                 - name: ANSIBLE_DEBUG_LOGS
-                    value: "False"
+                  value: "False"
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
