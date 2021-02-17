@@ -333,6 +333,7 @@ func (driver *ScaleDriver) CreatePrimaryFileset(sc connectors.SpectrumScaleConne
 		if inodeLimit != "" {
 			opts[connectors.UserSpecifiedInodeLimit] = inodeLimit
 		}
+
 		err = sc.CreateFileset(primaryFS, filesetName, opts)
 		if err != nil {
 			glog.Errorf("Unable to create primary fileset %s", filesetName)

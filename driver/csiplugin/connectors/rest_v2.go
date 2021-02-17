@@ -362,7 +362,7 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 
 	filesetreq := CreateFilesetRequest{}
 	filesetreq.FilesetName = filesetName
-	filesetreq.Comment = "Fileset created by IBM Container Storage Interface driver"
+	filesetreq.Comment = FilesetComment
 
 	filesetType, filesetTypeSpecified := opts[UserSpecifiedFilesetType]
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]

@@ -88,6 +88,8 @@ const (
 	UserSpecifiedVolBackendFs   string = "volBackendFs"
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
 	UserSpecifiedNodeClass      string = "nodeClass"
+
+	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {

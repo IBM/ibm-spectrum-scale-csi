@@ -128,7 +128,6 @@ func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volum
 	return targetPath, nil
 }
 
-
 //createDirectory: Create directory if not present
 func (cs *ScaleControllerServer) createDirectory(scVol *scaleVolume, targetPath string) error {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:createDirectory", scVol.VolName)
@@ -693,6 +692,8 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 	if len(splitVid) == 3 {
 		/* This is LW volume */
 		/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
+		/* OR a static volume created for fileset */
+		/* <cluster_id>;<filesystem_uuid>;fileset=<filesetname> */
 		vIdMem.ClusterId = splitVid[0]
 		vIdMem.FsUUID = splitVid[1]
 		SlnkPart := splitVid[2]
@@ -700,8 +701,13 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vId))
 		}
-		vIdMem.SymLnkPath = slnkSplit[1]
-		vIdMem.IsFilesetBased = false
+		if strings.EqualFold(slnkSplit[0], "fileset") {
+			vIdMem.FsetName = slnkSplit[1]
+			vIdMem.IsFilesetBased = true
+		} else {
+			vIdMem.SymLnkPath = slnkSplit[1]
+			vIdMem.IsFilesetBased = false
+		}
 		return vIdMem, nil
 	}
 
@@ -1097,8 +1103,18 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		}
 	}
 
-	//clusterId;FSUUID;filesetName;snapshotName;path
-	snapID := fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
+	snapID := ""
+	if strings.Compare(filesetResp.Config.Comment, connectors.FilesetComment) == 0 &&
+		strings.Compare(cs.Driver.primary.PrimaryFset, filesetName) != 0 &&
+		strings.Compare(cs.Driver.primary.PrimaryFs, filesystemName) != 0 {
+		// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
+		//clusterId;FSUUID;filesetName;snapshotName;path
+		snapID = fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
+	} else {
+		// This is statically created PVC from an independent fileset, here path is the root of fileset
+		//clusterId;FSUUID;filesetName;snapshotName;/
+		snapID = fmt.Sprintf("%s;%s;%s;%s;/", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName)
+	}
 
 	timestamp, err := cs.getSnapshotCreateTimestamp(conn, filesystemName, filesetName, snapName)
 	if err != nil {
