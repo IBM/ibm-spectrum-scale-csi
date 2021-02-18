@@ -12,6 +12,8 @@ metadata:
     createdAt: Thu Feb 11 18:14:05 IST 2021
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
+    operators.operatorframework.io/builder: operator-sdk-v1.3.2
+    operators.operatorframework.io/project_layout: ansible.sdk.operatorframework.io/v1
     repository: https://github.com/IBM/ibm-spectrum-scale-csi/
     support: IBM
   labels:
@@ -388,6 +390,8 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: CSI_DRIVER_IMAGE
+                  value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.2.0
                 image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.2.0
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -402,11 +406,22 @@ spec:
                     - ./health_check.sh
                   initialDelaySeconds: 3
                   periodSeconds: 1
-                resources: {}
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 500Mi
+                  requests:
+                    cpu: 50m
+                    memory: 50Mi
                 securityContext:
+                  allowPrivilegeEscalation: false
                   capabilities:
                     drop:
                     - ALL
+                  privileged: false
+                  readOnlyRootFilesystem: false
+                  runAsNonRoot: true
+                  runAsUser: 1001
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
