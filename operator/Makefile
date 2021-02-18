@@ -34,7 +34,7 @@ uninstall: kustomize
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: kustomize
-	cd config/manager && $(KUSTOMIZE) edit set image ibm-spectrum-scale-csi-operator=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Undeploy controller in the configured Kubernetes cluster in ~/.kube/config
@@ -73,8 +73,8 @@ ifeq (, $(shell which ansible-operator 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p bin ;\
-	curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.3.0/ansible-operator-v1.3.0-$(ARCHOPER)-$(OSOPER) ;\
-	mv ansible-operator-v1.3.0-$(ARCHOPER)-$(OSOPER) ./bin/ansible-operator ;\
+	curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.3.2/ansible-operator-v1.3.2-$(ARCHOPER)-$(OSOPER) ;\
+	mv ansible-operator-v1.3.2-$(ARCHOPER)-$(OSOPER) ./bin/ansible-operator ;\
 	chmod +x ./bin/ansible-operator ;\
 	}
 ANSIBLE_OPERATOR=$(realpath ./bin/ansible-operator)
@@ -86,7 +86,7 @@ endif
 .PHONY: bundle
 bundle: kustomize
 	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image ibm-spectrum-scale-csi-operator=$(IMG)
+	cd config/manager && $(KUSTOMIZE) edit set image quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
