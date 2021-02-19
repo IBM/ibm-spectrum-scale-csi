@@ -107,6 +107,7 @@ jobs:
     - name: "Lint - Operator: run linters and bundle automation."
       script:
         - pip install ansible
+        - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip install operator-courier==2.1.7
