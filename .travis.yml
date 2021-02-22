@@ -59,7 +59,7 @@ env:
     - KUBE_VERSION="v1.20.6"
     - OP_VER="v1.3.2"
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
-    - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
+    - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk_linux_amd64"
     - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/config/olm-catalog/${REPO_NAME_OPERATOR}/"
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
