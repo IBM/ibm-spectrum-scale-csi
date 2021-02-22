@@ -16,6 +16,7 @@
     cluster_checksum: "{{ clustersCamelCase | to_json | checksum }}"
     secret_checksums: []
     deploy_list:
+      - name: "csi-driver.yaml.j2"
       - name: "cluster-role-attacher.yaml.j2"
       - name: "cluster-role-node.yaml.j2"
       - name: "cluster-role-provisioner.yaml.j2"

@@ -341,6 +341,7 @@ spec:
           resources:
           - volumeattachments
           - storageclasses
+          - csidrivers
           verbs:
           - '*'
         serviceAccountName: ibm-spectrum-scale-csi-operator
