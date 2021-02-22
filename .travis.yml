@@ -60,7 +60,7 @@ env:
     - OP_VER="v1.3.2"
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk-${OP_VER}-x86_64-linux-gnu"
-    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/deploy/olm-catalog/${REPO_NAME_OPERATOR}/"
+    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/config/olm-catalog/${REPO_NAME_OPERATOR}/"
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
     - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -108,9 +108,6 @@ jobs:
       script:
         - pip install ansible
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 3.5.4 ${HOME}/bin
-        - which kustomize
-        - ls ${HOME}/bin/kustomize
-        - ${HOME}/bin/kustomize version
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip install operator-courier==2.1.7
@@ -118,7 +115,6 @@ jobs:
         - ls ${OLM_MANIFEST}
         - echo ${BUILD_DIR_OPERATOR}
         - ls ${BUILD_DIR_OPERATOR}
-        - ls ${BUILD_DIR_OPERATOR}/deploy/*
         - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
           #Disabling for now..
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
