@@ -218,6 +218,7 @@ jobs:
       name: "Test - Operator: molecule"
       dist: xenial
       before_install:
+        - pip install --upgrade pip
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
@@ -236,6 +237,7 @@ jobs:
       name: "Test - Operator: scorecard"
       dist: xenial
       before_install:
+        - pip install --upgrade pip
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_minikube.sh
         - ${TRAVIS_BUILD_DIR}/tools/scripts/ci/install_operator-sdk.sh
