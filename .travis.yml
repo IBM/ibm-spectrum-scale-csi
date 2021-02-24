@@ -216,7 +216,7 @@ jobs:
     # Install minikube, build the image and run the scorecard then execute molecule testing.
     - stage: test
       name: "Test - Operator: molecule"
-      dist: focal
+      dist: xenial
       before_install:
         - pip install --upgrade pip
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
@@ -236,7 +236,7 @@ jobs:
 
     - stage: test
       name: "Test - Operator: scorecard"
-      dist: focal
+      dist: xenial
       before_install:
         - pip install --upgrade pip
         - pip install docker molecule ansible-lint yamllint flake8 openshift jmespath kubernetes-validate
