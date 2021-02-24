@@ -56,7 +56,7 @@ env:
     - OCTOKIT_API_ENDPOINT="https://github.ibm.com/api/v3/"
     - PATH=/opt/python/3.6.7/bin:$PATH
     - GO111MODULE=on
-    - KUBE_VERSION="v1.20.6"
+    - KUBE_VERSION="v1.20.4"
     - OP_VER="v1.3.2"
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk_linux_amd64"
@@ -229,8 +229,9 @@ jobs:
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
       script:
         # molecule
-        - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
-        - kubectl create -f deploy/namespace.yaml
+        #- ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
+        #- kubectl create -f deploy/namespace.yaml
+        - docker inspect ${REPO_NAME_OPERATOR}
           #- molecule test -s test-local
 
     - stage: test
@@ -246,10 +247,10 @@ jobs:
         - eval $(minikube docker-env) # Popping this out, because I don't think the script is working.
       script:
         - python hacks/clear_finalizers.py
-        - ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
+        #- ansible-playbook hacks/change_deploy_image.yml --extra-vars "quay_operator_endpoint=${OPERATOR_LOCAL_IMAGE}"
         - operator-sdk build ${REPO_NAME_OPERATOR}
         - docker tag ${REPO_NAME_OPERATOR} ${OPERATOR_LOCAL_IMAGE}
-        - kubectl create -f deploy/namespace.yaml
+        #- kubectl create -f deploy/namespace.yaml
         - operator-sdk scorecard --config .osdk-scorecard.yaml --verbose
 
 notifications:
