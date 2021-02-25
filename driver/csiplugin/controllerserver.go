@@ -517,23 +517,15 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Aborted, fmt.Sprintf("volume creation already in process : %v", scaleVol.VolName))
 	}
 
-	jobDetails, jobInProgress := cs.Driver.snapjobmap[scaleVol.VolName]
-	if jobInProgress && jobDetails.jobID != 0 {
-		glog.Infof("volume:[%v] -  Snapshot copy request in progress for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
-		conn, err := cs.getConnFromClusterID(snapIdMembers.ClusterId)
-		if err != nil {
-			glog.Errorf("volume:[%v] -  Error in getting connection for cluster: %v, %v", scaleVol.VolName, snapIdMembers.ClusterId, err)
-			return nil, err
-		}
-
-		err = conn.WaitForSnapshotCopy(jobDetails.jobStatus, jobDetails.jobID)
-		if err != nil {
-			glog.Errorf("volume:[%v] -  Unable to copy snapshot %s: %v.", scaleVol.VolName, snapIdMembers.SnapName, err)
-			//delete(cs.Driver.snapjobmap, scaleVol.VolName)
-			return nil, err
-		}
-
-		//delete(cs.Driver.snapjobmap, scaleVol.VolName)
+	jobDetails := cs.Driver.snapjobstatusmap[scaleVol.VolName]
+	if jobDetails.jobStatus == SNAP_JOB_RUNNING {
+		glog.Errorf("volume:[%v] -  Snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("Snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
+	} else if jobDetails.jobStatus == SNAP_JOB_FAILED {
+		glog.Errorf("volume:[%v] -  Snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("SSnapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+	} else if jobDetails.jobStatus == SNAP_JOB_COMPLETED {
+		glog.Infof("volume:[%v] -  Snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      jobDetails.volID,
@@ -615,19 +607,21 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 
 	}
 
-	jobDetails := SnapCopyJobDetails{0, 0, ""}
-	jobDetails.jobID = jobID
-	jobDetails.jobStatus = jobStatus
-	jobDetails.volID = volID
-	cs.Driver.snapjobmap[scVol.VolName] = jobDetails
+	jobDetails := SnapCopyJobDetails{SNAP_JOB_RUNNING, volID}
+	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 
 	err = conn.WaitForSnapshotCopy(jobStatus, jobID)
 	if err != nil {
 		glog.Errorf("Unable to copy snapshot %s: %v.", snapId.SnapName, err)
+		jobDetails.jobStatus = SNAP_JOB_FAILED
+		cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 		//delete(cs.Driver.snapjobmap, scVol.VolName)
 		return err
 	}
 
+	glog.Infof("Copy snapshot completed for snapId: [%v], scaleVolume: [%v]", snapId, scVol)
+	jobDetails.jobStatus = SNAP_JOB_COMPLETED
+	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 	//delete(cs.Driver.snapjobmap, scVol.VolName)
 	return nil
 }
@@ -845,6 +839,11 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				//Check if fileset exist has any snapshot
 				snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
 				if err != nil {
+					if strings.Contains(err.Error(), "EFSSG0072C") ||
+						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+						glog.V(4).Infof("Fileset seems already deleted - %v", err)
+						return &csi.DeleteVolumeResponse{}, nil
+					}
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 				}
 
@@ -855,6 +854,11 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 				err = conn.DeleteFileset(FilesystemName, FilesetName)
 				if err != nil {
+					if strings.Contains(err.Error(), "EFSSG0072C") ||
+						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+						glog.V(4).Infof("Fileset seems already deleted - %v", err)
+						return &csi.DeleteVolumeResponse{}, nil
+					}
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 				}
 			} else {
