@@ -7,7 +7,7 @@ set -u
 #. ./ci-env 
 
 # Install kubectl for minikube
-curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/bin/linux/amd64/kubectl
+curl -Lo kubectl https://dl.k8s.io/release/v${KUBE_VERSION}/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/
 

@@ -8,7 +8,7 @@ from shutil import copyfile
 
 
 BASE_DIR="{0}/..".format(os.path.dirname(os.path.realpath(__file__)))
-OLM_CATALOG="{0}/deploy/olm-catalog".format(BASE_DIR)
+OLM_CATALOG="{0}/config/olm-catalog".format(BASE_DIR)
 OPERATOR="{0}/ibm-spectrum-scale-csi-operator".format(OLM_CATALOG)
 #PACKAGE_FILE="ibm-spectrum-scale-csi-operator.package.yaml"
 

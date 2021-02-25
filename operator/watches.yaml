@@ -1,15 +1,17 @@
 ---
-- ManageStatus: true
+# Use the 'create api' subcommand to add watches to this file.
+- version: v1
   group: csi.ibm.com
   kind: CSIScaleOperator
-  role: /opt/ansible/roles/csi-scale
-  version: v1
+  role: /opt/ansible/roles/csiscaleoperator
+  ManageStatus: true
   finalizer:
     name: finalizer.csiscaleoperators.csi.ibm.com
     vars:
       state: absent
-- kind: Secret
+- version: v1
+  kind: Secret
+  playbook: /opt/ansible/playbooks/secret.yml
   manageStatus: false
-  playbook: /opt/ansible/roles/csi-scale/tasks/secret_watch.yml
-  version: v1
   watchDependentResources: false
+# +kubebuilder:scaffold:watch

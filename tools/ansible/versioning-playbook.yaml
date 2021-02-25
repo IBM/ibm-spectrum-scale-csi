@@ -3,10 +3,10 @@
   become: yes
   gather_facts: true
   vars:
-    VERSION_OLD: "2.0.0"
-    VERSION_NEW: "2.1.0"
+    VERSION_OLD: "2.1.0"
+    VERSION_NEW: "2.2.0"
     OPERATOR_DIR: "../../operator/"
-    OLM_DIR: "deploy/olm-catalog/ibm-spectrum-scale-csi-operator/"
+    OLM_DIR: "config/olm-catalog/ibm-spectrum-scale-csi-operator/"
     OPERATOR_NAME: "ibm-spectrum-scale-csi-operator"
   tasks:
 
@@ -37,7 +37,7 @@
     loop:
       - "{{CSV_NEW}}"
       - "{{OLM_DIR}}/ibm-spectrum-scale-csi-operator.package.yaml"
-      - deploy/operator.yaml
+      - config/manager/manager.yaml
       - .osdk-scorecard.yaml
       - hacks/package_operator.py
       - hacks/csv_copy_cr.py
