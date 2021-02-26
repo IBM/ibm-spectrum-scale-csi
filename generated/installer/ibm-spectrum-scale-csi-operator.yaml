@@ -435,6 +435,9 @@ spec:
               description: A generic trigger to be used in kickin off the ansible
                 operator.
               type: string
+            kubeletRootDirPath:
+              description: The kubelet root directory path.
+              type: string
           required:
           - scaleHostpath
           type: object

@@ -221,6 +221,11 @@ spec:
         path: clusters.restApi.guiPort
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: The kubelet root directory path.
+        displayName: Kubelet Root Directory Path
+        path: kubeletRootDirPath
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
       statusDescriptors:
       - description: The active status of the operator
         displayName: Conditions
