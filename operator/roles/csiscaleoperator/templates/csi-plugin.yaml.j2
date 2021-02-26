@@ -50,18 +50,18 @@ spec:
             - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
+              value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
             - name: CHECKSUM
               value: "{{cluster_checksum}}"
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
+              value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+              mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
             - name: registration-dir
               mountPath: /registration
         - name: ibm-spectrum-scale-csi
@@ -70,6 +70,7 @@ spec:
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--v=5"
+            - "--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)"
           env:
             - name: NODE_ID
               valueFrom:
@@ -79,13 +80,15 @@ spec:
             - name: CHECKSUM
               value: "{{cluster_checksum}}"
             - name: CSI_ENDPOINT
-              value: unix:/var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
+              value: "unix:{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
             - name: SCALE_HOSTPATH
               value: "{{ scaleHostpath }}"
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
             - name: SECRET_CHECKSUM
               value: "{{secret_checksum}}"
+            - name: KUBELET_ROOT_DIR_PATH
+              value: "{{ kubeletRootDirPath }}"
 {% if nodeMapping|length > 0 %}
 {% for nodemap in nodeMapping %}
             - name: "{{ nodemap.k8sNode }}"
@@ -96,9 +99,9 @@ spec:
           imagePullPolicy: "IfNotPresent" # "Always"
           volumeMounts:
             - name: plugin-dir
-              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+              mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
             - name: pods-mount-dir
-              mountPath: /var/lib/kubelet
+              mountPath: "{{ kubeletRootDirPath }}"
             - mountPath: /dev
               name: host-dev
             - name: "spectrum-scale-config"
@@ -143,15 +146,15 @@ spec:
       volumes:
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+            path: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
             type: DirectoryOrCreate
         - name: registration-dir
           hostPath:
-            path: /var/lib/kubelet/plugins_registry/
+            path: "{{ kubeletRootDirPath }}/plugins_registry/"
             type: Directory
         - name: pods-mount-dir
           hostPath:
-            path: /var/lib/kubelet
+            path: "{{ kubeletRootDirPath }}"
             type: Directory
         - name: host-dev
           hostPath:
