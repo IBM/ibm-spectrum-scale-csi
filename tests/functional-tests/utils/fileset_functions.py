@@ -363,7 +363,7 @@ def delete_created_fileset(volume_name):
             delete_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
 
-        for _ in range(0, 24):
+        for _ in range(0, 12):
             get_link = "https://"+test["guiHost"]+":"+test["port"] + \
                 "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
             response = requests.get(get_link, verify=False,
@@ -374,7 +374,8 @@ def delete_created_fileset(volume_name):
             if search_result is None:
                 LOGGER.info(f'Fileset Delete : Fileset {volume_name} has been deleted successfully')
                 return
-            time.sleep(5)
+            time.sleep(15)
+            LOGGER.info(f'Fileset Check : Checking for Fileset {volume_name}')
         LOGGER.error(f'Fileset Delete : Fileset {volume_name} deletion operation failed')
         assert False
 
@@ -445,7 +446,7 @@ def check_dir(dir_name):
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
-    while val < 24:
+    while val < 12:
         check_dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
             "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/owner/"+dir_name
         LOGGER.debug(check_dir_link)
@@ -458,7 +459,8 @@ def check_dir(dir_name):
         if response.status_code == 200:
             LOGGER.info(f'Directory Check : directory {dir_name} created successfully')
             return
-        time.sleep(5)
+        time.sleep(15)
+        LOGGER.info(f'Directory Check : Checking for directory {dir_name}')
         val += 1
     LOGGER.error(f'directory {dir_name} not created successfully')
     LOGGER.error(str(response))
@@ -589,7 +591,7 @@ def check_snapshot(snapshot_name, volume_name):
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-
+        LOGGER.info(f"Snapshot Check : Checking for snapshot {snapshot_name} of volume {volume_name}")
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
 
@@ -642,7 +644,7 @@ def check_snapshot_deleted(snapshot_name, volume_name):
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-
+        LOGER.info("Snapshot Check : Checking for deletion of snapshot {snapshot_name} of volume {volume_name}")
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
 
