@@ -12,13 +12,13 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 ### How to run IBM Spectrum Scale CSI test automation using container
 
-- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](./operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml) file.
+- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](./operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 
 - Configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./tests/functional-tests/config/test.config) file.
 
 Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platform 
 
-- Create config map using [test.config](./tests/functional-tests/config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](./operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
+- Create config map using [test.config](./tests/functional-tests/config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](./operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
 
 ```
 kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path>
@@ -26,7 +26,7 @@ kubectl create configmap  test-config  --from-file=test.config=<test.config file
 ```
 
 ```
-eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml --from-file=kubeconfig=/root/.kube/config
+eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml --from-file=kubeconfig=/root/.kube/config
  
 ```
 
