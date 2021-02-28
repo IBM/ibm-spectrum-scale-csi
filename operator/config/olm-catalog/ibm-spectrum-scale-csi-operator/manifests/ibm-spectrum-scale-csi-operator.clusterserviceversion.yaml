@@ -233,41 +233,30 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.phase
       version: v1
-  description: "\nThe IBM Spectrum Scale CSI Operator runs within a Kubernetes cluster\
-    \ providing a means to \ndeploy and manage the CSI plugin for spectrum scale.\
-    \ For more in depth documentation please refer\nto the [knowledge center](https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR).\n\
-    \nThis operator should be used to deploy the CSI plugin.\n\nThe configuration\
-    \ process is as follows:\n\n1. [Spectrum Scale GUI Setup](#spectrum-scale-gui-setup)\n\
-    2. [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum\
-    \ Scale GUI Setup \n------------------------\n> **NOTE:** This step only needs\
-    \ to be preformed once per GUI.\n\n> **WARNING:** If your daemonset pods (driver\
-    \ pods) do not come up, generally this means you have a  secret that  has not\
-    \ been defined in the correct namespace.\n\n1. Ensure the Spectrum Scale GUI is\
-    \ running by pointing your browser to the IP hosting the GUI:\n\n \n    > If you\
-    \ do not see a login follow on screen instructions, or review the [GUI Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.5/com.ibm.spectrum.scale.v5r05.doc/bl1ins_quickrefforgui.htm)\n\
-    \n\n3. Create a CsiAdmin group account on in the GUI (currently requires a CLI\
-    \ call):\n\n   ```\n\n   export USERNAME=\"SomeUser\"\n   export PASSWORD=\"SomePassword\"\
-    \n   /usr/lpp/mmfs/gui/cli/mkuser ${USERNAME} -p ${PASSWORD} -g CsiAdmin\n\n \
-    \  ```\n\n3. Create a Kubernetes secret for the `CsiAdmin` user:\n\n  ```\n\n\
-    \  export USERNAME_B64=$(echo $USERNAME | base64)\n  export PASSWORD_B64=$(echo\
-    \ $PASSWORD | base64)\n  export OPERATOR_NAMESPACE=\"ibm-spectrum-scale-csi-driver\"\
-    \  # Set this to the namespace you deploy the operator in.\n  \n\n  cat << EOF\
-    \ > /tmp/csisecret.yaml\n  apiVersion: v1\n  data:\n    password: ${PASSWORD_B64}\n\
-    \    username: ${USERNAME_B64}\n  kind: Secret\n  type: Opaque\n  metadata:\n\
-    \    name: csisecret    # This should be in your CSIScaleOperator definition\n\
-    \    namespace: ${OPERATOR_NAMESPACE} \n    labels:\n      app.kubernetes.io/name:\
-    \ ibm-spectrum-scale-csi-operator # Used by the operator to detect changes, set\
-    \ on load of CR change if secret matches name in CR and namespace.\n  EOF\n  \n\
-    \n  kubectl create -f /tmp/csisecret.yaml\n  rm -f /tmp/csisecret.yaml\n  \n \
-    \ ```\n\nCustom Resource Configuration\n-----------------------------\n\nThe bundled\
-    \ Custom Resource example represents the minimum settings needed to run the operator.\n\
-    If your environment needs more advanced settings (e.g. remote clusters, node mapping,\
-    \ etc.) please\nrefer to the sample [Custom Resource](https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/v2.2.0/operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml).\n\
-    \n\n"
+  description: |
+    The IBM Spectrum Scale CSI Operator for Kubernetes installs, manages, 
+     upgrades the IBM Spectrum Scale CSI Driver on OpenShift and Kubernetes 
+     for provisioning of persistent volumes on IBM Spectrum Scale.
+
+    ### Documentation
+    Documentation for IBM Spectrum Scale CSI Driver and Operator can be found at [knowledge center](https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR).
+
+    ### Getting help
+    IBM Spectrum Scale CSI driver is part of the IBM Spectrum Scale offering.
+    Please follow the [IBM support procedure](https://www.ibm.com/mysupport/s/?language=en_US) for any issues with the driver.
+
+    For non-urgent issues, suggestions, recommendations feel free to open an 
+    issue in [github](https://github.com/IBM/ibm-spectrum-scale-csi). Issues will be addressed as team availability permits.
+ 
+ 
+    **Note:** Custom Resource example represents the minimum settings needed to run 
+    the operator. If your environment needs more advanced settings (e.g. remote clusters, 
+    node mapping, image pull secret, Taint and Toleration etc.) please refer to 
+    the sample [Custom Resource](https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/v2.2.0/operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml).
   displayName: IBM Spectrum Scale CSI Plugin Operator
   icon:
-  - base64data: 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
-    mediatype: image/png
+  - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMzIgMzIiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiMzczZDkxNi0zNWQzLTQ4NDAtOWI5Ni1jMWFhNzkyNTI4NzYiIHgxPSIxLjcxIiB5MT0iMjIuNTAyIiB4Mj0iMTcuMjkiIHkyPSIzMS40OTgiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjIiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZjZmYjQ4MDgtMDdjYS00N2RlLWI5NjYtYjkzZTQ4YWQwNGZhIiB4MT0iMzU0MS41IiB5MT0iMjciIHgyPSIzNTQxLjUiIHkyPSIxOCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgxLCAwLCAwLCAtMSwgLTM1MjAsIDQ1KSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuMiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxtYXNrIGlkPSJhZjgzNjFhYy05Y2M3LTRmN2ItYjExMi0wM2Q3ZDdhOTE0NTQiIHg9IjAiIHk9IjAiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxwYXRoIGQ9Ik0xNS41LDMwLjg2NGwtMTItN0ExLDEsMCwwLDEsMywyM1Y5YTEsMSwwLDAsMSwuNS0uODY0bDEyLTdhMSwxLDAsMCwxLDEuMDA4LDBsMTIsN0ExLDEsMCwwLDEsMjksOVYyM0gyN1Y5LjU3NEwxNiwzLjE1OCw1LDkuNTc0VjIyLjQyNmwxMS41LDYuNzFaIiBmaWxsPSIjZmZmIi8+CiAgICAgIDxyZWN0IHg9IjIiIHk9IjIyIiB3aWR0aD0iMTUiIGhlaWdodD0iMTAiIGZpbGw9InVybCgjYjM3M2Q5MTYtMzVkMy00ODQwLTliOTYtYzFhYTc5MjUyODc2KSIvPgogICAgICA8cGF0aCBkPSJNMjEsMjUuNWgydi05YTEsMSwwLDAsMC0uNS0uODY0bC02LTMuNWExLDEsMCwwLDAtMS4wMDgsMGwtNiwzLjVBMSwxLDAsMCwwLDksMTYuNVYyMWgyVjE3LjA3NGw1LTIuOTE2LDUsMi45MTZaIiBmaWxsPSIjZmZmIi8+CiAgICAgIDxyZWN0IHg9IjE5IiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDMgNDUpIHJvdGF0ZSgxODApIiBmaWxsPSJ1cmwoI2Y2ZmI0ODA4LTA3Y2EtNDdkZS1iOTY2LWI5M2U0OGFkMDRmYSkiLz4KICAgIDwvbWFzaz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYWY4YWM3NjAtNzY5YS00MDc4LWI2ZmUtYTlmOGRjMzU3OThjIiB5MT0iMzIiIHgyPSIzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuMSIgc3RvcC1jb2xvcj0iIzQyYmU2NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuOSIgc3RvcC1jb2xvcj0iIzAwN2Q3OSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGcgaWQ9ImI0ODI0ZTUxLWRmMWMtNDdmMS1iMTc4LTQzZjYyOTUwYmJiNSIgZGF0YS1uYW1lPSJMYXllciAyIj4KICAgIDxnIGlkPSJiZjg4ZTFmMy1hYWFiLTRjNWEtYWVlYi02NDU2OTJiYWMxY2UiIGRhdGEtbmFtZT0iTGlnaHQgdGhlbWUgaWNvbnMiPgogICAgICA8Zz4KICAgICAgICA8ZyBtYXNrPSJ1cmwoI2FmODM2MWFjLTljYzctNGY3Yi1iMTEyLTAzZDdkN2E5MTQ1NCkiPgogICAgICAgICAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSJ1cmwoI2FmOGFjNzYwLTc2OWEtNDA3OC1iNmZlLWE5ZjhkYzM1Nzk4YykiLz4KICAgICAgICA8L2c+CiAgICAgICAgPHBhdGggZD0iTTE2LDMxYTEsMSwwLDAsMS0uNS0uMTM2bC0zLTEuNzVhMSwxLDAsMCwxLS41LS44NjR2LTMuNWExLDEsMCwwLDEsLjUtLjg2NGwzLTEuNzVhMSwxLDAsMCwxLDEuMDA4LDBsMywxLjc1YTEsMSwwLDAsMSwuNS44NjR2My41YTEsMSwwLDAsMS0uNS44NjRsLTMsMS43NUExLDEsMCwwLDEsMTYsMzFabS0yLTMuMzI0LDIsMS4xNjYsMi0xLjE2NlYyNS4zMjRsLTItMS4xNjYtMiwxLjE2NloiIGZpbGw9IiMwMDFkNmMiLz4KICAgICAgPC9nPgogICAgPC9nPgogIDwvZz4KPC9zdmc+Cg==
+    mediatype: image/svg+xml
   install:
     spec:
       clusterPermissions:
