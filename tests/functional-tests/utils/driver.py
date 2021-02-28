@@ -362,6 +362,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
             api_response = api_instance.read_namespaced_persistent_volume_claim(
                 name=pvc_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
+            LOGER.info(f'PVC Check: Checking for pvc {pvc_name}')
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
@@ -623,6 +624,7 @@ def check_pod(value_pod, pod_name, created_objects):
             api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
+            LOGGER.info(f'POD Check: Checking for pod {pod_name}')
             if api_response.status.phase == "Running":
                 LOGGER.info(f'POD Check : POD {pod_name} is Running')
                 check_pod_execution(value_pod, pod_name, created_objects)
@@ -738,6 +740,7 @@ def check_ds(ds_name,value_ds,created_objects):
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
                 name=ds_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(read_daemonsets_api_response)
+            LOGGER.info(f"Daemonset Check : Checking for daemonset {ds_name}")
             current_number_scheduled = read_daemonsets_api_response.status.current_number_scheduled
             desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
             number_available = read_daemonsets_api_response.status.number_available
