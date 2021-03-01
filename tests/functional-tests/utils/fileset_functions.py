@@ -644,7 +644,7 @@ def check_snapshot_deleted(snapshot_name, volume_name):
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-        LOGER.info("Snapshot Check : Checking for deletion of snapshot {snapshot_name} of volume {volume_name}")
+        LOGGER.info("Snapshot Check : Checking for deletion of snapshot {snapshot_name} of volume {volume_name}")
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
 
