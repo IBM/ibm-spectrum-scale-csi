@@ -362,7 +362,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
             api_response = api_instance.read_namespaced_persistent_volume_claim(
                 name=pvc_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
-            LOGER.info(f'PVC Check: Checking for pvc {pvc_name}')
+            LOGGER.info(f'PVC Check: Checking for pvc {pvc_name}')
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
