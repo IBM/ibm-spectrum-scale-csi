@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  author: Deepak Ghuge
+  description: An operator for managing and deploying Scale CSI drivers.
+  company: IBM
+
+  license: license (GPLv2, GPLv3)
+
+  min_ansible_version: 2.9
+
+  platforms:
+    - name: Kubernetes
+      versions:
+        - 1.19
+        - 1.20
+    - name: OpenShift
+      versions:
+        - all
+  
+
+  galaxy_tags: 
+    - kubernetes
+    - k8s
+    - openshift
+    - CSI
+
+dependencies: []
+
+collections:
+- operator_sdk.util
+- community.kubernetes

@@ -1,0 +1,55 @@
+---
+# defaults file for CSIScaleOperator
+opName: '{{ ansible_operator_meta.name | default("ibm-spectrum-scale-csi") }}'
+productName: '{{ ansible_operator_meta.product | default("ibm-spectrum-scale-csi") }}'
+labelInstance: "ibm-spectrum-scale-csi-operator"
+labelManage: "ibm-spectrum-scale-csi-operator"
+labelName: "ibm-spectrum-scale-csi-operator"
+labelRelease: "ibm-spectrum-scale-csi-operator"
+annotationProductID: "ibm-spectrum-scale-csi-operator"
+annotationProductName: "IBM Spectrum Scale CSI Operator"
+annotationProductVersion: "2.2.0"
+
+namespace: '{{ ansible_operator_meta.namespace | default("ibm-spectrum-scale-csi-driver") }}'
+storage-class: "ibm-spectrum-scale-csi"
+
+# Image defaults
+snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.0.0', true) }}"
+attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.1.0', true) }}"
+provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v2.1.0', true) }}"
+
+# Due to camelCase these get loaded differently in the operator.
+driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.1.0', true) }}"
+spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.2.0', true) }}"
+
+# Set defaults for the secret counter and hostpath.
+secretCounter: "{{ secret_counter |  default(-1) }}"
+scaleHostpath: "{{ scale_hostpath | default('/') }}"
+
+# List of imagePullSecrets
+imagePullSecrets: "{{ image_pull_secrets | default([])}}"
+
+# This needs a default for molecule, also the clusters version does weird stuff to the object?
+# clusters: []
+clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperator.spec.clusters | default([])}}"
+
+# Node Selector for Attacher sidecar.
+attacherNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.attacherNodeSelector | default([])}}"
+
+# Node Selector for Provisioner sidecar.
+provisionerNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.provisionerNodeSelector | default([])}}"
+
+# Node Selector for Snapshotter sidecar.
+snapshotterNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.snapshotterNodeSelector | default([])}}"
+
+# Node Selector for SpectrumScale CSI Plugin.
+pluginNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.pluginNodeSelector | default([])}}"
+
+# Node mapping between K8s and spectrumscale node.
+nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
+
+# List of tolerations
+tolerations: "{{ _csi_ibm_com_csiscaleoperator.spec.tolerations | default([])}}"
+
+# State of driver in the cluster (might not be needed).
+state: present

@@ -764,7 +764,7 @@ def get_cmd_values(request):
         if os.path.isfile('config/csiscaleoperators.csi.ibm.com_cr.yaml'):
             clusterconfig_value = 'config/csiscaleoperators.csi.ibm.com_cr.yaml'
         else:
-            clusterconfig_value = '../../operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml'
+            clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
     namespace_value = request.config.option.namespace
     if namespace_value is None:
