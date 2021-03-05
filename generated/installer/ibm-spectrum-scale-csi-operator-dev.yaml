@@ -328,6 +328,9 @@ spec:
               items:
                 type: string
               type: array
+            kubeletRootDirPath:
+              description: The kubelet root directory path.
+              type: string
             nodeMapping:
               description: Mapping of K8s node with SpectrumScale node.
               items:
@@ -434,9 +437,6 @@ spec:
             trigger:
               description: A generic trigger to be used in kickin off the ansible
                 operator.
-              type: string
-            kubeletRootDirPath:
-              description: The kubelet root directory path.
               type: string
           required:
           - scaleHostpath
