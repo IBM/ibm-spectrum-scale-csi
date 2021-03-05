@@ -1,0 +1,118 @@
+---
+# tasks file for CSIScaleOperator
+# - debug:
+#    msg:
+#      - "scaleHostpath - {{ scaleHostpath }}"
+#      - "secretCounter - {{ secretCounter }}"
+#      - "attacher - {{ attacher }}"
+#      - "provisioner - {{ provisioner }}"
+#      - "driverRegistrar - {{ driverRegistrar}}"
+#      - "spectrumScale - {{ spectrumScale }}"
+#      - "clustersCamelCase - {{clustersCamelCase}}"
+
+- name: "Get cluster information"
+  set_fact:
+    api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+    cluster_checksum: "{{ clustersCamelCase | to_json | checksum }}"
+    secret_checksums: []
+    deploy_list:
+      - name: "csi-driver.yaml.j2"
+      - name: "cluster-role-attacher.yaml.j2"
+      - name: "cluster-role-node.yaml.j2"
+      - name: "cluster-role-provisioner.yaml.j2"
+      - name: "cluster-role-snapshotter.yaml.j2"
+      - name: "sa-attacher.yaml.j2"
+      - name: "sa-node.yaml.j2"
+      - name: "sa-provisioner.yaml.j2"
+      - name: "sa-snapshotter.yaml.j2"
+      - name: "crb-attacher.yaml.j2"
+      - name: "crb-node.yaml.j2"
+      - name: "crb-provisioner.yaml.j2"
+      - name: "crb-snapshotter.yaml.j2"
+      - name: "spectrum_scale.yaml.j2"
+      - name: "csi-plugin-attacher.yaml.j2"
+      - name: "csi-plugin-provisioner.yaml.j2"
+      - name: "csi-plugin-snapshotter.yaml.j2"
+      - name: "csi-plugin.yaml.j2"
+
+- name: "Ensure SCC"
+  when: '"apps.openshift.io" in api_groups'
+  block:
+    - name: "Get security context constraint information"
+      k8s_info:
+        kind: "SecurityContextConstraints"
+        name: "spectrum-scale-csiaccess"
+      register: csiaccess_results
+
+    - name: "Ensure the csiaccess_users list"
+      set_fact:
+        csiaccess_users: "{{ (csiaccess_results.resources[0].users | default([])) }}"
+        scc_state: "present"
+        csiaccess_users_new:
+          - "system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-attacher"
+          - "system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-provisioner"
+          - "system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-snapshotter"
+          - "system:serviceaccount:{{ namespace }}:ibm-spectrum-scale-csi-node"
+
+    - name: "Union users if state is present"
+      set_fact:
+        csiaccess_users: "{{csiaccess_users | union(csiaccess_users_new) }}"
+      when: 'state == "present"'
+
+    - name: "Difference users if state is absent"
+      set_fact:
+        csiaccess_users: "{{csiaccess_users | difference(csiaccess_users_new)}}"
+      when: 'state != "present"'
+
+    - name: "Update scc_state"
+      set_fact:
+        scc_state: "absent"
+      when: "(csiaccess_users|length) == 0"
+
+    - name: "Ensure SCC are {{ state }}"
+      k8s:
+        state: "{{scc_state}}"
+        namespace: "{{namespace}}"
+        definition: "{{ lookup('template', 'scc.yaml.j2') | from_yaml }}"
+    # ==================================
+    # 1.x.x => 2.x.x
+    - name: "Check for old csiaccess"
+      k8s_info:
+        kind: "SecurityContextConstraints"
+        name: "csiaccess"
+      register: csiaccess_old
+
+    - name: "Ensure old SCC is removed"
+      include_tasks: clear_old_csi_access.yml
+      loop: "{{ csiaccess_old.resources }}"
+      when: csiaccess_old is defined
+     # ==================================
+
+- name: "Test clusters when setting to present"
+  block:
+    - name: "Ensure the clusters are valid"
+      include_tasks: cluster_check.yml
+      loop: "{{ clustersCamelCase }}"
+      when: 'state == "present"'
+
+- name: "Generate final secret checksum"
+  set_fact:
+    secret_checksum: "{{ secret_checksums | join('') | checksum }}"
+
+- name: "Reverse order when not present"
+  set_fact:
+    deploy_list: "{{deploy_list|reverse|list}}"
+  when: 'state != "present"'
+
+- name: "Handle csi-scale objects"
+  include_tasks: template_applicator.yml
+  loop: "{{ deploy_list }}"
+# - name: "Set isRunning - true"
+#  when:  (state == "present")
+#  operator_sdk.util.k8s_status:
+#    kind: CSIScaleOperator
+#    name: "{{ ansible_operator_meta.name }}"
+#    namespace: "{{ ansible_operator_meta.namespace }}"
+#    status:
+#      conditions:
+#        - isRunning: true

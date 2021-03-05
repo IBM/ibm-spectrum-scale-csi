@@ -109,7 +109,8 @@ def check_pod_deleted(pod_name, created_objects):
                 name=pod_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(str(api_response))
             count = count-1
-            time.sleep(5)
+            time.sleep(15)
+            LOGGER.info(f'POD Delete : Checking deletion for Pod {pod_name}')
         except ApiException:
             LOGGER.info(f'POD Delete : Pod {pod_name} has been deleted')
             return
@@ -170,6 +171,7 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
             LOGGER.debug(str(api_response))
             count = count-1
             time.sleep(15)
+            LOGGER.info(f'PVC Delete : Checking deletion for pvc {pvc_name}')
         except ApiException:
             LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
             ff.delete_created_fileset(volume_name)
@@ -210,7 +212,8 @@ def check_pv_deleted(pv_name, created_objects):
                 name=pv_name, pretty=True)
             LOGGER.debug(str(api_response))
             count = count-1
-            time.sleep(5)
+            time.sleep(15)
+            LOGGER.info(f'PV Delete : Checking deletion for PV {pv_name}')
         except ApiException:
             LOGGER.info(f'PV Delete : PV {pv_name} has been deleted')
             return
@@ -253,7 +256,8 @@ def check_storage_class_deleted(sc_name, created_objects):
                 name=sc_name, pretty=True)
             LOGGER.debug(str(api_response))
             count = count-1
-            time.sleep(5)
+            time.sleep(15)
+            LOGGER.info(f'SC Delete : Checking deletion for StorageClass {sc_name}')
         except ApiException:
             LOGGER.info(f'SC Delete : StorageClass {sc_name} has been deleted')
             return
@@ -294,7 +298,7 @@ def check_vs_content_deleted(vs_content_name, created_objects):
         return
     api_instance = client.CustomObjectsApi()
     val = 0
-    while val < 24:
+    while val < 12:
         try:
             api_response = api_instance.get_cluster_custom_object(
             group="snapshot.storage.k8s.io",
@@ -303,7 +307,8 @@ def check_vs_content_deleted(vs_content_name, created_objects):
             name=vs_content_name
             )
             LOGGER.debug(api_response)
-            time.sleep(5)
+            time.sleep(15)
+            LOGGER.info(f"Volume Snapshot Content Delete : Checking deletion {vs_content_name}")
             val += 1
         except ApiException:
             LOGGER.info(f"Volume Snapshot Content Delete : {vs_content_name} deletion confirmed")
@@ -344,7 +349,7 @@ def check_vs_deleted(vs_name, created_objects):
         return
     api_instance = client.CustomObjectsApi()
     val = 0
-    while val < 24:
+    while val < 12:
         try:
             api_response = api_instance.get_namespaced_custom_object(
                 group="snapshot.storage.k8s.io",
@@ -354,7 +359,8 @@ def check_vs_deleted(vs_name, created_objects):
                 namespace=namespace_value
             )
             LOGGER.debug(api_response)
-            time.sleep(5)
+            time.sleep(15)
+            LOGGER.info(f"Volume Snapshot Delete : Checking deletion for {vs_name}")
             val += 1
         except ApiException:
             LOGGER.info(f"Volume Snapshot Delete : {vs_name} deletion confirmed")
