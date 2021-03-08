@@ -76,13 +76,11 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	glog.Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath[1])
-
-	if _, err := os.Stat(targetPath); err == nil {
-		args := []string{targetPath}
-		outputBytes, err := executeCmd("rmdir", args)
-		glog.Infof("Cmd rmdir args: %v Output: %v", args, outputBytes)
+	if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
+		glog.V(4).Infof("NodePublishVolume - deleting the targetPath %#v", targetPath)
+		err := os.Remove(targetPath)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -90,7 +88,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	outputBytes, err := executeCmd("/bin/ln", args)
 	glog.Infof("Cmd /bin/ln args: %v Output: %v", args, outputBytes)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	glog.V(4).Infof("Successfully mounted %s", targetPath)
