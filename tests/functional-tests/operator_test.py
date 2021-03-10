@@ -339,7 +339,8 @@ def test_secureSslMode(_values):
         ff.delete_fileset(test)
     operator_object.delete()
 
-
+"""
+Removing this testcase as scaleHostpath is no longer needed
 def test_wrong_gpfs_filesystem_mount_point(_values):
     LOGGER.info("test_wrong_gpfs_filesystem_mount_point")
     LOGGER.info("gpfs filesystem mount point is wrong")
@@ -373,6 +374,7 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
             assert False
 
     operator_object.delete()
+"""
 
 
 def test_unlinked_primaryFset(_values):
