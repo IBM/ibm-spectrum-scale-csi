@@ -50,13 +50,13 @@ spec:
             - "--leader-election=false"
           env:
             - name: ADDRESS
-              value: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com/csi.sock
+              value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
             - name: socket-dir
-              mountPath: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+              mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/spectrumscale.csi.ibm.com
+            path: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
             type: DirectoryOrCreate
