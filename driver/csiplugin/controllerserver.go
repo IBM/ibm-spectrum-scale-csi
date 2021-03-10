@@ -929,6 +929,12 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	}
 	filesystemID := splitVolID[1]
 
+	volumePath := splitVolID[2]
+	if len(splitVolID) == 4 {
+		volumePath = splitVolID[3]
+	}
+	volumePath = strings.TrimPrefix(volumePath, "path=")
+
 	// if SKIP_MOUNT_UNMOUNT == "yes" then mount/unmount will not be invoked
 	skipMountUnmount := utils.GetEnv("SKIP_MOUNT_UNMOUNT", yes)
 	glog.V(4).Infof("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT is set to %s", skipMountUnmount)
@@ -973,9 +979,21 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 			glog.Errorf("ControllerPublishVolume : Error in getting filesystem mount details for %s", fsName)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
 		}
+
+		if !strings.HasPrefix(volumePath, fsMount.MountPoint) &&
+			!strings.HasPrefix(volumePath, pfsMount.MountPoint) {
+			glog.Errorf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", volumePath, primaryfsName, fsName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", volumePath, primaryfsName, fsName))
+		}
+
 		isFsMounted = utils.StringInSlice(scalenodeID, fsMount.NodesMounted)
 		glog.V(4).Infof("ControllerPublishVolume : Volume Source FS is mounted on %v", fsMount.NodesMounted)
 	} else {
+		if !strings.HasPrefix(volumePath, pfsMount.MountPoint) {
+			glog.Errorf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, primaryfsName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, primaryfsName))
+		}
+
 		isFsMounted = ispFsMounted
 	}
 

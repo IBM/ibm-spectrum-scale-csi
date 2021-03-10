@@ -2,7 +2,6 @@
 # tasks file for CSIScaleOperator
 # - debug:
 #    msg:
-#      - "scaleHostpath - {{ scaleHostpath }}"
 #      - "secretCounter - {{ secretCounter }}"
 #      - "attacher - {{ attacher }}"
 #      - "provisioner - {{ provisioner }}"
@@ -116,3 +115,4 @@
 #    status:
 #      conditions:
 #        - isRunning: true
+
