@@ -295,13 +295,6 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		fsetlinkpath = strings.Replace(fsetlinkpath, fsmount, primaryInfo.PrimaryFSMount, 1)
 	}
 
-	// Validate hostpath from daemonset is valid
-	err = driver.ValidateHostpath(primaryInfo.PrimaryFSMount, fsetlinkpath)
-	if err != nil {
-		glog.Errorf("Hostpath validation failed")
-		return scaleConnMap, scaleConfig, primaryInfo, err
-	}
-
 	// Create directory where volume symlinks will reside
 	symlinkPath, relativePath, err := driver.CreateSymlinkPath(scaleConnMap["primary"], primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFSMount, fsetlinkpath)
 	if err != nil {
@@ -370,42 +363,6 @@ func (driver *ScaleDriver) CreateSymlinkPath(sc connectors.SpectrumScaleConnecto
 	}
 
 	return symlinkpath, dirpath, nil
-}
-
-func (driver *ScaleDriver) ValidateHostpath(mountpath string, linkpath string) error {
-	glog.V(4).Infof("gpfs ValidateHostpath. mountpath: %s, linkpath: %s", mountpath, linkpath)
-
-	hostpath := utils.GetEnv("SCALE_HOSTPATH", "")
-	if hostpath == "" {
-		return fmt.Errorf("SCALE_HOSTPATH not defined in daemonset")
-	}
-
-	if !strings.HasSuffix(hostpath, "/") {
-		hostpathslice := []string{hostpath}
-		hostpathslice = append(hostpathslice, "/")
-		hostpath = strings.Join(hostpathslice, "")
-	}
-
-	if !strings.HasSuffix(linkpath, "/") {
-		linkpathslice := []string{linkpath}
-		linkpathslice = append(linkpathslice, "/")
-		linkpath = strings.Join(linkpathslice, "")
-	}
-
-	if !strings.HasSuffix(mountpath, "/") {
-		mountpathslice := []string{mountpath}
-		mountpathslice = append(mountpathslice, "/")
-		mountpath = strings.Join(mountpathslice, "")
-	}
-
-	if !strings.HasPrefix(hostpath, linkpath) &&
-		!strings.HasPrefix(hostpath, mountpath) &&
-		!strings.HasPrefix(linkpath, hostpath) &&
-		!strings.HasPrefix(mountpath, hostpath) {
-		return fmt.Errorf("Invalid SCALE_HOSTPATH")
-	}
-
-	return nil
 }
 
 // ValidateScaleConfigParameters : Validating the Configuration provided for Spectrum Scale CSI Driver

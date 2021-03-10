@@ -22,9 +22,8 @@ provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s
 driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.1.0', true) }}"
 spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.2.0', true) }}"
 
-# Set defaults for the secret counter and hostpath.
+# Set defaults for the secret counter.
 secretCounter: "{{ secret_counter |  default(-1) }}"
-scaleHostpath: "{{ scale_hostpath | default('/') }}"
 
 # List of imagePullSecrets
 imagePullSecrets: "{{ image_pull_secrets | default([])}}"
