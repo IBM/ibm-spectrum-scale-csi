@@ -592,6 +592,24 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	return nil
 }
 
+func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumScaleConnector) error {
+	/* Verify Spectrum Scale Version is not below 5.1.0-1 */
+	scaleVersion, err := conn.GetScaleVersion()
+	if err != nil {
+		return err
+	}
+
+	/* Assuming Spectrum Scale version is in a format like 5.0.0-0_170818.165000 */
+	splitScaleVer := strings.Split(scaleVersion, ".")
+	splitMinorVer := strings.Split(splitScaleVer[2], "-")
+	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
+	if assembledScaleVer < "5101" {
+		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster is %s. Min required Spectrum Scale version for snapshot support with CSI is 5.1.0-1", scaleVersion))
+	}
+
+	return nil
+}
+
 func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
 	glog.V(3).Infof("validateSnapId [%v]", sId)
 	conn, err := cs.getConnFromClusterID(sId.ClusterId)
@@ -599,13 +617,10 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return err
 	}
 
-	isSnapSupported, err := conn.IsSnapshotSupported()
-	if err != nil {
-		return err
-	}
-
-	if !isSnapSupported {
-		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster %s does not support this operation. Min required Spectrum Scale version is 5.0.5.2", sId.ClusterId))
+	/* Check if Spectrum Scale supports Snapshot */
+	chkSnapshotErr := cs.checkSnapshotSupport(conn)
+	if chkSnapshotErr != nil {
+		return chkSnapshotErr
 	}
 
 	if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
@@ -1054,6 +1069,12 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	conn, err := cs.getConnFromClusterID(volumeIDMembers.ClusterId)
 	if err != nil {
 		return nil, err
+	}
+
+	/* Check if Spectrum Scale supports Snapshot */
+	chkSnapshotErr := cs.checkSnapshotSupport(conn)
+	if chkSnapshotErr != nil {
+		return nil, chkSnapshotErr
 	}
 
 	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
