@@ -218,6 +218,9 @@ spec:
                   - key
                   - operator
                   - effect
+            kubeletRootDirPath:
+              description: The kubelet root directory path.
+              type: string
           type: object
         status:
           properties:

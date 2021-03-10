@@ -30,10 +30,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// PluginFolder defines the location of scaleplugin
 const (
-	PluginFolder          = "/var/lib/kubelet/plugins/spectrumscale.csi.ibm.com"
-	OldPluginFolder       = "/var/lib/kubelet/plugins/ibm-spectrum-scale-csi"
 	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 )
 
