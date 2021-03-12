@@ -694,7 +694,7 @@ def create_ds(ds_values, ds_name, pvc_name, created_objects):
         "containers": [
           {
             "name": "web-server",
-            "image": "nginx",
+            "image": "nginxinc/nginx-unprivileged",
             "volumeMounts": [
               {
                 "name": "mypvc",
