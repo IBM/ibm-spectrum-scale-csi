@@ -570,7 +570,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	if isSnapSource {
 		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath, volID)
 		if err != nil {
-			glog.Errorf("CreateVolume failed while copying snapshot content [%s]: [%v]", volName, err)
+			glog.Errorf("createVolume failed while copying snapshot content [%s]: [%v]", volName, err)
 			return nil, err
 		}
 	}
@@ -612,14 +612,14 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 
 	err = conn.WaitForSnapshotCopy(jobStatus, jobID)
 	if err != nil {
-		glog.Errorf("Unable to copy snapshot %s: %v.", snapId.SnapName, err)
+		glog.Errorf("unable to copy snapshot %s: %v.", snapId.SnapName, err)
 		jobDetails.jobStatus = SNAP_JOB_FAILED
 		cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 		//delete(cs.Driver.snapjobmap, scVol.VolName)
 		return err
 	}
 
-	glog.Infof("Copy snapshot completed for snapId: [%v], scaleVolume: [%v]", snapId, scVol)
+	glog.Infof("copy snapshot completed for snapId: [%v], scaleVolume: [%v]", snapId, scVol)
 	jobDetails.jobStatus = SNAP_JOB_COMPLETED
 	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 	//delete(cs.Driver.snapjobmap, scVol.VolName)
@@ -841,7 +841,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				if err != nil {
 					if strings.Contains(err.Error(), "EFSSG0072C") ||
 						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-						glog.V(4).Infof("Fileset seems already deleted - %v", err)
+						glog.V(4).Infof("fileset seems already deleted - %v", err)
 						return &csi.DeleteVolumeResponse{}, nil
 					}
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
@@ -856,13 +856,13 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				if err != nil {
 					if strings.Contains(err.Error(), "EFSSG0072C") ||
 						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-						glog.V(4).Infof("Fileset seems already deleted - %v", err)
+						glog.V(4).Infof("fileset seems already deleted - %v", err)
 						return &csi.DeleteVolumeResponse{}, nil
 					}
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 				}
 			} else {
-				glog.Infof("PV name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
+				glog.Infof("pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
 			}
 		}
 	} else {
