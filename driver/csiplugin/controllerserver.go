@@ -519,13 +519,13 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	jobDetails := cs.Driver.snapjobstatusmap[scaleVol.VolName]
 	if jobDetails.jobStatus == SNAP_JOB_RUNNING {
-		glog.Errorf("volume:[%v] -  Snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
-		return nil, status.Error(codes.Aborted, fmt.Sprintf("Snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
+		glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
 	} else if jobDetails.jobStatus == SNAP_JOB_FAILED {
-		glog.Errorf("volume:[%v] -  Snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("SSnapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+		glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
 	} else if jobDetails.jobStatus == SNAP_JOB_COMPLETED {
-		glog.Infof("volume:[%v] -  Snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
+		glog.Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      jobDetails.volID,
