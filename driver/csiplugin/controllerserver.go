@@ -580,6 +580,20 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	//}
 
 	fsMntPt := fsDetails.Mount.MountPoint
+	if !scVol.IsFilesetBased {
+		// For LW volume use the cluster connection where snapshot is present for snapshot copy
+		targetFsName, err := conn.GetFilesystemName(snapId.FsUUID)
+		if err != nil {
+			return err
+		}
+
+		targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
+		if err != nil {
+			return err
+		}
+
+		fsMntPt = targetFsDetails.Mount.MountPoint
+	}
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
 	err = conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
@@ -608,12 +622,14 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster %s does not support this operation. Min required Spectrum Scale version is 5.0.5.2", sId.ClusterId))
 	}
 
-	if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
-		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
-	}
+	if scVol.IsFilesetBased {
+		if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
+		}
 
-	if scVol.ClusterId == "" && sId.ClusterId != pCid {
-		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
+		if scVol.ClusterId == "" && sId.ClusterId != pCid {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
+		}
 	}
 
 	if scVol.NodeClass != "" {
