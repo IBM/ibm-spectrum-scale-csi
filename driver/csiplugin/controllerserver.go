@@ -562,7 +562,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
 
 	if isSnapSource {
-		err = cs.copySnapContent(scaleVol, snapIdMembers, volFsInfo, targetPath)
+		err = cs.copySnapContent(scaleVol, snapIdMembers, volFsInfo, targetPath, volID)
 		if err != nil {
 			glog.Errorf("createVolume failed while copying snapshot content [%s]: [%v]", volName, err)
 			return nil, err
