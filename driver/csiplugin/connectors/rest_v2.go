@@ -261,7 +261,7 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	}
 }
 
-func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) error {
+func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, snapshotName, srcPath, targetPath, nodeclass)
 
 	copySnapReq := CopySnapshotRequest{}
@@ -278,18 +278,24 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 	err := s.doHTTP(copySnapURL, "PUT", &copySnapResp, copySnapReq)
 	if err != nil {
 		glog.Errorf("Error in copy snapshot request: %v", err)
-		return err
+		return 0, 0, err
 	}
 
 	err = s.isRequestAccepted(copySnapResp, copySnapURL)
 	if err != nil {
-		glog.Errorf("Request not accepted for processing: %v", err)
-		return err
+		glog.Errorf("request not accepted for processing: %v", err)
+		return 0, 0, err
 	}
 
-	err = s.waitForJobCompletion(copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID)
+	return copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID, nil
+}
+
+func (s *spectrumRestV2) WaitForSnapshotCopy(statusCode int, jobID uint64) error {
+	glog.V(4).Infof("rest_v2 WaitForSnapshotCopy. statusCode: %v, jobID: %v", statusCode, jobID)
+
+	err := s.waitForJobCompletion(statusCode, jobID)
 	if err != nil {
-		glog.Errorf("Unable to copy snapshot %s: %v", snapshotName, err)
+		glog.Errorf("error in waiting for job completion %v, %v", jobID, err)
 		return err
 	}
 
@@ -307,13 +313,13 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 
 	err := s.doHTTP(createSnapshotURL, "POST", &createSnapshotResponse, snapshotreq)
 	if err != nil {
-		glog.Errorf("Error in create snapshot request: %v", err)
+		glog.Errorf("error in create snapshot request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(createSnapshotResponse, createSnapshotURL)
 	if err != nil {
-		glog.Errorf("Request not accepted for processing: %v", err)
+		glog.Errorf("request not accepted for processing: %v", err)
 		return err
 	}
 
@@ -323,7 +329,7 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 			fmt.Println(err)
 			return nil
 		}
-		glog.Errorf("Unable to create snapshot %s: %v", snapshotName, err)
+		glog.Errorf("unable to create snapshot %s: %v", snapshotName, err)
 		return err
 	}
 

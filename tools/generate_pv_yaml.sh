@@ -28,15 +28,15 @@ echo "Usage: $0
 
 fullUsage(){
 echo "Usage: $0
-		-f|--filesystem <Name of Volume's Source Filesystem>
-		-l|--linkpath <full Path of Volume in Primary Filesystem>
-    -F|--fileset <name of source fileset>
-		-s|--size <size in GB>
-		[-p|--pvname <name for pv>]
+                -f|--filesystem <Name of Volume's Source Filesystem>
+                -l|--linkpath <full Path of Volume in Primary Filesystem>
+                -F|--fileset <name of source fileset>
+                -s|--size <size in GB>
+                [-p|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
-		[-h|--help] 
-		
+                [-h|--help]
+
 
 Example 1: Single Fileystem
 	In this setup there is only one fileystem 'gpfs0' and directory from the same fileystem is being used as volume.
