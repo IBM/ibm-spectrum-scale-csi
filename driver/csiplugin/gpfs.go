@@ -32,7 +32,17 @@ import (
 
 const (
 	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+
+	SNAP_JOB_NOT_STARTED = 0
+	SNAP_JOB_RUNNING     = 1
+	SNAP_JOB_COMPLETED   = 2
+	SNAP_JOB_FAILED      = 3
 )
+
+type SnapCopyJobDetails struct {
+	jobStatus int
+	volID     string
+}
 
 type ScaleDriver struct {
 	name          string
@@ -43,10 +53,11 @@ type ScaleDriver struct {
 	ns  *ScaleNodeServer
 	cs  *ScaleControllerServer
 
-	connmap map[string]connectors.SpectrumScaleConnector
-	cmap    settings.ScaleSettingsConfigMap
-	primary settings.Primary
-	reqmap  map[string]int64
+	connmap          map[string]connectors.SpectrumScaleConnector
+	cmap             settings.ScaleSettingsConfigMap
+	primary          settings.Primary
+	reqmap           map[string]int64
+	snapjobstatusmap map[string]SnapCopyJobDetails
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -71,6 +82,7 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	d.cmap = cmap
 	d.primary = primary
 	d.reqmap = make(map[string]int64)
+	d.snapjobstatusmap = make(map[string]SnapCopyJobDetails)
 	return &ScaleControllerServer{
 		Driver: d,
 	}
