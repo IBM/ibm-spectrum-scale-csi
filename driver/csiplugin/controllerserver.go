@@ -48,7 +48,6 @@ type ScaleControllerServer struct {
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	cap, volpresent := cs.Driver.reqmap[scVol.VolName]
-	glog.Infof("reqmap: %v", cs.Driver.reqmap)
 	if volpresent {
 		if cap == int64(scVol.VolSize) {
 			return true, nil
@@ -518,6 +517,25 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Aborted, fmt.Sprintf("volume creation already in process : %v", scaleVol.VolName))
 	}
 
+	jobDetails := cs.Driver.snapjobstatusmap[scaleVol.VolName]
+	if jobDetails.jobStatus == SNAP_JOB_RUNNING {
+		glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
+	} else if jobDetails.jobStatus == SNAP_JOB_FAILED {
+		glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+	} else if jobDetails.jobStatus == SNAP_JOB_COMPLETED {
+		glog.Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
+		return &csi.CreateVolumeResponse{
+			Volume: &csi.Volume{
+				VolumeId:      jobDetails.volID,
+				CapacityBytes: int64(scaleVol.VolSize),
+				VolumeContext: req.GetParameters(),
+				ContentSource: volSrc,
+			},
+		}, nil
+	}
+
 	/* Update driver map with new volume. Make sure to defer delete */
 
 	cs.Driver.reqmap[scaleVol.VolName] = volSize
@@ -550,9 +568,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath)
+		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath, volID)
 		if err != nil {
-			glog.Errorf("CreateVolume [%s]: [%v]", volName, err)
+			glog.Errorf("createVolume failed while copying snapshot content [%s]: [%v]", volName, err)
 			return nil, err
 		}
 	}
@@ -567,7 +585,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}, nil
 }
 
-func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scaleSnapId, fsDetails connectors.FileSystem_v2, targetPath string) error {
+func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scaleSnapId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
 	glog.V(3).Infof("copySnapContent snapId: [%v], scaleVolume: [%v]", snapId, scVol)
 	conn, err := cs.getConnFromClusterID(snapId.ClusterId)
 	if err != nil {
@@ -582,13 +600,29 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	fsMntPt := fsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
-	err = conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
+	jobStatus, jobID, err := conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
 	if err != nil {
 		glog.Errorf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err)
 		return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err))
 
 	}
 
+	jobDetails := SnapCopyJobDetails{SNAP_JOB_RUNNING, volID}
+	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
+
+	err = conn.WaitForSnapshotCopy(jobStatus, jobID)
+	if err != nil {
+		glog.Errorf("unable to copy snapshot %s: %v.", snapId.SnapName, err)
+		jobDetails.jobStatus = SNAP_JOB_FAILED
+		cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
+		//delete(cs.Driver.snapjobmap, scVol.VolName)
+		return err
+	}
+
+	glog.Infof("copy snapshot completed for snapId: [%v], scaleVolume: [%v]", snapId, scVol)
+	jobDetails.jobStatus = SNAP_JOB_COMPLETED
+	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
+	//delete(cs.Driver.snapjobmap, scVol.VolName)
 	return nil
 }
 
@@ -805,6 +839,11 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				//Check if fileset exist has any snapshot
 				snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
 				if err != nil {
+					if strings.Contains(err.Error(), "EFSSG0072C") ||
+						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+						glog.V(4).Infof("fileset seems already deleted - %v", err)
+						return &csi.DeleteVolumeResponse{}, nil
+					}
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 				}
 
@@ -815,10 +854,15 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 				err = conn.DeleteFileset(FilesystemName, FilesetName)
 				if err != nil {
+					if strings.Contains(err.Error(), "EFSSG0072C") ||
+						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+						glog.V(4).Infof("fileset seems already deleted - %v", err)
+						return &csi.DeleteVolumeResponse{}, nil
+					}
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 				}
 			} else {
-				glog.Infof("PV name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
+				glog.Infof("pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
 			}
 		}
 	} else {
