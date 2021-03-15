@@ -543,14 +543,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
 
-	//fsDetails, err := cs.getFilesystemDetails(scaleVol)
-	fsDetails, err := scaleVol.Connector.GetFilesystemDetails(scaleVol.VolBackendFs)
-	if err != nil {
-		return nil, err
-	}
-
 	if isSnapSource {
-		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath)
+		err = cs.copySnapContent(scaleVol, snapIdMembers, volFsInfo, targetPath)
 		if err != nil {
 			glog.Errorf("CreateVolume [%s]: [%v]", volName, err)
 			return nil, err
@@ -579,21 +573,17 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	//	return err
 	//}
 
-	fsMntPt := fsDetails.Mount.MountPoint
-	if !scVol.IsFilesetBased {
-		// For LW volume use the cluster connection where snapshot is present for snapshot copy
-		targetFsName, err := conn.GetFilesystemName(snapId.FsUUID)
-		if err != nil {
-			return err
-		}
-
-		targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
-		if err != nil {
-			return err
-		}
-
-		fsMntPt = targetFsDetails.Mount.MountPoint
+	targetFsName, err := conn.GetFilesystemName(fsDetails.UUID)
+	if err != nil {
+		return err
 	}
+
+	targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
+	if err != nil {
+		return err
+	}
+
+	fsMntPt := targetFsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
 	err = conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
