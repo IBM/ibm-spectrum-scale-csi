@@ -26,6 +26,7 @@ type SpectrumScaleConnector interface {
 	//Cluster operations
 	GetClusterId() (string, error)
 	GetTimeZoneOffset() (string, error)
+	GetScaleVersion() (string, error)
 	//Filesystem operations
 	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
