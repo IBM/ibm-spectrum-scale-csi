@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -46,21 +47,20 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	volumeCapability := req.GetVolumeCapability()
 
 	if len(volumeID) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Volume ID must be provided")
+		return nil, status.Error(codes.InvalidArgument, "volumeID must be provided")
 	}
 	if len(targetPath) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Target Path must be provided")
+		return nil, status.Error(codes.InvalidArgument, "target path must be provided")
 	}
 	if volumeCapability == nil {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume Volume Capability must be provided")
+		return nil, status.Error(codes.InvalidArgument, "volume capability must be provided")
 	}
 
 	/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
 
 	splitVId := strings.Split(volumeID, ";")
-
 	if len(splitVId) < 3 {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume VolumeID is not in proper format")
+		return nil, status.Error(codes.InvalidArgument, "volumeID is not in proper format")
 	}
 
 	index := 2
@@ -72,26 +72,27 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	targetSlnkPath := strings.Split(SlnkPart, "=")
 
 	if len(targetSlnkPath) < 2 {
-		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume VolumeID is not in proper format")
+		return nil, status.Error(codes.InvalidArgument, "volumeID is not in proper format")
 	}
 
-	glog.Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath[1])
+	glog.V(4).Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath[1])
+	// Check if Mount Dir/slink exist, if yes delete it
 	if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
-		glog.V(4).Infof("NodePublishVolume - deleting the targetPath %#v", targetPath)
+		glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
 		err := os.Remove(targetPath)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete the target path - [%s]. Error [%v]", targetPath, err.Error()))
 		}
 	}
 
-	args := []string{"-sf", targetSlnkPath[1], targetPath}
-	outputBytes, err := executeCmd("/bin/ln", args)
-	glog.Infof("Cmd /bin/ln args: %v Output: %v", args, outputBytes)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	// create symlink
+	glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, targetSlnkPath[1])
+	symlinkerr := os.Symlink(targetSlnkPath[1], targetPath)
+	if symlinkerr != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, targetSlnkPath[1], symlinkerr.Error()))
 	}
 
-	glog.V(4).Infof("Successfully mounted %s", targetPath)
+	glog.V(4).Infof("successfully mounted %s", targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -102,14 +103,15 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	targetPath := req.GetTargetPath()
 	volID := req.GetVolumeId()
 	if len(volID) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "NodeUnpublishVolume Volume ID must be provided")
+		return nil, status.Error(codes.InvalidArgument, "volumeID must be provided")
 	}
 	if len(targetPath) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "NodeUnpublishVolume Target Path must be provided")
+		return nil, status.Error(codes.InvalidArgument, "target path must be provided")
 	}
 
-	if err := os.RemoveAll(targetPath); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	glog.V(4).Infof("NodeUnpublishVolume - deleting the targetPath - [%v]", targetPath)
+	if err := os.Remove(targetPath); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove targetPath - [%v]. Error [%v]", targetPath, err.Error()))
 	}
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
