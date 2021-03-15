@@ -187,12 +187,12 @@ func (s *spectrumRestV2) GetScaleVersion() (string, error) {
 
 	err := s.doHTTP(getVersionURL, "GET", &getVersionResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get Spectrum Scale version: [%v]", err)
+		glog.Errorf("unable to get Spectrum Scale version: [%v]", err)
 		return "", err
 	}
 
 	if len(getVersionResponse.Info.ServerVersion) == 0 {
-		return "", fmt.Errorf("Unable to get Spectrum Scale version.")
+		return "", fmt.Errorf("unable to get Spectrum Scale version.")
 	}
 
 	return getVersionResponse.Info.ServerVersion, nil
