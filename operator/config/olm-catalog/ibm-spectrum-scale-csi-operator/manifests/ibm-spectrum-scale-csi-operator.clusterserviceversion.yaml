@@ -443,6 +443,8 @@ spec:
   maintainers:
   - email: deeghuge@in.ibm.com
     name: Deepak Ghuge
+  - email: madhu.punjabi@in.ibm.com
+    name: Madhu Thorat
   maturity: alpha
   provider:
     name: IBM
