@@ -235,8 +235,8 @@ spec:
       version: v1
   description: |
     The IBM Spectrum Scale CSI Operator for Kubernetes installs, manages, 
-     upgrades the IBM Spectrum Scale CSI Driver on OpenShift and Kubernetes 
-     for provisioning of persistent volumes on IBM Spectrum Scale.
+    upgrades the IBM Spectrum Scale CSI Driver on OpenShift and Kubernetes 
+    for provisioning of persistent volumes on IBM Spectrum Scale.
 
     ### Documentation
     Documentation for IBM Spectrum Scale CSI Driver and Operator can be found at [knowledge center](https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR).
@@ -247,8 +247,8 @@ spec:
 
     For non-urgent issues, suggestions, recommendations feel free to open an 
     issue in [github](https://github.com/IBM/ibm-spectrum-scale-csi). Issues will be addressed as team availability permits.
- 
- 
+
+
     **Note:** Custom Resource example represents the minimum settings needed to run 
     the operator. If your environment needs more advanced settings (e.g. remote clusters, 
     node mapping, image pull secret, Taint and Toleration etc.) please refer to 
