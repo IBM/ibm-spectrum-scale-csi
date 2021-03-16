@@ -761,7 +761,7 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 
 	if len(splitVid) == 4 {
 		/* This is fileset Based volume */
-		/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>; path=<symlink_path> */
+		/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>;path=<symlink_path> */
 		vIdMem.ClusterId = splitVid[0]
 		vIdMem.FsUUID = splitVid[1]
 		fileSetPart := splitVid[2]
@@ -1185,8 +1185,17 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		}
 	}
 
-	//clusterId;FSUUID;filesetName;snapshotName;path
-	snapID := fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
+	snapID := ""
+	if filesetResp.Config.Comment == connectors.FilesetComment &&
+		(cs.Driver.primary.PrimaryFset != filesetName || cs.Driver.primary.PrimaryFs != filesystemName) {
+		// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
+		//clusterId;FSUUID;filesetName;snapshotName;path
+		snapID = fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
+	} else {
+		// This is statically created PVC from an independent fileset, here path is the root of fileset
+		//clusterId;FSUUID;filesetName;snapshotName;/
+		snapID = fmt.Sprintf("%s;%s;%s;%s;/", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName)
+	}
 
 	timestamp, err := cs.getSnapshotCreateTimestamp(conn, filesystemName, filesetName, snapName)
 	if err != nil {
