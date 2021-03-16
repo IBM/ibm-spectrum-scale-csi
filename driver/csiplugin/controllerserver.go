@@ -561,14 +561,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
 
-	//fsDetails, err := cs.getFilesystemDetails(scaleVol)
-	fsDetails, err := scaleVol.Connector.GetFilesystemDetails(scaleVol.VolBackendFs)
-	if err != nil {
-		return nil, err
-	}
-
 	if isSnapSource {
-		err = cs.copySnapContent(scaleVol, snapIdMembers, fsDetails, targetPath, volID)
+		err = cs.copySnapContent(scaleVol, snapIdMembers, volFsInfo, targetPath, volID)
 		if err != nil {
 			glog.Errorf("createVolume failed while copying snapshot content [%s]: [%v]", volName, err)
 			return nil, err
@@ -597,7 +591,17 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	//	return err
 	//}
 
-	fsMntPt := fsDetails.Mount.MountPoint
+	targetFsName, err := conn.GetFilesystemName(fsDetails.UUID)
+	if err != nil {
+		return err
+	}
+
+	targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
+	if err != nil {
+		return err
+	}
+
+	fsMntPt := targetFsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
 	jobStatus, jobID, err := conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
@@ -626,6 +630,24 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	return nil
 }
 
+func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumScaleConnector) error {
+	/* Verify Spectrum Scale Version is not below 5.1.0-1 */
+	scaleVersion, err := conn.GetScaleVersion()
+	if err != nil {
+		return err
+	}
+
+	/* Assuming Spectrum Scale version is in a format like 5.0.0-0_170818.165000 */
+	splitScaleVer := strings.Split(scaleVersion, ".")
+	splitMinorVer := strings.Split(splitScaleVer[2], "-")
+	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
+	if assembledScaleVer < "5101" {
+		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster is %s. Min required Spectrum Scale version for snapshot support with CSI is 5.1.0-1", scaleVersion))
+	}
+
+	return nil
+}
+
 func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
 	glog.V(3).Infof("validateSnapId [%v]", sId)
 	conn, err := cs.getConnFromClusterID(sId.ClusterId)
@@ -633,21 +655,20 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return err
 	}
 
-	isSnapSupported, err := conn.IsSnapshotSupported()
-	if err != nil {
-		return err
+	/* Check if Spectrum Scale supports Snapshot */
+	chkSnapshotErr := cs.checkSnapshotSupport(conn)
+	if chkSnapshotErr != nil {
+		return chkSnapshotErr
 	}
 
-	if !isSnapSupported {
-		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster %s does not support this operation. Min required Spectrum Scale version is 5.0.5.2", sId.ClusterId))
-	}
+	if scVol.IsFilesetBased {
+		if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
+		}
 
-	if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
-		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
-	}
-
-	if scVol.ClusterId == "" && sId.ClusterId != pCid {
-		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
+		if scVol.ClusterId == "" && sId.ClusterId != pCid {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
+		}
 	}
 
 	if scVol.NodeClass != "" {
@@ -1098,6 +1119,12 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	conn, err := cs.getConnFromClusterID(volumeIDMembers.ClusterId)
 	if err != nil {
 		return nil, err
+	}
+
+	/* Check if Spectrum Scale supports Snapshot */
+	chkSnapshotErr := cs.checkSnapshotSupport(conn)
+	if chkSnapshotErr != nil {
+		return nil, chkSnapshotErr
 	}
 
 	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
