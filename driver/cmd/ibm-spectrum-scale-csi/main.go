@@ -32,6 +32,7 @@ var (
 	endpoint      = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName    = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 	nodeID        = flag.String("nodeid", "", "node id")
+	kubeletRootDir= flag.String("kubeletRootDirPath", "/var/lib/kubelet", "kubelet root directory path")
 	vendorVersion = "2.2.0"
 )
 
@@ -41,17 +42,21 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	if err := createPersistentStorage(path.Join(driver.PluginFolder, "controller")); err != nil {
+	// PluginFolder defines the location of scaleplugin
+        PluginFolder := path.Join(*kubeletRootDir, "plugins/spectrumscale.csi.ibm.com")
+        OldPluginFolder := path.Join(*kubeletRootDir, "plugins/ibm-spectrum-scale-csi")
+
+	if err := createPersistentStorage(path.Join(PluginFolder, "controller")); err != nil {
 		glog.Errorf("failed to create persistent storage for controller %v", err)
 		os.Exit(1)
 	}
-	if err := createPersistentStorage(path.Join(driver.PluginFolder, "node")); err != nil {
+	if err := createPersistentStorage(path.Join(PluginFolder, "node")); err != nil {
 		glog.Errorf("failed to create persistent storage for node %v", err)
 		os.Exit(1)
 	}
 
-	if err := deleteStalePluginDir(driver.OldPluginFolder); err != nil {
-		glog.Errorf("failed to delete stale plugin folder %v, please delete manually. %v", driver.OldPluginFolder, err)
+	if err := deleteStalePluginDir(OldPluginFolder); err != nil {
+		glog.Errorf("failed to delete stale plugin folder %v, please delete manually. %v", OldPluginFolder, err)
 	}
 
 	handle()

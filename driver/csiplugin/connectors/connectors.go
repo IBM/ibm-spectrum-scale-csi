@@ -26,6 +26,7 @@ type SpectrumScaleConnector interface {
 	//Cluster operations
 	GetClusterId() (string, error)
 	GetTimeZoneOffset() (string, error)
+	GetScaleVersion() (string, error)
 	//Filesystem operations
 	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
@@ -67,13 +68,14 @@ type SpectrumScaleConnector interface {
 	IsSnapshotSupported() (bool, error)
 
 	//Snapshot operations
+	WaitForSnapshotCopy(statusCode int, jobID uint64) error
 	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
 	ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
-	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) error
+	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
 }
 
 const (
@@ -88,6 +90,8 @@ const (
 	UserSpecifiedVolBackendFs   string = "volBackendFs"
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
 	UserSpecifiedNodeClass      string = "nodeClass"
+
+	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {

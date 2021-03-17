@@ -114,3 +114,7 @@ spec:
 #      effect: "NoExecute"
 #      tolerationSeconds: 3600
 
+# Kubelet root directory path, in case we don't want to use the default kubelet
+# root directory path.
+# ==================================================================================
+#  kubeletRootDirPath: "/var/lib/kubelet"
