@@ -19,6 +19,7 @@ usage(){
 echo "Usage: $0
                 -f|--filesystem <Name of Volume's Source Filesystem>
                 -l|--linkpath <full Path of Volume in Primary Filesystem>
+                -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
                 [-p|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
@@ -27,14 +28,15 @@ echo "Usage: $0
 
 fullUsage(){
 echo "Usage: $0
-		-f|--filesystem <Name of Volume's Source Filesystem>
-		-l|--linkpath <full Path of Volume in Primary Filesystem>
-		-s|--size <size in GB>
-		[-p|--pvname <name for pv>]
+                -f|--filesystem <Name of Volume's Source Filesystem>
+                -l|--linkpath <full Path of Volume in Primary Filesystem>
+                -F|--fileset <name of source fileset>
+                -s|--size <size in GB>
+                [-p|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
-		[-h|--help] 
-		
+                [-h|--help]
+
 
 Example 1: Single Fileystem
 	In this setup there is only one fileystem 'gpfs0' and directory from the same fileystem is being used as volume.
@@ -46,6 +48,11 @@ Example 2: Two or More Filesystem
 	In this setup there are two filesystems 'gpfs0' and 'gpfs1'. gpfs0 is configured as primary fileystem in Spectrum-scale-csi setup. User want to create volume from the directory present in the gpfs1 filesystem. Say the directory in the gpfs1 is /ibm/gpfs1/dir1. As a first step user will create softlink  /ibm/gpfs1/dir1 --> /ibm/gpfs0/fileset1/.volumes/staticpv1 and then run following command to generate the pv.yaml.
 
 	$0 --filesystem gpfs1 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv1 --size 10 --pvname mystaticpv1
+
+Example 3: Fileset based volume
+	This example shows how to create a volume from a fileset 'fileset1' within the filesyetem 'gpfs0'.
+
+	$0 --filesystem gpfs0 --fileset fileset1 --size 10 --pvname mystaticpv
 
 	Note: This script does not validate if softlinks are correctly created.
 	      The Path specified for option --linkpath must be valid gpfs path from primary fileystem." 1>&2; exit 1; }
@@ -83,8 +90,8 @@ echo "INFO: Successfully created ${volname}.yaml"
 }
 
 
-SHORT=hf:l:s:p:c:a:
-LONG=help,filesystem:,linkpath:,size:,pvname:,storageclass:,accessmode:
+SHORT=hf:l:F:s:p:c:a:
+LONG=help,filesystem:,linkpath:,fileset:,size:,pvname:,storageclass:,accessmode:
 ERROROUT="/tmp/csierror.out"
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
 
@@ -104,6 +111,10 @@ while true ; do
       ;;
     -f | --filesystem )
       FSNAME="$2"
+      shift 2
+      ;;
+    -F | --fileset )
+      FSETNAME="$2"
       shift 2
       ;;
     -s | --size )
@@ -138,10 +149,14 @@ done
 MPARAM=""
 [[ -z "${FSNAME}" ]] && MPARAM="${MPARAM}--filesystem "
 [[ -z "${VOLSIZE}" ]] && MPARAM="${MPARAM}--size "
-[[ -z "${VOLPATH}" ]] && MPARAM="${MPARAM}--linkpath "
 
 if [ ! -z "$MPARAM" ]; then
    echo "ERROR: Mandatory parameter missing : $MPARAM"
+   usage
+fi
+
+if [[ ! -z "${VOLPATH}" && ! -z "${FSETNAME}" ]]; then
+   echo "ERROR: Missing parameter. Either 'linkpath' or 'fileset' is mandatory"
    usage
 fi
 
@@ -220,21 +235,35 @@ fi
 
 # TODO : Add check for kubernetes lable limit for value of VolumeHandle
 
-# Verify if path exist. It should be either directory or softlink
-if ! ( [  -d "${VOLPATH}" ] || [ -L "${VOLPATH}" ]); then
-	echo "ERROR: Either Path (${VOLPATH}) does not exist or it is not a Directory/Softlink."
+echo "FSETNAME=${FSETNAME}"
+if [[ -z "${FSETNAME}" ]]; then
+  # Verify if path exist. It should be either directory or softlink
+  if ! ( [  -d "${VOLPATH}" ] || [ -L "${VOLPATH}" ]); then
+	   echo "ERROR: Either Path (${VOLPATH}) does not exist or it is not a Directory/Softlink."
         exit 2
-fi
+  fi 
 
-# Check if given path is gpfs path
-/usr/lpp/mmfs/bin/mmlsattr ${VOLPATH} &> /dev/null
-if [[ $? -ne 0 ]]; then
-	echo "ERROR: The Path (${VOLPATH}) is not gpfs path"
+  # Check if given path is gpfs path
+  /usr/lpp/mmfs/bin/mmlsattr ${VOLPATH} &> /dev/null
+  if [[ $? -ne 0 ]]; then
+	  echo "ERROR: The Path (${VOLPATH}) is not gpfs path"
         exit 2
+  fi
 fi
 
 # Generate Volume Handle
-VolumeHandle="${clusterID};${fileSystemID};path=${VOLPATH}"
+if [[ ! -z "${FSETNAME}" ]]; then
+  fsetId=`/usr/lpp/mmfs/bin/mmlsfileset ${FSNAME} ${FSETNAME} -Y 2>${ERROROUT}  | tail -1 | awk '{split($0,a,":"); print a[9]}'`
+  fsetLinkPath=`/usr/lpp/mmfs/bin/mmlsfileset ${FSNAME} ${FSETNAME} 2>${ERROROUT}  | tail -1 | awk '{split($0,a," "); print a[3]}'`
+
+  if [[ "${fsetLinkPath}" == "--" ]]; then
+    echo "ERROR: Fileset ${FSETNAME} is not linked."
+    exit 2
+  fi
+  VolumeHandle="${clusterID};${fileSystemID};fileset=${fsetId};path=${fsetLinkPath}"
+else
+  VolumeHandle="${clusterID};${fileSystemID};path=${VOLPATH}"
+fi
 
 # Gererate yaml file
 generate_yaml "${VolumeHandle}" "${VOLNAME}" "${VOLSIZE}" "${ACCESSMODE}"

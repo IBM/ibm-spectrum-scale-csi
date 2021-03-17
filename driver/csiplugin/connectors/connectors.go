@@ -26,6 +26,7 @@ type SpectrumScaleConnector interface {
 	//Cluster operations
 	GetClusterId() (string, error)
 	GetTimeZoneOffset() (string, error)
+	GetScaleVersion() (string, error)
 	//Filesystem operations
 	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
@@ -89,6 +90,8 @@ const (
 	UserSpecifiedVolBackendFs   string = "volBackendFs"
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
 	UserSpecifiedNodeClass      string = "nodeClass"
+
+	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {

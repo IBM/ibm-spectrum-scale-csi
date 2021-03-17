@@ -179,6 +179,25 @@ func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
 	return timezone, nil
 }
 
+func (s *spectrumRestV2) GetScaleVersion() (string, error) {
+	glog.V(4).Infof("rest_v2 GetScaleVersion")
+
+	getVersionURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/info")
+	getVersionResponse := GetInfoResponse_v2{}
+
+	err := s.doHTTP(getVersionURL, "GET", &getVersionResponse, nil)
+	if err != nil {
+		glog.Errorf("unable to get Spectrum Scale version: [%v]", err)
+		return "", err
+	}
+
+	if len(getVersionResponse.Info.ServerVersion) == 0 {
+		return "", fmt.Errorf("unable to get Spectrum Scale version.")
+	}
+
+	return getVersionResponse.Info.ServerVersion, nil
+}
+
 func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
 	glog.V(4).Infof("rest_v2 GetFilesystemMountDetails. filesystemName: %s", filesystemName)
 
@@ -368,7 +387,7 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 
 	filesetreq := CreateFilesetRequest{}
 	filesetreq.FilesetName = filesetName
-	filesetreq.Comment = "Fileset created by IBM Container Storage Interface driver"
+	filesetreq.Comment = FilesetComment
 
 	filesetType, filesetTypeSpecified := opts[UserSpecifiedFilesetType]
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
