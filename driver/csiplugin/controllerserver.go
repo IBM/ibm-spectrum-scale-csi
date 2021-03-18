@@ -617,9 +617,16 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	err = conn.WaitForSnapshotCopy(jobStatus, jobID)
 	if err != nil {
 		glog.Errorf("unable to copy snapshot %s: %v.", snapId.SnapName, err)
-		jobDetails.jobStatus = SNAP_JOB_FAILED
+		if strings.Contains(err.Error(), "EFSSG0632C") {
+			// EFSSG0632C = Command execution aborted
+			// Store SNAP_JOB_NOT_STARTED in snapjobstatusmap if error was due to same mmxcp in progress
+			// or max no. of mmxcp already running. In these cases we want to retry again
+			// in the next k8s rety cycle
+			jobDetails.jobStatus = SNAP_JOB_NOT_STARTED
+		} else {
+			jobDetails.jobStatus = SNAP_JOB_FAILED
+		}
 		cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
-		//delete(cs.Driver.snapjobmap, scVol.VolName)
 		return err
 	}
 
