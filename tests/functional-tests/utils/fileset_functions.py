@@ -174,6 +174,13 @@ def create_fileset(test_data):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
+        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/"
+    time.sleep(2)
+    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    LOGGER.debug(response.text)
+    response_dict = json.loads(response.text)
+    scalehostpath = response_dict["filesystems"][0]["mount"]["mountPoint"]
     create_fileset_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
         "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/filesets"
     headers = {
@@ -181,7 +188,8 @@ def create_fileset(test_data):
         'accept': 'application/json',
     }
     data = '{"filesetName":"'+test_data["primaryFset"]+'","path":"' + \
-        test_data["scaleHostpath"]+'/'+test_data["primaryFset"]+'"}'
+        scalehostpath+'/'+test_data["primaryFset"]+'"}'
+
     response = requests.post(create_fileset_link, headers=headers,
                              data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)

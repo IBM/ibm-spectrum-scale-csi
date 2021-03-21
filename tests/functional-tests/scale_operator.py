@@ -609,7 +609,6 @@ def read_driver_data(clusterconfig, namespace):
         LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
         assert False
 
-    data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster.keys():
             data["primaryFs"] = cluster["primary"]["primaryFs"]
@@ -694,7 +693,6 @@ def read_operator_data(clusterconfig, namespace):
         LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
         assert False
 
-    data["scaleHostpath"] = loadcr_yaml["spec"]["scaleHostpath"]
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
     data["custom_object_body"]["metadata"]["namespace"] = namespace
     data["remote_secret_names"] = []
