@@ -638,7 +638,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 }
 
 func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumScaleConnector) error {
-	/* Verify Spectrum Scale Version is not below 5.1.0-1 */
+	/* Verify Spectrum Scale Version is not below 5.1.1-0 */
 	scaleVersion, err := conn.GetScaleVersion()
 	if err != nil {
 		return err
@@ -648,8 +648,8 @@ func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumSc
 	splitScaleVer := strings.Split(scaleVersion, ".")
 	splitMinorVer := strings.Split(splitScaleVer[2], "-")
 	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
-	if assembledScaleVer < "5101" {
-		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster is %s. Min required Spectrum Scale version for snapshot support with CSI is 5.1.0-1", scaleVersion))
+	if assembledScaleVer < "5110" {
+		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster is %s. Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0", scaleVersion))
 	}
 
 	return nil
