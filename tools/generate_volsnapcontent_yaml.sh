@@ -43,8 +43,9 @@ fi
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotContent
 metadata:
-        name: ${snapcontentname}
+  name: ${snapcontentname}
 spec:
+  deletionPolicy: Delete
   driver: spectrumscale.csi.ibm.com
   source:
     snapshotHandle: ${snaphandle}
@@ -85,7 +86,7 @@ while true ; do
       shift 2
       ;;
     -p | --path )
-      PATH="$2"
+      SNAPPATH="$2"
       shift 2
       ;;
     -c | --snapshotcontentname )
@@ -194,11 +195,11 @@ if [[ $? -ne 0 ]]; then
      exit 2
 fi
 
-if [ -z "${PATH}" ] ; then
+if [ -z "${SNAPPATH}" ] ; then
     # Generate Volume Handle
     SnapshotHandle="${clusterID};${fileSystemID};${FSETNAME};${SNAPSHOT}"
 else
-    SnapshotHandle="${clusterID};${fileSystemID};${FSETNAME};${SNAPSHOT};${PATH}"
+    SnapshotHandle="${clusterID};${fileSystemID};${FSETNAME};${SNAPSHOT};${SNAPPATH}"
 fi
 
 # Gererate yaml file
