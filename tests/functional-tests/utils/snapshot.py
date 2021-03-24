@@ -1,4 +1,5 @@
 import time
+import re
 import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -226,11 +227,22 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
     else:
         LOGGER.error("volume snapshot status ReadyToUse is not true")
         if reason is not None:
-            LOGGER.info("As failure reason is provided , passing the test")
-            return
+            api_instance_events = client.CoreV1Api()
+            field = "involvedObject.name="+vs_name
+            failure_reason = api_instance_events.list_namespaced_event(
+                namespace=namespace_value, pretty=True, field_selector=field)
+            LOGGER.debug(failure_reason)
+            search_result = None
+            for item in failure_reason.items:
+                search_result = re.search(reason, str(item.message))
+                if search_result is not None:
+                    LOGGER.info(f"reason {reason} matched in volumesnapshot events, passing the test")
+                    return
+
+
+        LOGGER.error(f"reason {reason} did not matched in volumesnapshot events")
         clean_with_created_objects(created_objects)
         assert False
-    LOGGER.debug(api_response)
 
     uid_name = api_response["metadata"]["uid"]
     snapcontent_name = "snapcontent-" + uid_name

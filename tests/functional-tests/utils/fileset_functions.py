@@ -667,9 +667,9 @@ def check_snapshot_deleted(snapshot_name, volume_name):
             return True
     return False
 
-def snapshot_restore_available():
+def snapshot_available():
     """
-    returns True , if snapshot restore feature is available
+    returns True , if snapshot feature is available
     else , returns False
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -678,8 +678,10 @@ def snapshot_restore_available():
     LOGGER.debug(response.text)
 
     response_dict = json.loads(response.text)
-    required_api = "/filesystems/{filesystemName}/filesets/{filesetName}/snapshotCopy/{snapshotName}"
-    if required_api in response_dict["info"]["paths"]:
+    LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
+    scale_version = response_dict["info"]["serverVersion"]
+    scale_version = scale_version[0] + scale_version[2] + scale_version[4] + scale_version[6]
+    if int(scale_version) >= 5110:
         return True
     LOGGER.warning("Snapshot restore feature is not supported")
     return False

@@ -235,13 +235,13 @@ def test_snapshot_dynamic_pass_2():
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="failure reason to be updated")
+    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
 
 
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="failure reason to be updated")
+    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
 
 
 def test_snapshot_dynamic_multiple_snapshots():

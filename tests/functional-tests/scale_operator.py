@@ -476,13 +476,15 @@ class Snapshot():
             snapshot.create_vs_class(vs_class_name, value_vs_class, created_objects)
             snapshot.check_vs_class(vs_class_name)
 
+            if not(ff.snapshot_available()):
+                if reason is None:
+                    reason = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
+                test_restore = False
+
             vs_name = d.get_random_name("vs")
             for num in range(0, number_of_snapshots):
                 snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name, created_objects)
                 snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
-
-            if not(ff.snapshot_restore_available()):
-                pvc_value["reason"] = "Min required Spectrum Scale version is 5.0.5.2"
 
             if test_restore:
                 for num in range(0, number_of_restore):
@@ -551,8 +553,8 @@ class Snapshot():
                 snapshot.create_vs_from_content(vs_name+"-"+str(num), vs_content_name+"-"+str(num), created_objects)
                 snapshot.check_vs_detail_for_static(vs_name+"-"+str(num), created_objects)
 
-            if not(ff.snapshot_restore_available()):
-                pvc_value["reason"] = "Min required Spectrum Scale version is 5.0.5.2"
+            if not(ff.snapshot_available()):
+                pvc_value["reason"] = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
 
             if test_restore:
                 for num in range(0, number_of_restore):
