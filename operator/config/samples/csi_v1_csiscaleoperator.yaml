@@ -85,6 +85,16 @@ spec:
 #    - key: "infranode"
 #      value: "1"
 
+# snapshotterNodeSelector specifies on which nodes we want to run snapshotter
+# sidecar. In below example snapshotter pod will run on nodes which have label as
+# "scale=true" and "infranode=1". Can have multiple entries.
+# ==================================================================================
+  snapshotterNodeSelector:
+    - key: "scale"
+      value: "true"
+#    - key: "infranode"
+#      value: "1"
+
 # pluginNodeSelector specifies nodes on which we want to run plugin daemoset
 # In below example plugin daemonset will run on nodes which have label as
 # "scale=true". Can have multiple entries.
