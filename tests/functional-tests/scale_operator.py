@@ -625,6 +625,11 @@ def read_driver_data(clusterconfig, namespace):
     if len(loadcr_yaml["spec"]["clusters"]) > 1:
         data["remote"] = True
 
+    if check_key(loadcr_yaml["spec"], "pluginNodeSelector"):
+        data["pluginNodeSelector"] = loadcr_yaml["spec"]["pluginNodeSelector"]
+    else:
+        data["pluginNodeSelector"] = []
+
     return data
 
 
