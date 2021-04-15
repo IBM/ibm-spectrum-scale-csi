@@ -110,15 +110,11 @@ for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernete
   $klog pod/"${opPodName}" --all-containers  --previous > "${logdir}"/"${opPodName}"-previous.log 2>&1 || :
 done
 
-describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
+describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount,clusterroles,clusterrolebindings -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
 echo "$describe_label_cmd"
 $describe_label_cmd > "$describe_all_per_label" 2>&1 || :
 
-describe_clusterroles="$cmd describe clusterroles/external-provisioner-runner clusterrolebindings/csi-provisioner-role clusterroles/external-attacher-runner clusterrolebindings/csi-provisioner-role clusterroles/csi-nodeplugin clusterrolebindings/csi-nodeplugin clusterroles/ibm-spectrum-scale-csi-snapshotter clusterrolebindings/ibm-spectrum-scale-csi-snapshotter clusterroles/snapshot-controller-runner clusterrolebindings/snapshot-controller-role --namespace $ns"
-echo "$describe_clusterroles"
-$describe_clusterroles >> "$describe_all_per_label" 2>&1 || :
-
-get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,ds,serviceaccount --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
+get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
 echo "$get_label_cmd"
 $get_label_cmd > "$get_all_per_label" 2>&1 || :
 
