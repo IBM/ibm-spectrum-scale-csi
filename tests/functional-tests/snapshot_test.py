@@ -408,3 +408,135 @@ def test_snapshot_dynamic_pass_26():
                 "inodeLimit": data["inodeLimit"],
                 "volBackendFs": data["primaryFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False)
+
+
+def test_snapshot_dynamic_different_sc_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+                "inodeLimit": data["inodeLimit"], "uid": data["uid_number"],
+                "gid": data["gid_number"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_4():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+                "inodeLimit": data["inodeLimit"], "uid": data["uid_number"],
+                "gid": data["gid_number"]}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_5():
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "inodeLimit": data["inodeLimit"],
+                "clusterId": data["id"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_6():
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "inodeLimit": data["inodeLimit"],
+                "clusterId": data["id"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+                "inodeLimit": data["inodeLimit"], "uid": data["uid_number"],
+                "gid": data["gid_number"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_4():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+                "inodeLimit": data["inodeLimit"], "uid": data["uid_number"],
+                "gid": data["gid_number"]}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_5():
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "inodeLimit": data["inodeLimit"],
+                "clusterId": data["id"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_6():
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "inodeLimit": data["inodeLimit"],
+                "clusterId": data["id"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_nodeclass_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "GUI_MGMT_SERVERS"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_nodeclass_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "GUI_SERVERS"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_nodeclass_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "randomnodeclassx"}
+    restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi","reason":"NotFound desc = nodeclass"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc,restore_pvc=restore_pvc)
+
+
+def test_snapshot_static_nodeclass_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "GUI_MGMT_SERVERS"}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_nodeclass_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "GUI_SERVERS"}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_nodeclass_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "randomnodeclassx"}
+    restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi","reason":"NotFound desc = nodeclass"}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc,restore_pvc=restore_pvc)

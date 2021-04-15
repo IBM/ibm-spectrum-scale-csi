@@ -46,7 +46,7 @@ def get_storage_class_parameters(values):
     """
     dict_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
-                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit"]
+                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass"]
     num = len(list_parameters)
     for val in range(0, num):
         if(check_key(values, list_parameters[val])):
