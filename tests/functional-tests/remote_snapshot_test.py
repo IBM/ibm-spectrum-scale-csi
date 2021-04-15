@@ -362,3 +362,136 @@ def test_snapshot_dynamic_pass_18():
                 "inodeLimit": data["r_inodeLimit"],
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False)
+
+
+def test_snapshot_dynamic_different_sc_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
+                "gid": data["r_gid_number"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
+                "gid": data["r_gid_number"]}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "inodeLimit": data["r_inodeLimit"],
+                "clusterId": data["remoteid"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_different_sc_6():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "inodeLimit": data["r_inodeLimit"],
+                "clusterId": data["remoteid"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
+                "gid": data["r_gid_number"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
+                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
+                "gid": data["r_gid_number"]}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "inodeLimit": data["r_inodeLimit"],
+                "clusterId": data["remoteid"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_different_sc_6():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "inodeLimit": data["r_inodeLimit"],
+                "clusterId": data["remoteid"], "filesetType": "independent"}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_nodeclass_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_nodeclass_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_nodeclass_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "randomnodeclassx"}
+    restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc,restore_pvc=restore_pvc)
+
+
+def test_snapshot_static_nodeclass_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_nodeclass_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
+
+
+def test_snapshot_static_nodeclass_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
+    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "randomnodeclassx"}
+    restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
+    snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc,restore_pvc=restore_pvc)
+

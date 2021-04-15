@@ -447,7 +447,7 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
-    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None):
+    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -487,6 +487,13 @@ class Snapshot():
                 snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
 
             if test_restore:
+                if restore_sc is not None:
+                    sc_name = "restore-" + sc_name
+                    d.create_storage_class(restore_sc, sc_name, created_objects)
+                    d.check_storage_class(sc_name)
+                if restore_pvc is not None:
+                    pvc_value = restore_pvc
+
                 for num in range(0, number_of_restore):
                     restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
@@ -503,7 +510,7 @@ class Snapshot():
 
             cleanup.clean_with_created_objects(created_objects)
 
-    def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None):
+    def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -557,6 +564,13 @@ class Snapshot():
                 pvc_value["reason"] = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
 
             if test_restore:
+                if restore_sc is not None:
+                    sc_name = "restore-" + sc_name
+                    d.create_storage_class(restore_sc, sc_name, created_objects)
+                    d.check_storage_class(sc_name)
+                if restore_pvc is not None:
+                    pvc_value = restore_pvc
+
                 for num in range(0, number_of_restore):
                     restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
