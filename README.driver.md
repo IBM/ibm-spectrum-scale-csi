@@ -50,10 +50,10 @@ Example:
 
 ## Links
 
-[IBM Spectrum Scale Knowledge Center Welcome Page](https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html)
-The Knowledge Center contains all official IBM Spectrum Scale information and guidance.
+[IBM Spectrum Scale Documentation Welcome Page](https://www.ibm.com/docs/en/spectrum-scale)
+The IBM Documentation contains all official IBM Spectrum Scale information and guidance.
 
-[IBM Spectrum Scale FAQ](https://www.ibm.com/support/knowledgecenter/en/STXKQY/gpfsclustersfaq.html)
+[IBM Spectrum Scale FAQ](https://www.ibm.com/docs/en/spectrum-scale?topic=STXKQY/gpfsclustersfaq.html)
 Main starting page for all IBM Spectrum Scale compatibility information.
 
 [IBM Block CSI driver](https://github.com/IBM/ibm-block-csi-driver)

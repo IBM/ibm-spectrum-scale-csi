@@ -1,6 +1,6 @@
 # IBM Spectrum Scale CSI (Container Storage Interface)
 
-[Official Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR)
+[Official IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi)
 
 
 The IBM Spectrum Scale Container Storage Interface (CSI) project enables container orchestrators, such as Kubernetes and OpenShift, to manage the life-cycle of persistent storage.

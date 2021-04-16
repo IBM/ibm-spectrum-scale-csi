@@ -6,7 +6,7 @@ Prerequisites
     .. image:: images/scale-gui-login.png
         :alt: Spectrum Scale GUI Login
 
-If you do not see a login or on-screen instructions, review the `GUI Documentation <https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.3/com.ibm.spectrum.scale.v5r03.doc/bl1ins_quickrefforgui.htm>`_ here.
+If you do not see a login or on-screen instructions, review the `GUI Documentation <https://www.ibm.com/docs/en/spectrum-scale/5.1.0?topic=reference-spectrum-scale-gui>`_ here.
 
 
 2. Create a ``CsiAdmin`` group account.

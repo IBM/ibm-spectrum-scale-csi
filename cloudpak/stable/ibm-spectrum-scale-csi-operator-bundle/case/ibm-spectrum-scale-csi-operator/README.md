@@ -10,19 +10,19 @@ This operator installs IBM Spectrum Scale CSI in the cluster, consisting of Atta
 The standard deployment of this operator consists of one pod for the Attacher and Provisioner each, and a pod on each node the driver is to be used on.
 
 ### Configuration
-Please refer to the [Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_configurations.html).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-configurations).
 
 ## Installing
-Please refer to the [Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_instal_intro.html).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-installation).
 
 # Limitations
-Please refer to the [Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_limitations.html).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-limitations).
 
 ## Prerequisites
-Please refer to the [Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_instal_prereq.html).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=installation-performing-pre-tasks).
 
 ### Resources Required
-Please refer to the [Knowledge Center Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.4/com.ibm.spectrum.scale.csi.v5r04.doc/bl1csi_planning.html).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-planning).
 
 # PodSecurityPolicy Requirements
 This operator does not require any pod  security requirements.
