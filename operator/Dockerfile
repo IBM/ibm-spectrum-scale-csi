@@ -1,6 +1,6 @@
 # Multi-arch build for IBM Spectrum Scale CSI Operator
 
-FROM quay.io/operator-framework/ansible-operator:v1.3.2
+FROM quay.io/operator-framework/ansible-operator:v1.5.1
 MAINTAINER deeghuge@in.ibm.com
 
 ARG CSI_ATTACHER_IMAGE

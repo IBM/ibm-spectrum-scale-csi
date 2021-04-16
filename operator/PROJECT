@@ -2,10 +2,18 @@ domain: ibm.com
 layout: ansible.sdk.operatorframework.io/v1
 projectName: ibm-spectrum-scale-csi-operator
 resources:
-- group: csi
+-
+  controller: true
+  domain: ibm.com
+  group: csi
   kind: CSIScaleOperator
   version: v1
-- group: csi
+-
+  domain: ibm.com
+  group: csi
   kind: Secret
   version: v1
-version: 3-alpha
+version: "3"
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
