@@ -12,6 +12,7 @@
       - 1.1.0
       - 2.0.0
       - 2.1.0
+      - 2.2.0
 
     QUAY_USERNAME: "QUAY_USERNAME"
     QUAY_PASSWORD: "QUAY_PASSWORD"
@@ -21,10 +22,10 @@
 
     # Contains the CSV directories for all of the versions to be tested.
     # This  can  be a  copy of https://github.com/operator-framework/community-operators/tree/master/community-operators/ibm-spectrum-scale-csi-operator
-    # To  add dev version just copy the version directory from operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator/
+    # To  add dev version just copy the version directory from operator/config/olm-catalog/ibm-spectrum-scale-csi-operator/
     # Must be full directory name
 
-    OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator
+    OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/config/olm-catalog/ibm-spectrum-scale-csi-operator
     #It can also be /root/demo/community-operators/community-operators/ibm-spectrum-scale-csi-operator
 
     # Do not change following variables
