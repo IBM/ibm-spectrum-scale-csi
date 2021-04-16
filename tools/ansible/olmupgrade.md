@@ -44,13 +44,14 @@ OPERATOR_VERSIONS:
   - 1.1.0
   - 2.0.0
   - 2.1.0
+  - 2.2.0
 
 # Quay username with write access to the application and Quay Password
 QUAY_USERNAME: "QUAY_USERNAME"
 QUAY_PASSWORD: "QUAY_PASSWORD"
 
 # Check OPERATOR_DIR location is correct
-OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator
+OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/config/olm-catalog/ibm-spectrum-scale-csi-operator
 ```
 3. Run OLM upgrade playbook using following command
 ```
@@ -125,9 +126,10 @@ OPERATOR_VERSIONS:
   - 1.1.0
   - 2.0.0
   - 2.1.0
+  - 2.2.0
 
 # Check OPERATOR_DIR location is correct
-OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/deploy/olm-catalog/ibm-spectrum-scale-csi-operator
+OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/config/olm-catalog/ibm-spectrum-scale-csi-operator
 ```
 6. Run following command
 ```
