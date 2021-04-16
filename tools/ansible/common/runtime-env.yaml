@@ -1,8 +1,8 @@
 ---
 - name: Set environment facts
   set_fact:
-    OPERATOR_SDK_VER: "v1.3.2"
-    OPERATOR_VERSION: "2.1.0"
+    OPERATOR_SDK_VER: "v1.5.1"
+    OPERATOR_VERSION: "2.2.0"
 
 #- name: Ensure 'python3' is installed
 #  package:

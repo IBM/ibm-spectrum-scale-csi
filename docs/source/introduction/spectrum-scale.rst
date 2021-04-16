@@ -12,5 +12,5 @@ IBM Spectrum Scale can run on virtualized instances providing common data access
 or other hypervisors. Multiple IBM Spectrum Scale clusters can share data within a location or across wide area network (WAN) 
 connections. 
 
-Please refer to `IBM Spectrum Scale Knowledge Center <https://www.ibm.com/support/knowledgecenter/en/STXKQY/ibmspectrumscale_welcome.html>`_ 
+Please refer to `IBM Spectrum Scale Documentation <https://www.ibm.com/docs/en/spectrum-scale>`_ 
 for more information on this product
