@@ -22,7 +22,7 @@ python3.7 -m pip install -r requirements.txt
 - Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](./operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 
 
-  If changed `csiscaleoperators.csi.ibm.com_cr.yaml` configuration file is not present at default path `./operator/config/samples/crds/`, `csiscaleoperators.csi.ibm.com_cr.yaml` file path location must be passwd with `--clusterconfig` parameter. For example :
+  If changed `csiscaleoperators.csi.ibm.com_cr.yaml` configuration file is not present at default path `./operator/config/samples/`, `csiscaleoperators.csi.ibm.com_cr.yaml` file path location must be passwd with `--clusterconfig` parameter. For example :
 ```
 pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
 ```
