@@ -4,10 +4,10 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 ### Tested Testbed environment
 
-- IBM Spectrum Scale Cluster - 5.0.4.1+ Version  (**IBM Spectrum Scale supported kernel version**)
-- Kubernetes Cluster Version 1.14 - 1.18
-- Openshift Version 4.3.x, 4.4.x
-- IBM Spectrum Scale Cluster CSI Version - 2.0.0+
+- IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
+- Kubernetes Cluster Version 1.19 - 1.21
+- Openshift Version 4.6.x, 4.7.x
+- IBM Spectrum Scale Cluster CSI Version - 2.1.0+
 
 ### Pre-requesite for automation framework
 
@@ -19,10 +19,10 @@ python3.7 -m pip install -r requirements.txt
 
 ### How to run IBM Spectrum Scale CSI test automation
 
-- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](./operator/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml) file.
+- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](./operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 
 
-  If changed `csiscaleoperators.csi.ibm.com_cr.yaml` configuration file is not present at default path `./operator/deploy/crds/`, `csiscaleoperators.csi.ibm.com_cr.yaml` file path location must be passwd with `--clusterconfig` parameter. For example :
+  If changed `csiscaleoperators.csi.ibm.com_cr.yaml` configuration file is not present at default path `./operator/config/samples/crds/`, `csiscaleoperators.csi.ibm.com_cr.yaml` file path location must be passwd with `--clusterconfig` parameter. For example :
 ```
 pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
 ```

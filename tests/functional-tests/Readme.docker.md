@@ -4,9 +4,9 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 ### Tested Testbed environment
 
-- IBM Spectrum Scale Cluster - 5.0.4.2+ Version  (**IBM Spectrum Scale supported kernel version**)
-- Kubernetes Cluster Version 1.14 - 1.18
-- Openshift Version 4.3.x, 4.4.x , 4.5.x
+- IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
+- Kubernetes Cluster Version 1.19 - 1.21
+- Openshift Version 4.6.x, 4.7.x 
 - IBM Spectrum Scale Cluster CSI Version - 2.1.0+
 
 
@@ -46,7 +46,9 @@ metadata:
 spec:
   containers:
   - name: csi-test
-    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:x86 #container image for csi tests
+    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:x86 #container iamge for x86
+#    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:ppcle64 #container iamge for ppcle64
+#    image: quay.io/jainbrt/ibm-spectrum-scale-csi-test:s390x  #container iamge for s390x
     securityContext:
       privileged: true
     command: [ "/bin/sh", "-c", "--" ]
@@ -128,4 +130,9 @@ For example :
 kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py --runslow --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
 kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --html=/data/<report-name>.html
 ```
+#Run specific testcases using marker
+```
+pytest driver_test.py -m marker_name
 
+eg. kubectl exec -it <csi-test-pod-name> -- pytest driver_test.py -m regression --html=/data/<report-name>.html
+```
