@@ -12,7 +12,7 @@ metadata:
     createdAt: Thu Feb 11 18:14:05 IST 2021
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
-    operators.operatorframework.io/builder: operator-sdk-v1.5.1
+    operators.operatorframework.io/builder: operator-sdk-v1.5.2
     operators.operatorframework.io/project_layout: ansible.sdk.operatorframework.io/v1
     repository: https://github.com/IBM/ibm-spectrum-scale-csi/
     support: IBM
