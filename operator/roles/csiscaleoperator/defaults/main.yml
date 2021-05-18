@@ -17,6 +17,7 @@ storage-class: "ibm-spectrum-scale-csi"
 snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.0.0', true) }}"
 attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.1.0', true) }}"
 provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v2.1.0', true) }}"
+livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.2.0', true) }}"
 
 # Due to camelCase these get loaded differently in the operator.
 driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.1.0', true) }}"

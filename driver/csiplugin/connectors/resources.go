@@ -122,6 +122,28 @@ type Resprequest struct {
 	Data map[string]interface{} `json:"data,omitempty"`
 }
 
+type GetNodeHealthStatesResponse_v2 struct {
+        States []State     `json:"states,omitempty"`
+        Status Status      `json:"status,omitempty"`
+}
+
+type State struct {
+	activeSince	string	`json:"activeSince,omitempty"`
+	component	string	`json:"component,omitempty"`	
+	entityName	string	`json:"entityName,omitempty"`
+	entityType	string	`json:"entityType,omitempty"`
+	oid		int	`json:"oid,omitempty"`
+	parentName	string	`json:"parentName,omitempty"`
+	reportingNode	string  `json:"reportingNode,omitempty"`
+	state		string  `json:"state,omitempty"`
+	etype		string	`json:"type,omitempty"`
+	name		string	`json:"name,omitempty"`
+	message		string	`json:"message,omitempty"`
+	userAction	string	`json:"userAction,omitempty"`
+	description	string	`json:"description,omitempty"`
+	severity	string  `json:"severity,omitempty"`
+}
+
 type GetFilesystemResponse struct {
 	FileSystems []FileSystem `json:"filesystems,omitempty"`
 	Status      Status       `json:"status,omitempty"`

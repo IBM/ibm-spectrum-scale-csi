@@ -57,6 +57,10 @@ spec:
 # ==================================================================================
 #  driverRegistrar: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.1.0"
 
+# Liveness probe image name, in case we do not want to use default image.
+# ==================================================================================
+# livenessprobe: "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.2.0"
+
 # Snapshotter image name, in case we do not want to use default image.
 # ==================================================================================
 #  snapshotter: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.0.0"
