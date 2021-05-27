@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,19 +52,33 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	// If unhealthy return gRPC error code
 	// more on error codes https://github.com/container-storage-interface/spec/blob/master/spec.md#probe-errors
 
-	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(is.Driver.nodeID,"GPFS")
-	if (ghealthy == false) {
-		glog.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", is.Driver.nodeID, err)
-		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: false}}, err
+	// Node mapping check
+	scalenodeID := utils.GetEnv(is.Driver.nodeID, notFound)
+	// Additional node mapping check in case of k8s node id start with number.
+	if scalenodeID == notFound {
+		prefix := utils.GetEnv("SCALE_NODE_MAPPING_PREFIX", "K8sNodePrefix_")
+		scalenodeID = utils.GetEnv(prefix+is.Driver.nodeID, notFound)
+		if scalenodeID == notFound {
+			glog.V(4).Infof("Probe: scale node mapping not found for %s using %s", prefix+is.Driver.nodeID, is.Driver.nodeID)
+			scalenodeID = is.Driver.nodeID
+		}
 	}
 
-/*	nhealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(is.Driver.nodeID,"NODE")
+	glog.V(4).Infof("Probe: scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, is.Driver.nodeID)
+
+	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "GPFS")
+	if (ghealthy == false) {
+		glog.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
+		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
+	}
+
+/*	nhealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "NODE")
 	if (nhealthy == false) {
-		glog.Errorf("Probe: NODE component on node %v is not healthy. Error: %v", is.Driver.nodeID, err)
-		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: false}}, err
+		glog.Errorf("Probe: NODE component on node %v is not healthy. Error: %v", scalenodeID, err)
+		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
 	}*/
 
-	glog.V(4).Infof("Probe: GPFS on node %v is healthy", is.Driver.nodeID)
+	glog.V(4).Infof("Probe: GPFS on node %v is healthy", scalenodeID)
 	
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
