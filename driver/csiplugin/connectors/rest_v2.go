@@ -89,17 +89,21 @@ func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
 	glog.V(4).Infof("rest_v2 AsyncJobCompletion. jobURL: %s", jobURL)
 
 	jobQueryResponse := GenericResponse{}
+	var waitTime time.Duration = 2
 	for {
 		err := s.doHTTP(jobURL, "GET", &jobQueryResponse, nil)
 		if err != nil {
 			return err
 		}
 		if len(jobQueryResponse.Jobs) == 0 {
-			return fmt.Errorf("Unable to get Job details for %s: %v", jobURL, jobQueryResponse)
+			return fmt.Errorf("unable to get Job details for %s: %v", jobURL, jobQueryResponse)
 		}
 
 		if jobQueryResponse.Jobs[0].Status == "RUNNING" {
-			time.Sleep(2000 * time.Millisecond)
+			time.Sleep(waitTime * time.Second)
+			if waitTime < 16 {
+				waitTime = waitTime * 2
+			}
 			continue
 		}
 		break
