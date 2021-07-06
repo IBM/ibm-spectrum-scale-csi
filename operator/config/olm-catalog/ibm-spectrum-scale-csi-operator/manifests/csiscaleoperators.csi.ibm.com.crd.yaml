@@ -236,8 +236,8 @@ spec:
                 type: object
               type: array
           type: object
-      served: true
-      storage: true
+    served: true
+    storage: true
     subresources:
       status: {}
 
