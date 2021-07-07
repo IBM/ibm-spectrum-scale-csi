@@ -64,6 +64,18 @@ spec:
               mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
             - name: registration-dir
               mountPath: /registration
+        - name: liveness-probe
+          image: '{{ livenessprobe }}'
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
         - name: ibm-spectrum-scale-csi
           image: "{{ spectrumScale }}"
           args :
@@ -95,6 +107,14 @@ spec:
 {% endif %}
             # Get refs to the secrets so we can trigger a refresh
           imagePullPolicy: "Always" # "IfNotPresent"
+          livenessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /healthz
+              port: 9808
+            timeoutSeconds: 20
+            initialDelaySeconds: 60
+            periodSeconds: 30 
           volumeMounts:
             - name: plugin-dir
               mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
