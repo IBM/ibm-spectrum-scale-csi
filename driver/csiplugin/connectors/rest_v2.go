@@ -1166,3 +1166,22 @@ func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs strin
 	}
 	return err
 }
+
+func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component string) (bool, error) {
+        glog.V(4).Infof("rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", nodeName, component)
+
+        getNodeHealthStatesURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component))
+        getNodeHealthStatesResponse := GetNodeHealthStatesResponse_v2{}
+
+        err := s.doHTTP(getNodeHealthStatesURL, "GET", &getNodeHealthStatesResponse, nil)
+        if err != nil {
+                return false, fmt.Errorf("unable to get health states for nodename %v", nodeName)
+        }
+
+        if len(getNodeHealthStatesResponse.States) == 0 {
+                return false, nil
+        }
+
+        return true, nil
+}
+
