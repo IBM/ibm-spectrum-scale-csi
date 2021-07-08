@@ -123,25 +123,25 @@ type Resprequest struct {
 }
 
 type GetNodeHealthStatesResponse_v2 struct {
-        States []State     `json:"states,omitempty"`
-        Status Status      `json:"status,omitempty"`
+	States []State `json:"states,omitempty"`
+	Status Status  `json:"status,omitempty"`
 }
 
 type State struct {
-	activeSince	string	`json:"activeSince,omitempty"`
-	component	string	`json:"component,omitempty"`	
-	entityName	string	`json:"entityName,omitempty"`
-	entityType	string	`json:"entityType,omitempty"`
-	oid		int	`json:"oid,omitempty"`
-	parentName	string	`json:"parentName,omitempty"`
-	reportingNode	string  `json:"reportingNode,omitempty"`
-	state		string  `json:"state,omitempty"`
-	etype		string	`json:"type,omitempty"`
-	name		string	`json:"name,omitempty"`
-	message		string	`json:"message,omitempty"`
-	userAction	string	`json:"userAction,omitempty"`
-	description	string	`json:"description,omitempty"`
-	severity	string  `json:"severity,omitempty"`
+	activeSince   string `json:"activeSince,omitempty"`
+	component     string `json:"component,omitempty"`
+	entityName    string `json:"entityName,omitempty"`
+	entityType    string `json:"entityType,omitempty"`
+	oid           int    `json:"oid,omitempty"`
+	parentName    string `json:"parentName,omitempty"`
+	reportingNode string `json:"reportingNode,omitempty"`
+	state         string `json:"state,omitempty"`
+	etype         string `json:"type,omitempty"`
+	name          string `json:"name,omitempty"`
+	message       string `json:"message,omitempty"`
+	userAction    string `json:"userAction,omitempty"`
+	description   string `json:"description,omitempty"`
+	severity      string `json:"severity,omitempty"`
 }
 
 type GetFilesystemResponse struct {
@@ -637,10 +637,11 @@ type CreateFilesetRequest struct {
 }
 
 type CreateMakeDirRequest struct {
-	UID   string `json:"uid,omitempty"`   //uidnumber
-	GID   string `json:"gid,omitempty"`   //gidnumber
-	USER  string `json:"user,omitempty"`  //username
-	GROUP string `json:"group,omitempty"` //groupname
+	UID         string `json:"uid,omitempty"`       //uidnumber
+	GID         string `json:"gid,omitempty"`       //gidnumber
+	USER        string `json:"user,omitempty"`      //username
+	GROUP       string `json:"group,omitempty"`     //groupname
+	PERMISSIONS string `json:"permisson,omitempty"` //permissions
 }
 
 type SymLnkRequest struct {
