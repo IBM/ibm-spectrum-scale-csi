@@ -136,8 +136,6 @@ func (cs *ScaleControllerServer) createDirectory(scVol *scaleVolume, targetPath 
 		return fmt.Errorf("unable to check if directory path [%v] exists in filesystem [%v]. Error : %v", targetPath, scVol.VolBackendFs, err)
 	}
 
-	glog.V(5).Infof("DEEBUG permissions %s", scVol.VolPermissions)
-
 	if !dirExists {
 		if scVol.VolPermissions != "" {
 			err = scVol.Connector.MakeDirectoryV2(scVol.VolBackendFs, targetPath, scVol.VolUid, scVol.VolGid, scVol.VolPermissions)
@@ -664,6 +662,7 @@ func (cs *ScaleControllerServer) checkMinScaleVersion(conn connectors.SpectrumSc
 		return false, err
 	}
 	/* Assuming Spectrum Scale version is in a format like 5.0.0-0_170818.165000 */
+	// "serverVersion" : "5.1.1.1-developer build",
 	splitScaleVer := strings.Split(scaleVersion, ".")
 	if len(splitScaleVer) < 3 {
 		return false, status.Error(codes.Internal, fmt.Sprintf("invalid Spectrum Scale version - %s", scaleVersion))

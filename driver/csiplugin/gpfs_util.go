@@ -245,7 +245,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		}
 
 		scaleVol.VolPermissions = permissions
-		glog.V(5).Infof("DEEBUG permissions specified %s", permissions)
 	}
 
 	if scaleVol.IsFilesetBased {
