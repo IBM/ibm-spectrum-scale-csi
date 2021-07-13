@@ -641,7 +641,7 @@ type CreateMakeDirRequest struct {
 	GID         string `json:"gid,omitempty"`       //gidnumber
 	USER        string `json:"user,omitempty"`      //username
 	GROUP       string `json:"group,omitempty"`     //groupname
-	PERMISSIONS string `json:"permisson,omitempty"` //permissions
+	PERMISSIONS string `json:"permissions,omitempty"` //permissions
 }
 
 type SymLnkRequest struct {
