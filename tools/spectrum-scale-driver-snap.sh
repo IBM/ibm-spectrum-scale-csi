@@ -137,7 +137,7 @@ then
 fi
 
 # check if the namespace is valid and active
-if !($cmd get namespace | grep "$ns\s*Active")
+if !($cmd get namespace | grep -q "$ns\s*Active")
 then
   echo "Namespace $ns is invalid or not active. Please provide a valid namespace"
   exit 1
