@@ -27,15 +27,16 @@ function find_versions()
   csi_version="null"
   driver_image="null"
   registrar_image="null"
+  liveness_probe_image="null"
   attacher_image="null"
   provisioner_image="null"
   snapshotter_image="null"
 
   driver_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi -o jsonpath="{.items[0].metadata.name}"`
   operator_pod=`$cmd -n $ns get pod -l name=ibm-spectrum-scale-csi-operator -o jsonpath="{.items[0].metadata.name}"`
-  attacher_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-attacher -o jsonpath="{.items[0].metadata.name}"`
-  provisioner_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-provisioner -o jsonpath="{.items[0].metadata.name}"`
-  snapshotter_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-snapshotter -o jsonpath="{.items[0].metadata.name}"`
+  attacher_pod="ibm-spectrum-scale-csi-attacher-0"
+  provisioner_pod="ibm-spectrum-scale-csi-provisioner-0"
+  snapshotter_pod="ibm-spectrum-scale-csi-snapshotter-0"
 
   #get operator image
   if [[ $operator_pod != ibm-spectrum-scale-csi-operator* ]]
@@ -52,6 +53,7 @@ function find_versions()
   else
     driver_image=`$cmd -n $ns get pod $driver_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi")].image}'`
     registrar_image=`$cmd -n $ns get pod $driver_pod -o jsonpath='{.status.containerStatuses[?(@.name=="driver-registrar")].image}'`
+    liveness_probe_image=`$cmd -n $ns get pod $driver_pod -o jsonpath='{.status.containerStatuses[?(@.name=="liveness-probe")].image}'`
     csi_version=`echo $driver_image | cut -f2 -d:`
   fi
 
@@ -84,6 +86,7 @@ function find_versions()
   echo "Operator Image                : $operator_image"
   echo "Driver Image                  : $driver_image"
   echo "Node Registrar Image          : $registrar_image"
+  echo "Liveness Probe Image          : $liveness_probe_image"
   echo "Attacher Image                : $attacher_image"
   echo "Provisioner Image             : $provisioner_image"
   echo "Snapshotter Image             : $snapshotter_image"
@@ -110,12 +113,12 @@ while getopts 'n:o:vh' OPTION; do
       ;;
 
     h)
-      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-v] [-h]"
+      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-v (get CSI version)] [-h]"
       exit 0
       ;;
 
     ?)
-      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-v] [-h]"
+      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-v (get CSI version)] [-h]"
       exit 1
       ;;
   esac
