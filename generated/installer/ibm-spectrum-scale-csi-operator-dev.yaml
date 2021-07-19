@@ -289,7 +289,8 @@ spec:
                           description: The name of the primary filesystem.
                           type: string
                         primaryFset:
-                          description: The name of the primary fileset, created in primaryFs.
+                          description: The name of the primary fileset, created in
+                            primaryFs.
                           type: string
                         remoteCluster:
                           description: Remote cluster ID.
@@ -361,7 +362,8 @@ spec:
                   type: object
                 type: array
               provisioner:
-                description: Provisioner image for csi (actually issues provision requests).
+                description: Provisioner image for csi (actually issues provision
+                  requests).
                 type: string
               provisionerNodeSelector:
                 description: Node selector for provisioner sidecar.
@@ -399,14 +401,14 @@ spec:
                 type: string
               tolerations:
                 description: Array of tolerations that will be distribued to CSI pods.
-                  Please refer to official k8s documentation for your environment for
-                  more details.
+                  Please refer to official k8s documentation for your environment
+                  for more details.
                 items:
                   properties:
                     effect:
                       description: Valid values are "NoSchedule", "PreferNoSchedule"
-                        and "NoExecute". An empty effect matches all effects with given
-                        key.
+                        and "NoExecute". An empty effect matches all effects with
+                        given key.
                       enum:
                       - NoSchedule
                       - PreferNoSchedule
