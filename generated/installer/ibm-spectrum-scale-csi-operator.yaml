@@ -19,7 +19,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.2.0
+        productVersion: 2.3.0
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -52,8 +52,8 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.2.0
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.2.0
+            value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.3.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -229,16 +229,15 @@ spec:
     singular: csiscaleoperator
   scope: Namespaced
   versions:
-  - name: v1
-    additionalPrinterColumns:
+  - additionalPrinterColumns:
     - jsonPath: .status.conditions[?(@.type="Ready")].status
       description: The Nginx Status
       name: Ready
       type: string
+    name: v1
     schema:
      openAPIV3Schema:
       description: CSIScaleOperator is the Schema for the csiscaleoperator API
-      type: object
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -454,6 +453,7 @@ spec:
                 type: object
               type: array
           type: object
+      type: object
     served: true
     storage: true
     subresources:

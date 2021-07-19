@@ -45,6 +45,7 @@ OPERATOR_VERSIONS:
   - 2.0.0
   - 2.1.0
   - 2.2.0
+  - 2.3.0
 
 # Quay username with write access to the application and Quay Password
 QUAY_USERNAME: "QUAY_USERNAME"
@@ -127,6 +128,7 @@ OPERATOR_VERSIONS:
   - 2.0.0
   - 2.1.0
   - 2.2.0
+  - 2.3.0
 
 # Check OPERATOR_DIR location is correct
 OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/config/olm-catalog/ibm-spectrum-scale-csi-operator

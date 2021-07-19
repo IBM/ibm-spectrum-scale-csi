@@ -114,6 +114,11 @@ spec:
                 Sidecar container image for the csi spectrum scale plugin
                 pods.
               type: string
+            livenessprobe:
+              description:
+                Sidecar liveness probe image for the csi spectrum scale plugin
+                pods.
+              type: string
             nodeMapping:
               description: Mapping of K8s node with SpectrumScale node.
               items:
