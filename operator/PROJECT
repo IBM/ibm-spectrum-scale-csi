@@ -3,6 +3,8 @@ layout: ansible.sdk.operatorframework.io/v1
 projectName: ibm-spectrum-scale-csi-operator
 resources:
 -
+  api:
+    crdVersion: v1
   controller: true
   domain: ibm.com
   group: csi
