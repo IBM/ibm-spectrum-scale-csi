@@ -40,7 +40,7 @@ const (
 	filesystemTypeRemote        = "remote"
 	filesystemMounted           = "mounted"
 	filesetUnlinkedPath         = "--"
-	smallestVolSize      uint64 = 1 * 2024 * 1024 * 1024 // 1GB
+	smallestVolSize      uint64 = 1024 * 1024 * 1024 // 1GB
 
 )
 
@@ -397,7 +397,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	scaleVol.VolName = volName
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
-		glog.V(4).Info("DEEBUG using smallest volume size of 96MB")
 		scaleVol.VolSize = smallestVolSize
 	} else {
 		scaleVol.VolSize = uint64(volSize)
