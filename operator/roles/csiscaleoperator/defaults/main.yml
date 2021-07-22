@@ -14,7 +14,7 @@ namespace: '{{ ansible_operator_meta.namespace | default("ibm-spectrum-scale-csi
 storage-class: "ibm-spectrum-scale-csi"
 
 # Image defaults
-snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.0.0', true) }}"
+snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1', true) }}"
 attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.1.0', true) }}"
 provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v2.1.0', true) }}"
 livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0', true) }}"
