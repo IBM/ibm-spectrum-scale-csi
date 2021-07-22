@@ -18,6 +18,7 @@ package scale
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -266,11 +267,15 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	if scVol.InodeLimit != "" {
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
 	} else {
-		blockSize := uint64(fsDetails.Block.BlockSize)
 		var inodeLimit uint64
-		inodeLimit = scVol.VolSize / blockSize
-		if inodeLimit < 1024 {
-			inodeLimit = 1024
+		var x float64
+		volsizeGB := scVol.VolSize >> 30
+		if !(volsizeGB < 1) {
+			x = (1024 * 1024 * float64(volsizeGB)) / math.Pow(4, 1+0.4*math.Log2(float64(volsizeGB)))
+			inodeLimit = uint64(math.Round(x/1000) * 1000)
+		}
+		if inodeLimit < 100000 {
+			inodeLimit = 100000
 		}
 		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
 	}
