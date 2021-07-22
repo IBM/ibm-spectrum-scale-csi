@@ -55,7 +55,7 @@ spec:
 
 # Driver Registrar image name, in case we do not want to use default image.
 # ==================================================================================
-#  driverRegistrar: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.1.0"
+#  driverRegistrar: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.2.0"
 
 # Liveness probe image name, in case we do not want to use default image.
 # ==================================================================================
