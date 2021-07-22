@@ -34,12 +34,14 @@ import (
 )
 
 const (
-	no                   = "no"
-	yes                  = "yes"
-	notFound             = "NOT_FOUND"
-	filesystemTypeRemote = "remote"
-	filesystemMounted    = "mounted"
-	filesetUnlinkedPath  = "--"
+	no                          = "no"
+	yes                         = "yes"
+	notFound                    = "NOT_FOUND"
+	filesystemTypeRemote        = "remote"
+	filesystemMounted           = "mounted"
+	filesetUnlinkedPath         = "--"
+	smallestVolSize      uint64 = 1024 * 1024 * 1024 // 1GB
+
 )
 
 type ScaleControllerServer struct {
@@ -394,7 +396,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	scaleVol.VolName = volName
-	scaleVol.VolSize = uint64(volSize)
+	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
+		scaleVol.VolSize = smallestVolSize
+	} else {
+		scaleVol.VolSize = uint64(volSize)
+	}
 
 	/* Get details for Primary Cluster */
 	pConn, PSLnkRelPath, PFS, PFSMount, PSLnkPath, PCid, err := cs.GetPriConnAndSLnkPath()
