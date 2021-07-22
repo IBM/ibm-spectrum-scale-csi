@@ -59,7 +59,7 @@ spec:
 
 # Liveness probe image name, in case we do not want to use default image.
 # ==================================================================================
-# livenessprobe: "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.2.0"
+#  livenessprobe: "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
 
 # Snapshotter image name, in case we do not want to use default image.
 # ==================================================================================
