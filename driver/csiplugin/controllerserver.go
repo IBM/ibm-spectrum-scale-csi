@@ -137,11 +137,20 @@ func (cs *ScaleControllerServer) createDirectory(scVol *scaleVolume, targetPath 
 	}
 
 	if !dirExists {
-		err = scVol.Connector.MakeDirectory(scVol.VolBackendFs, targetPath, scVol.VolUid, scVol.VolGid)
-		if err != nil {
-			// Directory creation failed, no cleanup will retry in next retry
-			glog.Errorf("volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", scVol.VolName, targetPath, scVol.VolBackendFs, err)
-			return fmt.Errorf("unable to create directory [%v] in filesystem [%v]. Error : %v", targetPath, scVol.VolBackendFs, err)
+		if scVol.VolPermissions != "" {
+			err = scVol.Connector.MakeDirectoryV2(scVol.VolBackendFs, targetPath, scVol.VolUid, scVol.VolGid, scVol.VolPermissions)
+			if err != nil {
+				// Directory creation failed, no cleanup will retry in next retry
+				glog.Errorf("volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", scVol.VolName, targetPath, scVol.VolBackendFs, err)
+				return fmt.Errorf("unable to create directory [%v] in filesystem [%v]. Error : %v", targetPath, scVol.VolBackendFs, err)
+			}
+		} else {
+			err = scVol.Connector.MakeDirectory(scVol.VolBackendFs, targetPath, scVol.VolUid, scVol.VolGid)
+			if err != nil {
+				// Directory creation failed, no cleanup will retry in next retry
+				glog.Errorf("volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", scVol.VolName, targetPath, scVol.VolBackendFs, err)
+				return fmt.Errorf("unable to create directory [%v] in filesystem [%v]. Error : %v", targetPath, scVol.VolBackendFs, err)
+			}
 		}
 	}
 	return nil
@@ -536,6 +545,16 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}, nil
 	}
 
+	if scaleVol.VolPermissions != "" {
+		versionCheck, err := cs.checkMinScaleVersion(scaleVol.Connector, "5112")
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("the minimum Spectrum Scale version check for permissions failed with error %s", err))
+		}
+		if !versionCheck {
+			return nil, status.Error(codes.Internal, "the minimum required Spectrum Scale version for permissions support with CSI is 5.1.1-2")
+		}
+	}
+
 	/* Update driver map with new volume. Make sure to defer delete */
 
 	cs.Driver.reqmap[scaleVol.VolName] = volSize
@@ -637,21 +656,36 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	return nil
 }
 
+func (cs *ScaleControllerServer) checkMinScaleVersion(conn connectors.SpectrumScaleConnector, version string) (bool, error) {
+	scaleVersion, err := conn.GetScaleVersion()
+	if err != nil {
+		return false, err
+	}
+	/* Assuming Spectrum Scale version is in a format like 5.0.0-0_170818.165000 */
+	// "serverVersion" : "5.1.1.1-developer build",
+	splitScaleVer := strings.Split(scaleVersion, ".")
+	if len(splitScaleVer) < 3 {
+		return false, status.Error(codes.Internal, fmt.Sprintf("invalid Spectrum Scale version - %s", scaleVersion))
+	}
+	splitMinorVer := strings.Split(splitScaleVer[2], "-")
+	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
+
+	if assembledScaleVer < version {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumScaleConnector) error {
 	/* Verify Spectrum Scale Version is not below 5.1.1-0 */
-	scaleVersion, err := conn.GetScaleVersion()
+	versionCheck, err := cs.checkMinScaleVersion(conn, "5110")
 	if err != nil {
 		return err
 	}
 
-	/* Assuming Spectrum Scale version is in a format like 5.0.0-0_170818.165000 */
-	splitScaleVer := strings.Split(scaleVersion, ".")
-	splitMinorVer := strings.Split(splitScaleVer[2], "-")
-	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
-	if assembledScaleVer < "5110" {
-		return status.Error(codes.FailedPrecondition, fmt.Sprintf("the version of Spectrum Scale on cluster is %s. Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0", scaleVersion))
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for snapshot support with CSI is 5.1.1-0")
 	}
-
 	return nil
 }
 

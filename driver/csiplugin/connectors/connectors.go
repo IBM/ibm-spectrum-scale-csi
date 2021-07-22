@@ -51,6 +51,7 @@ type SpectrumScaleConnector interface {
 	CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error)
 	//Directory operations
 	MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error
+	MakeDirectoryV2(filesystemName string, relativePath string, uid string, gid string, permissions string) error
 	MountFilesystem(filesystemName string, nodeName string) error
 	UnmountFilesystem(filesystemName string, nodeName string) error
 	GetFilesystemName(filesystemUUID string) (string, error)
@@ -92,6 +93,7 @@ const (
 	UserSpecifiedVolBackendFs   string = "volBackendFs"
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
 	UserSpecifiedNodeClass      string = "nodeClass"
+	UserSpecifiedPermissions    string = "permissions"
 
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )

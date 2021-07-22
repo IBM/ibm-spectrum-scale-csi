@@ -653,6 +653,67 @@ func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath strin
 	return nil
 }
 
+func (s *spectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath string, uid string, gid string, permissions string) error {
+	glog.V(4).Infof("rest_v2 MakeDirectoryV2. filesystem: %s, path: %s, uid: %s, gid: %s, permissions: %s", filesystemName, relativePath, uid, gid, permissions)
+
+	dirreq := CreateMakeDirRequest{}
+
+	if uid != "" {
+		_, err := strconv.Atoi(uid)
+		if err != nil {
+			dirreq.USER = uid
+		} else {
+			dirreq.UID = uid
+		}
+	} else {
+		dirreq.UID = "0"
+	}
+
+	if gid != "" {
+		_, err := strconv.Atoi(gid)
+		if err != nil {
+			dirreq.GROUP = gid
+		} else {
+			dirreq.GID = gid
+		}
+	} else {
+		dirreq.GID = "0"
+	}
+
+	dirreq.PERMISSIONS = permissions
+
+	formattedPath := strings.ReplaceAll(relativePath, "/", "%2F")
+	makeDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, formattedPath))
+
+	makeDirResponse := GenericResponse{}
+
+	err := s.doHTTP(makeDirURL, "POST", &makeDirResponse, dirreq)
+
+	if err != nil {
+		glog.Errorf("Error in make directory request: %v", err)
+		return err
+	}
+
+	err = s.isRequestAccepted(makeDirResponse, makeDirURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return err
+	}
+
+	err = s.waitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
+			glog.Infof("Directory exists. %v", err)
+			return nil
+		}
+
+		glog.Errorf("Unable to make directory %s: %v.", relativePath, err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string) error {
 	glog.V(4).Infof("rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", filesystemName, filesetName, quota)
 
@@ -1168,20 +1229,19 @@ func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs strin
 }
 
 func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component string) (bool, error) {
-        glog.V(4).Infof("rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", nodeName, component)
+	glog.V(4).Infof("rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", nodeName, component)
 
-        getNodeHealthStatesURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component))
-        getNodeHealthStatesResponse := GetNodeHealthStatesResponse_v2{}
+	getNodeHealthStatesURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component))
+	getNodeHealthStatesResponse := GetNodeHealthStatesResponse_v2{}
 
-        err := s.doHTTP(getNodeHealthStatesURL, "GET", &getNodeHealthStatesResponse, nil)
-        if err != nil {
-                return false, fmt.Errorf("unable to get health states for nodename %v", nodeName)
-        }
+	err := s.doHTTP(getNodeHealthStatesURL, "GET", &getNodeHealthStatesResponse, nil)
+	if err != nil {
+		return false, fmt.Errorf("unable to get health states for nodename %v", nodeName)
+	}
 
-        if len(getNodeHealthStatesResponse.States) == 0 {
-                return false, nil
-        }
+	if len(getNodeHealthStatesResponse.States) == 0 {
+		return false, nil
+	}
 
-        return true, nil
+	return true, nil
 }
-

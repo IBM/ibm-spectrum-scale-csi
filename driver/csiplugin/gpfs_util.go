@@ -42,6 +42,7 @@ type scaleVolume struct {
 	VolDirBasePath     string                            `json:"volDirBasePath"`
 	VolUid             string                            `json:"volUid"`
 	VolGid             string                            `json:"volGid"`
+	VolPermissions     string                            `json:"volPermissions"`
 	ClusterId          string                            `json:"clusterId"`
 	FilesetType        string                            `json:"filesetType"`
 	InodeLimit         string                            `json:"inodeLimit"`
@@ -116,6 +117,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
+	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -171,6 +173,10 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.ClusterId = clusterID
 	}
 
+	if isPermissionsSpecified && permissions == "" {
+		isPermissionsSpecified = false
+	}
+
 	if volDirPathSpecified {
 		if fsTypeSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and volDirBasePath must not be specified together in storageClass")
@@ -224,6 +230,21 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	if gidSpecified {
 		scaleVol.VolGid = gid
+	}
+
+	if isPermissionsSpecified {
+		_, err := strconv.Atoi(permissions)
+		if err != nil || len(permissions) != 3 {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "invalid value specified for permissions")
+		}
+
+		for _, n := range permissions {
+			if n < 48 || n > 55 {
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "invalid value specified for permissions")
+			}
+		}
+
+		scaleVol.VolPermissions = permissions
 	}
 
 	if scaleVol.IsFilesetBased {
