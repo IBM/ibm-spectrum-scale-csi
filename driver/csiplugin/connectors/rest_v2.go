@@ -416,7 +416,7 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 		filesetreq.InodeSpace = "new"
 		if inodeLimitSpecified {
 			filesetreq.MaxNumInodes = inodeLimit.(string)
-			filesetreq.AllocInodes = inodeLimit.(string)
+			filesetreq.AllocInodes = "1024"
 		}
 	}
 
