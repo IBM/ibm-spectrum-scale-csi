@@ -6,7 +6,7 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 - IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
 - Kubernetes Cluster Version 1.19 - 1.21
-- Openshift Version 4.6.x, 4.7.x
+- Openshift Version 4.6.x, 4.7.x, 4.8.x
 - IBM Spectrum Scale Cluster CSI Version - 2.1.0+
 
 ### Pre-requesite for automation framework
@@ -19,14 +19,14 @@ python3.7 -m pip install -r requirements.txt
 
 ### How to run IBM Spectrum Scale CSI test automation
 
-- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](./operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
+- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 
 
   If changed `csiscaleoperators.csi.ibm.com_cr.yaml` configuration file is not present at default path `./operator/config/samples/`, `csiscaleoperators.csi.ibm.com_cr.yaml` file path location must be passwd with `--clusterconfig` parameter. For example :
 ```
 pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
 ```
-- For configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./tests/functional-tests/config/test.config) file.
+- For configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
 
 - If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional).For example :
 ```
