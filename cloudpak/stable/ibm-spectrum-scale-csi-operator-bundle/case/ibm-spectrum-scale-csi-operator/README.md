@@ -4,25 +4,25 @@ The [IBM Spectrum Scale Container Storage Interface](https://github.com/IBM/ibm-
 This project contains an ansible-based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver.
 
 # Introduction
-This operator installs IBM Spectrum Scale CSI in the cluster, consisting of Attacher and Provisioner StatefulSets, and Driver DaemonSet.
+This operator installs IBM Spectrum Scale CSI in kubernetes or Openshift container platfromcluster, consisting of Attacher, Provisioner and Snaphotter StatefulSets, and CSI driver DaemonSet.
 
 ## Details
-The standard deployment of this operator consists of one pod for the Attacher and Provisioner each, and a pod on each node the driver is to be used on.
+The standard deployment of this operator consists of one pod for the Attacher, Provisioner and Snaphotter each, and a pod on each node for the driver is to be used on.
 
 ### Configuration
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-configurations).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=230-configurations).
 
 ## Installing
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-installation).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=230-installation).
 
 # Limitations
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-limitations).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=230-limitations).
 
 ## Prerequisites
 Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=installation-performing-pre-tasks).
 
 ### Resources Required
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=220-planning).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=230-planning).
 
 # PodSecurityPolicy Requirements
 This operator does not require any pod  security requirements.
@@ -39,8 +39,8 @@ The installed SCC is as follows, please note this is a jinja2 template applied b
     annotations:
       kubernetes.io/description: allow hostpath and host network to be accessible
     generation: 1
-    name: csiaccess
-    selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/csiaccess
+    name: spectrum-scale-csiaccess
+    selfLink: /apis/security.openshift.io/v1/securitycontextconstraints/spectrum-scale-csiaccess
   readOnlyRootFilesystem: false
   requiredDropCapabilities:
   - KILL
@@ -72,8 +72,6 @@ The installed SCC is as follows, please note this is a jinja2 template applied b
   defaultAddCapabilities: null
   fsGroup:
     type: MustRunAs
-  groups:
-  - system:authenticated
   {% if csiaccess_users|length > 0 %}
   users:
   {% for user in csiaccess_users %}

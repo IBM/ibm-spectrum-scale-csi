@@ -7,14 +7,12 @@ resources:
   resourceDefs:
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
+      ref: cluster/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/operator.yaml
+      ref: cluster/deploy/operator.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/role_binding.yaml
+      ref: cluster/deploy/role_binding.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/role.yaml
+      ref: cluster/deploy/role.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/service_account.yaml
-    - mediaType: application/vnd.case.resource.image.manifest.v1
-      ref: manifest.yaml
+      ref: cluster/deploy/service_account.yaml

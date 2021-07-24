@@ -1,21 +1,19 @@
 
 prereqs:
   prereqDefs:
-    ibmCoreServices: {}
-    k8sDistros: {}
-      #ibmCloud:
-      #  distribution: ibmCloud
-      #  semver: '>=1.11.3'
-      #ibmCloudPrivate:
-      #  distribution: ibmCloudPrivate
-      #  semver: '>=1.11.3'
-      #kubernetes:
-      #  distribution: kubernetes
-      #  semver: '>=1.14'
-      #openshift:
-      #  distribution: openshift
-      #  semver: '>=4.2'
-    k8sResources:  {}
+    k8sDistros: 
+      kubernetes:
+        distribution: kubernetes
+        semver: '>=1.20'
+      openshift:
+        distribution: openshift
+        semver: '>=4.6'
+    k8sResourceVersions:  {}
+       # customresourcedefinition:
+        # apiGroup: apiextensions.k8s.io
+        # kind: CustomResourceDefinition
+        # version: v1beta1
+    k8sResources: {}
     #  ibmRestrictedPSP:
     #    apiGroup: policy
     #    kind: PodSecurityPolicy
@@ -30,4 +28,3 @@ prereqs:
     #    selector:
     #      matchExpressions: []
     #    version: v1
-    k8sResourceVersions: {}
