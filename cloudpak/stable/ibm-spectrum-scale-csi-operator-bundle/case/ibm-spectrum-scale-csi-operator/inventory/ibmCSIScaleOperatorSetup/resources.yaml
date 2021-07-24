@@ -5,6 +5,33 @@ resources:
     name: "ibmCSIScaleOperatorSetup"
     description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
   resourceDefs:
+    - metadata:
+        name: ibm_spectrum_scale_csi_operator
+      image: ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
+      tag: v2.3.0
+      digest: sha256:d20fa0e77776c4dc23a8fa9f4dcfea056491c4f4a27e30124acaabc9e25c8f74
+      mediaType: application/vnd.docker.distribution.manifest.list.v2
+      registries:
+      - host: quay.io
+      manifests:
+      - digest: sha256:65c0f2178ac8a3c28f48efd26ccf16bd6f344fa88d1aa20efd3a25d5f99587c0
+        mediaType: application/vnd.docker.distribution.manifest.v2
+        platform:
+          architecture: amd64
+          os: linux
+        tag: v2.3.0-amd64
+      - digest: sha256:449bde3da6e107fdbdb584a5c8f04998c90467ffd35dc6dbd778bfb0dcefab1e
+        mediaType: application/vnd.docker.distribution.manifest.v2
+        platform:
+          architecture: ppc64le
+          os: linux
+        tag: v2.3.0-ppc64le
+      - digest: sha256:17be8f96224afa9a9bb15bf28307ce1cbfb8cecea570133b241a694e8f2e271b
+        mediaType: application/vnd.docker.distribution.manifest.v2
+        platform:
+          architecture: s390x
+          os: linux
+        tag: v2.3.0-s390x
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
       ref: cluster/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
