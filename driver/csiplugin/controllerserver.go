@@ -18,7 +18,6 @@ package scale
 
 import (
 	"fmt"
-	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -41,7 +40,8 @@ const (
 	filesystemTypeRemote        = "remote"
 	filesystemMounted           = "mounted"
 	filesetUnlinkedPath         = "--"
-	smallestVolSize      uint64 = 1024 * 1024 * 1024 // 1GB
+	oneGB                uint64 = 1024 * 1024 * 1024
+	smallestVolSize      uint64 = oneGB // 1GB
 
 )
 
@@ -268,13 +268,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
 	} else {
 		var inodeLimit uint64
-		var x float64
 		volsizeGB := scVol.VolSize >> 30
-		if !(volsizeGB < 1) {
-			x = (1024 * 1024 * float64(volsizeGB)) / math.Pow(4, 1+0.4*math.Log2(float64(volsizeGB)))
-			inodeLimit = uint64(math.Round(x/1000) * 1000)
-		}
-		if inodeLimit < 100000 {
+		if volsizeGB > 10 {
+			inodeLimit = 200000
+		} else {
 			inodeLimit = 100000
 		}
 		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
