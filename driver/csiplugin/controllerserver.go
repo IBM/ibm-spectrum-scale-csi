@@ -40,7 +40,8 @@ const (
 	filesystemTypeRemote        = "remote"
 	filesystemMounted           = "mounted"
 	filesetUnlinkedPath         = "--"
-	smallestVolSize      uint64 = 1024 * 1024 * 1024 // 1GB
+	oneGB                uint64 = 1024 * 1024 * 1024
+	smallestVolSize      uint64 = oneGB // 1GB
 
 )
 
@@ -266,11 +267,11 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	if scVol.InodeLimit != "" {
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
 	} else {
-		blockSize := uint64(fsDetails.Block.BlockSize)
 		var inodeLimit uint64
-		inodeLimit = scVol.VolSize / blockSize
-		if inodeLimit < 1024 {
-			inodeLimit = 1024
+		if scVol.VolSize > 10*oneGB {
+			inodeLimit = 200000
+		} else {
+			inodeLimit = 100000
 		}
 		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
 	}
