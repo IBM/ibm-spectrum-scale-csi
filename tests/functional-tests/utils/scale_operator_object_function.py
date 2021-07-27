@@ -596,9 +596,10 @@ def get_driver_image():
     try:
         api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-        LOGGER.info(f"CSI driver image :  {api_response.status.container_statuses[-1].image}")
-        LOGGER.info(f"CSI driver image id : {api_response.status.container_statuses[-1].image_id}")
-
+        for container in api_response.status.container_statuses:
+            if(container.name == "ibm-spectrum-scale-csi"):
+                LOGGER.info(f"CSI driver image :  {container.image}")
+                LOGGER.info(f"CSI driver image id : {container.image_id}")
     except ApiException:
         LOGGER.info("Unable to get driver image")
 
