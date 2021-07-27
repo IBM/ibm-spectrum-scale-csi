@@ -12,6 +12,7 @@ spec:
       privileged: true
     command: [ "/bin/sh", "-c", "--" ]
     args: [ "while true; do sleep 120; done;" ]
+    imagePullPolicy: "Always"
     volumeMounts:
     - mountPath: /data
       name: report
