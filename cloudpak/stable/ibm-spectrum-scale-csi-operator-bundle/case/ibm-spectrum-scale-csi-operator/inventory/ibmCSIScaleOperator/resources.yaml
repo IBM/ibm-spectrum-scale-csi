@@ -35,4 +35,4 @@ resources:
         tag: v2.3.0-s390x
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml
+      ref: cluster/deploy/crds/csi_v1_csiscaleoperator.yaml

@@ -5,6 +5,7 @@ resources:
     name: "ibmCSIScaleOperatorSetup"
     description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
   resourceDefs:
+    containerImages:
     - metadata:
         name: ibm_spectrum_scale_csi_operator
       image: ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
@@ -34,7 +35,7 @@ resources:
         tag: v2.3.0-s390x
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
-      ref: cluster/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
+      ref: cluster/deploy/crds/csi_v1_csiscaleoperator.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
       ref: cluster/deploy/operator.yaml
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
