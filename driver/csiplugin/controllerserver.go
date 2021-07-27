@@ -268,8 +268,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
 	} else {
 		var inodeLimit uint64
-		volsizeGB := scVol.VolSize >> 30
-		if volsizeGB > 10 {
+		if scVol.VolSize > 10*oneGB {
 			inodeLimit = 200000
 		} else {
 			inodeLimit = 100000
