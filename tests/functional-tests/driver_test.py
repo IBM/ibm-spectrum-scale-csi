@@ -8,20 +8,19 @@ LOGGER = logging.getLogger()
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, driver_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val = scaleop.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, namespace_value)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    data = scaleop.read_driver_data(clusterconfig_value, test_namespace)
+    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace)
     keep_objects = data["keepobjects"]
-    test_namespace = namespace_value
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
 
     ff.cred_check(data)
     ff.set_data(data)
-    operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
+    operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace)
     operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
+    condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
     if condition is True:
         if not(operator_object.check()):
             LOGGER.error("Operator custom object is not deployed succesfully")

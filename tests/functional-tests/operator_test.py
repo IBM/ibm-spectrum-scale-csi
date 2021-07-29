@@ -15,8 +15,8 @@ LOGGER = logging.getLogger()
 def _values(request):
 
     global kubeconfig_value, clusterconfig_value, namespace_value
-    kubeconfig_value, clusterconfig_value, namespace_value, _ = scaleop.get_cmd_values(request)
-
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, _ = scaleop.get_cmd_values(request)
+    namespace_value = operator_namespace
     condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
     operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
     read_file = scaleop.read_operator_data(clusterconfig_value, namespace_value)

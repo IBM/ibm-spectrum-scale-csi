@@ -6,7 +6,8 @@ from py.xml import html
 def pytest_addoption(parser):
     parser.addoption("--kubeconfig", action="store")
     parser.addoption("--clusterconfig", action="store")
-    parser.addoption("--namespace", action="store")
+    parser.addoption("--testnamespace", action="store")
+    parser.addoption("--operatornamespace", action="store")
     parser.addoption("--runslow", action="store_true", help="run slow tests")
 
 

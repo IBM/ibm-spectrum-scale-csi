@@ -40,7 +40,8 @@ const (
 	filesystemTypeRemote        = "remote"
 	filesystemMounted           = "mounted"
 	filesetUnlinkedPath         = "--"
-	smallestVolSize      uint64 = 1024 * 1024 * 1024 // 1GB
+	oneGB                uint64 = 1024 * 1024 * 1024
+	smallestVolSize      uint64 = oneGB // 1GB
 
 )
 
@@ -266,11 +267,11 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	if scVol.InodeLimit != "" {
 		opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
 	} else {
-		blockSize := uint64(fsDetails.Block.BlockSize)
 		var inodeLimit uint64
-		inodeLimit = scVol.VolSize / blockSize
-		if inodeLimit < 1024 {
-			inodeLimit = 1024
+		if scVol.VolSize > 10*oneGB {
+			inodeLimit = 200000
+		} else {
+			inodeLimit = 100000
 		}
 		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
 	}
@@ -306,7 +307,22 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume) (stri
 	// fileset is present/created. Confirm if fileset is linked
 	if (filesetInfo.Config.Path == "") || (filesetInfo.Config.Path == filesetUnlinkedPath) {
 		// this means not linked, link it
-		junctionPath := fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, scVol.VolName)
+		var junctionPath string
+		junctionPath = fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, scVol.VolName)
+
+		if scVol.ParentFileset != "" {
+			parentfilesetInfo, err := scVol.Connector.ListFileset(scVol.VolBackendFs, scVol.ParentFileset)
+			if err != nil {
+				glog.Errorf("volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.ParentFileset, scVol.VolBackendFs, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.ParentFileset, scVol.VolBackendFs, err))
+			}
+			if (parentfilesetInfo.Config.Path == "") || (parentfilesetInfo.Config.Path == filesetUnlinkedPath) {
+				glog.Errorf("volume:[%v] - parent fileset [%v] is not linked", scVol.VolName, scVol.ParentFileset)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - parent fileset [%v] is not linked", scVol.VolName, scVol.ParentFileset))
+			}
+			junctionPath = fmt.Sprintf("%s/%s", parentfilesetInfo.Config.Path, scVol.VolName)
+		}
+
 		err := scVol.Connector.LinkFileset(scVol.VolBackendFs, scVol.VolName, junctionPath)
 		if err != nil {
 			glog.Errorf("volume:[%v] - linking fileset [%v] in filesystem [%v] at path [%v] failed. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, junctionPath, err)
