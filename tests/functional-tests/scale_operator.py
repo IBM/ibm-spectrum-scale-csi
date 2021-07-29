@@ -602,11 +602,11 @@ def get_test_data():
     else:
         data['keepobjects'] = False
 
-    if data['remote_username'] is None:
+    if data.get('remote_username') is None:
         data['remote_username'] = {}
-    if data['remote_password'] is None:
+    if data.get('remote_password') is None:
         data['remote_password'] = {}
-    if data['remote_cacert_path'] is None:
+    if data.get('remote_cacert_path') is None:
         data['remote_cacert_path'] = {}
 
     return data
