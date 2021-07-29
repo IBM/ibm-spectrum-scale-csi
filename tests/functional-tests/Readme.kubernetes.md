@@ -32,6 +32,8 @@ pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.ya
 ```
 pytest  driver_test.py --kubeconfig <kubeconfig_file_path>
 ```
+- To run the tests in namespace other than ibm-spectrum-scale-csi-driver (default) , please use --testnamespace parameter 
+- If operator is not running in namespace ibm-spectrum-scale-csi-driver (default) , please use --operatornamespace with value where operator is already running 
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :
 ```
 pytest  driver_test.py --html report.html
