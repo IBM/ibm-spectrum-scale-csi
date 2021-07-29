@@ -9,24 +9,23 @@ LOGGER = logging.getLogger()
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
     global data, remote_data, snapshot_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, namespace_value, runslow_val = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val = scaleop.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, namespace_value)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    data = scaleop.read_driver_data(clusterconfig_value, test_namespace)
+    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace)
     keep_objects = data["keepobjects"]
     if not("remote" in data):
         LOGGER.error("remote data is not provided in cr file")
         assert False
-    test_namespace = namespace_value
 
     remote_data = get_remote_data(data)
     ff.cred_check(data)
     ff.cred_check(remote_data)
     ff.set_data(remote_data)
 
-    operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
+    operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace)
     operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
+    condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
     if condition is True:
         if not(operator_object.check()):
             LOGGER.error("Operator custom object is not deployed succesfully")

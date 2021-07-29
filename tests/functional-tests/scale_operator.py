@@ -785,12 +785,17 @@ def get_cmd_values(request):
         else:
             clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
-    namespace_value = request.config.option.namespace
-    if namespace_value is None:
-        namespace_value = 'ibm-spectrum-scale-csi-driver'
-    
+    test_namespace = request.config.option.testnamespace
+    if test_namespace is None:
+        test_namespace = 'ibm-spectrum-scale-csi-driver'
+
+    operator_namespace = request.config.option.operatornamespace
+    if operator_namespace is None:
+        operator_namespace = 'ibm-spectrum-scale-csi-driver'
+
     runslow_val = request.config.option.runslow
-    return kubeconfig_value,clusterconfig_value,namespace_value,runslow_val
+    return kubeconfig_value,clusterconfig_value,operator_namespace,test_namespace,runslow_val
+
 
 def get_cleanup_dict():
     created_object = {
