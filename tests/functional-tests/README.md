@@ -29,6 +29,8 @@ kubectl create configmap  test-config  --from-file=test.config=<test.config file
 eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml --from-file=kubeconfig=/root/.kube/config
  
 ```
+- To run the tests in namespace other than ibm-spectrum-scale-csi-driver (default) , please use --testnamespace parameter
+- If operator is not running in namespace ibm-spectrum-scale-csi-driver (default) , please use --operatornamespace with value where operator is already running
 
 - if you want to use SSL=enable, for cacert configmap use following command and change the path in test.config file as `config/local.crt`
 ```
