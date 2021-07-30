@@ -2,12 +2,12 @@
 prereqs:
   prereqDefs:
     k8sDistros: 
-      kubernetes:
-        distribution: kubernetes
-        semver: '>=1.20'
-      openshift:
-        distribution: openshift
-        semver: '>=4.6'
+    #  kubernetes:
+    #    distribution: kubernetes
+    #    semver: '>=1.20'
+    #  openshift:
+    #    distribution: openshift
+    #    semver: '>=4.6'
     k8sResourceVersions:  {}
        # customresourcedefinition:
         # apiGroup: apiextensions.k8s.io
