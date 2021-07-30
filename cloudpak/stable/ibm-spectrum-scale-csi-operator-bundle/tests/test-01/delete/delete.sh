@@ -12,25 +12,15 @@ echo "deleteDir is "
 echo $deleteDir
 
 set +o errexit
-kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml &
+kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/samples/csi_v1_csiscaleoperator.yaml &
 kubectl patch CSIScaleOperator -n ibm-spectrum-scale-csi-driver  ibm-spectrum-scale-csi -p '{"metadata":{"finalizers":[]}}' --type=merge
 set -o errexit
-kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
-kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml
-kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml
-kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml 
+kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/crd/bases/csi.ibm.com_csiscaleoperators.yaml
+kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/role_binding.yaml
+kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/role.yaml
+kubectl delete -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/service_account.yaml 
 kubectl delete namespace ${CV_TEST_NAMESPACE}
 set +o errexit
 kubectl patch namespace ibm-spectrum-scale-csi-driver -p '{"metadata":{"finalizers":[]}}' --type=merge
 set -o errexit
-
-#$APP_TEST_LIBRARY_FUNCTIONS/operatorDelete.sh \
-#    --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
-#    --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml \
-#    --cr $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com_cr.yaml \
-#    --role $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml \
-#    --rolebinding $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml \
-#    --operator $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml \
-
-#deleteNamespace ${CV_TEST_NAMESPACE}
 
