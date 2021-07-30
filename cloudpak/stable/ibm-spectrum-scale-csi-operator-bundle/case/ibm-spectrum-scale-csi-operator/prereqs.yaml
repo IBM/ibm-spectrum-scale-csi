@@ -1,7 +1,7 @@
 
 prereqs:
   prereqDefs:
-    k8sDistros: 
+    k8sDistros:  {}
     #  kubernetes:
     #    distribution: kubernetes
     #    semver: '>=1.20'
