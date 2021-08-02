@@ -24,24 +24,15 @@ set +o errexit
 kubectl create namespace ${CV_TEST_NAMESPACE}
 set -o errexit
 
-kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml
-kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml 
-kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml
-kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/role.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/service_account.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/role_binding.yaml
+kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/crd/bases/csi.ibm.com_csiscaleoperators.yaml
 
 #kubectl get CSIScaleOperator --namespace=ibm-spectrum-scale-csi-driver
 #kubectl patch CSIScaleOperator ibm-spectrum-scale-csi-operator -p '{"metadata":{"finalizers":[]}}' --type=merge --namespace=ibm-spectrum-scale-csi-driver
-kubectl apply -f  $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
+kubectl apply -f  $CV_TEST_BUNDLE_DIR/operators/${operator}/config/manager/manager.yaml
 
-
-#$APP_TEST_LIBRARY_FUNCTIONS/operatorDeployment.sh \
-#    --serviceaccount $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/service_account.yaml \
-#    --crd $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/crds/csiscaleoperators.csi.ibm.com.crd.yaml \
-#    --role $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role.yaml \
-#    --rolebinding $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/role_binding.yaml \
-#    --operator $CV_TEST_BUNDLE_DIR/operators/${operator}/deploy/operator.yaml
-    # --secretname FIXME \
-    # --imagename FIXME
 
 # Optional setup for hardcoded namespace(s) with specific Pod Security Policy
 # NOTE: clean-up.sh need to contain matching removeNamespace
