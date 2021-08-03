@@ -55,6 +55,27 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
+{% if imagePullSecrets | length > 0 %}
+      imagePullSecrets:
+{% for pullSecret in imagePullSecrets %}
+        - name:  "{{ pullSecret }}"
+{% endfor %}
+{% endif %}
+
+{% if tolerations | length > 0 %}
+      tolerations:
+{% for toleration in tolerations %}
+        - key: "{{ toleration.key }}"
+          operator: "{{ toleration.operator }}"
+{% if 'Equal' == toleration.operator %}
+          value: "{{ toleration.value }}"
+{% endif %}
+          effect: {{ toleration.effect }}
+{% if 'NoExecute' == toleration.effect  and toleration.tolerationSeconds is defined %}
+          tolerationSeconds: "{{ toleration.tolerationSeconds }}"
+{% endif %}
+{% endfor %}
+{% endif %}
       volumes:
         - name: socket-dir
           hostPath:
