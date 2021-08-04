@@ -14,6 +14,13 @@ prereqs:
         # kind: CustomResourceDefinition
         # version: v1beta1
     k8sResources: {}
+    #  restrictedSCC:
+    #    metadata:
+    #      description: "Namespace is using the restricted SecurityContextConstraint"
+    #    kind: SecurityContextConstraints
+    #    apiGroup: security.openshift.io
+    #    name: restricted
+    #    version: v1
     #  ibmRestrictedPSP:
     #    apiGroup: policy
     #    kind: PodSecurityPolicy

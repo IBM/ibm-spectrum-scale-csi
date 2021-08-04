@@ -38,3 +38,7 @@ overrides:
   - reason: File is auto-generated, outside of our control.
     reduceTo: INFO
     rule: RequiredMetadataLabelsDefined
+
+  - reason: Our SCC is created during the product install.
+    reduceTo: WARNING
+    rule: PrereqsContainSCC
