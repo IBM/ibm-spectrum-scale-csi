@@ -4,14 +4,14 @@ prereqs:
     k8sDistros:
       kubernetes:
         metadata:
-          description: "Kubernetes version is 1.20 or greater"
+          description: "Kubernetes version is 1.19 or greater"
         distribution: kubernetes
-        semver: '>=1.20'
+        semver: ">=1.19"
       openshift:
         metadata:
           description: "OpenShift Container Platform Kubernetes version is 4.6 or greater"
         distribution: openshift
-        semver: '>=4.6'
+        semver: ">=4.6"
     k8sResourceVersions:
       crd:
         kind: CustomResourceDefinition     # v1 crds
