@@ -35,3 +35,16 @@ prereqs:
     #    selector:
     #      matchExpressions: []
     #    version: v1
+    client:
+      kubectl:
+        metadata:
+          description: "Client has kubectl version 1.18.0 or greater"
+        command: "kubectl"
+        versionArgs: "version"
+        versionRegex: "GitVersion:\"v1.1[8-9].[0-9]*"
+      oc:
+        metadata:
+          description: "Client has oc version 4.5.0 - 4.7.0"
+        command: "oc"
+        versionArgs: "version --client"
+        versionRegex: "4.[5-7]*.[0-9]*"
