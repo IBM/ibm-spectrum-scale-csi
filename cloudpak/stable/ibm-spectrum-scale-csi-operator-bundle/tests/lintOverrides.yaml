@@ -1,44 +1,61 @@
 overrides:
-  - reason: HostPath is required to mount hostPath for communication with UNIX domain socket.
-    reduceTo: WARNING
-    rule: NoHostPath
+  #- reason: HostPath is required to mount hostPath for communication with UNIX domain socket.
+  #  reduceTo: WARNING
+  #  rule: NoHostPath
 
-  - reason: PrivilegedContainers is required for node to perform host actions.
-    reduceTo: WARNING
-    rule: NoPrivilegedContainers
+  #- reason: PrivilegedContainers is required for node to perform host actions.
+  #  reduceTo: WARNING
+  #  rule: NoPrivilegedContainers
 
-  - reason: Using default values and DROP ALL capabilities. 
-    reduceTo: WARNING
-    rule: PodSecurityContextDefined
+  #- reason: Using default values and DROP ALL capabilities. 
+  #  reduceTo: WARNING
+  #  rule: PodSecurityContextDefined
 
-  - reason: both crd and olm-catalog in package.
-    reduceTo: WARNING
-    rule: ResourceHasUniqueNameAmongKind
+  #- reason: both crd and olm-catalog in package.
+  #  reduceTo: WARNING
+  #  rule: ResourceHasUniqueNameAmongKind
 
-  - reason: Errors on olm-catalog package file.
-    reduceTo: WARNING
-    rule: ResourceSchemaIsValid
+  #- reason: Errors on olm-catalog package file.
+  #  reduceTo: WARNING
+  #  rule: ResourceSchemaIsValid
 
-  - reason: Errors on olm-catalog package file.
-    reduceTo: WARNING
-    rule: CustomResourceIsValid
+  #- reason: Errors on olm-catalog package file.
+  #  reduceTo: WARNING
+  #  rule: CustomResourceIsValid
 
-  - reason: Errors on olm-catalog CSV file.
-    reduceTo: WARNING
-    rule: NoInvalidAPIVersions
+  #- reason: Errors on olm-catalog CSV file.
+  #  reduceTo: WARNING
+  #  rule: NoInvalidAPIVersions
 
-  - reason: Only controller and node require livenessProbe.
-    reduceTo: WARNING
-    rule: ContainerHasLivenessProbe
+  #- reason: Only controller and node require livenessProbe.
+  #  reduceTo: WARNING
+  #  rule: ContainerHasLivenessProbe
 
-  - reason: pull-secret can be provided in CR
+  #- reason: pull-secret can be provided in CR
+  #  reduceTo: INFO
+  #  rule: ServiceAccountHasPullSecret
+
+  #- reason: File is auto-generated, outside of our control.
+  #  reduceTo: INFO
+  #  rule: RequiredMetadataLabelsDefined
+
+  #- reason: Our SCC is created during the product install.
+  #  reduceTo: WARNING
+  #  rule: PrereqsContainSCC
+
+  - rule: LicensingAnnotationsDefined
+    reason: "Not applicable to Spectrum Scale CSI Driver"
     reduceTo: INFO
-    rule: ServiceAccountHasPullSecret
 
-  - reason: File is auto-generated, outside of our control.
+  - rule: MeteringAnnotationsDefined
+    reason: "Not applicable to Spectrum Scale CSI Driver"
     reduceTo: INFO
-    rule: RequiredMetadataLabelsDefined
 
-  - reason: Our SCC is created during the product install.
+  - rule: ProductHasNetworkPolicy
+    reason: "Network policies are a pending item... reduce to WARNING for now"
     reduceTo: WARNING
-    rule: PrereqsContainSCC
+
+  - rule: NoDeprecatedLabelsInAffinityRules
+    reason: "Will fix soon in this release"
+    reduceTo: WARNING
+
