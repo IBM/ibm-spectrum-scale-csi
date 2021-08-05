@@ -59,3 +59,14 @@ overrides:
     reason: "Will fix soon in this release"
     reduceTo: WARNING
 
+  - rule: LaunchScriptMissingAirGapMethods
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: LaunchScriptName
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: MissingScriptForAirGapSupport
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
