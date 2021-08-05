@@ -366,7 +366,7 @@ spec:
                   requiredDuringSchedulingIgnoredDuringExecution:
                     nodeSelectorTerms:
                     - matchExpressions:
-                      - key: beta.kubernetes.io/arch
+                      - key: kubernetes.io/arch
                         operator: Exists
               containers:
               - name: operator
