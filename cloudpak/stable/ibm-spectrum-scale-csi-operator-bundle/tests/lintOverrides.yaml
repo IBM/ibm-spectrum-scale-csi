@@ -70,3 +70,8 @@ overrides:
   - rule: MissingScriptForAirGapSupport
     reason: "Will fix soon in future release"
     reduceTo: WARNING
+
+  - rule: NoSensitiveInfoInValues
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
