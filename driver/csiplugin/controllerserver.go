@@ -579,7 +579,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	/* Update driver map with new volume. Make sure to defer delete */
 
-	cs.Driver.reqmap[scaleVol.VolName] = volSize
+	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize)
 	defer delete(cs.Driver.reqmap, scaleVol.VolName)
 
 	var targetPath string
