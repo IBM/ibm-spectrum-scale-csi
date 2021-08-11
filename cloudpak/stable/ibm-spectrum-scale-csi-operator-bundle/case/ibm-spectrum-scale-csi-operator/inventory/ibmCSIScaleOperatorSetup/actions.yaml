@@ -7,7 +7,22 @@ actions:
     description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
   actionDefs:
     install:
-      roles: []
+      metadata:
+        name: "install"
+        description: "install the ibm-spectrum-scale-csi-operator resources"
+        case.launcher.type: "script"
+      roles:
+        - clusterAdmin
+      requires:
+        metadata:
+          message:
+            onFailure: |
+              The install action must be run on OpenShift Container Platform on amd64 Linux.
+              The minimum level of Kubernetes on each platform are described in the CASE prerequisites.
+        and:
+        - "/case/prereqs/k8sDistros/kubernetes"
+        - "/case/prereqs/k8sDistros/openshift"
+        - "/case/prereqs/k8sResourceVersions/crd"
       k8sPermissions:
         rules:
         - rule:

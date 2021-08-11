@@ -1,6 +1,6 @@
 name: ibm-spectrum-scale-csi-operator
 specVersion: 1.0.0
-version: 1.0.0
+version: 2.3.0
 appVersion: 2.3.0
 description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
 displayName: "IBM CSI Spectrum Scale Driver CASE" 
@@ -11,16 +11,16 @@ icons:
 organization: IBM
 webPage: https://www.ibm.com/docs/en/spectrum-scale-csi
 certifications:
-  ibmccscp: {}
+  ibmccs: {}
 supports:
   architectures:
     amd64: {}
+    ppc64le: {}
+    s390x: {}
   k8sDistros:
     rhocp4: {}
 classifications:
   limited: {}
   opensource: {}
 catalogs:
-  container: {}
-  deploy: {}
   storage: {}

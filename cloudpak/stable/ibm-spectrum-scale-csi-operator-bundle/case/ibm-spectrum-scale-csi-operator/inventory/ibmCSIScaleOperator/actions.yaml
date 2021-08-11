@@ -6,212 +6,57 @@ actions:
     name: "ibmCSIScaleOperator"
     description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
   actionDefs:
-    install:
-      roles: []
+    applyCustomResources:
+      metadata :
+        name: applyCustomResources
+        displayName: applyCustomResources
+        displayDescription: Install the IBM Spectrum Scale CSI Driver Instance
+        #case.launcher.type: "script"
+        #case.launcher.isdefault: true
+        #case.cli.alias: "apply-custom-resources"
+      roles:
+      - namespaceAdmin
+      requires:
+        metadata:
+          message:
+            onFailure: |
+              The applyCustomResources action must be run on OpenShift Container Platform on amd64 Linux. The minimum
+              level of Kubernetes on each platform are described in the CASE prerequisites. The ibm-spectrum-scale-csi-operator CustomResourceDefintion
+              and SecurityContextConstraints described in the CASE prerequisites must also exist on the Cluster. The client
+              must have kubectl and oc installed to execute the launcher script.
+        and:
+        - "/case/prereqs/k8sDistros/kubernetes"
+        - or:
+          - "/case/prereqs/client/kubectl"
+          - "/case/prereqs/client/oc"
+          - and:
+            - "/case/prereqs/k8sDistros/openshift"
+            - "/case/prereqs/k8sResources/restrictedSCC"
       k8sPermissions:
         rules:
         - rule:
-            group: ""
-            resource: pods
-            verbs:
-            - get
-            version: ""
-        - rule:
-            group: ""
-            resource: configmaps
-            verbs:
-            - get
-            - create
-            - delete
-            version: ""
-        - rule:
-            group: ""
-            resource: secrets
-            verbs:
-            - get
-            - list
-            version: ""
-        - rule:
-            group: ""
-            resource: persistentvolumeclaims
+            group: csiscaleoperators.csi.ibm.com
+            resource: '*'
             verbs:
             - get
             - list
             - watch
+            - create
+            - patch
             - update
-            version: ""
+    deleteCustomResources:
+      metadata :
+        name: deleteCustomResources
+        displayName: deleteCustomResources
+        displayDescription: Uninstall the IBM Spectrum Scale CSI Driver Instance
+        #case.launcher.type: "script"
+        #case.cli.alias: "delete-custom-resources"
+      roles:
+      - namespaceAdmin
+      k8sPermissions:
+        rules:
         - rule:
-            group: ""
-            resource: persistentvolumes
-            verbs:
-            - get
-            - list
-            - watch
-            - update
-            - create
-            - delete
-            version: ""
-        - rule:
-            group: ""
-            resource: events
-            verbs:
-            - '*'
-            version: ""
-        - rule:
-            group: ""
-            resource: nodes
-            verbs:
-            - get
-            - list
-            - watch
-            version: ""
-        - rule:
-            group: apps
-            resource: deployments
-            verbs:
-            - get
-            - list
-            - watch
-            - update
-            - create
-            - delete
-            version: ""
-        - rule:
-            group: apps
-            resource: daemonsets
-            verbs:
-            - get
-            - list
-            - watch
-            - update
-            - create
-            - delete
-            version: ""
-        - rule:
-            group: apps
-            resource: statefulsets
-            verbs:
-            - get
-            - list
-            - watch
-            - update
-            - create
-            - delete
-            version: ""
-        - rule:
-            group: ""
-            resource: serviceaccounts
-            verbs:
-            - create
-            - delete
-            - get
-            - watch
-            - list
-            version: ""
-        - rule:
-            group: rbac.authorization.k8s.io
-            resource: clusterroles
-            verbs:
-            - create
-            - delete
-            - get
-            - watch
-            - list
-            version: ""
-        - rule:
-            group: rbac.authorization.k8s.io
-            resource: clusterrolebindings
-            verbs:
-            - create
-            - delete
-            - get
-            - watch
-            - list
-            version: ""
-        - rule:
-            group: storage.k8s.io
-            resource: volumeattachments
-            verbs:
-            - get
-            - list
-            - watch
-            - update
-            version: ""
-        - rule:
-            group: storage.k8s.io
-            resource: storageclasses
-            verbs:
-            - get
-            - list
-            - watch
-            version: ""
-        - rule:
-            group: monitoring.coreos.com
-            resource: servicemonitors
-            verbs:
-            - get
-            - create
-            version: ""
-        - rule:
-            group: apps
-            resource: deployments/finalizers
-            verbs:
-            - update
-            version: ""
-        - rule:
-            group: storage.k8s.io
-            resource: csidrivers
-            verbs:
-            - create
-            - delete
-            - get
-            - watch
-            - list
-            version: ""
-        - rule:
-            group: storage.k8s.io
-            resource: csinodes
-            verbs:
-            - get
-            - list
-            - watch
-            version: ""
-        - rule:
-            group: csi.storage.k8s.io
-            resource: csidrivers
-            verbs:
-            - create
-            - delete
-            - get
-            - watch
-            - list
-            version: ""
-        - rule:
-            group: csi.storage.k8s.io
-            resource: csinodeinfos
-            verbs:
-            - get
-            - list
-            - watch
-            version: ""
-        - rule:
-            group: security.openshift.io
-            resource: securitycontextconstraints
-            verbs:
-            - use
-            version: ""
-        - rule:
-            group: apiextensions.k8s.io
-            resource: customresourcedefinitions
-            verbs:
-            - create
-            - list
-            - watch
-            - delete
-            version: ""
-        - rule:
-            group: csi.ibm.com
+            group: csiscaleoperators.csi.ibm.com
             resource: '*'
             verbs:
             - '*'
-            version: ""
