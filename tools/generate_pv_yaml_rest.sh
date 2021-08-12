@@ -23,7 +23,7 @@ usage() {
                 -s|--size <size in GB>
                 -u|--username <Username of spectrum scale GUI user account.>
                 -t|--password <Password of spectrum scale GUI user account.>
-                -r|--route <Route host name used to route traffic to the spectrum scale GUI service.>
+                -r|--guihost <Route host name used to route traffic to the spectrum scale GUI service.>
                 [-p|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
@@ -39,7 +39,7 @@ fullUsage() {
                 -s|--size <size in GB>
                 -u|--username <Username of spectrum scale GUI user account.>
                 -t|--password <Password of spectrum scale GUI user account.>
-                -r|--route <Route host name used to route traffic to the spectrum scale GUI service.>
+                -r|--guihost <Route host name used to route traffic to the spectrum scale GUI service.>
                 [-p|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
@@ -49,18 +49,18 @@ fullUsage() {
 Example 1: Single Fileystem
 	In this setup there is only one fileystem 'gpfs0' and directory from the same fileystem is being used as volume.
 
-	$0 --filesystem gpfs0 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv --size 10 --pvname mystaticpv --username admin --password password --route ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+	$0 --filesystem gpfs0 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv --size 10 --pvname mystaticpv --username admin --password password --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
 
 
 Example 2: Two or More Filesystem
 	In this setup there are two filesystems 'gpfs0' and 'gpfs1'. gpfs0 is configured as primary fileystem in Spectrum-scale-csi setup. User want to create volume from the directory present in the gpfs1 filesystem. Say the directory in the gpfs1 is /ibm/gpfs1/dir1. As a first step user will create softlink  /ibm/gpfs1/dir1 --> /ibm/gpfs0/fileset1/.volumes/staticpv1 and then run following command to generate the pv.yaml.
 
-	$0 --filesystem gpfs1 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv1 --size 10 --pvname mystaticpv1 --username admin --password password --route ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+	$0 --filesystem gpfs1 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv1 --size 10 --pvname mystaticpv1 --username admin --password password --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
 
 Example 3: Fileset based volume
 	This example shows how to create a volume from a fileset 'fileset1' within the filesyetem 'gpfs0'.
 
-	$0 --filesystem gpfs0 --fileset fileset1 --size 10 --pvname mystaticpv --username admin --password password --route ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+	$0 --filesystem gpfs0 --fileset fileset1 --size 10 --pvname mystaticpv --username admin --password password --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
 
 	Note: This script does not validate if softlinks are correctly created.
 	      The Path specified for option --linkpath must be valid gpfs path from primary fileystem." 1>&2
@@ -68,7 +68,7 @@ Example 3: Fileset based volume
 }
 
 # Generate Yaml
-generate_yaml() {
+generate_pv_yaml() {
   volhandle=$1
   volname=$2
   volsize=$3
@@ -89,6 +89,9 @@ spec:
     storage: ${volsize}Gi
   accessModes:
     - ${accessmode}
+  claimRef:
+    name: pvc-${volname}
+    namespace: ibm-spectrum-scale-csi
   csi:
     driver: spectrumscale.csi.ibm.com
     volumeHandle: ${volhandle}
@@ -98,8 +101,35 @@ EOL
   echo "INFO: Successfully created ${volname}.yaml"
 }
 
+# Generate PVC manifest
+generate_pvc_yaml() {
+  volname=$1
+  volsize=$2
+  accessmode=$3
+  if [[ -f "pvc-${volname}.yaml" ]]; then
+    echo "ERROR: File pvc-${volname}.yaml already exist"
+    exit 2
+  fi
+
+  cat >pvc-"${volname}".yaml <<EOL
+# -- pvc-${volname}.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-${volname}
+  namespace: ibm-spectrum-scale-csi
+spec:
+  accessModes:
+    - ${accessmode}
+  resources:
+    requests:
+      storage: ${volsize}Gi
+EOL
+  echo "INFO: Successfully created pvc-${volname}.yaml"
+}
+
 SHORT=hf:l:F:s:p:c:a:u:t:r
-LONG=help,filesystem:,linkpath:,fileset:,size:,pvname:,storageclass:,accessmode:,username:,password:,route:
+LONG=help,filesystem:,linkpath:,fileset:,size:,pvname:,storageclass:,accessmode:,username:,password:,guihost:
 ERROROUT="/tmp/csierror.out"
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
 
@@ -153,7 +183,7 @@ while true; do
     PASSWORD="$2"
     shift 2
     ;;
-  -r | --route)
+  -r | --guihost)
     URL="$2"
     shift 2
     ;;
@@ -167,6 +197,13 @@ while true; do
     ;;
   esac
 done
+
+# Pre-requisite check
+if ! python3 --version 2>${ERROROUT};
+then
+  echo "ERROR: Pre-requisite check failed. Python3 not found."
+  exit 2
+fi
 
 # Check for mandatory Params
 MPARAM=""
@@ -322,7 +359,8 @@ else
 fi
 
 # Gererate yaml file
-generate_yaml "${VolumeHandle}" "${VOLNAME}" "${VOLSIZE}" "${ACCESSMODE}"
+generate_pv_yaml "${VolumeHandle}" "${VOLNAME}" "${VOLSIZE}" "${ACCESSMODE}"
+generate_pvc_yaml "${VOLNAME}" "${VOLSIZE}" "${ACCESSMODE}"
 
 rm -f ${ERROROUT}
 exit 0
