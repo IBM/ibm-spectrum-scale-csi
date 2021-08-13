@@ -198,6 +198,9 @@ while true; do
   esac
 done
 
+# Secure password prompt if not passed with flag --password
+if [ -z "$PASSWORD" ]; then read -r -p "GUI Password: " -s PASSWORD ; fi
+
 # Pre-requisite check
 if ! python3 --version 2>${ERROROUT};
 then
