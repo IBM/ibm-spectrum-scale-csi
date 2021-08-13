@@ -49,18 +49,18 @@ fullUsage() {
 Example 1: Single Fileystem
 	In this setup there is only one fileystem 'gpfs0' and directory from the same fileystem is being used as volume.
 
-	$0 --filesystem gpfs0 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv --size 10 --pvname mystaticpv --username admin --password password --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+	$0 --filesystem gpfs0 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv --size 10 --pvname mystaticpv --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
 
 
 Example 2: Two or More Filesystem
 	In this setup there are two filesystems 'gpfs0' and 'gpfs1'. gpfs0 is configured as primary fileystem in Spectrum-scale-csi setup. User want to create volume from the directory present in the gpfs1 filesystem. Say the directory in the gpfs1 is /ibm/gpfs1/dir1. As a first step user will create softlink  /ibm/gpfs1/dir1 --> /ibm/gpfs0/fileset1/.volumes/staticpv1 and then run following command to generate the pv.yaml.
 
-	$0 --filesystem gpfs1 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv1 --size 10 --pvname mystaticpv1 --username admin --password password --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+	$0 --filesystem gpfs1 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv1 --size 10 --pvname mystaticpv1 --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
 
 Example 3: Fileset based volume
 	This example shows how to create a volume from a fileset 'fileset1' within the filesyetem 'gpfs0'.
 
-	$0 --filesystem gpfs0 --fileset fileset1 --size 10 --pvname mystaticpv --username admin --password password --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+	$0 --filesystem gpfs0 --fileset fileset1 --size 10 --pvname mystaticpv --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
 
 	Note: This script does not validate if softlinks are correctly created.
 	      The Path specified for option --linkpath must be valid gpfs path from primary fileystem." 1>&2
@@ -198,11 +198,12 @@ while true; do
   esac
 done
 
-# Secure password prompt if not passed with flag --password
-if [ -z "$PASSWORD" ]; then read -r -p "GUI Password: " -s PASSWORD ; fi
+# Secure username/password prompt if not passed with flag
+if [ -z "$USERNAME" ]; then read -r -p "GUI Username: " USERNAME ; fi
+if [ -z "$PASSWORD" ]; then read -r -p "GUI Password: " -s PASSWORD ; echo ; fi
 
 # Pre-requisite check
-if ! python3 --version 2>${ERROROUT};
+if ! python3 --version 1>/dev/null 2>${ERROROUT};
 then
   echo "ERROR: Pre-requisite check failed. Python3 not found."
   exit 2
