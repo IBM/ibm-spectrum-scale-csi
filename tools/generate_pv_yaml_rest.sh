@@ -128,7 +128,7 @@ EOL
   echo "INFO: Successfully created pvc-${volname}.yaml"
 }
 
-SHORT=hf:l:F:s:p:c:a:u:t:r
+SHORT=hf:l:F:s:p:c:a:u:t:r:
 LONG=help,filesystem:,linkpath:,fileset:,size:,pvname:,storageclass:,accessmode:,username:,password:,guihost:
 ERROROUT="/tmp/csierror.out"
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
