@@ -198,9 +198,9 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 		}
 	}
 
-	if filesetQuotaBytes != scVol.VolSize && filesetQuotaBytes != 0 {
+	if filesetQuotaBytes < scVol.VolSize && filesetQuotaBytes != 0 {
 		// quota does not match and it is not 0 - It might not be fileset created by us
-		return fmt.Errorf("Fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize)
+		return fmt.Errorf("fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize)
 	}
 
 	if filesetQuotaBytes == 0 {
