@@ -279,14 +279,28 @@ fi
 
 echo >${ERROROUT}
 
+# Authentication and route validation
+response=$(curl -kv -u "${USERNAME}":"${PASSWORD}" -X GET \
+  --header 'accept:application/json' \
+  "https://${URL}:443/scalemgmt/v2/cluster" \
+  2>&1 | grep -i 'HTTP/1.1 ' | awk '{print $3}'| sed -e 's/^[ \t]*//')
+
+if [[  ${response} == 401 ]]; then
+  echo "ERROR: Unauthorized. Incorrect username or password."
+  exit 2
+elif [[  -z ${response} ]]; then
+  echo "ERROR: Could not resolve host ${URL}."
+  exit 2
+fi
+
 # Get the Spectrum Scale cluster ID
 clusterID=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
   --header 'accept:application/json' \
   "https://${URL}:443/scalemgmt/v2/cluster" \
-  2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['cluster']['clusterSummary']['clusterId'])")
+  2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['cluster']['clusterSummary']['clusterId'])" 2>>${ERROROUT})
 if [[ $? -ne 0 ]] || [[ -z "$clusterID" ]]; then
-  echo "ERROR: Failed to get the Spectrum Scale cluster ID"
-  cat ${ERROROUT}
+  echo "ERROR: Failed to get the Spectrum Scale cluster ID."
+  #cat ${ERROROUT}
   exit 2
 fi
 
@@ -294,10 +308,10 @@ fi
 fileSystemID=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
   --header 'accept:application/json' \
   "https://${URL}:443/scalemgmt/v2/filesystems/${FSNAME}" \
-  2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesystems'][0]['uuid'])")
+  2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesystems'][0]['uuid'])" 2>>${ERROROUT})
 if [[ $? -ne 0 ]] || [[ -z "$fileSystemID" ]]; then
   echo "ERROR: Failed to get the Fileystem ID of ${FSNAME}"
-  cat ${ERROROUT}
+  #cat ${ERROROUT}
   exit 2
 fi
 
@@ -320,14 +334,14 @@ if [[ -z "${FSETNAME}" ]]; then
   response=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
   --header 'accept:application/json' \
   "https://${URL}:443/scalemgmt/v2/filesystems/${FSNAME}/owner/${relativePath}" \
-  2>${ERROROUT} | python3 -c "import sys, json; print(json.dumps(json.load(sys.stdin)['status']))")
+  2>${ERROROUT} | python3 -c "import sys, json; print(json.dumps(json.load(sys.stdin)['status']))" 2>>${ERROROUT})
 
   responseCode=$(echo "$response" | python3 -c "import sys, json; print(json.load(sys.stdin)['code'])")
   responseMsg=$(echo "$response" | python3 -c "import sys, json; print(json.load(sys.stdin)['message'])")
 
   if [[ $responseCode != 200 ]]; then
     if [[ $responseMsg == "Path is not a valid GPFS path." ]]; then
-      echo "ERROR: The Path (${VOLPATH}) is not gpfs path"
+      echo "ERROR: The Path (${VOLPATH}) is not gpfs path."
       exit 2
     elif [[ $responseMsg == "File not found" ]]; then
       echo "ERROR: Either Path (${VOLPATH}) does not exist or it is not a Directory/Softlink."
@@ -346,12 +360,21 @@ if [[ ! -z "${FSETNAME}" ]]; then
   fsetId=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
     --header 'accept:application/json' \
     "https://${URL}:443/scalemgmt/v2/filesystems/${FSNAME}/filesets/${FSETNAME}" \
-    2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesets'][0]['config']['id'])")
+    2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesets'][0]['config']['id'])" 2>>${ERROROUT})
+  if [[ $? -ne 0 ]] || [[ -z "$fsetId" ]]; then
+    echo "ERROR: Failed to get the fileset ID of ${FSETNAME}."
+    #cat ${ERROROUT}
+    exit 2
+  fi
   
   fsetLinkPath=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
     --header 'accept:application/json' \
     "https://${URL}:443/scalemgmt/v2/filesystems/${FSNAME}/filesets/${FSETNAME}" \
-    2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesets'][0]['config']['path'])")
+    2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesets'][0]['config']['path'])" 2>>${ERROROUT})
+  if [[ $? -ne 0 ]] || [[ -z "$fsetLinkPath" ]]; then
+    echo "ERROR: Failed to get the fileset link path of ${FSETNAME}."
+    exit 2
+  fi
 
   if [[ "${fsetLinkPath}" == "--" ]]; then
     echo "ERROR: Fileset ${FSETNAME} is not linked."
