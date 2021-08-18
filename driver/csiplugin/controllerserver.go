@@ -194,13 +194,13 @@ func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume) error {
 			// Invalid number specified means quota is not set
 			filesetQuotaBytes = 0
 		} else {
-			return fmt.Errorf("unable to convirt quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
+			return fmt.Errorf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", scVol.VolName, scVol.VolBackendFs, err)
 		}
 	}
 
-	if filesetQuotaBytes != scVol.VolSize && filesetQuotaBytes != 0 {
+	if filesetQuotaBytes < scVol.VolSize && filesetQuotaBytes != 0 {
 		// quota does not match and it is not 0 - It might not be fileset created by us
-		return fmt.Errorf("Fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize)
+		return fmt.Errorf("fileset %v present but quota %v does not match with requested size %v", scVol.VolName, filesetQuotaBytes, scVol.VolSize)
 	}
 
 	if filesetQuotaBytes == 0 {
