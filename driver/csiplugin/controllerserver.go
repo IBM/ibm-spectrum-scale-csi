@@ -1057,7 +1057,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	volumePath = strings.TrimPrefix(volumePath, "path=")
 
 	// if SKIP_MOUNT_UNMOUNT == "yes" then mount/unmount will not be invoked
-	skipMountUnmount := utils.GetEnv("SKIP_MOUNT_UNMOUNT", yes)
+	skipMountUnmount := utils.GetEnv(SKIP_MOUNT_UNMOUNT, yes)
 	glog.V(4).Infof("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT is set to %s", skipMountUnmount)
 
 	//Get filesystem name from UUID
@@ -1076,19 +1076,23 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	}
 
 	// Node mapping check
-	scalenodeID := utils.GetEnv(nodeID, notFound)
-	// Additional node mapping check in case of k8s node id start with number.
-	if scalenodeID == notFound {
-		prefix := utils.GetEnv("SCALE_NODE_MAPPING_PREFIX", "K8sNodePrefix_")
-		scalenodeID = utils.GetEnv(prefix+nodeID, notFound)
-		if scalenodeID == notFound {
-			glog.V(4).Infof("ControllerPublishVolume : scale node mapping not found for %s using %s", prefix+nodeID, nodeID)
-			scalenodeID = nodeID
-		}
+	scalenodeID := getNodeMapping(nodeID)
+	glog.V(4).Infof("ControllerUnpublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, nodeID)
+
+	shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
+	if shortnameNodeMapping == yes {
+		glog.V(4).Infof("ControllerPublishVolume : SHORTNAME_NODE_MAPPING is set to %s", shortnameNodeMapping)
 	}
 
-	glog.V(4).Infof("ControllerUnpublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, nodeID)
-	ispFsMounted := utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
+	var ispFsMounted bool
+	// NodesMounted has admin node names
+	// This means node mapping must be to admin names.
+	// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
+	if shortnameNodeMapping == yes {
+		ispFsMounted = shortnameInSlice(scalenodeID, pfsMount.NodesMounted)
+	} else {
+		ispFsMounted = utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
+	}
 
 	glog.V(4).Infof("ControllerPublishVolume : Primary FS is mounted on %v", pfsMount.NodesMounted)
 	glog.V(4).Infof("ControllerPublishVolume : Primary Fileystem is %s and Volume is from Filesystem %s", primaryfsName, fsName)
@@ -1107,7 +1111,15 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", volumePath, primaryfsName, fsName))
 		}
 
-		isFsMounted = utils.StringInSlice(scalenodeID, fsMount.NodesMounted)
+		// NodesMounted has admin node names
+		// This means node mapping must be to admin names.
+		// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
+		if shortnameNodeMapping == yes {
+			isFsMounted = shortnameInSlice(scalenodeID, pfsMount.NodesMounted)
+		} else {
+			isFsMounted = utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
+		}
+
 		glog.V(4).Infof("ControllerPublishVolume : Volume Source FS is mounted on %v", fsMount.NodesMounted)
 	} else {
 		if !strings.HasPrefix(volumePath, pfsMount.MountPoint) {
