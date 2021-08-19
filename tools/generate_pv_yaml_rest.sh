@@ -83,7 +83,7 @@ generate_pv_yaml() {
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-        name: ${volname}
+  name: ${volname}
 spec:
   capacity:
     storage: ${volsize}Gi
@@ -124,6 +124,7 @@ spec:
   resources:
     requests:
       storage: ${volsize}Gi
+  ${STORAGECLASS}
 EOL
   echo "INFO: Successfully created pvc-${volname}.yaml"
 }
@@ -317,7 +318,7 @@ fi
 
 # TODO : Add check for kubernetes lable limit for value of VolumeHandle
 
-echo "FSETNAME=${FSETNAME}"
+# echo "FSETNAME=${FSETNAME}"
 if [[ -z "${FSETNAME}" ]]; then
   # Verify the path exists and is a GPFS path.
   mountpathDepth=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
