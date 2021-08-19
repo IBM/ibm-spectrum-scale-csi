@@ -58,6 +58,7 @@ def values(request):
         if(ff.fileset_exists(data)):
             ff.delete_fileset(data)
 
+@pytest.mark.regression
 def test_get_version():
     LOGGER.info("Cluster Details:")
     LOGGER.info("----------------")
@@ -66,14 +67,16 @@ def test_get_version():
     scaleop.scale_function.get_operator_image()
     scaleop.ob.get_driver_image()
 
-
+@pytest.mark.regression
 def test_snapshot_static_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_static(value_sc, test_restore=True)
 
+@pytest.mark.regression
 def test_snapshot_static_multiple_snapshots():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_static(value_sc, test_restore=True, number_of_snapshots=3)
+
 
 def test_snapshot_static_pass_3():
     value_sc = {"volBackendFs": data["primaryFs"],
@@ -221,7 +224,7 @@ def test_snapshot_static_pass_26():
                 "volBackendFs": data["primaryFs"]}
     snapshot_object.test_static(value_sc, test_restore=False)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
@@ -231,13 +234,13 @@ def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class={"deletionPolicy": "Retain"})
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": data["volDirBasePath"]}
@@ -408,13 +411,13 @@ def test_snapshot_dynamic_pass_26():
                 "volBackendFs": data["primaryFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_different_sc_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_different_sc_2():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     restore_sc = {"volBackendFs": data["primaryFs"],
@@ -502,7 +505,7 @@ def test_snapshot_static_different_sc_6():
                 "filesetType": "dependent", "clusterId": data["id"]}
     snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_nodeclass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "GUI_MGMT_SERVERS"}
@@ -514,7 +517,7 @@ def test_snapshot_dynamic_nodeclass_2():
     restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "GUI_SERVERS"}
     snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_nodeclass_3():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     restore_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "nodeClass": "randomnodeclassx"}
