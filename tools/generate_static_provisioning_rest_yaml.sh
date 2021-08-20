@@ -39,7 +39,7 @@ fullUsage() {
                 -s|--size <size in GB>
                 -u|--username <Username of spectrum scale GUI user account.>
                 -t|--password <Password of spectrum scale GUI user account.>
-                -r|--guihost <Route host name used to route traffic to the spectrum scale GUI service.>
+                -r|--guihost <HostName(or route) used to access IBM Spectrum Scale GUI service running on Primary Cluster.>
                 [-p|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
