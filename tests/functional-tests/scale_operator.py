@@ -434,6 +434,94 @@ class Driver:
         cleanup.clean_with_created_objects(created_objects)
 
 
+    def test_sc_permissions(self, value_sc, value_pvc_passed=None, value_pod_passed=None, permissions=None):
+        created_objects = get_cleanup_dict()
+        if value_pvc_passed is None:
+            value_pvc_passed = self.value_pvc
+        if value_pod_passed is None:
+            value_pod_passed = self.value_pod
+        LOGGER.info(
+            f"Testing Dynamic Provisioning with following PVC parameters {str(value_pvc_passed)}")
+        sc_name = d.get_random_name("sc")
+        config.load_kube_config(config_file=self.kubeconfig)
+        d.create_storage_class(value_sc, sc_name, created_objects)
+        d.check_storage_class(sc_name)
+        for num,_ in enumerate(value_pvc_passed):
+            value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
+            if (check_key(value_sc, "reason")):
+                if not(check_key(value_pvc_pass, "reason")):
+                    value_pvc_pass["reason"] = value_sc["reason"]
+            LOGGER.info(100*"=")
+            pvc_name = d.get_random_name("pvc")
+            d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
+            val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
+            if val is True:
+                pv_name = d.get_pv_for_pvc(value_pvc_pass, pvc_name, created_objects)
+                if permissions == "": #assign default permissions 771
+                    permissions = "771"
+                status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+                if status is True:
+                    LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+                else:
+                    LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+            vol_name=cleanup.delete_pvc(pvc_name, created_objects)
+            cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
+        LOGGER.info(100*"=")
+        cleanup.clean_with_created_objects(created_objects)
+
+
+    def test_sc_permissions_from_pod(self, value_sc, value_pvc_passed=None, value_pod_passed=None, permissions=None):
+        created_objects = get_cleanup_dict()
+        if value_pvc_passed is None:
+            value_pvc_passed = self.value_pvc
+        if value_pod_passed is None:
+            value_pod_passed = self.value_pod
+        LOGGER.info(
+            f"Testing Dynamic Provisioning with following PVC parameters {str(value_pvc_passed)}")
+        sc_name = d.get_random_name("sc")
+        config.load_kube_config(config_file=self.kubeconfig)
+        d.create_storage_class(value_sc, sc_name, created_objects)
+        d.check_storage_class(sc_name)
+        for num,_ in enumerate(value_pvc_passed):
+            value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
+            if (check_key(value_sc, "reason")):
+                if not(check_key(value_pvc_pass, "reason")):
+                    value_pvc_pass["reason"] = value_sc["reason"]
+            LOGGER.info(100*"=")
+            pvc_name = d.get_random_name("pvc")
+            d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
+            val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
+            if val is True:
+                pv_name = d.get_pv_for_pvc(value_pvc_pass, pvc_name, created_objects)
+                status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+                if status is True:
+                    LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+                else:
+                    LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+                for num2,_ in enumerate(value_pod_passed):
+                    LOGGER.info(100*"-")
+                    pod_name = d.get_random_name("pod")
+                    run_as_group = value_sc["gid"]
+                    run_as_user = value_sc["uid"]
+                    d.create_pod_subpath(value_pod_passed[num2], pvc_name, pod_name, created_objects, run_as_user, run_as_group, self.image_name)
+                    d.check_pod(value_pod_passed[num2], pod_name, created_objects)
+                    d.create_file_inside_pod(value_pod_passed[num2], pod_name, created_objects)
+                    d.check_file_inside_pod(value_pod_passed[num2], pod_name, created_objects)
+                    cleanup.delete_pod(pod_name, created_objects)
+                    cleanup.check_pod_deleted(pod_name, created_objects)
+                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
+                        pvc_name = d.get_random_name("pvc")
+                        d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
+                        val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
+                        if val is not True:
+                            break
+                LOGGER.info(100*"-")
+            vol_name=cleanup.delete_pvc(pvc_name, created_objects)
+            cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
+        LOGGER.info(100*"=")
+        cleanup.clean_with_created_objects(created_objects)
+
+
 class Snapshot():
     def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name, cluster_id):
         config.load_kube_config(config_file=kubeconfig)

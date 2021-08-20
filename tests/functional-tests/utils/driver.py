@@ -46,7 +46,7 @@ def get_storage_class_parameters(values):
     """
     dict_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
-                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass"]
+                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions"]
     num = len(list_parameters)
     for val in range(0, num):
         if(check_key(values, list_parameters[val])):
@@ -859,4 +859,101 @@ def create_deployment_object():
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
+        assert False
+
+
+def get_pv_for_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
+    """ return pv name associated with pvc
+        need this to find out fileset path on scale cluster
+    """
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace=namespace_value, pretty=True)
+        LOGGER.debug(str(api_response))
+        LOGGER.info(str(api_response))
+        LOGGER.info(f'PVC Check: Checking for pvc {pvc_name}')
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
+        LOGGER.info(f"PVC Check : PVC {pvc_name} does not exists on the cluster")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+    return api_response.spec.volume_name
+
+
+def create_pod_subpath(value_pod, pvc_name, pod_name, created_objects, run_as_user, run_as_group, image_name="nginx:1.19.0"):
+    """
+    creates pod
+
+    Args:
+        param1: value_pod - values required for creation of pod
+        param2: pvc_name - name of pvc , pod associated with
+        param3: pod_name - name of pod to be created
+        param4: run_as_user - value for pod securityContext spec runAsUser
+        param5: run_as_group - value for pod securityContext spec runAsGroup
+        param6: image_name - name of the pod image (Default:"nginx:1.19.0")
+
+    Returns:
+        None
+
+    Raises:
+        Raises an exception on kubernetes client api failure and asserts
+
+    """
+    if value_pod["read_only"] == "True":
+        value_pod["read_only"] = True
+    elif value_pod["read_only"] == "False":
+        value_pod["read_only"] = False
+    api_instance = client.CoreV1Api()
+    pod_metadata = client.V1ObjectMeta(name=pod_name, labels={"app": "nginx"})
+
+    #volume_mounts
+    sub_path="sub_path_mnt"
+    pod_volume_mounts = client.V1VolumeMount(
+        name="mypvc", mount_path=value_pod["mount_path"], sub_path=sub_path)
+
+    #pod_containers
+    pod_ports = client.V1ContainerPort(container_port=80)
+    command = [ "/bin/sh", "-c", "--" ]
+    args = [ "while true; do sleep 30; done;" ]
+    pod_containers = client.V1Container(
+        name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports],
+        command=command, args=args)
+
+    #pod_volumes
+    pod_persistent_volume_claim = client.V1PersistentVolumeClaimVolumeSource(
+        claim_name=pvc_name, read_only=value_pod["read_only"])
+    pod_volumes = client.V1Volume(
+        name="mypvc", persistent_volume_claim=pod_persistent_volume_claim)
+
+    #pod_spec
+    run_as_group=int(run_as_group)
+    run_as_user=int(run_as_user)
+    pod_security_context = client.V1PodSecurityContext(
+        run_as_group=run_as_group, run_as_user=run_as_user)
+    pod_spec = client.V1PodSpec(
+        containers=[pod_containers], volumes=[pod_volumes], security_context=pod_security_context)
+
+    pod_body = client.V1Pod(
+        api_version="v1",
+        kind="Pod",
+        metadata=pod_metadata,
+        spec=pod_spec
+    )
+
+    try:
+        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name} with {image_name} image')
+        api_response = api_instance.create_namespaced_pod(
+            namespace=namespace_value, body=pod_body, pretty=True)
+        LOGGER.debug(str(api_response))
+        if pod_name[0:12] == "snap-end-pod":
+            created_objects["restore_pod"].append(pod_name)
+        else:
+            created_objects["pod"].append(pod_name)
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->create_namespaced_pod: {e}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False

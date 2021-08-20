@@ -2652,3 +2652,96 @@ def test_driver_one_pvc_two_pod_fail_4():
 def test_driver_sequential_pvc():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
     driver_object.sequential_pvc(value_sc, data["number_of_sequential_pvc"])
+
+
+@pytest.mark.regression
+def test_driver_sc_permissions_empty_independent_pass_1():
+    permissions = "" #to test default behavior i.e. directory should be created with 771 permissions
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+
+
+def test_driver_sc_permissions_777_independent_pass_2():
+    permissions = "777"
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+
+
+def test_driver_sc_permissions_666_independent_pass_3():
+    permissions = "666"
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+
+
+def test_driver_sc_permissions_777_dependent_pass_1():
+    permissions = "777"
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+
+
+def test_driver_sc_permissions_666_dependent_pass_2():
+    permissions = "666"
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+
+
+@pytest.mark.regression
+def test_driver_sc_permissions_from_pod_777_independent_pass_1():
+    permissions = "777"
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions_from_pod(value_sc, permissions=permissions)
+
+
+def test_driver_sc_permissions_from_pod_777_dependent_pass_1():
+    permissions = "777"
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
+            "gid": data["gid_number"], "uid": data["uid_number"]}
+    driver_object.test_sc_permissions_from_pod(value_sc, permissions=permissions)
+
+
+def test_driver_sc_permissions_invalid_input_1():
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+                "permissions": "   ",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_2():
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+                "permissions": "abcd",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_3():
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+                "permissions": "0x309",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_4():
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+                "permissions": "o777",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_5():
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+                "permissions": "77",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_6():
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+                "permissions": "778",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
