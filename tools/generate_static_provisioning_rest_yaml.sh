@@ -18,13 +18,13 @@
 usage() {
   echo "Usage: $0
                 -f|--filesystem <Name of Volume's Source Filesystem>
-                -l|--linkpath <full Path of Volume in Primary Filesystem>
+                -l|--path <full Path of Volume in Primary Filesystem>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
                 -u|--username <Username of spectrum scale GUI user account.>
-                -t|--password <Password of spectrum scale GUI user account.>
+                -p|--password <Password of spectrum scale GUI user account.>
                 -r|--guihost <Route host name used to route traffic to the spectrum scale GUI service.>
-                [-p|--pvname <name for pv>]
+                [-P|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
                 [-h|--help] " 1>&2
@@ -34,36 +34,29 @@ usage() {
 fullUsage() {
   echo "Usage: $0
                 -f|--filesystem <Name of Volume's Source Filesystem>
-                -l|--linkpath <full Path of Volume in Primary Filesystem>
+                -l|--path <full Path of Volume in Primary Filesystem>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
                 -u|--username <Username of spectrum scale GUI user account.>
-                -t|--password <Password of spectrum scale GUI user account.>
+                -p|--password <Password of spectrum scale GUI user account.>
                 -r|--guihost <HostName(or route) used to access IBM Spectrum Scale GUI service running on Primary Cluster.>
-                [-p|--pvname <name for pv>]
+                [-P|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
                 [-h|--help]
 
 
-Example 1: Single Fileystem
-	In this setup there is only one fileystem 'gpfs0' and directory from the same fileystem is being used as volume.
+Example 1:  Directory based static volume 
+  This example shows how to create a volume from a directory '/mnt/fs1/staticpv' within the filesystem 'fs1'.
 
-	$0 --filesystem gpfs0 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv --size 10 --pvname mystaticpv --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
+  $0 --filesystem fs1 --path /mnt/fs1/staticpv --size 10 --pvname mystaticpv --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.cluster.cp.fyre.ibm.com
+	
+Example 2: Fileset based volume
+	This example shows how to create a volume from a fileset 'fileset1' within the filesystem 'fs1'.
 
+	$0 --filesystem fs1 --fileset f1 --size 10 --pvname mystaticpv --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.cluster.cp.fyre.ibm.com
 
-Example 2: Two or More Filesystem
-	In this setup there are two filesystems 'gpfs0' and 'gpfs1'. gpfs0 is configured as primary fileystem in Spectrum-scale-csi setup. User want to create volume from the directory present in the gpfs1 filesystem. Say the directory in the gpfs1 is /ibm/gpfs1/dir1. As a first step user will create softlink  /ibm/gpfs1/dir1 --> /ibm/gpfs0/fileset1/.volumes/staticpv1 and then run following command to generate the pv.yaml.
-
-	$0 --filesystem gpfs1 --linkpath /ibm/gpfs0/fileset1/.volumes/staticpv1 --size 10 --pvname mystaticpv1 --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
-
-Example 3: Fileset based volume
-	This example shows how to create a volume from a fileset 'fileset1' within the filesyetem 'gpfs0'.
-
-	$0 --filesystem gpfs0 --fileset fileset1 --size 10 --pvname mystaticpv --guihost ibm-spectrum-scale-gui-ibm-spectrum-scale.apps.hci-cluster.cp.fyre.ibm.com
-
-	Note: This script does not validate if softlinks are correctly created.
-	      The Path specified for option --linkpath must be valid gpfs path from primary fileystem." 1>&2
+	Note: The Path specified for option --path must be valid gpfs path from primary filesystem." 1>&2
   exit 1
 }
 
@@ -129,8 +122,8 @@ EOL
   echo "INFO: Successfully created pvc-${volname}.yaml"
 }
 
-SHORT=hf:l:F:s:p:c:a:u:t:r:
-LONG=help,filesystem:,linkpath:,fileset:,size:,pvname:,storageclass:,accessmode:,username:,password:,guihost:
+SHORT=hf:l:F:s:P:c:a:u:p:r:
+LONG=help,filesystem:,path:,fileset:,size:,pvname:,storageclass:,accessmode:,username:,password:,guihost:
 ERROROUT="/tmp/csierror.out"
 OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
 
@@ -148,7 +141,7 @@ while true; do
   -h | --help)
     fullUsage
     ;;
-  -l | --linkpath)
+  -l | --path)
     VOLPATH="$2"
     shift 2
     ;;
@@ -164,7 +157,7 @@ while true; do
     VOLSIZE="$2"
     shift 2
     ;;
-  -p | --pvname)
+  -P | --pvname)
     VOLNAME="$2"
     shift 2
     ;;
@@ -180,7 +173,7 @@ while true; do
     USERNAME="$2"
     shift 2
     ;;
-  -t | --password)
+  -p | --password)
     PASSWORD="$2"
     shift 2
     ;;
@@ -221,17 +214,17 @@ if [ ! -z "$MPARAM" ]; then
 fi
 
 if [[ ! -z "${VOLPATH}" && ! -z "${FSETNAME}" ]]; then
-  echo "ERROR: Missing parameter. Either 'linkpath' or 'fileset' is mandatory"
+  echo "ERROR: Missing parameter. Either 'path' or 'fileset' is mandatory."
   usage
 fi
 
 if [[ ! ${VOLSIZE} =~ ^[1-9][0-9]*$ ]]; then
-  echo "ERROR: Provided value for --size=${VOLSIZE} is not valid number"
+  echo "ERROR: Provided value for --size=${VOLSIZE} is not valid number."
   exit 2
 fi
 
 if [[ ${#VOLNAME} -ge 254 ]]; then
-  echo "ERROR: pvname specified against option --pvname must be less than 254 characters"
+  echo "ERROR: pvname specified against option --pvname must be less than 254 characters."
   exit 2
 fi
 
@@ -241,12 +234,12 @@ if [ -z "${VOLNAME}" ]; then
   VOLNAME="pv-${FSNAME}-${VOLNAME}"
   VOLNAME=${VOLNAME,,}
   if [[ ${#VOLNAME} -ge 254 ]]; then
-    echo "ERROR: Specify name for pv using option --pvname"
+    echo "ERROR: Specify name for pv using option --pvname."
     exit 2
   fi
 
   if ! [[ "${VOLNAME}" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$ ]]; then
-    echo "ERROR: Specify name for pv using option --pvname"
+    echo "ERROR: Specify name for pv using option --pvname."
     exit 2
   fi
 fi
