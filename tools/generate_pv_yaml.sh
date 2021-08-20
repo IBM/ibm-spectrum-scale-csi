@@ -236,7 +236,6 @@ fi
 
 # TODO : Add check for kubernetes lable limit for value of VolumeHandle
 
-echo "FSETNAME=${FSETNAME}"
 if [[ -z "${FSETNAME}" ]]; then
   # Verify if path exist. It should be either directory or softlink
   if ! ( [  -d "${VOLPATH}" ] || [ -L "${VOLPATH}" ]); then
