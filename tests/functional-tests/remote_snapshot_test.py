@@ -95,7 +95,7 @@ def get_remote_data(data_passed):
 
     return remote_data
 
-
+@pytest.mark.regression
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
     LOGGER.info("-----------------------")
@@ -107,12 +107,12 @@ def test_get_version():
     scaleop.scale_function.get_operator_image()
     scaleop.ob.get_driver_image()
 
-
+@pytest.mark.regression
 def test_snapshot_static_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_static(value_sc, test_restore=True)
 
-
+@pytest.mark.regression
 def test_snapshot_static_multiple_snapshots():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_static(value_sc, test_restore=True, number_of_snapshots=3)
@@ -220,7 +220,7 @@ def test_snapshot_static_pass_18():
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_static(value_sc, test_restore=False)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True)
@@ -230,19 +230,19 @@ def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class={"deletionPolicy": "Retain"})
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_multiple_snapshots():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, number_of_snapshots=3)
@@ -362,13 +362,13 @@ def test_snapshot_dynamic_pass_18():
                 "volBackendFs": data["remoteFs"]}
     snapshot_object.test_dynamic(value_sc, test_restore=False)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_different_sc_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_different_sc_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     restore_sc = {"volBackendFs": data["remoteFs"],
@@ -456,13 +456,13 @@ def test_snapshot_static_different_sc_6():
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
     snapshot_object.test_static(value_sc, test_restore=True,restore_sc=restore_sc)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_nodeclass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
     snapshot_object.test_dynamic(value_sc, test_restore=True,restore_sc=restore_sc)
 
-
+@pytest.mark.regression
 def test_snapshot_dynamic_nodeclass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
