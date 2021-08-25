@@ -95,6 +95,8 @@ spec:
               value: "unix:{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
             - name: SKIP_MOUNT_UNMOUNT
               value: "yes"
+            - name: SHORTNAME_NODE_MAPPING
+              value: "{{shortnameNodeMapping}}"
             - name: SECRET_CHECKSUM
               value: "{{secret_checksum}}"
             - name: KUBELET_ROOT_DIR_PATH
