@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -334,4 +335,40 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	}
 
 	return retValue, nil
+}
+
+const (
+	SCALE_NODE_MAPPING_PREFIX = "SCALE_NODE_MAPPING_PREFIX"
+	DefaultScaleNodeMapPrefix = "K8sNodePrefix_"
+)
+
+// getNodeMapping returns the configured mapping to GPFS Admin Node Name given Kubernetes Node ID.
+func getNodeMapping(kubernetesNodeID string) (gpfsAdminName string) {
+	gpfsAdminName = utils.GetEnv(kubernetesNodeID, notFound)
+	// Additional node mapping check in case of k8s node id start with number.
+	if gpfsAdminName == notFound {
+		prefix := utils.GetEnv(SCALE_NODE_MAPPING_PREFIX, DefaultScaleNodeMapPrefix)
+		gpfsAdminName = utils.GetEnv(prefix+kubernetesNodeID, notFound)
+		if gpfsAdminName == notFound {
+			glog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
+			gpfsAdminName = kubernetesNodeID
+		}
+	}
+	return gpfsAdminName
+}
+
+const (
+	SHORTNAME_NODE_MAPPING = "SHORTNAME_NODE_MAPPING"
+	SKIP_MOUNT_UNMOUNT     = "SKIP_MOUNT_UNMOUNT"
+)
+
+func shortnameInSlice(shortname string, nodeNames []string) bool {
+	glog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
+	for _, name := range nodeNames {
+		short := strings.SplitN(name, ".", 2)[0]
+		if strings.EqualFold(short, shortname) {
+			return true
+		}
+	}
+	return false
 }
