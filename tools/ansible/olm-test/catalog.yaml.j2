@@ -9,4 +9,7 @@ spec:
   image: "quay.io/{{QUAY_NAMESPACE}}/{{PACKAGE_NAME}}:{{CHANNEL_NAME}}"
   displayName: "CSI Scale Operator"
   publisher: "IBM"
+  updateStrategy:
+    registryPoll:
+      interval: 1m
 
