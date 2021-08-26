@@ -21,11 +21,15 @@
   
 - name: "Consume catalogsource"
   shell: 
-    cmd: " kubectl delete -f {{CATALOG}}; sleep 5; kubectl apply -f {{CATALOG}} "
+    cmd: " kubectl apply -f {{CATALOG}} "
 
 - name: "Wait until the catalogsource pod is running"
-  shell:
-    cmd: " kubectl wait --for=condition=Ready --timeout=60s pod -l olm.catalogSource=ibm-spectrum-scale-csi -n {{NAMESPACE}}"
+  shell: " kubectl get  pod -l olm.catalogSource=ibm-spectrum-scale-csi  --field-selector  status.phase=Running -n  {{NAMESPACE}}"
+  register: nodes
+  until:
+    - '"Running"  in nodes.stdout'
+  retries: 10
+  delay: 20
 
 - name: "Consume namespace {{NAMESPACE_OPERATOR}} and operatorgroup"
   shell:
@@ -33,7 +37,7 @@
 
 - name: "Consume subscription"
   shell:
-    cmd: " kubectl delete -f {{SUB}}; sleep 2; kubectl apply -f {{SUB}} "
+    cmd: " kubectl apply -f {{SUB}} "
 
 - pause:
     prompt: "OLM configured to use {{item}}, press enter to continue"

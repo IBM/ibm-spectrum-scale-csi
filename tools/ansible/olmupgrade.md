@@ -104,8 +104,8 @@ docker login quay.io
 ```
 2. Install OLM using following commands
 ```
-kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/crds.yaml
-kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/olm.yaml
+kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
+kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
 ```
 3. Check OLM pods status 
 ```
