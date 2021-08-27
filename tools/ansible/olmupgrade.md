@@ -104,8 +104,8 @@ docker login quay.io
 ```
 2. Install OLM using following commands
 ```
-kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
 kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
+kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
 ```
 3. Check OLM pods status 
 ```
@@ -140,9 +140,6 @@ ansible-playbook k8s-olm-test-playbook.yaml
 7. Verify operator installtion using  
 ```
 kubectl get pods -n ibm-spectrum-scale-csi-driver
-kubectl get csv -n ibm-spectrum-scale-csi-driver
-kubectl get sub -n ibm-spectrum-scale-csi-driver
-kubectl get ip -n ibm-spectrum-scale-csi-driver
 ```
 8. Cleanup
 ```
@@ -151,8 +148,8 @@ kubectl delete operatorgroup operatorgroup -n ibm-spectrum-scale-csi-driver
 kubectl delete namespace ibm-spectrum-scale-csi-driver #( before this delete the operator and driver)
 kubectl delete catalogsource ibm-spectrum-scale-csi -n olm
 
-kubectl delete -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/crds.yaml
-kubectl delete -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/olm.yaml
+kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
+kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
 
 ```
 9. Delete Repository from quay 
