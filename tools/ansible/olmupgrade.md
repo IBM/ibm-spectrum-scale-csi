@@ -98,14 +98,14 @@ iv.  Enter repository name , click on public and and then click the 'Create Publ
 
 ### Steps to Follow (kubernetes)
 
-1. Login to quay.io
+1. Login to quay.io using quay username which will be used for pushing the image in OLM upgrade run
 ```
-docker login quay.io
+docker login quay.io -u  <username>
 ```
 2. Install OLM using following commands
 ```
-kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
 kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
+kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
 ```
 3. Check OLM pods status 
 ```
@@ -117,8 +117,8 @@ kubectl delete catalogsource operatorhubio-catalog -n olm
 ```
 5. Edit required values in k8s-olm-test-playbook.yaml
 ```
-QUAY_NAMESPACE: "QUAY_NAMESPACE"         # Quay username
-PACKAGE_NAME: "PACKAGE_NAME"             # Quay Container image repository name
+  QUAY_NAMESPACE: "QUAY_NAMESPACE"         # Quay username
+  PACKAGE_NAME: "PACKAGE_NAME"             # Quay Container image repository name
 
 
 # Versions you want to test. Playbook will upload  in order and run  tests.
@@ -130,6 +130,9 @@ OPERATOR_VERSIONS:
   - 2.2.0
   - 2.3.0
 
+ QUAY_USERNAME: "QUAY_USERNAME"             # Quay username used for login to quay.io and have admin access to Quay Container image repository name
+ QUAY_PASSWORD: "QUAY_PASSWORD"             # Quay username's token for login to quay.io to push the image to Quay Container image repository
+
 # Check OPERATOR_DIR location is correct
 OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/config/olm-catalog/ibm-spectrum-scale-csi-operator
 ```
@@ -140,19 +143,20 @@ ansible-playbook k8s-olm-test-playbook.yaml
 7. Verify operator installtion using  
 ```
 kubectl get pods -n ibm-spectrum-scale-csi-driver
-kubectl get csv -n ibm-spectrum-scale-csi-driver
-kubectl get sub -n ibm-spectrum-scale-csi-driver
-kubectl get ip -n ibm-spectrum-scale-csi-driver
 ```
 8. Cleanup
 ```
+1. Delete CSI driver and operator
+
+2. Run below commands for OLM cleanup 
+
 kubectl delete sub ibm-spectrum-scale-csi-sub -n ibm-spectrum-scale-csi-driver
 kubectl delete operatorgroup operatorgroup -n ibm-spectrum-scale-csi-driver
-kubectl delete namespace ibm-spectrum-scale-csi-driver #( before this delete the operator and driver)
+kubectl delete namespace ibm-spectrum-scale-csi-driver
 kubectl delete catalogsource ibm-spectrum-scale-csi -n olm
 
-kubectl delete -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/crds.yaml
-kubectl delete -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/olm.yaml
+kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
+kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
 
 ```
 9. Delete Repository from quay 

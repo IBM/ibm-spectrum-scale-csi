@@ -19,7 +19,7 @@
     QUAY_PASSWORD: "QUAY_PASSWORD"
 
     # Need not to be changed
-    CHANNEL_NAME: latest
+    CHANNEL_NAME: master
 
     # Contains the CSV directories for all of the versions to be tested.
     # This  can  be a  copy of https://github.com/operator-framework/community-operators/tree/master/community-operators/ibm-spectrum-scale-csi-operator
