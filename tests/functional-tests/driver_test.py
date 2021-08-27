@@ -2583,8 +2583,7 @@ def test_driver_dynamic_fail_invalid_input_274():
                 "reason": "parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
 
-
-@pytest.mark.regression
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_pass_1():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "pluginNodeSelector":data["pluginNodeSelector"]}
@@ -2592,26 +2591,28 @@ def test_driver_one_pvc_two_pod_pass_1():
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
 
-@pytest.mark.regression
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_fail_1():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Multi-Attach error for volume", "pluginNodeSelector":data["pluginNodeSelector"]}
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_pass_2():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "pluginNodeSelector":data["pluginNodeSelector"]}
     value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
-
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_fail_2():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Multi-Attach error for volume", "pluginNodeSelector":data["pluginNodeSelector"]}
     value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_pass_3():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "pluginNodeSelector":data["pluginNodeSelector"]}
@@ -2619,7 +2620,7 @@ def test_driver_one_pvc_two_pod_pass_3():
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
-
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_fail_3():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Multi-Attach error for volume", "pluginNodeSelector":data["pluginNodeSelector"]}
@@ -2627,7 +2628,7 @@ def test_driver_one_pvc_two_pod_fail_3():
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
-
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_pass_4():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "pluginNodeSelector":data["pluginNodeSelector"]}
@@ -2637,7 +2638,7 @@ def test_driver_one_pvc_two_pod_pass_4():
                 "parentFileset": data["parentFileset"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
-
+@pytest.mark.slow
 def test_driver_one_pvc_two_pod_fail_4():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Multi-Attach error for volume", "pluginNodeSelector":data["pluginNodeSelector"]}
