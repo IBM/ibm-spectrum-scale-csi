@@ -146,9 +146,13 @@ kubectl get pods -n ibm-spectrum-scale-csi-driver
 ```
 8. Cleanup
 ```
+1. Delete CSI driver and operator
+
+2. Run below commands for OLM cleanup 
+
 kubectl delete sub ibm-spectrum-scale-csi-sub -n ibm-spectrum-scale-csi-driver
 kubectl delete operatorgroup operatorgroup -n ibm-spectrum-scale-csi-driver
-kubectl delete namespace ibm-spectrum-scale-csi-driver #( before this delete the operator and driver)
+kubectl delete namespace ibm-spectrum-scale-csi-driver
 kubectl delete catalogsource ibm-spectrum-scale-csi -n olm
 
 kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
