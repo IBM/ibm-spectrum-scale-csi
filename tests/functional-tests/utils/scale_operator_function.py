@@ -197,7 +197,7 @@ def create_crd(body):
         assert False
 
 
-def delete_crd():
+def delete_crd(crd_version):
     """
     Delete existing IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
 
@@ -211,16 +211,20 @@ def delete_crd():
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    delete_crd_api_instance = client.ApiextensionsV1beta1Api()
+    crd_name = "csiscaleoperators.csi.ibm.com"
+    custom_object_api_instance = client.CustomObjectsApi()
     try:
-        delete_crd_api_response = delete_crd_api_instance.delete_custom_resource_definition(
-            name="csiscaleoperators.csi.ibm.com", pretty=True)
-        LOGGER.debug(str(delete_crd_api_response))
+        custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
+            group="apiextensions.k8s.io",
+            version=crd_version,
+            plural="customresourcedefinitions",
+            name=crd_name
+        )
+        LOGGER.debug(str(custom_object_api_response))
     except ApiException as e:
         LOGGER.error(
-            f"Exception when calling ApiextensionsV1beta1Api->delete_custom_resource_definition: {e}")
+            f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
         assert False
-
 
 def delete_namespace():
     """
@@ -347,7 +351,7 @@ def delete_cluster_role_binding(cluster_role_binding_name):
         assert False
 
 
-def check_crd_deleted():
+def check_crd_deleted(crd_version):
     """
     Function for checking CRD (Custom Resource Defination) is deleted or not
     If CRD is not deleted in 60 seconds,function asserts
@@ -363,12 +367,17 @@ def check_crd_deleted():
 
     """
     count = 12
-    list_crd_api_instance = client.ApiextensionsV1beta1Api()
+    crd_name = "csiscaleoperators.csi.ibm.com"
+    custom_object_api_instance = client.CustomObjectsApi()
     while (count > 0):
         try:
-            list_crd_api_response = list_crd_api_instance.read_custom_resource_definition(
-                pretty=True, name="ibm-spectrum-scale-csi")
-            LOGGER.debug(list_crd_api_response)
+            custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
+                group="apiextensions.k8s.io",
+                version=crd_version,
+                plural="customresourcedefinitions",
+                name=crd_name
+            )
+            LOGGER.debug(custom_object_api_response)
             LOGGER.info("still deleting crd")
             count -= 1
             time.sleep(5)
@@ -379,7 +388,6 @@ def check_crd_deleted():
 
     LOGGER.error("crd is not deleted")
     assert False
-
 
 def check_namespace_deleted():
     """
@@ -525,7 +533,7 @@ def check_cluster_role_binding_deleted(cluster_role_binding_name):
     assert False
 
 
-def check_crd_exists():
+def check_crd_exists(crd_version):
     """
     Checks custom resource defination exists or not
 
@@ -541,17 +549,20 @@ def check_crd_exists():
 
     """
     crd_name = "csiscaleoperators.csi.ibm.com"
-    read_crd_api_instance = client.ApiextensionsV1beta1Api()
+    custom_object_api_instance = client.CustomObjectsApi()
     try:
-        read_crd_api_response = read_crd_api_instance.read_custom_resource_definition(
-            pretty=True, name=crd_name)
-        LOGGER.debug(str(read_crd_api_response))
+        custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
+            group="apiextensions.k8s.io",
+            version=crd_version,
+            plural="customresourcedefinitions",
+            name=crd_name
+        )
+        LOGGER.debug(str(custom_object_api_response))
         LOGGER.info(f"crd  {crd_name} exists")
         return True
     except ApiException:
         LOGGER.info(f"crd {crd_name} does not exist")
         return False
-
 
 def check_namespace_exists():
     """

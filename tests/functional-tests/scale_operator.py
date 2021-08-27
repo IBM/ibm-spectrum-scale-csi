@@ -20,6 +20,10 @@ class Scaleoperator:
         scale_function.set_global_namespace_value(namespace_value)
         ob.set_namespace_value(namespace_value)
 
+        crd_body = self.get_operator_body()
+        crd_full_version = crd_body["CustomResourceDefinition"]["apiVersion"].split("/")
+        self.crd_version = crd_full_version[1]
+
     def create(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
@@ -40,7 +44,7 @@ class Scaleoperator:
         if not(scale_function.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")):
             scale_function.create_cluster_role_binding(body['ClusterRoleBinding'])
 
-        if not(scale_function.check_crd_exists()):
+        if not(scale_function.check_crd_exists(self.crd_version)):
             scale_function.create_crd(body['CustomResourceDefinition'])
 
     def delete(self, condition=False):
@@ -50,9 +54,9 @@ class Scaleoperator:
             ob.delete_custom_object()
             ob.check_scaleoperatorobject_is_deleted()
 
-        if scale_function.check_crd_exists():
-            scale_function.delete_crd()
-        scale_function.check_crd_deleted()
+        if scale_function.check_crd_exists(self.crd_version):
+            scale_function.delete_crd(self.crd_version)
+        scale_function.check_crd_deleted(self.crd_version)
 
         if scale_function.check_service_account_exists("ibm-spectrum-scale-csi-operator"):
             scale_function.delete_service_account("ibm-spectrum-scale-csi-operator")
@@ -82,7 +86,7 @@ class Scaleoperator:
         scale_function.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")
         scale_function.check_service_account_exists("ibm-spectrum-scale-csi-operator")
         scale_function.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")
-        scale_function.check_crd_exists()
+        scale_function.check_crd_exists(self.crd_version)
 
     def get_operator_body(self):
 
