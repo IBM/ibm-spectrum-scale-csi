@@ -98,9 +98,9 @@ iv.  Enter repository name , click on public and and then click the 'Create Publ
 
 ### Steps to Follow (kubernetes)
 
-1. Login to quay.io
+1. Login to quay.io using quay username which will be used for pushing the image in OLM upgrade run
 ```
-docker login quay.io
+docker login quay.io -u  <username>
 ```
 2. Install OLM using following commands
 ```
@@ -117,8 +117,8 @@ kubectl delete catalogsource operatorhubio-catalog -n olm
 ```
 5. Edit required values in k8s-olm-test-playbook.yaml
 ```
-QUAY_NAMESPACE: "QUAY_NAMESPACE"         # Quay username
-PACKAGE_NAME: "PACKAGE_NAME"             # Quay Container image repository name
+  QUAY_NAMESPACE: "QUAY_NAMESPACE"         # Quay username
+  PACKAGE_NAME: "PACKAGE_NAME"             # Quay Container image repository name
 
 
 # Versions you want to test. Playbook will upload  in order and run  tests.
@@ -129,6 +129,9 @@ OPERATOR_VERSIONS:
   - 2.1.0
   - 2.2.0
   - 2.3.0
+
+ QUAY_USERNAME: "QUAY_USERNAME"             # Quay username used for login to quay.io and have admin access to Quay Container image repository name
+ QUAY_PASSWORD: "QUAY_PASSWORD"             # Quay username's token for login to quay.io to push the image to Quay Container image repository
 
 # Check OPERATOR_DIR location is correct
 OPERATOR_DIR:  /root/ibm-spectrum-scale-csi/operator/config/olm-catalog/ibm-spectrum-scale-csi-operator
