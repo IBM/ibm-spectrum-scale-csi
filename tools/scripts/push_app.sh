@@ -13,7 +13,7 @@ helm registry -h >/dev/null
 if [ $? -ne 0 ]
 then
   curl -L https://git.io/get_helm.sh | bash
-  mkdi r-p ~/.helm/plugins/
+  mkdir -p ~/.helm/plugins/
   cd ~/.helm/plugins/ && git clone https://github.com/app-registry/appr-helm-plugin.git registry
 fi
 
