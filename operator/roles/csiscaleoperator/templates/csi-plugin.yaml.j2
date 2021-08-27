@@ -108,7 +108,7 @@ spec:
 {% endfor %}
 {% endif %}
             # Get refs to the secrets so we can trigger a refresh
-          imagePullPolicy: "Always" # "IfNotPresent"
+          imagePullPolicy: "IfNotPresent" # "Always"
           livenessProbe:
             failureThreshold: 10
             httpGet:
