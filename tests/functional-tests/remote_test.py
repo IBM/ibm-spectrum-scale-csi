@@ -59,7 +59,7 @@ def values(request):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
 
-    driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod, remote_data["id"], test_namespace, keep_objects, data["image_name"])
+    driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod, remote_data["id"], test_namespace, keep_objects, data["image_name"],data["pluginNodeSelector"])
     ff.create_dir(remote_data["volDirBasePath"])
     # driver_object.create_test_ns(kubeconfig_value)
     yield

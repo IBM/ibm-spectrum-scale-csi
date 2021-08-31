@@ -46,7 +46,7 @@ def values(request):
 
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = scaleop.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, data["image_name"], data["id"])
+    snapshot_object = scaleop.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, data["image_name"], data["id"],data["pluginNodeSelector"])
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
     ff.create_dir(data["volDirBasePath"])

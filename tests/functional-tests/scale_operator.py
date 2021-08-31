@@ -257,7 +257,7 @@ class Scaleoperatorobject:
 
 class Driver:
 
-    def __init__(self, kubeconfig_value, value_pvc, value_pod, cluster_id, test_ns, keep_object, image_name):
+    def __init__(self, kubeconfig_value, value_pvc, value_pod, cluster_id, test_ns, keep_object, image_name, plugin_nodeselector_labels):
         self.value_pvc = value_pvc
         self.value_pod = value_pod
         self.cluster_id = cluster_id
@@ -266,6 +266,7 @@ class Driver:
         self.kubeconfig = kubeconfig_value
         self.image_name = image_name
         d.set_test_namespace_value(self.test_ns)
+        d.set_test_nodeselector_value(plugin_nodeselector_labels)
         cleanup.set_keep_objects(self.keep_objects)
         cleanup.set_test_namespace_value(self.test_ns)
 
@@ -439,7 +440,7 @@ class Driver:
 
 
 class Snapshot():
-    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name, cluster_id):
+    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name, cluster_id, plugin_nodeselector_labels):
         config.load_kube_config(config_file=kubeconfig)
         self.value_pvc = value_pvc
         self.value_vs_class = value_vs_class
@@ -447,6 +448,7 @@ class Snapshot():
         self.image_name = image_name
         self.cluster_id = cluster_id
         d.set_test_namespace_value(test_namespace)
+        d.set_test_nodeselector_value(plugin_nodeselector_labels)
         snapshot.set_test_namespace_value(test_namespace)
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)

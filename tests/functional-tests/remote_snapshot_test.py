@@ -53,7 +53,7 @@ def values(request):
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
     snapshot_object = scaleop.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
-                               number_of_snapshots, data["image_name"], remote_data["id"])
+                               number_of_snapshots, data["image_name"], remote_data["id"],data["pluginNodeSelector"])
     ff.create_dir(remote_data["volDirBasePath"])
     yield
     if condition is False and not(keep_objects):

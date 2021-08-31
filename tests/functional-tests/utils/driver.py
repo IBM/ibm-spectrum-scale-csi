@@ -25,6 +25,15 @@ def set_test_namespace_value(namespace_name=None):
     namespace_value = namespace_name
 
 
+def set_test_nodeselector_value(plugin_node_selector):
+    """ sets the nodeselector global for use in create_pod functions"""
+    global nodeselector
+    node_selector_labels = {}
+    for lable_val in plugin_node_selector:
+        node_selector_labels[lable_val["key"]] = lable_val["value"]
+    nodeselector = node_selector_labels
+
+
 def get_random_name(type_of):
     """ return random name of type_of"""
     return type_of+"-"+name_generator()
@@ -450,7 +459,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
     pod_volumes = client.V1Volume(
         name="mypvc", persistent_volume_claim=pod_persistent_volume_claim)
     pod_spec = client.V1PodSpec(
-        containers=[pod_containers], volumes=[pod_volumes])
+        containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
     pod_body = client.V1Pod(
         api_version="v1",
         kind="Pod",
