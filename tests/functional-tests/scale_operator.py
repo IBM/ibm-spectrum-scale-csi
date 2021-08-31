@@ -238,9 +238,9 @@ class Scaleoperatorobject:
     def get_scaleplugin_labelled_nodes(self, label):
         api_instance = client.CoreV1Api()
         label_selector = ""
-        for lable_val in label:
-            label_selector += str(lable_val["key"]) + \
-                "="+str(lable_val["value"])+","
+        for label_val in label:
+            label_selector += str(label_val["key"]) + \
+                "="+str(label_val["value"])+","
         label_selector = label_selector[0:-1]
         try:
             api_response_2 = api_instance.list_node(

@@ -29,8 +29,8 @@ def set_test_nodeselector_value(plugin_node_selector):
     """ sets the nodeselector global for use in create_pod functions"""
     global nodeselector
     node_selector_labels = {}
-    for lable_val in plugin_node_selector:
-        node_selector_labels[lable_val["key"]] = lable_val["value"]
+    for label_val in plugin_node_selector:
+        node_selector_labels[label_val["key"]] = label_val["value"]
     nodeselector = node_selector_labels
 
 
