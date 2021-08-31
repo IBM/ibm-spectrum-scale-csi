@@ -226,6 +226,7 @@ def delete_crd(crd_version):
             f"Exception when calling CustomObjectsApi->delete_cluster_custom_object: {e}")
         assert False
 
+
 def delete_namespace():
     """
     Delete IBM Spectrum Scale CSI Operator namespace
@@ -388,6 +389,7 @@ def check_crd_deleted(crd_version):
 
     LOGGER.error("crd is not deleted")
     assert False
+
 
 def check_namespace_deleted():
     """
@@ -564,6 +566,7 @@ def check_crd_exists(crd_version):
         LOGGER.info(f"crd {crd_name} does not exist")
         return False
 
+
 def check_namespace_exists():
     """
     Checks namespace namespace_value exists or not
@@ -698,6 +701,7 @@ def check_cluster_role_binding_exists(cluster_role_binding_name):
         LOGGER.info("cluster role binding does not exists")
         return False
 
+
 def get_operator_pod_name():
     try:
         pod_list_api_instance = client.CoreV1Api()
@@ -717,9 +721,8 @@ def get_operator_image():
     api_instance = client.CoreV1Api()
     try:
         api_response = api_instance.read_namespaced_pod(
-                name=pod_name, namespace=namespace_value, pretty=True)
+            name=pod_name, namespace=namespace_value, pretty=True)
         LOGGER.info(f"CSI operator image : {api_response.status.container_statuses[-1].image}")
         LOGGER.info(f"CSI operator image id : {api_response.status.container_statuses[-1].image_id}")
     except ApiException:
         LOGGER.info("Unable to get operator image")
-

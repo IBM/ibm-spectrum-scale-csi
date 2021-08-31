@@ -36,6 +36,7 @@ def _values(request):
     if(not(fileset_exist) and ff.fileset_exists(read_file)):
         ff.delete_fileset(read_file)
 
+
 @pytest.mark.regression
 def test_get_version(_values):
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
@@ -338,6 +339,7 @@ def test_secureSslMode(_values):
     if(ff.fileset_exists(test)):
         ff.delete_fileset(test)
     operator_object.delete()
+
 
 """
 Removing this testcase as scaleHostpath is no longer needed

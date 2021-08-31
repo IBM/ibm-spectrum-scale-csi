@@ -217,7 +217,7 @@ class Scaleoperatorobject:
 
         val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
 
-        #ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
+        # ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
         return val
 
@@ -238,9 +238,9 @@ class Scaleoperatorobject:
     def get_scaleplugin_labelled_nodes(self, label):
         api_instance = client.CoreV1Api()
         label_selector = ""
-        for lable_val in label:
-            label_selector += str(lable_val["key"]) + \
-                "="+str(lable_val["value"])+","
+        for label_val in label:
+            label_selector += str(label_val["key"]) + \
+                "="+str(label_val["value"])+","
         label_selector = label_selector[0:-1]
         try:
             api_response_2 = api_instance.list_node(
@@ -257,7 +257,7 @@ class Scaleoperatorobject:
 
 class Driver:
 
-    def __init__(self, kubeconfig_value, value_pvc, value_pod, cluster_id, test_ns, keep_object, image_name):
+    def __init__(self, kubeconfig_value, value_pvc, value_pod, cluster_id, test_ns, keep_object, image_name, plugin_nodeselector_labels):
         self.value_pvc = value_pvc
         self.value_pod = value_pod
         self.cluster_id = cluster_id
@@ -266,6 +266,7 @@ class Driver:
         self.kubeconfig = kubeconfig_value
         self.image_name = image_name
         d.set_test_namespace_value(self.test_ns)
+        d.set_test_nodeselector_value(plugin_nodeselector_labels)
         cleanup.set_keep_objects(self.keep_objects)
         cleanup.set_test_namespace_value(self.test_ns)
 
@@ -294,7 +295,7 @@ class Driver:
         config.load_kube_config(config_file=self.kubeconfig)
         d.create_storage_class(value_sc, sc_name, created_objects)
         d.check_storage_class(sc_name)
-        for num,_ in enumerate(value_pvc_passed):
+        for num, _ in enumerate(value_pvc_passed):
             value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
             if (check_key(value_sc, "reason")):
                 if not(check_key(value_pvc_pass, "reason")):
@@ -304,7 +305,7 @@ class Driver:
             d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
             val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
             if val is True:
-                for num2,_ in enumerate(value_pod_passed):
+                for num2, _ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
                     d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
@@ -318,11 +319,10 @@ class Driver:
                         if val is not True:
                             break
                 LOGGER.info(100*"-")
-            vol_name=cleanup.delete_pvc(pvc_name, created_objects)
-            cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
+            vol_name = cleanup.delete_pvc(pvc_name, created_objects)
+            cleanup.check_pvc_deleted(pvc_name, vol_name, created_objects)
         LOGGER.info(100*"=")
         cleanup.clean_with_created_objects(created_objects)
-        
 
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
@@ -381,13 +381,13 @@ class Driver:
                     if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
                         break
                 LOGGER.info(100*"-")
-            vol_name=cleanup.delete_pvc(pvc_name, created_objects)
-            cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
+            vol_name = cleanup.delete_pvc(pvc_name, created_objects)
+            cleanup.check_pvc_deleted(pvc_name, vol_name, created_objects)
             cleanup.delete_pv(pv_name, created_objects)
             cleanup.check_pv_deleted(pv_name, created_objects)
         LOGGER.info(100*"=")
         cleanup.clean_with_created_objects(created_objects)
-        
+
     def one_pvc_two_pod(self, value_sc, value_pvc_pass, value_ds_pass):
         created_objects = get_cleanup_dict()
         sc_name = d.get_random_name("sc")
@@ -399,10 +399,10 @@ class Driver:
         val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
         if val is True:
             ds_name = d.get_random_name("ds")
-            d.create_ds(value_ds_pass,ds_name,pvc_name,created_objects)
-            d.check_ds(ds_name,value_ds_pass,created_objects)
+            d.create_ds(value_ds_pass, ds_name, pvc_name, created_objects)
+            d.check_ds(ds_name, value_ds_pass, created_objects)
         cleanup.clean_with_created_objects(created_objects)
-        
+
     def sequential_pvc(self, value_sc, num_of_pvc):
         created_objects = get_cleanup_dict()
         sc_name = d.get_random_name("sc")
@@ -421,7 +421,7 @@ class Driver:
         for pvc_name in pvc_names:
             LOGGER.info(100*"-")
             d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
-            
+
         for pvc_name in pvc_names:
             LOGGER.info(100*"-")
             d.check_pvc(value_pvc_pass, pvc_name, created_objects)
@@ -439,7 +439,7 @@ class Driver:
 
 
 class Snapshot():
-    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name, cluster_id):
+    def __init__(self, kubeconfig, test_namespace, keep_objects, value_pvc, value_vs_class, number_of_snapshots, image_name, cluster_id, plugin_nodeselector_labels):
         config.load_kube_config(config_file=kubeconfig)
         self.value_pvc = value_pvc
         self.value_vs_class = value_vs_class
@@ -447,6 +447,7 @@ class Snapshot():
         self.image_name = image_name
         self.cluster_id = cluster_id
         d.set_test_namespace_value(test_namespace)
+        d.set_test_nodeselector_value(plugin_nodeselector_labels)
         snapshot.set_test_namespace_value(test_namespace)
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
@@ -509,8 +510,8 @@ class Snapshot():
                         d.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
                         cleanup.delete_pod(snap_pod_name, created_objects)
                         cleanup.check_pod_deleted(snap_pod_name, created_objects)
-                    vol_name=cleanup.delete_pvc(restored_pvc_name, created_objects)
-                    cleanup.check_pvc_deleted(restored_pvc_name,vol_name, created_objects)
+                    vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
+                    cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
             cleanup.clean_with_created_objects(created_objects)
 
@@ -586,8 +587,8 @@ class Snapshot():
                         d.check_file_inside_pod(value_pod, snap_pod_name, created_objects, volume_name)
                         cleanup.delete_pod(snap_pod_name, created_objects)
                         cleanup.check_pod_deleted(snap_pod_name, created_objects)
-                    vol_name=cleanup.delete_pvc(restored_pvc_name, created_objects)
-                    cleanup.check_pvc_deleted(restored_pvc_name,vol_name, created_objects)
+                    vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
+                    cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
             cleanup.clean_with_created_objects(created_objects)
 
@@ -798,22 +799,22 @@ def get_cmd_values(request):
         operator_namespace = 'ibm-spectrum-scale-csi-driver'
 
     runslow_val = request.config.option.runslow
-    return kubeconfig_value,clusterconfig_value,operator_namespace,test_namespace,runslow_val
+    return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val
 
 
 def get_cleanup_dict():
     created_object = {
-                         "sc": [], 
-                         "pvc": [],
-                         "pod": [], 
-                         "vs": [], 
-                         "vsclass": [],
-                         "vscontent":[],
-                         "scalesnapshot":[],
-                         "restore_pod":[],
-                         "restore_pvc":[],
-                         "pv":[],
-                         "dir":[],
-                         "ds":[]
-                       }
+        "sc": [],
+        "pvc": [],
+        "pod": [],
+        "vs": [],
+        "vsclass": [],
+        "vscontent": [],
+        "scalesnapshot": [],
+        "restore_pod": [],
+        "restore_pvc": [],
+        "pv": [],
+        "dir": [],
+        "ds": []
+    }
     return created_object

@@ -31,8 +31,8 @@ def clean_with_created_objects(created_objects):
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["restore_pvc"]):
-        vol_name=delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name,vol_name, created_objects)
+        vol_name = delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, vol_name, created_objects)
 
     for vs_name in copy.deepcopy(created_objects["vs"]):
         delete_vs(vs_name, created_objects)
@@ -60,8 +60,8 @@ def clean_with_created_objects(created_objects):
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["pvc"]):
-        vol_name=delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name,vol_name, created_objects)
+        vol_name = delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, vol_name, created_objects)
 
     for pv_name in copy.deepcopy(created_objects["pv"]):
         delete_pv(pv_name, created_objects)
@@ -301,10 +301,10 @@ def check_vs_content_deleted(vs_content_name, created_objects):
     while val < 12:
         try:
             api_response = api_instance.get_cluster_custom_object(
-            group="snapshot.storage.k8s.io",
-            version="v1beta1",
-            plural="volumesnapshotcontents",
-            name=vs_content_name
+                group="snapshot.storage.k8s.io",
+                version="v1beta1",
+                plural="volumesnapshotcontents",
+                name=vs_content_name
             )
             LOGGER.debug(api_response)
             time.sleep(15)
@@ -316,6 +316,7 @@ def check_vs_content_deleted(vs_content_name, created_objects):
     LOGGER.error(f"Volume Snapshot Content Delete : {vs_content_name} is not deleted , asserting")
     clean_with_created_objects(created_objects)
     assert False
+
 
 def delete_vs(vs_name, created_objects):
     """
@@ -414,6 +415,7 @@ def check_vs_class_deleted(vs_class_name, created_objects):
     except ApiException:
         LOGGER.info(f"Volume Snapshot Class Delete : {vs_class_name} deletion confirmed")
 
+
 def delete_ds(ds_name, created_objects):
     if keep_objects:
         return
@@ -429,6 +431,7 @@ def delete_ds(ds_name, created_objects):
         clean_with_created_objects(created_objects)
         assert False
 
+
 def check_ds_deleted(ds_name, created_objects):
     if keep_objects:
         return
@@ -442,4 +445,3 @@ def check_ds_deleted(ds_name, created_objects):
         assert False
     except ApiException:
         LOGGER.info(f"Daemon Set Delete : {ds_name} deletion confirmed")
-

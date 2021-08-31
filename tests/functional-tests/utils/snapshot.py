@@ -49,8 +49,6 @@ def create_vs_class(vs_class_name, body_params, created_objects):
         assert False
 
 
-
-
 def check_vs_class(vs_class_name):
     """ 
     checks volume snapshot class vs_class_name exists or not
@@ -71,7 +69,6 @@ def check_vs_class(vs_class_name):
     except ApiException:
         LOGGER.info(f"volume snapshot class {vs_class_name} does not exists")
         return False
-
 
 
 def create_vs(vs_name, vs_class_name, pvc_name, created_objects):
@@ -173,8 +170,6 @@ def check_vs(vs_name):
         return False
 
 
-
-
 def check_vs_detail_for_static(vs_name, created_objects):
     api_instance = client.CustomObjectsApi()
     try:
@@ -239,7 +234,6 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
                     LOGGER.info(f"reason {reason} matched in volumesnapshot events, passing the test")
                     return
 
-
         LOGGER.error(f"reason {reason} did not matched in volumesnapshot events")
         clean_with_created_objects(created_objects)
         assert False
@@ -264,7 +258,8 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
 
     if body_params["deletionPolicy"] == "Retain":
         created_objects["vscontent"].append(snapcontent_name)
-        created_objects["scalesnapshot"].append([snapshot_name,volume_name])
+        created_objects["scalesnapshot"].append([snapshot_name, volume_name])
+
 
 def get_pv_name(pvc_name, created_objects):
     api_instance = client.CoreV1Api()
@@ -329,7 +324,7 @@ def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
             "source": {
                 "snapshotHandle": body_params["snapshotHandle"]
             },
-             "volumeSnapshotRef": {
+            "volumeSnapshotRef": {
                 "name": vs_name,
                 "namespace": namespace_value
             }
@@ -355,7 +350,6 @@ def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
         assert False
 
 
-
 def check_vs_content(vs_content_name):
     """
     checks volume snapshot content vs_content_name exists or not
@@ -376,5 +370,3 @@ def check_vs_content(vs_content_name):
     except ApiException:
         LOGGER.info(f"Volume Snapshot content {vs_content_name} does not exists")
         return False
-
-
