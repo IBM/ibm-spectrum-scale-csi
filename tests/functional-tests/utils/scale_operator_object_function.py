@@ -252,7 +252,7 @@ def check_scaleoperatorobject_daemonsets_state():
             if number_available == current_number_scheduled == desired_number_scheduled:
                 LOGGER.info("CSI driver daemonset ibm-spectrum-scale-csi's pods are Running")
                 return True, desired_number_scheduled
-             
+
             time.sleep(20)
             num += 1
             LOGGER.info("waiting for daemonsets")
@@ -590,16 +590,16 @@ def get_driver_ds_pod_name():
             f"Exception when calling CoreV1Api->list_namespaced_pod: {e}")
         assert False
 
+
 def get_driver_image():
     pod_name = get_driver_ds_pod_name()
     api_instance = client.CoreV1Api()
     try:
         api_response = api_instance.read_namespaced_pod(
-                name=pod_name, namespace=namespace_value, pretty=True)
+            name=pod_name, namespace=namespace_value, pretty=True)
         for container in api_response.status.container_statuses:
             if(container.name == "ibm-spectrum-scale-csi"):
                 LOGGER.info(f"CSI driver image :  {container.image}")
                 LOGGER.info(f"CSI driver image id : {container.image_id}")
     except ApiException:
         LOGGER.info("Unable to get driver image")
-
