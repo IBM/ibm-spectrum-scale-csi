@@ -25,6 +25,15 @@ def set_test_namespace_value(namespace_name=None):
     namespace_value = namespace_name
 
 
+def set_test_nodeselector_value(plugin_node_selector):
+    """ sets the nodeselector global for use in create_pod functions"""
+    global nodeselector
+    node_selector_labels = {}
+    for label_val in plugin_node_selector:
+        node_selector_labels[label_val["key"]] = label_val["value"]
+    nodeselector = node_selector_labels
+
+
 def get_random_name(type_of):
     """ return random name of type_of"""
     return type_of+"-"+name_generator()
@@ -450,7 +459,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
     pod_volumes = client.V1Volume(
         name="mypvc", persistent_volume_claim=pod_persistent_volume_claim)
     pod_spec = client.V1PodSpec(
-        containers=[pod_containers], volumes=[pod_volumes])
+        containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
     pod_body = client.V1Pod(
         api_version="v1",
         kind="Pod",
@@ -463,7 +472,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         api_response = api_instance.create_namespaced_pod(
             namespace=namespace_value, body=pod_body, pretty=True)
         LOGGER.debug(str(api_response))
-        if pod_name[0:12] == "snap-end-pod":   
+        if pod_name[0:12] == "snap-end-pod":
             created_objects["restore_pod"].append(pod_name)
         else:
             created_objects["pod"].append(pod_name)
@@ -667,60 +676,56 @@ def create_ds(ds_values, ds_name, pvc_name, created_objects):
     elif ds_values["read_only"] == "False":
         ds_values["read_only"] = False
 
-    node_selector_labels = {}
-    for lable_val in ds_values["pluginNodeSelector"]:
-        node_selector_labels[lable_val["key"]] = lable_val["value"]
-
     ds_body = {
-  "apiVersion": "apps/v1",
-  "kind": "DaemonSet",
-  "metadata": {
-    "name": ds_name,
-    "labels": {
-      "app": "nginx",
-      "ownerReferences":ds_name
-    }
-  },
-  "spec": {
-    "selector": {
-      "matchLabels": {
-        "name": "nginx",
-        "ownerReferences":ds_name
-      }
-    },
-    "template": {
-      "metadata": {
-        "labels": {
-          "name": "nginx",
-          "ownerReferences":ds_name
-        }
-      },
-      "spec": {
-        "containers": [
-          {
-            "name": "web-server",
-            "image": "nginxinc/nginx-unprivileged",
-            "volumeMounts": [
-              {
-                "name": "mypvc",
-                "mountPath": ds_values["mount_path"]
-              }
-            ]
-          }
-        ],
-        "volumes": [
-          {
-            "name": "mypvc",
-            "persistentVolumeClaim": {
-              "claimName": pvc_name,
-              "readOnly": ds_values["read_only"]
+        "apiVersion": "apps/v1",
+        "kind": "DaemonSet",
+        "metadata": {
+            "name": ds_name,
+            "labels": {
+                "app": "nginx",
+                "ownerReferences": ds_name
             }
-          }
-        ],
-         "nodeSelector": node_selector_labels
-      }
-    }
-  }
+        },
+        "spec": {
+            "selector": {
+                "matchLabels": {
+                    "name": "nginx",
+                    "ownerReferences": ds_name
+                }
+            },
+            "template": {
+                "metadata": {
+                    "labels": {
+                        "name": "nginx",
+                        "ownerReferences": ds_name
+                    }
+                },
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "web-server",
+                            "image": "nginxinc/nginx-unprivileged",
+                            "volumeMounts": [
+                                {
+                                    "name": "mypvc",
+                                    "mountPath": ds_values["mount_path"]
+                                }
+                            ]
+                        }
+                    ],
+                    "volumes": [
+                        {
+                            "name": "mypvc",
+                            "persistentVolumeClaim": {
+                                "claimName": pvc_name,
+                                "readOnly": ds_values["read_only"]
+                            }
+                        }
+                    ],
+                    "nodeSelector": nodeselector
+                }
+            }
+        }
     }
 
     try:
@@ -738,7 +743,7 @@ def create_ds(ds_values, ds_name, pvc_name, created_objects):
         assert False
 
 
-def check_ds(ds_name,value_ds,created_objects):
+def check_ds(ds_name, value_ds, created_objects):
     read_daemonsets_api_instance = client.AppsV1Api()
     num = 0
     while (num < 11):
@@ -752,7 +757,7 @@ def check_ds(ds_name,value_ds,created_objects):
             number_available = read_daemonsets_api_response.status.number_available
 
             if number_available == current_number_scheduled == desired_number_scheduled:
-                if desired_number_scheduled<2:
+                if desired_number_scheduled < 2:
                     LOGGER.error(f"Not enough nodes for this test, only {desired_number_scheduled} nodes are there")
                     cleanup.clean_with_created_objects(created_objects)
                     assert False
@@ -775,17 +780,17 @@ def check_ds(ds_name,value_ds,created_objects):
             LOGGER.info(f"Daemonset Check : waiting for daemonsets {ds_name}")
 
     if "reason" not in value_ds:
-       LOGGER.error(
-        f"Daemonset Check : daemonset {ds_name} {number_available}/{desired_number_scheduled} pods are Running, asserting")
-       cleanup.clean_with_created_objects(created_objects)
-       assert False
+        LOGGER.error(
+            f"Daemonset Check : daemonset {ds_name} {number_available}/{desired_number_scheduled} pods are Running, asserting")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
 
-    if desired_number_scheduled<2:
+    if desired_number_scheduled < 2:
         LOGGER.error(f"Not enough nodes for this test, only {desired_number_scheduled} nodes are there")
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
-    if check_ds_pod(ds_name,value_ds,created_objects):
+    if check_ds_pod(ds_name, value_ds, created_objects):
         LOGGER.info(f"Daemonset Check : daemonset {ds_name} pods failed with expected reason {value_ds['reason']}")
         return
 
@@ -793,26 +798,27 @@ def check_ds(ds_name,value_ds,created_objects):
     cleanup.clean_with_created_objects(created_objects)
     assert False
 
-def check_ds_pod(ds_name,value_ds,created_objects):
+
+def check_ds_pod(ds_name, value_ds, created_objects):
     api_instance = client.CoreV1Api()
     selector = "ownerReferences="+ds_name
-    running_pod_list,pod_list = [],[]
+    running_pod_list, pod_list = [], []
     try:
         api_response = api_instance.list_namespaced_pod(
-                namespace=namespace_value,pretty=True, label_selector=selector)
+            namespace=namespace_value, pretty=True, label_selector=selector)
         LOGGER.debug(api_response)
         for pod in api_response.items:
-            if pod.status.phase=="Running":
+            if pod.status.phase == "Running":
                 running_pod_list.append(pod.metadata.name)
             else:
                 pod_list.append(pod.metadata.name)
     except ApiException as e:
         LOGGER.error(
-                f"Exception when calling CoreV1Api->list_node: {e}")
+            f"Exception when calling CoreV1Api->list_node: {e}")
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
-    if len(running_pod_list)!=1:
+    if len(running_pod_list) != 1:
         LOGGER.error(f"running pods are {running_pod_list} , only one pod should be running, asserting")
         return False
 

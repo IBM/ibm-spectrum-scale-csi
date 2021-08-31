@@ -108,6 +108,7 @@ def fileset_exists(test_data):
         return False
     return True
 
+
 def cred_check(test_data):
     """
     checks if given parameters in test_data are correct
@@ -276,6 +277,7 @@ def mount_fs(test_data):
         LOGGER.error(f'Unable to mount {test_data["primaryFs"]} on {test_data["guiHost"]}')
         assert False
     LOGGER.info(f'primaryFS {test_data["primaryFs"]} mounted on {test_data["guiHost"]}')
+
 
 def cleanup():
     """
@@ -628,8 +630,9 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
     response = requests.post(snap_link, headers=headers, data=data, verify=False,
                              auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    created_objects["scalesnapshot"].append([snapshot_name,volume_name])
+    created_objects["scalesnapshot"].append([snapshot_name, volume_name])
     LOGGER.info(f"Static Snapshot Create :snapshot {snapshot_name} created for volume {volume_name}")
+
 
 def delete_snapshot(snapshot_name, volume_name, created_objects):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -638,7 +641,7 @@ def delete_snapshot(snapshot_name, volume_name, created_objects):
         volume_name+"/snapshots/"+snapshot_name
     response = requests.delete(snap_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    created_objects["scalesnapshot"].remove([snapshot_name,volume_name])
+    created_objects["scalesnapshot"].remove([snapshot_name, volume_name])
     LOGGER.info(f"Scale Snapshot Delete :snapshot {snapshot_name} of volume {volume_name} is deleted")
 
 
@@ -666,6 +669,7 @@ def check_snapshot_deleted(snapshot_name, volume_name):
         else:
             return True
     return False
+
 
 def snapshot_available():
     """
