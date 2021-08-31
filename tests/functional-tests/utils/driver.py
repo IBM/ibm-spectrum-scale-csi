@@ -676,10 +676,6 @@ def create_ds(ds_values, ds_name, pvc_name, created_objects):
     elif ds_values["read_only"] == "False":
         ds_values["read_only"] = False
 
-    node_selector_labels = {}
-    for lable_val in ds_values["pluginNodeSelector"]:
-        node_selector_labels[lable_val["key"]] = lable_val["value"]
-
     ds_body = {
         "apiVersion": "apps/v1",
         "kind": "DaemonSet",
@@ -726,7 +722,7 @@ def create_ds(ds_values, ds_name, pvc_name, created_objects):
                             }
                         }
                     ],
-                    "nodeSelector": node_selector_labels
+                    "nodeSelector": nodeselector
                 }
             }
         }
