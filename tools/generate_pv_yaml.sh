@@ -89,6 +89,7 @@ echo "INFO: volumeHandle: ${volhandle}"
 echo "INFO: Successfully created ${volname}.yaml"
 }
 
+echo "NOTE: This script is deprecated and will be removed in next release. Use generate_static_provisioning_rest_yaml.sh instead."
 
 SHORT=hf:l:F:s:p:c:a:
 LONG=help,filesystem:,linkpath:,fileset:,size:,pvname:,storageclass:,accessmode:
@@ -235,7 +236,6 @@ fi
 
 # TODO : Add check for kubernetes lable limit for value of VolumeHandle
 
-echo "FSETNAME=${FSETNAME}"
 if [[ -z "${FSETNAME}" ]]; then
   # Verify if path exist. It should be either directory or softlink
   if ! ( [  -d "${VOLPATH}" ] || [ -L "${VOLPATH}" ]); then
