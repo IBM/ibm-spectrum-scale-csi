@@ -1,0 +1,83 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: "{{ opName }}-resizer"
+  namespace: "{{ namespace }}"
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+spec:
+  serviceName: "{{ opName }}-resizer"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ opName }}-resizer"
+      product: "{{ productName }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ opName }}-resizer"
+        app.kubernetes.io/instance: '{{labelInstance}}'
+        app.kubernetes.io/managed-by: '{{labelManage}}'
+        app.kubernetes.io/name: '{{labelName}}'
+        product: '{{ productName }}'
+        release: '{{ labelRelease }}'
+      annotations:
+        productID: '{{annotationProductID}}'
+        productName: '{{annotationProductName}}'
+        productVersion: '{{annotationProductVersion}}'
+    spec:
+{% if resizerNodeSelector|length > 0 %}
+      nodeSelector:
+{% for resizerNodeSelect in resizerNodeSelector %}
+        {{ resizerNodeSelect.key }}: "{{ resizerNodeSelect.value }}"
+{% endfor %}
+{% endif %}
+      serviceAccount: "{{ productName }}-resizer"
+      containers:
+        - name: "{{ opName }}-resizer"
+{% if 'apps.openshift.io' in api_groups %}
+          securityContext:
+            privileged: true
+{% endif %}
+          image: "{{ resizer }}"
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+          env:
+            - name: ADDRESS
+              value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
+{% if imagePullSecrets | length > 0 %}
+      imagePullSecrets:
+{% for pullSecret in imagePullSecrets %}
+        - name:  "{{ pullSecret }}"
+{% endfor %}
+{% endif %}
+
+{% if tolerations | length > 0 %}
+      tolerations:
+{% for toleration in tolerations %}
+        - key: "{{ toleration.key }}"
+          operator: "{{ toleration.operator }}"
+{% if 'Equal' == toleration.operator %}
+          value: "{{ toleration.value }}"
+{% endif %}
+          effect: {{ toleration.effect }}
+{% if 'NoExecute' == toleration.effect  and toleration.tolerationSeconds is defined %}
+          tolerationSeconds: "{{ toleration.tolerationSeconds }}"
+{% endif %}
+{% endfor %}
+{% endif %}
+
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com"
+            type: DirectoryOrCreate

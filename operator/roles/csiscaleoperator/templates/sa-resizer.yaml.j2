@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+  name: ibm-spectrum-scale-csi-resizer
+  namespace: "{{namespace}}"
