@@ -47,6 +47,9 @@ spec:
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
+            - "--timeout=2m"
+            - "--handle-volume-inuse-error=false"
+            - "--workers=10"
           env:
             - name: ADDRESS
               value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"

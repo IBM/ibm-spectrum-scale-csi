@@ -48,6 +48,7 @@ spec:
             - "--csi-address=$(ADDRESS)"
             - "--timeout=2m"
             - "--worker-threads=10"
+            - "--extra-create-metadata"
             - "--v=5" # Debugging
           env:
             - name: ADDRESS
