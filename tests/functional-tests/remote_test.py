@@ -2733,7 +2733,7 @@ def test_driver_sc_permissions_empty_independent_pass_1():
     permissions = "" #to test default behavior i.e. directory should be created with 771 permissions
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod, permissions=permissions)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 @pytest.mark.regression
@@ -2741,7 +2741,7 @@ def test_driver_sc_permissions_777_independent_pass_2():
     permissions = "777"
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_666_independent_pass_3():
@@ -2752,14 +2752,14 @@ def test_driver_sc_permissions_666_independent_pass_3():
     permissions = "666"
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod, permissions=permissions)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 def test_driver_sc_permissions_777_dependent_pass_1():
     permissions = "777"
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": permissions,
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_666_dependent_pass_2():
@@ -2770,7 +2770,7 @@ def test_driver_sc_permissions_666_dependent_pass_2():
     permissions = "666"
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": permissions,
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod, permissions=permissions)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 def test_driver_sc_permissions_invalid_input_1():

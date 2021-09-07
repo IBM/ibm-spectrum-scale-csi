@@ -561,7 +561,7 @@ def test_snapshot_dynamic_permissions_777_independent():
     permissions = "777"
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
                 "gid": data["gid_number"], "uid": data["uid_number"]}
-    snapshot_object.test_dynamic_permissions(value_sc, test_restore=True, permissions=permissions)
+    snapshot_object.test_dynamic_permissions(value_sc, test_restore=True)
 
 
 @pytest.mark.slow
@@ -570,4 +570,4 @@ def test_snapshot_dynamic_permissions_777_dependent():
     permissions = "777"
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
             "gid": data["gid_number"], "uid": data["uid_number"]}
-    snapshot_object.test_dynamic_permissions(value_sc, test_restore=True, permissions=permissions)
+    snapshot_object.test_dynamic_permissions(value_sc, test_restore=True)

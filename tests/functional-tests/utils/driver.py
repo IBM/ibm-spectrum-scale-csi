@@ -910,3 +910,18 @@ def get_pv_for_pvc(pvc_name, created_objects):
 
     return api_response.spec.volume_name
 
+
+def check_permissions_for_pvc(pvc_name, permissions, created_objects):
+    """
+    get pv and verify permissions for pv
+    """
+    pv_name = get_pv_for_pvc(pvc_name, created_objects)
+    if permissions == "": #assign default permissions 771
+        permissions = "771"
+    status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+    if status is True:
+        LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+    else:
+        LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
