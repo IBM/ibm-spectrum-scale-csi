@@ -2670,53 +2670,51 @@ def test_driver_sequential_pvc():
 
 @pytest.mark.regression
 def test_driver_sc_permissions_empty_independent_pass_1():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Permission denied"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                     "read_only": "True", "reason": "Read-only file system"}
+                 ]
     permissions = "" #to test default behavior i.e. directory should be created with 771 permissions
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
             "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod, permissions=permissions)
 
 
+@pytest.mark.regression
 def test_driver_sc_permissions_777_independent_pass_2():
     permissions = "777"
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
             "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc, permissions=permissions)
 
 
 def test_driver_sc_permissions_666_independent_pass_3():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Permission denied"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                     "read_only": "True", "reason": "Read-only file system"}
+                 ]
     permissions = "666"
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
             "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod, permissions=permissions)
 
 
 def test_driver_sc_permissions_777_dependent_pass_1():
     permissions = "777"
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
             "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc, permissions=permissions)
 
 
 def test_driver_sc_permissions_666_dependent_pass_2():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "reason": "Permission denied"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                     "read_only": "True", "reason": "Read-only file system"}
+                 ]
     permissions = "666"
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
             "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions(value_sc, permissions=permissions)
-
-
-@pytest.mark.regression
-def test_driver_sc_permissions_from_pod_777_independent_pass_1():
-    permissions = "777"
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
-            "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions_from_pod(value_sc, permissions=permissions)
-
-
-def test_driver_sc_permissions_from_pod_777_dependent_pass_1():
-    permissions = "777"
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
-            "gid": data["gid_number"], "uid": data["uid_number"]}
-    driver_object.test_sc_permissions_from_pod(value_sc, permissions=permissions)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod, permissions=permissions)
 
 
 def test_driver_sc_permissions_invalid_input_1():

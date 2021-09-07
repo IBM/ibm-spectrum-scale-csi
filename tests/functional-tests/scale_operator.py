@@ -283,12 +283,18 @@ class Driver:
             scale_function.delete_namespace()
         scale_function.check_namespace_deleted()
 
-    def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None):
+    def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None, permissions=None):
         created_objects = get_cleanup_dict()
         if value_pvc_passed is None:
             value_pvc_passed = self.value_pvc
         if value_pod_passed is None:
             value_pod_passed = self.value_pod
+
+        if permissions is not None and not(ff.permissions_available()):
+            LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+            LOGGER.warning("Skipping Testcase")
+            return
+
         LOGGER.info(
             f"Testing Dynamic Provisioning with following PVC parameters {str(value_pvc_passed)}")
         sc_name = d.get_random_name("sc")
@@ -305,10 +311,27 @@ class Driver:
             d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
             val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
             if val is True:
+                if permissions is not None:
+                    pv_name = d.get_pv_for_pvc(pvc_name, created_objects)
+                    if permissions == "": #assign default permissions 771
+                        permissions = "771"
+                    status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+                    if status is True:
+                        LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+                    else:
+                        LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+                        cleanup.clean_with_created_objects(created_objects)
+                        assert False
+
                 for num2, _ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
-                    d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
+                    if permissions is not None:
+                        run_as_group = value_sc["gid"]
+                        run_as_user = value_sc["uid"]
+                        d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name, run_as_user, run_as_group)
+                    else:
+                        d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     d.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
@@ -323,6 +346,7 @@ class Driver:
             cleanup.check_pvc_deleted(pvc_name, vol_name, created_objects)
         LOGGER.info(100*"=")
         cleanup.clean_with_created_objects(created_objects)
+
 
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
@@ -435,94 +459,6 @@ class Driver:
             d.create_pod(self.value_pod[0], pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(self.value_pod[0], pod_name, created_objects)
 
-        cleanup.clean_with_created_objects(created_objects)
-
-
-    def test_sc_permissions(self, value_sc, value_pvc_passed=None, value_pod_passed=None, permissions=None):
-        created_objects = get_cleanup_dict()
-        if value_pvc_passed is None:
-            value_pvc_passed = self.value_pvc
-        if value_pod_passed is None:
-            value_pod_passed = self.value_pod
-        LOGGER.info(
-            f"Testing Dynamic Provisioning with following PVC parameters {str(value_pvc_passed)}")
-        sc_name = d.get_random_name("sc")
-        config.load_kube_config(config_file=self.kubeconfig)
-        d.create_storage_class(value_sc, sc_name, created_objects)
-        d.check_storage_class(sc_name)
-        for num,_ in enumerate(value_pvc_passed):
-            value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
-            if (check_key(value_sc, "reason")):
-                if not(check_key(value_pvc_pass, "reason")):
-                    value_pvc_pass["reason"] = value_sc["reason"]
-            LOGGER.info(100*"=")
-            pvc_name = d.get_random_name("pvc")
-            d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
-            val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
-            if val is True:
-                pv_name = d.get_pv_for_pvc(value_pvc_pass, pvc_name, created_objects)
-                if permissions == "": #assign default permissions 771
-                    permissions = "771"
-                status = ff.get_and_verify_pv_permissions(pv_name, permissions)
-                if status is True:
-                    LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
-                else:
-                    LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
-            vol_name=cleanup.delete_pvc(pvc_name, created_objects)
-            cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
-        LOGGER.info(100*"=")
-        cleanup.clean_with_created_objects(created_objects)
-
-
-    def test_sc_permissions_from_pod(self, value_sc, value_pvc_passed=None, value_pod_passed=None, permissions=None):
-        created_objects = get_cleanup_dict()
-        if value_pvc_passed is None:
-            value_pvc_passed = self.value_pvc
-        if value_pod_passed is None:
-            value_pod_passed = self.value_pod
-        LOGGER.info(
-            f"Testing Dynamic Provisioning with following PVC parameters {str(value_pvc_passed)}")
-        sc_name = d.get_random_name("sc")
-        config.load_kube_config(config_file=self.kubeconfig)
-        d.create_storage_class(value_sc, sc_name, created_objects)
-        d.check_storage_class(sc_name)
-        for num,_ in enumerate(value_pvc_passed):
-            value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
-            if (check_key(value_sc, "reason")):
-                if not(check_key(value_pvc_pass, "reason")):
-                    value_pvc_pass["reason"] = value_sc["reason"]
-            LOGGER.info(100*"=")
-            pvc_name = d.get_random_name("pvc")
-            d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
-            val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
-            if val is True:
-                pv_name = d.get_pv_for_pvc(value_pvc_pass, pvc_name, created_objects)
-                status = ff.get_and_verify_pv_permissions(pv_name, permissions)
-                if status is True:
-                    LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
-                else:
-                    LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
-                for num2,_ in enumerate(value_pod_passed):
-                    LOGGER.info(100*"-")
-                    pod_name = d.get_random_name("pod")
-                    run_as_group = value_sc["gid"]
-                    run_as_user = value_sc["uid"]
-                    d.create_pod_subpath(value_pod_passed[num2], pvc_name, pod_name, created_objects, run_as_user, run_as_group, self.image_name)
-                    d.check_pod(value_pod_passed[num2], pod_name, created_objects)
-                    d.create_file_inside_pod(value_pod_passed[num2], pod_name, created_objects)
-                    d.check_file_inside_pod(value_pod_passed[num2], pod_name, created_objects)
-                    cleanup.delete_pod(pod_name, created_objects)
-                    cleanup.check_pod_deleted(pod_name, created_objects)
-                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
-                        pvc_name = d.get_random_name("pvc")
-                        d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
-                        val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
-                        if val is not True:
-                            break
-                LOGGER.info(100*"-")
-            vol_name=cleanup.delete_pvc(pvc_name, created_objects)
-            cleanup.check_pvc_deleted(pvc_name,vol_name, created_objects)
-        LOGGER.info(100*"=")
         cleanup.clean_with_created_objects(created_objects)
 
 
@@ -680,6 +616,108 @@ class Snapshot():
 
             cleanup.clean_with_created_objects(created_objects)
 
+    def test_dynamic_permissions(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, permissions=None):
+        if value_vs_class is None:
+            value_vs_class = self.value_vs_class
+        if number_of_snapshots is None:
+            number_of_snapshots = self.number_of_snapshots
+        number_of_restore = 1
+
+        if permissions is not None and not(ff.permissions_available()):
+            LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+            LOGGER.warning("Skipping Testcase")
+            return
+
+        for pvc_value in self.value_pvc:
+
+            created_objects = get_cleanup_dict()
+            LOGGER.info("-"*100)
+            sc_name = d.get_random_name("sc")
+            d.create_storage_class(value_sc, sc_name, created_objects)
+            d.check_storage_class(sc_name)
+
+            pvc_name = d.get_random_name("pvc")
+            d.create_pvc(pvc_value, sc_name, pvc_name, created_objects)
+            val = d.check_pvc(pvc_value, pvc_name, created_objects)
+            
+            if val is True and permissions is not None:
+                pv_name = d.get_pv_for_pvc(pvc_name, created_objects)
+                if permissions == "": #assign default permissions 771
+                    permissions = "771"
+                status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+                if status is True:
+                    LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+                else:
+                    LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+                    cleanup.clean_with_created_objects(created_objects)
+                    assert False
+
+            pod_name = d.get_random_name("snap-start-pod")
+            value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
+
+            if permissions is not None:
+                run_as_group = value_sc["gid"]
+                run_as_user = value_sc["uid"]
+                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name, run_as_user, run_as_group)
+            else:
+                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
+            d.check_pod(value_pod, pod_name, created_objects)
+            d.create_file_inside_pod(value_pod, pod_name, created_objects)
+
+            vs_class_name = d.get_random_name("vsclass")
+            snapshot.create_vs_class(vs_class_name, value_vs_class, created_objects)
+            snapshot.check_vs_class(vs_class_name)
+
+            if not(ff.snapshot_available()):
+                if reason is None:
+                    reason = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
+                test_restore = False
+
+            vs_name = d.get_random_name("vs")
+            for num in range(0, number_of_snapshots):
+                snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name, created_objects)
+                snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
+
+            if test_restore:
+                if restore_sc is not None:
+                    sc_name = "restore-" + sc_name
+                    d.create_storage_class(restore_sc, sc_name, created_objects)
+                    d.check_storage_class(sc_name)
+                if restore_pvc is not None:
+                    pvc_value = restore_pvc
+
+                for num in range(0, number_of_restore):
+                    restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
+                    snap_pod_name = "snap-end-pod"+vs_name[2:]
+                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
+                    val = d.check_pvc(pvc_value, restored_pvc_name, created_objects)
+                    if val is True and permissions is not None:
+                        pv_name = d.get_pv_for_pvc(pvc_name, created_objects)
+                        if permissions == "": #assign default permissions 771
+                            permissions = "771"
+                        status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+                        if status is True:
+                            LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+                        else:
+                            LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+                            cleanup.clean_with_created_objects(created_objects)
+                            assert False
+
+                    if val is True:
+                        if permissions is not None:
+                            run_as_group = value_sc["gid"]
+                            run_as_user = value_sc["uid"]
+                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name, run_as_user, run_as_group)
+                        else:
+                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
+                        d.check_pod(value_pod, snap_pod_name, created_objects)
+                        d.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
+                        cleanup.delete_pod(snap_pod_name, created_objects)
+                        cleanup.check_pod_deleted(snap_pod_name, created_objects)
+                    vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
+                    cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
+
+            cleanup.clean_with_created_objects(created_objects)
 
 def get_test_data():
     filepath = "config/test.config"
