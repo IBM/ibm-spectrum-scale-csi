@@ -173,6 +173,21 @@ spec:
                     type: string
                 type: object
               type: array
+            resizer:
+              description: Resizer image for csi (issues volume snapshot requests).
+              type: string
+            resizerNodeSelector:
+              description: Node selector for resizer sidecar.
+              items:
+                properties:
+                  key:
+                    description: Key for node selector.
+                    type: string
+                  value:
+                    description: Value for key.
+                    type: string
+                type: object
+              type: array
             secretCounter:
               description:
                 An internal counter used by the operator to trigger reloads

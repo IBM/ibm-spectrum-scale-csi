@@ -99,6 +99,16 @@ spec:
 #    - key: "infranode"
 #      value: "1"
 
+# resizerNodeSelector specifies on which nodes we want to run resizer
+# sidecar. In below example resizer pod will run on nodes which have label as
+# "scale=true" and "infranode=1". Can have multiple entries.
+# ==================================================================================
+  resizerNodeSelector:
+    - key: "scale"
+      value: "true"
+#    - key: "infranode"
+#      value: "1"
+
 # pluginNodeSelector specifies nodes on which we want to run plugin daemoset
 # In below example plugin daemonset will run on nodes which have label as
 # "scale=true". Can have multiple entries.
