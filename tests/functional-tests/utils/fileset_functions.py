@@ -678,31 +678,8 @@ def feature_available(feature_name):
     """
     features = {"snapshot":5110,"permissions":5112}
     scale_version =  return_scale_version()
-    if int(scale_version) >= features["feature_name"]:
+    if int(scale_version) >= features[feature_name]:
         return True
-    return False
-
-def snapshot_available():
-    """
-    returns True , if snapshot feature is available
-    else , returns False
-    """
-    scale_version =  return_scale_version()
-    if int(scale_version) >= 5110:
-        return True
-    LOGGER.warning("Snapshot restore feature is not supported")
-    return False
-
-
-def permissions_available():
-    """
-    returns True , if permissions in storageclass feature is available
-    else , returns False
-    """
-    scale_version =  return_scale_version()
-    if int(scale_version) >= 5112:
-        return True
-    LOGGER.warning("Permissions in storageclass feature is not supported")
     return False
 
 
