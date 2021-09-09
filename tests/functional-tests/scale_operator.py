@@ -290,7 +290,7 @@ class Driver:
         if value_pod_passed is None:
             value_pod_passed = self.value_pod
 
-        if "permissions" in value_sc.keys() and not(ff.permissions_available()):
+        if "permissions" in value_sc.keys() and not(ff.feature_available("permissions")):
             LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
@@ -467,12 +467,18 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
+
     def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
             number_of_snapshots = self.number_of_snapshots
         number_of_restore = 1
+
+        if "permissions" in value_sc.keys() and not(ff.feature_available("permissions")):
+            LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+            LOGGER.warning("Skipping Testcase")
+            return
 
         for pvc_value in self.value_pvc:
 
@@ -484,11 +490,20 @@ class Snapshot():
 
             pvc_name = d.get_random_name("pvc")
             d.create_pvc(pvc_value, sc_name, pvc_name, created_objects)
-            d.check_pvc(pvc_value, pvc_name, created_objects)
+            val = d.check_pvc(pvc_value, pvc_name, created_objects)
+
+            if val is True and "permissions" in value_sc.keys():
+                d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
 
             pod_name = d.get_random_name("snap-start-pod")
             value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-            d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
+
+            if "permissions" in value_sc.keys():
+                run_as_group = value_sc["gid"]
+                run_as_user = value_sc["uid"]
+                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name, run_as_user, run_as_group)
+            else:
+                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(value_pod, pod_name, created_objects)
             d.create_file_inside_pod(value_pod, pod_name, created_objects)
 
@@ -496,7 +511,7 @@ class Snapshot():
             snapshot.create_vs_class(vs_class_name, value_vs_class, created_objects)
             snapshot.check_vs_class(vs_class_name)
 
-            if not(ff.snapshot_available()):
+            if not(ff.feature_available("snapshot")):
                 if reason is None:
                     reason = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
                 test_restore = False
@@ -519,8 +534,16 @@ class Snapshot():
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
                     d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
                     val = d.check_pvc(pvc_value, restored_pvc_name, created_objects)
+                    if val is True and "permissions" in value_sc.keys():
+                        d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
+
                     if val is True:
-                        d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
+                        if "permissions" in value_sc.keys():
+                            run_as_group = value_sc["gid"]
+                            run_as_user = value_sc["uid"]
+                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name, run_as_user, run_as_group)
+                        else:
+                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         d.check_pod(value_pod, snap_pod_name, created_objects)
                         d.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
                         cleanup.delete_pod(snap_pod_name, created_objects)
@@ -529,6 +552,7 @@ class Snapshot():
                     cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
             cleanup.clean_with_created_objects(created_objects)
+
 
     def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:
@@ -580,7 +604,7 @@ class Snapshot():
                 snapshot.create_vs_from_content(vs_name+"-"+str(num), vs_content_name+"-"+str(num), created_objects)
                 snapshot.check_vs_detail_for_static(vs_name+"-"+str(num), created_objects)
 
-            if not(ff.snapshot_available()):
+            if not(ff.feature_available("snapshot")):
                 pvc_value["reason"] = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
 
             if test_restore:
@@ -607,90 +631,6 @@ class Snapshot():
 
             cleanup.clean_with_created_objects(created_objects)
 
-    def test_dynamic_permissions(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None):
-        if value_vs_class is None:
-            value_vs_class = self.value_vs_class
-        if number_of_snapshots is None:
-            number_of_snapshots = self.number_of_snapshots
-        number_of_restore = 1
-
-        if "permissions" in value_sc.keys() and not(ff.permissions_available()):
-            LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
-            LOGGER.warning("Skipping Testcase")
-            return
-
-        for pvc_value in self.value_pvc:
-
-            created_objects = get_cleanup_dict()
-            LOGGER.info("-"*100)
-            sc_name = d.get_random_name("sc")
-            d.create_storage_class(value_sc, sc_name, created_objects)
-            d.check_storage_class(sc_name)
-
-            pvc_name = d.get_random_name("pvc")
-            d.create_pvc(pvc_value, sc_name, pvc_name, created_objects)
-            val = d.check_pvc(pvc_value, pvc_name, created_objects)
-            
-            if val is True and "permissions" in value_sc.keys():
-                d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
-
-            pod_name = d.get_random_name("snap-start-pod")
-            value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-
-            if "permissions" in value_sc.keys():
-                run_as_group = value_sc["gid"]
-                run_as_user = value_sc["uid"]
-                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name, run_as_user, run_as_group)
-            else:
-                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
-            d.check_pod(value_pod, pod_name, created_objects)
-            d.create_file_inside_pod(value_pod, pod_name, created_objects)
-
-            vs_class_name = d.get_random_name("vsclass")
-            snapshot.create_vs_class(vs_class_name, value_vs_class, created_objects)
-            snapshot.check_vs_class(vs_class_name)
-
-            if not(ff.snapshot_available()):
-                if reason is None:
-                    reason = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
-                test_restore = False
-
-            vs_name = d.get_random_name("vs")
-            for num in range(0, number_of_snapshots):
-                snapshot.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name, created_objects)
-                snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
-
-            if test_restore:
-                if restore_sc is not None:
-                    sc_name = "restore-" + sc_name
-                    d.create_storage_class(restore_sc, sc_name, created_objects)
-                    d.check_storage_class(sc_name)
-                if restore_pvc is not None:
-                    pvc_value = restore_pvc
-
-                for num in range(0, number_of_restore):
-                    restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
-                    snap_pod_name = "snap-end-pod"+vs_name[2:]
-                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
-                    val = d.check_pvc(pvc_value, restored_pvc_name, created_objects)
-                    if val is True and "permissions" in value_sc.keys():
-                        d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
-
-                    if val is True:
-                        if "permissions" in value_sc.keys():
-                            run_as_group = value_sc["gid"]
-                            run_as_user = value_sc["uid"]
-                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name, run_as_user, run_as_group)
-                        else:
-                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
-                        d.check_pod(value_pod, snap_pod_name, created_objects)
-                        d.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
-                        cleanup.delete_pod(snap_pod_name, created_objects)
-                        cleanup.check_pod_deleted(snap_pod_name, created_objects)
-                    vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
-                    cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
-
-            cleanup.clean_with_created_objects(created_objects)
 
 def get_test_data():
     filepath = "config/test.config"

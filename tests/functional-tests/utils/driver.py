@@ -480,7 +480,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         pod_security_context = client.V1PodSecurityContext(
             run_as_group=run_as_group, run_as_user=run_as_user)
         pod_spec = client.V1PodSpec(
-            containers=[pod_containers], volumes=[pod_volumes], security_context=pod_security_context)
+            containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
 
     pod_body = client.V1Pod(
         api_version="v1",

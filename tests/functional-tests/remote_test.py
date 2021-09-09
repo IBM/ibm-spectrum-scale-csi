@@ -2730,16 +2730,15 @@ def test_driver_sc_permissions_empty_independent_pass_1():
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    permissions = "" #to test default behavior i.e. directory should be created with 771 permissions
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
+    #to test default behavior i.e. directory should be created with 771 permissions
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 @pytest.mark.regression
 def test_driver_sc_permissions_777_independent_pass_2():
-    permissions = "777"
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc)
 
@@ -2749,15 +2748,13 @@ def test_driver_sc_permissions_666_independent_pass_3():
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    permissions = "666"
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "666",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 def test_driver_sc_permissions_777_dependent_pass_1():
-    permissions = "777"
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": permissions,
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc)
 
@@ -2767,8 +2764,7 @@ def test_driver_sc_permissions_666_dependent_pass_2():
                  {"mount_path": "/usr/share/nginx/html/scale",
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
-    permissions = "666"
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": permissions,
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "666",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 

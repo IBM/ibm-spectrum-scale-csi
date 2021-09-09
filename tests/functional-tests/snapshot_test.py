@@ -558,8 +558,7 @@ def test_snapshot_static_nodeclass_3():
 @pytest.mark.slow
 def test_snapshot_dynamic_permissions_777_independent():
     LOGGER.error("Testcase will fail due to ongoing issue")
-    permissions = "777"
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": permissions,
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     snapshot_object.test_dynamic_permissions(value_sc, test_restore=True)
 
@@ -567,7 +566,6 @@ def test_snapshot_dynamic_permissions_777_independent():
 @pytest.mark.slow
 def test_snapshot_dynamic_permissions_777_dependent():
     LOGGER.error("Testcase will fail due to ongoing issue")
-    permissions = "777"
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": permissions,
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
             "gid": data["gid_number"], "uid": data["uid_number"]}
     snapshot_object.test_dynamic_permissions(value_sc, test_restore=True)

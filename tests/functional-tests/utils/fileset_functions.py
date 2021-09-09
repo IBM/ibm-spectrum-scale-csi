@@ -671,6 +671,17 @@ def check_snapshot_deleted(snapshot_name, volume_name):
     return False
 
 
+def feature_available(feature_name):
+    """
+    returns True , if passed feature_name available in scale version
+    else , returns False
+    """
+    features = {"snapshot":5110,"permissions":5112}
+    scale_version =  return_scale_version()
+    if int(scale_version) >= features["feature_name"]:
+        return True
+    return False
+
 def snapshot_available():
     """
     returns True , if snapshot feature is available
