@@ -497,7 +497,7 @@ class Snapshot():
 
             if value_sc.keys() >= {"permissions", "gid", "uid"}:
                 value_pod["gid"] = value_sc["gid"]
-                value_pod[num2]["uid"] = value_sc["uid"]
+                value_pod["uid"] = value_sc["uid"]
             d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(value_pod, pod_name, created_objects)
             d.create_file_inside_pod(value_pod, pod_name, created_objects)
@@ -533,12 +533,7 @@ class Snapshot():
                         d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
 
                     if val is True:
-                        if "permissions" in value_sc.keys():
-                            run_as_group = value_sc["gid"]
-                            run_as_user = value_sc["uid"]
-                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name, run_as_user, run_as_group)
-                        else:
-                            d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
+                        d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         d.check_pod(value_pod, snap_pod_name, created_objects)
                         d.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
                         cleanup.delete_pod(snap_pod_name, created_objects)

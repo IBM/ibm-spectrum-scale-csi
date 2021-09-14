@@ -476,7 +476,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
 
     if "gid" in value_pod and "uid" in value_pod:
         pod_security_context = client.V1PodSecurityContext(
-            run_as_group=value_pod["gid"], run_as_user=value_pod["uid"])
+            run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]))
         pod_spec = client.V1PodSpec(
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
     else:
