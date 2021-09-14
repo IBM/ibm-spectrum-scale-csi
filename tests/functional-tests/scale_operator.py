@@ -286,9 +286,9 @@ class Driver:
     def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None):
         created_objects = get_cleanup_dict()
         if value_pvc_passed is None:
-            value_pvc_passed = self.value_pvc
+            value_pvc_passed = copy.deepcopy(self.value_pvc)
         if value_pod_passed is None:
-            value_pod_passed = self.value_pod
+            value_pod_passed = copy.deepcopy(self.value_pod)
 
         if "permissions" in value_sc.keys() and not(ff.feature_available("permissions")):
             LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
@@ -317,12 +317,10 @@ class Driver:
                 for num2, _ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
                     pod_name = d.get_random_name("pod")
-                    if "permissions" in value_sc.keys():
-                        run_as_group = value_sc["gid"]
-                        run_as_user = value_sc["uid"]
-                        d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name, run_as_user, run_as_group)
-                    else:
-                        d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
+                    if value_sc.keys() >= {"permissions", "gid", "uid"}:
+                        value_pod_passed[num2]["gid"] = value_sc["gid"]
+                        value_pod_passed[num2]["uid"] = value_sc["uid"]
+                    d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     d.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
@@ -468,7 +466,7 @@ class Snapshot():
         cleanup.set_test_namespace_value(test_namespace)
 
 
-    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None):
+    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -496,14 +494,13 @@ class Snapshot():
                 d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
 
             pod_name = d.get_random_name("snap-start-pod")
-            value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
+            if value_pod is None:
+                value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"} 
 
-            if "permissions" in value_sc.keys():
-                run_as_group = value_sc["gid"]
-                run_as_user = value_sc["uid"]
-                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name, run_as_user, run_as_group)
-            else:
-                d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
+            if value_sc.keys() >= {"permissions", "gid", "uid"}:
+                value_pod["gid"] = value_sc["gid"]
+                value_pod[num2]["uid"] = value_sc["uid"]
+            d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(value_pod, pod_name, created_objects)
             d.create_file_inside_pod(value_pod, pod_name, created_objects)
 

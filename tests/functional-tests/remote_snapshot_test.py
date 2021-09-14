@@ -509,16 +509,16 @@ def test_snapshot_static_nodeclass_3():
 @pytest.mark.slow
 def test_snapshot_dynamic_permissions_777_independent():
     LOGGER.error("Testcase will fail due to ongoing issue")
-    permissions = "777"
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": permissions,
+    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]}
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
                         "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic_permissions(value_sc, test_restore=True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)
 
 
 @pytest.mark.slow
 def test_snapshot_dynamic_permissions_777_dependent():
     LOGGER.error("Testcase will fail due to ongoing issue")
-    permissions = "777"
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": permissions,
+    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]}
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
                     "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic_permissions(value_sc, test_restore=True)
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)

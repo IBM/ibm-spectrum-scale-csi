@@ -426,7 +426,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                     con = False
 
 
-def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx:1.19.0", run_as_user=None, run_as_group=None):
+def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx:1.19.0"):
     """
     creates pod
     Args:
@@ -453,34 +453,36 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
     pod_volumes = client.V1Volume(
         name="mypvc", persistent_volume_claim=pod_persistent_volume_claim)
 
-    if run_as_user is None and run_as_group is None:
+    pod_ports = client.V1ContainerPort(container_port=80)
+
+    if "sub_path" not in value_pod:
         pod_volume_mounts = client.V1VolumeMount(
             name="mypvc", mount_path=value_pod["mount_path"])
 
-        pod_ports = client.V1ContainerPort(container_port=80)
         pod_containers = client.V1Container(
             name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
-    
-        pod_spec = client.V1PodSpec(
-            containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
     else:
-        sub_path="sub_path_mnt"
-        pod_volume_mounts = client.V1VolumeMount(
-            name="mypvc", mount_path=value_pod["mount_path"], sub_path=sub_path)
-
-        pod_ports = client.V1ContainerPort(container_port=80)
+        list_pod_volume_mount = []
+        for iter_num,single_sub_path in enumerate(value_pod["sub_path"]):
+            final_mount_path = value_pod["mount_path"] if iter_num==0 else value_pod["mount_path"]+str(iter_num)
+            list_pod_volume_mount.append(client.V1VolumeMount(
+            name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path))
+     
         command = [ "/bin/sh", "-c", "--" ]
         args = [ "while true; do sleep 30; done;" ]
         pod_containers = client.V1Container(
-            name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports],
+            name="web-server", image=image_name, volume_mounts=list_pod_volume_mount, ports=[pod_ports],
             command=command, args=args)
 
-        run_as_group=int(run_as_group)
-        run_as_user=int(run_as_user)
+
+    if "gid" in value_pod and "uid" in value_pod:
         pod_security_context = client.V1PodSecurityContext(
-            run_as_group=run_as_group, run_as_user=run_as_user)
+            run_as_group=value_pod["gid"], run_as_user=value_pod["uid"])
         pod_spec = client.V1PodSpec(
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
+    else:
+        pod_spec = client.V1PodSpec(
+                        containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
 
     pod_body = client.V1Pod(
         api_version="v1",

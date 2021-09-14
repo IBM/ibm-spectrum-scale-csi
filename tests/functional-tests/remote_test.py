@@ -2738,9 +2738,13 @@ def test_driver_sc_permissions_empty_independent_pass_1():
 
 @pytest.mark.regression
 def test_driver_sc_permissions_777_independent_pass_2():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt"], "reason": "Read-only file system"}
+                 ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 def test_driver_sc_permissions_666_independent_pass_3():
@@ -2753,10 +2757,25 @@ def test_driver_sc_permissions_666_independent_pass_3():
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
+def test_driver_sc_permissions_777_independent_pass_4():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt","sub_path_mnt_2","sub_path_mnt3"]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt","sub_path_mnt_2","sub_path_mnt3"], "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
+            "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
 def test_driver_sc_permissions_777_dependent_pass_1():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt"], "reason": "Read-only file system"}
+                 ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    driver_object.test_dynamic(value_sc)
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 def test_driver_sc_permissions_666_dependent_pass_2():
@@ -2765,6 +2784,17 @@ def test_driver_sc_permissions_666_dependent_pass_2():
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "666",
+            "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_777_dependent_pass_3():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt","sub_path_mnt_2","sub_path_mnt3"]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt","sub_path_mnt_2","sub_path_mnt3"], "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
             "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
