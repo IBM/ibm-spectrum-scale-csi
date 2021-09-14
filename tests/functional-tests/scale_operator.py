@@ -336,7 +336,6 @@ class Driver:
         LOGGER.info(100*"=")
         cleanup.clean_with_created_objects(created_objects)
 
-
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
         config.load_kube_config(config_file=self.kubeconfig)
@@ -465,7 +464,6 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
-
     def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
@@ -495,7 +493,7 @@ class Snapshot():
 
             pod_name = d.get_random_name("snap-start-pod")
             if value_pod is None:
-                value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"} 
+                value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
 
             if value_sc.keys() >= {"permissions", "gid", "uid"}:
                 value_pod["gid"] = value_sc["gid"]
@@ -549,7 +547,6 @@ class Snapshot():
                     cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
             cleanup.clean_with_created_objects(created_objects)
-
 
     def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:

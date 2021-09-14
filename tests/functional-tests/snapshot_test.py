@@ -570,5 +570,5 @@ def test_snapshot_dynamic_permissions_777_dependent():
     LOGGER.error("Testcase will fail due to ongoing issue")
     value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]}
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
-            "gid": data["gid_number"], "uid": data["uid_number"]}
+                "gid": data["gid_number"], "uid": data["uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)

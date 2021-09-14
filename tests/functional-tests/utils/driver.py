@@ -463,17 +463,16 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
             name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
     else:
         list_pod_volume_mount = []
-        for iter_num,single_sub_path in enumerate(value_pod["sub_path"]):
-            final_mount_path = value_pod["mount_path"] if iter_num==0 else value_pod["mount_path"]+str(iter_num)
+        for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
+            final_mount_path = value_pod["mount_path"] if iter_num == 0 else value_pod["mount_path"]+str(iter_num)
             list_pod_volume_mount.append(client.V1VolumeMount(
-            name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path))
-     
-        command = [ "/bin/sh", "-c", "--" ]
-        args = [ "while true; do sleep 30; done;" ]
+                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path))
+
+        command = ["/bin/sh", "-c", "--"]
+        args = ["while true; do sleep 30; done;"]
         pod_containers = client.V1Container(
             name="web-server", image=image_name, volume_mounts=list_pod_volume_mount, ports=[pod_ports],
             command=command, args=args)
-
 
     if "gid" in value_pod and "uid" in value_pod:
         pod_security_context = client.V1PodSecurityContext(
@@ -482,7 +481,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
     else:
         pod_spec = client.V1PodSpec(
-                        containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
+            containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
 
     pod_body = client.V1Pod(
         api_version="v1",
@@ -918,7 +917,7 @@ def check_permissions_for_pvc(pvc_name, permissions, created_objects):
     get pv and verify permissions for pv
     """
     pv_name = get_pv_for_pvc(pvc_name, created_objects)
-    if permissions == "": #assign default permissions 771
+    if permissions == "":  # assign default permissions 771
         permissions = "771"
     status = ff.get_and_verify_pv_permissions(pv_name, permissions)
     if status is True:
