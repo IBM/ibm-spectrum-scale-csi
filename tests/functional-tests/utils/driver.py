@@ -466,8 +466,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
             final_mount_path = value_pod["mount_path"] if iter_num == 0 else value_pod["mount_path"]+str(iter_num)
             list_pod_volume_mount.append(client.V1VolumeMount(
-                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path))
-
+                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path,read_only=value_pod["sub_path_read_only"][iter_num]))
         command = ["/bin/sh", "-c", "--"]
         args = ["while true; do sleep 30; done;"]
         pod_containers = client.V1Container(
