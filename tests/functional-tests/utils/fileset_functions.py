@@ -407,7 +407,7 @@ def created_fileset_exists(volume_name):
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)

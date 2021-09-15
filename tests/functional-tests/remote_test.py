@@ -2721,5 +2721,55 @@ def test_driver_one_pvc_two_pod_fail_4():
 
 @pytest.mark.slow
 def test_driver_sequential_pvc():
+    # this testcase contains sequential pod creation after all pvc are bound
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
-    driver_object.sequential_pvc(value_sc, data["number_of_sequential_pvc"])
+    driver_object.parallel_pvc(value_sc, data["number_of_sequential_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+def test_driver_parallel_pvc_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    driver_object.parallel_pvc(value_sc, 5)
+
+
+def test_driver_parallel_pvc_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    driver_object.parallel_pvc(value_sc, 10)
+
+
+@pytest.mark.slow
+def test_driver_parallel_pvc_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    driver_object.parallel_pvc(value_sc, 25)
+
+
+@pytest.mark.slow
+def test_driver_parallel_pvc_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    driver_object.parallel_pvc(value_sc, 50)
+
+
+@pytest.mark.slow
+def test_driver_parallel_pvc_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    driver_object.parallel_pvc(value_sc, 10)
+
+
+def test_driver_parallel_pvc_6():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "volDirBasePath": data["r_volDirBasePath"]}
+    driver_object.parallel_pvc(value_sc, 10)
+
+
+def test_driver_parallel_pvc_7():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    driver_object.parallel_pvc(value_sc, 50)
+
+
+@pytest.mark.slow
+def test_driver_parallel_pvc_8():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "volDirBasePath": data["r_volDirBasePath"]}
+    driver_object.parallel_pvc(value_sc, 50)

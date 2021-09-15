@@ -395,7 +395,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
             if(check_key(pvc_values, "reason")):
                 time_count = 8
             elif(check_key(pvc_values, "parallel")):
-                time_count = 60
+                time_count = 240
             else:
                 time_count = 20
             if(var > time_count):
