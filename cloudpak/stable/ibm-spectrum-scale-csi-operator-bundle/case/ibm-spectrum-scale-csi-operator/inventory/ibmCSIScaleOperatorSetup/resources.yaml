@@ -9,13 +9,14 @@ resources:
     - metadata:
         name: ibm_spectrum_scale_csi_operator
       image: cpopen/ibm-spectrum-scale-csi-operator
+
       tag: v2.3.1
       digest: sha256:271884321e5df95c3fe9198b71d2e6eb29c3b42a23cb7e8d6fe30e6bde97158e   
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: icr.io
       manifests:
-      - digest: sha256:65c0f2178ac8a3c28f48efd26ccf16bd6f344fa88d1aa20efd3a25d5f99587c0
+      - digest: sha256:bc0b3693dfa3a7724e1d54943b6fd9c129637ef0e0bbc8d5ce66ee7cfb96d31b
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64

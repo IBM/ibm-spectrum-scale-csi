@@ -15,19 +15,19 @@ resources:
       registries:
       - host: icr.io
       manifests:
-      - digest: sha256:40fde94c993190dcef22b5038434490042f94c7d9fb81cdaa9acf807c2b36db7
+      - digest: sha256:285106992f39fcce4a0d036306c85d00d2630574f67bfada5dda662e88118a77
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
         tag: v2.3.1-amd64
-      - digest: sha256:7545e4c7ed99279005ecc586406d9173d625f7ce3630c3d6819847b45b410ec6
+      - digest: sha256:c2a2b8537d3a075aa6aeea489625dfd139a3c334911361f49a468007ca47cc0f
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
         tag: v2.3.1-ppc64le
-      - digest: sha256:b8fe42cb2f441df16ebf14cbab593e4d48f3cf07916a822c6e40adda7e32fade
+      - digest: sha256:1eb4428b0a098aac8a2973f9e60e732d0823969aa018606ede2e1930903efb12
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
