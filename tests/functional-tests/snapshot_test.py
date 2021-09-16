@@ -555,20 +555,19 @@ def test_snapshot_static_nodeclass_3():
     restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
     snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc, restore_pvc=restore_pvc)
 
-
-@pytest.mark.slow
 def test_snapshot_dynamic_permissions_777_independent():
     LOGGER.error("Testcase will fail due to ongoing issue")
-    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]}
+    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
+                 "sub_path_read_only":[ False ]}
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)
 
 
-@pytest.mark.slow
 def test_snapshot_dynamic_permissions_777_dependent():
     LOGGER.error("Testcase will fail due to ongoing issue")
-    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"]}
+    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
+                 "sub_path_read_only":[ False ]}
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)

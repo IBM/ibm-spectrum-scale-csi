@@ -2773,7 +2773,6 @@ def test_driver_sc_permissions_777_independent_pass_4():
                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ False, False, False], "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
-                 ]
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
