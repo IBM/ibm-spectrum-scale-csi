@@ -2728,9 +2728,9 @@ def test_driver_sequential_pvc():
 @pytest.mark.regression
 def test_driver_sc_permissions_empty_independent_pass_1():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                 "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ], "reason": "Permission denied"},
+                 "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Permission denied"},
                  {"mount_path": "/usr/share/nginx/html/scale",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ],
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],
                   "read_only": "True", "reason": "Read-only file system"}
                  ]
     # to test default behavior i.e. directory should be created with 771 permissions
@@ -2741,11 +2741,11 @@ def test_driver_sc_permissions_empty_independent_pass_1():
 
 @pytest.mark.regression
 def test_driver_sc_permissions_777_independent_pass_2():
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ]},
-                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ True ],
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ True ],
                   "reason": "Read-only file system"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -2754,9 +2754,9 @@ def test_driver_sc_permissions_777_independent_pass_2():
 
 def test_driver_sc_permissions_666_independent_pass_3():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ],"reason": "Permission denied"},
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],"reason": "Permission denied"},
                  {"mount_path": "/usr/share/nginx/html/scale",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ],
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],
                   "read_only": "True", "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "666",
@@ -2766,11 +2766,11 @@ def test_driver_sc_permissions_666_independent_pass_3():
 
 def test_driver_sc_permissions_777_independent_pass_4():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ False , True, True]},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False , True, True]},
                   {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ True, False, False], "reason": "Read-only file system"},
+                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ True, False, False], "reason": "Read-only file system"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ False, False, False], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False, False, False], "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -2778,11 +2778,11 @@ def test_driver_sc_permissions_777_independent_pass_4():
 
 
 def test_driver_sc_permissions_777_dependent_pass_1():
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ]},
-                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ True ],
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ True ],
                   "reason": "Read-only file system"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -2791,9 +2791,9 @@ def test_driver_sc_permissions_777_dependent_pass_1():
 
 def test_driver_sc_permissions_666_dependent_pass_2():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ], "reason": "Permission denied"},
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Permission denied"},
                  {"mount_path": "/usr/share/nginx/html/scale",
-                  "sub_path": ["sub_path_mnt"], "sub_path_read_only":[ False ],
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],
                   "read_only": "True", "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "666",
@@ -2803,11 +2803,11 @@ def test_driver_sc_permissions_666_dependent_pass_2():
 
 def test_driver_sc_permissions_777_dependent_pass_3():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ False , True, True]},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False , True, True]},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ True, False, False], "reason": "Read-only file system"},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ True, False, False], "reason": "Read-only file system"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "sub_path_read_only":[ False, False, False], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False, False, False], "reason": "Read-only file system"}
                  ]
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}

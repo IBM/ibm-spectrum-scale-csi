@@ -507,18 +507,9 @@ def test_snapshot_static_nodeclass_3():
 
 
 def test_snapshot_dynamic_permissions_777_independent():
-    LOGGER.error("Testcase will fail due to ongoing issue")
+    LOGGER.error("Testcase will fail if scale version < 5.1.1-4")
     value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
-                 "sub_path_read_only":[ False ]}
+                 "volumemount_readonly":[ False ]}
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
-                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)
-
-
-def test_snapshot_dynamic_permissions_777_dependent():
-    LOGGER.error("Testcase will fail due to ongoing issue")
-    value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
-                 "sub_path_read_only":[ False ]}
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)
