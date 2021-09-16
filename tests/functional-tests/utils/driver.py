@@ -55,7 +55,7 @@ def get_storage_class_parameters(values):
     """
     dict_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
-                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass"]
+                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions"]
     num = len(list_parameters)
     for val in range(0, num):
         if(check_key(values, list_parameters[val])):
@@ -429,19 +429,17 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
 def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx:1.19.0"):
     """
     creates pod
-
     Args:
         param1: value_pod - values required for creation of pod
         param2: pvc_name - name of pvc , pod associated with
         param3: pod_name - name of pod to be created
         param4: image_name - name of the pod image (Default:"nginx:1.19.0")
-
+        param5: run_as_user - value for pod securityContext spec runAsUser
+        param6: run_as_group - value for pod securityContext spec runAsGroup
     Returns:
         None
-
     Raises:
         Raises an exception on kubernetes client api failure and asserts
-
     """
     if value_pod["read_only"] == "True":
         value_pod["read_only"] = True
@@ -449,17 +447,41 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         value_pod["read_only"] = False
     api_instance = client.CoreV1Api()
     pod_metadata = client.V1ObjectMeta(name=pod_name, labels={"app": "nginx"})
-    pod_volume_mounts = client.V1VolumeMount(
-        name="mypvc", mount_path=value_pod["mount_path"])
-    pod_ports = client.V1ContainerPort(container_port=80)
-    pod_containers = client.V1Container(
-        name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
+
     pod_persistent_volume_claim = client.V1PersistentVolumeClaimVolumeSource(
         claim_name=pvc_name, read_only=value_pod["read_only"])
     pod_volumes = client.V1Volume(
         name="mypvc", persistent_volume_claim=pod_persistent_volume_claim)
-    pod_spec = client.V1PodSpec(
-        containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
+
+    pod_ports = client.V1ContainerPort(container_port=80)
+
+    if "sub_path" not in value_pod:
+        pod_volume_mounts = client.V1VolumeMount(
+            name="mypvc", mount_path=value_pod["mount_path"])
+
+        pod_containers = client.V1Container(
+            name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
+    else:
+        list_pod_volume_mount = []
+        for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
+            final_mount_path = value_pod["mount_path"] if iter_num == 0 else value_pod["mount_path"]+str(iter_num)
+            list_pod_volume_mount.append(client.V1VolumeMount(
+                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path,read_only=value_pod["volumemount_readonly"][iter_num]))
+        command = ["/bin/sh", "-c", "--"]
+        args = ["while true; do sleep 30; done;"]
+        pod_containers = client.V1Container(
+            name="web-server", image=image_name, volume_mounts=list_pod_volume_mount, ports=[pod_ports],
+            command=command, args=args)
+
+    if "gid" in value_pod and "uid" in value_pod:
+        pod_security_context = client.V1PodSecurityContext(
+            run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]))
+        pod_spec = client.V1PodSpec(
+            containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
+    else:
+        pod_spec = client.V1PodSpec(
+            containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
+
     pod_body = client.V1Pod(
         api_version="v1",
         kind="Pod",
@@ -505,6 +527,7 @@ def create_file_inside_pod(value_pod, pod_name, created_objects):
         LOGGER.info("file snaptestfile created successfully on SpectrumScale mount point inside the pod")
         return
     LOGGER.error("file snaptestfile not created")
+    LOGGER.error(resp)
     cleanup.clean_with_created_objects(created_objects)
     assert False
 
@@ -865,4 +888,40 @@ def create_deployment_object():
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
+        assert False
+
+
+def get_pv_for_pvc(pvc_name, created_objects):
+    """ 
+    return pv name associated with pvc
+    """
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace=namespace_value, pretty=True)
+        LOGGER.debug(str(api_response))
+        LOGGER.info(f'PVC Check: Checking for pvc {pvc_name}')
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
+        LOGGER.info(f"PVC Check : PVC {pvc_name} does not exists on the cluster")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+    return api_response.spec.volume_name
+
+
+def check_permissions_for_pvc(pvc_name, permissions, created_objects):
+    """
+    get pv and verify permissions for pv
+    """
+    pv_name = get_pv_for_pvc(pvc_name, created_objects)
+    if permissions == "":  # assign default permissions 771
+        permissions = "771"
+    status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+    if status is True:
+        LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
+    else:
+        LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
+        cleanup.clean_with_created_objects(created_objects)
         assert False
