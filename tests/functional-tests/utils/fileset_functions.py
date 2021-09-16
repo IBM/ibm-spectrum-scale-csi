@@ -671,10 +671,21 @@ def check_snapshot_deleted(snapshot_name, volume_name):
     return False
 
 
-def snapshot_available():
+def feature_available(feature_name):
     """
-    returns True , if snapshot feature is available
+    returns True , if passed feature_name available in scale version
     else , returns False
+    """
+    features = {"snapshot": 5110, "permissions": 5112}
+    scale_version = return_scale_version()
+    if int(scale_version) >= features[feature_name]:
+        return True
+    return False
+
+
+def return_scale_version():
+    """
+    get spectrum scale version and return it
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     get_link = "https://"+test["guiHost"]+":"+test["port"] + "/scalemgmt/v2/info"
@@ -685,10 +696,7 @@ def snapshot_available():
     LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
     scale_version = response_dict["info"]["serverVersion"]
     scale_version = scale_version[0] + scale_version[2] + scale_version[4] + scale_version[6]
-    if int(scale_version) >= 5110:
-        return True
-    LOGGER.warning("Snapshot restore feature is not supported")
-    return False
+    return scale_version
 
 
 def get_scale_version(test_data):
@@ -702,3 +710,99 @@ def get_scale_version(test_data):
 
     response_dict = json.loads(response.text)
     LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
+
+
+def get_and_verify_pv_permissions(volume_name, mode):
+    """
+
+    Get permissions for pv path and ensure they match with parameter mode.
+
+    Args:
+        volume_name: name of persistent volume
+        mode: expected permissions for persistent volume
+
+    Returns:
+       returns True , if persistent volume permissions match with mode
+       returns False , if persistent volume permissions and mode mismatch
+
+    Raises:
+       None
+
+    Brief:
+       An extra parameter "permissions" is added to Storageclass. This helps
+       create pv with user specified permissions e.g. permissions=777.
+       We want to ensure that pv path is really created with input permissions.
+
+       However, there is no REST API to get mode bits aka permissions (777)
+       for a filesystem path. But, another REST API "acl" exists which returns
+       acls for a path. We can translate the acls to mode bits.
+
+       e.g. "acl" API returns "rwmxDaAnNcCos"; here acl to mode bit translation
+       "r" == 4 , "w" == 2 , "x" == 1
+       so for permissions=777, we need to ensure that "rwx" is present for all
+       i.e. for owner, group and everyone
+    """
+
+    # get acl for a path
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/acl/" + \
+        volume_name + "%2F" + volume_name + "-data"
+
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+
+    # store acl string as python dictionary
+    response_dict = json.loads(response.text)
+
+    possible_aces = ["x", "w", "r"]
+    mode_to_ace_bits = {
+        "1": ["x"],
+        "2": ["w"],
+        "4": ["r"],
+        "5": ["x", "r"],
+        "6": ["w", "r"],
+        "7": ["x", "w", "r"],
+    }
+
+    # retrieve actual aces set for owner, group, everyone
+    owner_aces = response_dict["acl"]["entries"][0]["permissions"]
+    group_aces = response_dict["acl"]["entries"][1]["permissions"]
+    everyone_aces = response_dict["acl"]["entries"][2]["permissions"]
+    # LOGGER.info(owner_aces) #, group_aces, everyone_aces)
+    LOGGER.info(f'Permissions Check : acebits for owner : {owner_aces} , group : {group_aces} , everyone : {everyone_aces}')
+
+    # expected permissions for owner, group, everyone
+    owner, group, everyone = [c for c in mode]
+    # LOGGER.info(owner) #, group, everyone)
+    LOGGER.info(f'Permissions Check : modebits for owner : {owner} , group : {group}, everyone : {everyone}')
+
+    # verify requred ace bits are set for owner, group, everyone
+    owner_aces_matched = all([c in owner_aces for c in mode_to_ace_bits[owner]])
+    group_aces_matched = all([c in group_aces for c in mode_to_ace_bits[group]])
+    everyone_aces_matched = all([c in everyone_aces for c in mode_to_ace_bits[everyone]])
+    # LOGGER.info(owner_aces_matched) #, group_aces_matched, everyone_aces_matched)
+    LOGGER.info(
+        f'Permissions Check : required acebits matched result for owner : {owner_aces_matched}, group : {group_aces_matched} , everyone : {everyone_aces_matched}')
+
+    # retrieve acebits that should not be set for owner, group, everyone
+    owner_excluded_aces = [ace for ace in possible_aces if ace not in mode_to_ace_bits[owner]]
+    group_excluded_aces = [ace for ace in possible_aces if ace not in mode_to_ace_bits[group]]
+    everyone_excluded_aces = [ace for ace in possible_aces if ace not in mode_to_ace_bits[everyone]]
+    # LOGGER.info(owner_excluded_aces) #, group_excluded_aces, everyone_excluded_aces)
+    LOGGER.info(f'Permissions Check : acebits missing for owner : {owner_excluded_aces} , group : {group_excluded_aces} , everyone : {everyone_excluded_aces}')
+
+    # ensure expected and actual missing aces should match
+    owner_excluded_aces_missing = all([c not in owner_aces for c in owner_excluded_aces])
+    group_excluded_aces_missing = all([c not in group_aces for c in group_excluded_aces])
+    everyone_excluded_aces_missing = all([c not in everyone_aces for c in everyone_excluded_aces])
+    # LOGGER.info(owner_excluded_aces_missing) #, group_excluded_aces_missing, everyone_excluded_aces_missing)
+    LOGGER.info(
+        f'Permissions Check : missing acebits result for owner : {owner_excluded_aces_missing} , group : {group_excluded_aces_missing} , everyone : {everyone_excluded_aces_missing}')
+
+    # return True only if required ace bits are set and excluded ace bits are missing for all (owner, group, everyone)
+    status = all([owner_aces_matched, group_aces_matched, everyone_aces_matched,
+                 owner_excluded_aces_missing, group_excluded_aces_missing, everyone_excluded_aces_missing])
+    LOGGER.info(f'Permissions Check : final result : {status}')
+
+    return status
