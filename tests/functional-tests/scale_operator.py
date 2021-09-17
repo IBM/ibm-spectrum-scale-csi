@@ -415,7 +415,7 @@ class Driver:
             d.check_ds(ds_name, value_ds_pass, created_objects)
         cleanup.clean_with_created_objects(created_objects)
 
-    def sequential_pvc(self, value_sc, num_of_pvc):
+    def parallel_pvc(self, value_sc, num_of_pvc, pod_creation=False):
         created_objects = get_cleanup_dict()
         sc_name = d.get_random_name("sc")
         config.load_kube_config(config_file=self.kubeconfig)
@@ -438,6 +438,10 @@ class Driver:
             LOGGER.info(100*"-")
             d.check_pvc(value_pvc_pass, pvc_name, created_objects)
 
+        if pod_creation is False:
+            cleanup.clean_with_created_objects(created_objects)
+            return
+
         pod_names = []
 
         for pvc_name in pvc_names:
@@ -446,6 +450,8 @@ class Driver:
             pod_names.append(pod_name)
             d.create_pod(self.value_pod[0], pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(self.value_pod[0], pod_name, created_objects)
+            cleanup.delete_pod(pod_name, created_objects)
+            cleanup.check_pod_deleted(pod_name, created_objects)
 
         cleanup.clean_with_created_objects(created_objects)
 

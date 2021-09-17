@@ -139,3 +139,9 @@ pytest driver_test.py -m marker_name
 
 eg. kubectl exec -it <csi-test-pod-name> -- pytest driver_test.py -m regression --html=/data/<report-name>.html
 ```
+### Run Stress/Load testcases using stresstest marker and runslow
+```
+pytest driver_test.py -m "stresstest" --runslow --workers 6 #(ensure driver is already deployed before using --workers)
+
+eg. kubectl exec -it <csi-test-pod-name> -- pytest driver_test.py -m "stresstest" --runslow --workers 6 --html=/data/<report-name>.html
+```
