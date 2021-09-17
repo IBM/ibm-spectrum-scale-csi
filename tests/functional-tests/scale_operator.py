@@ -450,6 +450,8 @@ class Driver:
             pod_names.append(pod_name)
             d.create_pod(self.value_pod[0], pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(self.value_pod[0], pod_name, created_objects)
+            cleanup.delete_pod(pod_name, created_objects)
+            cleanup.check_pod_deleted(pod_name, created_objects)
 
         cleanup.clean_with_created_objects(created_objects)
 
