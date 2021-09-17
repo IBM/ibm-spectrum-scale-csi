@@ -59,7 +59,7 @@ spec:
 
 # Liveness probe image name, in case we do not want to use default image.
 # ==================================================================================
-#  livenessprobe: "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.1"
+#  livenessprobe: "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
 
 # Snapshotter image name, in case we do not want to use default image.
 # ==================================================================================
@@ -67,7 +67,7 @@ spec:
 
 # SpectrumScale CSI Plugin image name, in case we do not want to use default image.
 # ==================================================================================
-#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.0"
+#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.1"
 
 # attacherNodeSelector specifies on which nodes we want to run attacher sidecar
 # In below example attacher will run on nodes which have label as "scale=true"
