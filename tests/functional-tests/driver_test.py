@@ -2663,9 +2663,52 @@ def test_driver_one_pvc_two_pod_fail_4():
 
 
 @pytest.mark.slow
-def test_driver_sequential_pvc():
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_1():
+    # this testcase contains sequential pod creation after all pvc are bound
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
-    driver_object.sequential_pvc(value_sc, data["number_of_sequential_pvc"])
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_3():
+    # this testcase contains sequential pod creation after all pvc are bound
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_4():
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "clusterId": data["id"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_5():
+    # this testcase contains sequential pod creation after all pvc are bound
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "volDirBasePath": data["volDirBasePath"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_6():
+    value_sc = {"volBackendFs": data["primaryFs"],
+                "volDirBasePath": data["volDirBasePath"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
 
 
 @pytest.mark.regression
