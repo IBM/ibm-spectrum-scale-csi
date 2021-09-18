@@ -14,13 +14,13 @@ namespace: '{{ ansible_operator_meta.namespace | default("ibm-spectrum-scale-csi
 storage-class: "ibm-spectrum-scale-csi"
 
 # Image defaults
-snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1', true) }}"
-attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.2.1', true) }}"
-provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v2.2.2', true) }}"
-livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0', true) }}"
+snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.2.1', true) }}"
+attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.3.0', true) }}"
+provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.0.0', true) }}"
+livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.4.0', true) }}"
 
 # Due to camelCase these get loaded differently in the operator.
-driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.2.0', true) }}"
+driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.3.0', true) }}"
 spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.0', true) }}"
 
 # Set defaults for the secret counter.
