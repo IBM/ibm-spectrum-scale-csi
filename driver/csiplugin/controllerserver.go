@@ -1046,7 +1046,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	//Assumption : filesystem_uuid is always from local/primary cluster.
 	splitVolID := strings.Split(volumeID, ";")
 	if len(splitVolID) < 3 {
-		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume : VolumeID is not in proper format")
+		return nil, status.Error(codes.NotFound, "ControllerPublishVolume : VolumeID is not in proper format")
 	}
 	filesystemID := splitVolID[1]
 
@@ -1064,7 +1064,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	fsName, err := cs.Driver.connmap["primary"].GetFilesystemName(filesystemID)
 	if err != nil {
 		glog.Errorf("ControllerPublishVolume : Error in getting filesystem Name for filesystem ID of %s.", filesystemID)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem Name for filesystem ID of %s. Error [%v]", filesystemID, err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem Name for filesystem ID of %s. Error [%v]", filesystemID, err))
 	}
 
 	//Check if primary filesystem is mounted.
