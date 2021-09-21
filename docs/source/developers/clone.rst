@@ -62,7 +62,7 @@ Driver
   cd ${DRIVER_DIR}
 
   # Build the container image 
-  VERSION="v2.3.0"
+  VERSION="v2.3.1"
   docker build -t ibm-spectrum-scale-csi:${VERSION} .
 
   # Save the image into a .tar file
