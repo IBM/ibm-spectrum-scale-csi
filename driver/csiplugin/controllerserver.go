@@ -785,7 +785,7 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	var sIdMem scaleSnapId
 
 	if len(splitSid) < 4 {
-		return scaleSnapId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Snapshot Id : [%v]", sId))
+		return scaleSnapId{}, status.Error(codes.NotFound, fmt.Sprintf("Invalid Snapshot Id : [%v]", sId))
 	}
 
 	/* clusterId;FSUUID;filesetName;snapshotName;path */
@@ -815,7 +815,7 @@ func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error)
 		SlnkPart := splitVid[2]
 		slnkSplit := strings.Split(SlnkPart, "=")
 		if len(slnkSplit) < 2 {
-			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vId))
+			return scaleVolId{}, status.Error(codes.NotFound, fmt.Sprintf("Invalid Volume Id : [%v]", vId))
 		}
 		vIdMem.SymLnkPath = slnkSplit[1]
 		vIdMem.IsFilesetBased = false
@@ -985,6 +985,12 @@ func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "No volume capability specified")
 	}
 
+        splitVolID := strings.Split(volumeID, ";")
+        if len(splitVolID) < 3 {
+                return nil, status.Error(codes.NotFound, "ValidateVolumeCapabilities : VolumeID is not in proper format")
+        }
+
+
 	for _, cap := range req.VolumeCapabilities {
 		if cap.GetAccessMode().GetMode() != csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
 			return &csi.ValidateVolumeCapabilitiesResponse{Message: ""}, nil
@@ -1031,13 +1037,17 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	nodeID := req.GetNodeId()
 
 	if nodeID == "" {
-		return nil, status.Error(codes.InvalidArgument, "NodeID not present")
+		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume : NodeID not present")
 	}
 
 	volumeID := req.GetVolumeId()
 
 	if volumeID == "" {
 		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume : VolumeID is not present")
+	}
+
+	if req.VolumeCapability == nil {
+		return nil, status.Error(codes.InvalidArgument, ""ControllerPublishVolume : VolumeCapabilities cannot be empty")
 	}
 
 	var isFsMounted bool
@@ -1139,7 +1149,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 	if skipMountUnmount == "yes" && (!isFsMounted || !ispFsMounted) {
 		glog.Errorf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s", primaryfsName, fsName, scalenodeID)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s.", primaryfsName, fsName, scalenodeID))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s.", primaryfsName, fsName, scalenodeID))
 	}
 
 	//mount the primary filesystem if not mounted
