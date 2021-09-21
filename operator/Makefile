@@ -3,7 +3,7 @@ SHELL:=/bin/bash
 NAMESPACE=csiscaleoperator
 
 # Current Operator version
-VERSION ?= 2.3.0
+VERSION ?= 2.3.1
 # Default bundle image tag
 BUNDLE_IMG ?= controller-bundle:$(VERSION)
 # Options for 'bundle-build'

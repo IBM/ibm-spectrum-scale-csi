@@ -46,6 +46,7 @@ OPERATOR_VERSIONS:
   - 2.1.0
   - 2.2.0
   - 2.3.0
+  - 2.3.1
 
 # Quay username with write access to the application and Quay Password
 QUAY_USERNAME: "QUAY_USERNAME"
@@ -129,6 +130,7 @@ OPERATOR_VERSIONS:
   - 2.1.0
   - 2.2.0
   - 2.3.0
+  - 2.3.1
 
  QUAY_USERNAME: "QUAY_USERNAME"             # Quay username used for login to quay.io and have admin access to Quay Container image repository name
  QUAY_PASSWORD: "QUAY_PASSWORD"             # Quay username's token for login to quay.io to push the image to Quay Container image repository
