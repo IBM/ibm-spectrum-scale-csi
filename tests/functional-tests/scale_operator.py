@@ -322,6 +322,12 @@ class Driver:
                         value_pod_passed[num2]["uid"] = value_sc["uid"]
                     d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     d.check_pod(value_pod_passed[num2], pod_name, created_objects)
+                    if "volume_expansion_storage" in value_pvc_pass:
+                        for expand_storage in value_pvc_pass["volume_expansion_storage"]:
+                            value_pvc_pass['storage'] = expand_storage
+                            d.expand_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
+                            if(d.check_pvc(value_pvc_pass, pvc_name, created_objects)):
+                                d.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
                     if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):

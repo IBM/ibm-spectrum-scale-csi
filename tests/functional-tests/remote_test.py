@@ -2897,3 +2897,34 @@ def test_driver_sc_permissions_invalid_input_6():
                 "permissions": "778",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
+
+
+def test_driver_volume_expansion_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["5Gi","15Gi","25Gi"]},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["4Gi","12Gi"]},
+                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                      "reason": "ReadOnlyMany is not supported"}
+                ]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_volume_expansion_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["5Gi","15Gi","25Gi"]},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["4Gi","12Gi"]},
+                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                      "reason": "ReadOnlyMany is not supported"}
+                ]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_volume_expansion_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
+                "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["4Gi","16Gi"]},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["5Gi","15Gi","25Gi"]},
+                 {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                      "reason": "ReadOnlyMany is not supported"}
+                ]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
