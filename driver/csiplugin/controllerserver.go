@@ -1047,7 +1047,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	}
 
 	if req.VolumeCapability == nil {
-		return nil, status.Error(codes.InvalidArgument, ""ControllerPublishVolume : VolumeCapabilities cannot be empty")
+		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume : VolumeCapabilities cannot be empty")
 	}
 
 	var isFsMounted bool
