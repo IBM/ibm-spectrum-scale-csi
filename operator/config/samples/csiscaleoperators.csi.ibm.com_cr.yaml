@@ -45,30 +45,6 @@ spec:
 #      - guiHost: "< Cluster GUI IP/Hostname >"
 #      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
 
-# Attacher image name, in case we do not want to use default image.
-# ==================================================================================
-#  attacher: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.3.0"
-
-# Provisioner image name, in case we do not want to use default image.
-# ==================================================================================
-#  provisioner: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.0.0"
-
-# Driver Registrar image name, in case we do not want to use default image.
-# ==================================================================================
-#  driverRegistrar: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.3.0"
-
-# Liveness probe image name, in case we do not want to use default image.
-# ==================================================================================
-#  livenessprobe: "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.4.0"
-
-# Snapshotter image name, in case we do not want to use default image.
-# ==================================================================================
-#  snapshotter: "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.2.1"
-
-# SpectrumScale CSI Plugin image name, in case we do not want to use default image.
-# ==================================================================================
-#  spectrumScale: "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.1"
-
 # attacherNodeSelector specifies on which nodes we want to run attacher sidecar
 # In below example attacher will run on nodes which have label as "scale=true"
 # and "infranode=2". Can have multiple entries.
