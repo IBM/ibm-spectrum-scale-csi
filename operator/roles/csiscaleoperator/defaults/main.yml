@@ -8,7 +8,7 @@ labelName: "ibm-spectrum-scale-csi-operator"
 labelRelease: "ibm-spectrum-scale-csi-operator"
 annotationProductID: "ibm-spectrum-scale-csi-operator"
 annotationProductName: "IBM Spectrum Scale CSI Operator"
-annotationProductVersion: "2.3.0"
+annotationProductVersion: "2.3.1"
 
 namespace: '{{ ansible_operator_meta.namespace | default("ibm-spectrum-scale-csi-driver") }}'
 storage-class: "ibm-spectrum-scale-csi"
@@ -20,8 +20,9 @@ provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s
 livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.4.0', true) }}"
 
 # Due to camelCase these get loaded differently in the operator.
+
 driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.3.0', true) }}"
-spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.0', true) }}"
+spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.1', true) }}"
 
 # Set defaults for the secret counter.
 secretCounter: "{{ secret_counter |  default(-1) }}"
