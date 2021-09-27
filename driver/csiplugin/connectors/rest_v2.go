@@ -325,7 +325,7 @@ func (s *spectrumRestV2) WaitForSnapshotCopy(statusCode int, jobID uint64) error
 	return nil
 }
 
-func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) error {
+func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyFilesetPath. filesystem: %s, fileset: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, srcPath, targetPath, nodeclass)
 
 	copyVolReq := CopyVolumeRequest{}
@@ -342,18 +342,24 @@ func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName stri
 	err := s.doHTTP(copyVolURL, "PUT", &copyVolResp, copyVolReq)
 	if err != nil {
 		glog.Errorf("Error in copy volume request: %v", err)
-		return err
+		return 0, 0, err
 	}
 
 	err = s.isRequestAccepted(copyVolResp, copyVolURL)
 	if err != nil {
 		glog.Errorf("Request not accepted for processing: %v", err)
-		return err
+		return 0, 0, err
 	}
 
-	err = s.waitForJobCompletion(copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID)
+	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
+}
+
+func (s *spectrumRestV2) WaitForFilesetCopy(statusCode int, jobID uint64) error {
+	glog.V(4).Infof("rest_v2 WaitForFilesetCopy. statusCode: %v, jobID: %v", statusCode, jobID)
+
+	err := s.waitForJobCompletion(statusCode, jobID)
 	if err != nil {
-		glog.Errorf("Unable to copy volume %v", err)
+		glog.Errorf("error in waiting for job completion %v, %v", jobID, err)
 		return err
 	}
 

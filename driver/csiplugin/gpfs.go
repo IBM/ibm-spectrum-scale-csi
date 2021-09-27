@@ -33,13 +33,22 @@ import (
 const (
 	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 
-	SNAP_JOB_NOT_STARTED = 0
-	SNAP_JOB_RUNNING     = 1
-	SNAP_JOB_COMPLETED   = 2
-	SNAP_JOB_FAILED      = 3
+	SNAP_JOB_NOT_STARTED    = 0
+	SNAP_JOB_RUNNING        = 1
+	SNAP_JOB_COMPLETED      = 2
+	SNAP_JOB_FAILED         = 3
+	VOLCOPY_JOB_NOT_STARTED = 4
+	VOLCOPY_JOB_RUNNING     = 5
+	VOLCOPY_JOB_COMPLETED   = 6
+	VOLCOPY_JOB_FAILED      = 7
 )
 
 type SnapCopyJobDetails struct {
+	jobStatus int
+	volID     string
+}
+
+type VolCopyJobDetails struct {
 	jobStatus int
 	volID     string
 }
@@ -53,11 +62,12 @@ type ScaleDriver struct {
 	ns  *ScaleNodeServer
 	cs  *ScaleControllerServer
 
-	connmap          map[string]connectors.SpectrumScaleConnector
-	cmap             settings.ScaleSettingsConfigMap
-	primary          settings.Primary
-	reqmap           map[string]int64
-	snapjobstatusmap map[string]SnapCopyJobDetails
+	connmap              map[string]connectors.SpectrumScaleConnector
+	cmap                 settings.ScaleSettingsConfigMap
+	primary              settings.Primary
+	reqmap               map[string]int64
+	snapjobstatusmap     map[string]SnapCopyJobDetails
+	volcopyjobstatusmap  map[string]VolCopyJobDetails
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -83,6 +93,7 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	d.primary = primary
 	d.reqmap = make(map[string]int64)
 	d.snapjobstatusmap = make(map[string]SnapCopyJobDetails)
+	d.volcopyjobstatusmap = make(map[string]VolCopyJobDetails)
 	return &ScaleControllerServer{
 		Driver: d,
 	}
