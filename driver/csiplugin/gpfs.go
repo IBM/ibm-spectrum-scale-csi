@@ -231,9 +231,12 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 				glog.Errorf("Error in getting filesystem mount details for %s on Primary cluster", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
-			if !isFsMounted {
-				glog.Errorf("Primary filesystem %s is not mounted on GUI node of Primary cluster", cluster.Primary.GetPrimaryFs())
-				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())
+			shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
+			if shortnameNodeMapping != "skip_check" {
+				if !isFsMounted {
+					glog.Errorf("Primary filesystem %s is not mounted on GUI node of Primary cluster", cluster.Primary.GetPrimaryFs())
+					return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())
+				}
 			}
 
 			// In case primary fset value is not specified in configuation then use default
@@ -278,9 +281,12 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			return scaleConnMap, scaleConfig, primaryInfo, err
 		}
 
-		if !isPfsMounted {
-			glog.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
-			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
+		shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
+		if shortnameNodeMapping != "skip_check" {
+			if !isPfsMounted {
+				glog.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
+				return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
+			}
 		}
 	}
 
