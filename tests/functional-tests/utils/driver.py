@@ -986,6 +986,7 @@ def expand_pvc(pvc_values, sc_name, pvc_name, created_objects, pv_name=None):
         spec=pvc_spec
     )
 
+    LOGGER.info(100*"-")
     try:
         LOGGER.info(
             f'PVC Patch : Patching pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
@@ -999,3 +1000,12 @@ def expand_pvc(pvc_values, sc_name, pvc_name, created_objects, pv_name=None):
             f"Exception when calling CoreV1Api->patch_namespaced_persistent_volume_claim: {e}")
         cleanup.clean_with_created_objects(created_objects)
         assert False
+
+
+def expand_and_check_pvc(sc_name, pvc_name, value_pvc, expansion_key, pod_name, value_pod, created_objects):
+
+    for expand_storage in value_pvc[expansion_key]:
+        value_pvc['storage'] = expand_storage
+        expand_pvc(value_pvc, sc_name, pvc_name, created_objects)
+        if(check_pvc(value_pvc, pvc_name, created_objects)):
+            check_pod(value_pod, pod_name, created_objects)
