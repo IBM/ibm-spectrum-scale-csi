@@ -806,3 +806,37 @@ def get_and_verify_pv_permissions(volume_name, mode):
     LOGGER.info(f'Permissions Check : final result : {status}')
 
     return status
+
+
+def check_fileset_quota(volume_name, fileset_size):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/quotas?filter=objectName="+volume_name
+    LOGGER.debug(get_link)
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+
+    if not(response.status_code == 200):
+        LOGGER.error(f"Response status code is not 200 for {get_link}")
+        LOGGER.error(response)
+        return False
+
+    response_dict = json.loads(response.text)
+    quota_from_api = int(response_dict["quotas"][0]["blockLimit"])
+    quota_from_pvc = 0
+
+    power_of_10 = {"M": int(1000**2 / 1024), "G": int(1000**3 / 1024), "T": int(1000**4 / 1024)}
+    power_of_2 = {"Mi": int(1024), "Gi": int(1024**2), "Ti": int(1024**3)}
+
+    if fileset_size[-1:] in power_of_10:
+        quota_from_pvc = int(fileset_size[:-1]) * power_of_10[fileset_size[-1:]]
+    if fileset_size[-2:] in power_of_2:
+        quota_from_pvc = int(fileset_size[:-2]) * power_of_2[fileset_size[-2:]]
+    if quota_from_pvc < int(1024**2):
+       quota_from_pvc = int(1024**2)
+
+    LOGGER.info(f"PVC Check : Minimum quota expected = {quota_from_pvc}   Actual quota set = {quota_from_api}")
+
+    if quota_from_api >= quota_from_pvc:
+        return True
+    return False

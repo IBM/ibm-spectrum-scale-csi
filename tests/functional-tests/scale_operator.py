@@ -322,6 +322,10 @@ class Driver:
                         value_pod_passed[num2]["uid"] = value_sc["uid"]
                     d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     d.check_pod(value_pod_passed[num2], pod_name, created_objects)
+                    if "volume_expansion_storage" in value_pvc_pass:
+                        d.expand_and_check_pvc(sc_name, pvc_name, value_pvc_pass, "volume_expansion_storage", 
+                                               pod_name, value_pod_passed[num2], created_objects)
+
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
                     if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
@@ -470,7 +474,7 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
-    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None):
+    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None, value_pvc=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -481,8 +485,11 @@ class Snapshot():
             LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
+       
+        if value_pvc is None:
+            value_pvc = copy.deepcopy(self.value_pvc)
 
-        for pvc_value in self.value_pvc:
+        for pvc_value in value_pvc:
 
             created_objects = get_cleanup_dict()
             LOGGER.info("-"*100)
@@ -508,6 +515,11 @@ class Snapshot():
             d.check_pod(value_pod, pod_name, created_objects)
             d.create_file_inside_pod(value_pod, pod_name, created_objects)
 
+
+            if "presnap_volume_expansion_storage" in pvc_value:
+                d.expand_and_check_pvc(sc_name, pvc_name, pvc_value, "presnap_volume_expansion_storage",
+                                       pod_name, value_pod, created_objects)
+
             vs_class_name = d.get_random_name("vsclass")
             snapshot.create_vs_class(vs_class_name, value_vs_class, created_objects)
             snapshot.check_vs_class(vs_class_name)
@@ -523,17 +535,18 @@ class Snapshot():
                 snapshot.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
 
             if test_restore:
+                restore_sc_name = sc_name
                 if restore_sc is not None:
-                    sc_name = "restore-" + sc_name
-                    d.create_storage_class(restore_sc, sc_name, created_objects)
-                    d.check_storage_class(sc_name)
+                    restore_sc_name = "restore-" + restore_sc_name
+                    d.create_storage_class(restore_sc, restore_sc_name, created_objects)
+                    d.check_storage_class(restore_sc_name)
                 if restore_pvc is not None:
                     pvc_value = restore_pvc
 
                 for num in range(0, number_of_restore):
                     restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
-                    d.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
+                    d.create_pvc_from_snapshot(pvc_value, restore_sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
                     val = d.check_pvc(pvc_value, restored_pvc_name, created_objects)
                     if val is True and "permissions" in value_sc.keys():
                         d.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
@@ -542,6 +555,15 @@ class Snapshot():
                         d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         d.check_pod(value_pod, snap_pod_name, created_objects)
                         d.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
+
+                        if "postsnap_volume_expansion_storage" in pvc_value:
+                            d.expand_and_check_pvc(restore_sc_name, restored_pvc_name, pvc_value, "postsnap_volume_expansion_storage",
+                                                   snap_pod_name, value_pod, created_objects)
+
+                        if "post_presnap_volume_expansion_storage" in pvc_value:
+                            d.expand_and_check_pvc(sc_name, pvc_name, pvc_value, "post_presnap_volume_expansion_storage",
+                                                   pod_name, value_pod, created_objects)
+
                         cleanup.delete_pod(snap_pod_name, created_objects)
                         cleanup.check_pod_deleted(snap_pod_name, created_objects)
                     vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
