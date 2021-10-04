@@ -372,3 +372,12 @@ func shortnameInSlice(shortname string, nodeNames []string) bool {
 	}
 	return false
 }
+
+func numberInSlice(a int, list []int) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}

@@ -1426,12 +1426,12 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	volID := req.GetVolumeId()
 	if len(volID) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "Volume ID missing in request")
+		return nil, status.Error(codes.InvalidArgument, "volume ID missing in request")
 	}
 
 	capRange := req.GetCapacityRange()
 	if capRange == nil {
-		return nil, status.Error(codes.InvalidArgument, "Capacity range not provided")
+		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
 	}
 
 	capacity := uint64(capRange.GetRequiredBytes())
@@ -1457,8 +1457,8 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
 	if err != nil {
-		glog.Errorf("ControllerExpandVolume - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+		glog.Errorf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
 	filesetName := volumeIDMembers.FsetName
@@ -1490,13 +1490,33 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		volsize := strconv.FormatUint(capacity, 10)
 		err = conn.SetFilesetQuota(filesystemName, filesetName, volsize)
 		if err != nil {
-			glog.Errorf("unable to expand the volume. Error [%v]", err)
+			glog.Errorf("unable to update the quota. Error [%v]", err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to expand the volume. Error [%v]", err))
 		}
 	} else {
 		capacity = filesetQuotaBytes
 	}
 
+	fsetDetails, err := conn.ListFileset(filesystemName, filesetName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
+	}
+	//check if fileset is dependent of independent\
+	maxInodesCombination := []int{100096, 100352, 102400, 106496, 114688, 131072}
+
+	if fsetDetails.Config.ParentId == 0 {
+		if capacity > 10*oneGB {
+			if numberInSlice(fsetDetails.Config.MaxNumInodes, maxInodesCombination) {
+				opt := make(map[string]interface{})
+				opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
+				fseterr := conn.UpdateFileset(filesystemName, filesetName, opt)
+				if fseterr != nil {
+					glog.Errorf("volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesetName, filesystemName, fseterr)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
+				}
+			}
+		}
+	}
 	return &csi.ControllerExpandVolumeResponse{
 		CapacityBytes:         int64(capacity),
 		NodeExpansionRequired: false,
