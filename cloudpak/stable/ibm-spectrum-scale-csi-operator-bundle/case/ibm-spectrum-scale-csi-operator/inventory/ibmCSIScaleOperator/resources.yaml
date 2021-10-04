@@ -13,7 +13,7 @@ resources:
       digest: sha256:e1cb113441f02ccb49050e4dac55cc21aa3f485ac45d9d66296c50570b3dca94
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
-      - host: icr.io
+      - host: cp.icr.io
       manifests:
       - digest: sha256:285106992f39fcce4a0d036306c85d00d2630574f67bfada5dda662e88118a77
         mediaType: application/vnd.docker.distribution.manifest.v2
@@ -41,7 +41,7 @@ resources:
       digest: sha256:ed98431376c9e944e19a465fe8ea944806714dd95416a0821096c78d66b579bd
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
-      - host: icr.io
+      - host: cp.icr.io
       manifests:
       - digest: sha256:45355983657c022413a965eda7dee2b0ff2c48caa65a371c5c96c8c214a1cfb8
         mediaType: application/vnd.docker.distribution.manifest.v2
@@ -69,7 +69,7 @@ resources:
       digest: sha256:04c55b93a032ad8075cae540d60fc740a72c31006590dbdb61ad4ab9813959d0
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
-      - host: icr.io
+      - host: cp.icr.io
       manifests:
       - digest: sha256:74ed98f7cb6dfc67b9ad7d8a65c331dd16d676335ad9f69c3c4337cc50f44703
         mediaType: application/vnd.docker.distribution.manifest.v2
@@ -97,7 +97,7 @@ resources:
       digest: sha256:60ab9b3e6a030d3038c87c0d6bca2930f58d1d72823e6a4af09767dc83b696a2
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
-      - host: icr.io
+      - host: cp.icr.io
       manifests:
       - digest: sha256:721fce8988b24df52dddc639589cf9df4dd0899246b715040e8f93b3b55d90f4
         mediaType: application/vnd.docker.distribution.manifest.v2
@@ -125,7 +125,7 @@ resources:
       digest: sha256:2dee3fe5fe861bb66c3a4ac51114f3447a4cd35870e0f2e2b558c7a400d89589
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
-      - host: icr.io
+      - host: cp.icr.io
       manifests:
       - digest: sha256:d306b425b63cd05b1ebdbec1955aae0ae733c347a77079e36db6b444ddb9b55e
         mediaType: application/vnd.docker.distribution.manifest.v2
@@ -152,7 +152,7 @@ resources:
       digest: sha256:1b7c978a792a8fa4e96244e8059bd71bb49b07e2e5a897fb0c867bdc6db20d5d
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
-      - host: icr.io
+      - host: cp.icr.io
       manifests:
       - digest: sha256:9c99ceae57291a61e5d6dfc0e6947ce8f3e996fbdc6a57f3a00d7824f0654708
         mediaType: application/vnd.docker.distribution.manifest.v2
