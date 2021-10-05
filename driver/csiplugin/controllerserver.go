@@ -753,18 +753,36 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 
 	fsMntPt := targetFsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
-	path := fmt.Sprintf("%s%s", vID.FsetName, "-data")
 
-	jobStatus, jobID, err := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
-	if err != nil {
-		glog.Errorf("failed to create volume from volume. Error: [%v]", err)
-		return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from volume. Error: [%v]", err))
+	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
+	if scVol.IsFilesetBased {
+		path := fmt.Sprintf("%s%s", vID.FsetName, "-data")
+
+		jobStatus, jobID, err := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
+		if err != nil {
+			glog.Errorf("failed to create volume from volume. Error: [%v]", err)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from volume. Error: [%v]", err))
+		}
+
+		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
+		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		err = conn.WaitForFilesetCopy(jobStatus, jobID)
+	} else {
+		sLinkRelPath := strings.Replace(vID.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
+		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
+
+		jobStatus, jobID, err := conn.CopyDirectoryPath(vID.FsName, sLinkRelPath, targetPath, scVol.NodeClass)
+
+		if err != nil {
+			glog.Errorf("failed to create volume from volume. Error: [%v]", err)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from volume. Error: [%v]", err))
+		}
+
+		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
+		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		err = conn.WaitForDirectoryCopy(jobStatus, jobID)
 	}
 
-	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
-	cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
-
-	err = conn.WaitForFilesetCopy(jobStatus, jobID)
 	if err != nil {
 		glog.Errorf("unable to copy volume: %v.", err)
 		if strings.Contains(err.Error(), "EFSSG0632C") {
@@ -937,19 +955,21 @@ func (cs *ScaleControllerServer) validateSrcVolumeID(vID *scaleVolId, scVol *sca
 		}
 	}
 
-	if vID.FsetName == "" {
-		vID.FsetName, err = conn.GetFileSetNameFromId(vID.FsName, vID.FsetId)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("error in getting fileset details for %s", vID.FsetId))
+	if scVol.IsFilesetBased {
+		if vID.FsetName == "" {
+			vID.FsetName, err = conn.GetFileSetNameFromId(vID.FsName, vID.FsetId)
+			if err != nil {
+				return status.Error(codes.Internal, fmt.Sprintf("error in getting fileset details for %s", vID.FsetId))
+			}
 		}
-	}
 
-	isFsetLinked, err := conn.IsFilesetLinked(vID.FsName, vID.FsetName)
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", vID.FsetName))
-	}
-	if !isFsetLinked {
-		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", vID.FsetName))
+		isFsetLinked, err := conn.IsFilesetLinked(vID.FsName, vID.FsetName)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", vID.FsetName))
+		}
+		if !isFsetLinked {
+			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", vID.FsetName))
+		}
 	}
 	return nil
 }

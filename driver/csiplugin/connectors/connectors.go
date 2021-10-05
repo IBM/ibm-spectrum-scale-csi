@@ -79,6 +79,8 @@ type SpectrumScaleConnector interface {
 	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
 	CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
 	WaitForFilesetCopy(statusCode int, jobID uint64) error
+	CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
+	WaitForDirectoryCopy(statusCode int, jobID uint64) error
 	IsNodeComponentHealthy(nodeName string, component string) (bool, error)
 }
 
