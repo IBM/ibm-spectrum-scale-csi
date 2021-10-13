@@ -541,6 +541,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isVolSource {
+		if !scaleVol.IsFilesetBased {
+			if volFsInfo.Type == filesystemTypeRemote {
+				return nil, status.Error(codes.Unimplemented, "Volume cloning for directories for remote file system is not supported")
+			}
+		}
+
 		err = cs.validateSrcVolumeID(&srcVolumeIDMembers, scaleVol, PCid)
 		if err != nil {
 			glog.Errorf("volume:[%v] - Error in source volume validation [%v]", volName, err)
