@@ -346,7 +346,14 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
         LOGGER.error(f'PVC Check : PVC {pvc_name} storage does not match storage in PVC status')
         return False
 
-    if not(ff.check_fileset_quota(volume_name, pvc_values["storage"])):
+    inode = None
+    if 'storage_class_parameters' in globals():
+        if "inodeLimit" in storage_class_parameters:
+            inode = storage_class_parameters["inodeLimit"]
+        elif "filesetType" in storage_class_parameters and storage_class_parameters["filesetType"] == "dependent":
+            inode = 0
+
+    if not(ff.check_fileset_quota(volume_name, pvc_values["storage"], inode)):
         LOGGER.error(f'PVC Check : Fileset {volume_name} quota does not match requested storage')
         return False
 
