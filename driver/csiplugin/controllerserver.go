@@ -712,7 +712,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	jobDetails := SnapCopyJobDetails{SNAP_JOB_RUNNING, volID}
 	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 
-	err = conn.WaitForSnapshotCopy(jobStatus, jobID)
+	err = conn.WaitForJobCompletion(jobStatus, jobID)
 	if err != nil {
 		glog.Errorf("unable to copy snapshot %s: %v.", snapId.SnapName, err)
 		if strings.Contains(err.Error(), "EFSSG0632C") {
@@ -766,13 +766,13 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 
 		jobStatus, jobID, err := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
 		if err != nil {
-			glog.Errorf("failed to create volume from volume. Error: [%v]", err)
-			return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from volume. Error: [%v]", err))
+			glog.Errorf("failed to clone volume from volume. Error: [%v]", err)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", err))
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
 		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
-		err = conn.WaitForFilesetCopy(jobStatus, jobID)
+		err = conn.WaitForJobCompletion(jobStatus, jobID)
 	} else {
 		sLinkRelPath := strings.Replace(vID.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
@@ -780,13 +780,13 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		jobStatus, jobID, err := conn.CopyDirectoryPath(vID.FsName, sLinkRelPath, targetPath, scVol.NodeClass)
 
 		if err != nil {
-			glog.Errorf("failed to create volume from volume. Error: [%v]", err)
-			return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from volume. Error: [%v]", err))
+			glog.Errorf("failed to clone volume from volume. Error: [%v]", err)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", err))
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
 		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
-		err = conn.WaitForDirectoryCopy(jobStatus, jobID)
+		err = conn.WaitForJobCompletion(jobStatus, jobID)
 	}
 
 	if err != nil {

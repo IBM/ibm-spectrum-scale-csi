@@ -313,8 +313,8 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 	return copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) WaitForSnapshotCopy(statusCode int, jobID uint64) error {
-	glog.V(4).Infof("rest_v2 WaitForSnapshotCopy. statusCode: %v, jobID: %v", statusCode, jobID)
+func (s *spectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) error {
+	glog.V(4).Infof("rest_v2 WaitForJobCompletion. statusCode: %v, jobID: %v", statusCode, jobID)
 
 	err := s.waitForJobCompletion(statusCode, jobID)
 	if err != nil {
@@ -354,18 +354,6 @@ func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName stri
 	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) WaitForFilesetCopy(statusCode int, jobID uint64) error {
-	glog.V(4).Infof("rest_v2 WaitForFilesetCopy. statusCode: %v, jobID: %v", statusCode, jobID)
-
-	err := s.waitForJobCompletion(statusCode, jobID)
-	if err != nil {
-		glog.Errorf("error in waiting for job completion %v, %v", jobID, err)
-		return err
-	}
-
-	return nil
-}
-
 func (s *spectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyDirectoryPath. filesystem: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, srcPath, targetPath, nodeclass)
 
@@ -393,18 +381,6 @@ func (s *spectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string
 	}
 
 	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
-}
-
-func (s *spectrumRestV2) WaitForDirectoryCopy(statusCode int, jobID uint64) error {
-	glog.V(4).Infof("rest_v2 WaitForDirectoryCopy. statusCode: %v, jobID: %v", statusCode, jobID)
-
-	err := s.waitForJobCompletion(statusCode, jobID)
-	if err != nil {
-		glog.Errorf("error in waiting for job completion %v, %v", jobID, err)
-		return err
-	}
-
-	return nil
 }
 
 func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
