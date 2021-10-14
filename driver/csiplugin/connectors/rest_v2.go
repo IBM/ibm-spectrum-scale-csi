@@ -386,6 +386,36 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 	return nil
 }
 
+func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
+	glog.V(4).Infof("rest_v2 UpdateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
+	filesetreq := CreateFilesetRequest{}
+	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
+	if inodeLimitSpecified {
+		filesetreq.MaxNumInodes = inodeLimit.(string)
+		//filesetreq.AllocInodes = "1024"
+	}
+	updateFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName))
+	updateFilesetResponse := GenericResponse{}
+	err := s.doHTTP(updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
+	if err != nil {
+		glog.Errorf("error in update fileset request: %v", err)
+		return err
+	}
+
+	err = s.isRequestAccepted(updateFilesetResponse, updateFilesetURL)
+	if err != nil {
+		glog.Errorf("request not accepted for processing: %v", err)
+		return err
+	}
+
+	err = s.waitForJobCompletion(updateFilesetResponse.Status.Code, updateFilesetResponse.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("unable to update fileset %s: %v", filesetName, err)
+		return err
+	}
+	return nil
+}
+
 func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
 	glog.V(4).Infof("rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
 

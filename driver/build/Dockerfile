@@ -1,7 +1,7 @@
 # Legacy docker build for IBM Spectrum Scale CSI Driver
 # usage: docker build -f build/Dockerfile -t my_image_tag .
 
-FROM golang:1.15.2 AS builder
+FROM golang:1.17 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
 COPY ./go.mod .
 COPY ./go.sum .
