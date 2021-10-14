@@ -1493,8 +1493,6 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 			glog.Errorf("unable to update the quota. Error [%v]", err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to expand the volume. Error [%v]", err))
 		}
-	} else {
-		capacity = filesetQuotaBytes
 	}
 
 	fsetDetails, err := conn.ListFileset(filesystemName, filesetName)
