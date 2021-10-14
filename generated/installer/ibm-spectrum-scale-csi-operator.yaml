@@ -70,8 +70,8 @@ spec:
           periodSeconds: 1
         resources:
           limits:
-            cpu: 500m
-            memory: 500Mi
+            cpu: 600m
+            memory: 600Mi
           requests:
             cpu: 50m
             memory: 50Mi
@@ -367,6 +367,21 @@ spec:
                 type: string
               provisionerNodeSelector:
                 description: Node selector for provisioner sidecar.
+                items:
+                  properties:
+                    key:
+                      description: Key for node selector.
+                      type: string
+                    value:
+                      description: Value for key.
+                      type: string
+                  type: object
+                type: array
+              resizer:
+                description: Resizer image for csi (issues volume snapshot requests).
+                type: string
+              resizerNodeSelector:
+                description: Node selector for resizer sidecar.
                 items:
                   properties:
                     key:

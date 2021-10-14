@@ -1,0 +1,73 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+  name: ibm-spectrum-scale-csi-resizer
+  namespace: "{{ namespace }}"
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - list
+  - watch
+  - create
+  - update
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - list
+  - watch
+  - get
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
+  - list
+  - watch
+  - get
+
+
