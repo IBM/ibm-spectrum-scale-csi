@@ -1,5 +1,10 @@
 .DEFAULT_GOAL:=help
-SHELL:=/bin/bash
+
+# Setting SHELL to bash allows bash commands to be executed by recipes. 
+# This is a requirement for 'setup-envtest.sh' in the test target. 
+# Options are set to exit when a recipe line exits non-zero or a piped command fails. 
+SHELL = /usr/bin/env bash -o pipefail 
+.SHELLFLAGS = -ec
 NAMESPACE=csiscaleoperator
 
 # Current Operator version
@@ -22,7 +27,7 @@ all: docker-build
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: ansible-operator
-	$(ANSIBLE_OPERATOR) run
+	ANSIBLE_ROLES_PATH="$(ANSIBLE_ROLES_PATH):$(shell pwd)/roles" $(ANSIBLE_OPERATOR) run
 
 # Install CRDs into a cluster
 install: kustomize
@@ -80,7 +85,7 @@ ifeq (,$(shell which ansible-operator 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(ANSIBLE_OPERATOR)) ;\
-	curl -sSLo $(ANSIBLE_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.5.2/ansible-operator_$(OS)_$(ARCH) ;\
+	curl -sSLo $(ANSIBLE_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.13.0/ansible-operator_$(OS)_$(ARCH) ;\
 	chmod +x $(ANSIBLE_OPERATOR) ;\
 	}
 else

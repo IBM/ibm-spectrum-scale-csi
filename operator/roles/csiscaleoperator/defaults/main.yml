@@ -16,6 +16,7 @@ storage-class: "ibm-spectrum-scale-csi"
 # Image defaults
 snapshotter: "{{ lookup('env', 'CSI_SNAPSHOTTER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.2.1', true) }}"
 attacher: "{{ lookup('env', 'CSI_ATTACHER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.3.0', true) }}"
+resizer: "{{ lookup('env', 'CSI_RESIZER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0', true) }}"
 provisioner: "{{ lookup('env', 'CSI_PROVISIONER_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.0.0', true) }}"
 livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.4.0', true) }}"
 
@@ -36,6 +37,9 @@ clustersCamelCase: "{{ _csi_ibm_com_csiscaleoperator.spec.clusters | default([])
 
 # Node Selector for Attacher sidecar.
 attacherNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.attacherNodeSelector | default([])}}"
+
+# Node Selector for Resizer sidecar.
+resizerNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.resizerNodeSelector | default([])}}"
 
 # Node Selector for Provisioner sidecar.
 provisionerNodeSelector: "{{ _csi_ibm_com_csiscaleoperator.spec.provisionerNodeSelector | default([])}}"
@@ -59,3 +63,5 @@ state: present
 kubeletRootDirPath: "{{ _csi_ibm_com_csiscaleoperator.spec.kubeletRootDirPath | default('/var/lib/kubelet') }}"
 
 shortnameNodeMapping: "{{ lookup('env', 'SHORTNAME_NODE_MAPPING') | default('no', true) }}"
+
+livenessHealthPort: "{{ lookup('env', 'LIVENESS_HEALTH_PORT') | default('9821', true) }}"

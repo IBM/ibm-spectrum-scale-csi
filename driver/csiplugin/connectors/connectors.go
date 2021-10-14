@@ -35,6 +35,7 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountpoint(filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
+	UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
 	LinkFileset(filesystemName string, filesetName string, linkpath string) error
