@@ -1,8 +1,8 @@
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: '{{ opName }}-provisioner'
-  namespace: '{{ namespace }}'
+  name: "{{ opName }}-resizer"
+  namespace: "{{ namespace }}"
   labels:
     app.kubernetes.io/instance: '{{labelInstance}}'
     app.kubernetes.io/managed-by: '{{labelManage}}'
@@ -10,16 +10,16 @@ metadata:
     product: '{{ productName }}'
     release: '{{ labelRelease }}'
 spec:
-  serviceName: '{{ opName }}-provisioner'
+  serviceName: "{{ opName }}-resizer"
   replicas: 1
   selector:
     matchLabels:
-      app: "{{ opName }}-provisioner"
-      product: '{{ productName }}'
+      app: "{{ opName }}-resizer"
+      product: "{{ productName }}"
   template:
     metadata:
       labels:
-        app: '{{ opName }}-provisioner'
+        app: "{{ opName }}-resizer"
         app.kubernetes.io/instance: '{{labelInstance}}'
         app.kubernetes.io/managed-by: '{{labelManage}}'
         app.kubernetes.io/name: '{{labelName}}'
@@ -30,26 +30,26 @@ spec:
         productName: '{{annotationProductName}}'
         productVersion: '{{annotationProductVersion}}'
     spec:
-{% if provisionerNodeSelector|length > 0 %}
+{% if resizerNodeSelector|length > 0 %}
       nodeSelector:
-{% for provisionerNodeSelect in provisionerNodeSelector %}
-        {{ provisionerNodeSelect.key }}: "{{ provisionerNodeSelect.value }}"
+{% for resizerNodeSelect in resizerNodeSelector %}
+        {{ resizerNodeSelect.key }}: "{{ resizerNodeSelect.value }}"
 {% endfor %}
 {% endif %}
-      serviceAccount: "{{ productName }}-provisioner"
+      serviceAccount: "{{ productName }}-resizer"
       containers:
-        - name: csi-provisioner
+        - name: "{{ opName }}-resizer"
 {% if 'apps.openshift.io' in api_groups %}
           securityContext:
             privileged: true
 {% endif %}
-          image: '{{ provisioner }}'
+          image: "{{ resizer }}"
           args:
+            - "--v=5"
             - "--csi-address=$(ADDRESS)"
             - "--timeout=2m"
-            - "--worker-threads=10"
-            - "--extra-create-metadata"
-            - "--v=5" # Debugging
+            - "--handle-volume-inuse-error=false"
+            - "--workers=10"
           env:
             - name: ADDRESS
               value: "{{ kubeletRootDirPath }}/plugins/spectrumscale.csi.ibm.com/csi.sock"

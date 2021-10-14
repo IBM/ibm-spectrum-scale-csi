@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: '{{labelInstance}}'
+    app.kubernetes.io/managed-by: '{{labelManage}}'
+    app.kubernetes.io/name: '{{labelName}}'
+    product: '{{ productName }}'
+    release: '{{ labelRelease }}'
+  name: ibm-spectrum-scale-csi-resizer
+  namespace: "{{namespace}}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ibm-spectrum-scale-csi-resizer
+subjects:
+- kind: ServiceAccount
+  name: ibm-spectrum-scale-csi-resizer
+  namespace: "{{namespace}}"
