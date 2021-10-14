@@ -2720,6 +2720,180 @@ def test_driver_one_pvc_two_pod_fail_4():
 
 
 @pytest.mark.slow
-def test_driver_sequential_pvc():
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_1():
+    # this testcase contains sequential pod creation after all pvc are bound
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
-    driver_object.sequential_pvc(value_sc, data["number_of_sequential_pvc"])
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_3():
+    # this testcase contains sequential pod creation after all pvc are bound
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_4():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "filesetType": "dependent", "clusterId": data["remoteid"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_5():
+    # this testcase contains sequential pod creation after all pvc are bound
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "volDirBasePath": data["r_volDirBasePath"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
+
+
+@pytest.mark.slow
+@pytest.mark.stresstest
+def test_driver_parallel_pvc_6():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "volDirBasePath": data["r_volDirBasePath"]}
+    driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
+  
+
+@pytest.mark.regression
+def test_driver_sc_permissions_empty_independent_pass_1():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                 "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Permission denied"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],
+                  "read_only": "True", "reason": "Read-only file system"}
+                 ]
+    # to test default behavior i.e. directory should be created with 771 permissions
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+@pytest.mark.regression
+def test_driver_sc_permissions_777_independent_pass_2():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ True ],
+                  "reason": "Read-only file system"},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_666_independent_pass_3():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],"reason": "Permission denied"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],
+                  "read_only": "True", "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "666",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_777_independent_pass_4():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False , True, True]},
+                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ True, False, False], "reason": "Read-only file system"},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False, False, False], "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_777_dependent_pass_1():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ True ],
+                  "reason": "Read-only file system"},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_666_dependent_pass_2():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ], "reason": "Permission denied"},
+                 {"mount_path": "/usr/share/nginx/html/scale",
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[ False ],
+                  "read_only": "True", "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "666",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_777_dependent_pass_3():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False , True, True]},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ True, False, False], "reason": "Read-only file system"},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[ False, False, False], "reason": "Read-only file system"}
+                 ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "filesetType": "dependent", "permissions": "777",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_permissions_invalid_input_1():
+    value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
+                "permissions": "   ",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_2():
+    value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
+                "permissions": "abcd",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_3():
+    value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
+                "permissions": "0x309",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_4():
+    value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
+                "permissions": "o777",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_5():
+    value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
+                "permissions": "77",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)
+
+
+def test_driver_sc_permissions_invalid_input_6():
+    value_sc = {"clusterId":  data["remoteid"], "volBackendFs": data["remoteFs"],
+                "permissions": "778",
+                "reason": 'invalid value specified for permissions'}
+    driver_object.test_dynamic(value_sc)

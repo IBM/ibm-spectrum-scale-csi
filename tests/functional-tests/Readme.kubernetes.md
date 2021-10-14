@@ -87,6 +87,11 @@ pytest  remote_test.py::<test_name>
 eg. pytest  remote_test.py::test_driver_dynamic_pass_1
 ```
 
+### Run Stress/Load testcases using stresstest marker and runslow
+```
+pytest driver_test.py -m "stresstest" --runslow --workers 6 #(ensure driver is already deployed before using --workers)
+```
+
 ### List available Driver & Operator tests 
 Available functional tests list for driver & operator can be collected using following command
 ```

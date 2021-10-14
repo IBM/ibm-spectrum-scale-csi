@@ -8,7 +8,7 @@ metadata:
     capabilities: Basic Install
     categories: Storage
     certified: 'false'
-    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.3.1
+    containerImage:  registry.connect.redhat.com/ibm/ibm-spectrum-scale-csi-operator:v2.3.1
     createdAt: Thu Feb 11 18:14:05 IST 2021
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
@@ -21,8 +21,6 @@ metadata:
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     operatorframework.io/arch.amd64: supported
-    operatorframework.io/arch.s390x: supported
-    operatorframework.io/arch.ppc64le: supported
     release: ibm-spectrum-scale-csi-operator
   name: ibm-spectrum-scale-csi-operator.v2.3.1
   namespace: placeholder
@@ -386,8 +384,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: CSI_DRIVER_IMAGE
-                  value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.1
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.3.1
+                  value: registry.connect.redhat.com/ibm/ibm-spectrum-scale-csi-driver:v2.3.1
+                image: registry.connect.redhat.com/ibm/ibm-spectrum-scale-csi-operator:v2.3.1
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
@@ -453,5 +451,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v2.3.0
+  replaces: ibm-spectrum-scale-csi-operator.v2.2.0
   version: 2.3.1

@@ -19,7 +19,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.3.0
+        productVersion: 2.3.1
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -70,8 +70,8 @@ spec:
           periodSeconds: 1
         resources:
           limits:
-            cpu: 500m
-            memory: 500Mi
+            cpu: 600m
+            memory: 600Mi
           requests:
             cpu: 50m
             memory: 50Mi
