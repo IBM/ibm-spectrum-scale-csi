@@ -764,10 +764,10 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 	if scVol.IsFilesetBased {
 		path := fmt.Sprintf("%s%s", vID.FsetName, "-data")
 
-		jobStatus, jobID, err := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
-		if err != nil {
-			glog.Errorf("failed to clone volume from volume. Error: [%v]", err)
-			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", err))
+		jobStatus, jobID, jobErr := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
+		if jobErr != nil {
+			glog.Errorf("failed to clone volume from volume. Error: [%v]", jobErr)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", jobErr))
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
@@ -777,11 +777,11 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		sLinkRelPath := strings.Replace(vID.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
-		jobStatus, jobID, err := conn.CopyDirectoryPath(vID.FsName, sLinkRelPath, targetPath, scVol.NodeClass)
+		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(vID.FsName, sLinkRelPath, targetPath, scVol.NodeClass)
 
-		if err != nil {
-			glog.Errorf("failed to clone volume from volume. Error: [%v]", err)
-			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", err))
+		if jobErr != nil {
+			glog.Errorf("failed to clone volume from volume. Error: [%v]", jobErr)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", jobErr))
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
