@@ -313,8 +313,8 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 	return copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) WaitForSnapshotCopy(statusCode int, jobID uint64) error {
-	glog.V(4).Infof("rest_v2 WaitForSnapshotCopy. statusCode: %v, jobID: %v", statusCode, jobID)
+func (s *spectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) error {
+	glog.V(4).Infof("rest_v2 WaitForJobCompletion. statusCode: %v, jobID: %v", statusCode, jobID)
 
 	err := s.waitForJobCompletion(statusCode, jobID)
 	if err != nil {
@@ -323,6 +323,64 @@ func (s *spectrumRestV2) WaitForSnapshotCopy(statusCode int, jobID uint64) error
 	}
 
 	return nil
+}
+
+func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
+	glog.V(4).Infof("rest_v2 CopyFilesetPath. filesystem: %s, fileset: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, srcPath, targetPath, nodeclass)
+
+	copyVolReq := CopyVolumeRequest{}
+	copyVolReq.TargetPath = targetPath
+
+	if nodeclass != "" {
+		copyVolReq.NodeClass = nodeclass
+	}
+
+	formattedSrcPath := strings.ReplaceAll(srcPath, "/", "%2F")
+	copyVolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/directoryCopy/%s", filesystemName, filesetName, formattedSrcPath))
+	copyVolResp := GenericResponse{}
+
+	err := s.doHTTP(copyVolURL, "PUT", &copyVolResp, copyVolReq)
+	if err != nil {
+		glog.Errorf("Error in copy volume request: %v", err)
+		return 0, 0, err
+	}
+
+	err = s.isRequestAccepted(copyVolResp, copyVolURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return 0, 0, err
+	}
+
+	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
+}
+
+func (s *spectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
+	glog.V(4).Infof("rest_v2 CopyDirectoryPath. filesystem: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, srcPath, targetPath, nodeclass)
+
+	copyVolReq := CopyVolumeRequest{}
+	copyVolReq.TargetPath = targetPath
+
+	if nodeclass != "" {
+		copyVolReq.NodeClass = nodeclass
+	}
+
+	formattedSrcPath := strings.ReplaceAll(srcPath, "/", "%2F")
+	copyVolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directoryCopy/%s", filesystemName, formattedSrcPath))
+	copyVolResp := GenericResponse{}
+
+	err := s.doHTTP(copyVolURL, "PUT", &copyVolResp, copyVolReq)
+	if err != nil {
+		glog.Errorf("Error in copy volume request: %v", err)
+		return 0, 0, err
+	}
+
+	err = s.isRequestAccepted(copyVolResp, copyVolURL)
+	if err != nil {
+		glog.Errorf("Request not accepted for processing: %v", err)
+		return 0, 0, err
+	}
+
+	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
 }
 
 func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
