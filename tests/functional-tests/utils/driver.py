@@ -354,7 +354,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
             inode = 0
 
     if not(ff.check_fileset_quota(volume_name, pvc_values["storage"], inode)):
-        LOGGER.error(f'PVC Check : Fileset {volume_name} quota does not match requested storage')
+        LOGGER.error(f'PVC Check : Fileset {volume_name} quota does not match requested storage or maxinode is not as expected')
         return False
 
     LOGGER.info(f'PVC Check : Fileset {volume_name} has been created successfully')

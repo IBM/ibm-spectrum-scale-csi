@@ -871,5 +871,5 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
         time.sleep(10)
 
     LOGGER.error(f"PVC Check : Actual maximun number of inodes is smaller than expected maximum inodes {expected_max_inode}")
-    LOGGER.error(response)
+    LOGGER.error(response.text)
     return False
