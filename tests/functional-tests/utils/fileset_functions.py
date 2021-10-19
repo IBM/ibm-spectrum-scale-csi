@@ -864,7 +864,6 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
         if "maxNumInodes" in response_dict["filesets"][0]["config"]:
             actual_max_inode = int(response_dict["filesets"][0]["config"]['maxNumInodes'])
             if actual_max_inode >= expected_max_inode:
-                LOGGER.error(response.text)
                 LOGGER.info(f"PVC Check : Actual maximun number of inodes {actual_max_inode} is greater than expected maximum inodes {expected_max_inode}")
                 return True
         count -= 1
