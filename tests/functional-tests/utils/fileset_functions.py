@@ -833,7 +833,7 @@ def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
     if fileset_size[-2:] in power_of_2:
         quota_from_pvc = int(fileset_size[:-2]) * power_of_2[fileset_size[-2:]]
     if quota_from_pvc < int(1024**2):
-       quota_from_pvc = int(1024**2)
+        quota_from_pvc = int(1024**2)
 
     LOGGER.info(f"PVC Check : Minimum quota expected = {quota_from_pvc}   Actual quota set = {quota_from_api}")
 
@@ -842,7 +842,7 @@ def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
             expected_max_inode = 200000 if quota_from_pvc > int(1024*1024*10) else 100000
         else:
             expected_max_inode = int(max_inode_from_sc)
-        return (check_fileset_max_inode(volume_name,expected_max_inode))
+        return (check_fileset_max_inode(volume_name, expected_max_inode))
     return False
 
 
@@ -851,7 +851,7 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
     count = 30
     while count > 0:
         get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
+            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
         response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
 
         if not(response.status_code == 200):

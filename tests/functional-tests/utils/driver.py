@@ -63,7 +63,7 @@ def create_storage_class(values, sc_name, created_objects):
             storage_class_parameters[sc_parameter] = values[sc_parameter]
 
     additional_sc_options = {'allow_volume_expansion': None, 'allowed_topologies': None,
-                               'mount_options': None, 'volume_binding_mode': None }
+                             'mount_options': None, 'volume_binding_mode': None}
     for additional_option in list(additional_sc_options):
         if additional_option in values:
             additional_sc_options[additional_option] = values[additional_option]
@@ -389,7 +389,7 @@ def check_pvc_size(pvc_name, expected_size):
                 if expected_size[-2:] in power_of_2:
                     expected_size_in_Ki = int(expected_size[:-2]) * power_of_2[expected_size[-2:]]
                 if expected_size_in_Ki < int(1024**2):
-                   expected_size_in_Ki = int(1024**2)
+                    expected_size_in_Ki = int(1024**2)
                 if pvc_status_storage[-2:] in power_of_2:
                     pvc_status_storage = int(pvc_status_storage[:-2]) * power_of_2[pvc_status_storage[-2:]]
 
@@ -509,7 +509,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
             final_mount_path = value_pod["mount_path"] if iter_num == 0 else value_pod["mount_path"]+str(iter_num)
             list_pod_volume_mount.append(client.V1VolumeMount(
-                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path,read_only=value_pod["volumemount_readonly"][iter_num]))
+                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path, read_only=value_pod["volumemount_readonly"][iter_num]))
         command = ["/bin/sh", "-c", "--"]
         args = ["while true; do sleep 30; done;"]
         pod_containers = client.V1Container(
@@ -998,7 +998,7 @@ def expand_pvc(pvc_values, sc_name, pvc_name, created_objects, pv_name=None):
         LOGGER.info(
             f'PVC Patch : Patching pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
         api_response = api_instance.patch_namespaced_persistent_volume_claim(
-            name=pvc_name,namespace=namespace_value, body=pvc_body, pretty=True)
+            name=pvc_name, namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
         time.sleep(30)
     except ApiException as e:

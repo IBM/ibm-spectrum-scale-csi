@@ -323,7 +323,7 @@ class Driver:
                     d.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     d.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     if "volume_expansion_storage" in value_pvc_pass:
-                        d.expand_and_check_pvc(sc_name, pvc_name, value_pvc_pass, "volume_expansion_storage", 
+                        d.expand_and_check_pvc(sc_name, pvc_name, value_pvc_pass, "volume_expansion_storage",
                                                pod_name, value_pod_passed[num2], created_objects)
 
                     cleanup.delete_pod(pod_name, created_objects)
@@ -485,7 +485,7 @@ class Snapshot():
             LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
-       
+
         if value_pvc is None:
             value_pvc = copy.deepcopy(self.value_pvc)
 
@@ -514,7 +514,6 @@ class Snapshot():
             d.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
             d.check_pod(value_pod, pod_name, created_objects)
             d.create_file_inside_pod(value_pod, pod_name, created_objects)
-
 
             if "presnap_volume_expansion_storage" in pvc_value:
                 d.expand_and_check_pvc(sc_name, pvc_name, pvc_value, "presnap_volume_expansion_storage",
