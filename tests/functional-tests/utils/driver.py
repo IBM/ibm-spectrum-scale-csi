@@ -39,58 +39,46 @@ def get_random_name(type_of):
     return type_of+"-"+name_generator()
 
 
-def get_storage_class_parameters(values):
-    """
-    create parameters for storage class
-
-    Args:
-        param1: values - storage class input values
-
-    Returns:
-        storage class parameters
-
-    Raises:
-        None
-
-    """
-    dict_parameters = {}
-    list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
-                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions"]
-    num = len(list_parameters)
-    for val in range(0, num):
-        if(check_key(values, list_parameters[val])):
-            dict_parameters[list_parameters[val]
-                            ] = values[list_parameters[val]]
-    return dict_parameters
-
-
 def create_storage_class(values, sc_name, created_objects):
     """
     creates storage class
-
     Args:
         param1: values - storage class parameters
         param2: config_value - configuration file
         param3: sc_name - name of storage class to be created
-
     Returns:
         None
-
     Raises:
         Raises an exception on kubernetes client api failure and asserts
-
     """
     global storage_class_parameters
     api_instance = client.StorageV1Api()
     storage_class_metadata = client.V1ObjectMeta(name=sc_name)
-    storage_class_parameters = get_storage_class_parameters(values)
+
+    storage_class_parameters = {}
+    list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
+                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions"]
+    for sc_parameter in list_parameters:
+        if sc_parameter in values:
+            storage_class_parameters[sc_parameter] = values[sc_parameter]
+
+    additional_sc_options = {'allow_volume_expansion': None, 'allowed_topologies': None,
+                             'mount_options': None, 'volume_binding_mode': None}
+    for additional_option in list(additional_sc_options):
+        if additional_option in values:
+            additional_sc_options[additional_option] = values[additional_option]
+
     storage_class_body = client.V1StorageClass(
         api_version="storage.k8s.io/v1",
         kind="StorageClass",
         metadata=storage_class_metadata,
         provisioner="spectrumscale.csi.ibm.com",
         parameters=storage_class_parameters,
-        reclaim_policy="Delete"
+        reclaim_policy="Delete",
+        allow_volume_expansion=additional_sc_options['allow_volume_expansion'],
+        allowed_topologies=additional_sc_options['allowed_topologies'],
+        mount_options=additional_sc_options['mount_options'],
+        volume_binding_mode=additional_sc_options['volume_binding_mode']
     )
     try:
         LOGGER.info(
@@ -330,7 +318,7 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name, created_o
         assert False
 
 
-def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
+def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
     """
     calculates bound time for pvc and checks fileset created by
     pvc on spectrum scale
@@ -350,13 +338,68 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name):
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
 
-    val = ff.created_fileset_exists(volume_name)
-    if val is False:
+    if not(ff.created_fileset_exists(volume_name)):
         LOGGER.error(f'PVC Check : Fileset {volume_name} doesn\'t exists')
+        return False
+
+    if not(check_pvc_size(pvc_name, pvc_values["storage"])):
+        LOGGER.error(f'PVC Check : PVC {pvc_name} storage does not match storage in PVC status')
+        return False
+
+    inode = None
+    if 'storage_class_parameters' in globals():
+        if "inodeLimit" in storage_class_parameters:
+            inode = storage_class_parameters["inodeLimit"]
+        elif "filesetType" in storage_class_parameters and storage_class_parameters["filesetType"] == "dependent":
+            inode = 0
+
+    if not(ff.check_fileset_quota(volume_name, pvc_values["storage"], inode)):
+        LOGGER.error(f'PVC Check : Fileset {volume_name} quota does not match requested storage or maxinode is not as expected')
         return False
 
     LOGGER.info(f'PVC Check : Fileset {volume_name} has been created successfully')
     return True
+
+
+def check_pvc_size(pvc_name, expected_size):
+    """
+    Check PVC size in status matches passed PVC size or not"
+    """
+    api_instance = client.CoreV1Api()
+    count = 12
+    while (count > 0):
+        try:
+            api_response = api_instance.read_namespaced_persistent_volume_claim(
+                name=pvc_name, namespace=namespace_value, pretty=True)
+            LOGGER.debug(str(api_response))
+            LOGGER.info(f'PVC Check: Checking size for pvc {pvc_name}')
+
+            if "storage" in api_response.status.capacity:
+                pvc_status_storage = api_response.status.capacity["storage"]
+
+                if pvc_status_storage == expected_size:
+                    return True
+
+                power_of_10 = {"M": int(1000**2 / 1024), "G": int(1000**3 / 1024), "T": int(1000**4 / 1024)}
+                power_of_2 = {"Ki": 1, "Mi": int(1024), "Gi": int(1024**2), "Ti": int(1024**3)}
+
+                expected_size_in_Ki = 0
+                if expected_size[-1:] in power_of_10:
+                    expected_size_in_Ki = int(expected_size[:-1]) * power_of_10[expected_size[-1:]]
+                if expected_size[-2:] in power_of_2:
+                    expected_size_in_Ki = int(expected_size[:-2]) * power_of_2[expected_size[-2:]]
+                if expected_size_in_Ki < int(1024**2):
+                    expected_size_in_Ki = int(1024**2)
+                if pvc_status_storage[-2:] in power_of_2:
+                    pvc_status_storage = int(pvc_status_storage[:-2]) * power_of_2[pvc_status_storage[-2:]]
+
+                if pvc_status_storage >= expected_size_in_Ki:
+                    return True
+            count -= 1
+        except ApiException as e:
+            count -= 1
+
+    return False
 
 
 def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
@@ -385,7 +428,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                 asserting the test')
                 cleanup.clean_with_created_objects(created_objects)
                 assert False
-            if(pvc_bound_fileset_check(api_response, pv_name, pvc_name)):
+            if(pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values)):
                 return True
             cleanup.clean_with_created_objects(created_objects)
             assert False
@@ -466,7 +509,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
             final_mount_path = value_pod["mount_path"] if iter_num == 0 else value_pod["mount_path"]+str(iter_num)
             list_pod_volume_mount.append(client.V1VolumeMount(
-                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path,read_only=value_pod["volumemount_readonly"][iter_num]))
+                name="mypvc", mount_path=final_mount_path, sub_path=single_sub_path, read_only=value_pod["volumemount_readonly"][iter_num]))
         command = ["/bin/sh", "-c", "--"]
         args = ["while true; do sleep 30; done;"]
         pod_containers = client.V1Container(
@@ -925,3 +968,51 @@ def check_permissions_for_pvc(pvc_name, permissions, created_objects):
         LOGGER.info(f'FAIL: Testing storageclass parameter permissions={permissions} failed.')
         cleanup.clean_with_created_objects(created_objects)
         assert False
+
+
+def expand_pvc(pvc_values, sc_name, pvc_name, created_objects, pv_name=None):
+    """
+    expand pvc size
+    """
+    api_instance = client.CoreV1Api()
+    pvc_metadata = client.V1ObjectMeta(name=pvc_name)
+    pvc_resources = client.V1ResourceRequirements(
+        requests={"storage": pvc_values["storage"]})
+
+    pvc_spec = client.V1PersistentVolumeClaimSpec(
+        access_modes=[pvc_values["access_modes"]],
+        resources=pvc_resources,
+        storage_class_name=sc_name,
+        volume_name=pv_name
+    )
+
+    pvc_body = client.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata=pvc_metadata,
+        spec=pvc_spec
+    )
+
+    LOGGER.info(100*"-")
+    try:
+        LOGGER.info(
+            f'PVC Patch : Patching pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)}')
+        api_response = api_instance.patch_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace=namespace_value, body=pvc_body, pretty=True)
+        LOGGER.debug(str(api_response))
+        time.sleep(30)
+    except ApiException as e:
+        LOGGER.info(f'PVC {pvc_name} patch operation has been failed')
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->patch_namespaced_persistent_volume_claim: {e}")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+
+def expand_and_check_pvc(sc_name, pvc_name, value_pvc, expansion_key, pod_name, value_pod, created_objects):
+
+    for expand_storage in value_pvc[expansion_key]:
+        value_pvc['storage'] = expand_storage
+        expand_pvc(value_pvc, sc_name, pvc_name, created_objects)
+        if(check_pvc(value_pvc, pvc_name, created_objects)):
+            check_pod(value_pod, pod_name, created_objects)
