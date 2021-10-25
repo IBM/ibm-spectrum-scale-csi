@@ -1,6 +1,7 @@
 import time
 import re
 import logging
+import copy
 from datetime import datetime, timezone
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -318,6 +319,45 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name, created_o
         assert False
 
 
+def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objects):
+    api_instance = client.CoreV1Api()
+    pvc_metadata = client.V1ObjectMeta(name=pvc_name)
+    pvc_resources = client.V1ResourceRequirements(
+        requests={"storage": pvc_values["storage"]})
+    pvc_data_source = client.V1TypedLocalObjectReference(
+        kind="PersistentVolumeClaim",
+        name=from_pvc_name
+    )
+
+    pvc_spec = client.V1PersistentVolumeClaimSpec(
+        access_modes=[pvc_values["access_modes"]],
+        resources=pvc_resources,
+        storage_class_name=sc_name,
+        data_source=pvc_data_source
+    )
+
+    pvc_body = client.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata=pvc_metadata,
+        spec=pvc_spec
+    )
+
+    try:
+        LOGGER.info(
+            f'PVC Create from Clone : Creating pvc {pvc_name} with parameters {str(pvc_values)} and storageclass {str(sc_name)} from PVC {from_pvc_name}')
+        api_response = api_instance.create_namespaced_persistent_volume_claim(
+            namespace=namespace_value, body=pvc_body, pretty=True)
+        LOGGER.debug(str(api_response))
+        created_objects["clone_pvc"].append(pvc_name) 
+    except ApiException as e:
+        LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->create_namespaced_persistent_volume_claim: {e}")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False
+
+
 def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
     """
     calculates bound time for pvc and checks fileset created by
@@ -539,6 +579,8 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
         LOGGER.debug(str(api_response))
         if pod_name[0:12] == "snap-end-pod":
             created_objects["restore_pod"].append(pod_name)
+        elif pod_name[0:5] == "clone":
+            created_objects["clone_pod"].append(pod_name)
         else:
             created_objects["pod"].append(pod_name)
     except ApiException as e:
@@ -1016,3 +1058,37 @@ def expand_and_check_pvc(sc_name, pvc_name, value_pvc, expansion_key, pod_name, 
         expand_pvc(value_pvc, sc_name, pvc_name, created_objects)
         if(check_pvc(value_pvc, pvc_name, created_objects)):
             check_pod(value_pod, pod_name, created_objects)
+
+
+def clone_and_check_pvc(sc_name, pvc_name, pod_name, value_pod, clone_values, created_objects):
+
+    create_file_inside_pod(value_pod, pod_name, created_objects)
+    clone_sc_name = sc_name
+    number_of_clones = 1 if "number_of_clones" not in clone_values else int(clone_values["number_of_clones"])
+
+    if "clone_sc" in clone_values:
+        clone_sc_name = "clone-"+get_random_name("sc")
+        create_storage_class(clone_values["clone_sc"], clone_sc_name, created_objects)
+        check_storage_class(clone_sc_name)
+
+    for clone_pvc_number,clone_pvc_value in enumerate(clone_values["clone_pvc"]):
+        for iter_clone in range(0,number_of_clones):
+            clone_pvc_name = f"clone-{pvc_name}-{clone_pvc_number}-{iter_clone}"
+            create_clone_pvc(clone_pvc_value, clone_sc_name, clone_pvc_name, pvc_name, created_objects)
+            val = check_pvc(clone_pvc_value, clone_pvc_name, created_objects)
+            if val is True:
+                clone_pod_name = f"clone-pod-{pvc_name}-{clone_pvc_number}-{iter_clone}"
+                create_pod(value_pod, clone_pvc_name, clone_pod_name, created_objects)
+                check_pod(value_pod, clone_pod_name, created_objects)
+                check_file_inside_pod(value_pod, clone_pod_name, created_objects)
+
+            if "clone_chain" in clone_values and clone_values["clone_chain"] > 0:
+                clone_values["clone_chain"] -= 1
+                clone_and_check_pvc(clone_sc_name, clone_pvc_name, clone_pod_name, value_pod, clone_values, created_objects)
+
+    for pod_name in copy.deepcopy(created_objects["clone_pod"]):
+        cleanup.delete_pod(pod_name, created_objects)
+        cleanup.check_pod_deleted(pod_name, created_objects)
+    for pvc_name in copy.deepcopy(created_objects["clone_pvc"]):
+        vol_name = cleanup.delete_pvc(pvc_name, created_objects)
+        cleanup.check_pvc_deleted(pvc_name, vol_name, created_objects)

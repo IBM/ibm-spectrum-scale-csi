@@ -283,7 +283,7 @@ class Driver:
             scale_function.delete_namespace()
         scale_function.check_namespace_deleted()
 
-    def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None):
+    def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None, clone_values=None):
         created_objects = get_cleanup_dict()
         if value_pvc_passed is None:
             value_pvc_passed = copy.deepcopy(self.value_pvc)
@@ -325,6 +325,9 @@ class Driver:
                     if "volume_expansion_storage" in value_pvc_pass:
                         d.expand_and_check_pvc(sc_name, pvc_name, value_pvc_pass, "volume_expansion_storage",
                                                pod_name, value_pod_passed[num2], created_objects)
+
+                    if clone_values is not None:
+                        d.clone_and_check_pvc(sc_name, pvc_name, pod_name, value_pod_passed[num2], clone_values, created_objects)
 
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
@@ -868,6 +871,8 @@ def get_cleanup_dict():
         "scalesnapshot": [],
         "restore_pod": [],
         "restore_pvc": [],
+        "clone_pod": [],
+        "clone_pvc": [],
         "pv": [],
         "dir": [],
         "ds": []
