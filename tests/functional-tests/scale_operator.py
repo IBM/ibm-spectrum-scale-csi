@@ -327,7 +327,7 @@ class Driver:
                                                pod_name, value_pod_passed[num2], created_objects)
 
                     if clone_values is not None:
-                        d.clone_and_check_pvc(sc_name, pvc_name, pod_name, value_pod_passed[num2], clone_values, created_objects)
+                        d.clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod_passed[num2], clone_values, created_objects)
 
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
@@ -477,7 +477,7 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
-    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None, value_pvc=None):
+    def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None, value_pvc=None, clone_values=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
@@ -542,6 +542,8 @@ class Snapshot():
                     restore_sc_name = "restore-" + restore_sc_name
                     d.create_storage_class(restore_sc, restore_sc_name, created_objects)
                     d.check_storage_class(restore_sc_name)
+                else:
+                    restore_sc = value_sc 
                 if restore_pvc is not None:
                     pvc_value = restore_pvc
 
@@ -565,6 +567,9 @@ class Snapshot():
                         if "post_presnap_volume_expansion_storage" in pvc_value:
                             d.expand_and_check_pvc(sc_name, pvc_name, pvc_value, "post_presnap_volume_expansion_storage",
                                                    pod_name, value_pod, created_objects)
+
+                        if clone_values is not None:
+                            d.clone_and_check_pvc(restore_sc_name, restore_sc, restored_pvc_name, snap_pod_name, value_pod, clone_values, created_objects)
 
                         cleanup.delete_pod(snap_pod_name, created_objects)
                         cleanup.check_pod_deleted(snap_pod_name, created_objects)

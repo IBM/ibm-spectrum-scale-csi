@@ -573,7 +573,7 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
     )
 
     try:
-        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name} with {image_name} image')
+        LOGGER.info(f'POD Create : creating pod {pod_name} using {pvc_name} with {image_name} image with parameters {value_pod}')
         api_response = api_instance.create_namespaced_pod(
             namespace=namespace_value, body=pod_body, pretty=True)
         LOGGER.debug(str(api_response))
@@ -1060,7 +1060,7 @@ def expand_and_check_pvc(sc_name, pvc_name, value_pvc, expansion_key, pod_name, 
             check_pod(value_pod, pod_name, created_objects)
 
 
-def clone_and_check_pvc(sc_name, pvc_name, pod_name, value_pod, clone_values, created_objects):
+def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_values, created_objects):
 
     create_file_inside_pod(value_pod, pod_name, created_objects)
     clone_sc_name = sc_name
@@ -1070,6 +1070,7 @@ def clone_and_check_pvc(sc_name, pvc_name, pod_name, value_pod, clone_values, cr
         clone_sc_name = "clone-"+get_random_name("sc")
         create_storage_class(clone_values["clone_sc"], clone_sc_name, created_objects)
         check_storage_class(clone_sc_name)
+        value_sc = copy.deepcopy(clone_values["clone_sc"])
 
     for clone_pvc_number,clone_pvc_value in enumerate(clone_values["clone_pvc"]):
         for iter_clone in range(0,number_of_clones):
@@ -1077,6 +1078,12 @@ def clone_and_check_pvc(sc_name, pvc_name, pod_name, value_pod, clone_values, cr
             create_clone_pvc(clone_pvc_value, clone_sc_name, clone_pvc_name, pvc_name, created_objects)
             val = check_pvc(clone_pvc_value, clone_pvc_name, created_objects)
             if val is True:
+                if "permissions" in value_sc.keys():
+                    check_permissions_for_pvc(clone_pvc_name, value_sc["permissions"], created_objects)
+
+                if value_sc.keys() >= {"permissions", "gid", "uid"}:
+                    value_pod["gid"] = value_sc["gid"]
+                    value_pod["uid"] = value_sc["uid"]
                 clone_pod_name = f"clone-pod-{pvc_name}-{clone_pvc_number}-{iter_clone}"
                 create_pod(value_pod, clone_pvc_name, clone_pod_name, created_objects)
                 check_pod(value_pod, clone_pod_name, created_objects)

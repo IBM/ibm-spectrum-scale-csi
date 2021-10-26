@@ -2933,6 +2933,17 @@ def test_driver_volume_cloning_expand_before():
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, clone_values=clone_values)
 
 
+def test_driver_volume_cloning_with_subpath():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
+                "gid": data["gid_number"], "uid": data["uid_number"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+    clone_values = {}
+    clone_values["clone_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, True]}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod, clone_values=clone_values)
+
+
 def test_driver_volume_cloning_fail_1():
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
