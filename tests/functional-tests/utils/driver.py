@@ -479,6 +479,8 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                 time_count = 8
             elif(check_key(pvc_values, "parallel")):
                 time_count = 240
+            elif(check_key(pvc_values, "clone")):
+                time_count = 120
             else:
                 time_count = 20
             if(var > time_count):
@@ -1074,6 +1076,7 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
 
     for clone_pvc_number,clone_pvc_value in enumerate(clone_values["clone_pvc"]):
         for iter_clone in range(0,number_of_clones):
+            clone_pvc_value["clone"] = "True"
             clone_pvc_name = f"clone-{pvc_name}-{clone_pvc_number}-{iter_clone}"
             create_clone_pvc(clone_pvc_value, clone_sc_name, clone_pvc_name, pvc_name, created_objects)
             val = check_pvc(clone_pvc_value, clone_pvc_name, created_objects)
@@ -1091,7 +1094,7 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
 
             if "clone_chain" in clone_values and clone_values["clone_chain"] > 0:
                 clone_values["clone_chain"] -= 1
-                clone_and_check_pvc(clone_sc_name, clone_pvc_name, clone_pod_name, value_pod, clone_values, created_objects)
+                clone_and_check_pvc(clone_sc_name, value_sc, clone_pvc_name, clone_pod_name, value_pod, clone_values, created_objects)
 
     for pod_name in copy.deepcopy(created_objects["clone_pod"]):
         cleanup.delete_pod(pod_name, created_objects)
