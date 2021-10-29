@@ -8,7 +8,7 @@ SHELL = /usr/bin/env bash -o pipefail
 NAMESPACE=csiscaleoperator
 
 # Current Operator version
-VERSION ?= 2.3.1
+VERSION ?= 2.4.0
 # Default bundle image tag
 BUNDLE_IMG ?= controller-bundle:$(VERSION)
 # Options for 'bundle-build'
