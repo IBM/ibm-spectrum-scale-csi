@@ -106,8 +106,8 @@ docker login quay.io -u  <username>
 ```
 2. Install OLM using following commands
 ```
-kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
-kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
+kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.19.1/deploy/upstream/quickstart/crds.yaml
+kubectl apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.19.1/deploy/upstream/quickstart/olm.yaml
 ```
 3. Check OLM pods status 
 ```
@@ -159,8 +159,8 @@ kubectl delete operatorgroup operatorgroup -n ibm-spectrum-scale-csi-driver
 kubectl delete namespace ibm-spectrum-scale-csi-driver
 kubectl delete catalogsource ibm-spectrum-scale-csi -n olm
 
-kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/crds.yaml
-kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.18.3/deploy/upstream/quickstart/olm.yaml
+kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.19.1/deploy/upstream/quickstart/crds.yaml
+kubectl delete -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/v0.19.1/deploy/upstream/quickstart/olm.yaml
 
 ```
 9. Delete Repository from quay 
