@@ -69,9 +69,6 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: A collection of gpfs cluster properties for the csi driver to mount.
-        displayName: Clusters
-        path: clusters
       - description: The primary file system for the GPFS cluster.
         displayName: Primary
         path: clusters.primary
@@ -127,7 +124,12 @@ spec:
         displayName: nodeMapping
         path: nodeMapping
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: tolerations to distribue to CSI pods.
+        displayName: tolerations
+        path: tolerations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Node selector for SpectrumScale CSI Plugin.
         displayName: Plugin Node Selector
         path: pluginNodeSelector
@@ -215,7 +217,7 @@ spec:
         displayName: Kubelet Root Directory Path
         path: kubeletRootDirPath
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Image name for the csi spectrum scale plugin container.
         displayName: Spectrum Scale Image
         path: spectrumScale
@@ -241,6 +243,17 @@ spec:
         path: attacher
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Resizer image for csi (resize volume size).
+        displayName: Resizer Image
+        path: resizer
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Sidecar container image for the csi spectrum scale plugin pods.
+        displayName: Driver Registrar Image
+        path: driverRegistrar
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+
       statusDescriptors:
       - description: The active status of the operator
         displayName: Conditions
