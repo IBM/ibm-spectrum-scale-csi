@@ -69,12 +69,12 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: The primary file system for the GPFS cluster.
+      - description: The filesystem name for primary IBM Spectrum Scale cluster.
         displayName: Primary
         path: clusters.primary
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: The cluster id of the gpfs cluster specified (mandatory).
+      - description: The cluster id of IBM Spectrum Scale cluster specified (mandatory).
         displayName: ID
         path: clusters.id
         x-descriptors:
@@ -84,31 +84,31 @@ spec:
         path: clusters.restApi
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: The hostname of the REST server.
+      - description: The hostname of IBM Spectrum Scale REST server.
         displayName: GUI Host
         path: clusters.restApi.guiHost
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: The port number running the REST server.
+      - description: The port number running the IBM Spectrum Scale REST server.
         displayName: GUI Port
         path: clusters.restApi.guiPort
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - description: A string specifying a cacert resource name.
+      - description: A cacert resource name for IBM Spectrum Scale REST server SSL certificates
         displayName: cacert Resource Name
         path: clusters.cacert
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Require a secure SSL connection to connect to GPFS.
+      - description: Require a secure SSL connection to connect to IBM Spectrum Scale  REST server
         displayName: Secure SSL Mode
         path: clusters.secureSslMode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: A string specifying a secret resource name.
+      - description: A secret resource name for IBM Spectrum Scale REST server credentials
         displayName: Kubernetes Secret Name
         path: clusters.secrets
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
+        - urn:alm:descriptor:io.kubernetes:Secret
       - description: An internal counter used by the operator to trigger reloads on
           secret change.
         displayName: Secret Counter
@@ -120,17 +120,17 @@ spec:
         path: trigger
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: Mapping of K8s node with SpectrumScale node.
+      - description: Mapping of K8s node with IBM Spectrum Scale node.
         displayName: nodeMapping
         path: nodeMapping
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: tolerations to distribue to CSI pods.
+      - description: tolerations to distribue to IBM Spectrum Scale CSI pods.
         displayName: tolerations
         path: tolerations
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Node selector for SpectrumScale CSI Plugin.
+      - description: Node selector for IBM Spectrum Scale CSI Plugin pods.
         displayName: Plugin Node Selector
         path: pluginNodeSelector
         x-descriptors:
@@ -145,7 +145,7 @@ spec:
         path: pluginNodeSelector.value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Node selector for provisioner sidecar.
+      - description: Node selector for provisioner sidecar pods.
         displayName: Provisioner Node Selector
         path: provisionerNodeSelector
         x-descriptors:
@@ -160,12 +160,12 @@ spec:
         path: provisionerNodeSelector.value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Node selector for attacher sidecar.
+      - description: Node selector for attacher sidecar pods.
         displayName: Attacher Node Selector
         path: attacherNodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Key for attacher node selector.
+      - description: Key for attacher node selector pods.
         displayName: Key
         path: attacherNodeSelector.key
         x-descriptors:
@@ -175,8 +175,9 @@ spec:
         path: attacherNodeSelector.value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Node selector for snapshotter sidecar.
+      - description: Node selector for snapshotter sidecar pods.
         displayName: Snapshotter Node Selector
+        path: clusters
         path: snapshotterNodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
@@ -190,8 +191,9 @@ spec:
         path: snapshotterNodeSelector.value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Node selector for resizer sidecar.
+      - description: Node selector for resizer sidecar pods.
         displayName: Resizer Node Selector
+        path: clusters
         path: resizerNodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
@@ -218,7 +220,7 @@ spec:
         path: kubeletRootDirPath
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Image name for the csi spectrum scale plugin container.
+      - description: Image name for IBM Spectrum Scale CSI plugin container.
         displayName: Spectrum Scale Image
         path: spectrumScale
         x-descriptors:
@@ -253,7 +255,6 @@ spec:
         path: driverRegistrar
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-
       statusDescriptors:
       - description: The active status of the operator
         displayName: Conditions
