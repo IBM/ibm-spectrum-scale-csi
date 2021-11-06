@@ -637,10 +637,10 @@ type CreateFilesetRequest struct {
 }
 
 type CreateMakeDirRequest struct {
-	UID         string `json:"uid,omitempty"`       //uidnumber
-	GID         string `json:"gid,omitempty"`       //gidnumber
-	USER        string `json:"user,omitempty"`      //username
-	GROUP       string `json:"group,omitempty"`     //groupname
+	UID         string `json:"uid,omitempty"`         //uidnumber
+	GID         string `json:"gid,omitempty"`         //gidnumber
+	USER        string `json:"user,omitempty"`        //username
+	GROUP       string `json:"group,omitempty"`       //groupname
 	PERMISSIONS string `json:"permissions,omitempty"` //permissions
 }
 
@@ -663,3 +663,11 @@ const (
 	UserSpecifiedUID string = "uid"
 	UserSpecifiedGID string = "gid"
 )
+
+type CopyVolumeRequest struct {
+	TargetFilesystem string `json:"targetFilesystem,omitempty"`
+	TargetFileset    string `json:"targetFileset,omitempty"`
+	TargetPath       string `json:"targetPath,omitempty"`
+	NodeClass        string `json:"nodeclassName,omitempty"`
+	Force            bool   `json:"force,omitempty"`
+}
