@@ -555,10 +555,36 @@ def test_snapshot_static_nodeclass_3():
     restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
     snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc, restore_pvc=restore_pvc)
 
+
 def test_snapshot_dynamic_permissions_777_independent():
     LOGGER.warning("Testcase will fail if scale version < 5.1.1-4")
     value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
-                 "volumemount_readonly":[ False ]}
+                 "volumemount_readonly": [False]}
     value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)
+
+
+def test_snapshot_dynamic_volume_expansion_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["2Gi"],
+                  "post_presnap_volume_expansion_storage": ["5Gi", "15Gi"], "postsnap_volume_expansion_storage": ["10Gi", "15Gi"]}]
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc)
+
+
+def test_snapshot_dynamic_volume_expansion_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "allow_volume_expansion": True}
+    restore_sc = {"volBackendFs": data["primaryFs"],
+                  "filesetType": "dependent", "clusterId": data["id"], "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["3Gi"],
+                  "post_presnap_volume_expansion_storage": ["5Gi", "12Gi"], "postsnap_volume_expansion_storage": ["8Gi", "12Gi"]}]
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc, restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_volume_expansion_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "allow_volume_expansion": True}
+    restore_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"],
+                  "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["2Gi"],
+                  "post_presnap_volume_expansion_storage": ["5Gi", "15Gi"], "postsnap_volume_expansion_storage": ["10Gi", "15Gi"]}]
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc, restore_sc=restore_sc)

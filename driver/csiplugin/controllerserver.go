@@ -433,21 +433,33 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	volSrc := req.GetVolumeContentSource()
 	isSnapSource := false
-	snapIdMembers := scaleSnapId{}
-	if volSrc != nil {
-		if volSrc.GetVolume() != nil {
-			return nil, status.Error(codes.Unimplemented, "Volume as volume content source is not supported")
-		}
+	isVolSource := false
 
-		srcSnap := volSrc.GetSnapshot()
-		if srcSnap != nil {
-			snapId := srcSnap.GetSnapshotId()
-			snapIdMembers, err = cs.GetSnapIdMembers(snapId)
+	snapIdMembers := scaleSnapId{}
+	srcVolumeIDMembers := scaleVolId{}
+
+	if volSrc != nil {
+		srcVolume := volSrc.GetVolume()
+		if srcVolume != nil {
+			srcVolumeID := srcVolume.GetVolumeId()
+			srcVolumeIDMembers, err = cs.GetVolIdMembers(srcVolumeID)
 			if err != nil {
-				glog.Errorf("volume:[%v] - Invalid snapshot ID %s [%v]", volName, snapId, err)
+				glog.Errorf("volume:[%v] - Invalid Volume ID %s [%v]", volName, srcVolumeID, err)
 				return nil, err
 			}
-			isSnapSource = true
+			isVolSource = true
+		} else {
+
+			srcSnap := volSrc.GetSnapshot()
+			if srcSnap != nil {
+				snapId := srcSnap.GetSnapshotId()
+				snapIdMembers, err = cs.GetSnapIdMembers(snapId)
+				if err != nil {
+					glog.Errorf("volume:[%v] - Invalid snapshot ID %s [%v]", volName, snapId, err)
+					return nil, err
+				}
+				isSnapSource = true
+			}
 		}
 	}
 
@@ -528,6 +540,20 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.ClusterId = PCid
 	}
 
+	if isVolSource {
+		if !scaleVol.IsFilesetBased {
+			if volFsInfo.Type == filesystemTypeRemote {
+				return nil, status.Error(codes.Unimplemented, "Volume cloning for directories for remote file system is not supported")
+			}
+		}
+
+		err = cs.validateSrcVolumeID(&srcVolumeIDMembers, scaleVol, PCid)
+		if err != nil {
+			glog.Errorf("volume:[%v] - Error in source volume validation [%v]", volName, err)
+			return nil, err
+		}
+	}
+
 	if isSnapSource {
 		err = cs.validateSnapId(&snapIdMembers, scaleVol, PCid)
 		if err != nil {
@@ -548,23 +574,46 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Aborted, fmt.Sprintf("volume creation already in process : %v", scaleVol.VolName))
 	}
 
-	jobDetails := cs.Driver.snapjobstatusmap[scaleVol.VolName]
-	if jobDetails.jobStatus == SNAP_JOB_RUNNING {
-		glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
-		return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
-	} else if jobDetails.jobStatus == SNAP_JOB_FAILED {
-		glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
-	} else if jobDetails.jobStatus == SNAP_JOB_COMPLETED {
-		glog.Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
-		return &csi.CreateVolumeResponse{
-			Volume: &csi.Volume{
-				VolumeId:      jobDetails.volID,
-				CapacityBytes: int64(scaleVol.VolSize),
-				VolumeContext: req.GetParameters(),
-				ContentSource: volSrc,
-			},
-		}, nil
+	if isVolSource {
+		jobDetails := cs.Driver.volcopyjobstatusmap[scaleVol.VolName]
+		if jobDetails.jobStatus == VOLCOPY_JOB_RUNNING {
+			glog.Errorf("volume:[%v] -  volume cloning request in progress.", scaleVol.VolName)
+			return nil, status.Error(codes.Aborted, fmt.Sprintf("volume cloning request in progress for volume: %s", scaleVol.VolName))
+		} else if jobDetails.jobStatus == VOLCOPY_JOB_FAILED {
+			glog.Errorf("volume:[%v] -  volume cloning job had failed.", scaleVol.VolName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume: %s", scaleVol.VolName))
+		} else if jobDetails.jobStatus == VOLCOPY_JOB_COMPLETED {
+			glog.Infof("volume:[%v] -  volume cloning request has already completed successfully.", scaleVol.VolName)
+			return &csi.CreateVolumeResponse{
+				Volume: &csi.Volume{
+					VolumeId:      jobDetails.volID,
+					CapacityBytes: int64(scaleVol.VolSize),
+					VolumeContext: req.GetParameters(),
+					ContentSource: volSrc,
+				},
+			}, nil
+		}
+	}
+
+	if isSnapSource {
+		jobDetails := cs.Driver.snapjobstatusmap[scaleVol.VolName]
+		if jobDetails.jobStatus == SNAP_JOB_RUNNING {
+			glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
+			return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
+		} else if jobDetails.jobStatus == SNAP_JOB_FAILED {
+			glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+		} else if jobDetails.jobStatus == SNAP_JOB_COMPLETED {
+			glog.Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
+			return &csi.CreateVolumeResponse{
+				Volume: &csi.Volume{
+					VolumeId:      jobDetails.volID,
+					CapacityBytes: int64(scaleVol.VolSize),
+					VolumeContext: req.GetParameters(),
+					ContentSource: volSrc,
+				},
+			}, nil
+		}
 	}
 
 	if scaleVol.VolPermissions != "" {
@@ -601,6 +650,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
+
+	if isVolSource {
+		err = cs.copyVolumeContent(scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID)
+		if err != nil {
+			glog.Errorf("CreateVolume [%s]: [%v]", volName, err)
+			return nil, err
+		}
+	}
 
 	if isSnapSource {
 		err = cs.copySnapContent(scaleVol, snapIdMembers, volFsInfo, targetPath, volID)
@@ -655,7 +712,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	jobDetails := SnapCopyJobDetails{SNAP_JOB_RUNNING, volID}
 	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 
-	err = conn.WaitForSnapshotCopy(jobStatus, jobID)
+	err = conn.WaitForJobCompletion(jobStatus, jobID)
 	if err != nil {
 		glog.Errorf("unable to copy snapshot %s: %v.", snapId.SnapName, err)
 		if strings.Contains(err.Error(), "EFSSG0632C") {
@@ -675,6 +732,82 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	jobDetails.jobStatus = SNAP_JOB_COMPLETED
 	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
 	//delete(cs.Driver.snapjobmap, scVol.VolName)
+	return nil
+}
+
+func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
+	glog.V(3).Infof("copyVolContent volume ID: [%v], scaleVolume: [%v]", vID, scVol)
+	conn, err := cs.getConnFromClusterID(vID.ClusterId)
+	if err != nil {
+		return err
+	}
+
+	// err = cs.validateRemoteFs(fsDetails, scVol)
+	// if err != nil {
+	// 	return err
+	// }
+
+	targetFsName, err := conn.GetFilesystemName(fsDetails.UUID)
+	if err != nil {
+		return err
+	}
+
+	targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
+	if err != nil {
+		return err
+	}
+
+	fsMntPt := targetFsDetails.Mount.MountPoint
+	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
+
+	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
+	if scVol.IsFilesetBased {
+		path := fmt.Sprintf("%s%s", vID.FsetName, "-data")
+
+		jobStatus, jobID, jobErr := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
+		if jobErr != nil {
+			glog.Errorf("failed to clone volume from volume. Error: [%v]", jobErr)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", jobErr))
+		}
+
+		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
+		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		err = conn.WaitForJobCompletion(jobStatus, jobID)
+	} else {
+		sLinkRelPath := strings.Replace(vID.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
+		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
+
+		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(vID.FsName, sLinkRelPath, targetPath, scVol.NodeClass)
+
+		if jobErr != nil {
+			glog.Errorf("failed to clone volume from volume. Error: [%v]", jobErr)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", jobErr))
+		}
+
+		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
+		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		err = conn.WaitForJobCompletion(jobStatus, jobID)
+	}
+
+	if err != nil {
+		glog.Errorf("unable to copy volume: %v.", err)
+		if strings.Contains(err.Error(), "EFSSG0632C") {
+			// EFSSG0632C = Command execution aborted
+			// Store VOLCOPY_JOB_NOT_STARTED in volcopyjobstatusmap if error was due to same mmxcp in progress
+			// or max no. of mmxcp already running. In these cases we want to retry again
+			// in the next k8s rety cycle
+			jobDetails.jobStatus = VOLCOPY_JOB_NOT_STARTED
+		} else {
+			jobDetails.jobStatus = VOLCOPY_JOB_FAILED
+		}
+		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		return err
+	}
+
+	glog.Infof("volume copy completed for volumeID: [%v], scaleVolume: [%v]", vID, scVol)
+	jobDetails.jobStatus = VOLCOPY_JOB_COMPLETED
+	cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+	//delete(cs.Driver.volcopyjobstatusmap, scVol.VolName)
 	return nil
 }
 
@@ -780,6 +913,74 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 	return nil
 }
 
+func (cs *ScaleControllerServer) validateSrcVolumeID(vID *scaleVolId, scVol *scaleVolume, pCid string) error {
+	glog.V(3).Infof("validateVolId [%v]", vID)
+	conn, err := cs.getConnFromClusterID(vID.ClusterId)
+	if err != nil {
+		return err
+	}
+
+	// This is kind of snapshot restore
+	chkSnapshotErr := cs.checkSnapshotSupport(conn)
+	if chkSnapshotErr != nil {
+		return chkSnapshotErr
+	}
+
+	if scVol.ClusterId != "" && vID.ClusterId != scVol.ClusterId {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source volume from another cluster. Volume is being created in cluster %s, source volume is from cluster %s.", scVol.ClusterId, vID.ClusterId))
+	}
+
+	if scVol.ClusterId == "" && vID.ClusterId != pCid {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source volume from another cluster. Volume is being created in cluster %s, source volume is from cluster %s.", pCid, vID.ClusterId))
+	}
+
+	if scVol.NodeClass != "" {
+		isValidNodeclass, err := conn.IsValidNodeclass(scVol.NodeClass)
+		if err != nil {
+			return err
+		}
+
+		if !isValidNodeclass {
+			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scVol.NodeClass, scVol.ClusterId))
+		}
+	}
+
+	vID.FsName, err = conn.GetFilesystemName(vID.FsUUID)
+
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", vID.FsUUID, vID.ClusterId, err))
+	}
+
+	if vID.FsName != scVol.VolBackendFs {
+		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(vID.FsName)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", vID.FsName))
+		}
+		if !isFsMounted {
+			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", vID.FsName))
+		}
+	}
+
+	if scVol.IsFilesetBased {
+		if vID.FsetName == "" {
+			vID.FsetName, err = conn.GetFileSetNameFromId(vID.FsName, vID.FsetId)
+			if err != nil {
+				return status.Error(codes.Internal, fmt.Sprintf("error in getting fileset details for %s", vID.FsetId))
+			}
+		}
+
+		isFsetLinked, err := conn.IsFilesetLinked(vID.FsName, vID.FsetName)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", vID.FsetName))
+		}
+		if !isFsetLinked {
+			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", vID.FsetName))
+		}
+	}
+
+	return nil
+}
+
 func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, error) {
 	splitSid := strings.Split(sId, ";")
 	var sIdMem scaleSnapId
@@ -800,7 +1001,6 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	}
 
 	return sIdMem, nil
-
 }
 
 func (cs *ScaleControllerServer) GetVolIdMembers(vId string) (scaleVolId, error) {
@@ -1417,5 +1617,110 @@ func (cs *ScaleControllerServer) ListVolumes(ctx context.Context, req *csi.ListV
 	return nil, status.Error(codes.Unimplemented, "")
 }
 func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+	glog.V(3).Infof("ControllerExpandVolume - Volume expand req: %v", req)
+
+	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_EXPAND_VOLUME); err != nil {
+		glog.V(3).Infof("ControllerExpandVolume - invalid expand volume req: %v", req)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume ValidateControllerServiceRequest failed: %v", err))
+	}
+
+	volID := req.GetVolumeId()
+	if len(volID) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "volume ID missing in request")
+	}
+
+	capRange := req.GetCapacityRange()
+	if capRange == nil {
+		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
+	}
+
+	capacity := uint64(capRange.GetRequiredBytes())
+
+	volumeIDMembers, err := cs.GetVolIdMembers(volID)
+	if err != nil {
+		glog.Errorf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err)
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err))
+	}
+
+	// For lightweight return volume expanded as no action is required
+	if !volumeIDMembers.IsFilesetBased {
+		return &csi.ControllerExpandVolumeResponse{
+			CapacityBytes:         int64(capacity),
+			NodeExpansionRequired: false,
+		}, nil
+	}
+
+	conn, err := cs.getConnFromClusterID(volumeIDMembers.ClusterId)
+	if err != nil {
+		return nil, err
+	}
+
+	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
+	if err != nil {
+		glog.Errorf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+	}
+
+	filesetName := volumeIDMembers.FsetName
+
+	fsetExist, err := conn.CheckIfFilesetExist(filesystemName, filesetName)
+	if err != nil {
+		glog.Errorf("unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", filesetName, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+	}
+
+	if !fsetExist {
+		glog.Errorf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+	}
+
+	quota, err := conn.ListFilesetQuota(filesystemName, filesetName)
+	if err != nil {
+		glog.Errorf("unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+	}
+
+	filesetQuotaBytes, err := ConvertToBytes(quota)
+	if err != nil {
+		glog.Errorf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+	}
+
+	if filesetQuotaBytes < capacity {
+		volsize := strconv.FormatUint(capacity, 10)
+		err = conn.SetFilesetQuota(filesystemName, filesetName, volsize)
+		if err != nil {
+			glog.Errorf("unable to update the quota. Error [%v]", err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to expand the volume. Error [%v]", err))
+		}
+	}
+
+	fsetDetails, err := conn.ListFileset(filesystemName, filesetName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
+	}
+	//check if fileset is dependent of independent\
+	maxInodesCombination := []int{100096, 100352, 102400, 106496, 114688, 131072}
+
+	if fsetDetails.Config.ParentId == 0 {
+		if capacity > 10*oneGB {
+			if numberInSlice(fsetDetails.Config.MaxNumInodes, maxInodesCombination) {
+				opt := make(map[string]interface{})
+				opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
+				fseterr := conn.UpdateFileset(filesystemName, filesetName, opt)
+				if fseterr != nil {
+					glog.Errorf("volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesetName, filesystemName, fseterr)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
+				}
+			}
+		}
+	}
+	return &csi.ControllerExpandVolumeResponse{
+		CapacityBytes:         int64(capacity),
+		NodeExpansionRequired: false,
+	}, nil
+}
+
+func (cs *ScaleControllerServer) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }

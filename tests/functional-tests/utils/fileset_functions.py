@@ -806,3 +806,69 @@ def get_and_verify_pv_permissions(volume_name, mode):
     LOGGER.info(f'Permissions Check : final result : {status}')
 
     return status
+
+
+def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
+        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/quotas?filter=objectName="+volume_name
+    LOGGER.debug(get_link)
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+
+    if not(response.status_code == 200):
+        LOGGER.error(f"Response status code is not 200 for {get_link}")
+        LOGGER.error(response)
+        return False
+
+    response_dict = json.loads(response.text)
+    quota_from_api = int(response_dict["quotas"][0]["blockLimit"])
+    quota_from_pvc = 0
+
+    power_of_10 = {"M": int(1000**2 / 1024), "G": int(1000**3 / 1024), "T": int(1000**4 / 1024)}
+    power_of_2 = {"Mi": int(1024), "Gi": int(1024**2), "Ti": int(1024**3)}
+
+    if fileset_size[-1:] in power_of_10:
+        quota_from_pvc = int(fileset_size[:-1]) * power_of_10[fileset_size[-1:]]
+    if fileset_size[-2:] in power_of_2:
+        quota_from_pvc = int(fileset_size[:-2]) * power_of_2[fileset_size[-2:]]
+    if quota_from_pvc < int(1024**2):
+        quota_from_pvc = int(1024**2)
+
+    LOGGER.info(f"PVC Check : Minimum quota expected = {quota_from_pvc}   Actual quota set = {quota_from_api}")
+
+    if quota_from_api >= quota_from_pvc:
+        if max_inode_from_sc is None:
+            expected_max_inode = 200000 if quota_from_pvc > int(1024*1024*10) else 100000
+        else:
+            expected_max_inode = int(max_inode_from_sc)
+        return (check_fileset_max_inode(volume_name, expected_max_inode))
+    return False
+
+
+def check_fileset_max_inode(volume_name, expected_max_inode):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    count = 30
+    while count > 0:
+        get_link = "https://"+test["guiHost"]+":"+test["port"] + \
+            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
+        response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+
+        if not(response.status_code == 200):
+            LOGGER.error(f"Response status code is not 200 for {get_link}")
+            LOGGER.error(response)
+            return False
+
+        response_dict = json.loads(response.text)
+
+        if "maxNumInodes" in response_dict["filesets"][0]["config"]:
+            actual_max_inode = int(response_dict["filesets"][0]["config"]['maxNumInodes'])
+            if actual_max_inode >= expected_max_inode:
+                LOGGER.info(f"PVC Check : Actual maximun number of inodes {actual_max_inode} is greater than expected maximum inodes {expected_max_inode}")
+                return True
+        count -= 1
+        time.sleep(10)
+
+    LOGGER.error(f"PVC Check : Actual maximun number of inodes is smaller than expected maximum inodes {expected_max_inode}")
+    LOGGER.error(response.text)
+    return False
