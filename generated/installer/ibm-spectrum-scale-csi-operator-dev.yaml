@@ -318,6 +318,9 @@ spec:
                 required:
                 - id
                 type: array
+              csipspname:
+                description: PSP name for IBM Spectrum Scale CSI pods.
+                type: string
               driverRegistrar:
                 description: Sidecar container image for the csi spectrum scale plugin
                   pods.
@@ -332,9 +335,6 @@ spec:
                 type: array
               kubeletRootDirPath:
                 description: The kubelet root directory path.
-                type: string
-              csipspname:
-                description: PSP name for IBM Spectrum Scale CSI pods.
                 type: string
               livenessprobe:
                 description: Sidecar liveness probe image for the csi spectrum scale
