@@ -325,10 +325,8 @@ class Driver:
                     if "volume_expansion_storage" in value_pvc_pass:
                         d.expand_and_check_pvc(sc_name, pvc_name, value_pvc_pass, "volume_expansion_storage",
                                                pod_name, value_pod_passed[num2], created_objects)
-
                     if value_clone_passed is not None:
                         d.clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod_passed[num2], value_clone_passed, created_objects)
-
                     cleanup.delete_pod(pod_name, created_objects)
                     cleanup.check_pod_deleted(pod_name, created_objects)
                     if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
@@ -476,6 +474,7 @@ class Snapshot():
         snapshot.set_test_namespace_value(test_namespace)
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
+
 
     def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None, value_pvc=None, value_clone_passed=None):
         if value_vs_class is None:

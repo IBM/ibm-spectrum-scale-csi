@@ -318,7 +318,6 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name, created_o
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
-
 def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objects):
     api_instance = client.CoreV1Api()
     pvc_metadata = client.V1ObjectMeta(name=pvc_name)
