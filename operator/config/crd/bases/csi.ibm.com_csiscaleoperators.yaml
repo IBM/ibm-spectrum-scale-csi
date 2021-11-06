@@ -243,6 +243,9 @@ spec:
             kubeletRootDirPath:
               description: The kubelet root directory path.
               type: string
+            csipspname:
+              description: PSP name for IBM Spectrum Scale CSI pods.
+              type: string
           type: object
         status:
           properties:

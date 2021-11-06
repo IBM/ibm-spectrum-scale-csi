@@ -62,6 +62,8 @@ state: present
 # Kubelet root directory path.
 kubeletRootDirPath: "{{ _csi_ibm_com_csiscaleoperator.spec.kubeletRootDirPath | default('/var/lib/kubelet') }}"
 
+csipspname: "{ _csi_ibm_com_csiscaleoperator.spec.csipspname | default('ibm-spectrum-scale-csi-psp')}"
+
 shortnameNodeMapping: "{{ lookup('env', 'SHORTNAME_NODE_MAPPING') | default('no', true) }}"
 
 livenessHealthPort: "{{ lookup('env', 'LIVENESS_HEALTH_PORT') | default('9821', true) }}"

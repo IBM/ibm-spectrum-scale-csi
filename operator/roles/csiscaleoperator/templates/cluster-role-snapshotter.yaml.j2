@@ -48,3 +48,14 @@ rules:
   - volumesnapshotcontents/status
   verbs:
   - update
+
+{% if "apps.openshift.io" not in api_groups and csipspname is defined %}
+- apiGroups:
+  - extensions
+  resourceNames:
+  - {{ csipspname  }}
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+{% endif %}
