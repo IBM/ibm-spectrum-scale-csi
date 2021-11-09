@@ -318,6 +318,7 @@ def create_pvc_from_snapshot(pvc_values, sc_name, pvc_name, snap_name, created_o
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
+
 def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objects):
     api_instance = client.CoreV1Api()
     pvc_metadata = client.V1ObjectMeta(name=pvc_name)
@@ -348,7 +349,7 @@ def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objec
         api_response = api_instance.create_namespaced_persistent_volume_claim(
             namespace=namespace_value, body=pvc_body, pretty=True)
         LOGGER.debug(str(api_response))
-        created_objects["clone_pvc"].append(pvc_name) 
+        created_objects["clone_pvc"].append(pvc_name)
     except ApiException as e:
         LOGGER.info(f'PVC {pvc_name} creation operation has been failed')
         LOGGER.error(
@@ -1073,8 +1074,8 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
         check_storage_class(clone_sc_name)
         value_sc = copy.deepcopy(clone_values["clone_sc"])
 
-    for clone_pvc_number,clone_pvc_value in enumerate(clone_values["clone_pvc"]):
-        for iter_clone in range(0,number_of_clones):
+    for clone_pvc_number, clone_pvc_value in enumerate(clone_values["clone_pvc"]):
+        for iter_clone in range(0, number_of_clones):
             clone_pvc_value["clone"] = "True"
             clone_pvc_name = f"clone-{pvc_name}-{clone_pvc_number}-{iter_clone}"
             create_clone_pvc(clone_pvc_value, clone_sc_name, clone_pvc_name, pvc_name, created_objects)

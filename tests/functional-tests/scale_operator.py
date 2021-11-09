@@ -475,7 +475,6 @@ class Snapshot():
         cleanup.set_keep_objects(keep_objects)
         cleanup.set_test_namespace_value(test_namespace)
 
-
     def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None, value_pvc=None, value_clone_passed=None):
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
@@ -542,7 +541,7 @@ class Snapshot():
                     d.create_storage_class(restore_sc, restore_sc_name, created_objects)
                     d.check_storage_class(restore_sc_name)
                 else:
-                    restore_sc = value_sc 
+                    restore_sc = value_sc
                 if restore_pvc is not None:
                     pvc_value = restore_pvc
 
