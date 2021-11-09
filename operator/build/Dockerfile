@@ -21,7 +21,7 @@ ENV LIVENESS_HEALTH_PORT $LIVENESS_HEALTH_PORT
 
 LABEL name="IBM Spectrum Scale CSI Operator" \
       vendor="ibm" \
-      version="2.3.1" \
+      version="2.4.0" \
       release="1" \
       run='docker run ibm-spectrum-scale-csi-operator' \
       summary="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
