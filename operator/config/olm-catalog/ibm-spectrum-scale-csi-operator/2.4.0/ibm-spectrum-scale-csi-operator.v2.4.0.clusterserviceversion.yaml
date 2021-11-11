@@ -255,6 +255,11 @@ spec:
         path: driverRegistrar
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Pod Security Policy used for CSI driver pods.
+        displayName: PSP name
+        path: csipspname
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       statusDescriptors:
       - description: The active status of the operator
         displayName: Conditions
