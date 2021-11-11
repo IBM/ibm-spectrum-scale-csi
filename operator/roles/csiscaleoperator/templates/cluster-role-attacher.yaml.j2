@@ -52,7 +52,7 @@ rules:
   verbs:
   - patch
 
-{% if "apps.openshift.io" not in api_groups and csipspname is defined %}
+{% if "apps.openshift.io" not in api_groups and csipspname != "None"  %}
 - apiGroups:
   - extensions
   resourceNames:
