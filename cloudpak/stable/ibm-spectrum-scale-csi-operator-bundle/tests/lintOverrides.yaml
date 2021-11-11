@@ -43,3 +43,11 @@ overrides:
     reason: "Will fix soon in future release"
     reduceTo: WARNING
 
+  - rule: CASEHasAirgapMiscRequiredActions
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: OperatorHasCSVs
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
