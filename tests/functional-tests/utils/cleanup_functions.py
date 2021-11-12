@@ -34,6 +34,14 @@ def clean_with_created_objects(created_objects):
         vol_name = delete_pvc(pvc_name, created_objects)
         check_pvc_deleted(pvc_name, vol_name, created_objects)
 
+    for pod_name in copy.deepcopy(created_objects["clone_pod"]):
+        delete_pod(pod_name, created_objects)
+        check_pod_deleted(pod_name, created_objects)
+
+    for pvc_name in copy.deepcopy(created_objects["clone_pvc"]):
+        vol_name = delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, vol_name, created_objects)
+
     for vs_name in copy.deepcopy(created_objects["vs"]):
         delete_vs(vs_name, created_objects)
         check_vs_deleted(vs_name, created_objects)
@@ -87,6 +95,8 @@ def delete_pod(pod_name, created_objects):
         LOGGER.debug(str(api_response))
         if pod_name[0:12] == "snap-end-pod":
             created_objects["restore_pod"].remove(pod_name)
+        elif pod_name[0:5] == "clone":
+            created_objects["clone_pod"].remove(pod_name)
         else:
             created_objects["pod"].remove(pod_name)
 
@@ -148,6 +158,8 @@ def delete_pvc(pvc_name, created_objects):
         LOGGER.debug(str(api_response))
         if pvc_name[0:12] == "restored-pvc":
             created_objects["restore_pvc"].remove(pvc_name)
+        elif pvc_name[0:5] == "clone":
+            created_objects["clone_pvc"].remove(pvc_name)
         else:
             created_objects["pvc"].remove(pvc_name)
         return volume_name
@@ -162,7 +174,7 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
     """ check pvc deleted or not , if not deleted , asserts """
     if keep_objects:
         return
-    count = 12
+    count = 30
     api_instance = client.CoreV1Api()
     while (count > 0):
         try:
