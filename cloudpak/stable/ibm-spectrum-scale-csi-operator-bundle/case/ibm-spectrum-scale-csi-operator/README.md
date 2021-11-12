@@ -11,19 +11,19 @@ This operator installs IBM Spectrum Scale CSI driver in kubernetes or Redhat Ope
 The standard deployment of this operator consists of one pod for the Attacher, Provisioner, Resizer and Snapshotter each, and a pod on each node for the driver is to be used on.
 
 ### Configuration
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=231-configurations).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=240-configurations).
 
 ## Installing
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=231-installation).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=240-installation).
 
 # Limitations
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=231-limitations).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=240-limitations).
 
 ## Prerequisites
 Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=installation-performing-pre-tasks).
 
 ### Resources Required
-Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=231-planning).
+Please refer to the [IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi?topic=240-planning).
 
 # PodSecurityPolicy Requirements
 This operator does not require any pod  security requirements.

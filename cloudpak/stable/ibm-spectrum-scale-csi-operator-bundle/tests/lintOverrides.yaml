@@ -47,10 +47,6 @@ overrides:
     reason: "Will fix soon in future release"
     reduceTo: WARNING
 
-  - rule: EphemeralStorageLimitsAndRequestsDeclared
-    reason: "Will fix soon in future release"
-    reduceTo: WARNING
-
   - rule: NoForbiddenSCCRBACRules
     reason: "Not applicable to Spectrum Scale CSI Driver"
     reduceTo: WARNING
