@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
@@ -37,10 +38,10 @@ const (
 	SNAP_JOB_RUNNING        = 1
 	SNAP_JOB_COMPLETED      = 2
 	SNAP_JOB_FAILED         = 3
-	VOLCOPY_JOB_NOT_STARTED = 4
+	VOLCOPY_JOB_FAILED      = 4
 	VOLCOPY_JOB_RUNNING     = 5
 	VOLCOPY_JOB_COMPLETED   = 6
-	VOLCOPY_JOB_FAILED      = 7
+	VOLCOPY_JOB_NOT_STARTED = 7
 )
 
 type SnapCopyJobDetails struct {
@@ -67,7 +68,7 @@ type ScaleDriver struct {
 	primary              settings.Primary
 	reqmap               map[string]int64
 	snapjobstatusmap     map[string]SnapCopyJobDetails
-	volcopyjobstatusmap  map[string]VolCopyJobDetails
+	volcopyjobstatusmap  sync.Map
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -93,7 +94,6 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	d.primary = primary
 	d.reqmap = make(map[string]int64)
 	d.snapjobstatusmap = make(map[string]SnapCopyJobDetails)
-	d.volcopyjobstatusmap = make(map[string]VolCopyJobDetails)
 	return &ScaleControllerServer{
 		Driver: d,
 	}
