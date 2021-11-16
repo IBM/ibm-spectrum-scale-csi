@@ -37,6 +37,7 @@ function find_versions()
   attacher_pod="ibm-spectrum-scale-csi-attacher-0"
   provisioner_pod="ibm-spectrum-scale-csi-provisioner-0"
   snapshotter_pod="ibm-spectrum-scale-csi-snapshotter-0"
+  resizer_pod="ibm-spectrum-scale-csi-resizer-0"
 
   #get operator image
   if [[ $operator_pod != ibm-spectrum-scale-csi-operator* ]]
@@ -81,6 +82,15 @@ function find_versions()
     snapshotter_image=`$cmd -n $ns get pod $snapshotter_pod -o jsonpath='{.status.containerStatuses[?(@.name=="csi-snapshotter")].image}'`
   fi
 
+  #get resizer image
+  if [[ $resizer_pod != ibm-spectrum-scale-csi-resizer* ]]
+  then
+    echo "ibm-spectrum-scale-csi resizer pod is not running in namespace $ns. Can't extract resizer version."
+  else
+    resizer_image=`$cmd -n $ns get pod $resizer_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi-resizer")].image}'`
+  fi
+
+
   #print collected data
   echo "IBM Spectrum Scale CSI driver : $csi_version"
   echo "Operator Image                : $operator_image"
@@ -90,6 +100,7 @@ function find_versions()
   echo "Attacher Image                : $attacher_image"
   echo "Provisioner Image             : $provisioner_image"
   echo "Snapshotter Image             : $snapshotter_image"
+  echo "Resizer Image                 : $resizer_image"
 
 }
 
