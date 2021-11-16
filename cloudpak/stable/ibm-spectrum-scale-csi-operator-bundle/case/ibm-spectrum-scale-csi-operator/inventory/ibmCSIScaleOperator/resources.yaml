@@ -77,7 +77,7 @@ resources:
           architecture: amd64
           os: linux
         tag: v3.0.0-amd64
-      - digest: sha256:875f37d4b0b2bfb5399657ec55848777bd74ac2a3a1b55d402ee1e2efdf70450
+      - digest: sha256:62e291c33bbe09caed87a5eb4d651ac0c37e00ccb32d045d96ba35371f3af9ac
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
