@@ -55,3 +55,7 @@ overrides:
     reason: "Will fix soon in future release"
     reduceTo: WARNING
 
+  - rule: RequiredMetadataLabelsDefined
+    reason: "Not applicable to Spectrum Scale CSI Driver"
+    reduceTo: WARNING
+
