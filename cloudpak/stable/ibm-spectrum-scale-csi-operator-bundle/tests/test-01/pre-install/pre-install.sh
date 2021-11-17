@@ -22,6 +22,7 @@ command -v kubectl > /dev/null 2>&1 || { echo "kubectl pre-req is missing."; exi
 
 set +o errexit
 kubectl create namespace ${CV_TEST_NAMESPACE}
+kubectl label namespace  ${CV_TEST_NAMESPACE}  app.kubernetes.io/instance=ibm-spectrum-scale-csi-operator app.kubernetes.io/managed-by=ibm-spectrum-scale-csi-operator app.kubernetes.io/name=ibm-spectrum-scale-csi-operator
 set -o errexit
 
 kubectl apply -f $CV_TEST_BUNDLE_DIR/operators/${operator}/config/rbac/role.yaml
