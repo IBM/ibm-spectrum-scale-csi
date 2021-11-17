@@ -603,3 +603,14 @@ def get_driver_image():
                 LOGGER.info(f"CSI driver image id : {container.image_id}")
     except ApiException:
         LOGGER.info("Unable to get driver image")
+
+
+def get_scaleoperatorobject_values(namespace_value):
+    read_cr_api_instance = client.CustomObjectsApi()
+    try:
+        read_cr_api_response = read_cr_api_instance.get_namespaced_custom_object(group="csi.ibm.com",
+          version="v1",namespace=namespace_value,plural="csiscaleoperators",name="ibm-spectrum-scale-csi")
+        LOGGER.debug(str(read_cr_api_response))
+        return read_cr_api_response
+    except ApiException:
+        assert False

@@ -678,18 +678,22 @@ def get_test_data():
     return data
 
 
-def read_driver_data(clusterconfig, namespace):
+def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
 
     data = get_test_data()
 
     data["namespace"] = namespace
 
-    try:
-        with open(clusterconfig, "r") as f:
-            loadcr_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
-        assert False
+    config.load_kube_config(config_file=kubeconfig)
+    loadcr_yaml = ob.get_scaleoperatorobject_values(operator_namespace)
+
+    if loadcr_yaml is False:
+        try:
+            with open(clusterconfig, "r") as f:
+                loadcr_yaml = yaml.full_load(f.read())
+        except yaml.YAMLError as exc:
+            LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+            assert False
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -767,18 +771,25 @@ def check_nodes_available(label, label_name):
         assert False
 
 
-def read_operator_data(clusterconfig, namespace):
+def read_operator_data(clusterconfig, namespace, kubeconfig=None):
 
     data = get_test_data()
 
     data["namespace"] = namespace
 
-    try:
-        with open(clusterconfig, "r") as f:
-            loadcr_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
-        assert False
+    if kubeconfig is not None:
+        config.load_kube_config(config_file=kubeconfig)
+        loadcr_yaml = ob.get_scaleoperatorobject_values(namespace)
+    else:
+        loadcr_yaml = False
+
+    if loadcr_yaml is False:
+        try:
+            with open(clusterconfig, "r") as f:
+                loadcr_yaml = yaml.full_load(f.read())
+        except yaml.YAMLError as exc:
+            LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+            assert False
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
     data["custom_object_body"]["metadata"]["namespace"] = namespace
