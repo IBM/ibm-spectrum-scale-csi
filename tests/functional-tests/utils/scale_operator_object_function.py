@@ -613,4 +613,4 @@ def get_scaleoperatorobject_values(namespace_value):
         LOGGER.debug(str(read_cr_api_response))
         return read_cr_api_response
     except ApiException:
-        assert False
+        return False
