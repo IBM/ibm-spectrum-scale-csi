@@ -870,7 +870,7 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
         time.sleep(20)
         LOGGER.info(f"PVC Check : Checking maximun number of inodes for {volume_name} fileset")
 
-    LOGGER.error(f"PVC Check : Actual maximun number of inodes is smaller than expected maximum inodes {expected_max_inode}")
+    LOGGER.error(
+        f"PVC Check : Either actual max inode number is smaller than expected max inodes {expected_max_inode} or response does not contain 'maxNumInodes' ( for more info STG Defect 285687)")
     LOGGER.error(response.text)
-    LOGGER.error("If above message does not contain 'maxNumInodes', take a look at STG Defect 285687")
     return False
