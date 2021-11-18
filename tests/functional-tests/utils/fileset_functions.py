@@ -848,7 +848,7 @@ def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
 
 def check_fileset_max_inode(volume_name, expected_max_inode):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    count = 30
+    count = 15
     while count > 0:
         get_link = "https://"+test["guiHost"]+":"+test["port"] + \
             "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
@@ -867,8 +867,10 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
                 LOGGER.info(f"PVC Check : Actual maximun number of inodes {actual_max_inode} is greater than expected maximum inodes {expected_max_inode}")
                 return True
         count -= 1
-        time.sleep(10)
+        time.sleep(20)
+        LOGGER.info(f"PVC Check : Checking maximun number of inodes for {volume_name} fileset")
 
-    LOGGER.error(f"PVC Check : Actual maximun number of inodes is smaller than expected maximum inodes {expected_max_inode}")
+    LOGGER.error(
+        f"PVC Check : Either actual max inode number is smaller than expected max inodes {expected_max_inode} or response does not contain 'maxNumInodes' ( for more info STG Defect 285687)")
     LOGGER.error(response.text)
     return False
