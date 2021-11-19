@@ -7,7 +7,8 @@ LABEL operators.operatorframework.io.bundle.package.v1=ibm-spectrum-scale-csi
 LABEL operators.operatorframework.io.bundle.channels.v1=stable
 LABEL operators.operatorframework.io.bundle.channel.default.v1=stable
 
-COPY 2.4.0/manifests /manifests/
-COPY 2.4.0/metadata /metadata/
-LABEL com.redhat.openshift.versions="v4.7"
+COPY 2.2.0/manifests /manifests/
+COPY 2.2.0/metadata /metadata/
+LABEL com.redhat.openshift.versions="v4.6,v4.7"
 LABEL com.redhat.delivery.operator.bundle=true
+LABEL com.redhat.delivery.backport=true
