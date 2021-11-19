@@ -844,6 +844,19 @@ func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumSc
 	return nil
 }
 
+func (cs *ScaleControllerServer) checkVolCloneSupport(conn connectors.SpectrumScaleConnector) error {
+        /* Verify Spectrum Scale Version is not below 5.1.2-1 */
+        versionCheck, err := cs.checkMinScaleVersion(conn, "5121")
+        if err != nil {
+                return err
+        }
+
+        if !versionCheck {
+                return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for volume cloning support with CSI is 5.1.2-1")
+        }
+        return nil
+}
+
 func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
 	glog.V(3).Infof("validateSnapId [%v]", sId)
 	conn, err := cs.getConnFromClusterID(sId.ClusterId)
@@ -921,9 +934,9 @@ func (cs *ScaleControllerServer) validateSrcVolumeID(vID *scaleVolId, scVol *sca
 	}
 
 	// This is kind of snapshot restore
-	chkSnapshotErr := cs.checkSnapshotSupport(conn)
-	if chkSnapshotErr != nil {
-		return chkSnapshotErr
+	chkVolCloneErr := cs.checkVolCloneSupport(conn)
+	if chkVolCloneErr != nil {
+		return chkVolCloneErr
 	}
 
 	if scVol.ClusterId != "" && vID.ClusterId != scVol.ClusterId {

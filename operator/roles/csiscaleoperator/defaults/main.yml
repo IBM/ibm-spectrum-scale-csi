@@ -8,7 +8,7 @@ labelName: "ibm-spectrum-scale-csi-operator"
 labelRelease: "ibm-spectrum-scale-csi-operator"
 annotationProductID: "ibm-spectrum-scale-csi-operator"
 annotationProductName: "IBM Spectrum Scale CSI Operator"
-annotationProductVersion: "2.3.1"
+annotationProductVersion: "2.4.0"
 
 namespace: '{{ ansible_operator_meta.namespace | default("ibm-spectrum-scale-csi-driver") }}'
 storage-class: "ibm-spectrum-scale-csi"
@@ -23,7 +23,7 @@ livenessprobe: "{{ lookup('env', 'CSI_LIVENESSPROBE_IMAGE') | default('us.gcr.io
 # Due to camelCase these get loaded differently in the operator.
 
 driverRegistrar: "{{ driver_registrar | default(lookup('env', 'CSI_NODE_REGISTRAR_IMAGE')) | default('us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.3.0', true) }}"
-spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.1', true) }}"
+spectrumScale: "{{ spectrum_scale | default(lookup('env', 'CSI_DRIVER_IMAGE')) | default('quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.4.0', true) }}"
 
 # Set defaults for the secret counter.
 secretCounter: "{{ secret_counter |  default(-1) }}"
@@ -56,12 +56,15 @@ nodeMapping: "{{ _csi_ibm_com_csiscaleoperator.spec.nodeMapping | default([])}}"
 # List of tolerations
 tolerations: "{{ _csi_ibm_com_csiscaleoperator.spec.tolerations | default([])}}"
 
-# State of driver in the cluster (might not be needed).
-state: present
-
 # Kubelet root directory path.
 kubeletRootDirPath: "{{ _csi_ibm_com_csiscaleoperator.spec.kubeletRootDirPath | default('/var/lib/kubelet') }}"
+
+csipspname: "{{ _csi_ibm_com_csiscaleoperator.spec.csipspname | default('None', true) }}"
 
 shortnameNodeMapping: "{{ lookup('env', 'SHORTNAME_NODE_MAPPING') | default('no', true) }}"
 
 livenessHealthPort: "{{ lookup('env', 'LIVENESS_HEALTH_PORT') | default('9821', true) }}"
+
+# State of driver in the cluster (might not be needed).
+state: present
+

@@ -23,10 +23,6 @@ overrides:
     reason: "Network policies are a pending item... reduce to WARNING for now"
     reduceTo: WARNING
 
-  - rule: NoDeprecatedLabelsInAffinityRules
-    reason: "Will fix soon in this release"
-    reduceTo: WARNING
-
   - rule: LaunchScriptMissingAirGapMethods
     reason: "Will fix soon in future release"
     reduceTo: WARNING
@@ -35,11 +31,31 @@ overrides:
     reason: "Will fix soon in future release"
     reduceTo: WARNING
 
-  - rule: MissingScriptForAirGapSupport
+  - rule: NoSensitiveInfoInValues
     reason: "Will fix soon in future release"
     reduceTo: WARNING
 
-  - rule: NoSensitiveInfoInValues
+  - rule: CASEHasAirgapMiscRequiredActions
     reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: OperatorHasCSVs
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: AllPodsRunsAsRestricted
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: NoForbiddenSCCRBACRules
+    reason: "Not applicable to Spectrum Scale CSI Driver"
+    reduceTo: WARNING
+
+  - rule: RBACSpecifiesExplicitSCC
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: RequiredMetadataLabelsDefined
+    reason: "Not applicable to Spectrum Scale CSI Driver"
     reduceTo: WARNING
 

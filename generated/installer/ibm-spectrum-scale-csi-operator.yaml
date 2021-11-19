@@ -19,7 +19,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.3.1
+        productVersion: 2.4.0
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -52,8 +52,8 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.3.1
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.3.1
+          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.4.0
+        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.4.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -71,9 +71,11 @@ spec:
         resources:
           limits:
             cpu: 600m
+            ephemeral-storage: 5Gi
             memory: 600Mi
           requests:
             cpu: 50m
+            ephemeral-storage: 5Gi
             memory: 50Mi
         securityContext:
           allowPrivilegeEscalation: false
@@ -318,6 +320,9 @@ spec:
                 required:
                 - id
                 type: array
+              csipspname:
+                description: PSP name for IBM Spectrum Scale CSI pods.
+                type: string
               driverRegistrar:
                 description: Sidecar container image for the csi spectrum scale plugin
                   pods.
@@ -378,7 +383,7 @@ spec:
                   type: object
                 type: array
               resizer:
-                description: Resizer image for csi (issues volume snapshot requests).
+                description: Resizer image for csi (issues volume resize requests).
                 type: string
               resizerNodeSelector:
                 description: Node selector for resizer sidecar.
