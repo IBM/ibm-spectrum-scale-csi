@@ -38,10 +38,10 @@ const (
 	SNAP_JOB_RUNNING        = 1
 	SNAP_JOB_COMPLETED      = 2
 	SNAP_JOB_FAILED         = 3
-	VOLCOPY_JOB_NOT_STARTED = 4
+	VOLCOPY_JOB_FAILED      = 4
 	VOLCOPY_JOB_RUNNING     = 5
 	VOLCOPY_JOB_COMPLETED   = 6
-	VOLCOPY_JOB_FAILED      = 7
+	VOLCOPY_JOB_NOT_STARTED = 7
 )
 
 type SnapCopyJobDetails struct {
@@ -67,8 +67,10 @@ type ScaleDriver struct {
 	cmap                 settings.ScaleSettingsConfigMap
 	primary              settings.Primary
 	reqmap               map[string]int64
+
 	snapjobstatusmap     sync.Map
-	volcopyjobstatusmap  map[string]VolCopyJobDetails
+	volcopyjobstatusmap  sync.Map
+
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -93,7 +95,6 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	d.cmap = cmap
 	d.primary = primary
 	d.reqmap = make(map[string]int64)
-	d.volcopyjobstatusmap = make(map[string]VolCopyJobDetails)
 	return &ScaleControllerServer{
 		Driver: d,
 	}

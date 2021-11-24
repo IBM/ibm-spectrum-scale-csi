@@ -575,23 +575,30 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isVolSource {
-		jobDetails := cs.Driver.volcopyjobstatusmap[scaleVol.VolName]
-		if jobDetails.jobStatus == VOLCOPY_JOB_RUNNING {
-			glog.Errorf("volume:[%v] -  volume cloning request in progress.", scaleVol.VolName)
-			return nil, status.Error(codes.Aborted, fmt.Sprintf("volume cloning request in progress for volume: %s", scaleVol.VolName))
-		} else if jobDetails.jobStatus == VOLCOPY_JOB_FAILED {
-			glog.Errorf("volume:[%v] -  volume cloning job had failed.", scaleVol.VolName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume: %s", scaleVol.VolName))
-		} else if jobDetails.jobStatus == VOLCOPY_JOB_COMPLETED {
-			glog.Infof("volume:[%v] -  volume cloning request has already completed successfully.", scaleVol.VolName)
-			return &csi.CreateVolumeResponse{
-				Volume: &csi.Volume{
-					VolumeId:      jobDetails.volID,
-					CapacityBytes: int64(scaleVol.VolSize),
-					VolumeContext: req.GetParameters(),
-					ContentSource: volSrc,
-				},
-			}, nil
+		jobDetails, found := cs.Driver.volcopyjobstatusmap.Load(scaleVol.VolName)
+		if found {
+			jobStatus := jobDetails.(VolCopyJobDetails).jobStatus
+			volID := jobDetails.(VolCopyJobDetails).volID
+			glog.V(5).Infof("volume: [%v] found in volcopyjobstatusmap with volID: [%v], jobStatus: [%v]", scaleVol.VolName, volID, jobStatus)
+			if jobStatus == VOLCOPY_JOB_RUNNING {
+				glog.Errorf("volume:[%v] -  volume cloning request in progress.", scaleVol.VolName)
+				return nil, status.Error(codes.Aborted, fmt.Sprintf("volume cloning request in progress for volume: %s", scaleVol.VolName))
+			} else if jobStatus == VOLCOPY_JOB_FAILED {
+				glog.Errorf("volume:[%v] -  volume cloning job had failed", scaleVol.VolName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v]", scaleVol.VolName))
+                	} else if jobStatus == VOLCOPY_JOB_COMPLETED {
+				glog.V(5).Infof("volume:[%v] -  volume cloning request has already completed successfully.", scaleVol.VolName)
+				return &csi.CreateVolumeResponse{
+					Volume: &csi.Volume{
+						VolumeId:      volID,
+						CapacityBytes: int64(scaleVol.VolSize),
+						VolumeContext: req.GetParameters(),
+						ContentSource: volSrc,
+					},
+				}, nil
+			}
+		} else {
+			glog.V(5).Infof("volume: [%v] not found in volcopyjobstatusmap", scaleVol.VolName)
 		}
 	}
 
@@ -743,7 +750,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 }
 
 func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
-	glog.V(3).Infof("copyVolContent volume ID: [%v], scaleVolume: [%v]", vID, scVol)
+	glog.V(3).Infof("copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", vID, scVol, scVol.VolName)
 	conn, err := cs.getConnFromClusterID(vID.ClusterId)
 	if err != nil {
 		return err
@@ -778,7 +785,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
-		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
 		err = conn.WaitForJobCompletion(jobStatus, jobID)
 	} else {
 		sLinkRelPath := strings.Replace(vID.SymLnkPath, cs.Driver.primary.PrimaryFSMount, "", 1)
@@ -792,7 +799,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
-		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
 		err = conn.WaitForJobCompletion(jobStatus, jobID)
 	}
 
@@ -807,13 +814,14 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		} else {
 			jobDetails.jobStatus = VOLCOPY_JOB_FAILED
 		}
-		cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+		glog.Errorf("logging volume cloning error for VolName: [%v] Error: [%v] JobDetails: [%v]", scVol.VolName, err, jobDetails)
+		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
 		return err
 	}
 
 	glog.Infof("volume copy completed for volumeID: [%v], scaleVolume: [%v]", vID, scVol)
 	jobDetails.jobStatus = VOLCOPY_JOB_COMPLETED
-	cs.Driver.volcopyjobstatusmap[scVol.VolName] = jobDetails
+	cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
 	//delete(cs.Driver.volcopyjobstatusmap, scVol.VolName)
 	return nil
 }
