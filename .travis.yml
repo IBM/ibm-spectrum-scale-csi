@@ -57,7 +57,7 @@ env:
     - PATH=/opt/python/3.6.7/bin:$PATH
     - GO111MODULE=on
     - KUBE_VERSION="v1.20.4"
-    - OP_VER="v1.3.2"
+    - OP_VER="v1.13.0"
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk_linux_amd64"
     - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/config/olm-catalog/${REPO_NAME_OPERATOR}/"
@@ -106,6 +106,10 @@ jobs:
     # stage: lint
     - name: "Lint - Operator: run linters and bundle automation."
       script:
+        - which python
+        - which python3
+        - python3 --version
+        - ls -ls /usr/bin/python*
         - pip install ansible
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 3.5.4 ${HOME}/bin
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
