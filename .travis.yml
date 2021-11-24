@@ -106,12 +106,6 @@ jobs:
     # stage: lint
     - name: "Lint - Operator: run linters and bundle automation."
       script:
-        - which python
-        - which python3
-        - python3 --version
-        - ls -ls /usr/bin/python*
-        - which pip
-        - which pip3
         - pip3 install ansible
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 3.5.4 ${HOME}/bin
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
@@ -211,13 +205,13 @@ jobs:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD" && -n "$QUAY_APP"
 
-    # stage: build
-    - name: "Build - Operator: docs"
-      script:
-        - pip3 install sphinx sphinx_rtd_theme recommonmark
-        - cd ${TRAVIS_BUILD_DIR}/docs
-        - make html
-    # end stage: build
+#    # stage: build
+#    - name: "Build - Operator: docs"
+#      script:
+#        - pip3 install sphinx sphinx_rtd_theme recommonmark
+#        - cd ${TRAVIS_BUILD_DIR}/docs
+#        - make html
+#    # end stage: build
 
 #    # Install minikube, build the image and run the scorecard then execute molecule testing.
 #    - stage: test
