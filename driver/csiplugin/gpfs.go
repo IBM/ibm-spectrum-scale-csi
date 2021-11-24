@@ -67,8 +67,10 @@ type ScaleDriver struct {
 	cmap                 settings.ScaleSettingsConfigMap
 	primary              settings.Primary
 	reqmap               map[string]int64
-	snapjobstatusmap     map[string]SnapCopyJobDetails
+
+	snapjobstatusmap     sync.Map
 	volcopyjobstatusmap  sync.Map
+
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -93,7 +95,6 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	d.cmap = cmap
 	d.primary = primary
 	d.reqmap = make(map[string]int64)
-	d.snapjobstatusmap = make(map[string]SnapCopyJobDetails)
 	return &ScaleControllerServer{
 		Driver: d,
 	}
