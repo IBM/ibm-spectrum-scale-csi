@@ -121,7 +121,7 @@ jobs:
         - ls ${OLM_MANIFEST}
         - echo ${BUILD_DIR_OPERATOR}
         - ls ${BUILD_DIR_OPERATOR}
-        - python hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
+        - python3 hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
           #Disabling for now..
         - operator-courier --verbose verify --ui_validate_io /tmp/operator
 
@@ -214,7 +214,7 @@ jobs:
     # stage: build
     - name: "Build - Operator: docs"
       script:
-        - pip install sphinx sphinx_rtd_theme recommonmark
+        - pip3 install sphinx sphinx_rtd_theme recommonmark
         - cd ${TRAVIS_BUILD_DIR}/docs
         - make html
     # end stage: build
