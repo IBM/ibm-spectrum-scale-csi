@@ -18,6 +18,20 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platform 
 
+##### If IBM Spectrum Scale CSI operator and driver is already deployed.
+- Create config map using [test.config](./config/test.config) & kubeconfig file (default location `~/.kube/config`)
+
+```
+kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=kubeconfig=<kubeconfig file path>
+
+```
+
+```
+eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=kubeconfig=/root/.kube/config
+
+```
+
+#### If IBM Spectrum Scale CSI operator and driver is not deployed
 - Create config map using [test.config](./config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](../..//operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
 
 ```
