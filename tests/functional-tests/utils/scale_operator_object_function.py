@@ -149,7 +149,7 @@ def check_scaleoperatorobject_is_deleted():
     assert False
 
 
-def check_scaleoperatorobject_is_deployed():
+def check_scaleoperatorobject_is_deployed(csiscaleoperator_name="ibm-spectrum-scale-csi"):
     """
     Checks csiscaleoperator exists or not
 
@@ -170,8 +170,7 @@ def check_scaleoperatorobject_is_deployed():
                                                                                  version="v1",
                                                                                  namespace=namespace_value,
                                                                                  plural="csiscaleoperators",
-
-                                                                                 name="ibm-spectrum-scale-csi"
+                                                                                 name=csiscaleoperator_name
                                                                                  )
         LOGGER.debug(str(read_co_api_response))
         LOGGER.info("SpectrumScale CSI custom object exists")
@@ -220,7 +219,7 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
     assert False
 
 
-def check_scaleoperatorobject_daemonsets_state():
+def check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name="ibm-spectrum-scale-csi"):
     """
     Checks daemonset exists or not
     If not exists , It asserts
@@ -244,7 +243,7 @@ def check_scaleoperatorobject_daemonsets_state():
     while (num < 30):
         try:
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
-                name="ibm-spectrum-scale-csi", namespace=namespace_value, pretty=True)
+                name=csiscaleoperator_name, namespace=namespace_value, pretty=True)
             LOGGER.debug(read_daemonsets_api_response)
             current_number_scheduled = read_daemonsets_api_response.status.current_number_scheduled
             desired_number_scheduled = read_daemonsets_api_response.status.desired_number_scheduled
@@ -605,11 +604,11 @@ def get_driver_image():
         LOGGER.info("Unable to get driver image")
 
 
-def get_scaleoperatorobject_values(namespace_value):
+def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-spectrum-scale-csi"):
     read_cr_api_instance = client.CustomObjectsApi()
     try:
         read_cr_api_response = read_cr_api_instance.get_namespaced_custom_object(group="csi.ibm.com",
-          version="v1",namespace=namespace_value,plural="csiscaleoperators",name="ibm-spectrum-scale-csi")
+          version="v1",namespace=namespace_value,plural="csiscaleoperators",name=csiscaleoperator_name)
         LOGGER.debug(str(read_cr_api_response))
         return read_cr_api_response
     except ApiException:

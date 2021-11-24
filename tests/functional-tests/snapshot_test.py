@@ -20,7 +20,7 @@ def values(request):
     operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
     if condition is True:
-        if not(operator_object.check()):
+        if not(operator_object.check(data["csiscaleoperator_name"])):
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
     else:
