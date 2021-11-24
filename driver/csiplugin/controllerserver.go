@@ -603,23 +603,30 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		jobDetails := cs.Driver.snapjobstatusmap[scaleVol.VolName]
-		if jobDetails.jobStatus == SNAP_JOB_RUNNING {
-			glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
-			return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
-		} else if jobDetails.jobStatus == SNAP_JOB_FAILED {
-			glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
-		} else if jobDetails.jobStatus == SNAP_JOB_COMPLETED {
-			glog.Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
-			return &csi.CreateVolumeResponse{
-				Volume: &csi.Volume{
-					VolumeId:      jobDetails.volID,
-					CapacityBytes: int64(scaleVol.VolSize),
-					VolumeContext: req.GetParameters(),
-					ContentSource: volSrc,
-				},
-			}, nil
+		jobDetails, found := cs.Driver.snapjobstatusmap.Load(scaleVol.VolName)
+		if found {
+			jobStatus := jobDetails.(SnapCopyJobDetails).jobStatus
+			volID := jobDetails.(SnapCopyJobDetails).volID
+			glog.V(5).Infof("volume: [%v] found in snapjobstatusmap with volID: [%v], jobStatus: [%v]", scaleVol.VolName, volID, jobStatus)
+			if jobStatus == SNAP_JOB_RUNNING {
+				glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
+				return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
+			} else if jobStatus == SNAP_JOB_FAILED {
+				glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+			} else if jobStatus == SNAP_JOB_COMPLETED {
+				glog.V(5).Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
+				return &csi.CreateVolumeResponse{
+					Volume: &csi.Volume{
+						VolumeId:      volID,
+						CapacityBytes: int64(scaleVol.VolSize),
+						VolumeContext: req.GetParameters(),
+						ContentSource: volSrc,
+					},
+				}, nil
+			}
+		} else {
+			glog.V(5).Infof("volume: [%v] not found in snapjobstatusmap", scaleVol.VolName)
 		}
 	}
 
@@ -717,7 +724,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	}
 
 	jobDetails := SnapCopyJobDetails{SNAP_JOB_RUNNING, volID}
-	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
+	cs.Driver.snapjobstatusmap.Store(scVol.VolName, jobDetails)
 
 	err = conn.WaitForJobCompletion(jobStatus, jobID)
 	if err != nil {
@@ -731,13 +738,13 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 		} else {
 			jobDetails.jobStatus = SNAP_JOB_FAILED
 		}
-		cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
+		cs.Driver.snapjobstatusmap.Store(scVol.VolName, jobDetails)
 		return err
 	}
 
 	glog.Infof("copy snapshot completed for snapId: [%v], scaleVolume: [%v]", snapId, scVol)
 	jobDetails.jobStatus = SNAP_JOB_COMPLETED
-	cs.Driver.snapjobstatusmap[scVol.VolName] = jobDetails
+	cs.Driver.snapjobstatusmap.Store(scVol.VolName, jobDetails)
 	//delete(cs.Driver.snapjobmap, scVol.VolName)
 	return nil
 }
