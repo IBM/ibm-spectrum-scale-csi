@@ -10,8 +10,8 @@ def values(request):
     global data, driver_object, kubeconfig_value  # are required in every testcase
     kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val = scaleop.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, test_namespace)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace)
+    data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
+    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
@@ -22,7 +22,7 @@ def values(request):
     operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
     if condition is True:
-        if not(operator_object.check()):
+        if not(operator_object.check(data["csiscaleoperator_name"])):
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
     else:
