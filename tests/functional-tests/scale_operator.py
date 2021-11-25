@@ -202,20 +202,20 @@ class Scaleoperatorobject:
                 ob.delete_configmap(remote_cacert_name)
             ob.check_configmap_is_deleted(remote_cacert_name)
 
-    def check(self):
+    def check(self, csiscaleoperator_name="ibm-spectrum-scale-csi"):
         config.load_kube_config(config_file=self.kubeconfig)
 
-        is_deployed = ob.check_scaleoperatorobject_is_deployed()
+        is_deployed = ob.check_scaleoperatorobject_is_deployed(csiscaleoperator_name)
         if(is_deployed is False):
             return False
 
         ob.check_scaleoperatorobject_statefulsets_state(
-            "ibm-spectrum-scale-csi-attacher")
+            csiscaleoperator_name+"-attacher")
 
         ob.check_scaleoperatorobject_statefulsets_state(
-            "ibm-spectrum-scale-csi-provisioner")
+            csiscaleoperator_name+"-provisioner")
 
-        val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state()
+        val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
 
         # ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
@@ -678,18 +678,22 @@ def get_test_data():
     return data
 
 
-def read_driver_data(clusterconfig, namespace):
+def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
 
     data = get_test_data()
 
     data["namespace"] = namespace
 
-    try:
-        with open(clusterconfig, "r") as f:
-            loadcr_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
-        assert False
+    config.load_kube_config(config_file=kubeconfig)
+    loadcr_yaml = ob.get_scaleoperatorobject_values(operator_namespace, data["csiscaleoperator_name"])
+
+    if loadcr_yaml is False:
+        try:
+            with open(clusterconfig, "r") as f:
+                loadcr_yaml = yaml.full_load(f.read())
+        except yaml.YAMLError as exc:
+            LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+            assert False
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -767,18 +771,25 @@ def check_nodes_available(label, label_name):
         assert False
 
 
-def read_operator_data(clusterconfig, namespace):
+def read_operator_data(clusterconfig, namespace, kubeconfig=None):
 
     data = get_test_data()
 
     data["namespace"] = namespace
 
-    try:
-        with open(clusterconfig, "r") as f:
-            loadcr_yaml = yaml.full_load(f.read())
-    except yaml.YAMLError as exc:
-        LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
-        assert False
+    if kubeconfig is not None:
+        config.load_kube_config(config_file=kubeconfig)
+        loadcr_yaml = ob.get_scaleoperatorobject_values(namespace, data["csiscaleoperator_name"])
+    else:
+        loadcr_yaml = False
+
+    if loadcr_yaml is False:
+        try:
+            with open(clusterconfig, "r") as f:
+                loadcr_yaml = yaml.full_load(f.read())
+        except yaml.YAMLError as exc:
+            LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+            assert False
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
     data["custom_object_body"]["metadata"]["namespace"] = namespace
