@@ -200,6 +200,8 @@ subjects:
   namespace: ibm-spectrum-scale-csi-driver
 ---
 apiVersion: v1
+imagePullSecrets:
+- name: ibm-spectrum-scale-csi-registrykey
 kind: ServiceAccount
 metadata:
   labels:
