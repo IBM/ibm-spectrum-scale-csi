@@ -6,17 +6,34 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 
 - IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
 - Kubernetes Cluster Version 1.19 - 1.22
-- Openshift Version 4.6.x, 4.7.x, 4.8.x
-- IBM Spectrum Scale Cluster CSI Version - 2.1.0+
+- Openshift Version 4.8.x, 4.9.x
+- IBM Spectrum Scale Cluster CSI Version - 2.4.0+
 
 
 ### How to run IBM Spectrum Scale CSI test automation using container
 
-- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
+Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platform 
+
+#### In case IBM Spectrum Scale CSI operator and driver is already deployed
 
 - Configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
 
-Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platform 
+- Create config map using [test.config](./config/test.config) & kubeconfig file (default location `~/.kube/config`)
+
+```
+kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=kubeconfig=<kubeconfig file path>
+
+```
+
+```
+eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=kubeconfig=/root/.kube/config
+
+```
+
+#### In case IBM Spectrum Scale CSI operator and driver is not deployed
+- Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
+
+- Configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
 
 - Create config map using [test.config](./config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](../..//operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
 
