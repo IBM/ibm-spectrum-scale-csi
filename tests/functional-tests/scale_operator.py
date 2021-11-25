@@ -204,7 +204,7 @@ class Scaleoperatorobject:
 
     def check(self, csiscaleoperator_name="ibm-spectrum-scale-csi"):
         config.load_kube_config(config_file=self.kubeconfig)
-        
+
         is_deployed = ob.check_scaleoperatorobject_is_deployed(csiscaleoperator_name)
         if(is_deployed is False):
             return False

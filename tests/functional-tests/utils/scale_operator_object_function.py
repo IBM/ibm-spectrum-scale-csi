@@ -608,7 +608,7 @@ def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-s
     read_cr_api_instance = client.CustomObjectsApi()
     try:
         read_cr_api_response = read_cr_api_instance.get_namespaced_custom_object(group="csi.ibm.com",
-          version="v1",namespace=namespace_value,plural="csiscaleoperators",name=csiscaleoperator_name)
+                                                                                 version="v1", namespace=namespace_value, plural="csiscaleoperators", name=csiscaleoperator_name)
         LOGGER.debug(str(read_cr_api_response))
         return read_cr_api_response
     except ApiException:

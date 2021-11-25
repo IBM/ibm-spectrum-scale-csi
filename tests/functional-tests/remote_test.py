@@ -10,7 +10,7 @@ LOGGER = logging.getLogger()
 def values(request):
     global data, remote_data, driver_object, kubeconfig_value  # are required in every testcase
     kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val = scaleop.get_cmd_values(request)
-    
+
     data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
     operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
