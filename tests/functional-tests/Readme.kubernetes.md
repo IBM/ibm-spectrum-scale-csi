@@ -5,9 +5,9 @@ This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale
 ### Tested Testbed environment
 
 - IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
-- Kubernetes Cluster Version 1.19 - 1.21
-- Openshift Version 4.6.x, 4.7.x, 4.8.x
-- IBM Spectrum Scale Cluster CSI Version - 2.1.0+
+- Kubernetes Cluster Version 1.20 - 1.22
+- Openshift Version 4.8.x, 4.9.x
+- IBM Spectrum Scale Cluster CSI Version - 2.4.0+
 
 ### Pre-requesite for automation framework
 
