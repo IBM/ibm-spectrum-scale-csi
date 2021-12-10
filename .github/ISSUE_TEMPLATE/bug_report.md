@@ -33,7 +33,8 @@ Environmental output
 
 Tool to collect the CSI snap:
 
-./tools/spectrum-scale-driver-snap.sh
+`./tools/spectrum-scale-driver-snap.sh -n < csi driver namespace>`
+
 ## Screenshots
 If applicable, add screenshots to help explain your problem.
 
