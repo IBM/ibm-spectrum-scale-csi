@@ -7,30 +7,46 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+## Describe the bug
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
+## How to Reproduce?
+Please list the steps to help development teams reproduce the behavior
+
 1. ...
 
 
-**Expected behavior**
+## Expected behavior
 A clear and concise description of what you expected to happen.
 
-**Environment**
-Please run the following an paste your output here:
-``` bash
-# Developement
-operator-sdk version 
-go version
+### Data Collection and Debugging
 
-# Deployment
-kubectl version
-rpm -qa | grep gpfs
-```
-**Screenshots**
+Environmental output
+
+- What openshift/kubernetes version are you running, and the architecture? 
+- `kubectl get pods -o wide -n < csi driver namespace> `
+- `kubectl get nodes -o wide`
+- CNSA/Spectrum Scale version 
+- Remote Spectrum Scale version 
+- Output for `./tools/spectrum-scale-driver-snap.sh -n < csi driver namespace> -v `
+
+
+Tool to collect the CSI snap:
+
+`./tools/spectrum-scale-driver-snap.sh -n < csi driver namespace>`
+
+## Screenshots
 If applicable, add screenshots to help explain your problem.
 
-**Additional context**
+## Additional context
 Add any other context about the problem here.
+
+### Add labels
+
+- Component:
+- Severity:
+- Customer Impact:
+- Customer Probability:
+- Phase:
+
+Note : See [labels](https://github.com/IBM/ibm-spectrum-scale-csi/labels) for the labels
