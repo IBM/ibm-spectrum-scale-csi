@@ -1,4 +1,0 @@
-[masters]
-master ansible_host=jdunham-rh72-k8s-scale-master ansible_user=root ansible_python_interpreter=python3
-
-
