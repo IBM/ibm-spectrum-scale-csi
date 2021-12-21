@@ -1,0 +1,19 @@
+domain: ibm.com
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: ibm-spectrum-scale-csi
+repo: github.com/IBM/ibm-spectrum-scale-csi
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: ibm.com
+  group: csi
+  kind: CSIScaleOperator
+  path: github.com/IBM/ibm-spectrum-scale-csi/api/v1
+  version: v1
+version: "3"
