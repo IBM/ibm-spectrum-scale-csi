@@ -14,6 +14,6 @@ resources:
   domain: ibm.com
   group: csi
   kind: CSIScaleOperator
-  path: github.com/IBM/ibm-spectrum-scale-csi/api/v1
+  path: github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1
   version: v1
 version: "3"

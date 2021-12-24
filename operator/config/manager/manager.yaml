@@ -39,6 +39,8 @@ spec:
       containers:
         - args:
           env:
+            - name: METRICS_BIND_ADDRESS
+              value: "8383"
             - name: WATCH_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -64,11 +66,9 @@ spec:
             limits:
               cpu: 600m
               memory: 600Mi
-              ephemeral-storage: 5Gi
             requests:
               cpu: 50m
               memory: 50Mi
-              ephemeral-storage: 5Gi
 
           #hostNetwork: false
           #hostPID: false

@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 	"fmt"
+	"strconv"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -52,6 +53,26 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+// getMetricsBindAddress returns the metrics bind address for the operator
+func getMetricsBindAddress() (string) {
+        var metricsBindAddrEnvVar = "METRICS_BIND_ADDRESS"
+	
+	defaultBindAddr := ":8383"
+
+        bindAddr, found := os.LookupEnv(metricsBindAddrEnvVar)
+        if found {
+		_, err := strconv.Atoi(bindAddr)
+		if err != nil {
+			msg := fmt.Errorf("Supplied METRICS_BIND_ADDRESS is not a number", "METRICS_BIND_ADDRESS: %s", bindAddr)
+			setupLog.Error(msg, "Using default METRICS_BIND_ADDRESS: 8383")
+			return defaultBindAddr
+		} else {
+	                return ":" + bindAddr
+		}
+        }
+        return defaultBindAddr
+}
+
 // getWatchNamespace returns the Namespace the operator should be watching for changes
 func getWatchNamespace() (string, error) {
 	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
@@ -77,7 +98,9 @@ func main() {
 		       "the manager will watch and manage resources in all namespaces")
 	}
 
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8383", "The address the metric endpoint binds to.")
+	bindAddr := getMetricsBindAddress()
+
+	flag.StringVar(&metricsAddr, "metrics-bind-address", bindAddr, "The address the metric endpoint binds to.")
 //	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+

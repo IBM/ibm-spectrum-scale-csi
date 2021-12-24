@@ -69,12 +69,6 @@ type CSIScaleOperatorSpec struct {
 	// livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
 	LivenessProbe string `json:"livenessprobe,omitempty"`
 
-	// secretCounter is an internal counter used by the operator to trigger reloads on secret change.
-	// SecretCounter int `json:"secretCounter,omitempty"`
-
-	// trigger is a generic trigger to be used in kicking off the ansible operator.
-	// Trigger string `json:"trigger,omitempty"`
-
 	// spectrumScale is the image name for the CSI spectrum scale node driver plugin container.
 	SpectrumScale string `json:"spectrumScale,omitempty"`
 

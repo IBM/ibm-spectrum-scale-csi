@@ -9,7 +9,7 @@ metadata:
     categories: Storage
     certified: 'false'
     containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
-    createdAt: Mon Nov 01 13:55:05 IST 2021
+    createdAt: Mon Dec 20 14:55:05 IST 2021
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
     operators.operatorframework.io/builder: operator-sdk-v1.15.0
@@ -403,6 +403,8 @@ spec:
               containers:
               - args:
                 env:
+                - name: METRICS_BIND_ADDRESS
+                  value: "8383"
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -428,11 +430,9 @@ spec:
                   limits:
                     cpu: 600m
                     memory: 600Mi
-                    ephemeral-storage: 5Gi
                   requests:
                     cpu: 50m
                     memory: 50Mi
-                    ephemeral-storage: 5Gi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:

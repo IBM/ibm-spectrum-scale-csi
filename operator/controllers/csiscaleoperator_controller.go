@@ -334,7 +334,8 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	logger := csiLog.WithName("SetupWithManager")
 
-	logger.Info("Setting up the controller with the manager.")
+	logger.Info("running IBM Spectrum Scale CSI operator", "version", config.OperatorVersion)
+	logger.Info("setting up the controller with the manager.")
 	p, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
 		MatchLabels: secretsLabels,
 	})

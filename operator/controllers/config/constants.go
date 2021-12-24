@@ -52,7 +52,8 @@ const (
 	ENVKubeVersion = "KUBE_VERSION"
 	ENVIsOpenShift = "IS_OpenShift"
 
-	DriverVersion = "2.5.0"
+	DriverVersion   = "2.5.0"
+	OperatorVersion = "2.5.0"
 
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.4.0"
