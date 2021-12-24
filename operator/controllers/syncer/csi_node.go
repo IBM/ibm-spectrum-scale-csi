@@ -105,7 +105,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	}
 
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
-	annotations["kubectl.kubernetes.io/default-logs-container"] = config.Product
+	annotations["kubectl.kubernetes.io/default-container"] = config.Product
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSINodeSelectorLabels(config.GetNameForResource(config.CSINode, s.driver.Name)))
 

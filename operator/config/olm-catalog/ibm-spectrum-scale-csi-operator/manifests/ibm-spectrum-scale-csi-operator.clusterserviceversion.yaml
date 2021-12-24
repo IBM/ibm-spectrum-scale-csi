@@ -109,17 +109,17 @@ spec:
         path: clusters.secrets
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
-      - description: An internal counter used by the operator to trigger reloads on
-          secret change.
-        displayName: Secret Counter
-        path: secretCounter
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: A generic trigger to be used in kickin off the ansible operator.
-        displayName: trigger
-        path: trigger
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:hidden
+#      - description: An internal counter used by the operator to trigger reloads on
+#          secret change.
+#        displayName: Secret Counter
+#        path: secretCounter
+#        x-descriptors:
+#        - urn:alm:descriptor:com.tectonic.ui:hidden
+#      - description: A generic trigger to be used in kickin off the ansible operator.
+#        displayName: trigger
+#        path: trigger
+#        x-descriptors:
+#        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: Mapping of K8s node with IBM Spectrum Scale node.
         displayName: nodeMapping
         path: nodeMapping
@@ -403,18 +403,8 @@ spec:
                       - key: kubernetes.io/arch
                         operator: Exists
               containers:
-              - name: operator
-                args:
-                  - "--metrics-addr=0.0.0.0:8383"
-                  - "--enable-leader-election"
-                  - "--leader-election-id=ibm-spectrum-scale-csi-operator"
+              - args:
                 env:
-                - name: MAX_CONCURRENT_RECONCILES_CSISCALEOPERATOR_CSI_IBM_COM
-                  value: "1"
-                - name: MAX_CONCURRENT_RECONCILES_SECRET_
-                  value: "1"
-                - name: ANSIBLE_DEBUG_LOGS
-                  value: "False"
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -429,6 +419,7 @@ spec:
                     - ./health_check.sh
                   initialDelaySeconds: 10
                   periodSeconds: 30
+                name: operator
                 readinessProbe:
                   exec:
                     command:
@@ -453,13 +444,13 @@ spec:
                   readOnlyRootFilesystem: false
                   runAsNonRoot: true
                   runAsUser: 1001
-                volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
+#                volumeMounts:
+#                - mountPath: /tmp/ansible-operator/runner
+#                  name: runner
               serviceAccountName: ibm-spectrum-scale-csi-operator
-              volumes:
-              - emptyDir: {}
-                name: runner
+#              volumes:
+#              - emptyDir: {}
+#                name: runner
     strategy: deployment
   installModes:
   - supported: true
