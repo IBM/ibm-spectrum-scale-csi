@@ -177,7 +177,6 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Node selector for snapshotter sidecar pods.
         displayName: Snapshotter Node Selector
-        path: clusters
         path: snapshotterNodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
@@ -193,7 +192,6 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: Node selector for resizer sidecar pods.
         displayName: Resizer Node Selector
-        path: clusters
         path: resizerNodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
