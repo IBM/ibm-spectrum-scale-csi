@@ -28,6 +28,17 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -o manager main.go
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
+
+LABEL name="IBM Spectrum Scale CSI Operator" \
+      vendor="ibm" \
+      version="2.5.0" \
+      release="1" \
+      run='docker run ibm-spectrum-scale-csi-operator' \
+      summary="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
+      description="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
+      git_commit=$GIT_COMMIT
+
+COPY licenses /licenses
 COPY --from=builder --chmod=0771 /workspace/health_check.sh .
 COPY --from=builder /workspace/manager .
 USER 65532:65532
