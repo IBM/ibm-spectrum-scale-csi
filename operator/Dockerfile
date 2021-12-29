@@ -13,7 +13,7 @@ RUN go mod download
 
 # Copy the go source
 COPY main.go main.go
-COPY  hack/health_check.go health_check.go
+COPY hacks/health_check.go health_check.go
 COPY api/ api/
 COPY controllers/ controllers/
 #COPY ./config/crd/bases/csi.ibm.com_csiscaleoperators_cr.yaml ${CR_YAML}
