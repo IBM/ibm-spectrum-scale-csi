@@ -166,4 +166,3 @@ func (c *CSIScaleOperator) GetCSIEndpoint() string {
 	logger.Info("in GetCSIEndpoint", "CSIEndpoint", CSIEndpoint)
 	return CSIEndpoint
 }
-

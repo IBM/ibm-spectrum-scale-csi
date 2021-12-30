@@ -76,13 +76,34 @@ help: ## Display this help.
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen kustomize fmt vet lint sec ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
+	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v0.0.0|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.0.0|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|IfNotPresent|Always|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|productVersion:.*|productVersion: $(VERSION)|" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+
 
 fmt: ## Run go fmt against code.
+	@echo "***** FORMATTING ******"
 	go fmt ./...
+	go mod tidy
+
+lint: ## Run go lint against code.
+	@echo "****** LINTING ******"
+	go get -u golang.org/x/lint/golint
+	golint ./...
+
+sec: ## Run gosec against code.
+	@echo "****** SECURITY SCANNING ******"
+	go install github.com/securego/gosec/v2/cmd/gosec@latest
+	gosec -no-fail ./...
 
 vet: ## Run go vet against code.
+	@echo "****** VETTING *******"
 	go vet ./...
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin

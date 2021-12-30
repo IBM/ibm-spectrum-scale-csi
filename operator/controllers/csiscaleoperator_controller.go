@@ -1257,4 +1257,3 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 		os.Setenv(config.ENVIsOpenShift, "True")
 	}
 }
-

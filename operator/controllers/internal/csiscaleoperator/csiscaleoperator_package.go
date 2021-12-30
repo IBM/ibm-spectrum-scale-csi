@@ -664,4 +664,3 @@ func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 
 	return nodeSelectors
 }
-

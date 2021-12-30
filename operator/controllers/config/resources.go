@@ -63,4 +63,3 @@ func GetNameForResource(name ResourceName, driverName string) string {
 		return fmt.Sprintf("%s-%s", driverName, name)
 	}
 }
-

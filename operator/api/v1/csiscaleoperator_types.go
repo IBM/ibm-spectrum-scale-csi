@@ -122,7 +122,7 @@ type CSIScaleOperatorStatus struct {
 	*/
 
 	// version is the current CSIDriver version installed by the operator.
-	Version    string             `json:"version,omitempty"`
+	Version string `json:"version,omitempty"`
 
 	// conditions contains the details for one aspect of the current state of this custom resource.
 	Conditions []metav1.Condition `json:"condition,omitempty"`

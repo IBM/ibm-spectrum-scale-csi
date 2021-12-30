@@ -581,4 +581,3 @@ func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) 
 // 	}
 // 	return corev1.PullIfNotPresent
 // }
-

@@ -36,11 +36,11 @@ const (
 
 // Add a field here if it never changes, if it changes over time, put it to settings.go
 const (
-	APIGroup    = "csi.ibm.com"
-	APIVersion  = "v1"
-	ID          = "ibm-spectrum-scale-csi-operator"
-	DriverName  = "spectrumscale.csi.ibm.com"
-	Kind        = "CSIScaleOperator"
+	APIGroup   = "csi.ibm.com"
+	APIVersion = "v1"
+	ID         = "ibm-spectrum-scale-csi-operator"
+	DriverName = "spectrumscale.csi.ibm.com"
+	Kind       = "CSIScaleOperator"
 
 	Masterlabel = "node-role.kubernetes.io/master"
 	ProductName = "IBM Spectrum Scale CSI Operator"
@@ -100,4 +100,3 @@ const (
 	StatusConditionSuccess = "Success"
 	StatusConditionEnabled = "Enabled"
 )
-

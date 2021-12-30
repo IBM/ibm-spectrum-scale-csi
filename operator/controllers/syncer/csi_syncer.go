@@ -916,4 +916,3 @@ func (s *csiControllerSyncer) getCSIAttacherImage() string {
  	return s.getSidecarImage(config.CSIAttacher)
 }
 */
-

@@ -18,8 +18,8 @@ package main
 
 import (
 	"flag"
-	"os"
 	"fmt"
+	"os"
 	"strconv"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -54,23 +54,23 @@ func init() {
 }
 
 // getMetricsBindAddress returns the metrics bind address for the operator
-func getMetricsBindAddress() (string) {
-        var metricsBindAddrEnvVar = "METRICS_BIND_ADDRESS"
-	
+func getMetricsBindAddress() string {
+	var metricsBindAddrEnvVar = "METRICS_BIND_ADDRESS"
+
 	defaultBindAddr := ":8383"
 
-        bindAddr, found := os.LookupEnv(metricsBindAddrEnvVar)
-        if found {
+	bindAddr, found := os.LookupEnv(metricsBindAddrEnvVar)
+	if found {
 		_, err := strconv.Atoi(bindAddr)
 		if err != nil {
-			msg := fmt.Errorf("Supplied METRICS_BIND_ADDRESS is not a number", "METRICS_BIND_ADDRESS: %s", bindAddr)
+			msg := fmt.Errorf("%s %s: %s", "supplied METRICS_BIND_ADDRESS is not a number", "METRICS_BIND_ADDRESS", bindAddr)
 			setupLog.Error(msg, "Using default METRICS_BIND_ADDRESS: 8383")
 			return defaultBindAddr
 		} else {
-	                return ":" + bindAddr
+			return ":" + bindAddr
 		}
-        }
-        return defaultBindAddr
+	}
+	return defaultBindAddr
 }
 
 // getWatchNamespace returns the Namespace the operator should be watching for changes
@@ -82,7 +82,7 @@ func getWatchNamespace() (string, error) {
 
 	ns, found := os.LookupEnv(watchNamespaceEnvVar)
 	if !found {
-		return "", fmt.Errorf("Did not find WATCH_NAMESPACE.", "Environment variable WATCH_NAMESPACE must be set")
+		return "", fmt.Errorf("%s %s", "did not find WATCH_NAMESPACE", "Environment variable WATCH_NAMESPACE must be set")
 	}
 	return ns, nil
 }
@@ -90,18 +90,18 @@ func getWatchNamespace() (string, error) {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-//	var probeAddr string
+	//	var probeAddr string
 
 	watchNamespace, err := getWatchNamespace()
 	if err != nil {
-		setupLog.Error(err, "unable to get WatchNamespace, " +
-		       "the manager will watch and manage resources in all namespaces")
+		setupLog.Error(err, "unable to get WatchNamespace, "+
+			"the manager will watch and manage resources in all namespaces")
 	}
 
 	bindAddr := getMetricsBindAddress()
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", bindAddr, "The address the metric endpoint binds to.")
-//	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	//	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -114,13 +114,13 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-//		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "ibm-spectrum-scale-csi-operator",
-		Namespace:              watchNamespace, // namespaced-scope when the value is not an empty string
+		Scheme:             scheme,
+		MetricsBindAddress: metricsAddr,
+		Port:               9443,
+		//		HealthProbeBindAddress: probeAddr,
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "ibm-spectrum-scale-csi-operator",
+		Namespace:        watchNamespace, // namespaced-scope when the value is not an empty string
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

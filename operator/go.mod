@@ -9,6 +9,8 @@ require (
 	github.com/onsi/gomega v1.13.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/presslabs/controller-util v0.3.0
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/tools v0.1.8 // indirect
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
