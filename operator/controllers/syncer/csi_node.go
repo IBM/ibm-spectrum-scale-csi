@@ -41,16 +41,16 @@ const (
 	nodeContainerName                = "ibm-spectrum-scale-csi"
 	nodeDriverRegistrarContainerName = "driver-registrar"
 	nodeLivenessProbeContainerName   = "liveness-probe"
-	nodeContainerHealthPortName   = "healthz"
-	nodeContainerHealthPortNumber = 9821
-	podMountDir         = "pods-mount-dir"
-	hostDev             = "host-dev"
-	hostDevPath         = "/dev"
-	pluginDir           = "plugin-dir"
-	registrationDir     = "registration-dir"
-	registrationDirPath = "/registration"
-	secretUsername      = "username"
-	secretPassword      = "password"
+	nodeContainerHealthPortName      = "healthz"
+	nodeContainerHealthPortNumber    = 9821
+	podMountDir                      = "pods-mount-dir"
+	hostDev                          = "host-dev"
+	hostDevPath                      = "/dev"
+	pluginDir                        = "plugin-dir"
+	registrationDir                  = "registration-dir"
+	registrationDirPath              = "/registration"
+	secretUsername                   = "username"
+	secretPassword                   = "password"
 
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
@@ -123,6 +123,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 		return err
 	}
 
+	logger.Info("Synchronization of node DaemonSet is successful")
 	return nil
 }
 
@@ -162,7 +163,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-//	nodePlugin.Resources = ensureResources("40m", "1000m", "40Mi", "400Mi")
+	//	nodePlugin.Resources = ensureResources("40m", "1000m", "40Mi", "400Mi")
 
 	//nodePlugin.Ports = ensurePorts(corev1.ContainerPort{
 	//	Name:          nodeContainerHealthPortName,
@@ -258,7 +259,7 @@ func (s *csiNodeSyncer) ensureContainer(name, image string, args []string) corev
 		Args:         args,
 		Env:          s.getEnvFor(name),
 		VolumeMounts: s.getVolumeMountsFor(name),
-//		Resources:    ensureDefaultResources(),
+		//		Resources:    ensureDefaultResources(),
 	}
 }
 
@@ -580,3 +581,4 @@ func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) 
 // 	}
 // 	return corev1.PullIfNotPresent
 // }
+

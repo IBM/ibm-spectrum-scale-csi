@@ -209,6 +209,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
+	logger.Info("Creation of the resources which never change is successful")
+
 	// Synchronizing the resources which change over time.
 	// Resource list:
 	// 1. Cluster configMap
@@ -233,6 +235,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	logger.Info("Synchronization of ConfigMap is successful")
 
 	// Synchronizing attacher statefulset
 	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance)
@@ -248,6 +251,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	logger.Info("Synchronization of attacher interface is successful")
 
 	// Synchronizing provisioner statefulset
 	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance)
@@ -263,6 +267,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	logger.Info("Synchronization of provisioner interface is successful")
 
 	// Synchronizing snapshotter statefulset
 	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance)
@@ -278,6 +283,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	logger.Info("Synchronization of snapshotter interface is successful")
 
 	// Synchronizing resizer statefulset
 	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance)
@@ -293,6 +299,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	logger.Info("Synchronization of resizer interface is successful")
 
 	// Synchronizing node/driver daemonset
 
@@ -309,6 +316,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	logger.Info("Synchronization of node/driver interface is successful")
 
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
@@ -653,6 +661,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				})
 				return err
 			}
+			logger.Info("Creation of ServiceAccount " + sa.GetName() + "is successful")
 
 			if controllerServiceAccountName == sa.Name {
 				rErr := r.restartControllerPod(logger, instance)
@@ -706,6 +715,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 					}
 
 					daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(nodeDaemonSet.Spec.Template.ObjectMeta.Annotations)
+					logger.Info("Rollout restart of node DaemonSet is successful")
 				}
 				// TODO: Should restart sidecar pods if respective ServiceAccount is created afterwards?
 			}
@@ -726,7 +736,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 			logger.Info("ServiceAccount already exists.", "Namespace", sa.GetNamespace(), "Name", sa.GetName())
 		}
 	}
-	logger.V(1).Info("Exiting reconcileServiceAccount() method.")
+	logger.V(1).Info("Reconciliation of all the ServiceAccounts is successful")
 	return nil
 }
 
@@ -869,7 +879,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			}
 		}
 	}
-	logger.V(1).Info("Exiting reconcileClusterRole() method.")
+	logger.V(1).Info("Reconciliation of ClusterRoles is successful")
 	return nil
 }
 
@@ -969,7 +979,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			}
 		}
 	}
-	logger.V(1).Info("Exiting reconcileClusterRoleBinding() method.")
+	logger.V(1).Info("Reconciliation of ClusterRoleBindings is successful")
 	return nil
 }
 
@@ -1056,7 +1066,8 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 			logger.Info("SecurityContextConstraint is up to date, no updates required.")
 		}
 	}
-	logger.V(1).Info("Exiting reconcileSecurityContextConstraints() method.")
+
+	logger.V(1).Info("Reconciliation of SecurityContextConstraints is successful")
 	return nil
 }
 
@@ -1142,7 +1153,7 @@ func (r *CSIScaleOperatorReconciler) SetStatus(instance *csiscaleoperator.CSISca
 
 	crStatus.Version = config.DriverVersion
 
-	logger.V(1).Info("Exiting setStatus() method.")
+	logger.V(1).Info("Setting status of CSIScaleOperator is successful")
 	return nil
 }
 
@@ -1225,7 +1236,7 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.
 		logger.Error(err, "failed to get CSIDriver", "Name", csiDriver.GetName())
 		return err
 	}
-	logger.Info("exiting deleteCSIDriver()")
+	logger.Info("Deletion of CSIDriver is successful")
 	return nil
 }
 
@@ -1246,3 +1257,4 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 		os.Setenv(config.ENVIsOpenShift, "True")
 	}
 }
+

@@ -109,7 +109,7 @@ func (c *CSIScaleOperator) GetCSINodePodLabels(appName string) labels.Set {
 func (c *CSIScaleOperator) GetDefaultImage(name string) string {
 
 	logger := csiLog.WithName("GetDefaultImage")
-	logger.Info("in GetDefaultImage", "name", name)
+	logger.Info("Getting default image for ", "container:", name)
 
 	image := ""
 	switch name {
@@ -128,7 +128,7 @@ func (c *CSIScaleOperator) GetDefaultImage(name string) string {
 	case config.CSIResizer:
 		image = config.CSIResizerImage
 	}
-	logger.Info("in GetDefaultImage", "image", image)
+	logger.Info("Got default image for ", "container:", name, ", image:", image)
 	return image
 }
 
@@ -166,3 +166,4 @@ func (c *CSIScaleOperator) GetCSIEndpoint() string {
 	logger.Info("in GetCSIEndpoint", "CSIEndpoint", CSIEndpoint)
 	return CSIEndpoint
 }
+
