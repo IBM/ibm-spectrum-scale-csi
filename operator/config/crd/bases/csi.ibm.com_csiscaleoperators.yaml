@@ -26,7 +26,7 @@ spec:
       name: Version
       type: string
     - description: CSI driver resource creation status.
-      jsonPath: .status.conditions[?(@ "status")].status
+      jsonPath: .status.condition[?(@ "status")].status
       name: Success
       type: string
     name: v1
@@ -879,6 +879,9 @@ spec:
                   attaches to the storage).
                 type: string
               attacherNodeSelector:
+                default:
+                - key: scale
+                  value: "true"
                 description: attacherNodeSelector is the node selector for attacher
                   sidecar.
                 items:
@@ -1005,6 +1008,9 @@ spec:
                   type: object
                 type: array
               pluginNodeSelector:
+                default:
+                - key: scale
+                  value: "true"
                 description: pluginNodeSelector is the node selector for spectrum
                   scale CSI plugin.
                 items:
@@ -1025,6 +1031,9 @@ spec:
                   (actually issues provision requests).
                 type: string
               provisionerNodeSelector:
+                default:
+                - key: scale
+                  value: "true"
                 description: provisionerNodeSelector is the node selector for provisioner
                   sidecar.
                 items:
@@ -1045,6 +1054,9 @@ spec:
                   volume expansion requests).
                 type: string
               resizerNodeSelector:
+                default:
+                - key: scale
+                  value: "true"
                 description: resizerNodeSelector is the node selector for resizer
                   sidecar.
                 items:
@@ -1065,6 +1077,9 @@ spec:
                   (issues volume snapshot requests).
                 type: string
               snapshotterNodeSelector:
+                default:
+                - key: scale
+                  value: "true"
                 description: snapshotterNodeSelector is the snapshotter node selector
                   for snapshotter sidecar.
                 items:
@@ -1127,12 +1142,17 @@ spec:
                   type: object
                 type: array
             required:
+            - attacherNodeSelector
             - clusters
+            - pluginNodeSelector
+            - provisionerNodeSelector
+            - resizerNodeSelector
+            - snapshotterNodeSelector
             type: object
           status:
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
             properties:
-              conditions:
+              condition:
                 description: conditions contains the details for one aspect of the
                   current state of this custom resource.
                 items:

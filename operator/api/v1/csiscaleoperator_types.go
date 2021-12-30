@@ -34,7 +34,8 @@ type CSIScaleOperatorSpec struct {
 	Attacher string `json:"attacher,omitempty"`
 
 	// attacherNodeSelector is the node selector for attacher sidecar.
-	AttacherNodeSelector []CSINodeSelector `json:"attacherNodeSelector,omitempty"`
+	// +kubebuilder:default:={{key:scale,value:`true`}}
+	AttacherNodeSelector []CSINodeSelector `json:"attacherNodeSelector"`
 
 	// clusters is a collection of GPFS CSICluster properties for the CSI driver to mount.
 	Clusters []CSICluster `json:"clusters"`
@@ -46,25 +47,29 @@ type CSIScaleOperatorSpec struct {
 	NodeMapping []NodeMapping `json:"nodeMapping,omitempty"`
 
 	// pluginNodeSelector is the node selector for spectrum scale CSI plugin.
-	PluginNodeSelector []CSINodeSelector `json:"pluginNodeSelector,omitempty"`
+	// +kubebuilder:default:={{key:scale,value:`true`}}
+	PluginNodeSelector []CSINodeSelector `json:"pluginNodeSelector"`
 
 	// provisioner is the provisioner sidecar image for CSI (actually issues provision requests).
 	Provisioner string `json:"provisioner,omitempty"`
 
 	// provisionerNodeSelector is the node selector for provisioner sidecar.
-	ProvisionerNodeSelector []CSINodeSelector `json:"provisionerNodeSelector,omitempty"`
+	// +kubebuilder:default:={{key:scale,value:`true`}}
+	ProvisionerNodeSelector []CSINodeSelector `json:"provisionerNodeSelector"`
 
 	// snapshotter is the snapshotter sidecar image for CSI (issues volume snapshot requests).
 	Snapshotter string `json:"snapshotter,omitempty"`
 
 	// snapshotterNodeSelector is the snapshotter node selector for snapshotter sidecar.
-	SnapshotterNodeSelector []CSINodeSelector `json:"snapshotterNodeSelector,omitempty"`
+	// +kubebuilder:default:={{key:scale,value:`true`}}
+	SnapshotterNodeSelector []CSINodeSelector `json:"snapshotterNodeSelector"`
 
 	// resizer is the resizer sidecar image for CSI (issues volume expansion requests).
 	Resizer string `json:"resizer,omitempty"`
 
 	// resizerNodeSelector is the node selector for resizer sidecar.
-	ResizerNodeSelector []CSINodeSelector `json:"resizerNodeSelector,omitempty"`
+	// +kubebuilder:default:={{key:scale,value:`true`}}
+	ResizerNodeSelector []CSINodeSelector `json:"resizerNodeSelector"`
 
 	// livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
 	LivenessProbe string `json:"livenessprobe,omitempty"`
@@ -120,7 +125,7 @@ type CSIScaleOperatorStatus struct {
 	Version    string             `json:"version,omitempty"`
 
 	// conditions contains the details for one aspect of the current state of this custom resource.
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"condition,omitempty"`
 }
 
 /*
@@ -307,7 +312,7 @@ type RestApi struct {
 
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.status.version`,description="CSIDriver version."
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.conditions[?(@ "status")].status`,description="CSI driver resource creation status."
+// +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.condition[?(@ "status")].status`,description="CSI driver resource creation status."
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName=csi, categories=scale, scope=Namespaced
 
