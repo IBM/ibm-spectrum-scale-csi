@@ -314,7 +314,7 @@ type RestApi struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.condition[?(@ "status")].status`,description="CSI driver resource creation status."
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:shortName=csi, categories=scale, scope=Namespaced
+// +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
 // CSIScaleOperator is the Schema for the csiscaleoperators API
 type CSIScaleOperator struct {

@@ -16,7 +16,7 @@ spec:
     listKind: CSIScaleOperatorList
     plural: csiscaleoperators
     shortNames:
-    - csi
+    - cso
     singular: csiscaleoperator
   scope: Namespaced
   versions:
