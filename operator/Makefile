@@ -29,14 +29,14 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # ibm.com/ibm-spectrum-scale-csi-bundle:$VERSION and ibm.com/ibm-spectrum-scale-csi-catalog:$VERSION.
-IMAGE_TAG_BASE ?= ibm.com/ibm-spectrum-scale-csi
+IMAGE_TAG_BASE ?= quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
@@ -74,15 +74,16 @@ help: ## Display this help.
 ##@ Development
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=ibm-spectrum-scale-csi-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 generate: controller-gen kustomize fmt vet lint sec ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
 	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
-	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
-	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v0.0.0|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.0.0|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|v$(VERSION)|dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:dev|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:dev|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|IfNotPresent|Always|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|productVersion:.*|productVersion: $(VERSION)|" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 
@@ -166,12 +167,26 @@ endef
 
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
-	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	operator-sdk generate kustomize manifests -q --package "ibm-spectrum-scale-csi-operator"
+	cd config/manager && $(KUSTOMIZE) edit set image $(IMAGE_TAG_BASE):v$(VERSION) && $(KUSTOMIZE) edit add annotation productVersion:$(VERSION) --force
+	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --package "ibm-spectrum-scale-csi-operator" --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+	sed -i  "s|containerImage:.*|containerImage: $(IMAGE_TAG_BASE):v$(VERSION)|" bundle/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml
+	sed -i "s|v0.0.0|v$(VERSION)|g" bundle/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml
+	mkdir -p config/olm-catalog/ibm-spectrum-scale-csi-operator/$(VERSION)
+	cp bundle/manifests/csi.ibm.com_csiscaleoperators.yaml config/olm-catalog/ibm-spectrum-scale-csi-operator/$(VERSION)/csiscaleoperators.csi.ibm.com.crd.yaml
+	cp bundle/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml config/olm-catalog/ibm-spectrum-scale-csi-operator/$(VERSION)/ibm-spectrum-scale-csi-operator.v$(VERSION).clusterserviceversion.yaml
+	cp bundle/metadata/annotations.yaml config/olm-catalog/ibm-spectrum-scale-csi-operator/metadata/annotations.yaml
+	cp bundle/manifests/csi.ibm.com_csiscaleoperators.yaml config/olm-catalog/ibm-spectrum-scale-csi-operator/manifests/csiscaleoperators.csi.ibm.com.crd.yaml
+	cp bundle/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml config/olm-catalog/ibm-spectrum-scale-csi-operator/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml
+	sed -i "s|currentCSV: .*|currentCSV: ibm-spectrum-scale-csi-operator.v$(VERSION)|" config/olm-catalog/ibm-spectrum-scale-csi-operator/ibm-spectrum-scale-csi-operator.package.yaml
+	sed -i "s|bundle/manifests|config/olm-catalog/ibm-spectrum-scale-csi-operator/manifests|"  ./bundle.Dockerfile
+	sed -i "s|bundle/metadata|config/olm-catalog/ibm-spectrum-scale-csi-operator/metadata|"  ./bundle.Dockerfile
+	sed -i "/bundle\/tests\/scorecard/d" ./bundle.Dockerfile
+	rm -rf bundle
 
 .PHONY: bundle-build
+
 bundle-build: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 

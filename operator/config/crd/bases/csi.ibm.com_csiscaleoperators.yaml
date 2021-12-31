@@ -938,11 +938,11 @@ spec:
                       items:
                         properties:
                           guiHost:
-                            description: The hostname of the REST server
+                            description: The hostname of the REST server.
                             type: string
                           guiPort:
                             default: 443
-                            description: The port number running the REST server
+                            description: The port number running the REST server.
                             type: integer
                         required:
                         - guiHost
@@ -968,7 +968,7 @@ spec:
                   type: object
                 type: array
               csipspname:
-                description: PodSecurityPolicy name for CSI driver and sidecar pods
+                description: PodSecurityPolicy name for CSI driver and sidecar pods.
                 type: string
               driverRegistrar:
                 description: driverRegistrar is the Sidecar container image for the

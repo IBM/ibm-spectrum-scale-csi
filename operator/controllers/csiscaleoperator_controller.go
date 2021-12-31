@@ -77,10 +77,18 @@ type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
 
-//+kubebuilder:rbac:groups=csi.ibm.com,resources=csiscaleoperators,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=csi.ibm.com,resources=csiscaleoperators/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=csi.ibm.com,resources=csiscaleoperators/finalizers,verbs=update
-// +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=get;list;watch;create;patch
+// +kubebuilder:rbac:groups=csi.ibm.com,resources=*,verbs=*
+
+// +kubebuilder:rbac:groups="",resources={pods,persistentvolumeclaims,services,endpoints,events,configmaps,secrets,secrets/status,services/finalizers,serviceaccounts},verbs=*
+// TODO: Does the operator need to access to all the resources mentioned above?
+// TODO: Does all resources mentioned above required delete/patch/update permissions?
+
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources={clusterroles,clusterrolebinding},verbs=*
+// +kubebuilder:rbac:groups="apps",resources={deployments,daemonsets,replicasets,statefulsets},verbs=*
+// +kubebuilder:rbac:groups="apps",resourceNames=ibm-spectrum-scale-csi-operator,resources=deployments/finalizers,verbs=get;update
+// +kubebuilder:rbac:groups="storage.k8s.io",resources={volumeattachments,storageclasses,csidrivers},verbs=*
+// +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;create
+// +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=*
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -138,10 +146,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				Namespace: req.Namespace,
 			},
 		}
-		cr.Status = crStatus
 		if err := r.SetStatus(instance); err != nil {
 			logger.Error(err, "Assigning values to status sub-resource object failed.")
 		}
+		cr.Status = crStatus
 		err := r.Client.Status().Patch(ctx, cr, client.Merge, client.FieldOwner("CSIScaleOperator"))
 		if err != nil {
 			logger.Error(err, "Deferred update of resource status failed.", "Status", cr.Status)
