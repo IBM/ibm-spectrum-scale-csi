@@ -20,7 +20,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 0.0.0
+        productVersion: 2.5.0
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -46,8 +46,8 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: CSI_DRIVER_IMAGE
-            value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v0.0.0
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v0.0.0
+            value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0
+          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
