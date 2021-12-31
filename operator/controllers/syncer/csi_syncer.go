@@ -24,10 +24,10 @@ import (
 const (
 	socketVolumeName                     = "socket-dir"
 	controllerContainerName              = "ibm-spectrum-scale-csi-operator"
-	provisionerContainerName             = "csi-provisioner"
+	provisionerContainerName             = "ibm-spectrum-scale-csi-provisioner"
 	attacherContainerName                = "ibm-spectrum-scale-csi-attacher"
-	snapshotterContainerName             = "csi-snapshotter"
-	resizerContainerName                 = "csi-resizer" // TODO: Should be ibm-spectrum-scale-csi-resizer
+	snapshotterContainerName             = "ibm-spectrum-scale-csi-snapshotter"
+	resizerContainerName                 = "ibm-spectrum-scale-csi-resizer"
 	controllerLivenessProbeContainerName = "liveness-probe"
 
 	EnvVarForCSIAttacherImage    = "CSI_ATTACHER_IMAGE"
