@@ -20,8 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
-	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/operator/api/v1"
 )
 
 var csiLog = log.Log.WithName("csiscaleoperator")
