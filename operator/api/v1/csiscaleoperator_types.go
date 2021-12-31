@@ -349,7 +349,7 @@ type RestApi struct {
 // +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
 // CSIScaleOperator is the Schema for the csiscaleoperators API
-//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{Deployment,v1,ibm-spectrum-scale-csi-operator},{Secret,v1,"ibm-spectrum-scale-csiadmin"}}
+//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{StatefulSet,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
 type CSIScaleOperator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

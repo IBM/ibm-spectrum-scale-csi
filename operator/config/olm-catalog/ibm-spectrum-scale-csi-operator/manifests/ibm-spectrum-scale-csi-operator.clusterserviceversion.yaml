@@ -96,12 +96,18 @@ spec:
       kind: CSIScaleOperator
       name: csiscaleoperators.csi.ibm.com
       resources:
-      - kind: Deployment
-        name: ibm-spectrum-scale-csi-operator
+      - kind: ConfigMap
+        name: ""
         version: v1
-      - kind: Secret
-        name: ibm-spectrum-scale-csiadmin
+      - kind: DaemonSet
+        name: ""
+        version: v1beta2
+      - kind: Pod
+        name: ""
         version: v1
+      - kind: StatefulSet
+        name: ""
+        version: v1beta2
       specDescriptors:
       - description: affinity is a group of affinity scheduling rules.
         displayName: Affinity
