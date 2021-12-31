@@ -1,5 +1,5 @@
 /*
-Copyright 2021.
+Copyright 2022.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/api/v1"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers"
+	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers"
 
 	securityv1 "github.com/openshift/api/security/v1"
 	//+kubebuilder:scaffold:imports

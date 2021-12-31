@@ -5,7 +5,7 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: ibm-spectrum-scale-csi
-repo: github.com/IBM/ibm-spectrum-scale-csi
+repo: github.com/IBM/ibm-spectrum-scale-csi/operator
 resources:
 - api:
     crdVersion: v1

@@ -1,4 +1,4 @@
-module github.com/IBM/ibm-spectrum-scale-csi
+module github.com/IBM/ibm-spectrum-scale-csi/operator/
 
 go 1.16
 

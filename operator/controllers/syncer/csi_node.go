@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 IBM Corp.
+ * Copyright 2022 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/config"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/internal/csiscaleoperator"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/util/boolptr"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/util/k8sutil"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/k8sutil"
 )
 
 const (

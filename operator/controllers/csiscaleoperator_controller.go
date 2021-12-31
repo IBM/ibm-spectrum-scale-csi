@@ -1,5 +1,5 @@
 /*
-Copyright 2021.
+Copyright 2022.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,10 +47,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/api/v1"
-	config "github.com/IBM/ibm-spectrum-scale-csi/controllers/config"
-	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/controllers/internal/csiscaleoperator"
-	clustersyncer "github.com/IBM/ibm-spectrum-scale-csi/controllers/syncer"
+	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
+	config "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
+	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
+	clustersyncer "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/syncer"
 )
 
 // CSIScaleOperatorReconciler reconciles a CSIScaleOperator object
@@ -452,7 +452,8 @@ func (r *CSIScaleOperatorReconciler) hasFinalizer(instance *csiscaleoperator.CSI
 	return Contains(accessor.GetFinalizers(), finalizerName), nil
 }
 
-func Remove(list []string, s string) []string {
+// This removes an entry from list of strings
+func removeListEntry(list []string, s string) []string {
 	var newList []string
 	for _, v := range list {
 		if v != s {
@@ -471,7 +472,7 @@ func (r *CSIScaleOperatorReconciler) removeFinalizer(instance *csiscaleoperator.
 		return err
 	}
 
-	accessor.SetFinalizers(Remove(accessor.GetFinalizers(), finalizerName))
+	accessor.SetFinalizers(removeListEntry(accessor.GetFinalizers(), finalizerName))
 	if err := r.Client.Update(context.TODO(), instance.Unwrap()); err != nil {
 		logger.Error(err, "failed to remove", "finalizer", finalizerName, "from", accessor.GetName())
 		return err

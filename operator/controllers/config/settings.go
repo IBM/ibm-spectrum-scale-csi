@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	v1 "github.com/IBM/ibm-spectrum-scale-csi/api/v1"
+	v1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"

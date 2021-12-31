@@ -15,10 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/config"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/internal/csiscaleoperator"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/util/boolptr"
-	"github.com/IBM/ibm-spectrum-scale-csi/controllers/util/k8sutil"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/k8sutil"
 )
 
 const (
