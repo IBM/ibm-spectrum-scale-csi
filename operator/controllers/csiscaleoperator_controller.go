@@ -83,7 +83,7 @@ var crStatus = csiv1.CSIScaleOperatorStatus{}
 // TODO: Does the operator need to access to all the resources mentioned above?
 // TODO: Does all resources mentioned above required delete/patch/update permissions?
 
-// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources={clusterroles,clusterrolebindings},verbs=*
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources={clusterroles,clusterrolebinding},verbs=*
 // +kubebuilder:rbac:groups="apps",resources={deployments,daemonsets,replicasets,statefulsets},verbs=*
 // +kubebuilder:rbac:groups="apps",resourceNames=ibm-spectrum-scale-csi-operator,resources=deployments/finalizers,verbs=get;update
 // +kubebuilder:rbac:groups="storage.k8s.io",resources={volumeattachments,storageclasses,csidrivers},verbs=*
