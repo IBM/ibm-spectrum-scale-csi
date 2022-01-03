@@ -826,6 +826,16 @@ def read_operator_data(clusterconfig, namespace, kubeconfig=None):
     else:
         data["pluginNodeSelector"] = []
 
+    if check_key(loadcr_yaml["spec"], "resizerNodeSelector"):
+        data["resizerNodeSelector"] = loadcr_yaml["spec"]["resizerNodeSelector"]
+    else:
+        data["resizerNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"], "snapshotterNodeSelector"):
+        data["snapshotterNodeSelector"] = loadcr_yaml["spec"]["snapshotterNodeSelector"]
+    else:
+        data["snapshotterNodeSelector"] = []
+
     if check_key(data, "local_cacert_name"):
         if data["cacert_path"] == "":
             LOGGER.error("if using cacert , MUST include cacert path in test.config")

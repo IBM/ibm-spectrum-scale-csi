@@ -812,3 +812,195 @@ def test_pluginNodeSelector(_values):
             assert False
 
     operator_object.delete()
+
+
+def test_non_deafult_snapshotter(_values):
+    LOGGER.info("test_non_deafult_snapshotter")
+    LOGGER.info("snapshotter image name is changed")
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test["custom_object_body"]["spec"]["snapshotter"] = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1"
+    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+    else:
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
+            field = "involvedObject.name="+demonset_pod_name
+            api_response = get_logs_api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+
+    operator_object.delete()
+
+
+def test_non_deafult_livenessprobe(_values):
+    LOGGER.info("test_non_deafult_livenessprobe")
+    LOGGER.info("livenessprobe image name is changed")
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test["custom_object_body"]["spec"]["livenessprobe"] = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
+    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+    else:
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
+            field = "involvedObject.name="+demonset_pod_name
+            api_response = get_logs_api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+
+    operator_object.delete()
+
+
+def test_non_deafult_resizer(_values):
+    LOGGER.info("test_non_deafult_resizer")
+    LOGGER.info("resizer image name is changed")
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test["custom_object_body"]["spec"]["resizer"] = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
+    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+    else:
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
+            field = "involvedObject.name="+demonset_pod_name
+            api_response = get_logs_api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+
+    operator_object.delete()
+
+
+def test_snapshotterNodeSelector(_values):
+    LOGGER.info("test_snapshotterNodeSelector")
+    LOGGER.info("snapshotterNodeSelector is added to the cr file")
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+            test["snapshotterNodeSelector"])
+        if desired_daemonset_node == labelled_nodes:
+            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        else:
+            LOGGER.error(
+                "labelled nodes are not equal to desired daemonset nodes")
+            assert False
+    else:
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
+            field = "involvedObject.name="+demonset_pod_name
+            api_response = get_logs_api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+
+    operator_object.delete()
+
+
+def test_resizerNodeSelector(_values):
+    LOGGER.info("test_resizerNodeSelector")
+    LOGGER.info("resizerNodeSelector is added to the cr file")
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.info("Operator custom object is deployed successfully")
+        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+            test["resizerNodeSelector"])
+        if desired_daemonset_node == labelled_nodes:
+            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        else:
+            LOGGER.error(
+                "labelled nodes are not equal to desired daemonset nodes")
+            assert False
+    else:
+        get_logs_api_instance = client.CoreV1Api()
+        try:
+            demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
+            field = "involvedObject.name="+demonset_pod_name
+            api_response = get_logs_api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            LOGGER.error(
+                "operator custom object should be deployed but it is not deployed hence asserting")
+            assert False
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+
+    operator_object.delete()
+
+
+def test_wrong_kubeletRootDirPath(_values):
+    LOGGER.info("test_wrong_kubeletRootDirPath : kubeletRootDirPath is wrong")
+    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+
+    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{randomString()}/{randomString()}"
+
+    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.error(
+            "Operator custom object is deployed successfully not expected")
+        assert False
+    else:
+        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        api_instance = client.CoreV1Api()
+        try:
+            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
+            field = "involvedObject.name="+demonset_pod_name
+            api_response = api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            search_result = re.search(
+                "hostPath type check failed", str(api_response))
+            LOGGER.debug(search_result)
+            assert search_result is not None
+            LOGGER.info("'hostPath type check failed' failure reason matched")
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
+            assert False
+    operator_object.delete()

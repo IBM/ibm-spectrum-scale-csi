@@ -200,7 +200,7 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
     """
     read_statefulsets_api_instance = client.AppsV1Api()
     num = 0
-    while (num < 124):
+    while (num < 30):
         try:
             read_statefulsets_api_response = read_statefulsets_api_instance.read_namespaced_stateful_set(
                 name=stateful_name, namespace=namespace_value, pretty=True)
@@ -240,7 +240,7 @@ def check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name="ibm-spectr
     """
     read_daemonsets_api_instance = client.AppsV1Api()
     num = 0
-    while (num < 30):
+    while (num < 15):
         try:
             read_daemonsets_api_response = read_daemonsets_api_instance.read_namespaced_daemon_set(
                 name=csiscaleoperator_name, namespace=namespace_value, pretty=True)
