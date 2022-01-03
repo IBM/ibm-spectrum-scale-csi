@@ -1140,12 +1140,7 @@ spec:
                   type: object
                 type: array
             required:
-            - attacherNodeSelector
             - clusters
-            - pluginNodeSelector
-            - provisionerNodeSelector
-            - resizerNodeSelector
-            - snapshotterNodeSelector
             type: object
           status:
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
