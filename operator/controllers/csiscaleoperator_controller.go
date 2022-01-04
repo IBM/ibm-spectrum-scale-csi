@@ -1263,6 +1263,9 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 	}, service)
 	if err == nil {
 		logger.Info("CSI Operator is running on an OpenShift cluster.")
-		os.Setenv(config.ENVIsOpenShift, "True")
+		setEnvErr := os.Setenv(config.ENVIsOpenShift, "True")
+		if setEnvErr != nil {
+			logger.Error(err, "Error setting environment variable ENVIsOpenShift")
+		}
 	}
 }
