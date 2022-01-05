@@ -58,10 +58,7 @@ const (
 	DriverName = "spectrumscale.csi.ibm.com"
 	Kind       = "CSIScaleOperator"
 
-	Masterlabel = "node-role.kubernetes.io/master"
 	ProductName = "IBM Spectrum Scale CSI Operator"
-
-	NodeAgentRepository = "ibmcom/ibm-node-agent"
 
 	ENVEndpoint    = "ENDPOINT"
 	ENVNodeName    = "NODE_NAME"
