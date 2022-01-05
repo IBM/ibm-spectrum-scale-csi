@@ -196,12 +196,16 @@ type CSISidecar struct {
 }
 */
 
+/*
+//  Note: Uncomment this when CSICondition is in use.
 type CSICondition struct {
 	// +optional
 	// Indicates that the plugin is running
 	Ready bool `json:"Ready"`
 }
+*/
 
+// CSINodeSelector defines the fields of Node Selector
 type CSINodeSelector struct {
 
 	// Key for node selector
@@ -213,6 +217,8 @@ type CSINodeSelector struct {
 	Value string `json:"value"`
 }
 
+/*
+TODO: Unused code. Remove if not required.
 type Toleration struct {
 
 	// +optional
@@ -237,7 +243,10 @@ type Toleration struct {
 	// // +kubebuilder:validation:Enum=NoSchedule;PreferNoSchedule;NoExecute
 	Effect string `json:"effect"`
 }
+*/
 
+/*
+// Note: Uncomment this when Toleration structure is in use
 type Effect string
 
 const (
@@ -255,6 +264,7 @@ const (
 	None Effect = ""
 )
 
+
 // +kubebuilder:validation:Enum=Exists;Equal
 type Operator string
 
@@ -266,7 +276,9 @@ const (
 	// TODO: add doc
 	Equal Operator = "Equal"
 )
+*/
 
+// Defines mapping between kubernetes node and spectrumscale nodes
 type NodeMapping struct {
 
 	// k8sNode is the name of the kubernetes node
@@ -278,6 +290,7 @@ type NodeMapping struct {
 	SpectrumscaleNode string `json:"spectrumscaleNode"`
 }
 
+// Defines the fields of a CSI cluster specification
 type CSICluster struct {
 
 	// cacert is the name of the configMap storing GUI certificates. Mandatory if secureSslMode is true.
@@ -309,6 +322,7 @@ type CSICluster struct {
 	SecureSslMode bool `json:"secureSslMode"`
 }
 
+// Defines the fields for CSI for Spectrum Scale file system
 type CSIFilesystem struct {
 
 	// +optional
@@ -328,6 +342,7 @@ type CSIFilesystem struct {
 	RemoteCluster string `json:"remoteCluster,omitempty"`
 }
 
+// Defines the fields for REST API server information.
 type RestApi struct {
 
 	// The hostname of the REST server.

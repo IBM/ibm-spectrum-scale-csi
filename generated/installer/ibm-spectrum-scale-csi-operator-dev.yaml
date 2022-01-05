@@ -1127,6 +1127,7 @@ spec:
                   sidecar.
                 items:
                   type: object
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     value:
                       type: string
@@ -1143,6 +1144,7 @@ spec:
                   for the CSI driver to mount.
                 items:
                   type: object
+                  description: Defines the fields of a CSI cluster specification
                   properties:
                     cacert:
                       type: string
@@ -1180,6 +1182,7 @@ spec:
                       description: restApi is a collection of targets for REST calls
                       items:
                         type: object
+                        description: Defines the fields for REST API server information.
                         properties:
                           guiHost:
                             type: string
@@ -1228,6 +1231,8 @@ spec:
                   scale node.
                 items:
                   type: object
+                  description: Defines mapping between kubernetes node and spectrumscale
+                    nodes
                   properties:
                     k8sNode:
                       type: string
@@ -1248,6 +1253,7 @@ spec:
                   scale CSI plugin.
                 items:
                   type: object
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     value:
                       type: string
@@ -1271,6 +1277,7 @@ spec:
                   sidecar.
                 items:
                   type: object
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     value:
                       type: string
@@ -1294,6 +1301,7 @@ spec:
                   sidecar.
                 items:
                   type: object
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     value:
                       type: string
@@ -1317,6 +1325,7 @@ spec:
                   for snapshotter sidecar.
                 items:
                   type: object
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     value:
                       type: string

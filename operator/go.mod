@@ -3,7 +3,6 @@ module github.com/IBM/ibm-spectrum-scale-csi/operator
 go 1.16
 
 require (
-	github.com/go-logr/logr v0.4.0
 	github.com/imdario/mergo v0.3.12
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
