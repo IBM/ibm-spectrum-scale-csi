@@ -79,6 +79,7 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen kustomize fmt vet lint sec ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
 	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|v$(VERSION)|dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml

@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    productVersion: 2.5.0
+  name: ibm-spectrum-scale-csi-operator
+  namespace: ibm-spectrum-scale-csi-driver
   labels:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
+  annotations:
+    productVersion: 2.5.0
 spec:
   replicas: 1
   selector:
@@ -18,27 +18,23 @@ spec:
       app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
   template:
     metadata:
+      labels:
+        name: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+        product: ibm-spectrum-scale-csi
+        release: ibm-spectrum-scale-csi-operator
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
         productVersion: 2.5.0
-      labels:
-        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-        name: ibm-spectrum-scale-csi-operator
-        product: ibm-spectrum-scale-csi
-        release: ibm-spectrum-scale-csi-operator
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: Exists
+      serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
-      - args: null
+      - name: operator
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
+        args: null
         env:
         - name: METRICS_BIND_ADDRESS
           value: "8383"
@@ -48,21 +44,6 @@ spec:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
           value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
-        imagePullPolicy: Always
-        livenessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        name: operator
-        readinessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 3
-          periodSeconds: 1
         resources:
           limits:
             cpu: 600m
@@ -70,6 +51,19 @@ spec:
           requests:
             cpu: 50m
             memory: 50Mi
+        livenessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -79,17 +73,21 @@ spec:
           readOnlyRootFilesystem: false
           runAsNonRoot: true
           runAsUser: 1001
-      serviceAccountName: ibm-spectrum-scale-csi-operator
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: Exists
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: ibm-spectrum-scale-csi-operator
+  creationTimestamp: null
 rules:
-- apiGroups:
-  - ""
-  resources:
+- resources:
   - configmaps
   - endpoints
   - events
@@ -100,107 +98,109 @@ rules:
   - serviceaccounts
   - services
   - services/finalizers
+  apiGroups:
+  - ""
   verbs:
   - '*'
-- apiGroups:
-  - apps
-  resources:
+- resources:
   - daemonsets
   - deployments
   - replicasets
   - statefulsets
+  apiGroups:
+  - apps
   verbs:
   - '*'
-- apiGroups:
+- resources:
+  - deployments/finalizers
+  apiGroups:
   - apps
   resourceNames:
   - ibm-spectrum-scale-csi-operator
-  resources:
-  - deployments/finalizers
   verbs:
   - get
   - update
-- apiGroups:
-  - csi.ibm.com
-  resources:
+- resources:
   - '*'
+  apiGroups:
+  - csi.ibm.com
   verbs:
   - '*'
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
+- resources:
   - servicemonitors
+  apiGroups:
+  - monitoring.coreos.com
   verbs:
   - create
   - get
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
+- resources:
   - clusterrolebindings
   - clusterroles
+  apiGroups:
+  - rbac.authorization.k8s.io
   verbs:
   - '*'
-- apiGroups:
-  - security.openshift.io
-  resources:
+- resources:
   - securitycontextconstraints
+  apiGroups:
+  - security.openshift.io
   verbs:
   - '*'
-- apiGroups:
-  - storage.k8s.io
-  resources:
+- resources:
   - csidrivers
   - storageclasses
   - volumeattachments
+  apiGroups:
+  - storage.k8s.io
   verbs:
   - '*'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  name: ibm-spectrum-scale-csi-operator
   labels:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator
 roleRef:
-  apiGroup: rbac.authorization.k8s.io
+  name: ibm-spectrum-scale-csi-operator
   kind: ClusterRole
-  name: ibm-spectrum-scale-csi-operator
+  apiGroup: rbac.authorization.k8s.io
 subjects:
-- kind: ServiceAccount
-  name: ibm-spectrum-scale-csi-operator
+- name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
+  kind: ServiceAccount
 ---
 apiVersion: v1
-imagePullSecrets:
-- name: ibm-spectrum-scale-csi-registrykey
 kind: ServiceAccount
 metadata:
+  name: ibm-spectrum-scale-csi-operator
+  namespace: ibm-spectrum-scale-csi-driver
   labels:
     app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-  name: ibm-spectrum-scale-csi-operator
-  namespace: ibm-spectrum-scale-csi-driver
+imagePullSecrets:
+- name: ibm-spectrum-scale-csi-registrykey
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  name: csiscaleoperators.csi.ibm.com
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: csiscaleoperators.csi.ibm.com
 spec:
   group: csi.ibm.com
   names:
+    kind: CSIScaleOperator
     categories:
     - scale
-    kind: CSIScaleOperator
     listKind: CSIScaleOperatorList
     plural: csiscaleoperators
     shortNames:
@@ -208,43 +208,56 @@ spec:
     singular: csiscaleoperator
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - description: CSIDriver version.
+  - name: v1
+    additionalPrinterColumns:
+    - name: Version
+      type: string
+      description: CSIDriver version.
       jsonPath: .status.version
-      name: Version
+    - name: Success
       type: string
-    - description: CSI driver resource creation status.
+      description: CSI driver resource creation status.
       jsonPath: .status.condition[?(@ "status")].status
-      name: Success
-      type: string
-    name: v1
     schema:
       openAPIV3Schema:
+        type: object
         description: CSIScaleOperator is the Schema for the csiscaleoperators API
         properties:
           apiVersion:
+            type: string
             description: 'APIVersion defines the versioned schema of this representation
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
           kind:
+            type: string
             description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
           metadata:
             type: object
           spec:
+            type: object
             description: CSIScaleOperatorSpec specifies the desired state of CSI
             properties:
+              imagePullSecrets:
+                type: array
+                description: A passthrough option that distributes an imagePullSecrets
+                  array to the containers generated by the CSI scale operator. Please
+                  refer to official k8s documentation for your environment for more
+                  details.
+                items:
+                  type: string
               affinity:
+                type: object
                 description: affinity is a group of affinity scheduling rules.
                 properties:
                   nodeAffinity:
+                    type: object
                     description: Describes node affinity scheduling rules for the
                       pod.
                     properties:
                       preferredDuringSchedulingIgnoredDuringExecution:
+                        type: array
                         description: The scheduler will prefer to schedule pods to
                           nodes that satisfy the affinity expressions specified by
                           this field, but it may choose a node that violates one or
@@ -257,34 +270,39 @@ spec:
                           the corresponding matchExpressions; the node(s) with the
                           highest sum are the most preferred.
                         items:
+                          type: object
                           description: An empty preferred scheduling term matches
                             all objects with implicit weight 0 (i.e. it's a no-op).
                             A null preferred scheduling term matches no objects (i.e.
                             is also a no-op).
                           properties:
                             preference:
+                              type: object
                               description: A node selector term, associated with the
                                 corresponding weight.
                               properties:
                                 matchExpressions:
+                                  type: array
                                   description: A list of node selector requirements
                                     by node's labels.
                                   items:
+                                    type: object
                                     description: A node selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: The label key that the selector
                                           applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: Represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists, DoesNotExist. Gt, and
                                           Lt.
-                                        type: string
                                       values:
+                                        type: array
                                         description: An array of string values. If
                                           the operator is In or NotIn, the values
                                           array must be non-empty. If the operator
@@ -296,31 +314,31 @@ spec:
                                           strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
                                 matchFields:
+                                  type: array
                                   description: A list of node selector requirements
                                     by node's fields.
                                   items:
+                                    type: object
                                     description: A node selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: The label key that the selector
                                           applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: Represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists, DoesNotExist. Gt, and
                                           Lt.
-                                        type: string
                                       values:
+                                        type: array
                                         description: An array of string values. If
                                           the operator is In or NotIn, the values
                                           array must be non-empty. If the operator
@@ -332,24 +350,19 @@ spec:
                                           strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
-                              type: object
                             weight:
+                              type: integer
                               description: Weight associated with matching the corresponding
                                 nodeSelectorTerm, in the range 1-100.
                               format: int32
-                              type: integer
                           required:
                           - preference
                           - weight
-                          type: object
-                        type: array
                       requiredDuringSchedulingIgnoredDuringExecution:
+                        type: object
                         description: If the affinity requirements specified by this
                           field are not met at scheduling time, the pod will not be
                           scheduled onto the node. If the affinity requirements specified
@@ -358,33 +371,38 @@ spec:
                           eventually evict the pod from its node.
                         properties:
                           nodeSelectorTerms:
+                            type: array
                             description: Required. A list of node selector terms.
                               The terms are ORed.
                             items:
+                              type: object
                               description: A null or empty node selector term matches
                                 no objects. The requirements of them are ANDed. The
                                 TopologySelectorTerm type implements a subset of the
                                 NodeSelectorTerm.
                               properties:
                                 matchExpressions:
+                                  type: array
                                   description: A list of node selector requirements
                                     by node's labels.
                                   items:
+                                    type: object
                                     description: A node selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: The label key that the selector
                                           applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: Represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists, DoesNotExist. Gt, and
                                           Lt.
-                                        type: string
                                       values:
+                                        type: array
                                         description: An array of string values. If
                                           the operator is In or NotIn, the values
                                           array must be non-empty. If the operator
@@ -396,31 +414,31 @@ spec:
                                           strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
                                 matchFields:
+                                  type: array
                                   description: A list of node selector requirements
                                     by node's fields.
                                   items:
+                                    type: object
                                     description: A node selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: The label key that the selector
                                           applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: Represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists, DoesNotExist. Gt, and
                                           Lt.
-                                        type: string
                                       values:
+                                        type: array
                                         description: An array of string values. If
                                           the operator is In or NotIn, the values
                                           array must be non-empty. If the operator
@@ -432,23 +450,18 @@ spec:
                                           strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
-                              type: object
-                            type: array
                         required:
                         - nodeSelectorTerms
-                        type: object
-                    type: object
                   podAffinity:
+                    type: object
                     description: Describes pod affinity scheduling rules (e.g. co-locate
                       this pod in the same node, zone, etc. as some other pod(s)).
                     properties:
                       preferredDuringSchedulingIgnoredDuringExecution:
+                        type: array
                         description: The scheduler will prefer to schedule pods to
                           nodes that satisfy the affinity expressions specified by
                           this field, but it may choose a node that violates one or
@@ -461,38 +474,44 @@ spec:
                           pods which matches the corresponding podAffinityTerm; the
                           node(s) with the highest sum are the most preferred.
                         items:
+                          type: object
                           description: The weights of all of the matched WeightedPodAffinityTerm
                             fields are added per-node to find the most preferred node(s)
                           properties:
                             podAffinityTerm:
+                              type: object
                               description: Required. A pod affinity term, associated
                                 with the corresponding weight.
                               properties:
                                 labelSelector:
+                                  type: object
                                   description: A label query over a set of resources,
                                     in this case pods.
                                   properties:
                                     matchExpressions:
+                                      type: array
                                       description: matchExpressions is a list of label
                                         selector requirements. The requirements are
                                         ANDed.
                                       items:
+                                        type: object
                                         description: A label selector requirement
                                           is a selector that contains values, a key,
                                           and an operator that relates the key and
                                           values.
                                         properties:
                                           key:
+                                            type: string
                                             description: key is the label key that
                                               the selector applies to.
-                                            type: string
                                           operator:
+                                            type: string
                                             description: operator represents a key's
                                               relationship to a set of values. Valid
                                               operators are In, NotIn, Exists and
                                               DoesNotExist.
-                                            type: string
                                           values:
+                                            type: array
                                             description: values is an array of string
                                               values. If the operator is In or NotIn,
                                               the values array must be non-empty.
@@ -502,13 +521,11 @@ spec:
                                               merge patch.
                                             items:
                                               type: string
-                                            type: array
                                         required:
                                         - key
                                         - operator
-                                        type: object
-                                      type: array
                                     matchLabels:
+                                      type: object
                                       additionalProperties:
                                         type: string
                                       description: matchLabels is a map of {key,value}
@@ -517,9 +534,8 @@ spec:
                                         whose key field is "key", the operator is
                                         "In", and the values array contains only "value".
                                         The requirements are ANDed.
-                                      type: object
-                                  type: object
                                 namespaceSelector:
+                                  type: object
                                   description: A label query over the set of namespaces
                                     that the term applies to. The term is applied
                                     to the union of the namespaces selected by this
@@ -531,26 +547,29 @@ spec:
                                     feature is enabled.
                                   properties:
                                     matchExpressions:
+                                      type: array
                                       description: matchExpressions is a list of label
                                         selector requirements. The requirements are
                                         ANDed.
                                       items:
+                                        type: object
                                         description: A label selector requirement
                                           is a selector that contains values, a key,
                                           and an operator that relates the key and
                                           values.
                                         properties:
                                           key:
+                                            type: string
                                             description: key is the label key that
                                               the selector applies to.
-                                            type: string
                                           operator:
+                                            type: string
                                             description: operator represents a key's
                                               relationship to a set of values. Valid
                                               operators are In, NotIn, Exists and
                                               DoesNotExist.
-                                            type: string
                                           values:
+                                            type: array
                                             description: values is an array of string
                                               values. If the operator is In or NotIn,
                                               the values array must be non-empty.
@@ -560,13 +579,11 @@ spec:
                                               merge patch.
                                             items:
                                               type: string
-                                            type: array
                                         required:
                                         - key
                                         - operator
-                                        type: object
-                                      type: array
                                     matchLabels:
+                                      type: object
                                       additionalProperties:
                                         type: string
                                       description: matchLabels is a map of {key,value}
@@ -575,9 +592,8 @@ spec:
                                         whose key field is "key", the operator is
                                         "In", and the values array contains only "value".
                                         The requirements are ANDed.
-                                      type: object
-                                  type: object
                                 namespaces:
+                                  type: array
                                   description: namespaces specifies a static list
                                     of namespace names that the term applies to. The
                                     term is applied to the union of the namespaces
@@ -586,8 +602,8 @@ spec:
                                     and null namespaceSelector means "this pod's namespace"
                                   items:
                                     type: string
-                                  type: array
                                 topologyKey:
+                                  type: string
                                   description: This pod should be co-located (affinity)
                                     or not co-located (anti-affinity) with the pods
                                     matching the labelSelector in the specified namespaces,
@@ -595,21 +611,18 @@ spec:
                                     whose value of the label with key topologyKey
                                     matches that of any node on which any of the selected
                                     pods is running. Empty topologyKey is not allowed.
-                                  type: string
                               required:
                               - topologyKey
-                              type: object
                             weight:
+                              type: integer
                               description: weight associated with matching the corresponding
                                 podAffinityTerm, in the range 1-100.
                               format: int32
-                              type: integer
                           required:
                           - podAffinityTerm
                           - weight
-                          type: object
-                        type: array
                       requiredDuringSchedulingIgnoredDuringExecution:
+                        type: array
                         description: If the affinity requirements specified by this
                           field are not met at scheduling time, the pod will not be
                           scheduled onto the node. If the affinity requirements specified
@@ -620,6 +633,7 @@ spec:
                           to each podAffinityTerm are intersected, i.e. all terms
                           must be satisfied.
                         items:
+                          type: object
                           description: Defines a set of pods (namely those matching
                             the labelSelector relative to the given namespace(s))
                             that this pod should be co-located (affinity) or not co-located
@@ -629,27 +643,31 @@ spec:
                             pods is running
                           properties:
                             labelSelector:
+                              type: object
                               description: A label query over a set of resources,
                                 in this case pods.
                               properties:
                                 matchExpressions:
+                                  type: array
                                   description: matchExpressions is a list of label
                                     selector requirements. The requirements are ANDed.
                                   items:
+                                    type: object
                                     description: A label selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: key is the label key that the
                                           selector applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: operator represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists and DoesNotExist.
-                                        type: string
                                       values:
+                                        type: array
                                         description: values is an array of string
                                           values. If the operator is In or NotIn,
                                           the values array must be non-empty. If the
@@ -658,13 +676,11 @@ spec:
                                           replaced during a strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
                                 matchLabels:
+                                  type: object
                                   additionalProperties:
                                     type: string
                                   description: matchLabels is a map of {key,value}
@@ -673,9 +689,8 @@ spec:
                                     whose key field is "key", the operator is "In",
                                     and the values array contains only "value". The
                                     requirements are ANDed.
-                                  type: object
-                              type: object
                             namespaceSelector:
+                              type: object
                               description: A label query over the set of namespaces
                                 that the term applies to. The term is applied to the
                                 union of the namespaces selected by this field and
@@ -686,23 +701,26 @@ spec:
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
+                                  type: array
                                   description: matchExpressions is a list of label
                                     selector requirements. The requirements are ANDed.
                                   items:
+                                    type: object
                                     description: A label selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: key is the label key that the
                                           selector applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: operator represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists and DoesNotExist.
-                                        type: string
                                       values:
+                                        type: array
                                         description: values is an array of string
                                           values. If the operator is In or NotIn,
                                           the values array must be non-empty. If the
@@ -711,13 +729,11 @@ spec:
                                           replaced during a strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
                                 matchLabels:
+                                  type: object
                                   additionalProperties:
                                     type: string
                                   description: matchLabels is a map of {key,value}
@@ -726,9 +742,8 @@ spec:
                                     whose key field is "key", the operator is "In",
                                     and the values array contains only "value". The
                                     requirements are ANDed.
-                                  type: object
-                              type: object
                             namespaces:
+                              type: array
                               description: namespaces specifies a static list of namespace
                                 names that the term applies to. The term is applied
                                 to the union of the namespaces listed in this field
@@ -737,8 +752,8 @@ spec:
                                 "this pod's namespace"
                               items:
                                 type: string
-                              type: array
                             topologyKey:
+                              type: string
                               description: This pod should be co-located (affinity)
                                 or not co-located (anti-affinity) with the pods matching
                                 the labelSelector in the specified namespaces, where
@@ -746,18 +761,16 @@ spec:
                                 of the label with key topologyKey matches that of
                                 any node on which any of the selected pods is running.
                                 Empty topologyKey is not allowed.
-                              type: string
                           required:
                           - topologyKey
-                          type: object
-                        type: array
-                    type: object
                   podAntiAffinity:
+                    type: object
                     description: Describes pod anti-affinity scheduling rules (e.g.
                       avoid putting this pod in the same node, zone, etc. as some
                       other pod(s)).
                     properties:
                       preferredDuringSchedulingIgnoredDuringExecution:
+                        type: array
                         description: The scheduler will prefer to schedule pods to
                           nodes that satisfy the anti-affinity expressions specified
                           by this field, but it may choose a node that violates one
@@ -770,38 +783,44 @@ spec:
                           pods which matches the corresponding podAffinityTerm; the
                           node(s) with the highest sum are the most preferred.
                         items:
+                          type: object
                           description: The weights of all of the matched WeightedPodAffinityTerm
                             fields are added per-node to find the most preferred node(s)
                           properties:
                             podAffinityTerm:
+                              type: object
                               description: Required. A pod affinity term, associated
                                 with the corresponding weight.
                               properties:
                                 labelSelector:
+                                  type: object
                                   description: A label query over a set of resources,
                                     in this case pods.
                                   properties:
                                     matchExpressions:
+                                      type: array
                                       description: matchExpressions is a list of label
                                         selector requirements. The requirements are
                                         ANDed.
                                       items:
+                                        type: object
                                         description: A label selector requirement
                                           is a selector that contains values, a key,
                                           and an operator that relates the key and
                                           values.
                                         properties:
                                           key:
+                                            type: string
                                             description: key is the label key that
                                               the selector applies to.
-                                            type: string
                                           operator:
+                                            type: string
                                             description: operator represents a key's
                                               relationship to a set of values. Valid
                                               operators are In, NotIn, Exists and
                                               DoesNotExist.
-                                            type: string
                                           values:
+                                            type: array
                                             description: values is an array of string
                                               values. If the operator is In or NotIn,
                                               the values array must be non-empty.
@@ -811,13 +830,11 @@ spec:
                                               merge patch.
                                             items:
                                               type: string
-                                            type: array
                                         required:
                                         - key
                                         - operator
-                                        type: object
-                                      type: array
                                     matchLabels:
+                                      type: object
                                       additionalProperties:
                                         type: string
                                       description: matchLabels is a map of {key,value}
@@ -826,9 +843,8 @@ spec:
                                         whose key field is "key", the operator is
                                         "In", and the values array contains only "value".
                                         The requirements are ANDed.
-                                      type: object
-                                  type: object
                                 namespaceSelector:
+                                  type: object
                                   description: A label query over the set of namespaces
                                     that the term applies to. The term is applied
                                     to the union of the namespaces selected by this
@@ -840,26 +856,29 @@ spec:
                                     feature is enabled.
                                   properties:
                                     matchExpressions:
+                                      type: array
                                       description: matchExpressions is a list of label
                                         selector requirements. The requirements are
                                         ANDed.
                                       items:
+                                        type: object
                                         description: A label selector requirement
                                           is a selector that contains values, a key,
                                           and an operator that relates the key and
                                           values.
                                         properties:
                                           key:
+                                            type: string
                                             description: key is the label key that
                                               the selector applies to.
-                                            type: string
                                           operator:
+                                            type: string
                                             description: operator represents a key's
                                               relationship to a set of values. Valid
                                               operators are In, NotIn, Exists and
                                               DoesNotExist.
-                                            type: string
                                           values:
+                                            type: array
                                             description: values is an array of string
                                               values. If the operator is In or NotIn,
                                               the values array must be non-empty.
@@ -869,13 +888,11 @@ spec:
                                               merge patch.
                                             items:
                                               type: string
-                                            type: array
                                         required:
                                         - key
                                         - operator
-                                        type: object
-                                      type: array
                                     matchLabels:
+                                      type: object
                                       additionalProperties:
                                         type: string
                                       description: matchLabels is a map of {key,value}
@@ -884,9 +901,8 @@ spec:
                                         whose key field is "key", the operator is
                                         "In", and the values array contains only "value".
                                         The requirements are ANDed.
-                                      type: object
-                                  type: object
                                 namespaces:
+                                  type: array
                                   description: namespaces specifies a static list
                                     of namespace names that the term applies to. The
                                     term is applied to the union of the namespaces
@@ -895,8 +911,8 @@ spec:
                                     and null namespaceSelector means "this pod's namespace"
                                   items:
                                     type: string
-                                  type: array
                                 topologyKey:
+                                  type: string
                                   description: This pod should be co-located (affinity)
                                     or not co-located (anti-affinity) with the pods
                                     matching the labelSelector in the specified namespaces,
@@ -904,21 +920,18 @@ spec:
                                     whose value of the label with key topologyKey
                                     matches that of any node on which any of the selected
                                     pods is running. Empty topologyKey is not allowed.
-                                  type: string
                               required:
                               - topologyKey
-                              type: object
                             weight:
+                              type: integer
                               description: weight associated with matching the corresponding
                                 podAffinityTerm, in the range 1-100.
                               format: int32
-                              type: integer
                           required:
                           - podAffinityTerm
                           - weight
-                          type: object
-                        type: array
                       requiredDuringSchedulingIgnoredDuringExecution:
+                        type: array
                         description: If the anti-affinity requirements specified by
                           this field are not met at scheduling time, the pod will
                           not be scheduled onto the node. If the anti-affinity requirements
@@ -929,6 +942,7 @@ spec:
                           corresponding to each podAffinityTerm are intersected, i.e.
                           all terms must be satisfied.
                         items:
+                          type: object
                           description: Defines a set of pods (namely those matching
                             the labelSelector relative to the given namespace(s))
                             that this pod should be co-located (affinity) or not co-located
@@ -938,27 +952,31 @@ spec:
                             pods is running
                           properties:
                             labelSelector:
+                              type: object
                               description: A label query over a set of resources,
                                 in this case pods.
                               properties:
                                 matchExpressions:
+                                  type: array
                                   description: matchExpressions is a list of label
                                     selector requirements. The requirements are ANDed.
                                   items:
+                                    type: object
                                     description: A label selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: key is the label key that the
                                           selector applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: operator represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists and DoesNotExist.
-                                        type: string
                                       values:
+                                        type: array
                                         description: values is an array of string
                                           values. If the operator is In or NotIn,
                                           the values array must be non-empty. If the
@@ -967,13 +985,11 @@ spec:
                                           replaced during a strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
                                 matchLabels:
+                                  type: object
                                   additionalProperties:
                                     type: string
                                   description: matchLabels is a map of {key,value}
@@ -982,9 +998,8 @@ spec:
                                     whose key field is "key", the operator is "In",
                                     and the values array contains only "value". The
                                     requirements are ANDed.
-                                  type: object
-                              type: object
                             namespaceSelector:
+                              type: object
                               description: A label query over the set of namespaces
                                 that the term applies to. The term is applied to the
                                 union of the namespaces selected by this field and
@@ -995,23 +1010,26 @@ spec:
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
+                                  type: array
                                   description: matchExpressions is a list of label
                                     selector requirements. The requirements are ANDed.
                                   items:
+                                    type: object
                                     description: A label selector requirement is a
                                       selector that contains values, a key, and an
                                       operator that relates the key and values.
                                     properties:
                                       key:
+                                        type: string
                                         description: key is the label key that the
                                           selector applies to.
-                                        type: string
                                       operator:
+                                        type: string
                                         description: operator represents a key's relationship
                                           to a set of values. Valid operators are
                                           In, NotIn, Exists and DoesNotExist.
-                                        type: string
                                       values:
+                                        type: array
                                         description: values is an array of string
                                           values. If the operator is In or NotIn,
                                           the values array must be non-empty. If the
@@ -1020,13 +1038,11 @@ spec:
                                           replaced during a strategic merge patch.
                                         items:
                                           type: string
-                                        type: array
                                     required:
                                     - key
                                     - operator
-                                    type: object
-                                  type: array
                                 matchLabels:
+                                  type: object
                                   additionalProperties:
                                     type: string
                                   description: matchLabels is a map of {key,value}
@@ -1035,9 +1051,8 @@ spec:
                                     whose key field is "key", the operator is "In",
                                     and the values array contains only "value". The
                                     requirements are ANDed.
-                                  type: object
-                              type: object
                             namespaces:
+                              type: array
                               description: namespaces specifies a static list of namespace
                                 names that the term applies to. The term is applied
                                 to the union of the namespaces listed in this field
@@ -1046,8 +1061,8 @@ spec:
                                 "this pod's namespace"
                               items:
                                 type: string
-                              type: array
                             topologyKey:
+                              type: string
                               description: This pod should be co-located (affinity)
                                 or not co-located (anti-affinity) with the pods matching
                                 the labelSelector in the specified namespaces, where
@@ -1055,265 +1070,43 @@ spec:
                                 of the label with key topologyKey matches that of
                                 any node on which any of the selected pods is running.
                                 Empty topologyKey is not allowed.
-                              type: string
                           required:
                           - topologyKey
-                          type: object
-                        type: array
-                    type: object
-                type: object
-              attacher:
-                description: attacher is the attacher sidecar image for CSI (actually
-                  attaches to the storage).
-                type: string
-              attacherNodeSelector:
-                default:
-                - key: scale
-                  value: "true"
-                description: attacherNodeSelector is the node selector for attacher
-                  sidecar.
-                items:
-                  properties:
-                    key:
-                      description: Key for node selector
-                      type: string
-                    value:
-                      description: Value for key
-                      type: string
-                  required:
-                  - key
-                  - value
-                  type: object
-                type: array
-              clusters:
-                description: clusters is a collection of GPFS CSICluster properties
-                  for the CSI driver to mount.
-                items:
-                  properties:
-                    cacert:
-                      description: cacert is the name of the configMap storing GUI
-                        certificates. Mandatory if secureSslMode is true.
-                      type: string
-                    id:
-                      description: id is the CSICluster id of the GPFS CSICluster
-                        specified.
-                      maxLength: 20
-                      type: string
-                    primary:
-                      description: primary is the primary file system for the GPFS
-                        CSICluster
-                      properties:
-                        inodeLimit:
-                          default: 1M
-                          description: Inode limit for Primary Fileset
-                          type: string
-                        primaryFs:
-                          description: The name of the primary CSIFilesystem
-                          type: string
-                        primaryFset:
-                          default: spectrum-scale-csi-volume-store
-                          description: The name of the primary fileset, created in
-                            primaryFs
-                          type: string
-                        remoteCluster:
-                          description: Remote CSICluster ID
-                          type: string
-                      required:
-                      - primaryFs
-                      type: object
-                    restApi:
-                      description: restApi is a collection of targets for REST calls
-                      items:
-                        properties:
-                          guiHost:
-                            description: The hostname of the REST server.
-                            type: string
-                          guiPort:
-                            default: 443
-                            description: The port number running the REST server.
-                            type: integer
-                        required:
-                        - guiHost
-                        type: object
-                      type: array
-                    secrets:
-                      description: secret is the name of the basic-auth secret containing
-                        credentials to connect to IBM Spectrum Scale REST API server.
-                      type: string
-                    secureSslMode:
-                      default: false
-                      description: secureSslMode specifies if a secure SSL connection
-                        to connect to GPFS is required.
-                      enum:
-                      - true
-                      - false
-                      type: boolean
-                  required:
-                  - id
-                  - restApi
-                  - secrets
-                  - secureSslMode
-                  type: object
-                type: array
-              csipspname:
-                description: PodSecurityPolicy name for CSI driver and sidecar pods.
-                type: string
-              driverRegistrar:
-                description: driverRegistrar is the Sidecar container image for the
-                  CSI spectrum scale plugin pods.
-                type: string
-              imagePullSecrets:
-                description: A passthrough option that distributes an imagePullSecrets
-                  array to the containers generated by the CSI scale operator. Please
-                  refer to official k8s documentation for your environment for more
-                  details.
-                items:
-                  type: string
-                type: array
-              kubeletRootDirPath:
-                default: /var/lib/kubelet
-                description: kubeletRootDirPath is the path for kubelet root directory.
-                type: string
-              livenessprobe:
-                description: livenessprobe is the image for livenessProbe container
-                  (liveness probe is used to know when to restart a container).
-                type: string
-              nodeMapping:
-                description: nodeMapping specifies mapping of K8s node with spectrum
-                  scale node.
-                items:
-                  properties:
-                    k8sNode:
-                      description: k8sNode is the name of the kubernetes node
-                      type: string
-                    spectrumscaleNode:
-                      description: spectrumscaleNode is the name of the SpectrumScale
-                        node
-                      type: string
-                  required:
-                  - k8sNode
-                  - spectrumscaleNode
-                  type: object
-                type: array
-              pluginNodeSelector:
-                default:
-                - key: scale
-                  value: "true"
-                description: pluginNodeSelector is the node selector for spectrum
-                  scale CSI plugin.
-                items:
-                  properties:
-                    key:
-                      description: Key for node selector
-                      type: string
-                    value:
-                      description: Value for key
-                      type: string
-                  required:
-                  - key
-                  - value
-                  type: object
-                type: array
-              provisioner:
-                description: provisioner is the provisioner sidecar image for CSI
-                  (actually issues provision requests).
-                type: string
-              provisionerNodeSelector:
-                default:
-                - key: scale
-                  value: "true"
-                description: provisionerNodeSelector is the node selector for provisioner
-                  sidecar.
-                items:
-                  properties:
-                    key:
-                      description: Key for node selector
-                      type: string
-                    value:
-                      description: Value for key
-                      type: string
-                  required:
-                  - key
-                  - value
-                  type: object
-                type: array
-              resizer:
-                description: resizer is the resizer sidecar image for CSI (issues
-                  volume expansion requests).
-                type: string
-              resizerNodeSelector:
-                default:
-                - key: scale
-                  value: "true"
-                description: resizerNodeSelector is the node selector for resizer
-                  sidecar.
-                items:
-                  properties:
-                    key:
-                      description: Key for node selector
-                      type: string
-                    value:
-                      description: Value for key
-                      type: string
-                  required:
-                  - key
-                  - value
-                  type: object
-                type: array
-              snapshotter:
-                description: snapshotter is the snapshotter sidecar image for CSI
-                  (issues volume snapshot requests).
-                type: string
-              snapshotterNodeSelector:
-                default:
-                - key: scale
-                  value: "true"
-                description: snapshotterNodeSelector is the snapshotter node selector
-                  for snapshotter sidecar.
-                items:
-                  properties:
-                    key:
-                      description: Key for node selector
-                      type: string
-                    value:
-                      description: Value for key
-                      type: string
-                  required:
-                  - key
-                  - value
-                  type: object
-                type: array
-              spectrumScale:
-                description: spectrumScale is the image name for the CSI spectrum
-                  scale node driver plugin container.
-                type: string
               tolerations:
+                type: array
                 description: Array of tolerations that will be distributed to CSI
                   pods. Please refer to official k8s documentation for your environment
                   for more details.
                 items:
+                  type: object
                   description: The pod this Toleration is attached to tolerates any
                     taint that matches the triple <key,value,effect> using the matching
                     operator <operator>.
                   properties:
+                    value:
+                      type: string
+                      description: Value is the taint value the toleration matches
+                        to. If the operator is Exists, the value should be empty,
+                        otherwise just a regular string.
                     effect:
+                      type: string
                       description: Effect indicates the taint effect to match. Empty
                         means match all taint effects. When specified, allowed values
                         are NoSchedule, PreferNoSchedule and NoExecute.
-                      type: string
                     key:
+                      type: string
                       description: Key is the taint key that the toleration applies
                         to. Empty means match all taint keys. If the key is empty,
                         operator must be Exists; this combination means to match all
                         values and all keys.
-                      type: string
                     operator:
+                      type: string
                       description: Operator represents a key's relationship to the
                         value. Valid operators are Exists and Equal. Defaults to Equal.
                         Exists is equivalent to wildcard for value, so that a pod
                         can tolerate all taints of a particular category.
-                      type: string
                     tolerationSeconds:
+                      type: integer
                       description: TolerationSeconds represents the period of time
                         the toleration (which must be of effect NoExecute, otherwise
                         this field is ignored) tolerates the taint. By default, it
@@ -1321,24 +1114,235 @@ spec:
                         evict). Zero and negative values will be treated as 0 (evict
                         immediately) by the system.
                       format: int64
-                      type: integer
-                    value:
-                      description: Value is the taint value the toleration matches
-                        to. If the operator is Exists, the value should be empty,
-                        otherwise just a regular string.
-                      type: string
-                  type: object
+              attacher:
+                type: string
+                description: attacher is the attacher sidecar image for CSI (actually
+                  attaches to the storage).
+              attacherNodeSelector:
                 type: array
+                default:
+                - value: "true"
+                  key: scale
+                description: attacherNodeSelector is the node selector for attacher
+                  sidecar.
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: Value for key
+                    key:
+                      type: string
+                      description: Key for node selector
+                  required:
+                  - key
+                  - value
+              clusters:
+                type: array
+                description: clusters is a collection of GPFS CSICluster properties
+                  for the CSI driver to mount.
+                items:
+                  type: object
+                  properties:
+                    cacert:
+                      type: string
+                      description: cacert is the name of the configMap storing GUI
+                        certificates. Mandatory if secureSslMode is true.
+                    id:
+                      type: string
+                      description: id is the CSICluster id of the GPFS CSICluster
+                        specified.
+                      maxLength: 20
+                    primary:
+                      type: object
+                      description: primary is the primary file system for the GPFS
+                        CSICluster
+                      properties:
+                        inodeLimit:
+                          type: string
+                          default: 1M
+                          description: Inode limit for Primary Fileset
+                        primaryFs:
+                          type: string
+                          description: The name of the primary CSIFilesystem
+                        primaryFset:
+                          type: string
+                          default: spectrum-scale-csi-volume-store
+                          description: The name of the primary fileset, created in
+                            primaryFs
+                        remoteCluster:
+                          type: string
+                          description: Remote CSICluster ID
+                      required:
+                      - primaryFs
+                    restApi:
+                      type: array
+                      description: restApi is a collection of targets for REST calls
+                      items:
+                        type: object
+                        properties:
+                          guiHost:
+                            type: string
+                            description: The hostname of the REST server.
+                          guiPort:
+                            type: integer
+                            default: 443
+                            description: The port number running the REST server.
+                        required:
+                        - guiHost
+                    secrets:
+                      type: string
+                      description: secret is the name of the basic-auth secret containing
+                        credentials to connect to IBM Spectrum Scale REST API server.
+                    secureSslMode:
+                      type: boolean
+                      default: false
+                      description: secureSslMode specifies if a secure SSL connection
+                        to connect to GPFS is required.
+                      enum:
+                      - true
+                      - false
+                  required:
+                  - id
+                  - restApi
+                  - secrets
+                  - secureSslMode
+              csipspname:
+                type: string
+                description: PodSecurityPolicy name for CSI driver and sidecar pods.
+              driverRegistrar:
+                type: string
+                description: driverRegistrar is the Sidecar container image for the
+                  CSI spectrum scale plugin pods.
+              kubeletRootDirPath:
+                type: string
+                default: /var/lib/kubelet
+                description: kubeletRootDirPath is the path for kubelet root directory.
+              livenessprobe:
+                type: string
+                description: livenessprobe is the image for livenessProbe container
+                  (liveness probe is used to know when to restart a container).
+              nodeMapping:
+                type: array
+                description: nodeMapping specifies mapping of K8s node with spectrum
+                  scale node.
+                items:
+                  type: object
+                  properties:
+                    k8sNode:
+                      type: string
+                      description: k8sNode is the name of the kubernetes node
+                    spectrumscaleNode:
+                      type: string
+                      description: spectrumscaleNode is the name of the SpectrumScale
+                        node
+                  required:
+                  - k8sNode
+                  - spectrumscaleNode
+              pluginNodeSelector:
+                type: array
+                default:
+                - value: "true"
+                  key: scale
+                description: pluginNodeSelector is the node selector for spectrum
+                  scale CSI plugin.
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: Value for key
+                    key:
+                      type: string
+                      description: Key for node selector
+                  required:
+                  - key
+                  - value
+              provisioner:
+                type: string
+                description: provisioner is the provisioner sidecar image for CSI
+                  (actually issues provision requests).
+              provisionerNodeSelector:
+                type: array
+                default:
+                - value: "true"
+                  key: scale
+                description: provisionerNodeSelector is the node selector for provisioner
+                  sidecar.
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: Value for key
+                    key:
+                      type: string
+                      description: Key for node selector
+                  required:
+                  - key
+                  - value
+              resizer:
+                type: string
+                description: resizer is the resizer sidecar image for CSI (issues
+                  volume expansion requests).
+              resizerNodeSelector:
+                type: array
+                default:
+                - value: "true"
+                  key: scale
+                description: resizerNodeSelector is the node selector for resizer
+                  sidecar.
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: Value for key
+                    key:
+                      type: string
+                      description: Key for node selector
+                  required:
+                  - key
+                  - value
+              snapshotter:
+                type: string
+                description: snapshotter is the snapshotter sidecar image for CSI
+                  (issues volume snapshot requests).
+              snapshotterNodeSelector:
+                type: array
+                default:
+                - value: "true"
+                  key: scale
+                description: snapshotterNodeSelector is the snapshotter node selector
+                  for snapshotter sidecar.
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: Value for key
+                    key:
+                      type: string
+                      description: Key for node selector
+                  required:
+                  - key
+                  - value
+              spectrumScale:
+                type: string
+                description: spectrumScale is the image name for the CSI spectrum
+                  scale node driver plugin container.
             required:
             - clusters
-            type: object
           status:
+            type: object
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
             properties:
               condition:
+                type: array
                 description: conditions contains the details for one aspect of the
                   current state of this custom resource.
                 items:
+                  type: object
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
@@ -1350,19 +1354,36 @@ spec:
                     patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
                     \n     // other fields }"
                   properties:
+                    type:
+                      type: string
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                    status:
+                      type: string
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
                     lastTransitionTime:
+                      type: string
                       description: lastTransitionTime is the last time the condition
                         transitioned from one status to another. This should be when
                         the underlying condition changed.  If that is not known, then
                         using the time when the API field changed is acceptable.
                       format: date-time
-                      type: string
                     message:
+                      type: string
                       description: message is a human readable message indicating
                         details about the transition. This may be an empty string.
                       maxLength: 32768
-                      type: string
                     observedGeneration:
+                      type: integer
                       description: observedGeneration represents the .metadata.generation
                         that the condition was set based upon. For instance, if .metadata.generation
                         is currently 12, but the .status.conditions[x].observedGeneration
@@ -1370,8 +1391,8 @@ spec:
                         state of the instance.
                       format: int64
                       minimum: 0
-                      type: integer
                     reason:
+                      type: string
                       description: reason contains a programmatic identifier indicating
                         the reason for the condition's last transition. Producers
                         of specific condition types may define expected values and
@@ -1381,37 +1402,16 @@ spec:
                       maxLength: 1024
                       minLength: 1
                       pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
-                      type: string
-                    status:
-                      description: status of the condition, one of True, False, Unknown.
-                      enum:
-                      - "True"
-                      - "False"
-                      - Unknown
-                      type: string
-                    type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                        --- Many .condition.type values are consistent across resources
-                        like Available, but because arbitrary conditions can be useful
-                        (see .node.status.conditions), the ability to deconflict is
-                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
-                      maxLength: 316
-                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
-                      type: string
                   required:
                   - lastTransitionTime
                   - message
                   - reason
                   - status
                   - type
-                  type: object
-                type: array
               version:
+                type: string
                 description: version is the current CSIDriver version installed by
                   the operator.
-                type: string
-            type: object
-        type: object
     served: true
     storage: true
     subresources:
