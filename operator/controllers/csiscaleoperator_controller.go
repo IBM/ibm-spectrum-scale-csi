@@ -18,8 +18,10 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -218,6 +220,72 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	logger.Info("Creation of the resources which never change is successful")
+
+	// Rollout restart of node plugin pods, if modified driver
+	// manifest file is applied.
+	// The CSIConfigMap has the data which is last applied, so
+	// compare the clusters data of current driver instance with
+	// CSIConfigMap data and rollout restart if there is a difference.
+	configMap := &corev1.ConfigMap{}
+	cerr := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      config.CSIConfigMap,
+		Namespace: req.Namespace,
+	}, configMap)
+	if cerr != nil {
+		if !errors.IsNotFound(cerr) {
+			message := "Failed to get ConfigMap resource " + config.CSIConfigMap
+			logger.Error(cerr, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return ctrl.Result{}, cerr
+		}
+	} else {
+		clustersBytes, err := json.Marshal(&instance.Spec.Clusters)
+		if err != nil {
+			logger.Error(err, "Failed to marshal clusters data of this instance")
+			return ctrl.Result{}, err
+		}
+		clustersString := string(clustersBytes)
+		configMapDataBytes, err := json.Marshal(&configMap.Data)
+		if err != nil {
+			logger.Error(err, "Failed to marshal data of ConfigMap "+config.CSIConfigMap)
+			return ctrl.Result{}, err
+		}
+		configMapDataString := string(configMapDataBytes)
+		configMapDataString = strings.Replace(configMapDataString, " ", "", -1)
+		configMapDataString = strings.Replace(configMapDataString, "\\\"", "\"", -1)
+
+		if !strings.Contains(configMapDataString, clustersString) {
+			logger.Info("Some of the cluster fields of CSIScaleOperator instance are changed, so restarting node plugin pods")
+			daemonSet, derr := r.getNodeDaemonSet(instance)
+			if derr != nil {
+				if !errors.IsNotFound(derr) {
+					message := "Failed to get node plugin Daemonset"
+					logger.Error(derr, message)
+					// TODO: Add event.
+					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+						Type:    string(config.StatusConditionSuccess),
+						Status:  metav1.ConditionFalse,
+						Reason:  string(csiv1.ResourceReadError),
+						Message: message,
+					})
+					return ctrl.Result{}, derr
+				}
+			} else {
+				err = r.rolloutRestartNode(daemonSet)
+				if err != nil {
+					logger.Error(err, "Failed to rollout restart of node plugin pods")
+				} else {
+					daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
+				}
+			}
+		}
+	}
 
 	// Synchronizing the resources which change over time.
 	// Resource list:
