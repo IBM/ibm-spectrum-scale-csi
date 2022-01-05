@@ -75,6 +75,7 @@ func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
 	}
 }
 
+/*
 // GenerateControllerServiceAccount creates a kubernetes service account for the operator controllers
 // and modify the service account to use secret as an imagePullSecret.
 // It returns an object of type *corev1.ServiceAccount.
@@ -99,6 +100,7 @@ func (c *CSIScaleOperator) GenerateControllerServiceAccount() *corev1.ServiceAcc
 		ImagePullSecrets: secrets,
 	}
 }
+*/
 
 // GenerateNodeServiceAccount creates a kubernetes service account for the node/driver service
 // and modify the service account to use secret as an imagePullSecret.

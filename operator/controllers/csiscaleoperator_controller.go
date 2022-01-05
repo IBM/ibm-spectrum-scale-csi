@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/presslabs/controller-util/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -685,21 +684,21 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 	logger := csiLog.WithName("reconcileServiceAccount")
 	logger.Info("Creating the required ServiceAccount resources.")
 
-	controller := instance.GenerateControllerServiceAccount()
+	// controller := instance.GenerateControllerServiceAccount()
 	node := instance.GenerateNodeServiceAccount()
 	attacher := instance.GenerateAttacherServiceAccount()
 	provisioner := instance.GenerateProvisionerServiceAccount()
 	snapshotter := instance.GenerateSnapshotterServiceAccount()
 	resizer := instance.GenerateResizerServiceAccount()
 
-	controllerServiceAccountName := config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name)
+	// controllerServiceAccountName := config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name)
 	nodeServiceAccountName := config.GetNameForResource(config.CSINodeServiceAccount, instance.Name)
 	// attacherServiceAccountName := config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name)
 	// provisionerServiceAccountName := config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name)
 	// snapshotterServiceAccountName := config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name)
 
 	for _, sa := range []*corev1.ServiceAccount{
-		controller,
+		// controller,
 		node,
 		attacher,
 		provisioner,
@@ -738,24 +737,24 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				})
 				return err
 			}
-			logger.Info("Creation of ServiceAccount " + sa.GetName() + "is successful")
+			logger.Info("Creation of ServiceAccount " + sa.GetName() + " is successful")
 
-			if controllerServiceAccountName == sa.Name {
-				rErr := r.restartControllerPod(logger, instance)
+			//if controllerServiceAccountName == sa.Name {
+			//	rErr := r.restartControllerPod(logger, instance)
+			//	if rErr != nil {
+			//		message := "Failed to restart controller pod."
+			//		logger.Error(rErr, message)
+			//		// TODO: Add event.
+			//		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			//			Type:    string(config.StatusConditionSuccess),
+			//			Status:  metav1.ConditionFalse,
+			//			Reason:  string(csiv1.CSINotConfigured),
+			//			Message: message,
+			//		})
+			//		return rErr
+			//	}
+			//}
 
-				if rErr != nil {
-					message := "Failed to restart controller pod."
-					logger.Error(rErr, message)
-					// TODO: Add event.
-					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-						Type:    string(config.StatusConditionSuccess),
-						Status:  metav1.ConditionFalse,
-						Reason:  string(csiv1.CSINotConfigured),
-						Message: message,
-					})
-					return rErr
-				}
-			}
 			if nodeServiceAccountName == sa.Name {
 
 				nodeDaemonSet, err := r.getNodeDaemonSet(instance)
@@ -810,7 +809,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 		} else {
 			// Cannot update the service account of an already created pod.
 			// Reference: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
-			logger.Info("ServiceAccount already exists.", "Namespace", sa.GetNamespace(), "Name", sa.GetName())
+			logger.Info("ServiceAccount " + sa.GetName() + " already exists.")
 		}
 	}
 	logger.V(1).Info("Reconciliation of all the ServiceAccounts is successful")
@@ -827,6 +826,7 @@ func (r *CSIScaleOperatorReconciler) getNodeDaemonSet(instance *csiscaleoperator
 	return node, err
 }
 
+/*
 func (r *CSIScaleOperatorReconciler) restartControllerPod(logger logr.Logger, instance *csiscaleoperator.CSIScaleOperator) error {
 
 	logger.Info("restarting Controller Pod")
@@ -852,7 +852,8 @@ func (r *CSIScaleOperatorReconciler) restartControllerPod(logger logr.Logger, in
 
 	return r.restartControllerPodfromDeployment(logger, controllerDeployment, controllerPod)
 }
-
+*/
+/*
 func (r *CSIScaleOperatorReconciler) getControllerPod(controllerDeployment *appsv1.Deployment, controllerPod *corev1.Pod) error {
 	controllerPodName := controllerPod.Name
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
@@ -864,7 +865,8 @@ func (r *CSIScaleOperatorReconciler) getControllerPod(controllerDeployment *apps
 	}
 	return err
 }
-
+*/
+/*
 func (r *CSIScaleOperatorReconciler) restartControllerPodfromDeployment(logger logr.Logger,
 	controllerDeployment *appsv1.Deployment, controllerPod *corev1.Pod) error {
 	logger.Info("controller requires restart",
@@ -874,6 +876,7 @@ func (r *CSIScaleOperatorReconciler) restartControllerPodfromDeployment(logger l
 
 	return r.Client.Delete(context.TODO(), controllerPod)
 }
+*/
 
 func (r *CSIScaleOperatorReconciler) rolloutRestartNode(node *appsv1.DaemonSet) error {
 	restartedAt := fmt.Sprintf("%s/restartedAt", config.APIGroup)
@@ -892,6 +895,7 @@ func (r *CSIScaleOperatorReconciler) getRestartedAtAnnotation(Annotations map[st
 	return "", ""
 }
 
+/*
 func (r *CSIScaleOperatorReconciler) getControllerDeployment(instance *csiscaleoperator.CSIScaleOperator) (*appsv1.Deployment, error) {
 	controllerDeployment := &appsv1.Deployment{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
@@ -901,6 +905,7 @@ func (r *CSIScaleOperatorReconciler) getControllerDeployment(instance *csiscaleo
 
 	return controllerDeployment, err
 }
+*/
 
 func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("reconcileClusterRole")
@@ -941,6 +946,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			})
 			return err
 		} else {
+			logger.Info("Clusterrole " + cr.GetName() + " already exists. Updating clusterrole.")
 			err = r.Client.Update(context.TODO(), cr)
 			if err != nil {
 				message := "Failed to update ClusterRole " + cr.GetName()
@@ -1040,7 +1046,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			return err
 		} else {
 			// Resource already exists - don't requeue
-			logger.Info("update ClusterRoleBinding with", "Name", crb.GetName())
+			logger.Info("Clusterrolebinding " + crb.GetName() + " already exists. Updating clusterolebinding.")
 			err = r.Client.Update(context.TODO(), crb)
 			if err != nil {
 				message := "Failed to update ClusterRoleBinding " + crb.GetName()
