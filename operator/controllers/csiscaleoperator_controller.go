@@ -123,7 +123,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		logger.Error(err, "failed to get CSIScaleOperator.")
+		logger.Error(err, "Failed to get CSIScaleOperator.")
 		return ctrl.Result{}, err
 	}
 
@@ -165,46 +165,46 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("adding Finalizer")
+	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
-		logger.Error(err, "couldn't add Finalizer")
+		logger.Error(err, "Couldn't add Finalizer")
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("checking if CSIScaleOperator object got deleted")
+	logger.Info("Checking if CSIScaleOperator object got deleted")
 	if !instance.GetDeletionTimestamp().IsZero() {
 
-		logger.Info("attempting cleanup of CSI driver")
+		logger.Info("Attempting cleanup of CSI driver")
 		isFinalizerExists, err := r.hasFinalizer(instance)
 		if err != nil {
-			logger.Error(err, "finalizer check failed")
+			logger.Error(err, "Finalizer check failed")
 			return ctrl.Result{}, err
 		}
 
 		if !isFinalizerExists {
-			logger.Error(err, "no finalizer was found")
+			logger.Error(err, "No finalizer was found")
 			return ctrl.Result{}, nil
 		}
 
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
-			logger.Error(err, "failed to delete ClusterRoles and ClusterRolesBindings")
+			logger.Error(err, "Failed to delete ClusterRoles and ClusterRolesBindings")
 			return ctrl.Result{}, err
 		}
 
 		if err := r.deleteCSIDriver(instance); err != nil {
-			logger.Error(err, "failed to delete CSIDriver")
+			logger.Error(err, "Failed to delete CSIDriver")
 			return ctrl.Result{}, err
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
-			logger.Error(err, "failed to remove Finalizer")
+			logger.Error(err, "Failed to remove Finalizer")
 			return ctrl.Result{}, err
 		}
 		logger.Info("Removed CSI driver successfully")
 		return ctrl.Result{}, nil
 	}
 
-	logger.Info("create resources")
+	logger.Info("Create resources")
 	// create the resources which never change if not exist
 	for _, rec := range []reconciler{
 		r.reconcileCSIDriver,
@@ -218,7 +218,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	logger.Info("Creation of the resources which never change is successful")
+	logger.Info("Successfully created resources like ServiceAccount, ClusterRoles and ClusterRoleBinding")
 
 	// Rollout restart of node plugin pods, if modified driver
 	// manifest file is applied.
@@ -294,7 +294,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 4. Snapshotter statefulset
 	// 5. Resizer statefulset
 	// 6. Driver daemonset
-	logger.Info("Synchronizing the resources which change over time.")
 
 	// Synchronizing cluster configMap
 	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
@@ -417,8 +416,8 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	logger := csiLog.WithName("SetupWithManager")
 
-	logger.Info("running IBM Spectrum Scale CSI operator", "version", config.OperatorVersion)
-	logger.Info("setting up the controller with the manager.")
+	logger.Info("Running IBM Spectrum Scale CSI operator", "version", config.OperatorVersion)
+	logger.Info("Setting up the controller with the manager.")
 	p, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
 		MatchLabels: secretsLabels,
 	})
@@ -511,11 +510,11 @@ func (r *CSIScaleOperatorReconciler) hasFinalizer(instance *csiscaleoperator.CSI
 
 	accessor, finalizerName, err := r.getAccessorAndFinalizerName(instance)
 	if err != nil {
-		logger.Error(err, "no finalizer found")
+		logger.Error(err, "No finalizer found")
 		return false, err
 	}
 
-	logger.Info("returning with finalizer", "name", finalizerName)
+	logger.Info("Returning with finalizer", "name", finalizerName)
 	return Contains(accessor.GetFinalizers(), finalizerName), nil
 }
 
@@ -535,17 +534,17 @@ func (r *CSIScaleOperatorReconciler) removeFinalizer(instance *csiscaleoperator.
 
 	accessor, finalizerName, err := r.getAccessorAndFinalizerName(instance)
 	if err != nil {
-		logger.Error(err, "couldn't get finalizer")
+		logger.Error(err, "Couldn't get finalizer")
 		return err
 	}
 
 	accessor.SetFinalizers(removeListEntry(accessor.GetFinalizers(), finalizerName))
 	if err := r.Client.Update(context.TODO(), instance.Unwrap()); err != nil {
-		logger.Error(err, "failed to remove", "finalizer", finalizerName, "from", accessor.GetName())
+		logger.Error(err, "Failed to remove", "finalizer", finalizerName, "from", accessor.GetName())
 		return err
 	}
 
-	logger.Info("finalizer was removed")
+	logger.Info("Finalizer was removed.")
 	return nil
 }
 
@@ -554,20 +553,20 @@ func (r *CSIScaleOperatorReconciler) addFinalizerIfNotPresent(instance *csiscale
 
 	accessor, finalizerName, err := r.getAccessorAndFinalizerName(instance)
 	if err != nil {
-		logger.Error(err, "failed to get finalizer name")
+		logger.Error(err, "Failed to get finalizer name")
 		return err
 	}
 
 	if !Contains(accessor.GetFinalizers(), finalizerName) {
-		logger.Info("adding", "finalizer", finalizerName, "on", accessor.GetName())
+		logger.Info("Adding", "finalizer", finalizerName, "on", accessor.GetName())
 		accessor.SetFinalizers(append(accessor.GetFinalizers(), finalizerName))
 
 		if err := r.Client.Update(context.TODO(), instance.Unwrap()); err != nil {
-			logger.Error(err, "failed to add", "finalizer", finalizerName, "on", accessor.GetName())
+			logger.Error(err, "Failed to add", "finalizer", finalizerName, "on", accessor.GetName())
 			return err
 		}
 	}
-	logger.Info("finalizer was added with", "name", finalizerName)
+	logger.Info("Finalizer was added with", "name", finalizerName)
 	return nil
 }
 
@@ -578,37 +577,37 @@ func (r *CSIScaleOperatorReconciler) getAccessorAndFinalizerName(instance *csisc
 
 	accessor, err := meta.Accessor(instance)
 	if err != nil {
-		logger.Error(err, "failed to get meta information of instance")
+		logger.Error(err, "Failed to get meta information of instance")
 		return nil, "", err
 	}
 
-	logger.Info("got finalizer with", "name", finalizerName)
+	logger.Info("Got finalizer with", "name", finalizerName)
 	return accessor, finalizerName, nil
 }
 
 func (r *CSIScaleOperatorReconciler) deleteClusterRolesAndBindings(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteClusterRolesAndBindings")
 
-	logger.Info("calling deleteClusterRoleBindings()")
+	logger.Info("Calling deleteClusterRoleBindings()")
 	if err := r.deleteClusterRoleBindings(instance); err != nil {
-		logger.Error(err, "deletion of ClusterRoleBindings failed")
+		logger.Error(err, "Deletion of ClusterRoleBindings failed")
 		return err
 	}
 
-	logger.Info("calling deleteClusterRoles()")
+	logger.Info("Calling deleteClusterRoles()")
 	if err := r.deleteClusterRoles(instance); err != nil {
-		logger.Error(err, "deletion of ClusterRoles failed")
+		logger.Error(err, "Deletion of ClusterRoles failed")
 		return err
 	}
 
-	logger.Info("deletion of ClusterRoles and ClusterRoleBindings succeeded")
+	logger.Info("Deletion of ClusterRoles and ClusterRoleBindings succeeded.")
 	return nil
 }
 
 func (r *CSIScaleOperatorReconciler) deleteClusterRoles(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteClusterRoles")
 
-	logger.Info("deleting ClusterRoles")
+	logger.Info("Deleting ClusterRoles")
 	clusterRoles := r.getClusterRoles(instance)
 
 	for _, cr := range clusterRoles {
@@ -618,20 +617,20 @@ func (r *CSIScaleOperatorReconciler) deleteClusterRoles(instance *csiscaleoperat
 			Namespace: cr.Namespace,
 		}, found)
 		if err != nil && errors.IsNotFound(err) {
-			logger.Info("continuing working on ClusterRoles for deletion")
+			logger.Info("Continuing working on ClusterRoles for deletion")
 			continue
 		} else if err != nil {
-			logger.Error(err, "failed to get ClusterRole", "Name", cr.GetName())
+			logger.Error(err, "Failed to get ClusterRole", "Name", cr.GetName())
 			return err
 		} else {
-			logger.Info("deleting ClusterRole", "Name", cr.GetName())
+			logger.Info("Deleting ClusterRole", "Name", cr.GetName())
 			if err := r.Client.Delete(context.TODO(), found); err != nil {
-				logger.Error(err, "failed to delete ClusterRole", "Name", cr.GetName())
+				logger.Error(err, "Failed to delete ClusterRole", "Name", cr.GetName())
 				return err
 			}
 		}
 	}
-	logger.Info("exiting deleteClusterRoles()")
+	logger.Info("Exiting deleteClusterRoles method.")
 	return nil
 }
 
@@ -676,7 +675,7 @@ func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(instance *csiscaleoperat
 		// Resource already exists - don't requeue
 		logger.Info("Resource CSIDriver already exists.")
 	}
-	logger.V(1).Info("Exiting reconcileCSIDriver() method.")
+	logger.V(1).Info("Exiting reconcileCSIDriver method.")
 	return nil
 }
 
@@ -829,24 +828,24 @@ func (r *CSIScaleOperatorReconciler) getNodeDaemonSet(instance *csiscaleoperator
 /*
 func (r *CSIScaleOperatorReconciler) restartControllerPod(logger logr.Logger, instance *csiscaleoperator.CSIScaleOperator) error {
 
-	logger.Info("restarting Controller Pod")
+	logger.Info("Restarting Controller Pod")
 	controllerPod := &corev1.Pod{}
 	controllerDeployment, err := r.getControllerDeployment(instance)
 	if err != nil {
-		logger.Error(err, "failed to get controller deployment")
+		logger.Error(err, "Failed to get controller deployment")
 		return err
 	}
 
-	logger.Info("controller requires restart",
+	logger.Info("Controller requires restart",
 		"ReadyReplicas", controllerDeployment.Status.ReadyReplicas,
 		"Replicas", controllerDeployment.Status.Replicas)
-	logger.Info("restarting csi controller")
+	logger.Info("Restarting csi controller")
 
 	err = r.getControllerPod(controllerDeployment, controllerPod)
 	if errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
-		logger.Error(err, "failed to get controller pod")
+		logger.Error(err, "Failed to get controller pod")
 		return err
 	}
 
@@ -869,10 +868,10 @@ func (r *CSIScaleOperatorReconciler) getControllerPod(controllerDeployment *apps
 /*
 func (r *CSIScaleOperatorReconciler) restartControllerPodfromDeployment(logger logr.Logger,
 	controllerDeployment *appsv1.Deployment, controllerPod *corev1.Pod) error {
-	logger.Info("controller requires restart",
+	logger.Info("Controller requires restart",
 		"ReadyReplicas", controllerDeployment.Status.ReadyReplicas,
 		"Replicas", controllerDeployment.Status.Replicas)
-	logger.Info("restarting csi controller")
+	logger.Info("Restarting csi controller")
 
 	return r.Client.Delete(context.TODO(), controllerPod)
 }
@@ -1046,6 +1045,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			return err
 		} else {
 			// Resource already exists - don't requeue
+
 			logger.Info("Clusterrolebinding " + crb.GetName() + " already exists. Updating clusterolebinding.")
 			err = r.Client.Update(context.TODO(), crb)
 			if err != nil {
@@ -1128,7 +1128,7 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 		}
 		// Update SCC resource
 		if updateRequired {
-			logger.Info("updating SecurityContextConstraint with new users.")
+			logger.Info("Updating SecurityContextConstraint with new users.")
 			newSCC := instance.GenerateSecurityContextConstraint(csiaccess_users)
 			newSCC.SetResourceVersion(SCC.GetResourceVersion())
 			err = r.Client.Update(context.TODO(), newSCC)
@@ -1157,7 +1157,7 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteClusterRoleBindings")
 
-	logger.Info("deleting ClusterRoleBindings")
+	logger.Info("Deleting ClusterRoleBindings")
 	clusterRoleBindings := r.getClusterRoleBindings(instance)
 
 	for _, crb := range clusterRoleBindings {
@@ -1167,20 +1167,20 @@ func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(instance *csiscal
 			Namespace: crb.Namespace,
 		}, found)
 		if err != nil && errors.IsNotFound(err) {
-			logger.Info("continue looking for ClusterRoleBindings", "Name", crb.GetName())
+			logger.Info("Continue looking for ClusterRoleBindings", "Name", crb.GetName())
 			continue
 		} else if err != nil {
-			logger.Error(err, "failed to get ClusterRoleBinding", "Name", crb.GetName())
+			logger.Error(err, "Failed to get ClusterRoleBinding", "Name", crb.GetName())
 			return err
 		} else {
-			logger.Info("deleting ClusterRoleBinding", "Name", crb.GetName())
+			logger.Info("Deleting ClusterRoleBinding", "Name", crb.GetName())
 			if err := r.Client.Delete(context.TODO(), found); err != nil {
-				logger.Error(err, "failed to delete ClusterRoleBinding", "Name", crb.GetName())
+				logger.Error(err, "Failed to delete ClusterRoleBinding", "Name", crb.GetName())
 				return err
 			}
 		}
 	}
-	logger.Info("exiting deleteClusterRoleBindings()")
+	logger.Info("Exiting deleteClusterRoleBindings method.")
 	return nil
 }
 
@@ -1299,7 +1299,7 @@ func containsString(slice []string, s string) bool {
 func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteCSIDriver")
 
-	logger.Info("deleting CSIDriver")
+	logger.Info("Deleting CSIDriver")
 	csiDriver := instance.GenerateCSIDriver()
 	found := &storagev1.CSIDriver{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
@@ -1307,16 +1307,16 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.
 		Namespace: csiDriver.Namespace,
 	}, found)
 	if err == nil {
-		logger.Info("deleting CSIDriver", "Name", csiDriver.GetName())
+		logger.Info("Deleting CSIDriver", "Name", csiDriver.GetName())
 		if err := r.Client.Delete(context.TODO(), found); err != nil {
-			logger.Error(err, "failed to delete CSIDriver", "Name", csiDriver.GetName())
+			logger.Error(err, "Failed to delete CSIDriver", "Name", csiDriver.GetName())
 			return err
 		}
 	} else if errors.IsNotFound(err) {
 		logger.Info("CSIDriver not found for deletion")
 		return nil
 	} else {
-		logger.Error(err, "failed to get CSIDriver", "Name", csiDriver.GetName())
+		logger.Error(err, "Failed to get CSIDriver", "Name", csiDriver.GetName())
 		return err
 	}
 	logger.Info("Deletion of CSIDriver is successful")

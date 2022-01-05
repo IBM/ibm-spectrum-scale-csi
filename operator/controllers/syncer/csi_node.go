@@ -179,7 +179,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	if found {
 		port, err := strconv.Atoi(healthPortStr)
 		if err == nil {
-			logger.Info("got liveness probe", " port: ", port)
+			logger.Info("Got liveness probe", " port: ", port)
 			healthPort = intstr.FromInt(port)
 		} else {
 			logger.Info("Invalid liveness probe port number", "received port: ", healthPortStr)
@@ -461,7 +461,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 // if defined in CR, otherwise returns the default images.
 func (s *csiNodeSyncer) getImage(name string) string {
 	logger := csiLog.WithName("getImage")
-	logger.Info("getting image for: ", "name", name)
+	logger.Info("Getting image for: ", "name", name)
 
 	image := ""
 	csiNodeDriverPlugin := config.GetNameForResource(config.CSINode, s.driver.Name)
@@ -475,7 +475,7 @@ func (s *csiNodeSyncer) getImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
-		logger.Info("got image for", " node driver registrar: ", image)
+		logger.Info("Got image for", " node driver registrar: ", image)
 	case csiNodeDriverPlugin:
 		driverImage, found := os.LookupEnv(EnvVarForDriverImage)
 		if len(s.driver.Spec.SpectrumScale) != 0 {
@@ -485,7 +485,7 @@ func (s *csiNodeSyncer) getImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(config.CSINodeDriverPlugin)
 		}
-		logger.Info("got image for", " node plugin: ", image)
+		logger.Info("Got image for", " node plugin: ", image)
 	case config.LivenessProbe:
 		livenessProbeImage, found := os.LookupEnv(EnvVarForCSILivenessProbeImage)
 		if len(s.driver.Spec.LivenessProbe) != 0 {
@@ -495,9 +495,9 @@ func (s *csiNodeSyncer) getImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
-		logger.Info("got image for", " liveness probe: ", image)
+		logger.Info("Got image for", " liveness probe: ", image)
 	}
-	logger.Info("exiting getImage", " got image:", image)
+	logger.Info("Exiting getImage", " got image:", image)
 	return image
 }
 

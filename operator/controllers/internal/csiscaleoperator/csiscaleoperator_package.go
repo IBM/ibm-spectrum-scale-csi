@@ -81,7 +81,7 @@ func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
 // It returns an object of type *corev1.ServiceAccount.
 func (c *CSIScaleOperator) GenerateControllerServiceAccount() *corev1.ServiceAccount {
 	logger := csiLog.WithName("GenerateControllerServiceAccount")
-	logger.Info("in GenerateControllerServiceAccount")
+	logger.Info("Inside GenerateControllerServiceAccount method")
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(c.Spec.ImagePullSecrets) > 0 {

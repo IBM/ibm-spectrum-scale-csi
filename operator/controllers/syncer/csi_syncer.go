@@ -796,7 +796,7 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
-		logger.Info("got image for", " provisioner: ", image)
+		logger.Info("Got image for", " provisioner: ", image)
 	case config.CSIAttacher:
 		envImage, found := os.LookupEnv(EnvVarForCSIAttacherImage)
 		if len(s.driver.Spec.Attacher) != 0 {
@@ -806,7 +806,7 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
-		logger.Info("got image for", " attacher: ", image)
+		logger.Info("Got image for", " attacher: ", image)
 	case config.CSISnapshotter:
 		envImage, found := os.LookupEnv(EnvVarForCSISnapshotterImage)
 		if len(s.driver.Spec.Snapshotter) != 0 {
@@ -816,7 +816,7 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
-		logger.Info("got image for", " snapshotter: ", image)
+		logger.Info("Got image for", " snapshotter: ", image)
 	case config.CSIResizer:
 		envImage, found := os.LookupEnv(EnvVarForCSIResizerImage)
 		if len(s.driver.Spec.Resizer) != 0 {
@@ -826,7 +826,7 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
-		logger.Info("got image for", " resizer: ", image)
+		logger.Info("Got image for", " resizer: ", image)
 	}
 	return image
 }

@@ -152,10 +152,10 @@ func (c *CSIScaleOperator) GetKubeletRootDirPath() string {
 	logger := csiLog.WithName("GetKubeletRootDirPath")
 
 	if c.Spec.KubeletRootDirPath == "" {
-		logger.Info("in GetKubeletRootDirPath", "using default kubeletRootDirPath: ", config.CSIKubeletRootDirPath)
+		logger.Info("In GetKubeletRootDirPath", "using default kubeletRootDirPath: ", config.CSIKubeletRootDirPath)
 		return config.CSIKubeletRootDirPath
 	}
-	logger.Info("in GetKubeletRootDirPath", "using kubeletRootDirPath: ", c.Spec.KubeletRootDirPath)
+	logger.Info("In GetKubeletRootDirPath", "using kubeletRootDirPath: ", c.Spec.KubeletRootDirPath)
 	return c.Spec.KubeletRootDirPath
 }
 
@@ -163,7 +163,7 @@ func (c *CSIScaleOperator) GetSocketPath() string {
 	logger := csiLog.WithName("GetSocketPath")
 
 	socketPath := c.GetKubeletRootDirPath() + config.SocketPath
-	logger.Info("in GetSocketPath", "socketPath", socketPath)
+	logger.Info("In GetSocketPath", "socketPath", socketPath)
 	return socketPath
 }
 
@@ -171,7 +171,7 @@ func (c *CSIScaleOperator) GetSocketDir() string {
 	logger := csiLog.WithName("GetSocketDir")
 
 	socketDir := c.GetKubeletRootDirPath() + config.SocketDir
-	logger.Info("in GetSocketDir", "socketDir", socketDir)
+	logger.Info("In GetSocketDir", "socketDir", socketDir)
 	return socketDir
 }
 
@@ -179,6 +179,6 @@ func (c *CSIScaleOperator) GetCSIEndpoint() string {
 	logger := csiLog.WithName("GetCSIEndpoint")
 
 	CSIEndpoint := "unix://" + c.GetKubeletRootDirPath() + config.SocketPath
-	logger.Info("in GetCSIEndpoint", "CSIEndpoint", CSIEndpoint)
+	logger.Info("In GetCSIEndpoint", "CSIEndpoint", CSIEndpoint)
 	return CSIEndpoint
 }
