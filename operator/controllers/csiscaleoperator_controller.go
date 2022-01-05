@@ -471,16 +471,16 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					// Daemon set should not update when secret is updated but not the data.
 					// e.g Secret type, resource version etc is modified.
 					// TODO: Update only those daemon set which are in the same namespace as the secret that triggered the event.
-					for _, daemonSet := range CSIDaemonListFunc() {
+					daemonSets := CSIDaemonListFunc()
+					for i := range daemonSets {
 						logger.Info("Secrets were modified. Daemon Set will be updated. Restarting node specific pods.")
-						err = r.rolloutRestartNode(&daemonSet)
+						err = r.rolloutRestartNode(&daemonSets[i])
 						if err != nil {
 							logger.Error(err, "Unable to update daemon set. Please restart node specific pods manually.")
 						} else {
-							daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
+							daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
 						}
 					}
-
 					for _, request := range CSIReconcileRequestFunc() {
 						q.Add(request)
 					}
