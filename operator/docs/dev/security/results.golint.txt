@@ -13,7 +13,7 @@ controllers/csiscaleoperator_controller.go:498:1: exported function Contains sho
 controllers/csiscaleoperator_controller.go:1081:2: don't use underscores in Go names; var csiaccess_users_new should be csiaccessUsersNew
 controllers/csiscaleoperator_controller.go:1120:3: don't use underscores in Go names; var csiaccess_users should be csiaccessUsers
 controllers/csiscaleoperator_controller.go:1187:1: comment on exported method CSIScaleOperatorReconciler.SetStatus should be of the form "SetStatus ..."
-controllers/config/constants.go:114:2: exported const StatusConditionReady should have comment (or a comment on this block) or be unexported
+controllers/config/constants.go:115:2: exported const StatusConditionReady should have comment (or a comment on this block) or be unexported
 controllers/config/resources.go:29:2: exported const CSIController should have comment (or a comment on this block) or be unexported
 controllers/config/resources.go:37:2: comment on exported const CSINodeServiceAccount should be of the form "CSINodeServiceAccount ..."
 controllers/config/resources.go:43:2: comment on exported const Provisioner should be of the form "Provisioner ..."

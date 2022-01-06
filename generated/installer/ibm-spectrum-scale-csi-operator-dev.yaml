@@ -1140,11 +1140,11 @@ spec:
                   - value
               clusters:
                 type: array
-                description: clusters is a collection of GPFS CSICluster properties
+                description: clusters is a collection of Spectrum Scale cluster properties
                   for the CSI driver to mount.
                 items:
                   type: object
-                  description: Defines the fields of a CSI cluster specification
+                  description: Defines the fields of a Spectrum Scale cluster specification
                   properties:
                     cacert:
                       type: string
@@ -1152,13 +1152,12 @@ spec:
                         certificates. Mandatory if secureSslMode is true.
                     id:
                       type: string
-                      description: id is the CSICluster id of the GPFS CSICluster
-                        specified.
+                      description: id is the cluster ID of the Spectrum Scale cluster.
                       maxLength: 20
                     primary:
                       type: object
-                      description: primary is the primary file system for the GPFS
-                        CSICluster
+                      description: primary is the primary file system for the Spectrum
+                        Scale cluster.
                       properties:
                         inodeLimit:
                           type: string
@@ -1174,7 +1173,7 @@ spec:
                             primaryFs
                         remoteCluster:
                           type: string
-                          description: Remote CSICluster ID
+                          description: Remote Spectrum Scale cluster ID
                       required:
                       - primaryFs
                     restApi:
@@ -1186,11 +1185,13 @@ spec:
                         properties:
                           guiHost:
                             type: string
-                            description: The hostname of the REST server.
+                            description: guiHost is the hostname/IP of the Spectrum
+                              Scale GUI node.
                           guiPort:
                             type: integer
                             default: 443
-                            description: The port number running the REST server.
+                            description: guiPort is the port number of the Spectrum
+                              Scale GUI node.
                         required:
                         - guiHost
                     secrets:
@@ -1201,7 +1202,7 @@ spec:
                       type: boolean
                       default: false
                       description: secureSslMode specifies if a secure SSL connection
-                        to connect to GPFS is required.
+                        to connect to Spectrum Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -1216,7 +1217,7 @@ spec:
               driverRegistrar:
                 type: string
                 description: driverRegistrar is the Sidecar container image for the
-                  CSI spectrum scale plugin pods.
+                  CSI Spectrum Scale plugin pods.
               kubeletRootDirPath:
                 type: string
                 default: /var/lib/kubelet
@@ -1227,8 +1228,8 @@ spec:
                   (liveness probe is used to know when to restart a container).
               nodeMapping:
                 type: array
-                description: nodeMapping specifies mapping of K8s node with spectrum
-                  scale node.
+                description: nodeMapping specifies mapping of K8s node with Spectrum
+                  Scale node.
                 items:
                   type: object
                   description: Defines mapping between kubernetes node and spectrumscale
@@ -1249,8 +1250,8 @@ spec:
                 default:
                 - value: "true"
                   key: scale
-                description: pluginNodeSelector is the node selector for spectrum
-                  scale CSI plugin.
+                description: pluginNodeSelector is the node selector for Spectrum
+                  Scale CSI plugin.
                 items:
                   type: object
                   description: CSINodeSelector defines the fields of Node Selector
@@ -1338,8 +1339,8 @@ spec:
                   - value
               spectrumScale:
                 type: string
-                description: spectrumScale is the image name for the CSI spectrum
-                  scale node driver plugin container.
+                description: spectrumScale is the image name for the CSI Spectrum
+                  Scale node driver plugin container.
             required:
             - clusters
           status:

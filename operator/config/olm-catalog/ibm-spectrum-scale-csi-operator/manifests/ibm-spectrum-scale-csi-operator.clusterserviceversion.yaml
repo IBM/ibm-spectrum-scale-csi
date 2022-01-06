@@ -135,8 +135,8 @@ spec:
         path: attacherNodeSelector[0].value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: clusters is a collection of GPFS CSICluster properties for the
-          CSI driver to mount.
+      - description: clusters is a collection of Spectrum Scale cluster properties
+          for the CSI driver to mount.
         displayName: Clusters
         path: clusters
       - description: cacert is the name of the configMap storing GUI certificates.
@@ -145,12 +145,12 @@ spec:
         path: clusters[0].cacert
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:ConfigMap
-      - description: id is the CSICluster id of the GPFS CSICluster specified.
+      - description: id is the cluster ID of the Spectrum Scale cluster.
         displayName: Cluster ID
         path: clusters[0].id
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: primary is the primary file system for the GPFS CSICluster
+      - description: primary is the primary file system for the Spectrum Scale cluster.
         displayName: Primary
         path: clusters[0].primary
         x-descriptors:
@@ -160,12 +160,12 @@ spec:
         path: clusters[0].restApi
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: The hostname of the REST server.
+      - description: guiHost is the hostname/IP of the Spectrum Scale GUI node.
         displayName: GUI Host
         path: clusters[0].restApi[0].guiHost
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: The port number running the REST server.
+      - description: guiPort is the port number of the Spectrum Scale GUI node.
         displayName: GUI Port
         path: clusters[0].restApi[0].guiPort
         x-descriptors:
@@ -177,7 +177,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
       - description: secureSslMode specifies if a secure SSL connection to connect
-          to GPFS is required.
+          to Spectrum Scale cluster is required.
         displayName: Secure SSL Mode
         path: clusters[0].secureSslMode
         x-descriptors:
@@ -187,8 +187,8 @@ spec:
         path: csipspname
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: driverRegistrar is the Sidecar container image for the CSI spectrum
-          scale plugin pods.
+      - description: driverRegistrar is the Sidecar container image for the CSI Spectrum
+          Scale plugin pods.
         displayName: Driver Registrar
         path: driverRegistrar
         x-descriptors:
@@ -212,7 +212,7 @@ spec:
         path: livenessprobe
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: nodeMapping specifies mapping of K8s node with spectrum scale
+      - description: nodeMapping specifies mapping of K8s node with Spectrum Scale
           node.
         displayName: Node Mapping
         path: nodeMapping
@@ -228,7 +228,7 @@ spec:
         path: nodeMapping[0].spectrumscaleNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: pluginNodeSelector is the node selector for spectrum scale CSI
+      - description: pluginNodeSelector is the node selector for Spectrum Scale CSI
           plugin.
         displayName: Plugin Node Selector
         path: pluginNodeSelector
@@ -309,7 +309,7 @@ spec:
         path: snapshotterNodeSelector[0].value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: spectrumScale is the image name for the CSI spectrum scale node
+      - description: spectrumScale is the image name for the CSI Spectrum Scale node
           driver plugin container.
         displayName: Spectrum Scale Image
         path: spectrumScale
