@@ -224,6 +224,9 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 			logger.Info("SyncAttacherFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
+	} else {
+		// Use default imagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
 
 	// ensure template
@@ -261,6 +264,9 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 			logger.Info("SyncProvisionerFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
+	} else {
+		// Use default imagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
 
 	// ensure template
@@ -298,6 +304,9 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 			logger.Info("SyncSnapshotterFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
+	} else {
+		// Use default imagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
 
 	// ensure template
@@ -335,6 +344,9 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 			logger.Info("SyncResizerFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
+	} else {
+		// Use default imagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
 
 	// ensure template
@@ -372,6 +384,9 @@ func (s *csiControllerSyncer) SyncFn() error {
 			logger.Info("SyncFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
+	} else {
+		// Use default ImagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
 
 	// ensure template

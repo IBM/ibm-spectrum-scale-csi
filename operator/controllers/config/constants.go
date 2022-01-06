@@ -107,7 +107,8 @@ const (
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 
-	DefaultLogLevel = "DEBUG"
+	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey"
+	DefaultLogLevel        = "DEBUG"
 )
 
 const (

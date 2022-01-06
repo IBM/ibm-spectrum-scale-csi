@@ -102,6 +102,9 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 			logger.Info("Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
+	} else {
+		// Use default imagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
 
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
