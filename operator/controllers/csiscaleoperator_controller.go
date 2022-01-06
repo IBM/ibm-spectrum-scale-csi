@@ -1329,17 +1329,19 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.
 // used to reconcile resources needed only for OpenShift.
 func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 	logger := csiLog.WithName("setENVIsOpenShift")
-
-	service := &corev1.Service{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      "controller-manager",
-		Namespace: "openshift-controller-manager",
-	}, service)
-	if err == nil {
-		logger.Info("CSI Operator is running on an OpenShift cluster.")
-		setEnvErr := os.Setenv(config.ENVIsOpenShift, "True")
-		if setEnvErr != nil {
-			logger.Error(err, "Error setting environment variable ENVIsOpenShift")
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if !isOpenShift {
+		service := &corev1.Service{}
+		err := r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      "controller-manager",
+			Namespace: "openshift-controller-manager",
+		}, service)
+		if err == nil {
+			logger.Info("CSI Operator is running on an OpenShift cluster.")
+			setEnvErr := os.Setenv(config.ENVIsOpenShift, "True")
+			if setEnvErr != nil {
+				logger.Error(err, "Error setting environment variable ENVIsOpenShift")
+			}
 		}
 	}
 }

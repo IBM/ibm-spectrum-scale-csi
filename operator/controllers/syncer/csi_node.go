@@ -444,10 +444,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 			cacert := cluster.Cacert
 			if len(cacert) == 0 {
 				logger.Error(errors.New("SecureSslMode Error"),
-					"When secureSslMode is set to true, cacert has to be "+
-						"specified in CSI CR manifest file!")
-				logger.Info("The Communication with GPFS cluster with ID " +
-					cluster.Id + " will proceed in insecure mode!")
+					"CA certificate is not specified in secure SSL mode for cluster with ID "+cluster.Id)
 			} else {
 				cacertVolume := k8sutil.EnsureVolume(cacert,
 					k8sutil.EnsureConfigMapVolumeSource(cacert))
