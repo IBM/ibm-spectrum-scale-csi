@@ -76,7 +76,7 @@ help: ## Display this help.
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=ibm-spectrum-scale-csi-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-generate: controller-gen kustomize fmt vet lint sec ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
 	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
@@ -97,12 +97,12 @@ fmt: ## Run go fmt against code.
 lint: ## Run go lint against code.
 	@echo "****** LINTING ******"
 	go get -u golang.org/x/lint/golint
-	golint ./...
+	golint ./... > ./docs/dev/security/results.golint.txt
 
 sec: ## Run gosec against code.
 	@echo "****** SECURITY SCANNING ******"
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	gosec -no-fail ./...
+	gosec -fmt=json -no-fail ./... > ./docs/dev/security/results.gosec.json
 
 vet: ## Run go vet against code.
 	@echo "****** VETTING *******"
@@ -116,7 +116,7 @@ test: manifests generate fmt vet ## Run tests.
 
 ##@ Build
 
-build: generate fmt vet ## Build manager binary.
+build: generate fmt vet lint sec ## Build manager binary.
 	go build -o bin/manager main.go
 
 run: manifests generate fmt vet ## Run a controller from your host.

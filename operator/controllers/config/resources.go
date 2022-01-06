@@ -26,14 +26,14 @@ func (rn ResourceName) String() string {
 }
 
 const (
-	CSIController                ResourceName = "csi-controller"
-	CSIControllerAttacher        ResourceName = "csi-controller-attacher"
-	CSIControllerProvisioner     ResourceName = "csi-controller-provisioner"
-	CSIControllerSnapshotter     ResourceName = "csi-controller-snapshotter"
-	CSIControllerResizer         ResourceName = "csi-controller-resizer"
-	CSINode                      ResourceName = "csi"
-	NodeAgent                    ResourceName = "ibm-node-agent"
-	CSIAttacherServiceAccount    ResourceName = "csi-attacher-sa"
+	CSIController             ResourceName = "csi-controller"
+	CSIControllerAttacher     ResourceName = "csi-controller-attacher"
+	CSIControllerProvisioner  ResourceName = "csi-controller-provisioner"
+	CSIControllerSnapshotter  ResourceName = "csi-controller-snapshotter"
+	CSIControllerResizer      ResourceName = "csi-controller-resizer"
+	CSINode                   ResourceName = "csi"
+	NodeAgent                 ResourceName = "ibm-node-agent"
+	CSIAttacherServiceAccount ResourceName = "csi-attacher-sa"
 	// CSIControllerServiceAccount  ResourceName = "csi-operator"
 	CSINodeServiceAccount        ResourceName = "csi-node-sa"
 	CSIProvisionerServiceAccount ResourceName = "csi-provisioner-sa"

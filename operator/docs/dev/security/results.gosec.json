@@ -1,0 +1,28 @@
+{
+	"Golang errors": {},
+	"Issues": [
+		{
+			"severity": "HIGH",
+			"confidence": "LOW",
+			"cwe": {
+				"id": "798",
+				"url": "https://cwe.mitre.org/data/definitions/798.html"
+			},
+			"rule_id": "G101",
+			"details": "Potential hardcoded credentials",
+			"file": "/mnt/c/Users/NitishKumar/Documents/GitHub/nitish/fork/ibm-spectrum-scale-csi/operator/controllers/config/constants.go",
+			"code": "104: \tCSISCC                    = \"spectrum-scale-csiaccess\"\n105: \tSecretsMountPath          = \"/var/lib/ibm/\"\n106: \tConfigMapPath             = \"/var/lib/ibm/config\"\n",
+			"line": "105",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 14,
+		"lines": 4845,
+		"nosec": 0,
+		"found": 1
+	},
+	"GosecVersion": "dev"
+}

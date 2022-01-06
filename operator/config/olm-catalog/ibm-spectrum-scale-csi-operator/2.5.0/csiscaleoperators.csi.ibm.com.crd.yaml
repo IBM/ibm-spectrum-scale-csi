@@ -883,6 +883,7 @@ spec:
                 description: attacherNodeSelector is the node selector for attacher
                   sidecar.
                 items:
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     key:
                       description: Key for node selector
@@ -899,6 +900,7 @@ spec:
                 description: clusters is a collection of GPFS CSICluster properties
                   for the CSI driver to mount.
                 items:
+                  description: Defines the fields of a CSI cluster specification
                   properties:
                     cacert:
                       description: cacert is the name of the configMap storing GUI
@@ -934,6 +936,7 @@ spec:
                     restApi:
                       description: restApi is a collection of targets for REST calls
                       items:
+                        description: Defines the fields for REST API server information.
                         properties:
                           guiHost:
                             description: The hostname of the REST server.
@@ -992,6 +995,8 @@ spec:
                 description: nodeMapping specifies mapping of K8s node with spectrum
                   scale node.
                 items:
+                  description: Defines mapping between kubernetes node and spectrumscale
+                    nodes
                   properties:
                     k8sNode:
                       description: k8sNode is the name of the kubernetes node
@@ -1012,6 +1017,7 @@ spec:
                 description: pluginNodeSelector is the node selector for spectrum
                   scale CSI plugin.
                 items:
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     key:
                       description: Key for node selector
@@ -1035,6 +1041,7 @@ spec:
                 description: provisionerNodeSelector is the node selector for provisioner
                   sidecar.
                 items:
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     key:
                       description: Key for node selector
@@ -1058,6 +1065,7 @@ spec:
                 description: resizerNodeSelector is the node selector for resizer
                   sidecar.
                 items:
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     key:
                       description: Key for node selector
@@ -1081,6 +1089,7 @@ spec:
                 description: snapshotterNodeSelector is the snapshotter node selector
                   for snapshotter sidecar.
                 items:
+                  description: CSINodeSelector defines the fields of Node Selector
                   properties:
                     key:
                       description: Key for node selector
