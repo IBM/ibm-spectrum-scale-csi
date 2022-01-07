@@ -1,2 +1,9 @@
 resources:
 - manager.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
+  newTag: v2.5.0
+commonAnnotations:
+  productVersion: 2.5.0
