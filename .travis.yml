@@ -2,7 +2,7 @@ services: docker
 dist: focal
 language: go
 go:
-  - 1.15.x
+  - 1.17.x
 
 env:
   global:
@@ -107,7 +107,7 @@ jobs:
     - name: "Lint - Operator: run linters and bundle automation."
       script:
         - pip3 install ansible
-        - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 3.5.4 ${HOME}/bin
+        - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 3.8.2 ${HOME}/bin
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - pip3 install operator-courier==2.1.11

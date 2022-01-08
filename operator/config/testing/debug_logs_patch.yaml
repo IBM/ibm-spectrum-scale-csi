@@ -10,5 +10,5 @@ spec:
       containers:
         - name: manager
           env:
-            - name: ANSIBLE_DEBUG_LOGS
+            - name: GO_DEBUG_LOGS
               value: "TRUE"

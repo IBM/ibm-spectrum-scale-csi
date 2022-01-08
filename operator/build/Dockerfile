@@ -1,36 +1,47 @@
-# Multi-arch build for IBM Spectrum Scale CSI Operator
+# Build the manager binary
+FROM --platform=$BUILDPLATFORM golang:1.17 as builder
 
-FROM quay.io/operator-framework/ansible-operator:v1.13.0
-MAINTAINER deeghuge@in.ibm.com
+WORKDIR /workspace
+# Copy the Go Modules manifests
+COPY go.mod go.mod
+COPY go.sum go.sum
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
 
-ARG CSI_ATTACHER_IMAGE
-ARG CSI_PROVISIONER_IMAGE
-ARG CSI_NODE_REGISTRAR_IMAGE
-ARG CSI_DRIVER_IMAGE
-ARG CSI_LIVENESSPROBE_IMAGE
-ARG LIVENESS_HEALTH_PORT
-ARG GIT_COMMIT
+#ENV CR_YAML=/usr/local/etc/csi.ibm.com_csiscaleoperators_cr.yaml
 
+# Copy the go source
+COPY main.go main.go
+COPY hacks/health_check.go health_check.go
+COPY api/ api/
+COPY controllers/ controllers/
+#COPY ./config/crd/bases/csi.ibm.com_csiscaleoperators_cr.yaml ${CR_YAML}
+#RUN chmod 0444 ${CR_YAML}
 
-ENV CSI_ATTACHER_IMAGE $CSI_ATTACHER_IMAGE
-ENV CSI_PROVISIONER_IMAGE $CSI_PROVISIONER_IMAGE
-ENV CSI_NODE_REGISTRAR_IMAGE $CSI_NODE_REGISTRAR_IMAGE
-ENV CSI_DRIVER_IMAGE $CSI_DRIVER_IMAGE
-ENV CSI_LIVENESSPROBE_IMAGE $CSI_LIVENESSPROBE_IMAGE
-ENV LIVENESS_HEALTH_PORT $LIVENESS_HEALTH_PORT
+# Build dummy health checker
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o health_check.sh health_check.go
+# Build CSI Operator
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o manager main.go
+
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM gcr.io/distroless/static:nonroot
+WORKDIR /
 
 LABEL name="IBM Spectrum Scale CSI Operator" \
       vendor="ibm" \
-      version="2.4.0" \
+      version="2.5.0" \
       release="1" \
       run='docker run ibm-spectrum-scale-csi-operator' \
-      summary="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
-      description="An Ansible based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
+      summary="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
+      description="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
       git_commit=$GIT_COMMIT
 
-
-COPY hacks/health_check.sh .
 COPY licenses /licenses
-COPY watches.yaml ${HOME}/watches.yaml
-COPY roles/ ${HOME}/roles/
-COPY playbooks/ ${HOME}/playbooks/
+COPY --from=builder --chmod=0771 /workspace/health_check.sh .
+COPY --from=builder /workspace/manager .
+USER 65532:65532
+
+ENTRYPOINT ["/manager"]
+

@@ -20,7 +20,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.4.0
+        productVersion: 2.5.0
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -37,25 +37,17 @@ spec:
                   - key: kubernetes.io/arch
                     operator: Exists
       containers:
-        - name: operator
-          args:
-            - "--metrics-addr=0.0.0.0:8383"
-            - "--enable-leader-election"
-            - "--leader-election-id=ibm-spectrum-scale-csi-operator"
+        - args: null
           env:
-            - name: MAX_CONCURRENT_RECONCILES_CSISCALEOPERATOR_CSI_IBM_COM
-              value: "1"
-            - name: MAX_CONCURRENT_RECONCILES_SECRET_
-              value: "1"
-            - name: ANSIBLE_DEBUG_LOGS
-              value: "False"
-            - name: WATCH_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: CSI_DRIVER_IMAGE
-              value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.4.0
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.4.0
+          - name: METRICS_BIND_ADDRESS
+            value: "8383"
+          - name: WATCH_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: CSI_DRIVER_IMAGE
+            value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0
+          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
@@ -63,6 +55,7 @@ spec:
                 - ./health_check.sh
             initialDelaySeconds: 10
             periodSeconds: 30
+          name: operator
           readinessProbe:
             exec:
               command:
@@ -73,11 +66,10 @@ spec:
             limits:
               cpu: 600m
               memory: 600Mi
-              ephemeral-storage: 5Gi
             requests:
               cpu: 50m
               memory: 50Mi
-              ephemeral-storage: 5Gi
+
           #hostNetwork: false
           #hostPID: false
           #hostIPC: false
@@ -90,10 +82,4 @@ spec:
             capabilities:
               drop:
                 - ALL
-          volumeMounts:
-            - mountPath: /tmp/ansible-operator/runner
-              name: runner
       serviceAccountName: ibm-spectrum-scale-csi-operator
-      volumes:
-        - emptyDir: {}
-          name: runner
