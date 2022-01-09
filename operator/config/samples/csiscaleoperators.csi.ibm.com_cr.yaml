@@ -24,7 +24,7 @@ spec:
 # plugin. It can have multiple values.
 # ==================================================================================
   clusters:
-    - id: "< Primary Cluster ID - WARNING - THIS IS A STRING NEEDS YAML QUOTES! >"
+    - id: "<Primary Cluster ID>"
       secrets: "secret1"
       secureSslMode: false
       primary:
