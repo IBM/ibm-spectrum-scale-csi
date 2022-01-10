@@ -4,6 +4,7 @@ import logging
 import string
 import random
 import base64
+import re
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 LOGGER = logging.getLogger()
@@ -211,10 +212,10 @@ def check_scaleoperatorobject_statefulsets_state(stateful_name):
                 LOGGER.info(f"CSI driver statefulset {stateful_name} is up")
                 return
             num += 1
-            time.sleep(5)
+            time.sleep(10)
         except ApiException:
             num += 1
-            time.sleep(5)
+            time.sleep(10)
     LOGGER.info(f"CSI driver statefulset {stateful_name} does not exist")
     assert False
 
@@ -561,7 +562,7 @@ def check_pod_running(pod_name):
         try:
             api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-            LOGGER.debug(str(api_response))
+            LOGGER.warning(str(api_response))
             if api_response.status.phase == "Running":
                 LOGGER.info(f'POD Check : POD {pod_name} is Running')
                 return
@@ -608,8 +609,34 @@ def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-s
     read_cr_api_instance = client.CustomObjectsApi()
     try:
         read_cr_api_response = read_cr_api_instance.get_namespaced_custom_object(group="csi.ibm.com",
-                                                                                 version="v1", namespace=namespace_value, plural="csiscaleoperators", name=csiscaleoperator_name)
+                                  version="v1", namespace=namespace_value, plural="csiscaleoperators", name=csiscaleoperator_name)
         LOGGER.debug(str(read_cr_api_response))
         return read_cr_api_response
     except ApiException:
         return False
+
+
+def check_pod_image(pod_name, image_name):
+    """
+    checking phase of pod pod_name to be running
+    if not running then asserts
+    """
+
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_pod(
+            name=pod_name, namespace=namespace_value, pretty=True)
+        LOGGER.debug(str(api_response))
+        search_result = re.search(image_name, str(api_response))
+        LOGGER.info(search_result)
+        if search_result is not None:
+            LOGGER.info(f"Image {image_name} matched for pod {pod_name}")
+            return
+    except ApiException as e:
+        LOGGER.error(
+                f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
+        assert False
+
+    LOGGER.error(f"Image {image_name} not matched for pod {pod_name}")
+    LOGGER.error(str(api_response))
+    assert False

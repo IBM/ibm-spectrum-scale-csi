@@ -6,7 +6,7 @@ import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import scale_operator as scaleop
-from utils.scale_operator_object_function import randomStringDigits, randomString
+from utils.scale_operator_object_function import randomStringDigits, randomString, check_pod_image
 import utils.fileset_functions as ff
 LOGGER = logging.getLogger()
 
@@ -15,10 +15,10 @@ LOGGER = logging.getLogger()
 def _values(request):
 
     global kubeconfig_value, clusterconfig_value, namespace_value
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, _ = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, _, operator_yaml = scaleop.get_cmd_values(request)
     namespace_value = operator_namespace
     condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
-    operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value)
+    operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value, operator_yaml)
     read_file = scaleop.read_operator_data(clusterconfig_value, namespace_value)
     ff.cred_check(read_file)
     fileset_exist = ff.fileset_exists(read_file)
@@ -490,6 +490,7 @@ def test_non_deafult_attacher(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
+        check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -520,6 +521,7 @@ def test_non_deafult_provisioner(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
+        check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -682,6 +684,7 @@ def test_nodeMapping(_values):
     LOGGER.info("test_nodeMapping")
     LOGGER.info("nodeMapping is added to the cr file")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    LOGGER.warning(test)
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
@@ -818,11 +821,13 @@ def test_non_deafult_snapshotter(_values):
     LOGGER.info("test_non_deafult_snapshotter")
     LOGGER.info("snapshotter image name is changed")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["custom_object_body"]["spec"]["snapshotter"] = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1"
+    deployment_snapshotter_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1"
+    test["custom_object_body"]["spec"]["snapshotter"] = deployment_snapshotter_image
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
+        check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -847,11 +852,14 @@ def test_non_deafult_livenessprobe(_values):
     LOGGER.info("test_non_deafult_livenessprobe")
     LOGGER.info("livenessprobe image name is changed")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["custom_object_body"]["spec"]["livenessprobe"] = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
+    deployment_livenessprobe_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
+    test["custom_object_body"]["spec"]["livenessprobe"] = deployment_livenessprobe_image
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
+        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        check_pod_image(demonset_pod_name, deployment_livenessprobe_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -876,11 +884,13 @@ def test_non_deafult_resizer(_values):
     LOGGER.info("test_non_deafult_resizer")
     LOGGER.info("resizer image name is changed")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["custom_object_body"]["spec"]["resizer"] = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
+    deployment_resizer_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
+    test["custom_object_body"]["spec"]["resizer"] = deployment_resizer_image
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
+        check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:

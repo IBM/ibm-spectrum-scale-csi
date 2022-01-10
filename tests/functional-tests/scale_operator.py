@@ -14,12 +14,12 @@ LOGGER = logging.getLogger()
 
 
 class Scaleoperator:
-    def __init__(self, kubeconfig_value, namespace_value):
+    def __init__(self, kubeconfig_value, namespace_value, operator_yaml):
 
         self.kubeconfig = kubeconfig_value
         scale_function.set_global_namespace_value(namespace_value)
         ob.set_namespace_value(namespace_value)
-
+        self.operator_yaml_file_path = operator_yaml
         crd_body = self.get_operator_body()
         crd_full_version = crd_body["CustomResourceDefinition"]["apiVersion"].split("/")
         self.crd_version = crd_full_version[1]
@@ -90,7 +90,7 @@ class Scaleoperator:
 
     def get_operator_body(self):
 
-        path = "../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml"
+        path = self.operator_yaml_file_path
         body = {}
         with open(path, 'r') as f:
             manifests = yaml.load_all(f, Loader=yaml.SafeLoader)
@@ -214,6 +214,12 @@ class Scaleoperatorobject:
 
         ob.check_scaleoperatorobject_statefulsets_state(
             csiscaleoperator_name+"-provisioner")
+
+        ob.check_scaleoperatorobject_statefulsets_state(
+            csiscaleoperator_name+"-snapshotter")
+
+        ob.check_scaleoperatorobject_statefulsets_state(
+            csiscaleoperator_name+"-resizer")
 
         val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
 
@@ -881,7 +887,12 @@ def get_cmd_values(request):
         operator_namespace = 'ibm-spectrum-scale-csi-driver'
 
     runslow_val = request.config.option.runslow
-    return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val
+
+    operator_file = request.config.option.operatoryaml
+    if operator_file is None:
+        operator_file = '../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml'
+
+    return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_file
 
 
 def get_cleanup_dict():
