@@ -47,12 +47,12 @@ spec:
         resources:
           limits:
             cpu: 600m
-            memory: 600Mi
             ephemeral-storage: 5Gi
+            memory: 600Mi
           requests:
             cpu: 50m
-            memory: 50Mi
             ephemeral-storage: 5Gi
+            memory: 50Mi
         livenessProbe:
           exec:
             command:
