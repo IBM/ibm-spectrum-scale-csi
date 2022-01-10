@@ -562,7 +562,7 @@ def check_pod_running(pod_name):
         try:
             api_response = api_instance.read_namespaced_pod(
                 name=pod_name, namespace=namespace_value, pretty=True)
-            LOGGER.warning(str(api_response))
+            LOGGER.debug(str(api_response))
             if api_response.status.phase == "Running":
                 LOGGER.info(f'POD Check : POD {pod_name} is Running')
                 return
