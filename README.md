@@ -5,7 +5,7 @@
 
 The IBM Spectrum Scale Container Storage Interface (CSI) project enables container orchestrators, such as Kubernetes and OpenShift, to manage the life-cycle of persistent storage.
 
-This project contains an [ansible-based operator](https://sdk.operatorframework.io) to run and manage the deployment of the IBM Spectrum Scale CSI Driver.
+This project contains an [go-based operator](https://sdk.operatorframework.io) to run and manage the deployment of the IBM Spectrum Scale CSI Driver.
 
 If you are looking to deploy released versions of the IBM Spectrum Scale CSI Operator, consider starting at: 
 
