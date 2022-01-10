@@ -19,7 +19,7 @@ metadata:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: ibm-spectrum-scale-csi-operator.v0.0.0
+  name: ibm-spectrum-scale-csi-operator.v2.5.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -318,4 +318,4 @@ spec:
   provider:
     name: IBM
   replaces: ibm-spectrum-scale-csi-operator.v2.4.0
-  version: 0.0.0
+  version: 2.5.0
