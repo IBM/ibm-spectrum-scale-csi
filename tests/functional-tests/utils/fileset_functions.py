@@ -273,10 +273,7 @@ def mount_fs(test_data):
     response_dict = json.loads(response.text)
     mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
 
-    if test_data["guiHost"] not in mounted_on:
-        LOGGER.error(f'Unable to mount {test_data["primaryFs"]} on {test_data["guiHost"]}')
-        assert False
-    LOGGER.info(f'primaryFS {test_data["primaryFs"]} mounted on {test_data["guiHost"]}')
+    LOGGER.info(f'primaryFS {test_data["primaryFs"]} is mounted on {mounted_on}')
 
 
 def cleanup():
