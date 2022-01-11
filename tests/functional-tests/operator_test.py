@@ -55,11 +55,11 @@ def test_operator_deploy(_values):
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.error(str(get_logs_api_response))
             LOGGER.error(
                 "operator custom object should be deployed but it is not deployed hence asserting")
@@ -88,12 +88,12 @@ def test_wrong_cluster_id(_values):
             "Operator custom object is deployed successfully not expected")
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 "Cluster ID doesnt match the cluster", get_logs_api_response)
@@ -123,12 +123,12 @@ def test_wrong_primaryFS(_values):
             "Operator custom object is deployed successfully not expected")
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 "Unable to get filesystem", get_logs_api_response)
@@ -158,12 +158,12 @@ def test_wrong_guihost(_values):
             "Operator custom object is deployed successfully not expected")
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result1 = re.search(
                 "connection refused", get_logs_api_response)
@@ -190,12 +190,12 @@ def test_wrong_gui_username(_values):
             "Operator custom object is deployed successfully not expected")
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             x = re.search("401 Unauthorized", get_logs_api_response)
             assert x is not None
@@ -215,14 +215,14 @@ def test_wrong_gui_password(_values):
     operator_object.create()
     operator_object.check()
     LOGGER.info("Checkig if failure reason matches")
-    demonset_pod_name = operator_object.get_driver_ds_pod_name()
-    LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+    daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+    LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
     get_logs_api_instance = client.CoreV1Api()
     count = 0
     while count < 24:
         try:
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search("401 Unauthorized", get_logs_api_response)
             if search_result is None:
@@ -275,10 +275,10 @@ def test_random_gpfs_primaryFset_name(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             LOGGER.error(
                 "operator custom object should be deployed but it is not deployed hence asserting")
@@ -316,12 +316,12 @@ def test_secureSslMode(_values):
             "Operator custom object is deployed successfully not expected")
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 "CA certificate not specified in secure SSL mode for cluster", str(get_logs_api_response))
@@ -358,10 +358,10 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
         assert False
     else:
         get_logs_api_instance = client.CoreV1Api()
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -393,10 +393,10 @@ def test_unlinked_primaryFset(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.error(str(get_logs_api_response))
             LOGGER.error(
                 "operator custom object should be deployed but it is not deployed hence asserting")
@@ -424,9 +424,9 @@ def test_existing_primaryFset(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.error(str(get_logs_api_response))
             LOGGER.error(
                 "operator custom object should be deployed but it is not deployed hence asserting")
@@ -457,10 +457,10 @@ def test_unmounted_primaryFS(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.debug(str(get_logs_api_response))
             search_result = re.search(
                 'not mounted on GUI node Primary cluster', str(get_logs_api_response))
@@ -494,9 +494,9 @@ def test_non_deafult_attacher(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -525,9 +525,9 @@ def test_non_deafult_provisioner(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -565,12 +565,12 @@ def test_correct_cacert(_values):
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.info(str(get_logs_api_response))
             operator_object.delete()
             LOGGER.error(
@@ -607,12 +607,12 @@ def test_cacert_with_secureSslMode_false(_values):
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
             get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
             LOGGER.info(str(get_logs_api_response))
             operator_object.delete()
             LOGGER.error(
@@ -653,14 +653,14 @@ def test_wrong_cacert(_values):
         operator_object.delete()
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
-        LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod logs")
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+        LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
         get_logs_api_instance = client.CoreV1Api()
         count = 0
         while count < 24:
             try:
                 get_logs_api_response = get_logs_api_instance.read_namespaced_pod_log(
-                    name=demonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
+                    name=daemonset_pod_name, namespace=namespace_value, container="ibm-spectrum-scale-csi")
                 LOGGER.debug(str(get_logs_api_response))
                 search_result = re.search(
                     "Error in plugin initialization: Parsing CA cert", get_logs_api_response)
@@ -684,17 +684,22 @@ def test_nodeMapping(_values):
     LOGGER.info("test_nodeMapping")
     LOGGER.info("nodeMapping is added to the cr file")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    LOGGER.warning(test)
+    LOGGER.debug(test)
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+
+    if "nodeMapping" not in test['custom_object_body']['spec']:
+        LOGGER.info("skipping the test as nodeMapping is not given in cr.yaml file")
+        pytest.skip("nodeMapping not in cr file")
+
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -717,20 +722,20 @@ def test_attacherNodeSelector(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+        desired_daemonset_node, labeled_nodes = operator_object.get_scaleplugin_labeled_nodes(
             test["attacherNodeSelector"])
-        if desired_daemonset_node == labelled_nodes:
-            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        if desired_daemonset_node == labeled_nodes:
+            LOGGER.info("labeled nodes are equal to desired daemonset nodes")
         else:
             LOGGER.error(
-                "labelled nodes are not equal to desired daemonset nodes")
+                "labeled nodes are not equal to desired daemonset nodes")
             assert False
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -753,20 +758,20 @@ def test_provisionerNodeSelector(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+        desired_daemonset_node, labeled_nodes = operator_object.get_scaleplugin_labeled_nodes(
             test["provisionerNodeSelector"])
-        if desired_daemonset_node == labelled_nodes:
-            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        if desired_daemonset_node == labeled_nodes:
+            LOGGER.info("labeled nodes are equal to desired daemonset nodes")
         else:
             LOGGER.error(
-                "labelled nodes are not equal to desired daemonset nodes")
+                "labeled nodes are not equal to desired daemonset nodes")
             assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -789,20 +794,20 @@ def test_pluginNodeSelector(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+        desired_daemonset_node, labeled_nodes = operator_object.get_scaleplugin_labeled_nodes(
             test["pluginNodeSelector"])
-        if desired_daemonset_node == labelled_nodes:
-            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        if desired_daemonset_node == labeled_nodes:
+            LOGGER.info("labeled nodes are equal to desired daemonset nodes")
         else:
             LOGGER.error(
-                "labelled nodes are not equal to desired daemonset nodes")
+                "labeled nodes are not equal to desired daemonset nodes")
             assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         get_logs_api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -831,9 +836,9 @@ def test_non_deafult_snapshotter(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -858,14 +863,14 @@ def test_non_deafult_livenessprobe(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
-        check_pod_image(demonset_pod_name, deployment_livenessprobe_image)
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+        check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -894,9 +899,9 @@ def test_non_deafult_resizer(_values):
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -919,20 +924,20 @@ def test_snapshotterNodeSelector(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+        desired_daemonset_node, labeled_nodes = operator_object.get_scaleplugin_labeled_nodes(
             test["snapshotterNodeSelector"])
-        if desired_daemonset_node == labelled_nodes:
-            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        if desired_daemonset_node == labeled_nodes:
+            LOGGER.info("labeled nodes are equal to desired daemonset nodes")
         else:
             LOGGER.error(
-                "labelled nodes are not equal to desired daemonset nodes")
+                "labeled nodes are not equal to desired daemonset nodes")
             assert False
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -955,20 +960,20 @@ def test_resizerNodeSelector(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        desired_daemonset_node, labelled_nodes = operator_object.get_scaleplugin_labelled_nodes(
+        desired_daemonset_node, labeled_nodes = operator_object.get_scaleplugin_labeled_nodes(
             test["resizerNodeSelector"])
-        if desired_daemonset_node == labelled_nodes:
-            LOGGER.info("labelled nodes are equal to desired daemonset nodes")
+        if desired_daemonset_node == labeled_nodes:
+            LOGGER.info("labeled nodes are equal to desired daemonset nodes")
         else:
             LOGGER.error(
-                "labelled nodes are not equal to desired daemonset nodes")
+                "labeled nodes are not equal to desired daemonset nodes")
             assert False
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
-            demonset_pod_name = operator_object.get_driver_ds_pod_name()
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = get_logs_api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))
@@ -996,11 +1001,11 @@ def test_wrong_kubeletRootDirPath(_values):
             "Operator custom object is deployed successfully not expected")
         assert False
     else:
-        demonset_pod_name = operator_object.get_driver_ds_pod_name()
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
         api_instance = client.CoreV1Api()
         try:
-            LOGGER.info(f"Checking for failure reason match in {demonset_pod_name} pod events")
-            field = "involvedObject.name="+demonset_pod_name
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod events")
+            field = "involvedObject.name="+daemonset_pod_name
             api_response = api_instance.list_namespaced_event(
                 namespace=namespace_value, pretty="True", field_selector=field)
             LOGGER.debug(str(api_response))

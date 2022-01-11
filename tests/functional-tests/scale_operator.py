@@ -233,15 +233,15 @@ class Scaleoperatorobject:
             pod_list_api_instance = client.CoreV1Api()
             pod_list_api_response = pod_list_api_instance.list_namespaced_pod(
                 namespace=self.namespace, pretty=True, field_selector="spec.serviceAccountName=ibm-spectrum-scale-csi-node")
-            demonset_pod_name = pod_list_api_response.items[0].metadata.name
+            daemonset_pod_name = pod_list_api_response.items[0].metadata.name
             LOGGER.debug(str(pod_list_api_response))
-            return demonset_pod_name
+            return daemonset_pod_name
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->list_namespaced_pod: {e}")
             assert False
 
-    def get_scaleplugin_labelled_nodes(self, label):
+    def get_scaleplugin_labeled_nodes(self, label):
         api_instance = client.CoreV1Api()
         label_selector = ""
         for label_val in label:
@@ -251,7 +251,7 @@ class Scaleoperatorobject:
         try:
             api_response_2 = api_instance.list_node(
                 pretty=True, label_selector=label_selector)
-            LOGGER.info(f"{label_selector} labelled nodes are \
+            LOGGER.info(f"{label_selector} labeled nodes are \
                         {str(len(api_response_2.items))}")
             LOGGER.info(f"{str(self.desired_number_scheduled)} daemonset nodes")
             return self.desired_number_scheduled, len(api_response_2.items)
