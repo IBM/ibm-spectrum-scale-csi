@@ -33,6 +33,7 @@ import (
 const (
 	dependentFileset   = "dependent"
 	independentFileset = "independent"
+	scTypeAdvanced     = "Advanced"
 )
 
 type scaleVolume struct {
@@ -59,6 +60,9 @@ type scaleVolume struct {
 	FsetLinkPath       string                            `json:"fsetLinkPath"`
 	FsMountPoint       string                            `json:"fsMountPoint"`
 	NodeClass          string                            `json:"nodeClass"`
+	SCType             string                            `json:"scType"`
+	Compression        bool                              `json:"compression"`
+	Tier               string                            `json:"tier"`
 }
 
 type scaleVolId struct {
@@ -120,12 +124,43 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
 	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
 
+	scType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedSCType]
+	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
+	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
+
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
 	scaleVol.FilesetType = ""
 	scaleVol.ClusterId = ""
 	scaleVol.NodeClass = ""
+	scaleVol.SCType = ""
+	scaleVol.Compression = false
+	scaleVol.Tier = ""
+
+	if isSCTypeSpecified && scType == "" {
+		isSCTypeSpecified = false
+	}
+	if isSCTypeSpecified {
+		//This is a new type of StorageClass
+		if scType != scTypeAdvanced {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "scType must be \""+scTypeAdvanced+"\" if specified.")
+		}
+		scaleVol.SCType = scType
+
+		if isCompressionSpecified && compression == "" {
+			isCompressionSpecified = false
+		}
+		if isCompressionSpecified && (compression == "True" || compression == "true") {
+			scaleVol.Compression = true
+		}
+		if isTierSpecified && tier == "" {
+			isTierSpecified = false
+		}
+		if isTierSpecified {
+			scaleVol.Tier = tier
+		}
+	}
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false

@@ -101,18 +101,22 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 }
 
 //generateVolID: Generate volume ID
-func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string) string {
+func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, isNewVolumeType bool) string {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volID string
-
-	if scVol.IsFilesetBased {
-		/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>; path=<symlink_path> */
-		slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
-		volID = fmt.Sprintf("%s;%s;filesetName=%s;path=%s", scVol.ClusterId, uid, scVol.VolName, slink)
-	} else {
-		/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
-		slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
+	slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
+	if isNewVolumeType {
+		//TODO: Modify this temporary (lightweight based) volID to have the details for new type of volume
 		volID = fmt.Sprintf("%s;%s;path=%s", scVol.ClusterId, uid, slink)
+	} else {
+		if scVol.IsFilesetBased {
+			/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>; path=<symlink_path> */
+			volID = fmt.Sprintf("%s;%s;filesetName=%s;path=%s", scVol.ClusterId, uid, scVol.VolName, slink)
+		} else {
+			/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
+
+			volID = fmt.Sprintf("%s;%s;path=%s", scVol.ClusterId, uid, slink)
+		}
 	}
 	return volID
 }
@@ -512,6 +516,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	/* scaleVol.VolBackendFs will always be local cluster FS. So we need to find a
 	   remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and	create fileset on that FS. */
 
+	isNewVolumeType := false
+	if scaleVol.SCType == scTypeAdvanced {
+		isNewVolumeType = true
+		glog.V(5).Infof("This VolumeCreate request is for new type of volume.")
+	}
 	if scaleVol.IsFilesetBased {
 		remoteDeviceName := volFsInfo.Mount.RemoteDeviceName
 		scaleVol.LocalFS = scaleVol.VolBackendFs
@@ -586,7 +595,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			} else if jobStatus == VOLCOPY_JOB_FAILED {
 				glog.Errorf("volume:[%v] -  volume cloning job had failed", scaleVol.VolName)
 				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v]", scaleVol.VolName))
-                	} else if jobStatus == VOLCOPY_JOB_COMPLETED {
+			} else if jobStatus == VOLCOPY_JOB_COMPLETED {
 				glog.V(5).Infof("volume:[%v] -  volume cloning request has already completed successfully.", scaleVol.VolName)
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
@@ -663,7 +672,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	volID := cs.generateVolID(scaleVol, volFsInfo.UUID)
+	volID := cs.generateVolID(scaleVol, volFsInfo.UUID, isNewVolumeType)
 
 	if isVolSource {
 		err = cs.copyVolumeContent(scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID)
@@ -860,16 +869,16 @@ func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumSc
 }
 
 func (cs *ScaleControllerServer) checkVolCloneSupport(conn connectors.SpectrumScaleConnector) error {
-        /* Verify Spectrum Scale Version is not below 5.1.2-1 */
-        versionCheck, err := cs.checkMinScaleVersion(conn, "5121")
-        if err != nil {
-                return err
-        }
+	/* Verify Spectrum Scale Version is not below 5.1.2-1 */
+	versionCheck, err := cs.checkMinScaleVersion(conn, "5121")
+	if err != nil {
+		return err
+	}
 
-        if !versionCheck {
-                return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for volume cloning support with CSI is 5.1.2-1")
-        }
-        return nil
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for volume cloning support with CSI is 5.1.2-1")
+	}
+	return nil
 }
 
 func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
