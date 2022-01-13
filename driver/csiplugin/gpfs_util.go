@@ -63,6 +63,7 @@ type scaleVolume struct {
 	StorageClassType   string                            `json:"storageClassType"`
 	ConsistencyGroup   string                            `json:"consistencyGroup"`
 	Compression        string                            `json:"compression"`
+	Replication        int                               `json:"replication"`
 	Tier               string                            `json:"tier"`
 }
 
@@ -107,6 +108,19 @@ type scaleVolSnapId struct {
 	SnapId    string
 } //nolint
 
+func IsValidCompressionAlgorithm(input string) bool {
+	switch strings.ToLower(input) {
+	case
+		"z",
+		"lz4",
+		"zfast",
+		"alphae",
+		"alphah":
+		return true
+	}
+	return false
+}
+
 func getRemoteFsName(remoteDeviceName string) string {
 	splitDevName := strings.Split(remoteDeviceName, ":")
 	remDevFs := splitDevName[len(splitDevName)-1]
@@ -127,6 +141,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
 	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
+	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
+	replication, isReplicationSpecified := volOptions[connectors.UserSpecifiedReplication]
+	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 
 	storageClassType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedStorageClassType]
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
@@ -311,6 +328,34 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 
 	scaleVol.ConsistencyGroup = volOptions["csi.storage.k8s.io/pvc/namespace"]
+
+	if isCompressionSpecified {
+		if !IsValidCompressionAlgorithm(compression) {
+			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
+				compression)
+			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
+				"invalid compression algorithm specified: %s", compression)
+		}
+		scaleVol.Compression = compression
+		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
+	}
+
+	if isReplicationSpecified && replication != "" {
+		val, err := strconv.Atoi(replication)
+		if err != nil || val < 1 || val > 3 {
+			glog.V(5).Infof("gpfs_util invalid replication value specified: %s",
+				replication)
+			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
+				"invalid replication value specified: %s", replication)
+		}
+		scaleVol.Replication = val
+		glog.V(5).Infof("gpfs_util replication was set: %d", val)
+	}
+
+	if isTierSpecified && tier != "" {
+		scaleVol.Tier = tier
+		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
+	}
 
 	return scaleVol, nil
 }

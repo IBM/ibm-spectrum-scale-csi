@@ -1349,3 +1349,18 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component strin
 
 	return true, nil
 }
+
+func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 setFilesystemPolicy for filesystem %s", filesystemName)
+
+	setPolicyURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName))
+	status := Status{}
+
+	err := s.doHTTP(setPolicyURL, "PUT", &status, policy)
+	if err != nil {
+		glog.Errorf("Unable to set filesystem policy: %v", status.Message)
+		return err
+	}
+
+	return nil
+}

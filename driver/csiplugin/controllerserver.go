@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -634,6 +635,41 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	glog.Infof("volume:[%v] -  spectrum scale volume create params : %v\n", scaleVol.VolName, scaleVol)
+
+	if scaleVol.IsFilesetBased && scaleVol.Compression != "" {
+		glog.Infof("createvolume: compression is enabled: changing volume name")
+		scaleVol.VolName = fmt.Sprintf("%s-COMPRESS%s", scaleVol.VolName, strings.ToUpper(scaleVol.Compression))
+	}
+
+	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
+		rule := "RULE 'T%sR%d' SET POOL '%s' REPLICATE(%d) WHERE FILESET_NAME LIKE 'pvc-%%-T%s-R%d%%'"
+		policy := connectors.Policy{}
+
+		if scaleVol.Replication != 0 {
+			if int(scaleVol.Replication) > volFsInfo.Replication.MaxDataReplicas {
+				glog.Errorf("replication value (%d) specified is higher than max data replicas allowed by fs (%d)",
+					scaleVol.Replication, volFsInfo.Replication.MaxDataReplicas)
+				return nil, fmt.Errorf("replication value (%d) specified is higher than max data replicas allowed by fs (%d)",
+					scaleVol.Replication, volFsInfo.Replication.MaxDataReplicas)
+			}
+
+			policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Replication,
+				scaleVol.Tier, scaleVol.Replication,
+				scaleVol.Tier, scaleVol.Replication)
+		} else {
+			policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, volFsInfo.Replication.DefaultDataReplicas,
+				scaleVol.Tier, volFsInfo.Replication.DefaultDataReplicas,
+				scaleVol.Tier, volFsInfo.Replication.DefaultDataReplicas)
+		}
+		policy.Partition = "csi-" + volName
+
+		scaleVol.VolName = fmt.Sprintf("%s-T%s-R%d", scaleVol.VolName, scaleVol.Tier, scaleVol.Replication)
+		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+	} else if scaleVol.IsFilesetBased && scaleVol.Replication != 0 {
+		// Cannot have replication only. If tier is empty we exit out
+		glog.Errorf("tiering must be specified if replication is specified")
+		return nil, errors.New("tiering must be specified if replication is specified")
+	}
 
 	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)
 	if err != nil {
