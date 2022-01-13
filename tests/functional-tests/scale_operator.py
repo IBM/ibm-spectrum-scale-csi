@@ -14,12 +14,12 @@ LOGGER = logging.getLogger()
 
 
 class Scaleoperator:
-    def __init__(self, kubeconfig_value, namespace_value):
+    def __init__(self, kubeconfig_value, namespace_value, operator_yaml):
 
         self.kubeconfig = kubeconfig_value
         scale_function.set_global_namespace_value(namespace_value)
         ob.set_namespace_value(namespace_value)
-
+        self.operator_yaml_file_path = operator_yaml
         crd_body = self.get_operator_body()
         crd_full_version = crd_body["CustomResourceDefinition"]["apiVersion"].split("/")
         self.crd_version = crd_full_version[1]
@@ -90,7 +90,7 @@ class Scaleoperator:
 
     def get_operator_body(self):
 
-        path = "../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml"
+        path = self.operator_yaml_file_path
         body = {}
         with open(path, 'r') as f:
             manifests = yaml.load_all(f, Loader=yaml.SafeLoader)
@@ -215,6 +215,12 @@ class Scaleoperatorobject:
         ob.check_scaleoperatorobject_statefulsets_state(
             csiscaleoperator_name+"-provisioner")
 
+        ob.check_scaleoperatorobject_statefulsets_state(
+            csiscaleoperator_name+"-snapshotter")
+
+        ob.check_scaleoperatorobject_statefulsets_state(
+            csiscaleoperator_name+"-resizer")
+
         val, self.desired_number_scheduled = ob.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
 
         # ob.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
@@ -227,15 +233,15 @@ class Scaleoperatorobject:
             pod_list_api_instance = client.CoreV1Api()
             pod_list_api_response = pod_list_api_instance.list_namespaced_pod(
                 namespace=self.namespace, pretty=True, field_selector="spec.serviceAccountName=ibm-spectrum-scale-csi-node")
-            demonset_pod_name = pod_list_api_response.items[0].metadata.name
+            daemonset_pod_name = pod_list_api_response.items[0].metadata.name
             LOGGER.debug(str(pod_list_api_response))
-            return demonset_pod_name
+            return daemonset_pod_name
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->list_namespaced_pod: {e}")
             assert False
 
-    def get_scaleplugin_labelled_nodes(self, label):
+    def get_scaleplugin_labeled_nodes(self, label):
         api_instance = client.CoreV1Api()
         label_selector = ""
         for label_val in label:
@@ -245,7 +251,7 @@ class Scaleoperatorobject:
         try:
             api_response_2 = api_instance.list_node(
                 pretty=True, label_selector=label_selector)
-            LOGGER.info(f"{label_selector} labelled nodes are \
+            LOGGER.info(f"{label_selector} labeled nodes are \
                         {str(len(api_response_2.items))}")
             LOGGER.info(f"{str(self.desired_number_scheduled)} daemonset nodes")
             return self.desired_number_scheduled, len(api_response_2.items)
@@ -826,6 +832,16 @@ def read_operator_data(clusterconfig, namespace, kubeconfig=None):
     else:
         data["pluginNodeSelector"] = []
 
+    if check_key(loadcr_yaml["spec"], "resizerNodeSelector"):
+        data["resizerNodeSelector"] = loadcr_yaml["spec"]["resizerNodeSelector"]
+    else:
+        data["resizerNodeSelector"] = []
+
+    if check_key(loadcr_yaml["spec"], "snapshotterNodeSelector"):
+        data["snapshotterNodeSelector"] = loadcr_yaml["spec"]["snapshotterNodeSelector"]
+    else:
+        data["snapshotterNodeSelector"] = []
+
     if check_key(data, "local_cacert_name"):
         if data["cacert_path"] == "":
             LOGGER.error("if using cacert , MUST include cacert path in test.config")
@@ -871,7 +887,12 @@ def get_cmd_values(request):
         operator_namespace = 'ibm-spectrum-scale-csi-driver'
 
     runslow_val = request.config.option.runslow
-    return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val
+
+    operator_file = request.config.option.operatoryaml
+    if operator_file is None:
+        operator_file = '../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml'
+
+    return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_file
 
 
 def get_cleanup_dict():

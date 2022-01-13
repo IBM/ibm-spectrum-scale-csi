@@ -9,6 +9,8 @@ def pytest_addoption(parser):
     parser.addoption("--testnamespace", action="store")
     parser.addoption("--operatornamespace", action="store")
     parser.addoption("--runslow", action="store_true", help="run slow tests")
+    parser.addoption("--operatoryaml", action="store")
+
 
 
 def pytest_html_results_table_header(cells):
