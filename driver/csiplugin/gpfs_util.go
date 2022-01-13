@@ -255,7 +255,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.VolDirBasePath = volDirPath
 		scaleVol.IsFilesetBased = false
 	}
-	if fsTypeSpecified {
+	if fsTypeSpecified || isSCTypeSpecified {
 		scaleVol.IsFilesetBased = true
 	}
 
