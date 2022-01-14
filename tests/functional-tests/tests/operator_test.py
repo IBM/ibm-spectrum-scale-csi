@@ -5,9 +5,9 @@ import logging
 import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_test.scale_operator as scaleop
-from ibm_spectrum_scale_test.scale_operator_object_function import randomStringDigits, randomString, check_pod_image
-import ibm_spectrum_scale_test.fileset_functions as ff
+import ibm_spectrum_scale_csi.scale_operator as scaleop
+from ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function import randomStringDigits, randomString, check_pod_image
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 
 

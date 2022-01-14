@@ -1,7 +1,7 @@
 import logging
 import pytest
-import ibm_spectrum_scale_test.scale_operator as scaleop
-import ibm_spectrum_scale_test.fileset_functions as ff
+import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 
 
