@@ -1354,11 +1354,17 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 	glog.V(4).Infof("rest_v2 setFilesystemPolicy for filesystem %s", filesystemName)
 
 	setPolicyURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName))
-	status := Status{}
+	setPolicyResponse := GenericResponse{}
 
-	err := s.doHTTP(setPolicyURL, "PUT", &status, policy)
+	err := s.doHTTP(setPolicyURL, "PUT", &setPolicyResponse, policy)
 	if err != nil {
-		glog.Errorf("Unable to set filesystem policy: %v", status.Message)
+		glog.Errorf("Unable to set filesystem policy: %v", setPolicyResponse.Status.Message)
+		return err
+	}
+
+	err = s.waitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("unable to set policy rule %s for filesystem %s: %v", policy.Policy, filesystemName, err)
 		return err
 	}
 

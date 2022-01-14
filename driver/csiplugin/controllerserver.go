@@ -641,8 +641,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.VolName = fmt.Sprintf("%s-COMPRESS%s", scaleVol.VolName, strings.ToUpper(scaleVol.Compression))
 	}
 
-	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
-		rule := "RULE 'T%sR%d' SET POOL '%s' REPLICATE(%d) WHERE FILESET_NAME LIKE 'pvc-%%-T%s-R%d%%'"
+	if scaleVol.IsFilesetBased && scaleVol.StoragePool != "" {
+		rule := "RULE 'P%sR%d' SET POOL '%s' REPLICATE(%d) WHERE FILESET_NAME LIKE 'pvc-%%-P%s-R%d%%'"
 		policy := connectors.Policy{}
 
 		if scaleVol.Replication != 0 {
@@ -653,22 +653,22 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 					scaleVol.Replication, volFsInfo.Replication.MaxDataReplicas)
 			}
 
-			policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Replication,
-				scaleVol.Tier, scaleVol.Replication,
-				scaleVol.Tier, scaleVol.Replication)
+			policy.Policy = fmt.Sprintf(rule, scaleVol.StoragePool, scaleVol.Replication,
+				scaleVol.StoragePool, scaleVol.Replication,
+				scaleVol.StoragePool, scaleVol.Replication)
 		} else {
-			policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, volFsInfo.Replication.DefaultDataReplicas,
-				scaleVol.Tier, volFsInfo.Replication.DefaultDataReplicas,
-				scaleVol.Tier, volFsInfo.Replication.DefaultDataReplicas)
+			policy.Policy = fmt.Sprintf(rule, scaleVol.StoragePool, volFsInfo.Replication.DefaultDataReplicas,
+				scaleVol.StoragePool, volFsInfo.Replication.DefaultDataReplicas,
+				scaleVol.StoragePool, volFsInfo.Replication.DefaultDataReplicas)
 		}
-		policy.Partition = "csi-" + volName
+		policy.Partition = fmt.Sprintf("csi-P%s-R%d", scaleVol.StoragePool, scaleVol.Replication)
 
-		scaleVol.VolName = fmt.Sprintf("%s-T%s-R%d", scaleVol.VolName, scaleVol.Tier, scaleVol.Replication)
+		scaleVol.VolName = fmt.Sprintf("%s-P%s-R%d", scaleVol.VolName, scaleVol.StoragePool, scaleVol.Replication)
 		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
 	} else if scaleVol.IsFilesetBased && scaleVol.Replication != 0 {
-		// Cannot have replication only. If tier is empty we exit out
-		glog.Errorf("tiering must be specified if replication is specified")
-		return nil, errors.New("tiering must be specified if replication is specified")
+		// Cannot have replication only. If StoragePool is empty we exit out
+		glog.Errorf("storagePool must be specified if replication is specified")
+		return nil, errors.New("storagePool must be specified if replication is specified")
 	}
 
 	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)

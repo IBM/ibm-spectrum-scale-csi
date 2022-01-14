@@ -99,7 +99,7 @@ const (
 	UserSpecifiedPermissions    string = "permissions"
 	UserSpecifiedCompression    string = "compression"
 	UserSpecifiedReplication    string = "replication"
-	UserSpecifiedTier           string = "tier"
+	UserSpecifiedStoragePool    string = "storagePool"
 
 	UserSpecifiedStorageClassType string = "type"
 	UserSpecifiedCompression      string = "compression"

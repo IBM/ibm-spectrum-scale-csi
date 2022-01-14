@@ -64,7 +64,7 @@ type scaleVolume struct {
 	ConsistencyGroup   string                            `json:"consistencyGroup"`
 	Compression        string                            `json:"compression"`
 	Replication        int                               `json:"replication"`
-	Tier               string                            `json:"tier"`
+	StoragePool        string                            `json:"storagePool"`
 }
 
 type scaleVolId struct {
@@ -143,7 +143,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
 	replication, isReplicationSpecified := volOptions[connectors.UserSpecifiedReplication]
-	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
+	storagePool, isStoragePoolSpecified := volOptions[connectors.UserSpecifiedStoragePool]
 
 	storageClassType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedStorageClassType]
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
@@ -352,9 +352,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		glog.V(5).Infof("gpfs_util replication was set: %d", val)
 	}
 
-	if isTierSpecified && tier != "" {
-		scaleVol.Tier = tier
-		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
+	if isStoragePoolSpecified && storagePool != "" {
+		scaleVol.StoragePool = storagePool
+		glog.V(5).Infof("gpfs_util storagePool was set: %s", storagePool)
 	}
 
 	return scaleVol, nil
