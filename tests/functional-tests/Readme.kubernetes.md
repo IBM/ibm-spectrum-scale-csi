@@ -98,3 +98,31 @@ Available functional tests list for driver & operator can be collected using fol
 ```
 pytest --collect-only
 ```
+
+### Running Testcases using markers
+1. Running all testcases except operator testcases
+```
+pytest -m "volumeprovisioning or volumesnapshot"
+```
+2. Running only local cluster testcases
+```
+pytest -m "localcluster"
+```
+3. Running only remove cluster testcases
+```
+pytest -m "remotecluster"
+```
+4. Running only operator testcases
+```
+pytest -m "csioperator"
+```
+5. Running only localcluster volumeprovisioning testcases
+```
+pytest -m "volumeprovisioning and localcluster"
+```
+like above format you can run followingtestcases
+```
+pytest -m "volumeprovisioning and remotecluster"
+pytest -m "volumesnapshot and localcluster"
+pytest -m "volumesnapshot and remotecluster"
+```

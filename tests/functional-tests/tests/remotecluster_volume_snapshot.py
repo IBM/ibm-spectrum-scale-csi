@@ -4,7 +4,7 @@ import pytest
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 import ibm_spectrum_scale_csi.scale_operator as scaleop
 LOGGER = logging.getLogger()
-
+pytestmark = [pytest.mark.volumesnapshot, pytest.mark.remotecluster]
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request):
