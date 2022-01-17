@@ -249,7 +249,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
 
     volume_name = get_pv_name(pvc_name, created_objects)
 
-    if ff.check_snapshot(snapshot_name, volume_name):
+    if ff.check_snapshot_exists(snapshot_name, volume_name):
         LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
     else:
         LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")

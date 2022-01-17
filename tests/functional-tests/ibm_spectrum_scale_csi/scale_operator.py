@@ -617,7 +617,7 @@ class Snapshot():
             vs_name = d.get_random_name("vs")
             for num in range(0, number_of_snapshots):
                 ff.create_snapshot(snapshot_name+"-"+str(num), volume_name, created_objects)
-                if ff.check_snapshot(snapshot_name+"-"+str(num), volume_name):
+                if ff.check_snapshot_exists(snapshot_name+"-"+str(num), volume_name):
                     LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
                 else:
                     LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
