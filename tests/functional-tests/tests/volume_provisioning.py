@@ -5,41 +5,17 @@ import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.localcluster]
 
+
 @pytest.fixture(scope='session', autouse=True)
-def values(request):
+def values(request, check_csi_operator):
     global data, driver_object, kubeconfig_value  # are required in every testcase
     kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
 
     data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
 
-    ff.cred_check(data)
-    ff.set_data(data)
-    operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
-    operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
-    if condition is True:
-        if not(operator_object.check(data["csiscaleoperator_name"])):
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
-    else:
-        operator.create()
-        operator.check()
-        scaleop.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
-        scaleop.check_nodes_available(
-            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
-        scaleop.check_nodes_available(
-            operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object.create()
-        val = operator_object.check()
-        if val is True:
-            LOGGER.info("Operator custom object is deployed succesfully")
-        else:
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                      {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
@@ -56,16 +32,6 @@ def values(request):
 
     driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod, data["id"],
                                    test_namespace, keep_objects, data["image_name"], data["pluginNodeSelector"])
-    ff.create_dir(data["volDirBasePath"])
-    # driver_object.create_test_ns(kubeconfig_value)
-    yield
-    # driver_object.delete_test_ns(kubeconfig_value)
-    # delete_dir(data, data["volDirBasePath"])
-    if condition is False and not(keep_objects):
-        operator_object.delete()
-        operator.delete()
-        if(ff.fileset_exists(data)):
-            ff.delete_fileset(data)
 
 
 #: Testcase that are expected to pass:

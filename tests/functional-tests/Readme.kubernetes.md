@@ -120,7 +120,8 @@ pytest -m "csioperator"
 ```
 pytest -m "volumeprovisioning and localcluster"
 ```
-like above format you can run followingtestcases
+like above format you can combine volumeprovisioning, volumesnapshot, localcluster and remotecluster markers.
+Few examples,
 ```
 pytest -m "volumeprovisioning and remotecluster"
 pytest -m "volumesnapshot and localcluster"
