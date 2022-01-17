@@ -97,6 +97,10 @@ const (
 	UserSpecifiedNodeClass      string = "nodeClass"
 	UserSpecifiedPermissions    string = "permissions"
 
+	UserSpecifiedStorageClassType string = "scType"
+	UserSpecifiedCompression      string = "compression"
+	UserSpecifiedTier             string = "tier"
+
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
 

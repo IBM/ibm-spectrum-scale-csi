@@ -42,6 +42,16 @@ const (
 	VOLCOPY_JOB_RUNNING     = 5
 	VOLCOPY_JOB_COMPLETED   = 6
 	VOLCOPY_JOB_NOT_STARTED = 7
+
+	STORAGECLASS_CLASSIC  = "0"
+	STORAGECLASS_ADVANCED = "1"
+
+	// Volume types
+	FILE_DIRECTORYBASED_VOLUME     = "0"
+	FILE_DEPENDENTFILESET_VOLUME   = "1"
+	FILE_INDEPENDENTFILESET_VOLUME = "2"
+
+//	BLOCK_FILESET_VOLUME = 3
 )
 
 type SnapCopyJobDetails struct {
@@ -63,14 +73,13 @@ type ScaleDriver struct {
 	ns  *ScaleNodeServer
 	cs  *ScaleControllerServer
 
-	connmap              map[string]connectors.SpectrumScaleConnector
-	cmap                 settings.ScaleSettingsConfigMap
-	primary              settings.Primary
-	reqmap               map[string]int64
+	connmap map[string]connectors.SpectrumScaleConnector
+	cmap    settings.ScaleSettingsConfigMap
+	primary settings.Primary
+	reqmap  map[string]int64
 
-	snapjobstatusmap     sync.Map
-	volcopyjobstatusmap  sync.Map
-
+	snapjobstatusmap    sync.Map
+	volcopyjobstatusmap sync.Map
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -472,3 +481,4 @@ func (driver *ScaleDriver) Run(endpoint string) {
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()
 }
+
