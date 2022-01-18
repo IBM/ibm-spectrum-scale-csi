@@ -173,12 +173,12 @@ jobs:
         - echo $COMMIT_ARG
         - COMMIT_ARG="--build-arg GIT_COMMIT=$(git log -1 --format=%h)"
         - echo $COMMIT_ARG
-        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile .
+        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       deploy:
         - provider: script
-          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -t ${IMAGE_FQN_DRIVER} -f build/multi-arch.Dockerfile --push .
+          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -t ${IMAGE_FQN_DRIVER} --push .
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
