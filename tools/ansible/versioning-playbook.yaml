@@ -46,7 +46,6 @@
       - hacks/csv_prep.py
       # Driver files.
       - ../driver/build/Dockerfile
-      - ../driver/build/multi-arch.Dockerfile
       - ../driver/cmd/ibm-spectrum-scale-csi/main.go
 
   - name: "Rebuild operator 'ClusterServiceVersion'"

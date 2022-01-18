@@ -1,18 +1,21 @@
-# Legacy docker build for IBM Spectrum Scale CSI Driver
+# docker build for IBM Spectrum Scale CSI Driver
 # usage: docker build -f build/Dockerfile -t my_image_tag .
+# Multi-arch build for IBM Spectrum Scale CSI Driver
+# usage: docker buildx build -f build/multi-arch.Dockerfile --platform=linux/amd64 -t my_image_tag .
 
-FROM golang:1.17 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.17 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
 COPY ./go.mod .
 COPY ./go.sum .
 RUN go mod download
 
 COPY . .
+ARG TARGETOS
+ARG TARGETARCH
 ARG GOFLAGS
 ARG GIT_COMMIT
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 RUN chmod +x _output/ibm-spectrum-scale-csi
-
 
 FROM registry.access.redhat.com/ubi8-minimal:latest
 LABEL name="IBM Spectrum Scale CSI driver" \
