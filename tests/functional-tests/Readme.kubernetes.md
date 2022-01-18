@@ -24,42 +24,38 @@ python3.7 -m pip install -r requirements.txt
 
   If changed `csiscaleoperators.csi.ibm.com_cr.yaml` configuration file is not present at default path `./operator/config/samples/`, `csiscaleoperators.csi.ibm.com_cr.yaml` file path location must be passwd with `--clusterconfig` parameter. For example :
 ```
-pytest  driver_test.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
+pytest  tests/volume_provisioning.py --clusterconfig /root/csiscaleoperators.csi.ibm.com_cr.yaml
 ```
 - For configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
 
 - If kubeconfig file is at not at `~/.kube/config` location, pass the correct location with `--kubeconfig` (optional).For example :
 ```
-pytest  driver_test.py --kubeconfig <kubeconfig_file_path>
+pytest  tests/volume_provisioning.py --kubeconfig <kubeconfig_file_path>
 ```
 - To run the tests in namespace other than ibm-spectrum-scale-csi-driver (default) , please use --testnamespace parameter 
 - If operator is not running in namespace ibm-spectrum-scale-csi-driver (default) , please use --operatornamespace with value where operator is already running 
 - If operator yaml file is not at ../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml (default), please use --operatoryaml with value of operator yaml file path
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :
 ```
-pytest  driver_test.py --html report.html
+pytest  tests/volume_provisioning.py --html report.html
 ```
 - For running full testsuite with the tests which take long time, use `--runslow` parameter ( these tests are being marked with @pytest.mark.slow).For example :
 ```
-pytest driver_test.py --runslow  #This will run all testcases including those marked with slow
-pytest driver_test.py::test_driver_sequential_pvc --runslow
+pytest tests/volume_provisioning.py --runslow  #This will run all testcases including those marked with slow
+pytest tests/volume_provisioning.py::test_driver_sequential_pvc --runslow
 ```
-### Run driver tests on primary cluster using driver_test.py as shown below -
+### Run volume provisioning tests on primary cluster using `tests/volume_provisioning.py` as shown below -
 ```
 cd ./tests/functional-tests/
 
 #Run all testcases in driver testsuite using:
-pytest  driver_test.py 
+pytest  tests/volume_provisioning.py
 
 #Run any specific testcase in testsuite using:
-pytest  driver_test.py::<test_name> 
+pytest  tests/volume_provisioning.py::<test_name> 
 
-eg. pytest  driver_test.py::test_driver_dynamic_pass_1 
+eg. pytest  tests/volume_provisioning.py::test_driver_dynamic_pass_1 
 
-#Run specific testcases using marker 
-pytest driver_test.py -m marker_name
-
-eg. pytest driver_test.py -m regression
 ```
                 
 ### Run operator tests using operator_test.py as shown below -
@@ -67,12 +63,12 @@ eg. pytest driver_test.py -m regression
 cd ./tests/functional-tests/
 
 #Run all testcases in operator testsuite using:
-pytest  operator_test.py 
+pytest  tests/operator_test.py 
 
 #Run any specific testcase in testsuite using:
-pytest  operator_test.py::<test_name> 
+pytest  tests/operator_test.py::<test_name> 
 
-eg. pytest  operator_test.py::test_operator_deploy 
+eg. pytest  tests/operator_test.py::test_operator_deploy 
 ```
 
 ### Run driver tests on remote cluster using remote_test.py as shown below -
@@ -80,17 +76,12 @@ eg. pytest  operator_test.py::test_operator_deploy
 cd ./tests/functional-tests/
 
 #Run all testcases in driver testsuite using:
-pytest  remote_test.py 
+pytest  tests/remotecluster_volume_provisioning.py
 
 #Run any specific testcase in testsuite using:
-pytest  remote_test.py::<test_name> 
+pytest  tests/remotecluster_volume_provisioning.py::<test_name> 
 
-eg. pytest  remote_test.py::test_driver_dynamic_pass_1
-```
-
-### Run Stress/Load testcases using stresstest marker and runslow
-```
-pytest driver_test.py -m "stresstest" --runslow --workers 6 #(ensure driver is already deployed before using --workers)
+eg. pytest  tests/remotecluster_volume_provisioning.py::test_driver_dynamic_pass_1
 ```
 
 ### List available Driver & Operator tests 
