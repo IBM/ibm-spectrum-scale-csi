@@ -1358,13 +1358,31 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 
 	err := s.doHTTP(setPolicyURL, "PUT", &setPolicyResponse, policy)
 	if err != nil {
-		glog.Errorf("Unable to set filesystem policy: %v", setPolicyResponse.Status.Message)
+		glog.Errorf("unable to send filesystem policy: %v", setPolicyResponse.Status.Message)
 		return err
 	}
 
 	err = s.waitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("unable to set policy rule %s for filesystem %s: %v", policy.Policy, filesystemName, err)
+		glog.Errorf("setting policy rule %s for filesystem %s failed with error %v", policy.Policy, filesystemName, err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *spectrumRestV2) GetPoolInfoFromName(storagePoolName string, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 GetPoolInfoFromName. name %s, filesystem %s", storagePoolName, filesystemName)
+
+	poolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, storagePoolName))
+	getPoolResponse := GenericResponse{}
+
+	err := s.doHTTP(poolURL, "GET", &getPoolResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get pool: %s info %v", storagePoolName, getPoolResponse.Status.Message)
+		if strings.Contains(getPoolResponse.Status.Message, "Invalid value in 'storagePool'") {
+			return fmt.Errorf("invalid storagePool '%s' specified for filesystem %s", storagePoolName, filesystemName)
+		}
 		return err
 	}
 

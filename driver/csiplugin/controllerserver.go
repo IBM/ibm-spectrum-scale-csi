@@ -642,6 +642,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if scaleVol.IsFilesetBased && scaleVol.StoragePool != "" {
+
+		if err := scaleVol.Connector.GetPoolInfoFromName(scaleVol.StoragePool, scaleVol.VolBackendFs); err != nil {
+			return nil, err
+		}
+
 		rule := "RULE 'P%sR%d' SET POOL '%s' REPLICATE(%d) WHERE FILESET_NAME LIKE 'pvc-%%-P%s-R%d%%'"
 		policy := connectors.Policy{}
 

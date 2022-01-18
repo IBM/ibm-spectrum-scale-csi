@@ -67,6 +67,7 @@ type SpectrumScaleConnector interface {
 	GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error)
 	GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error)
 	SetFilesystemPolicy(policy *Policy, filesystemName string) error
+	GetPoolInfoFromName(storagePoolName string, filesystemName string) error
 	IsValidNodeclass(nodeclass string) (bool, error)
 	IsSnapshotSupported() (bool, error)
 
