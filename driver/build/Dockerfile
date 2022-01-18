@@ -8,11 +8,12 @@ COPY ./go.sum .
 RUN go mod download
 
 COPY . .
+ARG TARGETOS
+ARG TARGETARCH
 ARG GOFLAGS
 ARG GIT_COMMIT
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 RUN chmod +x _output/ibm-spectrum-scale-csi
-
 
 FROM registry.access.redhat.com/ubi8-minimal:latest
 LABEL name="IBM Spectrum Scale CSI driver" \
