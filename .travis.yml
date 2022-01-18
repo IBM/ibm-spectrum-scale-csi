@@ -170,13 +170,15 @@ jobs:
         - go mod vendor
       script:
         - go test -v -race ./...
+        - echo $COMMIT_ARG
         - COMMIT_ARG="--build-arg GIT_COMMIT=$(git log -1 --format=%h)"
-        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile .
+        - echo $COMMIT_ARG
+        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       deploy:
         - provider: script
-          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile -t ${IMAGE_FQN_DRIVER} --push .
+          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -t ${IMAGE_FQN_DRIVER} --push .
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
@@ -191,6 +193,7 @@ jobs:
         - operator-sdk version
         - cd ${BUILD_DIR_OPERATOR}
       script:
+        - echo $COMMIT_ARG
         - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
