@@ -5,11 +5,11 @@ import logging
 import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-import scale_operator as scaleop
-from utils.scale_operator_object_function import randomStringDigits, randomString, check_pod_image
-import utils.fileset_functions as ff
+import ibm_spectrum_scale_csi.scale_operator as scaleop
+from ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function import randomStringDigits, randomString, check_pod_image
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
-
+pytestmark = pytest.mark.csioperator
 
 @pytest.fixture(scope='session')
 def _values(request):

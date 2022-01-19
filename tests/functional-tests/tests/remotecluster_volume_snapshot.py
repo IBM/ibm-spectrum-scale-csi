@@ -1,50 +1,26 @@
 import copy
 import logging
 import pytest
-import utils.fileset_functions as ff
-import scale_operator as scaleop
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
+import ibm_spectrum_scale_csi.scale_operator as scaleop
 LOGGER = logging.getLogger()
-
+pytestmark = [pytest.mark.volumesnapshot, pytest.mark.remotecluster]
 
 @pytest.fixture(scope='session', autouse=True)
-def values(request):
+def values(request, check_csi_operator):
     global data, remote_data, snapshot_object, kubeconfig_value  # are required in every testcase
     kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
 
     data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not("remote" in data):
         LOGGER.error("remote data is not provided in cr file")
         assert False
 
-    remote_data = get_remote_data(data)
-    ff.cred_check(data)
+    remote_data = scaleop.get_remote_data(data)
     ff.cred_check(remote_data)
     ff.set_data(remote_data)
 
-    operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
-    operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
-    if condition is True:
-        if not(operator_object.check(data["csiscaleoperator_name"])):
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
-    else:
-        operator.create()
-        operator.check()
-        scaleop.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
-        scaleop.check_nodes_available(
-            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
-        scaleop.check_nodes_available(
-            operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object.create()
-        val = operator_object.check()
-        if val is True:
-            LOGGER.info("Operator custom object is deployed succesfully")
-        else:
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                      {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
@@ -55,45 +31,6 @@ def values(request):
     snapshot_object = scaleop.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
                                        number_of_snapshots, data["image_name"], remote_data["id"], data["pluginNodeSelector"])
     ff.create_dir(remote_data["volDirBasePath"])
-    yield
-    if condition is False and not(keep_objects):
-        operator_object.delete()
-        operator.delete()
-        if(ff.fileset_exists(data)):
-            ff.delete_fileset(data)
-
-
-def get_remote_data(data_passed):
-    remote_data = copy.deepcopy(data_passed)
-    remote_data["remoteFs_remote_name"] = ff.get_remoteFs_remotename(data)
-    if remote_data["remoteFs_remote_name"] is None:
-        LOGGER.error("Unable to get remoteFs , name on remote cluster")
-        assert False
-
-    remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
-    remote_data["id"] = remote_data["remoteid"]
-    remote_data["port"] = remote_data["remote_port"]
-    for cluster in remote_data["clusters"]:
-        if cluster["id"] == remote_data["remoteid"]:
-            remote_data["guiHost"] = cluster["restApi"][0]["guiHost"]
-            remote_sec_name = cluster["secrets"]
-            remote_data["username"] = remote_data["remote_username"][remote_sec_name]
-            remote_data["password"] = remote_data["remote_password"][remote_sec_name]
-
-    remote_data["volDirBasePath"] = remote_data["r_volDirBasePath"]
-    remote_data["parentFileset"] = remote_data["r_parentFileset"]
-    remote_data["gid_name"] = remote_data["r_gid_name"]
-    remote_data["uid_name"] = remote_data["r_uid_name"]
-    remote_data["gid_number"] = remote_data["r_gid_number"]
-    remote_data["uid_number"] = remote_data["r_uid_number"]
-    remote_data["inodeLimit"] = remote_data["r_inodeLimit"]
-    # for get_mount_point function
-    remote_data["type_remote"] = {"username": data_passed["username"],
-                                  "password": data_passed["password"],
-                                  "port": data_passed["port"],
-                                  "guiHost": data_passed["guiHost"]}
-
-    return remote_data
 
 
 @pytest.mark.regression

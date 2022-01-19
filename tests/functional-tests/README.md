@@ -107,36 +107,36 @@ eg. kubectl apply -f csi-test-pod.yaml
 ```
 
 #Run all testcases in driver testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  tests/volume_provisioning.py --html=/data/<report-name>.html
 
 #Run any specific testcase in testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py::<test_name> --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  tests/volume_provisioning.py::<test_name> --html=/data/<report-name>.html
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest  driver_test.py::test_driver_dynamic_pass_1 --html=/data/<report-name>.html
+eg. kubectl exec -it <csi-test-pod-name> -- pytest  tests/volume_provisioning.py::test_driver_dynamic_pass_1 --html=/data/<report-name>.html
 ```
                 
 ### Run operator tests using operator_test.py as shown below -
 ```       
 
 #Run all testcases in operator testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  tests/operator_test.py --html=/data/<report-name>.html
 
 #Run any specific testcase in testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py::<test_name>  --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  tests/operator_test.py::<test_name>  --html=/data/<report-name>.html
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest  operator_test.py::test_operator_deploy --html=/data/<report-name>.html
+eg. kubectl exec -it <csi-test-pod-name> -- pytest  tests/operator_test.py::test_operator_deploy --html=/data/<report-name>.html
 ```
 
 ### Run driver tests on remote cluster using remote_test.py as shown below -
 ```
 
 #Run all testcases in driver testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  tests/remotecluster_volume_provisioning.py --html=/data/<report-name>.html
 
 #Run any specific testcase in testsuite using:
-kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::<test_name> --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest  tests/remotecluster_volume_provisioning.py::<test_name> --html=/data/<report-name>.html
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest  remote_test.py::test_driver_dynamic_pass_1 --html=/data/<report-name>.html
+eg. kubectl exec -it <csi-test-pod-name> -- pytest  tests/remotecluster_volume_provisioning.py::test_driver_dynamic_pass_1 --html=/data/<report-name>.html
 ```
 
 ### List available Driver & Operator tests 
@@ -148,18 +148,34 @@ kubectl exec -it <csi-test-pod-name> -- pytest --collect-only
 For example :
 
 ```
-kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py --runslow --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
-kubectl exec -it <csi-test-pod-name> -- pytest snapshot_test.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --html=/data/<report-name>.html
+kubectl exec -it <csi-test-pod-name> -- pytest tests/volume_snapshot.py --runslow --html=/data/<report-name>.html   #This will run all testcases including those marked with slow
+kubectl exec -it <csi-test-pod-name> -- pytest tests/volume_snapshot.py::test_snapshot_dynamic_multiple_snapshots_256 --runslow --html=/data/<report-name>.html
 ```
-### Run specific testcases using marker
-```
-pytest driver_test.py -m marker_name
 
-eg. kubectl exec -it <csi-test-pod-name> -- pytest driver_test.py -m regression --html=/data/<report-name>.html
+### Running Testcases using markers
+1. Running all testcases except operator testcases
 ```
-### Run Stress/Load testcases using stresstest marker and runslow
+kubectl exec -it <csi-test-pod-name> -- pytest -m "volumeprovisioning or volumesnapshot"
 ```
-pytest driver_test.py -m "stresstest" --runslow --workers 6 #(ensure driver is already deployed before using --workers)
-
-eg. kubectl exec -it <csi-test-pod-name> -- pytest driver_test.py -m "stresstest" --runslow --workers 6 --html=/data/<report-name>.html
+2. Running only local cluster testcases
 ```
+kubectl exec -it <csi-test-pod-name> -- pytest -m "localcluster"
+```
+3. Running only remove cluster testcases
+```
+kubectl exec -it <csi-test-pod-name> -- pytest -m "remotecluster"
+```
+4. Running only operator testcases
+```
+kubectl exec -it <csi-test-pod-name> -- pytest -m "csioperator"
+```
+5. Running only localcluster volumeprovisioning testcases
+```
+kubectl exec -it <csi-test-pod-name> -- pytest -m "volumeprovisioning and localcluster"
+```
+like above format you can combine volumeprovisioning, volumesnapshot, localcluster and remotecluster markers.
+Few examples,
+```
+eg. kubectl exec -it <csi-test-pod-name> -- pytest -m "volumeprovisioning and remotecluster"
+eg. kubectl exec -it <csi-test-pod-name> -- pytest -m "volumesnapshot and localcluster"
+eg. kubectl exec -it <csi-test-pod-name> -- pytest -m "volumesnapshot and remotecluster"
