@@ -33,7 +33,7 @@ env:
     - IMAGE_FQN_OPERATOR=${IMAGE_REPO_OPERATOR}:${IMAGE_TAG}
     - IMAGE_VERSION=${IMAGE_TAG}
     # Add image label to expire nightlies
-    - COMMIT_ARG= "--build-arg GIT_COMMIT=$(git log -1 --format=%h)"
+    - COMMIT_ARG="--build-arg GIT_COMMIT=$(git log -1 --format=%h)"
     - IMAGE_LABEL=$(
         if [[ $TRAVIS_EVENT_TYPE == 'cron' ]];
         then
@@ -170,12 +170,12 @@ jobs:
         - go mod vendor
       script:
         - go test -v -race ./...
-        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile .
+        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       deploy:
         - provider: script
-          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -f build/multi-arch.Dockerfile -t ${IMAGE_FQN_DRIVER} --push .
+          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} ${COMMIT_ARG} -t ${IMAGE_FQN_DRIVER} --push .
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
