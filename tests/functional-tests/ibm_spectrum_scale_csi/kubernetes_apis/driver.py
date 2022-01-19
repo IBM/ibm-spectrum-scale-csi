@@ -358,7 +358,7 @@ def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objec
         assert False
 
 
-def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
+def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created_objects):
     """
     calculates bound time for pvc and checks fileset created by
     pvc on spectrum scale
@@ -378,8 +378,9 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
 
-    if not(ff.created_fileset_exists(volume_name)):
-        LOGGER.error(f'PVC Check : Fileset {volume_name} doesn\'t exists')
+    fileset_name = get_filesetname_from_pv(volume_name, created_objects)
+    if not(ff.created_fileset_exists(fileset_name)):
+        LOGGER.error(f'PVC Check : Fileset {fileset_name} doesn\'t exists')
         return False
 
     if not(check_pvc_size(pvc_name, pvc_values["storage"])):
@@ -393,11 +394,11 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
         elif "filesetType" in storage_class_parameters and storage_class_parameters["filesetType"] == "dependent":
             inode = 0
 
-    if not(ff.check_fileset_quota(volume_name, pvc_values["storage"], inode)):
-        LOGGER.error(f'PVC Check : Fileset {volume_name} quota does not match requested storage or maxinode is not as expected')
+    if not(ff.check_fileset_quota(fileset_name, pvc_values["storage"], inode)):
+        LOGGER.error(f'PVC Check : Fileset {fileset_name} quota does not match requested storage or maxinode is not as expected')
         return False
 
-    LOGGER.info(f'PVC Check : Fileset {volume_name} has been created successfully')
+    LOGGER.info(f'PVC Check : Fileset {fileset_name} has been created successfully')
     return True
 
 
@@ -468,7 +469,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                 asserting the test')
                 cleanup.clean_with_created_objects(created_objects)
                 assert False
-            if(pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values)):
+            if(pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created_objects)):
                 return True
             cleanup.clean_with_created_objects(created_objects)
             assert False
@@ -998,14 +999,41 @@ def get_pv_for_pvc(pvc_name, created_objects):
     return api_response.spec.volume_name
 
 
+def get_filesetname_from_pv(pv_name, created_objects):
+    """
+    return filesetname from VolumeHandle of PV
+    """
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_persistent_volume(
+            name=pv_name, pretty=True)
+        LOGGER.debug(str(api_response))
+        LOGGER.info(f'PV Check : Checking fileset name from PV {pv_name}')
+        volume_handle = api_response.spec.csi.volume_handle
+        volume_handle = volume_handle.split(";")
+        for resource in volume_handle:
+            if resource[:12] == "filesetName=":
+                LOGGER.info(f'PV Check : fileset name for PV {pv_name} is {str(resource[12:])}')
+                return str(resource[12:])
+        LOGGER.error(f'Not able to find fileset name for PV {pv_name}')
+        LOGGER.error(str(api_response))
+    except ApiException:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
+        LOGGER.info(f'PV {pv_name} does not exists on cluster')
+
+    cleanup.clean_with_created_objects(created_objects)
+    assert False
+
 def check_permissions_for_pvc(pvc_name, permissions, created_objects):
     """
     get pv and verify permissions for pv
     """
     pv_name = get_pv_for_pvc(pvc_name, created_objects)
+    fileset_name = get_filesetname_from_pv(pv_name, created_objects)
     if permissions == "":  # assign default permissions 771
         permissions = "771"
-    status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+    status = ff.get_and_verify_fileset_permissions(fileset_name, permissions)
     if status is True:
         LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
     else:

@@ -146,9 +146,28 @@ def delete_pvc(pvc_name, created_objects):
         assert False
 
     volume_name = api_response.spec.volume_name
+    fileset_name = None
+    try:
+        api_response = api_instance.read_persistent_volume(
+            name=volume_name, pretty=True)
+        LOGGER.debug(str(api_response))
+        volume_handle = api_response.spec.csi.volume_handle
+        volume_handle = volume_handle.split(";")
+        for resource in volume_handle:
+            if resource[:12] == "filesetName=":
+                fileset_name =  str(resource[12:])
+    except ApiException:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
+        LOGGER.info(f'PV {pv_name} does not exists on cluster')
 
+    if fileset_name is None:
+        LOGGER.error(f"Not able to find fileset name for PV {volume_name}")
+        clean_with_created_objects(created_objects)
+        assert False
+    
     if keep_objects:
-        return volume_name
+        return fileset_name
 
     api_instance = client.CoreV1Api()
     try:
@@ -162,7 +181,7 @@ def delete_pvc(pvc_name, created_objects):
             created_objects["clone_pvc"].remove(pvc_name)
         else:
             created_objects["pvc"].remove(pvc_name)
-        return volume_name
+        return fileset_name
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->delete_namespaced_persistent_volume_claim: {e}")

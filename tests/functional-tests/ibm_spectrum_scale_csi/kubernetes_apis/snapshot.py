@@ -4,6 +4,7 @@ import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
+import ibm_spectrum_scale_csi.kubernetes_apis.driver as d
 from ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions import clean_with_created_objects
 
 LOGGER = logging.getLogger()
@@ -247,34 +248,19 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
         clean_with_created_objects(created_objects)
         assert False
 
-    volume_name = get_pv_name(pvc_name, created_objects)
+    volume_name = d.get_pv_for_pvc(pvc_name, created_objects)
+    fileset_name = d.get_filesetname_from_pv(volume_name, created_objects)
 
-    if ff.check_snapshot_exists(snapshot_name, volume_name):
-        LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
+    if ff.check_snapshot_exists(snapshot_name, fileset_name):
+        LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")
     else:
-        LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
+        LOGGER.error(f"snapshot {snapshot_name} does not exists for {fileset_name}")
         clean_with_created_objects(created_objects)
         assert False
 
     if body_params["deletionPolicy"] == "Retain":
         created_objects["vscontent"].append(snapcontent_name)
-        created_objects["scalesnapshot"].append([snapshot_name, volume_name])
-
-
-def get_pv_name(pvc_name, created_objects):
-    api_instance = client.CoreV1Api()
-    try:
-        api_response = api_instance.read_namespaced_persistent_volume_claim(
-            name=pvc_name, namespace=namespace_value, pretty=True)
-        LOGGER.debug(str(api_response))
-    except ApiException as e:
-        LOGGER.error(
-            f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
-        LOGGER.error(f"PVC {pvc_name} does not exists on the cluster")
-        clean_with_created_objects(created_objects)
-        assert False
-
-    return api_response.spec.volume_name
+        created_objects["scalesnapshot"].append([snapshot_name, fileset_name])
 
 
 def check_snapshot_status(vs_name):

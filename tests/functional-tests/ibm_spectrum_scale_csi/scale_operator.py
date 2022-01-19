@@ -608,7 +608,8 @@ class Snapshot():
             d.create_file_inside_pod(value_pod, pod_name, created_objects)
 
             snapshot_name = d.get_random_name("snapshot")
-            volume_name = snapshot.get_pv_name(pvc_name, created_objects)
+            volume_name = d.get_pv_for_pvc(pvc_name, created_objects)
+            fileset_name = d.get_filesetname_from_pv(volume_name, created_objects)
 
             FSUID = ff.get_FSUID()
             cluster_id = self.cluster_id
@@ -616,15 +617,15 @@ class Snapshot():
 
             vs_name = d.get_random_name("vs")
             for num in range(0, number_of_snapshots):
-                ff.create_snapshot(snapshot_name+"-"+str(num), volume_name, created_objects)
-                if ff.check_snapshot_exists(snapshot_name+"-"+str(num), volume_name):
-                    LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
+                ff.create_snapshot(snapshot_name+"-"+str(num), fileset_name, created_objects)
+                if ff.check_snapshot_exists(snapshot_name+"-"+str(num), fileset_name):
+                    LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")
                 else:
-                    LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
+                    LOGGER.error(f"snapshot {snapshot_name} does not exists for {fileset_name}")
                     cleanup.clean_with_created_objects(created_objects)
                     assert False
 
-                snapshot_handle = cluster_id+';'+FSUID+';'+volume_name+';'+snapshot_name+"-"+str(num)
+                snapshot_handle = cluster_id+';'+FSUID+';'+fileset_name+';'+snapshot_name+"-"+str(num)
                 body_params = {"deletionPolicy": "Retain", "snapshotHandle": snapshot_handle}
                 snapshot.create_vs_content(vs_content_name+"-"+str(num), vs_name+"-"+str(num), body_params, created_objects)
                 snapshot.check_vs_content(vs_content_name+"-"+str(num))
@@ -651,7 +652,7 @@ class Snapshot():
                     if val is True:
                         d.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         d.check_pod(value_pod, snap_pod_name, created_objects)
-                        d.check_file_inside_pod(value_pod, snap_pod_name, created_objects, volume_name)
+                        d.check_file_inside_pod(value_pod, snap_pod_name, created_objects, fileset_name)
                         cleanup.delete_pod(snap_pod_name, created_objects)
                         cleanup.check_pod_deleted(snap_pod_name, created_objects)
                     vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
