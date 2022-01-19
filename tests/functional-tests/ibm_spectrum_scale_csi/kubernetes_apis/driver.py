@@ -57,8 +57,9 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_metadata = client.V1ObjectMeta(name=sc_name)
 
     storage_class_parameters = {}
-    list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
-                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions"]
+    list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
+                       "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
+                       "scType", "compression", "tier"]
     for sc_parameter in list_parameters:
         if sc_parameter in values:
             storage_class_parameters[sc_parameter] = values[sc_parameter]
@@ -377,6 +378,10 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
     if 'storage_class_parameters' in globals():
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
+        if check_key(storage_class_parameters, "scType") and storage_class_parameters["scType"] == "Advanced":
+            if not(ff.created_fileset_exists(namespace_value)):
+                LOGGER.error(f'PVC Check : Fileset {namespace_value} doesn\'t exists for scType=Advanced')
+                return False
 
     fileset_name = get_filesetname_from_pv(volume_name, created_objects)
     if not(ff.created_fileset_exists(fileset_name)):
@@ -392,6 +397,8 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
         if "inodeLimit" in storage_class_parameters:
             inode = storage_class_parameters["inodeLimit"]
         elif "filesetType" in storage_class_parameters and storage_class_parameters["filesetType"] == "dependent":
+            inode = 0
+        elif "scType" in storage_class_parameters and storage_class_parameters["scType"] == "Advanced":
             inode = 0
 
     if not(ff.check_fileset_quota(fileset_name, pvc_values["storage"], inode)):

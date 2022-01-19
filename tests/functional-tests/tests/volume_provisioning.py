@@ -2985,3 +2985,9 @@ def test_driver_volume_cloning_fail_10():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "5Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "new PVC request must be greater than or equal in size"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+@pytest.mark.regression
+def test_driver_cg_pass_1():
+    value_sc = {"volBackendFs": data["primaryFs"]} ,scType: "Advanced"}
+    driver_object.test_dynamic(value_sc)
