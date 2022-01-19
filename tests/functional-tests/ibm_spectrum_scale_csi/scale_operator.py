@@ -4,12 +4,12 @@ import os.path
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-import utils.scale_operator_function as scale_function
-import utils.scale_operator_object_function as ob
-import utils.driver as d
-import utils.snapshot as snapshot
-import utils.fileset_functions as ff
-import utils.cleanup_functions as cleanup
+import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_function as scale_function
+import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function as ob
+import ibm_spectrum_scale_csi.kubernetes_apis.driver as d
+import ibm_spectrum_scale_csi.kubernetes_apis.snapshot as snapshot
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
+import ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions as cleanup
 LOGGER = logging.getLogger()
 
 
@@ -617,7 +617,7 @@ class Snapshot():
             vs_name = d.get_random_name("vs")
             for num in range(0, number_of_snapshots):
                 ff.create_snapshot(snapshot_name+"-"+str(num), volume_name, created_objects)
-                if ff.check_snapshot(snapshot_name+"-"+str(num), volume_name):
+                if ff.check_snapshot_exists(snapshot_name+"-"+str(num), volume_name):
                     LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
                 else:
                     LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
@@ -862,6 +862,37 @@ def read_operator_data(clusterconfig, namespace, kubeconfig=None):
 
     return data
 
+def get_remote_data(data_passed):
+    remote_data = copy.deepcopy(data_passed)
+    remote_data["remoteFs_remote_name"] = ff.get_remoteFs_remotename(copy.deepcopy(remote_data))
+    if remote_data["remoteFs_remote_name"] is None:
+        LOGGER.error("Unable to get remoteFs , name on remote cluster")
+        assert False
+
+    remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
+    remote_data["id"] = remote_data["remoteid"]
+    remote_data["port"] = remote_data["remote_port"]
+    for cluster in remote_data["clusters"]:
+        if cluster["id"] == remote_data["remoteid"]:
+            remote_data["guiHost"] = cluster["restApi"][0]["guiHost"]
+            remote_sec_name = cluster["secrets"]
+            remote_data["username"] = remote_data["remote_username"][remote_sec_name]
+            remote_data["password"] = remote_data["remote_password"][remote_sec_name]
+
+    remote_data["volDirBasePath"] = remote_data["r_volDirBasePath"]
+    remote_data["parentFileset"] = remote_data["r_parentFileset"]
+    remote_data["gid_name"] = remote_data["r_gid_name"]
+    remote_data["uid_name"] = remote_data["r_uid_name"]
+    remote_data["gid_number"] = remote_data["r_gid_number"]
+    remote_data["uid_number"] = remote_data["r_uid_number"]
+    remote_data["inodeLimit"] = remote_data["r_inodeLimit"]
+    # for get_mount_point function
+    remote_data["type_remote"] = {"username": data_passed["username"],
+                                  "password": data_passed["password"],
+                                  "port": data_passed["port"],
+                                  "guiHost": data_passed["guiHost"]}
+
+    return remote_data
 
 def get_cmd_values(request):
     kubeconfig_value = request.config.option.kubeconfig
