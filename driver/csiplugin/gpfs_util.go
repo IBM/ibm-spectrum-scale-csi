@@ -62,7 +62,7 @@ type scaleVolume struct {
 	NodeClass          string                            `json:"nodeClass"`
 	StorageClassType   string                            `json:"storageClassType"`
 	ConsistencyGroup   string                            `json:"consistencyGroup"`
-	Compression        bool                              `json:"compression"`
+	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 }
 
@@ -141,7 +141,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.NodeClass = ""
 	scaleVol.ConsistencyGroup = ""
 	scaleVol.StorageClassType = ""
-	scaleVol.Compression = false
+	scaleVol.Compression = ""
 	scaleVol.Tier = ""
 
 	if isSCTypeSpecified && storageClassType == "" {
@@ -153,19 +153,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "storageClassType must be \""+storageClassAdvanced+"\" if specified.")
 		}
 		scaleVol.StorageClassType = storageClassType
-
-		if isCompressionSpecified && compression == "" {
-			isCompressionSpecified = false
-		}
-		if isCompressionSpecified && (compression == "True" || compression == "true") {
-			scaleVol.Compression = true
-		}
-		if isTierSpecified && tier == "" {
-			isTierSpecified = false
-		}
-		if isTierSpecified {
-			scaleVol.Tier = tier
-		}
 	}
 
 	if fsSpecified && volBckFs == "" {
@@ -263,6 +250,25 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 	if fsTypeSpecified || isSCTypeSpecified {
 		scaleVol.IsFilesetBased = true
+	}
+
+	if isCompressionSpecified && compression == "" {
+		isCompressionSpecified = false
+	}
+	if isTierSpecified && tier == "" {
+		isTierSpecified = false
+	}
+	if scaleVol.IsFilesetBased {
+		if isCompressionSpecified {
+			scaleVol.Compression = compression
+		}
+		if isTierSpecified {
+			scaleVol.Tier = tier
+		}
+	} else {
+		if isCompressionSpecified || isTierSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"compression\" and \"tier\" are not supported in storageClass for lightweight volumes")
+		}
 	}
 
 	/* Get UID/GID */
