@@ -33,7 +33,7 @@ import (
 const (
 	dependentFileset     = "dependent"
 	independentFileset   = "independent"
-	storageClassAdvanced = "Advanced"
+	storageClassAdvanced = "advanced"
 )
 
 type scaleVolume struct {

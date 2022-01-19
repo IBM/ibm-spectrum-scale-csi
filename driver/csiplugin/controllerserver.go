@@ -1199,10 +1199,12 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(sLinkRelPath)
 			if pvName == FilesetName {
-				// before deletion of fileset get its parentId if storageClassType=STORAGECLASS_ADVANCED
-				parentId := 0
+				// before deletion of fileset get its inodeSpace if storageClassType=STORAGECLASS_ADVANCED
+				// this will help to identify if there are one or more dependent filesets for same inodeSpace
+				// which is shared with independent fileset
+				inodeSpace := 0
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					// Save parent ID
+					// Save inodeSpace information
 					filesetDetails, err := conn.ListFileset(FilesystemName, FilesetName)
 					if err != nil {
 						if strings.Contains(err.Error(), "EFSSG0072C") ||
@@ -1212,8 +1214,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 						}
 						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
 					}
-					parentId = filesetDetails.Config.ParentId
-				
+					inodeSpace = filesetDetails.Config.InodeSpace
 				}
 
 				delVolResponse, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
@@ -1223,10 +1224,10 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 					glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-					filesets, err := conn.GetFilesetsParentId(FilesystemName, parentId)
+					filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
 					if err == nil {
 						found := false
-						if len(filesets) != 0 {
+						if len(filesets) > 1 {
 							found = true
 							glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
 						}

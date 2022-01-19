@@ -652,10 +652,10 @@ func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) 
 	return getFilesetResponse.Filesets[0], nil
 }
 
-func (s *spectrumRestV2) GetFilesetsParentId(filesystemName string, parentId int) ([]Fileset_v2, error) {
+func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
 	glog.V(4).Infof("rest_v2 ListAllFilesets. filesystem: %s", filesystemName)
 
-	getFilesetsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.parentId=%d", filesystemName, parentId))
+	getFilesetsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.inodeSpace=%d", filesystemName, inodeSpace))
 	getFilesetsResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(getFilesetsURL, "GET", &getFilesetsResponse, nil)
