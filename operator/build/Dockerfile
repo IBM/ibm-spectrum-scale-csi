@@ -1,4 +1,4 @@
-# Build the manager binary
+# docker build for IBM Spectrum Scale CSI Operator
 FROM --platform=$BUILDPLATFORM golang:1.17 as builder
 
 WORKDIR /workspace
@@ -9,15 +9,11 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-#ENV CR_YAML=/usr/local/etc/csi.ibm.com_csiscaleoperators_cr.yaml
-
 # Copy the go source
 COPY main.go main.go
 COPY hacks/health_check.go health_check.go
 COPY api/ api/
 COPY controllers/ controllers/
-#COPY ./config/crd/bases/csi.ibm.com_csiscaleoperators_cr.yaml ${CR_YAML}
-#RUN chmod 0444 ${CR_YAML}
 
 # Build dummy health checker
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o health_check.sh health_check.go
@@ -28,15 +24,25 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -o manager main.go
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
+ARG version=2.5.0
+ARG commit
+ARG build_date
+
+ENV version $version
+ENV commit $commit
+ENV build_date $build_date
 
 LABEL name="IBM Spectrum Scale CSI Operator" \
       vendor="ibm" \
-      version="2.5.0" \
+      version=$version \
       release="1" \
-      run='docker run ibm-spectrum-scale-csi-operator' \
       summary="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
       description="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
-      git_commit=$GIT_COMMIT
+      maintainers="IBM Spectrum Scale" \
+      build-date=$build_date \
+      vcs-ref=$commit \
+      vcs-type="git" \
+      url="https://www.ibm.com/docs/en/spectrum-scale-csi"
 
 COPY licenses /licenses
 COPY --from=builder --chmod=0771 /workspace/health_check.sh .
