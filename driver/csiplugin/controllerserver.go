@@ -304,7 +304,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		createDataDir := false
 		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir)
 		if err != nil {
-                       	glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
+		       	glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
 		}
 		glog.V(4).Infof("finished creation of independent fileset for new storageClass with fileset name: [%v]", indepFilesetName)
@@ -315,31 +315,31 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		opt[connectors.UserSpecifiedParentFset] = indepFilesetName
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
-                filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir)
-                if err != nil {
-                        glog.Errorf("volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
-                        return "", err
-                }
+		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir)
+		if err != nil {
+			glog.Errorf("volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
+			return "", err
+		}
 		glog.V(4).Infof("finished creation of dependent fileset for new storageClass with fileset name: [%v]", scVol.VolName)
 		return filesetPath, nil
 	} else {
 		// Create volume for classic storageClass
 		// Check if FileSetType not specified
-	        if scVol.FilesetType != "" {
-        	        opt[connectors.UserSpecifiedFilesetType] = scVol.FilesetType
-	        }
+		if scVol.FilesetType != "" {
+			opt[connectors.UserSpecifiedFilesetType] = scVol.FilesetType
+		}
 		if scVol.ParentFileset != "" {
-	                opt[connectors.UserSpecifiedParentFset] = scVol.ParentFileset
-        	}
+			opt[connectors.UserSpecifiedParentFset] = scVol.ParentFileset
+		}
 
-                // Create fileset
+		// Create fileset
 		glog.V(4).Infof("creating fileset for classic storageClass with fileset name: [%v]", scVol.VolName)
 		createDataDir := true
-                filesetPath, err := cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir)
-                if err != nil {
-                        glog.Errorf("volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
-                        return "", err
-                }
+		filesetPath, err := cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir)
+		if err != nil {
+			glog.Errorf("volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
+			return "", err
+		}
 		glog.V(4).Infof("finished creation of fileset for classic storageClass with fileset name: [%v]", scVol.VolName)
 		return filesetPath, nil
 	}
@@ -1102,6 +1102,35 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	return sIdMem, nil
 }
 
+func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (*csi.DeleteVolumeResponse, error) {
+	//Check if fileset exist has any snapshot
+	snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0072C") ||
+			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+			glog.V(4).Infof("fileset seems already deleted - %v", err)
+			return &csi.DeleteVolumeResponse{}, nil
+		}
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+	}
+
+	if len(snapshotList) > 0 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+	}
+	glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", FilesetName)
+
+	err = conn.DeleteFileset(FilesystemName, FilesetName)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0072C") ||
+			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+			glog.V(4).Infof("fileset seems already deleted - %v", err)
+			return &csi.DeleteVolumeResponse{}, nil
+		}
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+	}
+	return nil, nil
+}
+
 func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	glog.V(3).Infof("DeleteVolume [%v]", req)
 
@@ -1170,30 +1199,50 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(sLinkRelPath)
 			if pvName == FilesetName {
-				//Check if fileset exist has any snapshot
-				snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
-				if err != nil {
-					if strings.Contains(err.Error(), "EFSSG0072C") ||
+				// before deletion of fileset get its parentId if storageClassType=STORAGECLASS_ADVANCED
+				parentId := 0
+				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+					// Save parent ID
+					filesetDetails, err := conn.ListFileset(FilesystemName, FilesetName)
+					if err != nil {
+						if strings.Contains(err.Error(), "EFSSG0072C") ||
 						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-						glog.V(4).Infof("fileset seems already deleted - %v", err)
-						return &csi.DeleteVolumeResponse{}, nil
+							glog.V(4).Infof("fileset seems already deleted - %v", err)
+							return &csi.DeleteVolumeResponse{}, nil
+						}
+						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
 					}
-					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+					parentId = filesetDetails.Config.ParentId
+				
 				}
 
-				if len(snapshotList) > 0 {
-					return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+				delVolResponse, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
+				if !(delVolResponse == nil && err == nil) {
+					return delVolResponse, err
 				}
-				glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteVolume", FilesetName)
 
-				err = conn.DeleteFileset(FilesystemName, FilesetName)
-				if err != nil {
-					if strings.Contains(err.Error(), "EFSSG0072C") ||
-						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-						glog.V(4).Infof("fileset seems already deleted - %v", err)
-						return &csi.DeleteVolumeResponse{}, nil
+				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+					glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+					filesets, err := conn.GetFilesetsParentId(FilesystemName, parentId)
+					if err == nil {
+						found := false
+						if len(filesets) != 0 {
+							found = true
+							glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
+						}
+
+						if !found {
+							// Delete independent fileset for consistency group
+							_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+							if err != nil {
+								glog.V(4).Infof("deletion of independent fileset for consistency group [%v] failed with error: [%v]", volumeIdMembers.ConsistencyGroup, err)
+							} else {
+								glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+							}
+						}
+					} else {
+						glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
 					}
-					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 				}
 			} else {
 				glog.Infof("pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
