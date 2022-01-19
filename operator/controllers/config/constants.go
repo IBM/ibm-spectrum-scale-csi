@@ -74,7 +74,7 @@ const (
 	LivenessProbeImage          = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.5.0"
 	CSIAttacherImage            = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0"
 	CSIProvisionerImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0"
-	CSISnapshotterImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v5.0.0"
+	CSISnapshotterImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v5.0.1"
 	CSIResizerImage             = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
 
 	//ImagePullPolicies for containers
