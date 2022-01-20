@@ -652,6 +652,22 @@ func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) 
 	return getFilesetResponse.Filesets[0], nil
 }
 
+func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
+	glog.V(4).Infof("rest_v2 ListAllFilesets. filesystem: %s", filesystemName)
+
+	getFilesetsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.inodeSpace=%d", filesystemName, inodeSpace))
+	getFilesetsResponse := GetFilesetResponse_v2{}
+
+	err := s.doHTTP(getFilesetsURL, "GET", &getFilesetsResponse, nil)
+	if err != nil {
+		glog.Errorf("Error in list filesets request: %v", err)
+		return nil, err
+	}
+
+	return getFilesetsResponse.Filesets, nil
+}
+
+
 func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", filesystemName, filesetName)
 

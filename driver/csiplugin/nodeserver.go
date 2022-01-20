@@ -19,7 +19,6 @@ package scale
 import (
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/golang/glog"
@@ -56,26 +55,13 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		return nil, status.Error(codes.InvalidArgument, "volume capability must be provided")
 	}
 
-	/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
-
-	splitVId := strings.Split(volumeID, ";")
-	if len(splitVId) < 3 {
-		return nil, status.Error(codes.InvalidArgument, "volumeID is not in proper format")
+	volumeIDMembers, err := getVolIDMembers(volumeID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume : VolumeID is not in proper format")
 	}
+	targetSlnkPath := volumeIDMembers.SymLnkPath
 
-	index := 2
-	if len(splitVId) == 4 {
-		index = 3
-	}
-
-	SlnkPart := splitVId[index]
-	targetSlnkPath := strings.Split(SlnkPart, "=")
-
-	if len(targetSlnkPath) < 2 {
-		return nil, status.Error(codes.InvalidArgument, "volumeID is not in proper format")
-	}
-
-	glog.V(4).Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath[1])
+	glog.V(4).Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath)
 	// Check if Mount Dir/slink exist, if yes delete it
 	if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
 		glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
@@ -86,10 +72,10 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	// create symlink
-	glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, targetSlnkPath[1])
-	symlinkerr := os.Symlink(targetSlnkPath[1], targetPath)
+	glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, targetSlnkPath)
+	symlinkerr := os.Symlink(targetSlnkPath, targetPath)
 	if symlinkerr != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, targetSlnkPath[1], symlinkerr.Error()))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, targetSlnkPath, symlinkerr.Error()))
 	}
 
 	glog.V(4).Infof("successfully mounted %s", targetPath)

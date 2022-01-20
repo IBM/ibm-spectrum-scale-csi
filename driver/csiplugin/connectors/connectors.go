@@ -42,6 +42,7 @@ type SpectrumScaleConnector interface {
 	UnlinkFileset(filesystemName string, filesetName string) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(filesystemName string, filesetName string) (Fileset_v2, error)
+	GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error)
 	IsFilesetLinked(filesystemName string, filesetName string) (bool, error)
 	FilesetRefreshTask() error
 	//TODO modify quota from string to Capacity (see kubernetes)
@@ -96,6 +97,10 @@ const (
 	UserSpecifiedVolDirPath     string = "volDirBasePath"
 	UserSpecifiedNodeClass      string = "nodeClass"
 	UserSpecifiedPermissions    string = "permissions"
+
+	UserSpecifiedStorageClassType string = "type"
+	UserSpecifiedCompression      string = "compression"
+	UserSpecifiedTier             string = "tier"
 
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
