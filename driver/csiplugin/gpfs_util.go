@@ -62,7 +62,7 @@ type scaleVolume struct {
 	NodeClass          string                            `json:"nodeClass"`
 	StorageClassType   string                            `json:"storageClassType"`
 	ConsistencyGroup   string                            `json:"consistencyGroup"`
-	Compression        bool                              `json:"compression"`
+	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 }
 
@@ -78,7 +78,6 @@ type scaleVolId struct {
 	StorageClassType string
 	ConsistencyGroup string
 	VolType          string
-	ApplicationName  string
 }
 
 type scaleSnapId struct {
@@ -141,7 +140,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.NodeClass = ""
 	scaleVol.ConsistencyGroup = ""
 	scaleVol.StorageClassType = ""
-	scaleVol.Compression = false
+	scaleVol.Compression = ""
 	scaleVol.Tier = ""
 
 	if isSCTypeSpecified && storageClassType == "" {
@@ -153,19 +152,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "storageClassType must be \""+storageClassAdvanced+"\" if specified.")
 		}
 		scaleVol.StorageClassType = storageClassType
-
-		if isCompressionSpecified && compression == "" {
-			isCompressionSpecified = false
-		}
-		if isCompressionSpecified && (compression == "True" || compression == "true") {
-			scaleVol.Compression = true
-		}
-		if isTierSpecified && tier == "" {
-			isTierSpecified = false
-		}
-		if isTierSpecified {
-			scaleVol.Tier = tier
-		}
 	}
 
 	if fsSpecified && volBckFs == "" {
@@ -263,6 +249,25 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 	if fsTypeSpecified || isSCTypeSpecified {
 		scaleVol.IsFilesetBased = true
+	}
+
+	if isCompressionSpecified && compression == "" {
+		isCompressionSpecified = false
+	}
+	if isTierSpecified && tier == "" {
+		isTierSpecified = false
+	}
+	if scaleVol.IsFilesetBased {
+		if isCompressionSpecified {
+			scaleVol.Compression = compression
+		}
+		if isTierSpecified {
+			scaleVol.Tier = tier
+		}
+	} else {
+		if isCompressionSpecified || isTierSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"compression\" and \"tier\" are not supported in storageClass for lightweight volumes")
+		}
 	}
 
 	/* Get UID/GID */
@@ -474,17 +479,16 @@ func getVolIDMembers(vID string) (scaleVolId, bool, error) {
 		return vIdMem, isNewVolID, nil
 	}
 
-	if len(splitVid) == 8 {
-		isNewVolID = true
+	if len(splitVid) == 7 {
+    isNewVolID = true
 		/* Volume ID created from 2.5.0 onwards  */
-		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<application>;<fileset_name>;<symlink_path> */
+		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<symlink_path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]
 		vIdMem.ClusterId = splitVid[2]
 		vIdMem.FsUUID = splitVid[3]
 		vIdMem.ConsistencyGroup = splitVid[4]
-		vIdMem.ApplicationName = splitVid[5]
-		vIdMem.FsetName = splitVid[6]
+		vIdMem.FsetName = splitVid[5]
 		if vIdMem.StorageClassType == STORAGECLASS_CLASSIC {
 			if vIdMem.VolType == FILE_DIRECTORYBASED_VOLUME {
 				vIdMem.IsFilesetBased = false
@@ -494,7 +498,7 @@ func getVolIDMembers(vID string) (scaleVolId, bool, error) {
 		} else {
 			vIdMem.IsFilesetBased = true
 		}
-		vIdMem.Path = splitVid[7]
+		vIdMem.Path = splitVid[6]
 		return vIdMem, isNewVolID, nil
 
 	}

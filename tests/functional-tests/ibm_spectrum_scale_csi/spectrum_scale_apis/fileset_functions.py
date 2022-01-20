@@ -582,7 +582,7 @@ def get_remoteFs_remotename(test_data):
     return None
 
 
-def check_snapshot(snapshot_name, volume_name):
+def check_snapshot_exists(snapshot_name, volume_name):
     """
     checks if snapshot is snapshot_name created for volume_name
 

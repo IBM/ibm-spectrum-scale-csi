@@ -102,6 +102,7 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 
 //generateVolID: Generate volume ID
 //VolID format for all newly created volumes (from 2.5.0 onwards):
+
 //<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<application>;<fileset_name>;<full_path>
 func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, isNewVolumeType bool, targetPath string) (string, error) {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
@@ -157,6 +158,7 @@ func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volum
 	glog.V(4).Infof("volume: [%v] - ControllerServer:getTargetPath", volumeName)
 	targetPath := strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
 	targetPath = strings.Trim(targetPath, "!/")
+
 	return targetPath, nil
 }
 
@@ -313,7 +315,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		createDataDir := false
 		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir)
 		if err != nil {
-		       	glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
+			glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
 		}
 		glog.V(4).Infof("finished creation of independent fileset for new storageClass with fileset name: [%v]", indepFilesetName)
@@ -352,7 +354,8 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		glog.V(4).Infof("finished creation of fileset for classic storageClass with fileset name: [%v]", scVol.VolName)
 		return filesetPath, nil
 	}
-}	
+
+}
 
 func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
@@ -523,6 +526,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		if srcVolume != nil {
 			srcVolumeID := srcVolume.GetVolumeId()
 			srcVolumeIDMembers, _, err = getVolIDMembers(srcVolumeID)
+
 			if err != nil {
 				glog.Errorf("volume:[%v] - Invalid Volume ID %s [%v]", volName, srcVolumeID, err)
 				return nil, err
@@ -1210,21 +1214,23 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(relPath)
 			if pvName == FilesetName {
-				// before deletion of fileset get its parentId if storageClassType=STORAGECLASS_ADVANCED
-				parentId := 0
+				// before deletion of fileset get its inodeSpace if storageClassType=STORAGECLASS_ADVANCED
+				// this will help to identify if there are one or more dependent filesets for same inodeSpace
+				// which is shared with independent fileset
+				inodeSpace := 0
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					// Save parent ID
+					// Save inodeSpace information
 					filesetDetails, err := conn.ListFileset(FilesystemName, FilesetName)
 					if err != nil {
 						if strings.Contains(err.Error(), "EFSSG0072C") ||
-						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+							strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+
 							glog.V(4).Infof("fileset seems already deleted - %v", err)
 							return &csi.DeleteVolumeResponse{}, nil
 						}
 						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
 					}
-					parentId = filesetDetails.Config.ParentId
-				
+					inodeSpace = filesetDetails.Config.InodeSpace
 				}
 
 				delVolResponse, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
@@ -1234,10 +1240,10 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 					glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-					filesets, err := conn.GetFilesetsParentId(FilesystemName, parentId)
+					filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
 					if err == nil {
 						found := false
-						if len(filesets) != 0 {
+						if len(filesets) > 1 {
 							found = true
 							glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
 						}
@@ -1747,6 +1753,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	capacity := uint64(capRange.GetRequiredBytes())
 
 	volumeIDMembers, _, err := getVolIDMembers(volID)
+
 	if err != nil {
 		glog.Errorf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err)
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err))
