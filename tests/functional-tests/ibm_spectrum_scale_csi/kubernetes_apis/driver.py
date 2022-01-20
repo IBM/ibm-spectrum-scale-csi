@@ -59,7 +59,7 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
                        "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
-                       "scType", "compression", "tier"]
+                       "type", "compression", "tier"]
     for sc_parameter in list_parameters:
         if sc_parameter in values:
             storage_class_parameters[sc_parameter] = values[sc_parameter]
@@ -378,10 +378,12 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
     if 'storage_class_parameters' in globals():
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
-        if check_key(storage_class_parameters, "scType") and storage_class_parameters["scType"] == "Advanced":
+        if check_key(storage_class_parameters, "type") and storage_class_parameters["type"] == "advanced":
             if not(ff.created_fileset_exists(namespace_value)):
-                LOGGER.error(f'PVC Check : Fileset {namespace_value} doesn\'t exists for scType=Advanced')
+                LOGGER.error(f'PVC Check : Fileset {namespace_value} doesn\'t exists for type=advanced SC')
                 return False
+            else:
+                LOGGER.info(f'PVC Check : Fileset {namespace_value} has been created successfully for type=advanced SC')
 
     fileset_name = get_filesetname_from_pv(volume_name, created_objects)
     if not(ff.created_fileset_exists(fileset_name)):
@@ -398,7 +400,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
             inode = storage_class_parameters["inodeLimit"]
         elif "filesetType" in storage_class_parameters and storage_class_parameters["filesetType"] == "dependent":
             inode = 0
-        elif "scType" in storage_class_parameters and storage_class_parameters["scType"] == "Advanced":
+        elif "type" in storage_class_parameters and storage_class_parameters["type"] == "advanced":
             inode = 0
 
     if not(ff.check_fileset_quota(fileset_name, pvc_values["storage"], inode)):
@@ -1017,13 +1019,14 @@ def get_filesetname_from_pv(pv_name, created_objects):
         LOGGER.debug(str(api_response))
         LOGGER.info(f'PV Check : Checking fileset name from PV {pv_name}')
         volume_handle = api_response.spec.csi.volume_handle
+        LOGGER.info(f'PV Check : volume handle for pv {pv_name} is {volume_handle}')
         volume_handle = volume_handle.split(";")
-        for resource in volume_handle:
-            if resource[:12] == "filesetName=":
-                LOGGER.info(f'PV Check : fileset name for PV {pv_name} is {str(resource[12:])}')
-                return str(resource[12:])
-        LOGGER.error(f'Not able to find fileset name for PV {pv_name}')
-        LOGGER.error(str(api_response))
+        if len(volume_handle)<=4:
+            fileset_name= volume_handle[2][12:]
+        else:
+            fileset_name= volume_handle[5]
+        LOGGER.info(f'PV Check : fileset name for PV {pv_name} is {fileset_name}')
+        return fileset_name
     except ApiException:
         LOGGER.error(
             f"Exception when calling CoreV1Api->read_persistent_volume: {e}")

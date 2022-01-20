@@ -153,9 +153,11 @@ def delete_pvc(pvc_name, created_objects):
         LOGGER.debug(str(api_response))
         volume_handle = api_response.spec.csi.volume_handle
         volume_handle = volume_handle.split(";")
-        for resource in volume_handle:
-            if resource[:12] == "filesetName=":
-                fileset_name =  str(resource[12:])
+        if len(volume_handle)<=4:
+            fileset_name= volume_handle[2][12:]
+        else:
+            fileset_name= volume_handle[5]
+
     except ApiException:
         LOGGER.error(
             f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
