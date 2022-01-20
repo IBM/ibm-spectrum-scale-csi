@@ -98,7 +98,7 @@ const (
 	UserSpecifiedNodeClass      string = "nodeClass"
 	UserSpecifiedPermissions    string = "permissions"
 
-	UserSpecifiedStorageClassType string = "scType"
+	UserSpecifiedStorageClassType string = "type"
 	UserSpecifiedCompression      string = "compression"
 	UserSpecifiedTier             string = "tier"
 
