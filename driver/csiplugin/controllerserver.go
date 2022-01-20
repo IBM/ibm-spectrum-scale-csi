@@ -103,15 +103,13 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 //generateVolID: Generate volume ID
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
-//<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<application>;<fileset_name>;<full_path>
+//<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<full_path>
 func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, isNewVolumeType bool, targetPath string) (string, error) {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volID string
 	var storageClassType string
 	var volumeType string
 
-	// For 2.5.0 applicationName is considered as an empty string
-	applicationName := ""
 	filesetName := scVol.VolName
 
 	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
@@ -145,7 +143,7 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 		}
 	}
 
-	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, scVol.ConsistencyGroup, applicationName, filesetName, path)
+	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, scVol.ConsistencyGroup, filesetName, path)
 	return volID, nil
 }
 
