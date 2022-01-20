@@ -667,7 +667,6 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 	return getFilesetsResponse.Filesets, nil
 }
 
-
 func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
@@ -1371,17 +1370,17 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 	return nil
 }
 
-func (s *spectrumRestV2) GetPoolInfoFromName(storagePoolName string, filesystemName string) error {
-	glog.V(4).Infof("rest_v2 GetPoolInfoFromName. name %s, filesystem %s", storagePoolName, filesystemName)
+func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 GetTierInfoFromName. name %s, filesystem %s", tierName, filesystemName)
 
-	poolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, storagePoolName))
+	poolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName))
 	getPoolResponse := GenericResponse{}
 
 	err := s.doHTTP(poolURL, "GET", &getPoolResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get pool: %s info %v", storagePoolName, getPoolResponse.Status.Message)
-		if strings.Contains(getPoolResponse.Status.Message, "Invalid value in 'storagePool'") {
-			return fmt.Errorf("invalid storagePool '%s' specified for filesystem %s", storagePoolName, filesystemName)
+		glog.Errorf("Unable to get tier: %s info %v", tierName, getPoolResponse.Status.Message)
+		if strings.Contains(getPoolResponse.Status.Message, "Invalid value in 'tier'") {
+			return fmt.Errorf("invalid tier '%s' specified for filesystem %s", tierName, filesystemName)
 		}
 		return err
 	}

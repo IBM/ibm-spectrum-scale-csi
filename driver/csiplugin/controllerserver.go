@@ -17,7 +17,6 @@
 package scale
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -641,39 +640,21 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.VolName = fmt.Sprintf("%s-COMPRESS%s", scaleVol.VolName, strings.ToUpper(scaleVol.Compression))
 	}
 
-	if scaleVol.IsFilesetBased && scaleVol.StoragePool != "" {
+	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
 
-		if err := scaleVol.Connector.GetPoolInfoFromName(scaleVol.StoragePool, scaleVol.VolBackendFs); err != nil {
+		if err := scaleVol.Connector.GetTierInfoFromName(scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
 			return nil, err
 		}
 
-		rule := "RULE 'P%sR%d' SET POOL '%s' REPLICATE(%d) WHERE FILESET_NAME LIKE 'pvc-%%-P%s-R%d%%'"
+		rule := "RULE 'csi-T%s' SET POOL '%s' WHERE FILESET_NAME LIKE 'pvc-%%-T%s%%'"
 		policy := connectors.Policy{}
 
-		if scaleVol.Replication != 0 {
-			if int(scaleVol.Replication) > volFsInfo.Replication.MaxDataReplicas {
-				glog.Errorf("replication value (%d) specified is higher than max data replicas allowed by fs (%d)",
-					scaleVol.Replication, volFsInfo.Replication.MaxDataReplicas)
-				return nil, fmt.Errorf("replication value (%d) specified is higher than max data replicas allowed by fs (%d)",
-					scaleVol.Replication, volFsInfo.Replication.MaxDataReplicas)
-			}
+		policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Tier, scaleVol.Tier)
 
-			policy.Policy = fmt.Sprintf(rule, scaleVol.StoragePool, scaleVol.Replication,
-				scaleVol.StoragePool, scaleVol.Replication,
-				scaleVol.StoragePool, scaleVol.Replication)
-		} else {
-			policy.Policy = fmt.Sprintf(rule, scaleVol.StoragePool, volFsInfo.Replication.DefaultDataReplicas,
-				scaleVol.StoragePool, volFsInfo.Replication.DefaultDataReplicas,
-				scaleVol.StoragePool, volFsInfo.Replication.DefaultDataReplicas)
-		}
-		policy.Partition = fmt.Sprintf("csi-P%s-R%d", scaleVol.StoragePool, scaleVol.Replication)
+		policy.Partition = fmt.Sprintf("csi-T%s", scaleVol.Tier)
 
-		scaleVol.VolName = fmt.Sprintf("%s-P%s-R%d", scaleVol.VolName, scaleVol.StoragePool, scaleVol.Replication)
+		scaleVol.VolName = fmt.Sprintf("%s-T%s", scaleVol.VolName, scaleVol.Tier)
 		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
-	} else if scaleVol.IsFilesetBased && scaleVol.Replication != 0 {
-		// Cannot have replication only. If StoragePool is empty we exit out
-		glog.Errorf("storagePool must be specified if replication is specified")
-		return nil, errors.New("storagePool must be specified if replication is specified")
 	}
 
 	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)

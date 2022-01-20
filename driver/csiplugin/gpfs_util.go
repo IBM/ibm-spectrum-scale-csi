@@ -63,8 +63,7 @@ type scaleVolume struct {
 	StorageClassType   string                            `json:"storageClassType"`
 	ConsistencyGroup   string                            `json:"consistencyGroup"`
 	Compression        string                            `json:"compression"`
-	Replication        int                               `json:"replication"`
-	StoragePool        string                            `json:"storagePool"`
+	Tier               string                            `json:"tier"`
 }
 
 type scaleVolId struct {
@@ -141,10 +140,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
 	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
-	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
-	replication, isReplicationSpecified := volOptions[connectors.UserSpecifiedReplication]
-	storagePool, isStoragePoolSpecified := volOptions[connectors.UserSpecifiedStoragePool]
-
 	storageClassType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedStorageClassType]
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
@@ -340,21 +335,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
 	}
 
-	if isReplicationSpecified && replication != "" {
-		val, err := strconv.Atoi(replication)
-		if err != nil || val < 1 || val > 3 {
-			glog.V(5).Infof("gpfs_util invalid replication value specified: %s",
-				replication)
-			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
-				"invalid replication value specified: %s", replication)
-		}
-		scaleVol.Replication = val
-		glog.V(5).Infof("gpfs_util replication was set: %d", val)
-	}
-
-	if isStoragePoolSpecified && storagePool != "" {
-		scaleVol.StoragePool = storagePool
-		glog.V(5).Infof("gpfs_util storagePool was set: %s", storagePool)
+	if isTierSpecified && tier != "" {
+		scaleVol.Tier = tier
+		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
 	}
 
 	return scaleVol, nil
