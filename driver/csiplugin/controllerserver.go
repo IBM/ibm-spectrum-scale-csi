@@ -102,15 +102,13 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 
 //generateVolID: Generate volume ID
 //VolID format for all newly created volumes (from 2.5.0 onwards):
-//<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<application>;<fileset_name>;<symlink_path>
+//<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<symlink_path>
 func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, isNewVolumeType bool) string {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volID string
 	var storageClassType string
 	var volumeType string
 
-	// For 2.5.0 applicationName is considered as an empty string
-	applicationName := ""
 	filesetName := scVol.VolName
 
 	slink := fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
@@ -132,7 +130,7 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 		}
 	}
 
-	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, scVol.ConsistencyGroup, applicationName, filesetName, slink)
+	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, scVol.ConsistencyGroup, filesetName, slink)
 	return volID
 }
 
@@ -304,7 +302,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		createDataDir := false
 		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir)
 		if err != nil {
-		       	glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
+			glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
 		}
 		glog.V(4).Infof("finished creation of independent fileset for new storageClass with fileset name: [%v]", indepFilesetName)
@@ -343,7 +341,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		glog.V(4).Infof("finished creation of fileset for classic storageClass with fileset name: [%v]", scVol.VolName)
 		return filesetPath, nil
 	}
-}	
+}
 
 func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
@@ -1208,7 +1206,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 					filesetDetails, err := conn.ListFileset(FilesystemName, FilesetName)
 					if err != nil {
 						if strings.Contains(err.Error(), "EFSSG0072C") ||
-						strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+							strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
 							glog.V(4).Infof("fileset seems already deleted - %v", err)
 							return &csi.DeleteVolumeResponse{}, nil
 						}

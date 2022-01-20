@@ -78,7 +78,6 @@ type scaleVolId struct {
 	StorageClassType string
 	ConsistencyGroup string
 	VolType          string
-	ApplicationName  string
 }
 
 type scaleSnapId struct {
@@ -477,16 +476,15 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		return vIdMem, nil
 	}
 
-	if len(splitVid) == 8 {
+	if len(splitVid) == 7 {
 		/* Volume ID created from 2.5.0 onwards  */
-		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<application>;<fileset_name>;<symlink_path> */
+		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<symlink_path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]
 		vIdMem.ClusterId = splitVid[2]
 		vIdMem.FsUUID = splitVid[3]
 		vIdMem.ConsistencyGroup = splitVid[4]
-		vIdMem.ApplicationName = splitVid[5]
-		vIdMem.FsetName = splitVid[6]
+		vIdMem.FsetName = splitVid[5]
 		if vIdMem.StorageClassType == STORAGECLASS_CLASSIC {
 			if vIdMem.VolType == FILE_DIRECTORYBASED_VOLUME {
 				vIdMem.IsFilesetBased = false
@@ -496,7 +494,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		} else {
 			vIdMem.IsFilesetBased = true
 		}
-		vIdMem.SymLnkPath = splitVid[7]
+		vIdMem.SymLnkPath = splitVid[6]
 		return vIdMem, nil
 
 	}
