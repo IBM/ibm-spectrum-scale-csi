@@ -199,11 +199,11 @@ jobs:
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
-        - provider: script
-          script: ../tools/scripts/push_app.sh
-          on:
-            all_branches: true
-            condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD" && -n "$QUAY_APP"
+#        - provider: script
+#          script: ../tools/scripts/push_app.sh
+#          on:
+#            all_branches: true
+#            condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD" && -n "$QUAY_APP"
 
 #    # stage: build
 #    - name: "Build - Operator: docs"
