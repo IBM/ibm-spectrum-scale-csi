@@ -3011,3 +3011,16 @@ def test_driver_volume_cloning_fail_11():
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "Volume cloning for directories for remote file system is not supported"},
                                         {"access_modes": "ReadWriteOnce", "storage": "1Gi", "reason": "Volume cloning for directories for remote file system is not supported"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+def test_driver_cg_pass_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "type": "advanced"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 5
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+@pytest.mark.regression
+def test_driver_cg_pass_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "type": "advanced"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)

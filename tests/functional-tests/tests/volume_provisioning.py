@@ -2987,8 +2987,14 @@ def test_driver_volume_cloning_fail_10():
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
-@pytest.mark.regression
 def test_driver_cg_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "type": "advanced"}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 10
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 5
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+@pytest.mark.regression
+def test_driver_cg_pass_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "type": "advanced"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
