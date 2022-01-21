@@ -325,6 +325,12 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.ConsistencyGroup = volOptions["csi.storage.k8s.io/pvc/namespace"]
 
 	if isCompressionSpecified {
+		// Default compression will be Z if set but not specified
+		if strings.ToLower(compression) == "true" {
+			glog.V(5).Infof("gpfs_util compression was set to true. Defaulting to Z")
+			compression = "z"
+		}
+
 		if !IsValidCompressionAlgorithm(compression) {
 			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
 				compression)
