@@ -170,12 +170,12 @@ jobs:
         - go mod vendor
       script:
         - go test -v -race ./...
-        - docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} --build-arg commit=${COMMIT} --build-arg build_date="$(date -u)"  .
+        - docker buildx build --progress=plain --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} --build-arg commit=${COMMIT} --build-arg build_date="$(date -u)"  .
       before_deploy:
         - echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       deploy:
         - provider: script
-          script: docker buildx build --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} --build-arg commit=${COMMIT} --build-arg build_date="$(date -u)" -t ${IMAGE_FQN_DRIVER} --push .
+          script: docker buildx build --progress=plain --platform ${BUILD_PLATFORMS} ${IMAGE_LABEL} --build-arg commit=${COMMIT} --build-arg build_date="$(date -u)" -t ${IMAGE_FQN_DRIVER} --push .
           on:
             all_branches: true
             condition: -n "$QUAY_BOT_USERNAME" && -n "$QUAY_BOT_PASSWORD"
