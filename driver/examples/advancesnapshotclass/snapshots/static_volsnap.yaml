@@ -1,0 +1,9 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: ibm-spectrum-scale-snapshot
+  namespace: default
+spec:
+  source:
+    volumeSnapshotContentName: ibm-spectrum-scale-snapshot-content
+
