@@ -9,7 +9,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: ibm-spectrum-scale-storageclass
+  storageClassName: ibm-spectrum-scale-storageclass-advance
   dataSource:
     name: ibm-spectrum-scale-snapshot
     kind: VolumeSnapshot

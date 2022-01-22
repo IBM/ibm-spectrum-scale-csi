@@ -4,6 +4,6 @@ metadata:
   name: ibm-spectrum-scale-snapshot
   namespace: default
 spec:
-  volumeSnapshotClassName: ibm-spectrum-scale-snapshotclass
+  volumeSnapshotClassName: ibm-spectrum-scale-snapshotclass-advance
   source:
     persistentVolumeClaimName: ibm-spectrum-scale-pvc
