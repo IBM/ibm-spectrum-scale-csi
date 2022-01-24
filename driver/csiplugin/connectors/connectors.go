@@ -70,6 +70,7 @@ type SpectrumScaleConnector interface {
 	GetTierInfoFromName(tierName string, filesystemName string) error
 	IsValidNodeclass(nodeclass string) (bool, error)
 	IsSnapshotSupported() (bool, error)
+	CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool
 
 	//Snapshot operations
 	WaitForJobCompletion(statusCode int, jobID uint64) error

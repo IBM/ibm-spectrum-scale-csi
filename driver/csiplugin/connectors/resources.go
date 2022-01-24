@@ -662,6 +662,7 @@ type UnmountFilesystemRequest struct {
 type Policy struct {
 	Policy    string `json:"policy,omitempty"`
 	Partition string `json:"partition,omitempty"`
+	Priority  int    `json:"priority,omitempty"`
 }
 
 const (

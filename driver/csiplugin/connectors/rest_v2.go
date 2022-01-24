@@ -1387,3 +1387,18 @@ func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName str
 
 	return nil
 }
+
+func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
+	glog.V(4).Infof("rest_v2 CheckPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
+
+	partitionURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName))
+	getPartitionResponse := GenericResponse{}
+
+	// If it does or doesn't exist and we get an error we will default to just setting it again as an override
+	err := s.doHTTP(partitionURL, "GET", &getPartitionResponse, nil)
+	if err != nil {
+		return false
+	}
+
+	return true
+}
