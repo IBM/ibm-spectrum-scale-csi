@@ -593,7 +593,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	var remoteClusterID string
-	if volFsInfo.Type == filesystemTypeRemote {
+	if scaleVol.ClusterId == "" && volFsInfo.Type == filesystemTypeRemote {
 		glog.V(5).Infof("filesystem %s is remotely mounted, getting cluster ID information of the owning cluster.", volFsInfo.Name)
 		clusterName := strings.Split(volFsInfo.Mount.RemoteDeviceName, ":")[0]
 		if remoteClusterID, err = cs.getRemoteClusterID(clusterName); err != nil {
