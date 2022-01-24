@@ -146,28 +146,8 @@ def delete_pvc(pvc_name, created_objects):
         assert False
 
     volume_name = api_response.spec.volume_name
-    fileset_name = None
-    try:
-        api_response = api_instance.read_persistent_volume(
-            name=volume_name, pretty=True)
-        LOGGER.debug(str(api_response))
-        volume_handle = api_response.spec.csi.volume_handle
-        volume_handle = volume_handle.split(";")
-        if len(volume_handle)<=4:
-            fileset_name= volume_handle[2][12:]
-        else:
-            fileset_name= volume_handle[5]
+    fileset_name = get_filesetname_from_pv(volume_name, created_objects)
 
-    except ApiException:
-        LOGGER.error(
-            f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
-        LOGGER.info(f'PV {pv_name} does not exists on cluster')
-
-    if fileset_name is None:
-        LOGGER.error(f"Not able to find fileset name for PV {volume_name}")
-        clean_with_created_objects(created_objects)
-        assert False
-    
     if keep_objects:
         return fileset_name
 
@@ -478,3 +458,38 @@ def check_ds_deleted(ds_name, created_objects):
         assert False
     except ApiException:
         LOGGER.info(f"Daemon Set Delete : {ds_name} deletion confirmed")
+
+
+def get_filesetname_from_pv(volume_name, created_objects):
+    """
+    return filesetname from VolumeHandle of PV
+    """
+    api_instance = client.CoreV1Api()
+    fileset_name = None
+
+    if volume_name is not None:
+        try:
+            api_response = api_instance.read_persistent_volume(
+            name=volume_name, pretty=True)
+            LOGGER.debug(str(api_response))
+            volume_handle = api_response.spec.csi.volume_handle
+            volume_handle = volume_handle.split(";")
+            if len(volume_handle)==3:
+                fileset_name = ""
+            elif len(volume_handle)<=4:
+                fileset_name= volume_handle[2][12:]
+            else:
+                fileset_name= volume_handle[5]
+            if fileset_name == "":
+                fileset_name = "LW"
+        except ApiException:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
+            LOGGER.info(f'PV {pv_name} does not exists on cluster')
+
+    if volume_name is not None and fileset_name is None:
+        LOGGER.error(f"Not able to find fileset name for PV {volume_name}")
+        clean_with_created_objects(created_objects)
+        assert False
+
+    return fileset_name

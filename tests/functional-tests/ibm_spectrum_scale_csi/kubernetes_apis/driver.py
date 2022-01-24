@@ -385,7 +385,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
             else:
                 LOGGER.info(f'PVC Check : Fileset {namespace_value} has been created successfully for type=advanced SC')
 
-    fileset_name = get_filesetname_from_pv(volume_name, created_objects)
+    fileset_name = cleanup.get_filesetname_from_pv(volume_name, created_objects)
     if not(ff.created_fileset_exists(fileset_name)):
         LOGGER.error(f'PVC Check : Fileset {fileset_name} doesn\'t exists')
         return False
@@ -1008,39 +1008,12 @@ def get_pv_for_pvc(pvc_name, created_objects):
     return api_response.spec.volume_name
 
 
-def get_filesetname_from_pv(pv_name, created_objects):
-    """
-    return filesetname from VolumeHandle of PV
-    """
-    api_instance = client.CoreV1Api()
-    try:
-        api_response = api_instance.read_persistent_volume(
-            name=pv_name, pretty=True)
-        LOGGER.debug(str(api_response))
-        LOGGER.info(f'PV Check : Checking fileset name from PV {pv_name}')
-        volume_handle = api_response.spec.csi.volume_handle
-        LOGGER.info(f'PV Check : volume handle for pv {pv_name} is {volume_handle}')
-        volume_handle = volume_handle.split(";")
-        if len(volume_handle)<=4:
-            fileset_name= volume_handle[2][12:]
-        else:
-            fileset_name= volume_handle[5]
-        LOGGER.info(f'PV Check : fileset name for PV {pv_name} is {fileset_name}')
-        return fileset_name
-    except ApiException:
-        LOGGER.error(
-            f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
-        LOGGER.info(f'PV {pv_name} does not exists on cluster')
-
-    cleanup.clean_with_created_objects(created_objects)
-    assert False
-
 def check_permissions_for_pvc(pvc_name, permissions, created_objects):
     """
     get pv and verify permissions for pv
     """
     pv_name = get_pv_for_pvc(pvc_name, created_objects)
-    fileset_name = get_filesetname_from_pv(pv_name, created_objects)
+    fileset_name = cleanup.get_filesetname_from_pv(pv_name, created_objects)
     if permissions == "":  # assign default permissions 771
         permissions = "771"
     status = ff.get_and_verify_fileset_permissions(fileset_name, permissions)

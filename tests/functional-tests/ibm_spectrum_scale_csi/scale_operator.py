@@ -335,7 +335,7 @@ class Driver:
                         d.clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod_passed[num2], value_clone_passed, created_objects)
                     #cleanup.delete_pod(pod_name, created_objects)
                     #cleanup.check_pod_deleted(pod_name, created_objects)
-                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
+                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (num2 < (len(value_pod_passed)-1))):#and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
                         pvc_name = d.get_random_name("pvc")
                         d.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
                         val = d.check_pvc(value_pvc_pass, pvc_name, created_objects)
