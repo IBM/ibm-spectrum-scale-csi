@@ -1131,6 +1131,41 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, Fileset
 	return nil, nil
 }
 
+// This function deletes fileset for Consitency Group
+func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) {
+        glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+	filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
+	if err == nil {
+		found := false
+		if len(filesets) > 1 {
+			found = true
+			glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
+		}
+
+		if !found {
+			// Check if fileset was created by IBM Spectrum Scale CSI Driver
+			filesetDetails, err := conn.ListFileset(FilesystemName, volumeIdMembers.ConsistencyGroup)
+			if err == nil {
+				if filesetDetails.Config.Comment == connectors.FilesetComment {
+					// Delete independent fileset for consistency group
+					_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+					if err != nil {
+						glog.V(4).Infof("deletion of independent fileset for consistency group [%v] failed with error: [%v]", volumeIdMembers.ConsistencyGroup, err)
+					} else {
+						glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+					}
+				} else {
+					glog.V(4).Infof("independent fileset for consistency group [%v] not created by IBM Spectrum Scale CSI Driver", volumeIdMembers.ConsistencyGroup)
+				}
+			} else {
+				glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
+			}
+		}
+	} else {
+		glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
+	}
+}
+
 func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	glog.V(3).Infof("DeleteVolume [%v]", req)
 
@@ -1223,27 +1258,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				}
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-					filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
-					if err == nil {
-						found := false
-						if len(filesets) > 1 {
-							found = true
-							glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
-						}
-
-						if !found {
-							// Delete independent fileset for consistency group
-							_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
-							if err != nil {
-								glog.V(4).Infof("deletion of independent fileset for consistency group [%v] failed with error: [%v]", volumeIdMembers.ConsistencyGroup, err)
-							} else {
-								glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-							}
-						}
-					} else {
-						glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
-					}
+					cs.DeleteCGFileset(FilesystemName, inodeSpace, volumeIdMembers, conn)
 				}
 			} else {
 				glog.Infof("pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
