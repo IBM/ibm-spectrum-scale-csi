@@ -247,6 +247,10 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.VolDirBasePath = volDirPath
 		scaleVol.IsFilesetBased = false
 	}
+
+	if fsTypeSpecified && isSCTypeSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"filesetType\" are mutually exclusive")
+	}
 	if fsTypeSpecified || isSCTypeSpecified {
 		scaleVol.IsFilesetBased = true
 	}
