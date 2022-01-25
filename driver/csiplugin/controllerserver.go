@@ -369,6 +369,22 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 			glog.Errorf("volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, volName, scVol.VolBackendFs, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
 		}
+	} else {
+		// fileset is present. Confirm if creator is IBM Spectrum Scale CSI driver and fileset type is correct.
+		if (filesetInfo.Config.Comment != connectors.FilesetComment) {
+			glog.Errorf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName)
+			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName))
+		}
+		listFilesetType := ""
+		if filesetInfo.Config.IsInodeSpaceOwner == true {
+			listFilesetType = independentFileset
+		} else {
+			listFilesetType = dependentFileset
+		}
+		if opt[connectors.UserSpecifiedFilesetType] != listFilesetType {
+			glog.Errorf("volume:[%v] - the fileset type is not as expected, got type: [%s], expected type: [%s]", volName, listFilesetType, opt[connectors.UserSpecifiedFilesetType])
+			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset type is not as expected, got type: [%s], expected type: [%s]", volName, listFilesetType, opt[connectors.UserSpecifiedFilesetType]))
+		}
 	}
 
 	// fileset is present/created. Confirm if fileset is linked
@@ -473,14 +489,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	scaleVol, err := getScaleVolumeOptions(req.GetParameters())
-	isNewVolumeType := false
-	if scaleVol.StorageClassType == storageClassAdvanced {
-		isNewVolumeType = true
-	}
-
 	if err != nil {
 		return nil, err
 	}
+
+        isNewVolumeType := false
+        if scaleVol.StorageClassType == storageClassAdvanced {
+                isNewVolumeType = true
+        }
 
 	scaleVol.VolName = volName
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
