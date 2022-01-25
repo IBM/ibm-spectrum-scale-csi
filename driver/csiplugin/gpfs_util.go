@@ -172,7 +172,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		volDirPathSpecified = false
 	}
 
-	if !fsTypeSpecified && !volDirPathSpecified {
+	if !fsTypeSpecified && !volDirPathSpecified && !isSCTypeSpecified {
 		fsTypeSpecified = true
 		fsType = independentFileset
 	}
