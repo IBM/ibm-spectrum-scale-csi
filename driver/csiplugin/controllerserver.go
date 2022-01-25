@@ -495,9 +495,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
         isNewVolumeType := false
-        if scaleVol.StorageClassType == storageClassAdvanced {
-                isNewVolumeType = true
-        }
+	if scaleVol.StorageClassType == storageClassAdvanced {
+		isNewVolumeType = true
+	}
 
 	scaleVol.VolName = volName
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
@@ -1129,20 +1129,20 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	return sIdMem, nil
 }
 
-func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (*csi.DeleteVolumeResponse, error) {
+func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (bool, error) {
 	//Check if fileset exist has any snapshot
 	snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
 			glog.V(4).Infof("fileset seems already deleted - %v", err)
-			return &csi.DeleteVolumeResponse{}, nil
+			return true, nil
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+		return false, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 	}
 
 	if len(snapshotList) > 0 {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+		return false, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
 	}
 	glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", FilesetName)
 
@@ -1151,46 +1151,49 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, Fileset
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
 			glog.V(4).Infof("fileset seems already deleted - %v", err)
-			return &csi.DeleteVolumeResponse{}, nil
+			return true, nil
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+		return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 	}
-	return nil, nil
+	return false, nil
 }
 
 // This function deletes fileset for Consitency Group
-func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) {
-        glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (error) {
+	glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
 	filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
-	if err == nil {
-		found := false
-		if len(filesets) > 1 {
-			found = true
-			glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
-		}
-
-		if !found {
-			// Check if fileset was created by IBM Spectrum Scale CSI Driver
-			filesetDetails, err := conn.ListFileset(FilesystemName, volumeIdMembers.ConsistencyGroup)
-			if err == nil {
-				if filesetDetails.Config.Comment == connectors.FilesetComment {
-					// Delete independent fileset for consistency group
-					_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
-					if err != nil {
-						glog.V(4).Infof("deletion of independent fileset for consistency group [%v] failed with error: [%v]", volumeIdMembers.ConsistencyGroup, err)
-					} else {
-						glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-					}
-				} else {
-					glog.V(4).Infof("independent fileset for consistency group [%v] not created by IBM Spectrum Scale CSI Driver", volumeIdMembers.ConsistencyGroup)
-				}
-			} else {
-				glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
-			}
-		}
-	} else {
-		glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("listing of filesets for filesystem: [%v] failed. Error: [%v]", FilesystemName, err))
 	}
+
+	if len(filesets) > 1 {
+		glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
+		return nil
+	}
+
+	// Check if fileset was created by IBM Spectrum Scale CSI Driver
+	filesetDetails, err := conn.ListFileset(FilesystemName, volumeIdMembers.ConsistencyGroup)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0072C") ||
+			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+			glog.V(4).Infof("fileset seems already deleted - %v", err)
+			return nil
+		}
+		return status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v]. Error: [%v]", volumeIdMembers.ConsistencyGroup, err))
+	}
+
+	if filesetDetails.Config.Comment == connectors.FilesetComment {
+		// Delete independent fileset for consistency group
+		_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+		if err != nil {
+			return err
+		}
+		glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+	} else {
+		glog.V(4).Infof("independent fileset for consistency group [%v] not created by IBM Spectrum Scale CSI Driver. Cannot delete it.", volumeIdMembers.ConsistencyGroup)
+	}
+
+	return nil
 }
 
 func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
@@ -1279,14 +1282,26 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 					inodeSpace = filesetDetails.Config.InodeSpace
 				}
 
-				delVolResponse, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
-				if !(delVolResponse == nil && err == nil) {
-					return delVolResponse, err
+				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
+				if err != nil {
+					return nil, err
+				}
+
+				// Delete fileset related symlink
+				if !isFilesetAlreadyDel {
+					err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
+					if err != nil {
+						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
+					}
 				}
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					cs.DeleteCGFileset(FilesystemName, inodeSpace, volumeIdMembers, conn)
+					err := cs.DeleteCGFileset(FilesystemName, inodeSpace, volumeIdMembers, conn)
+					if err != nil {
+						return nil, err
+					}
 				}
+				return &csi.DeleteVolumeResponse{}, nil
 			} else {
 				glog.Infof("pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
 			}
