@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
@@ -607,20 +608,30 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.LocalFS = scaleVol.VolBackendFs
 	}
 
+	var remoteClusterID string
+	if scaleVol.ClusterId == "" && volFsInfo.Type == filesystemTypeRemote {
+		glog.V(5).Infof("filesystem %s is remotely mounted, getting cluster ID information of the owning cluster.", volFsInfo.Name)
+		clusterName := strings.Split(volFsInfo.Mount.RemoteDeviceName, ":")[0]
+		if remoteClusterID, err = cs.getRemoteClusterID(clusterName); err != nil {
+			return nil, err
+		}
+		glog.V(5).Infof("cluster ID for remote cluster %s is %s", clusterName, remoteClusterID)
+	}
+
 	if scaleVol.IsFilesetBased {
 		if scaleVol.ClusterId == "" {
-			scaleVol.ClusterId = PCid
-			glog.V(3).Infof("clusterID not provided in storage Class, using Primary ClusterID. Volume Name [%v]", scaleVol.VolName)
-			if volFsInfo.Type == filesystemTypeRemote {
-				glog.Errorf("volume filesystem %s is remotely mounted on Primary cluster, Specify owning cluster ID in storageClass", scaleVol.VolBackendFs)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume filesystem %s is remotely mounted on Primary cluster, Specify owning cluster ID in storageClass", scaleVol.VolBackendFs))
+			if volFsInfo.Type == filesystemTypeRemote { // if fileset based and remotely mounted.
+				glog.V(3).Infof("volume filesystem %s is remotely mounted on Primary cluster, using owning cluster ID %s.", scaleVol.VolBackendFs, remoteClusterID)
+				scaleVol.ClusterId = remoteClusterID
+			} else {
+				glog.V(3).Infof("volume filesystem %s is locally mounted on Primary cluster, using primary cluster ID %s.", scaleVol.VolBackendFs, PCid)
+				scaleVol.ClusterId = PCid
 			}
 		}
 		conn, err := cs.getConnFromClusterID(scaleVol.ClusterId)
 		if err != nil {
 			return nil, err
 		}
-
 		scaleVol.Connector = conn
 	} else {
 		scaleVol.Connector = scaleVol.PrimaryConnector
@@ -1863,4 +1874,120 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 func (cs *ScaleControllerServer) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
+}
+
+// getRemoteClusterID returns the cluster ID for the passed cluster name.
+func (cs *ScaleControllerServer) getRemoteClusterID(clusterName string) (string, error) {
+
+	glog.V(5).Infof("fetching cluster details from cache map for cluster %s", clusterName)
+	clusterDetails, found := cs.Driver.clusterMap.Load(ClusterName{clusterName})
+	if found {
+		glog.V(5).Infof("checking if cluster details found from cache map for cluster %s has expired.", clusterName)
+		if expired := checkExpiry(clusterDetails); !expired { // cluster details are not expired.
+			glog.V(5).Infof("cluster details found from cache map for cluster %s are valid.", clusterName)
+			return clusterDetails.(ClusterDetails).id, nil
+		} else { // cluster details are expired
+			glog.V(5).Infof("cluster details found from cache map for cluster %s are expired.", clusterName)
+			cID := clusterDetails.(ClusterDetails).id
+			conn, err := cs.getConnFromClusterID(cID)
+			if err != nil {
+				return "", err
+			}
+			clusterSummary, err := conn.GetClusterSummary()
+			if err != nil {
+				return "", err
+			}
+			cName := clusterSummary.ClusterName
+			if cName == clusterName {
+				glog.V(5).Infof("updating cluster details in cache map for cluster %s.", clusterName)
+				cs.Driver.clusterMap.Store(ClusterName{cName}, ClusterDetails{cID, cName, time.Now(), 24})
+				cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
+				glog.V(5).Infof("ClusterMap updated, [%s : %s]", cID, cName)
+				return cID, nil
+			} else {
+				found = false
+			}
+		}
+	}
+
+	if !found {
+		glog.V(5).Infof("cluster details are either expired or not found in cache map for cluster %s. Updating the cache map.", clusterName)
+		scaleconfig := settings.LoadScaleConfigSettings()
+
+		for i := range scaleconfig.Clusters {
+
+			cID := scaleconfig.Clusters[i].ID
+			glog.V(5).Infof("fetching cluster details from cache map for cluster %s", scaleconfig.Clusters[i].ID)
+			clusterDetails, found := cs.Driver.clusterMap.Load(ClusterID{cID})
+			if found {
+				glog.V(5).Infof("checking if cluster details found from cache map for cluster %s has expired.", scaleconfig.Clusters[i].ID)
+				if expired := checkExpiry(clusterDetails); !expired {
+					glog.V(5).Infof("cluster details found from cache map for cluster %s are valid.", scaleconfig.Clusters[i].ID)
+					cName := clusterDetails.(ClusterDetails).name
+					if cName == clusterName {
+						return cID, nil
+					}
+				} else {
+					glog.V(5).Infof("cluster details found from cache map for cluster %s are expired.", scaleconfig.Clusters[i].ID)
+					glog.V(5).Infof("updating cluster details in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
+					cName, updated := cs.updateClusterMap(cID)
+					if !updated {
+						continue
+					}
+					if cName == clusterName {
+						return cID, nil
+					}
+				}
+			} else { // if !found
+				glog.V(5).Infof("cluster details not found in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
+				glog.V(5).Infof("adding cluster details in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
+				cName, updated := cs.updateClusterMap(cID)
+				if !updated {
+					continue
+				}
+				if cName == clusterName {
+					return cID, nil
+				}
+			}
+		}
+	}
+
+	return "", status.Error(codes.Internal, fmt.Sprintf("unable to get cluster ID for cluster %s", clusterName))
+}
+
+// checkExpiry returns false if cluster detials are valid.
+// It returns true if cluster details have expired.
+func checkExpiry(clusterDetails interface{}) bool {
+	updateTime := clusterDetails.(ClusterDetails).lastupdated
+	expiryDuration := clusterDetails.(ClusterDetails).expiryDuration
+	if time.Since(updateTime).Hours() < float64(expiryDuration) {
+		return false
+	} else {
+		return true
+	}
+}
+
+// updateClusterMap updates the clusterMap with cluster details.
+// It returns true if cache map is updated else it returns false.
+func (cs *ScaleControllerServer) updateClusterMap(cID string) (string, bool) {
+	glog.V(5).Infof("creating new connector for the cluster %s", cID)
+	clusterConnector, err := cs.getConnFromClusterID(cID)
+	// clusterConnector, err := connectors.NewSpectrumRestV2(cluster)
+	if err != nil {
+		glog.V(5).Infof("unable to create new connector for the cluster %s", cID)
+		return "", false
+	}
+
+	clusterSummary, err := clusterConnector.GetClusterSummary()
+	if err != nil {
+		glog.V(5).Infof("unable to get cluster summary for cluster %s", cID)
+		return "", false
+	}
+
+	cName := clusterSummary.ClusterName
+	// cID = fmt.Sprint(clusterSummary.ClusterID)
+	cs.Driver.clusterMap.Store(ClusterName{cName}, ClusterDetails{cID, cName, time.Now(), 24})
+	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
+	glog.V(5).Infof("ClusterMap updated: [%s : %s]", cID, cName)
+	return cName, true
 }
