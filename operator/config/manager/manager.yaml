@@ -46,8 +46,8 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: CSI_DRIVER_IMAGE
-            value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0
-          image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
+            value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:ccadf534bb8c7c97161351ec94a93d7bb97f68a0127a753da6fa73e0b9902351
+          image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:f94ced08ffaba8f2895b12a0ba68007af3f9df750718683fe1d01f968b70fcf9
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
