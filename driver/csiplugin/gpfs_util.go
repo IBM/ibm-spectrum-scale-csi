@@ -251,6 +251,13 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if fsTypeSpecified && isSCTypeSpecified {
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"filesetType\" are mutually exclusive")
 	}
+	if fsTypeSpecified && inodeLimSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"inodeLimit\" are mutually exclusive")
+	}
+	if fsTypeSpecified && volDirPathSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"volDirBasePath\" are mutually exclusive")
+	}
+ 
 	if fsTypeSpecified || isSCTypeSpecified {
 		scaleVol.IsFilesetBased = true
 	}
