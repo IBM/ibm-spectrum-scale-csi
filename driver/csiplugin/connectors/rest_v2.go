@@ -168,6 +168,21 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	return cid_str, nil
 }
 
+// GetClusterSummary function returns the information details of the cluster.
+func (s *spectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
+	glog.V(4).Infof("rest_v2 GetClusterSummary")
+
+	getClusterURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/cluster")
+	getClusterResponse := GetClusterResponse{}
+
+	err := s.doHTTP(getClusterURL, "GET", &getClusterResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get cluster summary: %v", err)
+		return ClusterSummary{}, err
+	}
+	return getClusterResponse.Cluster.ClusterSummary, nil
+}
+
 func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
 	glog.V(4).Infof("rest_v2 GetTimeZoneOffset")
 
@@ -666,7 +681,6 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 
 	return getFilesetsResponse.Filesets, nil
 }
-
 
 func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", filesystemName, filesetName)
