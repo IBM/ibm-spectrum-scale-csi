@@ -25,6 +25,7 @@ import (
 type SpectrumScaleConnector interface {
 	//Cluster operations
 	GetClusterId() (string, error)
+	GetClusterSummary() (ClusterSummary, error)
 	GetTimeZoneOffset() (string, error)
 	GetScaleVersion() (string, error)
 	//Filesystem operations

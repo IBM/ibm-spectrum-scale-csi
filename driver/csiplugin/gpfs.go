@@ -21,6 +21,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
@@ -64,6 +65,30 @@ type VolCopyJobDetails struct {
 	volID     string
 }
 
+// ClusterDetails stores information of the cluster.
+type ClusterDetails struct {
+	// id of the Spectrum Scale cluster
+	id string
+	// name of the Spectrum Scale cluster
+	name string
+	// time when the object was last updated.
+	lastupdated time.Time
+	// expiry duration in hours.
+	expiryDuration float64
+}
+
+// ClusterName stores the name of the cluster.
+type ClusterName struct {
+	// name of the Spectrum Scale cluster
+	name string
+}
+
+// ClusterID stores the id of the cluster.
+type ClusterID struct {
+	// id of the Spectrum Scale cluster
+	id string
+}
+
 type ScaleDriver struct {
 	name          string
 	vendorVersion string
@@ -80,6 +105,9 @@ type ScaleDriver struct {
 
 	snapjobstatusmap    sync.Map
 	volcopyjobstatusmap sync.Map
+
+	// clusterMap map stores the cluster name as key and cluster details as value.
+	clusterMap sync.Map
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
@@ -481,4 +509,3 @@ func (driver *ScaleDriver) Run(endpoint string) {
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()
 }
-
