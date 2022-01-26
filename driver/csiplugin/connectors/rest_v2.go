@@ -168,6 +168,21 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	return cid_str, nil
 }
 
+// GetClusterSummary function returns the information details of the cluster.
+func (s *spectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
+	glog.V(4).Infof("rest_v2 GetClusterSummary")
+
+	getClusterURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/cluster")
+	getClusterResponse := GetClusterResponse{}
+
+	err := s.doHTTP(getClusterURL, "GET", &getClusterResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get cluster summary: %v", err)
+		return ClusterSummary{}, err
+	}
+	return getClusterResponse.Cluster.ClusterSummary, nil
+}
+
 func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
 	glog.V(4).Infof("rest_v2 GetTimeZoneOffset")
 
@@ -666,7 +681,6 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 
 	return getFilesetsResponse.Filesets, nil
 }
-
 
 func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", filesystemName, filesetName)
@@ -1348,4 +1362,58 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component strin
 	}
 
 	return true, nil
+}
+
+func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 setFilesystemPolicy for filesystem %s", filesystemName)
+
+	setPolicyURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName))
+	setPolicyResponse := GenericResponse{}
+
+	err := s.doHTTP(setPolicyURL, "PUT", &setPolicyResponse, policy)
+	if err != nil {
+		glog.Errorf("unable to send filesystem policy: %v", setPolicyResponse.Status.Message)
+		return err
+	}
+
+	err = s.waitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("setting policy rule %s for filesystem %s failed with error %v", policy.Policy, filesystemName, err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 GetTierInfoFromName. name %s, filesystem %s", tierName, filesystemName)
+
+	poolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName))
+	getPoolResponse := GenericResponse{}
+
+	err := s.doHTTP(poolURL, "GET", &getPoolResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get tier: %s info %v", tierName, getPoolResponse.Status.Message)
+		if strings.Contains(getPoolResponse.Status.Message, "Invalid value in 'tier'") {
+			return fmt.Errorf("invalid tier '%s' specified for filesystem %s", tierName, filesystemName)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
+	glog.V(4).Infof("rest_v2 CheckPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
+
+	partitionURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName))
+	getPartitionResponse := GenericResponse{}
+
+	// If it does or doesn't exist and we get an error we will default to just setting it again as an override
+	err := s.doHTTP(partitionURL, "GET", &getPartitionResponse, nil)
+	if err != nil {
+		return false
+	}
+
+	return true
 }

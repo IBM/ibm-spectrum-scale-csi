@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
@@ -369,6 +370,22 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 			glog.Errorf("volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, volName, scVol.VolBackendFs, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
 		}
+	} else {
+		// fileset is present. Confirm if creator is IBM Spectrum Scale CSI driver and fileset type is correct.
+		if (filesetInfo.Config.Comment != connectors.FilesetComment) {
+			glog.Errorf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName)
+			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName))
+		}
+		listFilesetType := ""
+		if filesetInfo.Config.IsInodeSpaceOwner == true {
+			listFilesetType = independentFileset
+		} else {
+			listFilesetType = dependentFileset
+		}
+		if opt[connectors.UserSpecifiedFilesetType] != listFilesetType {
+			glog.Errorf("volume:[%v] - the fileset type is not as expected, got type: [%s], expected type: [%s]", volName, listFilesetType, opt[connectors.UserSpecifiedFilesetType])
+			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset type is not as expected, got type: [%s], expected type: [%s]", volName, listFilesetType, opt[connectors.UserSpecifiedFilesetType]))
+		}
 	}
 
 	// fileset is present/created. Confirm if fileset is linked
@@ -473,13 +490,13 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	scaleVol, err := getScaleVolumeOptions(req.GetParameters())
-	isNewVolumeType := false
-	if scaleVol.StorageClassType == storageClassAdvanced {
-		isNewVolumeType = true
-	}
-
 	if err != nil {
 		return nil, err
+	}
+
+        isNewVolumeType := false
+	if scaleVol.StorageClassType == storageClassAdvanced {
+		isNewVolumeType = true
 	}
 
 	scaleVol.VolName = volName
@@ -591,20 +608,30 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.LocalFS = scaleVol.VolBackendFs
 	}
 
+	var remoteClusterID string
+	if scaleVol.ClusterId == "" && volFsInfo.Type == filesystemTypeRemote {
+		glog.V(5).Infof("filesystem %s is remotely mounted, getting cluster ID information of the owning cluster.", volFsInfo.Name)
+		clusterName := strings.Split(volFsInfo.Mount.RemoteDeviceName, ":")[0]
+		if remoteClusterID, err = cs.getRemoteClusterID(clusterName); err != nil {
+			return nil, err
+		}
+		glog.V(5).Infof("cluster ID for remote cluster %s is %s", clusterName, remoteClusterID)
+	}
+
 	if scaleVol.IsFilesetBased {
 		if scaleVol.ClusterId == "" {
-			scaleVol.ClusterId = PCid
-			glog.V(3).Infof("clusterID not provided in storage Class, using Primary ClusterID. Volume Name [%v]", scaleVol.VolName)
-			if volFsInfo.Type == filesystemTypeRemote {
-				glog.Errorf("volume filesystem %s is remotely mounted on Primary cluster, Specify owning cluster ID in storageClass", scaleVol.VolBackendFs)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume filesystem %s is remotely mounted on Primary cluster, Specify owning cluster ID in storageClass", scaleVol.VolBackendFs))
+			if volFsInfo.Type == filesystemTypeRemote { // if fileset based and remotely mounted.
+				glog.V(3).Infof("volume filesystem %s is remotely mounted on Primary cluster, using owning cluster ID %s.", scaleVol.VolBackendFs, remoteClusterID)
+				scaleVol.ClusterId = remoteClusterID
+			} else {
+				glog.V(3).Infof("volume filesystem %s is locally mounted on Primary cluster, using primary cluster ID %s.", scaleVol.VolBackendFs, PCid)
+				scaleVol.ClusterId = PCid
 			}
 		}
 		conn, err := cs.getConnFromClusterID(scaleVol.ClusterId)
 		if err != nil {
 			return nil, err
 		}
-
 		scaleVol.Connector = conn
 	} else {
 		scaleVol.Connector = scaleVol.PrimaryConnector
@@ -634,6 +661,47 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	glog.Infof("volume:[%v] -  spectrum scale volume create params : %v\n", scaleVol.VolName, scaleVol)
+
+	if scaleVol.IsFilesetBased && scaleVol.Compression != "" {
+		glog.Infof("createvolume: compression is enabled: changing volume name")
+		scaleVol.VolName = fmt.Sprintf("%s-COMPRESS%scsi", scaleVol.VolName, strings.ToUpper(scaleVol.Compression))
+	}
+
+	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
+		if err := cs.checkVolTierSupport(volFsInfo.Version); err != nil {
+			return nil, err
+		}
+
+		if err := scaleVol.Connector.GetTierInfoFromName(scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
+			return nil, err
+		}
+
+		rule := "RULE 'csi-T%s' SET POOL '%s' WHERE FILESET_NAME LIKE 'pvc-%%-T%scsi%%'"
+		policy := connectors.Policy{}
+
+		policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Tier, scaleVol.Tier)
+		policy.Priority = -5
+		policy.Partition = fmt.Sprintf("csi-T%s", scaleVol.Tier)
+
+		scaleVol.VolName = fmt.Sprintf("%s-T%scsi", scaleVol.VolName, scaleVol.Tier)
+		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+
+		// Since we are using a SET POOL rule, if there is not already a default rule in place in the policy partition
+		// then all files that do not match our rules will have no defined place to go. This sets a default rule with
+		// "lower" priority than the main policy as a catch all. If there is already a default rule in the main policy
+		// file then that will take precedence
+		// TODO: get pool info and find first non-system data pool and use that if possible, otherwise system
+		defaultPartitionName := "csi-defaultRule"
+		if !scaleVol.Connector.CheckIfDefaultPolicyPartitionExists(defaultPartitionName, scaleVol.VolBackendFs) {
+			glog.Infof("createvolume: setting default policy partition rule")
+
+			defaultPolicy := connectors.Policy{}
+			defaultPolicy.Policy = "RULE 'csi-defaultRule' SET POOL 'system'"
+			defaultPolicy.Priority = 5
+			defaultPolicy.Partition = defaultPartitionName
+			scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)
+		}
+	}
 
 	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)
 	if err != nil {
@@ -917,6 +985,17 @@ func (cs *ScaleControllerServer) checkMinScaleVersion(conn connectors.SpectrumSc
 	return true, nil
 }
 
+func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version string) bool {
+	/* Assuming Filesystem version (fsVersion) in a format like 27.00 and version as 2700 */
+	assembledFsVer := strings.ReplaceAll(fsVersion, ".", "")
+
+	glog.Infof("fs version (%s) vs min required version (%s)", assembledFsVer, version)
+	if assembledFsVer < version {
+		return false
+	}
+	return true
+}
+
 func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumScaleConnector) error {
 	/* Verify Spectrum Scale Version is not below 5.1.1-0 */
 	versionCheck, err := cs.checkMinScaleVersion(conn, "5110")
@@ -939,6 +1018,17 @@ func (cs *ScaleControllerServer) checkVolCloneSupport(conn connectors.SpectrumSc
 
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for volume cloning support with CSI is 5.1.2-1")
+	}
+	return nil
+}
+
+func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
+	/* Verify Spectrum Scale Filesystem Version is not below 5.1.3-0 (27.00) */
+
+	versionCheck := cs.checkMinFsVersion(version, "2700")
+
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale Filesystem version for tiering support with CSI is 5.1.3-0")
 	}
 	return nil
 }
@@ -1102,20 +1192,20 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	return sIdMem, nil
 }
 
-func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (*csi.DeleteVolumeResponse, error) {
+func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (bool, error) {
 	//Check if fileset exist has any snapshot
 	snapshotList, err := conn.ListFilesetSnapshots(FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
 			glog.V(4).Infof("fileset seems already deleted - %v", err)
-			return &csi.DeleteVolumeResponse{}, nil
+			return true, nil
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+		return false, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 	}
 
 	if len(snapshotList) > 0 {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+		return false, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
 	}
 	glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", FilesetName)
 
@@ -1124,11 +1214,49 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, Fileset
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
 			glog.V(4).Infof("fileset seems already deleted - %v", err)
-			return &csi.DeleteVolumeResponse{}, nil
+			return true, nil
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+		return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 	}
-	return nil, nil
+	return false, nil
+}
+
+// This function deletes fileset for Consitency Group
+func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (error) {
+	glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+	filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("listing of filesets for filesystem: [%v] failed. Error: [%v]", FilesystemName, err))
+	}
+
+	if len(filesets) > 1 {
+		glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
+		return nil
+	}
+
+	// Check if fileset was created by IBM Spectrum Scale CSI Driver
+	filesetDetails, err := conn.ListFileset(FilesystemName, volumeIdMembers.ConsistencyGroup)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0072C") ||
+			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+			glog.V(4).Infof("fileset seems already deleted - %v", err)
+			return nil
+		}
+		return status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v]. Error: [%v]", volumeIdMembers.ConsistencyGroup, err))
+	}
+
+	if filesetDetails.Config.Comment == connectors.FilesetComment {
+		// Delete independent fileset for consistency group
+		_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+		if err != nil {
+			return err
+		}
+		glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
+	} else {
+		glog.V(4).Infof("independent fileset for consistency group [%v] not created by IBM Spectrum Scale CSI Driver. Cannot delete it.", volumeIdMembers.ConsistencyGroup)
+	}
+
+	return nil
 }
 
 func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
@@ -1217,34 +1345,26 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 					inodeSpace = filesetDetails.Config.InodeSpace
 				}
 
-				delVolResponse, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
-				if !(delVolResponse == nil && err == nil) {
-					return delVolResponse, err
+				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
+				if err != nil {
+					return nil, err
+				}
+
+				// Delete fileset related symlink
+				if !isFilesetAlreadyDel {
+					err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
+					if err != nil {
+						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
+					}
 				}
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-					filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
-					if err == nil {
-						found := false
-						if len(filesets) > 1 {
-							found = true
-							glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
-						}
-
-						if !found {
-							// Delete independent fileset for consistency group
-							_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
-							if err != nil {
-								glog.V(4).Infof("deletion of independent fileset for consistency group [%v] failed with error: [%v]", volumeIdMembers.ConsistencyGroup, err)
-							} else {
-								glog.V(4).Infof("deleted independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-							}
-						}
-					} else {
-						glog.V(4).Infof("listing of filesets for filesystem: [%v] failed with error: [%v]", FilesystemName, err)
+					err := cs.DeleteCGFileset(FilesystemName, inodeSpace, volumeIdMembers, conn)
+					if err != nil {
+						return nil, err
 					}
 				}
+				return &csi.DeleteVolumeResponse{}, nil
 			} else {
 				glog.Infof("pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", pvName, FilesetName)
 			}
@@ -1817,4 +1937,120 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 func (cs *ScaleControllerServer) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
+}
+
+// getRemoteClusterID returns the cluster ID for the passed cluster name.
+func (cs *ScaleControllerServer) getRemoteClusterID(clusterName string) (string, error) {
+
+	glog.V(5).Infof("fetching cluster details from cache map for cluster %s", clusterName)
+	clusterDetails, found := cs.Driver.clusterMap.Load(ClusterName{clusterName})
+	if found {
+		glog.V(5).Infof("checking if cluster details found from cache map for cluster %s has expired.", clusterName)
+		if expired := checkExpiry(clusterDetails); !expired { // cluster details are not expired.
+			glog.V(5).Infof("cluster details found from cache map for cluster %s are valid.", clusterName)
+			return clusterDetails.(ClusterDetails).id, nil
+		} else { // cluster details are expired
+			glog.V(5).Infof("cluster details found from cache map for cluster %s are expired.", clusterName)
+			cID := clusterDetails.(ClusterDetails).id
+			conn, err := cs.getConnFromClusterID(cID)
+			if err != nil {
+				return "", err
+			}
+			clusterSummary, err := conn.GetClusterSummary()
+			if err != nil {
+				return "", err
+			}
+			cName := clusterSummary.ClusterName
+			if cName == clusterName {
+				glog.V(5).Infof("updating cluster details in cache map for cluster %s.", clusterName)
+				cs.Driver.clusterMap.Store(ClusterName{cName}, ClusterDetails{cID, cName, time.Now(), 24})
+				cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
+				glog.V(5).Infof("ClusterMap updated, [%s : %s]", cID, cName)
+				return cID, nil
+			} else {
+				found = false
+			}
+		}
+	}
+
+	if !found {
+		glog.V(5).Infof("cluster details are either expired or not found in cache map for cluster %s. Updating the cache map.", clusterName)
+		scaleconfig := settings.LoadScaleConfigSettings()
+
+		for i := range scaleconfig.Clusters {
+
+			cID := scaleconfig.Clusters[i].ID
+			glog.V(5).Infof("fetching cluster details from cache map for cluster %s", scaleconfig.Clusters[i].ID)
+			clusterDetails, found := cs.Driver.clusterMap.Load(ClusterID{cID})
+			if found {
+				glog.V(5).Infof("checking if cluster details found from cache map for cluster %s has expired.", scaleconfig.Clusters[i].ID)
+				if expired := checkExpiry(clusterDetails); !expired {
+					glog.V(5).Infof("cluster details found from cache map for cluster %s are valid.", scaleconfig.Clusters[i].ID)
+					cName := clusterDetails.(ClusterDetails).name
+					if cName == clusterName {
+						return cID, nil
+					}
+				} else {
+					glog.V(5).Infof("cluster details found from cache map for cluster %s are expired.", scaleconfig.Clusters[i].ID)
+					glog.V(5).Infof("updating cluster details in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
+					cName, updated := cs.updateClusterMap(cID)
+					if !updated {
+						continue
+					}
+					if cName == clusterName {
+						return cID, nil
+					}
+				}
+			} else { // if !found
+				glog.V(5).Infof("cluster details not found in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
+				glog.V(5).Infof("adding cluster details in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
+				cName, updated := cs.updateClusterMap(cID)
+				if !updated {
+					continue
+				}
+				if cName == clusterName {
+					return cID, nil
+				}
+			}
+		}
+	}
+
+	return "", status.Error(codes.Internal, fmt.Sprintf("unable to get cluster ID for cluster %s", clusterName))
+}
+
+// checkExpiry returns false if cluster detials are valid.
+// It returns true if cluster details have expired.
+func checkExpiry(clusterDetails interface{}) bool {
+	updateTime := clusterDetails.(ClusterDetails).lastupdated
+	expiryDuration := clusterDetails.(ClusterDetails).expiryDuration
+	if time.Since(updateTime).Hours() < float64(expiryDuration) {
+		return false
+	} else {
+		return true
+	}
+}
+
+// updateClusterMap updates the clusterMap with cluster details.
+// It returns true if cache map is updated else it returns false.
+func (cs *ScaleControllerServer) updateClusterMap(cID string) (string, bool) {
+	glog.V(5).Infof("creating new connector for the cluster %s", cID)
+	clusterConnector, err := cs.getConnFromClusterID(cID)
+	// clusterConnector, err := connectors.NewSpectrumRestV2(cluster)
+	if err != nil {
+		glog.V(5).Infof("unable to create new connector for the cluster %s", cID)
+		return "", false
+	}
+
+	clusterSummary, err := clusterConnector.GetClusterSummary()
+	if err != nil {
+		glog.V(5).Infof("unable to get cluster summary for cluster %s", cID)
+		return "", false
+	}
+
+	cName := clusterSummary.ClusterName
+	// cID = fmt.Sprint(clusterSummary.ClusterID)
+	cs.Driver.clusterMap.Store(ClusterName{cName}, ClusterDetails{cID, cName, time.Now(), 24})
+	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
+	glog.V(5).Infof("ClusterMap updated: [%s : %s]", cID, cName)
+	return cName, true
 }
