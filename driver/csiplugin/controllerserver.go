@@ -675,6 +675,47 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	glog.Infof("volume:[%v] -  spectrum scale volume create params : %v\n", scaleVol.VolName, scaleVol)
 
+	if scaleVol.IsFilesetBased && scaleVol.Compression != "" {
+		glog.Infof("createvolume: compression is enabled: changing volume name")
+		scaleVol.VolName = fmt.Sprintf("%s-COMPRESS%scsi", scaleVol.VolName, strings.ToUpper(scaleVol.Compression))
+	}
+
+	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
+		if err := cs.checkVolTierSupport(volFsInfo.Version); err != nil {
+			return nil, err
+		}
+
+		if err := scaleVol.Connector.GetTierInfoFromName(scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
+			return nil, err
+		}
+
+		rule := "RULE 'csi-T%s' SET POOL '%s' WHERE FILESET_NAME LIKE 'pvc-%%-T%scsi%%'"
+		policy := connectors.Policy{}
+
+		policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Tier, scaleVol.Tier)
+		policy.Priority = -5
+		policy.Partition = fmt.Sprintf("csi-T%s", scaleVol.Tier)
+
+		scaleVol.VolName = fmt.Sprintf("%s-T%scsi", scaleVol.VolName, scaleVol.Tier)
+		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+
+		// Since we are using a SET POOL rule, if there is not already a default rule in place in the policy partition
+		// then all files that do not match our rules will have no defined place to go. This sets a default rule with
+		// "lower" priority than the main policy as a catch all. If there is already a default rule in the main policy
+		// file then that will take precedence
+		// TODO: get pool info and find first non-system data pool and use that if possible, otherwise system
+		defaultPartitionName := "csi-defaultRule"
+		if !scaleVol.Connector.CheckIfDefaultPolicyPartitionExists(defaultPartitionName, scaleVol.VolBackendFs) {
+			glog.Infof("createvolume: setting default policy partition rule")
+
+			defaultPolicy := connectors.Policy{}
+			defaultPolicy.Policy = "RULE 'csi-defaultRule' SET POOL 'system'"
+			defaultPolicy.Priority = 5
+			defaultPolicy.Partition = defaultPartitionName
+			scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)
+		}
+	}
+
 	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)
 	if err != nil {
 		return nil, err
@@ -954,6 +995,17 @@ func (cs *ScaleControllerServer) checkMinScaleVersion(conn connectors.SpectrumSc
 	return true, nil
 }
 
+func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version string) bool {
+	/* Assuming Filesystem version (fsVersion) in a format like 27.00 and version as 2700 */
+	assembledFsVer := strings.ReplaceAll(fsVersion, ".", "")
+
+	glog.Infof("fs version (%s) vs min required version (%s)", assembledFsVer, version)
+	if assembledFsVer < version {
+		return false
+	}
+	return true
+}
+
 func (cs *ScaleControllerServer) checkSnapshotSupport(conn connectors.SpectrumScaleConnector) error {
 	/* Verify Spectrum Scale Version is not below 5.1.1-0 */
 	versionCheck, err := cs.checkMinScaleVersion(conn, "5110")
@@ -976,6 +1028,17 @@ func (cs *ScaleControllerServer) checkVolCloneSupport(conn connectors.SpectrumSc
 
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for volume cloning support with CSI is 5.1.2-1")
+	}
+	return nil
+}
+
+func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
+	/* Verify Spectrum Scale Filesystem Version is not below 5.1.3-0 (27.00) */
+
+	versionCheck := cs.checkMinFsVersion(version, "2700")
+
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale Filesystem version for tiering support with CSI is 5.1.3-0")
 	}
 	return nil
 }

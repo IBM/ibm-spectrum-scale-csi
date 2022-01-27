@@ -107,6 +107,19 @@ type scaleVolSnapId struct {
 	SnapId    string
 } //nolint
 
+func IsValidCompressionAlgorithm(input string) bool {
+	switch strings.ToLower(input) {
+	case
+		"z",
+		"lz4",
+		"zfast",
+		"alphae",
+		"alphah":
+		return true
+	}
+	return false
+}
+
 func getRemoteFsName(remoteDeviceName string) string {
 	splitDevName := strings.Split(remoteDeviceName, ":")
 	remDevFs := splitDevName[len(splitDevName)-1]
@@ -127,7 +140,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
 	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
-
 	storageClassType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedStorageClassType]
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
@@ -322,6 +334,28 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 
 	scaleVol.ConsistencyGroup = volOptions["csi.storage.k8s.io/pvc/namespace"]
+
+	if isCompressionSpecified {
+		// Default compression will be Z if set but not specified
+		if strings.ToLower(compression) == "true" {
+			glog.V(5).Infof("gpfs_util compression was set to true. Defaulting to Z")
+			compression = "z"
+		}
+
+		if !IsValidCompressionAlgorithm(compression) {
+			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
+				compression)
+			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
+				"invalid compression algorithm specified: %s", compression)
+		}
+		scaleVol.Compression = compression
+		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
+	}
+
+	if isTierSpecified && tier != "" {
+		scaleVol.Tier = tier
+		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
+	}
 
 	return scaleVol, nil
 }
