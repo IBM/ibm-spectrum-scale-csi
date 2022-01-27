@@ -18,10 +18,12 @@ package csiscaleoperator
 
 import (
 	securityv1 "github.com/openshift/api/security/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	v1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
@@ -34,6 +36,7 @@ const (
 	storageApiGroup                      string = "storage.k8s.io"
 	rbacAuthorizationApiGroup            string = "rbac.authorization.k8s.io"
 	podSecurityPolicyApiGroup            string = "extensions"
+	coordinationApiGroup                 string = "coordination.k8s.io"
 	storageClassesResource               string = "storageclasses"
 	persistentVolumesResource            string = "persistentvolumes"
 	persistentVolumeClaimsResource       string = "persistentvolumeclaims"
@@ -51,6 +54,7 @@ const (
 	namespacesResource                   string = "namespaces"
 	securityContextConstraintsResource   string = "securitycontextconstraints"
 	podSecurityPolicyResource            string = "podsecuritypolicies"
+	leaseResource                        string = "leases"
 	verbGet                              string = "get"
 	verbList                             string = "list"
 	verbWatch                            string = "watch"
@@ -119,58 +123,131 @@ func (c *CSIScaleOperator) GenerateNodeServiceAccount() *corev1.ServiceAccount {
 // GenerateAttacherServiceAccount creates a kubernetes service account for the attacher service
 // and modify the service account to use secret as an imagePullSecret.
 // It returns an object of type *corev1.ServiceAccount.
-func (c *CSIScaleOperator) GenerateAttacherServiceAccount() *corev1.ServiceAccount {
+func (c *CSIScaleOperator) GenerateSidecarServiceAccount() *corev1.ServiceAccount {
 
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.GetNameForResource(config.CSIAttacherServiceAccount, c.Name),
+			Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
 		},
 	}
 }
 
-// GenerateProvisionerServiceAccount creates a kubernetes service account for the provisioner service
-// and modify the service account to use secret as an imagePullSecret.
-// It returns an object of type *corev1.ServiceAccount.
-func (c *CSIScaleOperator) GenerateProvisionerServiceAccount() *corev1.ServiceAccount {
-
-	return &corev1.ServiceAccount{
+/*
+// GenerateAttacherClusterRole returns a kubernetes clusterrole object for the attacher service.
+func (c *CSIScaleOperator) GenerateSidecarClusterRole() *rbacv1.ClusterRole {
+	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.GetNameForResource(config.CSIProvisionerServiceAccount, c.Name),
-			Namespace: c.Namespace,
-			Labels:    c.GetLabels(),
+			Name:   config.GetNameForResource(config.Sidecar, c.Name),
+			Labels: c.GetLabels(),
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{storageApiGroup},
+				Resources: []string{csiNodesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{storageApiGroup},
+				Resources: []string{volumeAttachmentsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbPatch},
+			},
+			{
+				APIGroups: []string{storageApiGroup},
+				Resources: []string{volumeAttachmentsStatusResource},
+				Verbs:     []string{verbPatch},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{persistentVolumesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbDelete, verbPatch, verbUpdate},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{persistentVolumeClaimsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate},
+			},
+			{
+				APIGroups: []string{storageApiGroup},
+				Resources: []string{storageClassesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{eventsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbUpdate, verbPatch},
+			},
+			{
+				APIGroups: []string{snapshotStorageApiGroup},
+				Resources: []string{volumeSnapshotsResource},
+				Verbs:     []string{verbGet, verbList},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{nodesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{snapshotStorageApiGroup},
+				Resources: []string{volumeSnapshotContentsResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbWatch, verbUpdate, verbDelete, verbPatch},
+			},
+			{
+				APIGroups: []string{snapshotStorageApiGroup},
+				Resources: []string{volumeSnapshotContentsStatusResource},
+				Verbs:     []string{verbUpdate, verbPatch},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{podsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{persistentVolumeClaimsStatusResource},
+				Verbs:     []string{verbList, verbWatch, verbGet, verbCreate, verbPatch, verbUpdate},
+			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
+		},
+	}
+	if len(c.Spec.CSIpspname) != 0 {
+		clusterRole.Rules = append(clusterRole.Rules, rbacv1.PolicyRule{
+			APIGroups:     []string{podSecurityPolicyApiGroup},
+			Resources:     []string{podSecurityPolicyResource},
+			ResourceNames: []string{c.Spec.CSIpspname},
+			Verbs:         []string{verbUse},
+		})
+	}
+	return clusterRole
+}
+
+// GenerateAttacherClusterRoleBinding returns a kubernetes clusterrolebinding object for the attacher service.
+func (c *CSIScaleOperator) GenerateSidecarClusterRoleBinding() *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   config.GetNameForResource(config.Sidecar, c.Name),
+			Labels: c.GetLabels(),
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+				Namespace: c.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     config.GetNameForResource(config.Sidecar, c.Name),
+			APIGroup: rbacAuthorizationApiGroup,
 		},
 	}
 }
-
-// GenerateSnapshotterServiceAccount creates a kubernetes service account for the snapshotter service
-// and modify the service account to use secret as an imagePullSecret.
-// It returns an object of type *corev1.ServiceAccount.
-func (c *CSIScaleOperator) GenerateSnapshotterServiceAccount() *corev1.ServiceAccount {
-
-	return &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.GetNameForResource(config.CSISnapshotterServiceAccount, c.Name),
-			Namespace: c.Namespace,
-			Labels:    c.GetLabels(),
-		},
-	}
-}
-
-// GenerateResizerServiceAccount creates a kubernetes service account for the resizer service
-// and modify the service account to use secret as an imagePullSecret.
-// It returns an object of type *corev1.ServiceAccount.
-func (c *CSIScaleOperator) GenerateResizerServiceAccount() *corev1.ServiceAccount {
-
-	return &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.GetNameForResource(config.CSIResizerServiceAccount, c.Name),
-			Namespace: c.Namespace,
-			Labels:    c.GetLabels(),
-		},
-	}
-}
+*/
 
 // GenerateProvisionerClusterRole returns a kubernetes clusterrole object for the provisioner service.
 func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole {
@@ -225,6 +302,11 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeAttachmentsResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -248,7 +330,7 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRoleBinding() *rbacv1.Clust
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSIProvisionerServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -293,6 +375,11 @@ func (c *CSIScaleOperator) GenerateAttacherClusterRole() *rbacv1.ClusterRole {
 				Resources: []string{volumeAttachmentsStatusResource},
 				Verbs:     []string{verbPatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -316,7 +403,7 @@ func (c *CSIScaleOperator) GenerateAttacherClusterRoleBinding() *rbacv1.ClusterR
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSIAttacherServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -356,6 +443,11 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeSnapshotContentsStatusResource},
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -379,7 +471,7 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRoleBinding() *rbacv1.Clust
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSISnapshotterServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -400,7 +492,7 @@ func (c *CSIScaleOperator) GenerateResizerClusterRoleBinding() *rbacv1.ClusterRo
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSIResizerServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -449,6 +541,11 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{storageClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
 		},
 	}
@@ -681,4 +778,146 @@ func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 	}
 
 	return nodeSelectors
+}
+
+// GetNodeTolerations returns an array of kubernetes object of type corev1.Tolerations
+func (s *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
+
+	tolerationsSeconds := config.TolerationsSeconds
+	tolerations := []corev1.Toleration{
+		{
+			Key:               "node.kubernetes.io/unreachable",
+			Operator:          "Exists",
+			Effect:            "NoExecute",
+			TolerationSeconds: &tolerationsSeconds,
+		},
+		{
+			Key:               "node.kubernetes.io/not-ready",
+			Operator:          "Exists",
+			Effect:            "NoExecute",
+			TolerationSeconds: &tolerationsSeconds,
+		},
+	}
+
+	return tolerations
+}
+
+func (s *CSIScaleOperator) GetPodAntiAffinity() *corev1.PodAntiAffinity {
+	podAntiAffinity := corev1.PodAntiAffinity{
+		RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+			{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "app",
+							Operator: "In",
+							Values:   []string{"csi-sidecar-controller"},
+						},
+					},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			},
+		},
+	}
+
+	return &podAntiAffinity
+}
+
+func (s *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
+	//tolerationsSeconds := config.TolerationsSeconds
+	probe := corev1.Probe{
+		FailureThreshold:    int32(1),
+		InitialDelaySeconds: int32(10),
+		TimeoutSeconds:      int32(10),
+		PeriodSeconds:       int32(20),
+		Handler:             s.GetHandler(),
+	}
+	return &probe
+}
+
+func (s *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
+	ports := []corev1.ContainerPort{
+		{
+			ContainerPort: int32(8080),
+			Name:          "http-endpoint",
+			Protocol:      s.GetProtocol(),
+		},
+	}
+	return ports
+}
+
+func (s *CSIScaleOperator) GetProvisionerContainerPort() []corev1.ContainerPort {
+	ports := []corev1.ContainerPort{
+		{
+			ContainerPort: int32(8081),
+			Name:          "http-endpoint",
+			Protocol:      s.GetProtocol(),
+		},
+	}
+	return ports
+}
+
+func (s *CSIScaleOperator) GetResizerContainerPort() []corev1.ContainerPort {
+	ports := []corev1.ContainerPort{
+		{
+			ContainerPort: int32(8083),
+			Name:          "http-endpoint",
+			Protocol:      s.GetProtocol(),
+		},
+	}
+	return ports
+}
+
+func (s *CSIScaleOperator) GetSnapshotterContainerPort() []corev1.ContainerPort {
+	ports := []corev1.ContainerPort{
+		{
+			ContainerPort: int32(8082),
+			Name:          "http-endpoint",
+			Protocol:      s.GetProtocol(),
+		},
+	}
+	return ports
+}
+
+func (s *CSIScaleOperator) GetProtocol() corev1.Protocol {
+	var protocol corev1.Protocol = "TCP"
+	return protocol
+}
+
+func (s *CSIScaleOperator) GetHandler() corev1.Handler {
+	handler := corev1.Handler{
+		HTTPGet: s.GetHTTPGetAction(),
+	}
+	return handler
+}
+
+func (s CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
+	action := corev1.HTTPGetAction{
+		Path: "/healthz/leader-election",
+		Port: intstr.FromString("http-endpoint"),
+	}
+	return &action
+}
+
+func (s CSIScaleOperator) GetDeploymentStrategy() appsv1.DeploymentStrategy {
+	strategy := appsv1.DeploymentStrategy{
+		RollingUpdate: s.GetRollingUpdateDeployment(),
+		Type:          s.GetDeploymentStrategyType(),
+	}
+	return strategy
+}
+
+func (s CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDeployment {
+	maxSurge := intstr.FromString("25%")
+	maxUnavailable := intstr.FromString("50%")
+	deploy := appsv1.RollingUpdateDeployment{
+		MaxSurge:       &maxSurge,
+		MaxUnavailable: &maxUnavailable,
+	}
+	return &deploy
+}
+
+func (s *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategyType {
+	var StrategyType appsv1.DeploymentStrategyType = "RollingUpdate"
+	return StrategyType
 }

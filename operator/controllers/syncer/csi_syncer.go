@@ -86,15 +86,14 @@ func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscal
 	})
 }
 
-// GetAttacherSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI attacher service.
-func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+func GetSidecarSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
-	logger := csiLog.WithName("GetAttacherSyncer")
-	logger.Info("Creating a syncer object for the attacher statefulset.")
+	logger := csiLog.WithName("GetSidecarSyncer")
+	logger.Info("Creating a syncer object for the sidecar deployment.")
 
-	obj := &appsv1.StatefulSet{
+	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        config.GetNameForResource(config.CSIControllerAttacher, driver.Name),
+			Name:        config.GetNameForResource(config.CSIController, driver.Name),
 			Namespace:   driver.Namespace,
 			Annotations: driver.GetAnnotations("", ""),
 			Labels:      driver.GetLabels(),
@@ -107,85 +106,198 @@ func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscale
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncAttacherFn()
+		return sync.SyncSidecarFn()
 	})
 }
 
-// GetProvisionerSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI provisioner service.
-func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+// SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
+func (s *csiControllerSyncer) SyncSidecarFn() error {
 
-	logger := csiLog.WithName("GetProvisionerSyncer")
-	logger.Info("Creating a syncer object for the provisioner statefulset.")
+	logger := csiLog.WithName("SyncSidecarFn")
+	logger.Info("Mutating the sidecar deployment object into it's desired state.")
 
-	obj := &appsv1.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        config.GetNameForResource(config.CSIControllerProvisioner, driver.Name),
-			Namespace:   driver.Namespace,
-			Annotations: driver.GetAnnotations("", ""),
-			Labels:      driver.GetLabels(),
+	out := s.obj.(*appsv1.Deployment)
+
+	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels("csi-sidecar-controller"))
+	replicas := config.ReplicaCount
+	out.Spec.Replicas = &replicas
+	// out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
+	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
+
+	secrets := []corev1.LocalObjectReference{}
+	if len(s.driver.Spec.ImagePullSecrets) > 0 {
+		for _, s := range s.driver.Spec.ImagePullSecrets {
+			logger.Info("SyncSidecarFn: Got ", "ImagePullSecret:", s)
+			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
+		}
+	} else {
+		// Use default imagePullSecret
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
+	}
+
+	// ensure template
+	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels("csi-sidecar-controller")
+	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
+	if len(secrets) != 0 {
+		out.Spec.Template.Spec.ImagePullSecrets = secrets
+	}
+	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
+	// out.Spec.Template.Spec.Tolerations = append(out.Spec.Template.Spec.Tolerations, s.driver.GetNodeTolerations()...)
+	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ControllerNodeSelector)
+	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
+
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSidecarPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ensureAttacherPodSpec returns an object of type corev1.PodSpec.
+// PodSpec contains description of the attacher pod.
+func (s *csiControllerSyncer) ensureSidecarPodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
+
+	logger := csiLog.WithName("ensureSidecarPodSpec")
+	logger.Info("Generating pod description for the sidecar pod.")
+
+	// fsGroup := config.ControllerUserID
+	pod := corev1.PodSpec{
+		Containers: s.ensureSidecarContainersSpec(),
+		Volumes:    s.ensureVolumes(),
+		//		SecurityContext: &corev1.PodSecurityContext{
+		//			FSGroup:   &fsGroup,
+		//			RunAsUser: &fsGroup,
+		//		},
+		Affinity:           s.driver.Spec.Affinity,
+		Tolerations:        s.driver.Spec.Tolerations,
+		ServiceAccountName: config.GetNameForResource(config.CSISidecarServiceAccount, s.driver.Name),
+	}
+	if pod.Affinity != nil {
+		pod.Affinity.PodAntiAffinity = s.driver.GetPodAntiAffinity()
+	} else {
+		affinity := corev1.Affinity{
+			PodAntiAffinity: s.driver.GetPodAntiAffinity(),
+		}
+		pod.Affinity = &affinity
+	}
+
+	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
+
+	if len(secrets) != 0 {
+		pod.ImagePullSecrets = secrets
+	}
+	return pod
+}
+
+// ensureAttacherContainersSpec returns an object of type corev1.Container.
+// Container object contains description for the container within the attacher pod.
+func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
+
+	logger := csiLog.WithName("ensureAttacherContainersSpec")
+	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
+
+	attacher := s.ensureContainer(attacherContainerName,
+		s.getSidecarImage(config.CSIAttacher),
+		// TODO: make timeout configurable
+		[]string{
+			"--v=5",
+			"--csi-address=$(ADDRESS)",
+			"--resync=10m",
+			"--timeout=2m",
+			"--leader-election",
+			"--http-endpoint=:8080",
+			//"--leader-election-lease-duration=15s",
+			//"--leader-election-renew-deadline=10s",
+			//"--leader-election-retry-period=5s",
 		},
-	}
+	)
+	attacher.Ports = s.driver.GetContainerPort()
+	attacher.LivenessProbe = s.driver.GetLivenessProbe()
+	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
-	sync := &csiControllerSyncer{
-		driver: driver,
-		obj:    obj,
-	}
-
-	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncProvisionerFn()
-	})
-}
-
-// GetSnapshotterSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI snapshotter service.
-func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
-
-	logger := csiLog.WithName("GetSnapshotterSyncer")
-	logger.Info("Creating a syncer object for the snapshotter statefulset.")
-
-	obj := &appsv1.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        config.GetNameForResource(config.CSIControllerSnapshotter, driver.Name),
-			Namespace:   driver.Namespace,
-			Annotations: driver.GetAnnotations("", ""),
-			Labels:      driver.GetLabels(),
+	snapshotter := s.ensureContainer(snapshotterContainerName,
+		s.getSidecarImage(config.CSISnapshotter),
+		// TODO: make timeout configurable
+		[]string{
+			"--csi-address=$(ADDRESS)",
+			"--v=5",
+			"--leader-election",
+			"--http-endpoint=:8082",
+			//"--leader-election-lease-duration=15s",
+			//"--leader-election-renew-deadline=10s",
+			//"--leader-election-retry-period=5s",
 		},
-	}
+	)
+	snapshotter.Ports = s.driver.GetSnapshotterContainerPort()
+	snapshotter.LivenessProbe = s.driver.GetLivenessProbe()
+	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 
-	sync := &csiControllerSyncer{
-		driver: driver,
-		obj:    obj,
-	}
-
-	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncSnapshotterFn()
-	})
-}
-
-// GetResizerSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI resizer service.
-func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
-
-	logger := csiLog.WithName("GetResizerSyncer")
-	logger.Info("Creating a syncer object for the resizer statefulset.")
-
-	obj := &appsv1.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        config.GetNameForResource(config.CSIControllerResizer, driver.Name),
-			Namespace:   driver.Namespace,
-			Annotations: driver.GetAnnotations("", ""),
-			Labels:      driver.GetLabels(),
+	resizer := s.ensureContainer(resizerContainerName,
+		s.getSidecarImage(config.CSIResizer),
+		[]string{
+			"--csi-address=$(ADDRESS)",
+			"--v=5",
+			"--timeout=2m",
+			"--handle-volume-inuse-error=false",
+			"--workers=10",
+			"--leader-election",
+			"--http-endpoint=:8083",
+			//"--leader-election-lease-duration",
+			//"--leader-election-renew-deadline",
+			//"--leader-election-retry-period",
 		},
-	}
+	)
+	resizer.Ports = s.driver.GetResizerContainerPort()
+	resizer.LivenessProbe = s.driver.GetLivenessProbe()
+	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
 
-	sync := &csiControllerSyncer{
-		driver: driver,
-		obj:    obj,
-	}
+	provisioner := s.ensureContainer(provisionerContainerName,
+		s.getSidecarImage(config.CSIProvisioner),
+		// TODO: make timeout configurable
+		[]string{
+			"--csi-address=$(ADDRESS)",
+			"--timeout=2m",
+			"--worker-threads=10",
+			"--extra-create-metadata",
+			"--v=5",
+			"--default-fstype=gpfs",
+			"--leader-election",
+			"--http-endpoint=:8081",
+			//"--leader-election-lease-duration=15s",
+			//"--leader-election-renew-deadline=10s",
+			//"--leader-election-retry-period=5s",
+		},
+	)
+	provisioner.Ports = s.driver.GetProvisionerContainerPort()
+	provisioner.LivenessProbe = s.driver.GetLivenessProbe()
+	//provisioner.Ports = s.driver.GetProvisionerPort()
+	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
 
-	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncResizerFn()
-	})
+	/*
+		// liveness probe sidecar
+		livenessProbe := s.ensureContainer(nodeLivenessProbeContainerName,
+			s.getSidecarImage(config.LivenessProbe),
+			[]string{
+				"--health-port=" + "9821232",
+				"--csi-address=$(ADDRESS)",
+				"--v=2",
+				"--probe-timeout=3s",
+			},
+		)
+		livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
+	*/
+
+	return []corev1.Container{
+		attacher,
+		snapshotter,
+		provisioner,
+		resizer,
+		// livenessProbe,
+	}
 }
 
+// GetAttacherSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI attacher service.
 // SyncConfigMapFn is a function which mutates the existing configMap object into it's desired state.
 func (s *csiControllerSyncer) SyncConfigMapFn() error {
 
@@ -207,165 +319,7 @@ func (s *csiControllerSyncer) SyncConfigMapFn() error {
 	return nil
 }
 
-// SyncAttacherFn is a function which mutates the existing attacher statefulset object into it's desired state.
-func (s *csiControllerSyncer) SyncAttacherFn() error {
-
-	logger := csiLog.WithName("SyncAttacherFn")
-	logger.Info("Mutating the attacher statefulset object into it's desired state.")
-
-	out := s.obj.(*appsv1.StatefulSet)
-
-	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
-
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncAttacherFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
-	}
-
-	// ensure template
-	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
-	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
-	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
-
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SyncProvisionerFn is a function which mutates the existing provisioner statefulset object into it's desired state.
-func (s *csiControllerSyncer) SyncProvisionerFn() error {
-
-	logger := csiLog.WithName("SyncProvisionerFn")
-	logger.Info("Mutating the provisioner statefulset object into it's desired state.")
-
-	out := s.obj.(*appsv1.StatefulSet)
-
-	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)
-
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncProvisionerFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
-	}
-
-	// ensure template
-	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
-	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ProvisionerNodeSelector)
-	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
-
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SyncSnapshotterFn is a function which mutates the existing snapshotter statefulset object into it's desired state.
-func (s *csiControllerSyncer) SyncSnapshotterFn() error {
-
-	logger := csiLog.WithName("SyncSnapshotterFn")
-	logger.Info("Mutating the snapshotter statefulset object into it's desired state.")
-
-	out := s.obj.(*appsv1.StatefulSet)
-
-	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)
-
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncSnapshotterFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
-	}
-
-	// ensure template
-	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
-	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.SnapshotterNodeSelector)
-	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
-
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SyncResizerFn is a function which mutates the existing resizer statefulset object into it's desired state.
-func (s *csiControllerSyncer) SyncResizerFn() error {
-
-	logger := csiLog.WithName("SyncResizerFn")
-	logger.Info("Mutating the resizer statefulset object into it's desired state.")
-
-	out := s.obj.(*appsv1.StatefulSet)
-
-	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)
-
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncResizerFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
-	}
-
-	// ensure template
-	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
-	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ResizerNodeSelector)
-	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
-
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
+// SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
 
 /*
 TODO: Unused code. Remove if not required.
@@ -373,7 +327,7 @@ func (s *csiControllerSyncer) SyncFn() error {
 	logger := csiLog.WithName("SyncFn")
 	logger.Info("in SyncFn")
 
-	out := s.obj.(*appsv1.StatefulSet)
+	out := s.obj.(*appsv1.deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels())
 	out.Spec.ServiceName = config.GetNameForResource(config.CSIController, s.driver.Name)
@@ -407,103 +361,6 @@ func (s *csiControllerSyncer) SyncFn() error {
 
 // ensureAttacherPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the attacher pod.
-func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
-
-	logger := csiLog.WithName("ensureAttacherPodSpec")
-	logger.Info("Generating pod description for the attacher pod.")
-
-	// fsGroup := config.ControllerUserID
-	pod := corev1.PodSpec{
-		Containers: s.ensureAttacherContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
-		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
-	}
-	return pod
-}
-
-// ensureProvisionerPodSpec returns an object of type corev1.PodSpec.
-// PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
-
-	logger := csiLog.WithName("ensureProvisionerPodSpec")
-	logger.Info("Generating pod description for the provisioner pod.")
-
-	// fsGroup := config.ControllerUserID
-	pod := corev1.PodSpec{
-		Containers: s.ensureProvisionerContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
-		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
-	}
-	return pod
-}
-
-// ensureSnapshotterPodSpec returns an object of type corev1.PodSpec.
-// PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
-
-	logger := csiLog.WithName("ensureSnapshotterPodSpec")
-	logger.Info("Generating pod description for the snapshotter pod.")
-
-	// fsGroup := config.ControllerUserID
-	pod := corev1.PodSpec{
-		Containers: s.ensureSnapshotterContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
-		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
-	}
-	return pod
-}
-
-// ensureResizerPodSpec returns an object of type corev1.PodSpec.
-// PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
-
-	logger := csiLog.WithName("ensureResizerPodSpec")
-	logger.Info("Generating pod description for the resizer pod.")
-
-	// fsGroup := config.ControllerUserID
-	pod := corev1.PodSpec{
-		Containers: s.ensureResizerContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
-		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
-	}
-	return pod
-}
 
 /*
 TODO: Unused code. Remove if not required.
@@ -531,75 +388,6 @@ func (s *csiControllerSyncer) ensurePodSpec() corev1.PodSpec {
 
 // ensureAttacherContainersSpec returns an object of type corev1.Container.
 // Container object contains description for the container within the attacher pod.
-func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container {
-
-	logger := csiLog.WithName("ensureAttacherContainersSpec")
-	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
-
-	attacher := s.ensureContainer(attacherContainerName,
-		s.getSidecarImage(config.CSIAttacher),
-		// TODO: make timeout configurable
-		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m"},
-	)
-	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
-
-	return []corev1.Container{
-		attacher,
-	}
-}
-
-// ensureProvisionerContainersSpec returns an object of type corev1.Container.
-// Container object contains description for the container within the provisioner pod.
-func (s *csiControllerSyncer) ensureProvisionerContainersSpec() []corev1.Container {
-
-	logger := csiLog.WithName("ensureProvisionerContainersSpec")
-	logger.Info("Generating container description for the provisioner pod.", "provisionerContainerName", provisionerContainerName)
-
-	provisioner := s.ensureContainer(provisionerContainerName,
-		s.getSidecarImage(config.CSIProvisioner),
-		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10", "--extra-create-metadata", "--v=5", "--default-fstype=gpfs"},
-	)
-	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
-	return []corev1.Container{
-		provisioner,
-	}
-}
-
-// ensureSnapshotterContainersSpec returns an object of type corev1.Container.
-// Container object contains description for the container within the snapshotter pod.
-func (s *csiControllerSyncer) ensureSnapshotterContainersSpec() []corev1.Container {
-
-	logger := csiLog.WithName("ensureSnapshotterContainersSpec")
-	logger.Info("Generating container description for the snapshotter pod.", "snapshotterContainerName", snapshotterContainerName)
-
-	snapshotter := s.ensureContainer(snapshotterContainerName,
-		s.getSidecarImage(config.CSISnapshotter),
-		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--leader-election=false"},
-	)
-	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
-	return []corev1.Container{
-		snapshotter,
-	}
-}
-
-// ensureResizerContainersSpec returns an object of type corev1.Container.
-// Container object contains description for the container within the resizer pod.
-func (s *csiControllerSyncer) ensureResizerContainersSpec() []corev1.Container {
-
-	logger := csiLog.WithName("ensureResizerContainersSpec")
-	logger.Info("Generating container description for the resizer pod.", "resizerContainerName", resizerContainerName)
-
-	resizer := s.ensureContainer(resizerContainerName,
-		s.getSidecarImage(config.CSIResizer),
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10"},
-	)
-	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
-	return []corev1.Container{
-		resizer,
-	}
-}
 
 /*
 TODO: Unused code. Remove if not required.
@@ -710,6 +498,9 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		//EnvFrom:         s.getEnvSourcesFor(name),
 		Env:          s.getEnvFor(name),
 		VolumeMounts: s.getVolumeMountsFor(name),
+		//Ports:         s.driver.GetContaninerPort(),
+		//LivenessProbe: s.driver.GetLivenessProbe(),
+		// LivenessProbe: s.getLivenessProbe(),
 	}
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {
@@ -842,6 +633,9 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 			image = s.driver.GetDefaultImage(name)
 		}
 		logger.Info("Got image for", " resizer: ", image)
+	case config.LivenessProbe:
+		// TODO: Add Checks
+		image = s.driver.GetDefaultImage(name)
 	}
 	return image
 }

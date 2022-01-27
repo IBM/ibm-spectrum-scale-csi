@@ -37,7 +37,7 @@ type CSIScaleOperatorSpec struct {
 	// attacherNodeSelector is the node selector for attacher sidecar.
 	// +kubebuilder:default:={{key:scale,value:`true`}}
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Attacher Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
-	AttacherNodeSelector []CSINodeSelector `json:"attacherNodeSelector,omitempty"`
+	ControllerNodeSelector []CSINodeSelector `json:"controllerNodeSelector,omitempty"`
 
 	// clusters is a collection of Spectrum Scale cluster properties for the CSI driver to mount.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Clusters"
@@ -63,7 +63,7 @@ type CSIScaleOperatorSpec struct {
 	// provisionerNodeSelector is the node selector for provisioner sidecar.
 	// +kubebuilder:default:={{key:scale,value:`true`}}
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Provisioner Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
-	ProvisionerNodeSelector []CSINodeSelector `json:"provisionerNodeSelector,omitempty"`
+	//ProvisionerNodeSelector []CSINodeSelector `json:"provisionerNodeSelector,omitempty"`
 
 	// snapshotter is the snapshotter sidecar image for CSI (issues volume snapshot requests).
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Snapshotter Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
@@ -72,7 +72,7 @@ type CSIScaleOperatorSpec struct {
 	// snapshotterNodeSelector is the snapshotter node selector for snapshotter sidecar.
 	// +kubebuilder:default:={{key:scale,value:`true`}}
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Snapshotter Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
-	SnapshotterNodeSelector []CSINodeSelector `json:"snapshotterNodeSelector,omitempty"`
+	//SnapshotterNodeSelector []CSINodeSelector `json:"snapshotterNodeSelector,omitempty"`
 
 	// resizer is the resizer sidecar image for CSI (issues volume expansion requests).
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Resizer Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
@@ -81,7 +81,7 @@ type CSIScaleOperatorSpec struct {
 	// resizerNodeSelector is the node selector for resizer sidecar.
 	// +kubebuilder:default:={{key:scale,value:`true`}}
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Resizer Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
-	ResizerNodeSelector []CSINodeSelector `json:"resizerNodeSelector,omitempty"`
+	//ResizerNodeSelector []CSINodeSelector `json:"resizerNodeSelector,omitempty"`
 
 	// livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LivenessProbe",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
@@ -364,7 +364,7 @@ type RestApi struct {
 // +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
 // CSIScaleOperator is the Schema for the csiscaleoperators API
-//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{StatefulSet,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
+//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{Deployment,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
 type CSIScaleOperator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -389,11 +389,12 @@ func init() {
 type CSIReason string
 
 const (
-	CSIConfigured       CSIReason = "Successful"
+	CSIConfigured       CSIReason = "successful"
 	CSINotConfigured    CSIReason = "CSIError"
-	ResourceSyncError   CSIReason = "SyncError"
-	ResourceCreateError CSIReason = "CreateError"
-	ResourceReadError   CSIReason = "ReadError"
-	ResourceUpdateError CSIReason = "UpdateError"
-	Unknown             CSIReason = "Unknown"
+	ResourceSyncError   CSIReason = "syncError"
+	ResourceCreateError CSIReason = "createError"
+	ResourceReadError   CSIReason = "readError"
+	ResourceUpdateError CSIReason = "updateError"
+	ResourceDeleteError CSIReason = "deleteError"
+	Unknown             CSIReason = "unknown"
 )

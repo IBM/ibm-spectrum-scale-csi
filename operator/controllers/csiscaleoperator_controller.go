@@ -289,10 +289,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing the resources which change over time.
 	// Resource list:
 	// 1. Cluster configMap
-	// 2. Attacher statefulset
-	// 3. Provisioner statefulset
-	// 4. Snapshotter statefulset
-	// 5. Resizer statefulset
+	// 2. Attacher deployment
+	// 3. Provisioner deployment
+	// 4. Snapshotter deployment
+	// 5. Resizer deployment
 	// 6. Driver daemonset
 
 	// Synchronizing cluster configMap
@@ -311,10 +311,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Synchronization of ConfigMap is successful")
 
-	// Synchronizing attacher statefulset
-	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance)
+	csiControllerSyncer := clustersyncer.GetSidecarSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, r.recorder); err != nil {
-		message := "Synchronization of attacher interface failed."
+		message := "Synchronization of sidecar interface failed."
 		logger.Error(err, message)
 		// TODO: Add event.
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
@@ -325,58 +324,26 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of attacher interface is successful")
+	// TODO: Delete STS when pods of deplyment are in running state.
+	logger.Info("Removing the deprecated Statefulset resources if present.")
+	if err := r.removeStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 
-	// Synchronizing provisioner statefulset
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, r.recorder); err != nil {
-		message := "Synchronization of provisioner interface failed."
-		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+	if err := r.removeStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of provisioner interface is successful")
 
-	// Synchronizing snapshotter statefulset
-	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, r.recorder); err != nil {
-		message := "Synchronization of snapshotter interface failed."
-		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+	if err := r.removeStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of snapshotter interface is successful")
 
-	// Synchronizing resizer statefulset
-	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, r.recorder); err != nil {
-		message := "Synchronization of resizer interface failed."
-		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+	if err := r.removeStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of resizer interface is successful")
+	logger.Info("Synchronization of sidecar interface is successful")
 
 	// Synchronizing node/driver daemonset
-
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
@@ -391,6 +358,57 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of node/driver interface is successful")
+
+	logger.Info("Removing the deprecated ServiceAccount resources if present.")
+	if err := r.removeServiceAccount(instance, config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeServiceAccount(instance, config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeServiceAccount(instance, config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeServiceAccount(instance, config.GetNameForResource(config.CSIResizerServiceAccount, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Removing the deprecated ClusterRoleBinding resources if present.")
+	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Removing the deprecated ClusterRole resources if present.")
+	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
@@ -685,10 +703,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 
 	// controller := instance.GenerateControllerServiceAccount()
 	node := instance.GenerateNodeServiceAccount()
-	attacher := instance.GenerateAttacherServiceAccount()
-	provisioner := instance.GenerateProvisionerServiceAccount()
-	snapshotter := instance.GenerateSnapshotterServiceAccount()
-	resizer := instance.GenerateResizerServiceAccount()
+	sidecar := instance.GenerateSidecarServiceAccount()
 
 	// controllerServiceAccountName := config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name)
 	nodeServiceAccountName := config.GetNameForResource(config.CSINodeServiceAccount, instance.Name)
@@ -699,10 +714,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 	for _, sa := range []*corev1.ServiceAccount{
 		// controller,
 		node,
-		attacher,
-		provisioner,
-		snapshotter,
-		resizer,
+		sidecar,
 	} {
 		if err := controllerutil.SetControllerReference(instance.Unwrap(), sa, r.Scheme); err != nil {
 			message := "Failed to set controller reference for ServiceAccount " + sa.GetName()
@@ -966,17 +978,19 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 }
 
 func (r *CSIScaleOperatorReconciler) getClusterRoles(instance *csiscaleoperator.CSIScaleOperator) []*rbacv1.ClusterRole {
-	externalProvisioner := instance.GenerateProvisionerClusterRole()
+
 	externalAttacher := instance.GenerateAttacherClusterRole()
+	externalProvisioner := instance.GenerateProvisionerClusterRole()
 	externalSnapshotter := instance.GenerateSnapshotterClusterRole()
 	externalResizer := instance.GenerateResizerClusterRole()
+
 	nodePlugin := instance.GenerateNodePluginClusterRole()
 	// controllerSCC := instance.GenerateSCCForControllerClusterRole()
 	// nodeSCC := instance.GenerateSCCForNodeClusterRole()
 
 	return []*rbacv1.ClusterRole{
-		externalProvisioner,
 		externalAttacher,
+		externalProvisioner,
 		externalSnapshotter,
 		externalResizer,
 		nodePlugin,
@@ -986,17 +1000,19 @@ func (r *CSIScaleOperatorReconciler) getClusterRoles(instance *csiscaleoperator.
 }
 
 func (r *CSIScaleOperatorReconciler) getClusterRoleBindings(instance *csiscaleoperator.CSIScaleOperator) []*rbacv1.ClusterRoleBinding {
-	externalProvisioner := instance.GenerateProvisionerClusterRoleBinding()
+
 	externalAttacher := instance.GenerateAttacherClusterRoleBinding()
+	externalProvisioner := instance.GenerateProvisionerClusterRoleBinding()
 	externalSnapshotter := instance.GenerateSnapshotterClusterRoleBinding()
 	externalResizer := instance.GenerateResizerClusterRoleBinding()
+
 	nodePlugin := instance.GenerateNodePluginClusterRoleBinding()
 	// controllerSCC := instance.GenerateSCCForControllerClusterRoleBinding()
 	// nodeSCC := instance.GenerateSCCForNodeClusterRoleBinding()
 
 	return []*rbacv1.ClusterRoleBinding{
-		externalProvisioner,
 		externalAttacher,
+		externalProvisioner,
 		externalSnapshotter,
 		externalResizer,
 		nodePlugin,
@@ -1079,11 +1095,8 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 
 	logger.Info("Creating required SecurityContextConstraints resource.")
 	csiaccess_users_new := []string{
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name),
+		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSISidecarServiceAccount, instance.Name),
 		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSINodeServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIResizerServiceAccount, instance.Name),
 	}
 
 	// Check if  SCC "spectrum-scale-csiaccess" exists in cluster
@@ -1344,4 +1357,175 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 			}
 		}
 	}
+}
+
+func (r *CSIScaleOperatorReconciler) removeStatefulset(instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.WithName("removeStatefulsets")
+	logger.Info("Checking if " + name + " is deployed using statefulset.")
+	STS := &appsv1.StatefulSet{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, STS)
+
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info(name + " is not deployed using statefulset.")
+	} else if err != nil {
+		if err := r.Client.Delete(context.TODO(), STS); err != nil {
+			message := "Failed to get " + name + " statefulset information from the cluster."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return err
+		}
+	} else {
+		logger.Info("Found " + name + " statefulset. Statefulsets are replaced by deployments in CSI >= 2.5.0. Removing statefulset.")
+		if err := r.Client.Delete(context.TODO(), STS); err != nil {
+			message := "Unable to delete " + name + " statefulset."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) removeClusterRoleBinding(instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.WithName("removeClusterRoleBinding")
+	logger.Info("Checking if " + name + " is deployed using ClusterRoleBinding.")
+
+	CRB := &rbacv1.ClusterRoleBinding{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, CRB)
+
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info(name + " is not deployed using ClusterRoleBinding.")
+	} else if err != nil {
+		if err := r.Client.Delete(context.TODO(), CRB); err != nil {
+			message := "Failed to get " + name + " ClusterRoleBinding information from the cluster."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return err
+		}
+	} else {
+		logger.Info("Found " + name + " ClusterRoleBinding. Multiple ClusterRoleBinding for sidecars are deprecated in CSI >= 2.5.0. Removing ClusterRoleBinding.")
+		if err := r.Client.Delete(context.TODO(), CRB); err != nil {
+			message := "Unable to delete " + name + " ClusterRoleBinding."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) removeClusterRole(instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.WithName("removeClusterRole")
+	logger.Info("Checking if " + name + " is deployed using ClusterRole.")
+
+	CR := &rbacv1.ClusterRole{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, CR)
+
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info(name + " is not deployed using ClusterRole.")
+	} else if err != nil {
+		if err := r.Client.Delete(context.TODO(), CR); err != nil {
+			message := "Failed to get " + name + " ClusterRole information from the cluster."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return err
+		}
+	} else {
+		logger.Info("Found " + name + " ClusterRole. Multiple ClusterRoles for sidecars are deprecated in CSI >= 2.5.0. Removing ClusterRole.")
+		if err := r.Client.Delete(context.TODO(), CR); err != nil {
+			message := "Unable to delete " + name + " ClusterRole."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) removeServiceAccount(instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.WithName("removeServiceAccount")
+	logger.Info("Checking if " + name + " is deployed using ClusterRole.")
+
+	SA := &corev1.ServiceAccount{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, SA)
+
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info(name + " is not deployed using ServiceAccount.")
+	} else if err != nil {
+		if err := r.Client.Delete(context.TODO(), SA); err != nil {
+			message := "Failed to get " + name + " ServiceAccount information from the cluster."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return err
+		}
+	} else {
+		logger.Info("Found " + name + " ServiceAccount. Multiple ServiceAccounts for sidecars are deprecated in CSI >= 2.5.0. Removing ServiceAccount.")
+		if err := r.Client.Delete(context.TODO(), SA); err != nil {
+			message := "Unable to delete " + name + " ServiceAccount."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
+			return err
+		}
+	}
+	return nil
 }
