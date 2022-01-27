@@ -475,13 +475,11 @@ func numberInSlice(a int, list []int) bool {
 	return false
 }
 
-func getVolIDMembers(vID string) (scaleVolId, bool, error) {
+func getVolIDMembers(vID string) (scaleVolId, error) {
 	splitVid := strings.Split(vID, ";")
 	var vIdMem scaleVolId
 
-	isNewVolID := false
 	if len(splitVid) == 3 {
-		isNewVolID = false
 		/* This is LW volume */
 		/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
 		vIdMem.ClusterId = splitVid[0]
@@ -489,15 +487,14 @@ func getVolIDMembers(vID string) (scaleVolId, bool, error) {
 		SlnkPart := splitVid[2]
 		slnkSplit := strings.Split(SlnkPart, "=")
 		if len(slnkSplit) < 2 {
-			return scaleVolId{}, isNewVolID, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
 		vIdMem.Path = slnkSplit[1]
 		vIdMem.IsFilesetBased = false
-		return vIdMem, isNewVolID, nil
+		return vIdMem, nil
 	}
 
 	if len(splitVid) == 4 {
-		isNewVolID = false
 		/* This is fileset Based volume */
 		/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>;path=<symlink_path> */
 		vIdMem.ClusterId = splitVid[0]
@@ -505,7 +502,7 @@ func getVolIDMembers(vID string) (scaleVolId, bool, error) {
 		fileSetPart := splitVid[2]
 		fileSetSplit := strings.Split(fileSetPart, "=")
 		if len(fileSetSplit) < 2 {
-			return scaleVolId{}, isNewVolID, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
 
 		if fileSetSplit[0] == "filesetName" {
@@ -517,17 +514,16 @@ func getVolIDMembers(vID string) (scaleVolId, bool, error) {
 		SlnkPart := splitVid[3]
 		slnkSplit := strings.Split(SlnkPart, "=")
 		if len(slnkSplit) < 2 {
-			return scaleVolId{}, isNewVolID, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
 		vIdMem.Path = slnkSplit[1]
 		vIdMem.IsFilesetBased = true
-		return vIdMem, isNewVolID, nil
+		return vIdMem, nil
 	}
 
 	if len(splitVid) == 7 {
-    isNewVolID = true
 		/* Volume ID created from 2.5.0 onwards  */
-		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<symlink_path> */
+		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]
 		vIdMem.ClusterId = splitVid[2]
@@ -544,9 +540,9 @@ func getVolIDMembers(vID string) (scaleVolId, bool, error) {
 			vIdMem.IsFilesetBased = true
 		}
 		vIdMem.Path = splitVid[6]
-		return vIdMem, isNewVolID, nil
+		return vIdMem, nil
 
 	}
 
-	return scaleVolId{}, isNewVolID, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 }

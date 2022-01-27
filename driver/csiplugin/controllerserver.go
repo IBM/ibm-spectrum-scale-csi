@@ -104,7 +104,7 @@ func (cs *ScaleControllerServer) createLWVol(scVol *scaleVolume) (string, error)
 //generateVolID: Generate volume ID
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
-//<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<full_path>
+//<storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
 func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, isNewVolumeType bool, targetPath string) (string, error) {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId", scVol.VolName)
 	var volID string
@@ -113,18 +113,22 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 
 	filesetName := scVol.VolName
 	consistencyGroup := ""
+	path := ""
 
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
-		glog.Errorf("unable to get connector for primary cluster")
-		return "", status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
+	if isNewVolumeType { 
+		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+		if !isprimaryConnPresent {
+			glog.Errorf("unable to get connector for primary cluster")
+			return "", status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
+		}
+		fsMountPoint, err := primaryConn.GetFilesystemMountDetails(scVol.VolBackendFs)
+		if err != nil {
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.VolBackendFs))
+		}
+		path = fmt.Sprintf("%s/%s", fsMountPoint.MountPoint, targetPath)
+	} else {
+		path = fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
 	}
-	fsMountPoint, err := primaryConn.GetFilesystemMountDetails(scVol.VolBackendFs)
-	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.VolBackendFs))
-	}
-
-	path := fmt.Sprintf("%s/%s", fsMountPoint.MountPoint, targetPath)
 	glog.V(4).Infof("volume: [%v] - ControllerServer:generateVolId: targetPath: [%v]", scVol.VolName, path)
 
 	if isNewVolumeType {
@@ -146,18 +150,21 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 		}
 	}
 
-	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, consistencyGroup, filesetName, slink)
-	return volID
+	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, consistencyGroup, filesetName, path)
+	return volID, nil
 }
 
 //getTargetPath: retrun relative volume path from filesystem mount point
-func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool) (string, error) {
+func (cs *ScaleControllerServer) getTargetPath(fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isNewVolumeType bool) (string, error) {
 	if fsetLinkPath == "" || fsMountPoint == "" {
 		glog.Errorf("volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
 	}
 	glog.V(4).Infof("volume: [%v] - ControllerServer:getTargetPath", volumeName)
 	targetPath := strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
+	if createDataDir && !isNewVolumeType {
+		targetPath = fmt.Sprintf("%s/%s-data", targetPath, volumeName)
+	}
 	targetPath = strings.Trim(targetPath, "!/")
 
 	return targetPath, nil
@@ -314,7 +321,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		opt[connectors.UserSpecifiedParentFset] = ""
 		scVol.ParentFileset = ""
 		createDataDir := false
-		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, false)
+		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, false, isNewVolumeType)
 		if err != nil {
 			glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -327,7 +334,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		opt[connectors.UserSpecifiedParentFset] = indepFilesetName
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
-		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, true)
+		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, true, isNewVolumeType)
 		if err != nil {
 			glog.Errorf("volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -347,7 +354,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		// Create fileset
 		glog.V(4).Infof("creating fileset for classic storageClass with fileset name: [%v]", scVol.VolName)
 		createDataDir := true
-		filesetPath, err := cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, true)
+		filesetPath, err := cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, true, isNewVolumeType)
 		if err != nil {
 			glog.Errorf("volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -358,7 +365,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 
 }
 
-func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, setQuota bool) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, setQuota bool, isNewVolumeType bool) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(scVol.VolBackendFs, volName)
 	if err != nil {
@@ -439,7 +446,7 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 		}
 	}
 
-	targetBasePath, err := cs.getTargetPath(filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir)
+	targetBasePath, err := cs.getTargetPath(filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType)
 	if err != nil {
 		return "", status.Error(codes.Internal, err.Error())
 	}
@@ -542,8 +549,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		srcVolume := volSrc.GetVolume()
 		if srcVolume != nil {
 			srcVolumeID := srcVolume.GetVolumeId()
-			srcVolumeIDMembers, _, err = getVolIDMembers(srcVolumeID)
-
+			srcVolumeIDMembers, err = getVolIDMembers(srcVolumeID)
 			if err != nil {
 				glog.Errorf("volume:[%v] - Invalid Volume ID %s [%v]", volName, srcVolumeID, err)
 				return nil, err
@@ -809,6 +815,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
+	if !isNewVolumeType {
+		// Create symbolic link if not present
+		err = cs.createSoftlink(scaleVol, targetPath)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	volID, volIDErr := cs.generateVolID(scaleVol, volFsInfo.UUID, isNewVolumeType, targetPath)
 	if volIDErr != nil {
 		return nil, err
@@ -925,7 +939,10 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 
 	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
 	if scVol.IsFilesetBased {
-		path := fmt.Sprintf("%s%s", vID.FsetName, "-data")
+		path := ""
+		if vID.StorageClassType != STORAGECLASS_ADVANCED {
+			path = fmt.Sprintf("%s%s", vID.FsetName, "-data")
+		}
 
 		jobStatus, jobID, jobErr := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
 		if jobErr != nil {
@@ -1284,7 +1301,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		return nil, status.Error(codes.InvalidArgument, "volume Id is missing")
 	}
 
-	volumeIdMembers, isNewVolID, err := getVolIDMembers(volumeID)
+	volumeIdMembers, err := getVolIDMembers(volumeID)
 	if err != nil {
 		return &csi.DeleteVolumeResponse{}, err
 	}
@@ -1317,18 +1334,17 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	}
 
 	relPath := ""
-	if isNewVolID {
+	if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
-		FilesystemName = getRemoteFsName(mountInfo.RemoteDeviceName)
 	} else {
 		relPath = strings.Replace(volumeIdMembers.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
-		FilesystemName = cs.Driver.primary.GetPrimaryFs()
 	}
 	relPath = strings.Trim(relPath, "!/")
 
 	if volumeIdMembers.IsFilesetBased {
 		var FilesetName string
 
+		FilesystemName = getRemoteFsName(mountInfo.RemoteDeviceName)
 		if volumeIdMembers.FsetName != "" {
 			FilesetName = volumeIdMembers.FsetName
 		} else {
@@ -1367,10 +1383,10 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				}
 
 				// Delete fileset related symlink
-				if !isFilesetAlreadyDel {
-					err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), sLinkRelPath)
+				if !isFilesetAlreadyDel && volumeIdMembers.StorageClassType != STORAGECLASS_ADVANCED {
+					err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), relPath)
 					if err != nil {
-						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), sLinkRelPath, err))
+						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
 					}
 				}
 
@@ -1387,13 +1403,13 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		}
 	} else {
 		/* Delete Dir for Lw volume */
-		err = primaryConn.DeleteDirectory(FilesystemName, relPath)
+		err = primaryConn.DeleteDirectory(cs.Driver.primary.GetPrimaryFs(), relPath)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] Relative SymLink [%v]. Error [%v]", FilesystemName, relPath, err))
 		}
 	}
 
-	if !isNewVolID {
+	if volumeIdMembers.StorageClassType != STORAGECLASS_ADVANCED {
 		err = primaryConn.DeleteSymLnk(cs.Driver.primary.GetPrimaryFs(), relPath)
 
 		if err != nil {
@@ -1445,7 +1461,7 @@ func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, 
 	}
 
 	volumeID := req.GetVolumeId()
-	_, _, err := getVolIDMembers(volumeID)
+	_, err := getVolIDMembers(volumeID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "ControllerUnpublishVolume : VolumeID is not in proper format")
 	}
@@ -1480,7 +1496,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 	//Assumption : filesystem_uuid is always from local/primary cluster.
 
-	volumeIDMembers, isNewVolID, err := getVolIDMembers(volumeID)
+	volumeIDMembers, err := getVolIDMembers(volumeID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume : VolumeID is not in proper format")
 	}
@@ -1529,7 +1545,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	glog.V(4).Infof("ControllerPublishVolume : Primary FS is mounted on %v", pfsMount.NodesMounted)
 	glog.V(4).Infof("ControllerPublishVolume : Primary Fileystem is %s and Volume is from Filesystem %s", primaryfsName, fsName)
 	// Skip if primary filesystem and volume filesystem is same
-	if isNewVolID || primaryfsName != fsName {
+	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED || primaryfsName != fsName {
 		//Check if filesystem is mounted
 		fsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(fsName)
 		if err != nil {
@@ -1537,7 +1553,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
 		}
 
-		if isNewVolID &&
+		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED &&
 			!strings.HasPrefix(volumePath, fsMount.MountPoint) {
 			glog.Errorf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, fsName)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, fsName))
@@ -1618,7 +1634,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, status.Error(codes.InvalidArgument, "CreateSnapshot - Source Volume ID is a required field")
 	}
 
-	volumeIDMembers, _, err := getVolIDMembers(volID)
+	volumeIDMembers, err := getVolIDMembers(volID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Error in source Volume ID %v: %v", volID, err))
 	}
@@ -1872,7 +1888,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	capacity := uint64(capRange.GetRequiredBytes())
 
-	volumeIDMembers, _, err := getVolIDMembers(volID)
+	volumeIDMembers, err := getVolIDMembers(volID)
 
 	if err != nil {
 		glog.Errorf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err)

@@ -55,7 +55,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		return nil, status.Error(codes.InvalidArgument, "volume capability must be provided")
 	}
 
-	volumeIDMembers, _, err := getVolIDMembers(volumeID)
+	volumeIDMembers, err := getVolIDMembers(volumeID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume : VolumeID is not in proper format")
 	}
