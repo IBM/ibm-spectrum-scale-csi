@@ -301,6 +301,9 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		glog.V(4).Infof("creating independent fileset for new storageClass with fileset name: [%v]", indepFilesetName)
 		opt[connectors.UserSpecifiedFilesetType] = independentFileset
 		opt[connectors.UserSpecifiedParentFset] = ""
+		//Set uid and gid as 0 for CG independent fileset
+		opt[connectors.UserSpecifiedUid] = "0"
+		opt[connectors.UserSpecifiedGid] = "0"
 		scVol.ParentFileset = ""
 		createDataDir := false
 		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, true)
@@ -314,6 +317,14 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		glog.V(4).Infof("creating dependent fileset for new storageClass with fileset name: [%v]", scVol.VolName)
 		opt[connectors.UserSpecifiedFilesetType] = dependentFileset
 		opt[connectors.UserSpecifiedParentFset] = indepFilesetName
+		delete(opt, connectors.UserSpecifiedUid)
+		delete(opt, connectors.UserSpecifiedGid)
+		if scVol.VolUid != "" {
+			opt[connectors.UserSpecifiedUid] = scVol.VolUid
+		}
+		if scVol.VolGid != "" {
+			opt[connectors.UserSpecifiedGid] = scVol.VolGid
+		}
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
 		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, false)
