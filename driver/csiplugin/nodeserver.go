@@ -59,10 +59,10 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "NodePublishVolume : VolumeID is not in proper format")
 	}
-	targetSlnkPath := volumeIDMembers.SymLnkPath
+	volScalePath := volumeIDMembers.Path
 
-	glog.V(4).Infof("Target SpectrumScale Symlink Path : %v\n", targetSlnkPath)
-	// Check if Mount Dir/slink exist, if yes delete it
+	glog.V(4).Infof("Target SpectrumScale Path : %v\n", volScalePath)
+	// Check if mount dir/slink exists, if yes delete it
 	if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
 		glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
 		err := os.Remove(targetPath)
@@ -72,10 +72,10 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	// create symlink
-	glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, targetSlnkPath)
-	symlinkerr := os.Symlink(targetSlnkPath, targetPath)
+	glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, volScalePath)
+	symlinkerr := os.Symlink(volScalePath, targetPath)
 	if symlinkerr != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, targetSlnkPath, symlinkerr.Error()))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, volScalePath, symlinkerr.Error()))
 	}
 
 	glog.V(4).Infof("successfully mounted %s", targetPath)
