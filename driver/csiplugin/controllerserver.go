@@ -513,7 +513,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
-        isNewVolumeType := false
+	isNewVolumeType := false
 	if scaleVol.StorageClassType == storageClassAdvanced {
 		isNewVolumeType = true
 	}
@@ -1616,6 +1616,41 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	return &csi.ControllerPublishVolumeResponse{}, nil
 }
 
+func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, snapWindow string) (string, error) {
+	latestSnapList, err := conn.GetLatestFilesetSnapshots(filesystemName, filesetName)
+	if err != nil {
+		glog.Errorf("CheckNewSnapRequired - getting latest snapshot list failed for fileset: [%s:%s]. Error: [%v]", filesystemName, filesetName, err)
+		return "", err
+	}
+
+	if len(latestSnapList) == 0 {
+		// No snapshot exists, so create new one
+		return "", nil
+	}
+
+	timestamp, err := cs.getSnapshotCreateTimestamp(conn, filesystemName, filesetName, latestSnapList[0].SnapshotName)
+	if err != nil {
+		glog.Errorf("error getting create timestamp for snapshot %s:%s:%s", filesystemName, filesetName, latestSnapList[0].SnapshotName)
+		return "", err
+	}
+
+	timestampStr := timestamp.String()
+	timestampParse, err := strconv.ParseInt(timestampStr, 10, 64)
+	lastSnapTime := time.Unix(timestampParse, 0)
+	passedTime := time.Now().Sub(lastSnapTime).Seconds()
+
+	snapWindowInt, err := strconv.Atoi(snapWindow)
+	if err != nil {
+		return "", status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - invalid snapWindow value: [%v]", snapWindow))
+	}
+	snapWindowSeconds := snapWindowInt * 60
+	if passedTime < float64(snapWindowSeconds) {
+		// we need to take new snapshot
+		return latestSnapList[0].SnapshotName, nil
+	}
+	return "", nil
+}
+
 //CreateSnapshot Create Snapshot
 func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) { //nolint:gocyclo,funlen
 	glog.V(3).Infof("CreateSnapshot - create snapshot req: %v", req)
@@ -1640,7 +1675,11 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if !volumeIDMembers.IsFilesetBased {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is fileset", volID))
+	}
+
+	if (volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED) && (volumeIDMembers.VolType != FILE_DEPENDENTFILESET_VOLUME){
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is dependent fileset for new storageClass", volID))
 	}
 
 	conn, err := cs.getConnFromClusterID(volumeIDMembers.ClusterId)
@@ -1672,20 +1711,47 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		}
 	}
 
-	if filesetResp.Config.ParentId > 0 {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
+	if volumeIDMembers.StorageClassType != STORAGECLASS_ADVANCED {
+		if filesetResp.Config.ParentId > 0 {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
+		}
 	}
+
 	filesetName := filesetResp.FilesetName
-	sLinkRelPath := strings.Replace(volumeIDMembers.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
-	sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
+	relPath := ""
+	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+		if !isprimaryConnPresent {
+			glog.Errorf("CreateSnapshot - unable to get connector for primary cluster")
+			return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+		}
+		mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
+        	}
+		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
+		filesetName = volumeIDMembers.ConsistencyGroup
+	} else {
+		relPath = strings.Replace(volumeIDMembers.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
+	}
+	relPath = strings.Trim(relPath, "!/")
 
 	/* Confirm it is same fileset which was created for this PV */
-	pvName := filepath.Base(sLinkRelPath)
+	pvName := filepath.Base(relPath)
 	if pvName != filesetName {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - PV name from path [%v] does not match with filesetName [%v].", pvName, filesetName))
 	}
 
 	snapName := req.GetName()
+	snapWindow := ""
+	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+		snapParams := req.GetParameters()
+		snapWindowSpecified := false
+		snapWindow, snapWindowSpecified = snapParams[connectors.UserSpecifiedSnapWindow]
+		if !snapWindowSpecified {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("snapWindow not specified for fileset[%s:%s]", filesetResp.FilesetName, filesystemName))
+		}
+	}
 
 	snapExist, err := conn.CheckIfSnapshotExist(filesystemName, filesetName, snapName)
 	if err != nil {
@@ -1694,34 +1760,56 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if !snapExist {
-		snapshotList, err := conn.ListFilesetSnapshots(filesystemName, filesetName)
-		if err != nil {
-			glog.Errorf("CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", snapName, filesystemName, filesetName, err)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
+		/* For new storageClass check last snapshot creation time, if time passed is less than
+		 * snapWindow then return existing snapshot */
+		createNewSnap := true
+		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+			cgSnapName, err := cs.CheckNewSnapRequired(conn, filesystemName, filesetName, snapWindow)
+			if err != nil {
+				glog.Errorf("CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", snapName, filesystemName, filesetName, err)
+			}
+			if cgSnapName != "" {
+				createNewSnap = false
+				snapName = cgSnapName
+			} else {
+				glog.V(3).Infof("CreateSnapshot - creating new snapshot for consistency group for fileset: [%s:%s]", filesystemName, filesetName)
+			}
 		}
 
-		if len(snapshotList) >= 256 {
-			glog.Errorf("CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", snapName, filesystemName, filesetName)
-			return nil, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
-		}
+		if createNewSnap {
+			snapshotList, err := conn.ListFilesetSnapshots(filesystemName, filesetName)
+			if err != nil {
+				glog.Errorf("CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", snapName, filesystemName, filesetName, err)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
+			}
 
-		snaperr := conn.CreateSnapshot(filesystemName, filesetName, snapName)
-		if snaperr != nil {
-			glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
+			if len(snapshotList) >= 256 {
+				glog.Errorf("CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", snapName, filesystemName, filesetName)
+				return nil, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
+			}
+
+			snaperr := conn.CreateSnapshot(filesystemName, filesetName, snapName)
+			if snaperr != nil {
+				glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
+			}
 		}
 	}
 
 	snapID := ""
-	if filesetResp.Config.Comment == connectors.FilesetComment &&
-		(cs.Driver.primary.PrimaryFset != filesetName || cs.Driver.primary.PrimaryFs != filesystemName) {
-		// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
-		//clusterId;FSUUID;filesetName;snapshotName;path
-		snapID = fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
+	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+		snapID = fmt.Sprintf("%s;%s;%s;%s;%s", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
 	} else {
-		// This is statically created PVC from an independent fileset, here path is the root of fileset
-		//clusterId;FSUUID;filesetName;snapshotName;/
-		snapID = fmt.Sprintf("%s;%s;%s;%s;/", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName)
+		if filesetResp.Config.Comment == connectors.FilesetComment &&
+			(cs.Driver.primary.PrimaryFset != filesetName || cs.Driver.primary.PrimaryFs != filesystemName) {
+			// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
+			//clusterId;FSUUID;filesetName;snapshotName;path
+			snapID = fmt.Sprintf("%s;%s;%s;%s;%s-data", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName, filesetName)
+		} else {
+			// This is statically created PVC from an independent fileset, here path is the root of fileset
+			//clusterId;FSUUID;filesetName;snapshotName;/
+			snapID = fmt.Sprintf("%s;%s;%s;%s;/", volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, snapName)
+		}
 	}
 
 	timestamp, err := cs.getSnapshotCreateTimestamp(conn, filesystemName, filesetName, snapName)

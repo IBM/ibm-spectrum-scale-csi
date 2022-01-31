@@ -459,6 +459,20 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 	return nil
 }
 
+func (s *spectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	glog.V(4).Infof("rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
+
+	getLatestFilesetSnapshotsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/latest", filesystemName, filesetName))
+	getLatestFilesetSnapshotsResponse := GetSnapshotResponse_v2{}
+
+	err := s.doHTTP(getLatestFilesetSnapshotsURL, "GET", &getLatestFilesetSnapshotsResponse, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get latest list of snapshots for fileset [%v]. Error [%v]", filesetName, err)
+	}
+
+	return getLatestFilesetSnapshotsResponse.Snapshots, nil
+}
+
 func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
 	glog.V(4).Infof("rest_v2 UpdateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
 	filesetreq := CreateFilesetRequest{}

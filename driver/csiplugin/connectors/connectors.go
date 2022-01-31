@@ -77,6 +77,7 @@ type SpectrumScaleConnector interface {
 	WaitForJobCompletion(statusCode int, jobID uint64) error
 	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
+	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
@@ -103,6 +104,7 @@ const (
 	UserSpecifiedStorageClassType string = "type"
 	UserSpecifiedCompression      string = "compression"
 	UserSpecifiedTier             string = "tier"
+	UserSpecifiedSnapWindow       string = "snapWindow"
 
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
