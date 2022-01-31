@@ -319,9 +319,12 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		glog.V(4).Infof("creating independent fileset for new storageClass with fileset name: [%v]", indepFilesetName)
 		opt[connectors.UserSpecifiedFilesetType] = independentFileset
 		opt[connectors.UserSpecifiedParentFset] = ""
+		//Set uid and gid as 0 for CG independent fileset
+		opt[connectors.UserSpecifiedUid] = "0"
+		opt[connectors.UserSpecifiedGid] = "0"
 		scVol.ParentFileset = ""
 		createDataDir := false
-		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, false, isNewVolumeType)
+		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
 		if err != nil {
 			glog.Errorf("volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -332,9 +335,17 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		glog.V(4).Infof("creating dependent fileset for new storageClass with fileset name: [%v]", scVol.VolName)
 		opt[connectors.UserSpecifiedFilesetType] = dependentFileset
 		opt[connectors.UserSpecifiedParentFset] = indepFilesetName
+		delete(opt, connectors.UserSpecifiedUid)
+		delete(opt, connectors.UserSpecifiedGid)
+		if scVol.VolUid != "" {
+			opt[connectors.UserSpecifiedUid] = scVol.VolUid
+		}
+		if scVol.VolGid != "" {
+			opt[connectors.UserSpecifiedGid] = scVol.VolGid
+		}
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
-		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, true, isNewVolumeType)
+		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
 		if err != nil {
 			glog.Errorf("volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -354,7 +365,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		// Create fileset
 		glog.V(4).Infof("creating fileset for classic storageClass with fileset name: [%v]", scVol.VolName)
 		createDataDir := true
-		filesetPath, err := cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, true, isNewVolumeType)
+		filesetPath, err := cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
 		if err != nil {
 			glog.Errorf("volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -365,7 +376,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 
 }
 
-func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, setQuota bool, isNewVolumeType bool) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isNewVolumeType bool) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(scVol.VolBackendFs, volName)
 	if err != nil {
@@ -391,7 +402,7 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 		}
 	} else {
 		// fileset is present. Confirm if creator is IBM Spectrum Scale CSI driver and fileset type is correct.
-		if (filesetInfo.Config.Comment != connectors.FilesetComment) {
+		if filesetInfo.Config.Comment != connectors.FilesetComment {
 			glog.Errorf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName)
 			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName))
 		}
@@ -438,24 +449,25 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v] after linking. Error: %v", volName, scVol.VolBackendFs, err))
 		}
 	}
+	targetBasePath := ""
+	if !isCGIndependentFset {
+		if scVol.VolSize != 0 {
+			err = cs.setQuota(scVol, volName)
+			if err != nil {
+				return "", status.Error(codes.Internal, err.Error())
+			}
+		}
 
-	if scVol.VolSize != 0 && setQuota {
-		err = cs.setQuota(scVol, volName)
+		targetBasePath, err = cs.getTargetPath(filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType)
+		if err != nil {
+			return "", status.Error(codes.Internal, err.Error())
+		}
+
+		err = cs.createDirectory(scVol, volName, targetBasePath)
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
 		}
 	}
-
-	targetBasePath, err := cs.getTargetPath(filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType)
-	if err != nil {
-		return "", status.Error(codes.Internal, err.Error())
-	}
-
-	err = cs.createDirectory(scVol, volName, targetBasePath)
-	if err != nil {
-		return "", status.Error(codes.Internal, err.Error())
-	}
-
 	return targetBasePath, nil
 }
 
@@ -1249,7 +1261,7 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, Fileset
 }
 
 // This function deletes fileset for Consitency Group
-func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (error) {
+func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) error {
 	glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
 	filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
 	if err != nil {
