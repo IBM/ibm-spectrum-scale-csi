@@ -68,7 +68,9 @@ type SpectrumScaleConnector interface {
 	GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error)
 	GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error)
 	SetFilesystemPolicy(policy *Policy, filesystemName string) error
-	GetTierInfoFromName(tierName string, filesystemName string) error
+	DoesTierExist(tierName string, filesystemName string) error
+	GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error)
+	GetFirstDataTier(filesystemName string) (string, error)
 	IsValidNodeclass(nodeclass string) (bool, error)
 	IsSnapshotSupported() (bool, error)
 	CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool
