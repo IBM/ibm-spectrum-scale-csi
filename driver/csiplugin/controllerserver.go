@@ -952,7 +952,9 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
 	if scVol.IsFilesetBased {
 		path := ""
-		if vID.StorageClassType != STORAGECLASS_ADVANCED {
+		if vID.StorageClassType == STORAGECLASS_ADVANCED {
+			path = "/"
+		} else {
 			path = fmt.Sprintf("%s%s", vID.FsetName, "-data")
 		}
 
