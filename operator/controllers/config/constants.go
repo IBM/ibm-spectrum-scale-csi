@@ -68,6 +68,10 @@ const (
 	DriverVersion   = "2.5.0"
 	OperatorVersion = "2.5.0"
 
+	// Number of replica pods for CSI Sidecar deployment
+	ReplicaCount       = int32(2)
+	TolerationsSeconds = int64(60)
+
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0"
 	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.4.0"
