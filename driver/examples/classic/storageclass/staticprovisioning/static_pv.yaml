@@ -9,5 +9,4 @@ spec:
     - ReadWriteMany
   csi:
     driver: spectrumscale.csi.ibm.com
-    volumeHandle: "7118073361626808055;09762E69:5D36FE8D;path=/ibm/gpfs0/staticdir"
-
+    volumeHandle: "0;2;1925837219448245938;0A0B55AC:60704F6C;;pvc-9e6d9c29-3360-4e58-9237-d9d8390eb22d;/ibm/gpfs0/spectrum-scale-csi-volume-store/.volumes/pvc-9e6d9c29-3360-4e58-9237-d9d8390eb22d"
