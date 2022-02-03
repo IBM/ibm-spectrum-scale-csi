@@ -73,7 +73,7 @@ type scaleVolId struct {
 	FsetId           string
 	FsetName         string
 	DirPath          string
-	Path		 string
+	Path             string
 	IsFilesetBased   bool
 	StorageClassType string
 	ConsistencyGroup string
@@ -269,12 +269,12 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if fsTypeSpecified && volDirPathSpecified {
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"volDirBasePath\" are mutually exclusive")
 	}
- 
+
 	if fsTypeSpecified || isSCTypeSpecified {
 		scaleVol.IsFilesetBased = true
 	}
 
-	if isCompressionSpecified && compression == "" {
+	if isCompressionSpecified && (compression == "" || compression == "false") {
 		isCompressionSpecified = false
 	}
 	if isTierSpecified && tier == "" {
