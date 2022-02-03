@@ -28,23 +28,30 @@ import (
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
+// gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
 var (
-	endpoint      = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
-	driverName    = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
-	nodeID        = flag.String("nodeid", "", "node id")
-	kubeletRootDir= flag.String("kubeletRootDirPath", "/var/lib/kubelet", "kubelet root directory path")
-	vendorVersion = "2.5.0"
+	gitCommit string
+)
+
+var (
+	endpoint       = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
+	driverName     = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
+	nodeID         = flag.String("nodeid", "", "node id")
+	kubeletRootDir = flag.String("kubeletRootDirPath", "/var/lib/kubelet", "kubelet root directory path")
+	vendorVersion  = "2.5.0"
 )
 
 func main() {
 	_ = flag.Set("logtostderr", "true")
 	flag.Parse()
 
+	glog.Infof("Version Info: commit (%s)", gitCommit)
+
 	rand.Seed(time.Now().UnixNano())
 
 	// PluginFolder defines the location of scaleplugin
-        PluginFolder := path.Join(*kubeletRootDir, "plugins/spectrumscale.csi.ibm.com")
-        OldPluginFolder := path.Join(*kubeletRootDir, "plugins/ibm-spectrum-scale-csi")
+	PluginFolder := path.Join(*kubeletRootDir, "plugins/spectrumscale.csi.ibm.com")
+	OldPluginFolder := path.Join(*kubeletRootDir, "plugins/ibm-spectrum-scale-csi")
 
 	if err := createPersistentStorage(path.Join(PluginFolder, "controller")); err != nil {
 		glog.Errorf("failed to create persistent storage for controller %v", err)

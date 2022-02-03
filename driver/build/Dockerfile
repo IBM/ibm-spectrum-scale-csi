@@ -13,8 +13,11 @@ COPY . .
 ARG TARGETOS
 ARG TARGETARCH
 ARG GOFLAGS
-ARG GIT_COMMIT
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags '-extldflags "-static"' -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
+ARG commit
+
+ENV REVISION $commit
+
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 RUN chmod +x _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi8-minimal:latest

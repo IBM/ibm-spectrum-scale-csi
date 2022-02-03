@@ -10,4 +10,3 @@ spec:
   csi:
     driver: spectrumscale.csi.ibm.com
     volumeHandle: "7118073361626808055;09762E69:5D36FE8D;path=/ibm/gpfs0/staticdir"
-

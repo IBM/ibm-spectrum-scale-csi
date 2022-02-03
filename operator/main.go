@@ -43,6 +43,11 @@ import (
 
 const OCPControllerNamespace = "openshift-controller-manager"
 
+// gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
+var (
+	gitCommit string
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -94,6 +99,8 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	//	var probeAddr string
+
+	setupLog.Info("Version Info", "commit", gitCommit)
 
 	watchNamespace, err := getWatchNamespace()
 	if err != nil {
