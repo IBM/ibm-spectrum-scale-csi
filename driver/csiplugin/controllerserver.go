@@ -115,7 +115,7 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 	consistencyGroup := ""
 	path := ""
 
-	if isNewVolumeType { 
+	if isNewVolumeType {
 		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 		if !isprimaryConnPresent {
 			glog.Errorf("unable to get connector for primary cluster")
@@ -322,6 +322,12 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		//Set uid and gid as 0 for CG independent fileset
 		opt[connectors.UserSpecifiedUid] = "0"
 		opt[connectors.UserSpecifiedGid] = "0"
+		if scVol.InodeLimit != "" {
+			opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
+		} else {
+			opt[connectors.UserSpecifiedInodeLimit] = "1M"
+			// Assumption: On an average a consistency group contains 10 volumes
+		}
 		scVol.ParentFileset = ""
 		createDataDir := false
 		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
