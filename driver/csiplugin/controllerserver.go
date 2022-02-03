@@ -326,7 +326,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 			opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
 		} else {
 			opt[connectors.UserSpecifiedInodeLimit] = "1M"
-			// Assumption: On an avertage a consistancy group contains 10 volumes
+			// Assumption: On an average a consistency group contains 10 volumes
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
