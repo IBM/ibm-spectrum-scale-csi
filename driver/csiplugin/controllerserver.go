@@ -1648,20 +1648,25 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumSc
 		return "", err
 	}
 
-	timestampStr := timestamp.String()
-	timestampParse, err := strconv.ParseInt(timestampStr, 10, 64)
-	lastSnapTime := time.Unix(timestampParse, 0)
+	var timestampSecs int64
+	timestampSecs = timestamp.GetSeconds()
+	lastSnapTime := time.Unix(timestampSecs, 0)
 	passedTime := time.Now().Sub(lastSnapTime).Seconds()
+	glog.V(3).Infof("for fileset [%s:%s], last snapshot time: [%v], current time: [%v], passed time: %v seconds, snapWindow: %v minutes", filesystemName, filesetName, lastSnapTime, time.Now(), int64(passedTime), snapWindow)
 
 	snapWindowInt, err := strconv.Atoi(snapWindow)
 	if err != nil {
 		return "", status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - invalid snapWindow value: [%v]", snapWindow))
 	}
 	snapWindowSeconds := snapWindowInt * 60
+
 	if passedTime < float64(snapWindowSeconds) {
-		// we need to take new snapshot
+		// we don't need to take new snapshot
+		glog.V(3).Infof("CheckNewSnapRequired - for fileset [%s:%s], using existing snapshot [%s]", filesystemName, filesetName, latestSnapList[0].SnapshotName)
 		return latestSnapList[0].SnapshotName, nil
 	}
+
+	glog.V(3).Infof("CheckNewSnapRequired - for fileset [%s:%s] we need to create new snapshot", filesystemName, filesetName)
 	return "", nil
 }
 
@@ -1734,6 +1739,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	filesetName := filesetResp.FilesetName
 	relPath := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+		glog.V(3).Infof("CreateSnapshot - creating snapshot for advanced storageClass")
 		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 		if !isprimaryConnPresent {
 			glog.Errorf("CreateSnapshot - unable to get connector for primary cluster")
@@ -1744,8 +1750,8 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
         	}
 		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
-		filesetName = volumeIDMembers.ConsistencyGroup
 	} else {
+		glog.V(3).Infof("CreateSnapshot - creating snapshot for classic storageClass")
 		relPath = strings.Replace(volumeIDMembers.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
 	}
 	relPath = strings.Trim(relPath, "!/")
@@ -1754,6 +1760,10 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	pvName := filepath.Base(relPath)
 	if pvName != filesetName {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - PV name from path [%v] does not match with filesetName [%v].", pvName, filesetName))
+	}
+
+	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+		filesetName = volumeIDMembers.ConsistencyGroup
 	}
 
 	snapName := req.GetName()
@@ -1832,9 +1842,9 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, err
 	}
 
-	restoreSize, err := cs.getSnapRestoreSize(conn, filesystemName, filesetName)
+	restoreSize, err := cs.getSnapRestoreSize(conn, filesystemName, filesetResp.FilesetName)
 	if err != nil {
-		glog.Errorf("error getting the snapshot restore size for snapshot %s:%s:%s", filesystemName, filesetName, snapName)
+		glog.Errorf("error getting the snapshot restore size for snapshot %s:%s:%s", filesystemName, filesetResp.FilesetName, snapName)
 		return nil, err
 	}
 
@@ -1871,11 +1881,16 @@ func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.Spec
 	const longForm = "2006-01-02 15:04:05-07:00"
 	//nolint::staticcheck
 
-	strings.Replace(createTS, ",000", timezoneOffset, 1)
-	t, _ := time.Parse(longForm, createTS)
+	createTSTZ := strings.Replace(createTS, ",000", timezoneOffset, 1)
+	t, err := time.Parse(longForm, createTSTZ)
+	if err != nil {
+		glog.Errorf("snapshot - for fileset [%s:%s] error in parsing timestamp: [%v]. Error: [%v]", fs, fset, createTS, err)
+		return timestamp, err
+	}
 	timestamp.Seconds = t.Unix()
 	timestamp.Nanos = 0
 
+	glog.V(3).Infof("getSnapshotCreateTimestamp: for fileset [%s:%s] snapshot creation timestamp: [%v]", fs, fset, createTSTZ)
 	return timestamp, nil
 }
 
