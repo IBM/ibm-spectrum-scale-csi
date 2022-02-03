@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csi-scale-fsetdemo-pod
+  labels:
+    app: nginx
+spec:
+  containers:
+   - name: web-server
+     image: nginx 
+     volumeMounts:
+       - name: mypvc
+         mountPath: /usr/share/nginx/html/scale
+     ports:
+     - containerPort: 80
+  volumes:
+   - name: mypvc
+     persistentVolumeClaim:
+       claimName: scale-advance-pvc
+       readOnly: false
