@@ -82,9 +82,10 @@ type Clusters struct {
 }
 
 const (
-	DefaultGuiPort  int    = 443
-	GuiProtocol     string = "https"
-	ConfigMapFile   string = "/var/lib/ibm/config/spectrum-scale-config.json"
+	DefaultGuiPort int    = 443
+	GuiProtocol    string = "https"
+	ConfigMapFile  string = "/var/lib/ibm/config/spectrum-scale-config.json"
+	// #nosec G101
 	SecretBasePath  string = "/var/lib/ibm/" //nolint:gosec
 	CertificatePath string = "/var/lib/ibm/ssl/public"
 )
@@ -117,7 +118,7 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
-			file, e := ioutil.ReadFile(unamePath)
+			file, e := ioutil.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
 				return fmt.Errorf("Spectrum Scale secret not found: %v\n", e)
 			}
@@ -127,7 +128,7 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 			cmap.Clusters[i].MgmtUsername = file_s
 
 			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
-			file, e = ioutil.ReadFile(pwdPath)
+			file, e = ioutil.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
 				return fmt.Errorf("Spectrum Scale secret not found: %v\n", e)
 			}
@@ -140,7 +141,7 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
 			certPath := path.Join(CertificatePath, cmap.Clusters[i].Cacert)
 			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
-			file, e := ioutil.ReadFile(certPath)
+			file, e := ioutil.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
 				return fmt.Errorf("Spectrum Scale CA certificate not found: %v\n", e)
 			}

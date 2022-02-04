@@ -721,7 +721,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		policy.Partition = fmt.Sprintf("csi-T%s", scaleVol.Tier)
 
 		scaleVol.VolName = fmt.Sprintf("%s-T%scsi", scaleVol.VolName, scaleVol.Tier)
-		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+		err = scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+		if err != nil {
+			glog.Errorf("volume:[%v] - setting policy failed [%v]", volName, err)
+			return nil, err
+		}
 
 		// Since we are using a SET POOL rule, if there is not already a default rule in place in the policy partition
 		// then all files that do not match our rules will have no defined place to go. This sets a default rule with
@@ -736,7 +740,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			defaultPolicy.Policy = "RULE 'csi-defaultRule' SET POOL 'system'"
 			defaultPolicy.Priority = 5
 			defaultPolicy.Partition = defaultPartitionName
-			scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)
+			err = scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)
+			if err != nil {
+				glog.Errorf("volume:[%v] - setting default policy failed [%v]", volName, err)
+				return nil, err
+			}
 		}
 	}
 

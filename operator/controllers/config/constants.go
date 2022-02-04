@@ -102,12 +102,12 @@ const (
 	Plugins                   = "/plugins"
 	CSIKubeletRootDirPath     = "/var/lib/kubelet"
 	CSISCC                    = "spectrum-scale-csiaccess"
-	SecretsMountPath          = "/var/lib/ibm/"
+	SecretsMountPath          = "/var/lib/ibm/" // #nosec G101 false positive
 	ConfigMapPath             = "/var/lib/ibm/config"
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 
-	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey"
+	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
 	DefaultLogLevel        = "DEBUG"
 )
 
