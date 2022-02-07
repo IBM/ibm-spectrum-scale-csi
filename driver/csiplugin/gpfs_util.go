@@ -268,13 +268,13 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 
 	if isSCAdvanced && fsTypeSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"filesetType\" is not allowed with \"version\" value \""+storageClassAdvanced+"\"")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && isparentFilesetSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"parentFileset\" is not allowed with \"version\" value \""+storageClassAdvanced+"\"")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && volDirPathSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"volDirBasePath\" is not allowed with \"version\" value \""+storageClassAdvanced+"\"")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
 
 	if fsTypeSpecified || isSCAdvanced {
