@@ -117,7 +117,7 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 	consistencyGroup := ""
 	path := ""
 
-	if isNewVolumeType { 
+	if isNewVolumeType {
 		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 		if !isprimaryConnPresent {
 			glog.Errorf("unable to get connector for primary cluster")
@@ -324,6 +324,12 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		//Set uid and gid as 0 for CG independent fileset
 		opt[connectors.UserSpecifiedUid] = "0"
 		opt[connectors.UserSpecifiedGid] = "0"
+		if scVol.InodeLimit != "" {
+			opt[connectors.UserSpecifiedInodeLimit] = scVol.InodeLimit
+		} else {
+			opt[connectors.UserSpecifiedInodeLimit] = "1M"
+			// Assumption: On an average a consistency group contains 10 volumes
+		}
 		scVol.ParentFileset = ""
 		createDataDir := false
 		filesetPath, err := cs.createFilesetVol(scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
@@ -717,7 +723,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		policy.Partition = fmt.Sprintf("csi-T%s", scaleVol.Tier)
 
 		scaleVol.VolName = fmt.Sprintf("%s-T%scsi", scaleVol.VolName, scaleVol.Tier)
-		scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+		err = scaleVol.Connector.SetFilesystemPolicy(&policy, scaleVol.VolBackendFs)
+		if err != nil {
+			glog.Errorf("volume:[%v] - setting policy failed [%v]", volName, err)
+			return nil, err
+		}
 
 		// Since we are using a SET POOL rule, if there is not already a default rule in place in the policy partition
 		// then all files that do not match our rules will have no defined place to go. This sets a default rule with
@@ -732,7 +742,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			defaultPolicy.Policy = "RULE 'csi-defaultRule' SET POOL 'system'"
 			defaultPolicy.Priority = 5
 			defaultPolicy.Partition = defaultPartitionName
-			scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)
+			err = scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)
+			if err != nil {
+				glog.Errorf("volume:[%v] - setting default policy failed [%v]", volName, err)
+				return nil, err
+			}
 		}
 	}
 

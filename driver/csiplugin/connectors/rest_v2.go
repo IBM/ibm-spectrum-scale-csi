@@ -135,10 +135,11 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		if ok := caCertPool.AppendCertsFromPEM(scaleConfig.CacertValue); !ok {
 			return &spectrumRestV2{}, fmt.Errorf("Parsing CA cert %v failed", scaleConfig.Cacert)
 		}
-		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool}}
+		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		glog.V(4).Infof("Created Spectrum Scale connector with SSL mode for %v", guiHost)
 	} else {
-		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec //InsecureSkipVerify was requested by user.
+		//#nosec G402 InsecureSkipVerify was requested by user.
+		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
 		glog.V(4).Infof("Created Spectrum Scale connector without SSL mode for %v", guiHost)
 	}
 
