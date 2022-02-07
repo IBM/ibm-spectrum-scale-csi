@@ -1707,7 +1707,7 @@ func (cs *ScaleControllerServer) MakeSnapMetadataDir(conn connectors.SpectrumSca
 	err := conn.MakeDirectory(filesystemName, path, "0", "0")
 	if err != nil {
 		// Directory creation failed
-		glog.Errorf("volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", path, filesystemName, err)
+		glog.Errorf("for volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", filesetName, path, filesystemName, err)
 		return fmt.Errorf("unable to create directory [%v] in filesystem [%v]. Error : %v", path, filesystemName, err)
 	}
 	return nil
