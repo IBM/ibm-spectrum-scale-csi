@@ -87,6 +87,9 @@ type scaleSnapId struct {
 	SnapName  string
 	Path      string
 	FsName    string
+	StorageClassType string
+	ConsistencyGroup string
+	VolType          string
 }
 
 //nolint
