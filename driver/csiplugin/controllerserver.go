@@ -907,7 +907,13 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	fsMntPt := targetFsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
-	jobStatus, jobID, err := conn.CopyFsetSnapshotPath(snapId.FsName, snapId.FsetName, snapId.SnapName, snapId.Path, targetPath, scVol.NodeClass)
+	snapIDPath := snapId.Path
+	filesetForCopy := snapId.FsetName
+	if snapId.StorageClassType == STORAGECLASS_ADVANCED {
+		snapIDPath = fmt.Sprintf("/%s", snapId.FsetName)
+		filesetForCopy = snapId.ConsistencyGroup
+	}
+	jobStatus, jobID, err := conn.CopyFsetSnapshotPath(snapId.FsName, filesetForCopy, snapId.SnapName, snapIDPath, targetPath, scVol.NodeClass)
 	if err != nil {
 		glog.Errorf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err)
 		return status.Error(codes.Internal, fmt.Sprintf("failed to create volume from snapshot %s: [%v]", snapId.SnapName, err))
@@ -1148,12 +1154,25 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", sId.FsetName))
 	}
 
-	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, sId.FsetName, sId.SnapName)
+	filesetToCheck := sId.FsetName
+	if sId.StorageClassType == STORAGECLASS_ADVANCED {
+		// check if independent fileset is linked
+		filesetToCheck = sId.ConsistencyGroup
+		isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
+	        if err != nil {
+        	        return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	        }
+        	if !isFsetLinked {
+                	return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+	        }
+	} 
+
+	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sId.SnapName))
 	}
 	if !isSnapExist {
-		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sId.SnapName, sId.FsetName))
+		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sId.SnapName, filesetToCheck))
 	}
 
 	return nil
