@@ -34,7 +34,7 @@ const (
 	CSINode                   ResourceName = "csi"
 	NodeAgent                 ResourceName = "ibm-node-agent"
 	CSIAttacherServiceAccount ResourceName = "csi-attacher-sa"
-	CSISidecarServiceAccount  ResourceName = "csi-controller-sa"
+	CSIControllerServiceAccount  ResourceName = "csi-controller-sa"
 	CSINodeServiceAccount        ResourceName = "csi-node-sa"
 	CSIProvisionerServiceAccount ResourceName = "csi-provisioner-sa"
 	CSISnapshotterServiceAccount ResourceName = "csi-snapshotter-sa"
@@ -66,8 +66,8 @@ func GetNameForResource(name ResourceName, driverName string) string {
 		return driverName
 	case CSIAttacherServiceAccount:
 		return fmt.Sprintf("%s-attacher", driverName)
-	// case CSIControllerServiceAccount:
-	//	return fmt.Sprintf("%s-operator", driverName)
+	case CSIControllerServiceAccount:
+		return fmt.Sprintf("%s-controller", driverName)
 	case CSINodeServiceAccount:
 		return fmt.Sprintf("%s-node", driverName)
 	case CSIProvisionerServiceAccount:
@@ -76,8 +76,8 @@ func GetNameForResource(name ResourceName, driverName string) string {
 		return fmt.Sprintf("%s-snapshotter", driverName)
 	case CSIResizerServiceAccount:
 		return fmt.Sprintf("%s-resizer", driverName)
-	case CSISidecarServiceAccount:
-		return fmt.Sprintf("%s-sidecar", driverName)
+	//case CSISidecarServiceAccount:
+	//	return fmt.Sprintf("%s-controller", driverName)
 	default:
 		return fmt.Sprintf("%s-%s", driverName, name)
 	}

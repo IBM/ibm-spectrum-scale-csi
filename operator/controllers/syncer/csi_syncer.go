@@ -171,7 +171,7 @@ func (s *csiControllerSyncer) ensureSidecarPodSpec(secrets []corev1.LocalObjectR
 		//		},
 		Affinity:           s.driver.Spec.Affinity,
 		Tolerations:        s.driver.Spec.Tolerations,
-		ServiceAccountName: config.GetNameForResource(config.CSISidecarServiceAccount, s.driver.Name),
+		ServiceAccountName: config.GetNameForResource(config.CSIControllerServiceAccount, s.driver.Name),
 	}
 	if pod.Affinity != nil {
 		pod.Affinity.PodAntiAffinity = s.driver.GetPodAntiAffinity()

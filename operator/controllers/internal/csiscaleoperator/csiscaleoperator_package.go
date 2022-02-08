@@ -123,11 +123,11 @@ func (c *CSIScaleOperator) GenerateNodeServiceAccount() *corev1.ServiceAccount {
 // GenerateAttacherServiceAccount creates a kubernetes service account for the attacher service
 // and modify the service account to use secret as an imagePullSecret.
 // It returns an object of type *corev1.ServiceAccount.
-func (c *CSIScaleOperator) GenerateSidecarServiceAccount() *corev1.ServiceAccount {
+func (c *CSIScaleOperator) GenerateControllerServiceAccount() *corev1.ServiceAccount {
 
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+			Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
 		},
@@ -236,7 +236,7 @@ func (c *CSIScaleOperator) GenerateSidecarClusterRoleBinding() *rbacv1.ClusterRo
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -330,7 +330,7 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRoleBinding() *rbacv1.Clust
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -403,7 +403,7 @@ func (c *CSIScaleOperator) GenerateAttacherClusterRoleBinding() *rbacv1.ClusterR
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -471,7 +471,7 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRoleBinding() *rbacv1.Clust
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},
@@ -488,11 +488,12 @@ func (c *CSIScaleOperator) GenerateResizerClusterRoleBinding() *rbacv1.ClusterRo
 	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: config.GetNameForResource(config.Resizer, c.Name),
+			Labels: c.GetLabels(),
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSISidecarServiceAccount, c.Name),
+				Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
 				Namespace: c.Namespace,
 			},
 		},

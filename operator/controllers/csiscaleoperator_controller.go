@@ -324,7 +324,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
-	// TODO: Delete STS when pods of deplyment are in running state.
+	// TODO: Delete STS when pods of deployment are in running state.
 	logger.Info("Removing the deprecated Statefulset resources if present.")
 	if err := r.removeStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
@@ -376,39 +376,42 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Removing the deprecated ClusterRoleBinding resources if present.")
-	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+	/*
 
-	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		logger.Info("Removing the deprecated ClusterRoleBinding resources if present.")
+		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	logger.Info("Removing the deprecated ClusterRole resources if present.")
-	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		logger.Info("Removing the deprecated ClusterRole resources if present.")
+		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.removeClusterRole(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
+		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
+			return ctrl.Result{}, err
+		}
+	*/
 
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
@@ -703,7 +706,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 
 	// controller := instance.GenerateControllerServiceAccount()
 	node := instance.GenerateNodeServiceAccount()
-	sidecar := instance.GenerateSidecarServiceAccount()
+	controller := instance.GenerateControllerServiceAccount()
 
 	// controllerServiceAccountName := config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name)
 	nodeServiceAccountName := config.GetNameForResource(config.CSINodeServiceAccount, instance.Name)
@@ -714,7 +717,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 	for _, sa := range []*corev1.ServiceAccount{
 		// controller,
 		node,
-		sidecar,
+		controller,
 	} {
 		if err := controllerutil.SetControllerReference(instance.Unwrap(), sa, r.Scheme); err != nil {
 			message := "Failed to set controller reference for ServiceAccount " + sa.GetName()
@@ -1095,7 +1098,7 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 
 	logger.Info("Creating required SecurityContextConstraints resource.")
 	csiaccess_users_new := []string{
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSISidecarServiceAccount, instance.Name),
+		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name),
 		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSINodeServiceAccount, instance.Name),
 	}
 
@@ -1401,6 +1404,7 @@ func (r *CSIScaleOperatorReconciler) removeStatefulset(instance *csiscaleoperato
 	return nil
 }
 
+/*
 func (r *CSIScaleOperatorReconciler) removeClusterRoleBinding(instance *csiscaleoperator.CSIScaleOperator, name string) error {
 	logger := csiLog.WithName("removeClusterRoleBinding")
 	logger.Info("Checking if " + name + " is deployed using ClusterRoleBinding.")
@@ -1443,7 +1447,9 @@ func (r *CSIScaleOperatorReconciler) removeClusterRoleBinding(instance *csiscale
 	}
 	return nil
 }
+*/
 
+/*
 func (r *CSIScaleOperatorReconciler) removeClusterRole(instance *csiscaleoperator.CSIScaleOperator, name string) error {
 	logger := csiLog.WithName("removeClusterRole")
 	logger.Info("Checking if " + name + " is deployed using ClusterRole.")
@@ -1486,6 +1492,7 @@ func (r *CSIScaleOperatorReconciler) removeClusterRole(instance *csiscaleoperato
 	}
 	return nil
 }
+*/
 
 func (r *CSIScaleOperatorReconciler) removeServiceAccount(instance *csiscaleoperator.CSIScaleOperator, name string) error {
 	logger := csiLog.WithName("removeServiceAccount")
