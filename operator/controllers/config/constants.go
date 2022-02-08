@@ -72,6 +72,11 @@ const (
 	ReplicaCount = int32(2)
 	// Tolerations seconds for the CSI Sidecar deployment
 	TolerationsSeconds = int64(60)
+	// ContainerPort for /healthz/leader-election endpoint
+	AttacherLeaderLivenessPort    = int32(8080)
+	ProvisionerLeaderLivenessPort = int32(8081)
+	SnapshotterLeaderLivenessPort = int32(8082)
+	ResizerLeaderLivenessPort     = int32(8083)
 
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.4.0"

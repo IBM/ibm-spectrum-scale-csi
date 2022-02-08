@@ -36,7 +36,7 @@ const (
 	storageApiGroup                      string = "storage.k8s.io"
 	rbacAuthorizationApiGroup            string = "rbac.authorization.k8s.io"
 	podSecurityPolicyApiGroup            string = "extensions"
-	coordinationApiGroup                 string = "coordination.k8s.io"
+	coordinationAPIGroup                 string = "coordination.k8s.io"
 	storageClassesResource               string = "storageclasses"
 	persistentVolumesResource            string = "persistentvolumes"
 	persistentVolumeClaimsResource       string = "persistentvolumeclaims"
@@ -120,7 +120,7 @@ func (c *CSIScaleOperator) GenerateNodeServiceAccount() *corev1.ServiceAccount {
 	}
 }
 
-// GenerateAttacherServiceAccount creates a kubernetes service account for the attacher service
+// GenerateControllerServiceAccount creates a kubernetes service account for the CSI sidecar services
 // and modify the service account to use secret as an imagePullSecret.
 // It returns an object of type *corev1.ServiceAccount.
 func (c *CSIScaleOperator) GenerateControllerServiceAccount() *corev1.ServiceAccount {
@@ -209,7 +209,7 @@ func (c *CSIScaleOperator) GenerateSidecarClusterRole() *rbacv1.ClusterRole {
 				Verbs:     []string{verbList, verbWatch, verbGet, verbCreate, verbPatch, verbUpdate},
 			},
 			{
-				APIGroups: []string{coordinationApiGroup},
+				APIGroups: []string{coordinationAPIGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
@@ -303,7 +303,7 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
 			{
-				APIGroups: []string{coordinationApiGroup},
+				APIGroups: []string{coordinationAPIGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
@@ -320,7 +320,7 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 	return clusterRole
 }
 
-// GenerateProvisionerClusterRole returns a kubernetes clusterrolebinding object for the provisioner service.
+// GenerateProvisionerClusterRoleBinding returns a kubernetes clusterrolebinding object for the provisioner service.
 func (c *CSIScaleOperator) GenerateProvisionerClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -376,7 +376,7 @@ func (c *CSIScaleOperator) GenerateAttacherClusterRole() *rbacv1.ClusterRole {
 				Verbs:     []string{verbPatch},
 			},
 			{
-				APIGroups: []string{coordinationApiGroup},
+				APIGroups: []string{coordinationAPIGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
@@ -444,7 +444,7 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
 			{
-				APIGroups: []string{coordinationApiGroup},
+				APIGroups: []string{coordinationAPIGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
@@ -487,7 +487,7 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRoleBinding() *rbacv1.Clust
 func (c *CSIScaleOperator) GenerateResizerClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: config.GetNameForResource(config.Resizer, c.Name),
+			Name:   config.GetNameForResource(config.Resizer, c.Name),
 			Labels: c.GetLabels(),
 		},
 		Subjects: []rbacv1.Subject{
@@ -544,7 +544,7 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
 			{
-				APIGroups: []string{coordinationApiGroup},
+				APIGroups: []string{coordinationAPIGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
@@ -715,7 +715,7 @@ func (c *CSIScaleOperator) GenerateSCCForNodeClusterRoleBinding() *rbacv1.Cluste
 */
 
 // GenerateSecurityContextConstraint returns an openshift securitycontextconstraints object.
-func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *securityv1.SecurityContextConstraints {
+func (c *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *securityv1.SecurityContextConstraints {
 
 	var (
 		FSTypeHostPath              securityv1.FSType = "hostPath"
@@ -767,8 +767,8 @@ func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *se
 	}
 }
 
-// getNodeSelector converts the given nodeselector array into a map.
-func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
+// GetNodeSelectors converts the given nodeselector array into a map.
+func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 
 	nodeSelectors := make(map[string]string)
 
@@ -782,7 +782,7 @@ func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 }
 
 // GetNodeTolerations returns an array of kubernetes object of type corev1.Tolerations
-func (s *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
+func (c *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
 
 	tolerationsSeconds := config.TolerationsSeconds
 	tolerations := []corev1.Toleration{
@@ -803,7 +803,8 @@ func (s *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
 	return tolerations
 }
 
-func (s *CSIScaleOperator) GetPodAntiAffinity() *corev1.PodAntiAffinity {
+// GetPodAntiAffinity returns kubernetes podAntiAffinity for the sidecar controller pod.
+func (c *CSIScaleOperator) GetPodAntiAffinity() *corev1.PodAntiAffinity {
 	podAntiAffinity := corev1.PodAntiAffinity{
 		RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
 			{
@@ -824,75 +825,83 @@ func (s *CSIScaleOperator) GetPodAntiAffinity() *corev1.PodAntiAffinity {
 	return &podAntiAffinity
 }
 
-func (s *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
+// GetLivenessProbe returns liveness probe information for sidecar controller.
+func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	//tolerationsSeconds := config.TolerationsSeconds
 	probe := corev1.Probe{
 		FailureThreshold:    int32(1),
 		InitialDelaySeconds: int32(10),
 		TimeoutSeconds:      int32(10),
 		PeriodSeconds:       int32(20),
-		Handler:             s.GetHandler(),
+		Handler:             c.GetHandler(),
 	}
 	return &probe
 }
 
-func (s *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
+// GetAttacherContainerPort returns port details for the attacher sidecar container.
+func (c *CSIScaleOperator) GetAttacherContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: int32(8080),
+			ContainerPort: config.AttacherLeaderLivenessPort,
 			Name:          "http-endpoint",
-			Protocol:      s.GetProtocol(),
+			Protocol:      c.GetProtocol(),
 		},
 	}
 	return ports
 }
 
-func (s *CSIScaleOperator) GetProvisionerContainerPort() []corev1.ContainerPort {
+// GetProvisionerContainerPort returns port details for the provisioner sidecar container.
+func (c *CSIScaleOperator) GetProvisionerContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: int32(8081),
+			ContainerPort: config.ProvisionerLeaderLivenessPort,
 			Name:          "http-endpoint",
-			Protocol:      s.GetProtocol(),
+			Protocol:      c.GetProtocol(),
 		},
 	}
 	return ports
 }
 
-func (s *CSIScaleOperator) GetResizerContainerPort() []corev1.ContainerPort {
+// GetResizerContainerPort returns port details for the resizer sidecar container.
+func (c *CSIScaleOperator) GetResizerContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: int32(8083),
+			ContainerPort: config.ResizerLeaderLivenessPort,
 			Name:          "http-endpoint",
-			Protocol:      s.GetProtocol(),
+			Protocol:      c.GetProtocol(),
 		},
 	}
 	return ports
 }
 
-func (s *CSIScaleOperator) GetSnapshotterContainerPort() []corev1.ContainerPort {
+// GetSnapshotterContainerPort returns port details for the snapshotter sidecar container.
+func (c *CSIScaleOperator) GetSnapshotterContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: int32(8082),
+			ContainerPort: config.SnapshotterLeaderLivenessPort,
 			Name:          "http-endpoint",
-			Protocol:      s.GetProtocol(),
+			Protocol:      c.GetProtocol(),
 		},
 	}
 	return ports
 }
 
-func (s *CSIScaleOperator) GetProtocol() corev1.Protocol {
+// GetProtocol returns the protocol to be used by liveness probe with httpGet request.
+func (c *CSIScaleOperator) GetProtocol() corev1.Protocol {
 	var protocol corev1.Protocol = "TCP"
 	return protocol
 }
 
-func (s *CSIScaleOperator) GetHandler() corev1.Handler {
+// GetHandler returns a handler with httpGet information.
+func (c *CSIScaleOperator) GetHandler() corev1.Handler {
 	handler := corev1.Handler{
-		HTTPGet: s.GetHTTPGetAction(),
+		HTTPGet: c.GetHTTPGetAction(),
 	}
 	return handler
 }
 
-func (s CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
+// GetHTTPGetAction returns httpGet information for the liveness probe.
+func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	action := corev1.HTTPGetAction{
 		Path: "/healthz/leader-election",
 		Port: intstr.FromString("http-endpoint"),
@@ -900,15 +909,17 @@ func (s CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	return &action
 }
 
-func (s CSIScaleOperator) GetDeploymentStrategy() appsv1.DeploymentStrategy {
+// GetDeploymentStrategy returns update strategy details for kubernetes deployment.
+func (c CSIScaleOperator) GetDeploymentStrategy() appsv1.DeploymentStrategy {
 	strategy := appsv1.DeploymentStrategy{
-		RollingUpdate: s.GetRollingUpdateDeployment(),
-		Type:          s.GetDeploymentStrategyType(),
+		RollingUpdate: c.GetRollingUpdateDeployment(),
+		Type:          c.GetDeploymentStrategyType(),
 	}
 	return strategy
 }
 
-func (s CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDeployment {
+// GetRollingUpdateDeployment returns rollingUpdate details. MaxSurge as 25% and MaxUnavailable as 50%.
+func (c CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDeployment {
 	maxSurge := intstr.FromString("25%")
 	maxUnavailable := intstr.FromString("50%")
 	deploy := appsv1.RollingUpdateDeployment{
@@ -918,7 +929,8 @@ func (s CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDepl
 	return &deploy
 }
 
-func (s *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategyType {
+// GetDeploymentStrategyType returns deployment strategy type as `RollingUpdate` for kubernetes deployment.
+func (c *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategyType {
 	var StrategyType appsv1.DeploymentStrategyType = "RollingUpdate"
 	return StrategyType
 }

@@ -10,9 +10,9 @@
 			},
 			"rule_id": "G101",
 			"details": "Potential hardcoded credentials",
-			"file": "/home/madhu/goop_code/ibm-spectrum-scale-csi/operator/controllers/config/constants.go",
-			"code": "109: \n110: \tDefaultImagePullSecret = \"ibm-spectrum-scale-csi-registrykey\"\n111: \tDefaultLogLevel        = \"DEBUG\"\n",
-			"line": "110",
+			"file": "/mnt/c/Users/NitishKumar/Documents/GitHub/IBM/ibm-spectrum-scale-csi/operator/controllers/config/constants.go",
+			"code": "119: \n120: \tDefaultImagePullSecret = \"ibm-spectrum-scale-csi-registrykey\"\n121: \tDefaultLogLevel        = \"DEBUG\"\n",
+			"line": "120",
 			"column": "2",
 			"nosec": false,
 			"suppressions": null
@@ -26,9 +26,9 @@
 			},
 			"rule_id": "G101",
 			"details": "Potential hardcoded credentials",
-			"file": "/home/madhu/goop_code/ibm-spectrum-scale-csi/operator/controllers/config/constants.go",
-			"code": "104: \tCSISCC                    = \"spectrum-scale-csiaccess\"\n105: \tSecretsMountPath          = \"/var/lib/ibm/\"\n106: \tConfigMapPath             = \"/var/lib/ibm/config\"\n",
-			"line": "105",
+			"file": "/mnt/c/Users/NitishKumar/Documents/GitHub/IBM/ibm-spectrum-scale-csi/operator/controllers/config/constants.go",
+			"code": "114: \tCSISCC                    = \"spectrum-scale-csiaccess\"\n115: \tSecretsMountPath          = \"/var/lib/ibm/\"\n116: \tConfigMapPath             = \"/var/lib/ibm/config\"\n",
+			"line": "115",
 			"column": "2",
 			"nosec": false,
 			"suppressions": null
@@ -36,7 +36,7 @@
 	],
 	"Stats": {
 		"files": 14,
-		"lines": 4863,
+		"lines": 4977,
 		"nosec": 0,
 		"found": 2
 	},

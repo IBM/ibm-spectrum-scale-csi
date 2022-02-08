@@ -36,12 +36,12 @@ spec:
       - kind: DaemonSet
         name: ""
         version: v1beta2
+      - kind: Deployment
+        name: ""
+        version: v1beta2
       - kind: Pod
         name: ""
         version: v1
-      - kind: StatefulSet
-        name: ""
-        version: v1beta2
       specDescriptors:
       - description: affinity is a group of affinity scheduling rules.
         displayName: Affinity
@@ -54,21 +54,6 @@ spec:
         path: attacher
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: attacherNodeSelector is the node selector for attacher sidecar.
-        displayName: Attacher Node Selector
-        path: attacherNodeSelector
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Key for node selector
-        displayName: Key
-        path: attacherNodeSelector[0].key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Value for key
-        displayName: Value
-        path: attacherNodeSelector[0].value
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: clusters is a collection of Spectrum Scale cluster properties
           for the CSI driver to mount.
         displayName: Clusters
@@ -116,6 +101,21 @@ spec:
         path: clusters[0].secureSslMode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: controllerNodeSelector is the node selector for controller sidecars.
+        displayName: Controller Node Selector
+        path: controllerNodeSelector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Key for node selector
+        displayName: Key
+        path: controllerNodeSelector[0].key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
+      - description: Value for key
+        displayName: Value
+        path: controllerNodeSelector[0].value
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
       - description: PodSecurityPolicy name for CSI driver and sidecar pods.
         displayName: CSI Pod Security Policy Name
         path: csipspname
@@ -184,65 +184,18 @@ spec:
         path: provisioner
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: provisionerNodeSelector is the node selector for provisioner
-          sidecar.
-        displayName: Provisioner Node Selector
-        path: provisionerNodeSelector
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Key for node selector
-        displayName: Key
-        path: provisionerNodeSelector[0].key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Value for key
-        displayName: Value
-        path: provisionerNodeSelector[0].value
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: resizer is the resizer sidecar image for CSI (issues volume expansion
           requests).
         displayName: Resizer Image
         path: resizer
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: resizerNodeSelector is the node selector for resizer sidecar.
-        displayName: Resizer Node Selector
-        path: resizerNodeSelector
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Key for node selector
-        displayName: Key
-        path: resizerNodeSelector[0].key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Value for key
-        displayName: Value
-        path: resizerNodeSelector[0].value
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: snapshotter is the snapshotter sidecar image for CSI (issues
           volume snapshot requests).
         displayName: Snapshotter Image
         path: snapshotter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: snapshotterNodeSelector is the snapshotter node selector for
-          snapshotter sidecar.
-        displayName: Snapshotter Node Selector
-        path: snapshotterNodeSelector
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Key for node selector
-        displayName: Key
-        path: snapshotterNodeSelector[0].key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Value for key
-        displayName: Value
-        path: snapshotterNodeSelector[0].value
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:label
       - description: spectrumScale is the image name for the CSI Spectrum Scale node
           driver plugin container.
         displayName: Spectrum Scale Image

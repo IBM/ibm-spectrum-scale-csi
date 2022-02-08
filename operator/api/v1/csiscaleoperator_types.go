@@ -34,9 +34,9 @@ type CSIScaleOperatorSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Attacher Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	Attacher string `json:"attacher,omitempty"`
 
-	// attacherNodeSelector is the node selector for attacher sidecar.
+	// controllerNodeSelector is the node selector for controller sidecars.
 	// +kubebuilder:default:={{key:scale,value:`true`}}
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Attacher Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Controller Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	ControllerNodeSelector []CSINodeSelector `json:"controllerNodeSelector,omitempty"`
 
 	// clusters is a collection of Spectrum Scale cluster properties for the CSI driver to mount.
@@ -61,8 +61,8 @@ type CSIScaleOperatorSpec struct {
 	Provisioner string `json:"provisioner,omitempty"`
 
 	// provisionerNodeSelector is the node selector for provisioner sidecar.
-	// +kubebuilder:default:={{key:scale,value:`true`}}
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Provisioner Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
+	// // +kubebuilder:default:={{key:scale,value:`true`}}
+	// //+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Provisioner Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	//ProvisionerNodeSelector []CSINodeSelector `json:"provisionerNodeSelector,omitempty"`
 
 	// snapshotter is the snapshotter sidecar image for CSI (issues volume snapshot requests).
@@ -70,8 +70,8 @@ type CSIScaleOperatorSpec struct {
 	Snapshotter string `json:"snapshotter,omitempty"`
 
 	// snapshotterNodeSelector is the snapshotter node selector for snapshotter sidecar.
-	// +kubebuilder:default:={{key:scale,value:`true`}}
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Snapshotter Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
+	// // +kubebuilder:default:={{key:scale,value:`true`}}
+	// //+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Snapshotter Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	//SnapshotterNodeSelector []CSINodeSelector `json:"snapshotterNodeSelector,omitempty"`
 
 	// resizer is the resizer sidecar image for CSI (issues volume expansion requests).
@@ -79,8 +79,8 @@ type CSIScaleOperatorSpec struct {
 	Resizer string `json:"resizer,omitempty"`
 
 	// resizerNodeSelector is the node selector for resizer sidecar.
-	// +kubebuilder:default:={{key:scale,value:`true`}}
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Resizer Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
+	// // +kubebuilder:default:={{key:scale,value:`true`}}
+	// //+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Resizer Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	//ResizerNodeSelector []CSINodeSelector `json:"resizerNodeSelector,omitempty"`
 
 	// livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).

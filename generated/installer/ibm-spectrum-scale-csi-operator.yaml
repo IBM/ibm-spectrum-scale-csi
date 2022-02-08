@@ -1120,26 +1120,6 @@ spec:
                 type: string
                 description: attacher is the attacher sidecar image for CSI (actually
                   attaches to the storage).
-              attacherNodeSelector:
-                type: array
-                default:
-                - value: "true"
-                  key: scale
-                description: attacherNodeSelector is the node selector for attacher
-                  sidecar.
-                items:
-                  type: object
-                  description: CSINodeSelector defines the fields of Node Selector
-                  properties:
-                    value:
-                      type: string
-                      description: Value for key
-                    key:
-                      type: string
-                      description: Key for node selector
-                  required:
-                  - key
-                  - value
               clusters:
                 type: array
                 description: clusters is a collection of Spectrum Scale cluster properties
@@ -1213,6 +1193,26 @@ spec:
                   - restApi
                   - secrets
                   - secureSslMode
+              controllerNodeSelector:
+                type: array
+                default:
+                - value: "true"
+                  key: scale
+                description: controllerNodeSelector is the node selector for controller
+                  sidecars.
+                items:
+                  type: object
+                  description: CSINodeSelector defines the fields of Node Selector
+                  properties:
+                    value:
+                      type: string
+                      description: Value for key
+                    key:
+                      type: string
+                      description: Key for node selector
+                  required:
+                  - key
+                  - value
               csipspname:
                 type: string
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
@@ -1271,74 +1271,14 @@ spec:
                 type: string
                 description: provisioner is the provisioner sidecar image for CSI
                   (actually issues provision requests).
-              provisionerNodeSelector:
-                type: array
-                default:
-                - value: "true"
-                  key: scale
-                description: provisionerNodeSelector is the node selector for provisioner
-                  sidecar.
-                items:
-                  type: object
-                  description: CSINodeSelector defines the fields of Node Selector
-                  properties:
-                    value:
-                      type: string
-                      description: Value for key
-                    key:
-                      type: string
-                      description: Key for node selector
-                  required:
-                  - key
-                  - value
               resizer:
                 type: string
                 description: resizer is the resizer sidecar image for CSI (issues
                   volume expansion requests).
-              resizerNodeSelector:
-                type: array
-                default:
-                - value: "true"
-                  key: scale
-                description: resizerNodeSelector is the node selector for resizer
-                  sidecar.
-                items:
-                  type: object
-                  description: CSINodeSelector defines the fields of Node Selector
-                  properties:
-                    value:
-                      type: string
-                      description: Value for key
-                    key:
-                      type: string
-                      description: Key for node selector
-                  required:
-                  - key
-                  - value
               snapshotter:
                 type: string
                 description: snapshotter is the snapshotter sidecar image for CSI
                   (issues volume snapshot requests).
-              snapshotterNodeSelector:
-                type: array
-                default:
-                - value: "true"
-                  key: scale
-                description: snapshotterNodeSelector is the snapshotter node selector
-                  for snapshotter sidecar.
-                items:
-                  type: object
-                  description: CSINodeSelector defines the fields of Node Selector
-                  properties:
-                    value:
-                      type: string
-                      description: Value for key
-                    key:
-                      type: string
-                      description: Key for node selector
-                  required:
-                  - key
-                  - value
               spectrumScale:
                 type: string
                 description: spectrumScale is the image name for the CSI Spectrum

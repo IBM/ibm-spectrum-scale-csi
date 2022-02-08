@@ -86,10 +86,11 @@ func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscal
 	})
 }
 
+// GetSidecarSyncer returns a new kubernetes.Object syncer for k8s deployment object.
 func GetSidecarSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
 	logger := csiLog.WithName("GetSidecarSyncer")
-	logger.Info("Creating a syncer object for the sidecar deployment.")
+	logger.Info("Creating a syncer object for the sidecar controller deployment.")
 
 	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -212,7 +213,7 @@ func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
 			//"--leader-election-retry-period=5s",
 		},
 	)
-	attacher.Ports = s.driver.GetContainerPort()
+	attacher.Ports = s.driver.GetAttacherContainerPort()
 	attacher.LivenessProbe = s.driver.GetLivenessProbe()
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
