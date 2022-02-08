@@ -101,7 +101,7 @@ const (
 	UserSpecifiedVolDirPath       string = "volDirBasePath"
 	UserSpecifiedNodeClass        string = "nodeClass"
 	UserSpecifiedPermissions      string = "permissions"
-	UserSpecifiedStorageClassType string = "type"
+	UserSpecifiedStorageClassType string = "version"
 	UserSpecifiedCompression      string = "compression"
 	UserSpecifiedTier             string = "tier"
 	UserSpecifiedSnapWindow       string = "snapWindow"
