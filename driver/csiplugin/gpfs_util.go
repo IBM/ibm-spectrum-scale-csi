@@ -33,7 +33,8 @@ import (
 const (
 	dependentFileset     = "dependent"
 	independentFileset   = "independent"
-	storageClassAdvanced = "advanced"
+	storageClassClassic  = "1"
+	storageClassAdvanced = "2"
 )
 
 type scaleVolume struct {
@@ -158,12 +159,18 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if isSCTypeSpecified && storageClassType == "" {
 		isSCTypeSpecified = false
 	}
+	isSCAdvanced := false
 	if isSCTypeSpecified {
-		//This is a new type of StorageClass
-		if storageClassType != storageClassAdvanced {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "storageClassType must be \""+storageClassAdvanced+"\" if specified.")
+		if storageClassType != storageClassClassic && storageClassType != storageClassAdvanced {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
+				"\""+storageClassClassic+"\" or \""+storageClassAdvanced+"\"")
 		}
 		scaleVol.StorageClassType = storageClassType
+		if storageClassType == storageClassAdvanced {
+			isSCAdvanced = true
+		}
+	} else {
+		scaleVol.StorageClassType = storageClassClassic
 	}
 
 	if fsSpecified && volBckFs == "" {
@@ -184,7 +191,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		volDirPathSpecified = false
 	}
 
-	if !fsTypeSpecified && !volDirPathSpecified && !isSCTypeSpecified {
+	if !fsTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
 		fsTypeSpecified = true
 		fsType = independentFileset
 	}
@@ -260,17 +267,17 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.IsFilesetBased = false
 	}
 
-	if fsTypeSpecified && isSCTypeSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"filesetType\" are mutually exclusive")
+	if isSCAdvanced && fsTypeSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
-	if fsTypeSpecified && inodeLimSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"inodeLimit\" are mutually exclusive")
+	if isSCAdvanced && isparentFilesetSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
-	if fsTypeSpecified && volDirPathSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"volDirBasePath\" are mutually exclusive")
+	if isSCAdvanced && volDirPathSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
 
-	if fsTypeSpecified || isSCTypeSpecified {
+	if fsTypeSpecified || isSCAdvanced {
 		scaleVol.IsFilesetBased = true
 	}
 
