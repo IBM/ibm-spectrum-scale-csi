@@ -645,12 +645,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	glog.V(5).Infof("volume:[%v] - check if volume filesystem [%v] is mounted on GUI node of Primary cluster", scaleVol.VolName, scaleVol.VolBackendFs)
 	volFsInfo, err := scaleVol.PrimaryConnector.GetFilesystemDetails(scaleVol.VolBackendFs)
-
-	if isNewVolumeType || (scaleVol.IsFilesetBased && scaleVol.Tier != "") {
-		if err := cs.checkCGAndVolTierSupport(volFsInfo.Version); err != nil {
-			return nil, err
-		}
-	}
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid value in filesystemName") {
 			glog.Errorf("volume:[%v] - filesystem %s in not known to primary cluster. Error: %v", scaleVol.VolName, scaleVol.VolBackendFs, err)
@@ -708,6 +702,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.ClusterId = PCid
 	}
 
+	if isNewVolumeType || (scaleVol.IsFilesetBased && scaleVol.Tier != "") {
+		if err := cs.checkCGAndVolTierSupport(scaleVol.Connector); err != nil {
+			return nil, err
+		}
+	}
 	if isVolSource {
 		if !scaleVol.IsFilesetBased {
 			if volFsInfo.Type == filesystemTypeRemote {
@@ -1107,13 +1106,16 @@ func (cs *ScaleControllerServer) checkVolCloneSupport(conn connectors.SpectrumSc
 	return nil
 }
 
-func (cs *ScaleControllerServer) checkCGAndVolTierSupport(version string) error {
+func (cs *ScaleControllerServer) checkCGAndVolTierSupport(conn connectors.SpectrumScaleConnector) error {
 	/* Verify Spectrum Scale Filesystem Version is not below 5.1.3-0 (27.00) */
 
-	versionCheck := cs.checkMinFsVersion(version, "2700")
+	versionCheck, err := cs.checkMinScaleVersion(conn, "5130")
+	if err != nil {
+		return err
+	}
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale Filesystem version for consistency group and tiering support with CSI is 5.1.3-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for consistency group and tiering support with CSI is 5.1.3-0")
 	}
 	return nil
 }
