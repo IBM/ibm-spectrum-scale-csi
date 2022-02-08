@@ -76,8 +76,6 @@ func GetNameForResource(name ResourceName, driverName string) string {
 		return fmt.Sprintf("%s-snapshotter", driverName)
 	case CSIResizerServiceAccount:
 		return fmt.Sprintf("%s-resizer", driverName)
-	//case CSISidecarServiceAccount:
-	//	return fmt.Sprintf("%s-controller", driverName)
 	default:
 		return fmt.Sprintf("%s-%s", driverName, name)
 	}

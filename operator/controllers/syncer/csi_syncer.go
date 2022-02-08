@@ -119,7 +119,7 @@ func (s *csiControllerSyncer) SyncSidecarFn() error {
 
 	out := s.obj.(*appsv1.Deployment)
 
-	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels("csi-sidecar-controller"))
+	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIController, s.driver.Name)))
 	replicas := config.ReplicaCount
 	out.Spec.Replicas = &replicas
 	// out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
@@ -137,7 +137,7 @@ func (s *csiControllerSyncer) SyncSidecarFn() error {
 	}
 
 	// ensure template
-	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels("csi-sidecar-controller")
+	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIController, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
 	if len(secrets) != 0 {
 		out.Spec.Template.Spec.ImagePullSecrets = secrets

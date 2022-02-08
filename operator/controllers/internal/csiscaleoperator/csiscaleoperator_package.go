@@ -696,9 +696,9 @@ func (c *CSIScaleOperator) GetPodAntiAffinity() *corev1.PodAntiAffinity {
 				LabelSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
-							Key:      "app",
+							Key:      config.LabelApp,
 							Operator: "In",
-							Values:   []string{"csi-sidecar-controller"},
+							Values:   []string{config.GetNameForResource(config.CSIController, c.Name)},
 						},
 					},
 				},
