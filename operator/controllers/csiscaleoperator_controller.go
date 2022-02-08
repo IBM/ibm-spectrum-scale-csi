@@ -376,43 +376,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	/*
-
-		logger.Info("Removing the deprecated ClusterRoleBinding resources if present.")
-		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.removeClusterRoleBinding(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		logger.Info("Removing the deprecated ClusterRole resources if present.")
-		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Attacher, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Provisioner, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Snapshotter, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.removeClusterRole(instance, config.GetNameForResource(config.Resizer, instance.Name)); err != nil {
-			return ctrl.Result{}, err
-		}
-	*/
-
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
 
@@ -704,18 +667,13 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 	logger := csiLog.WithName("reconcileServiceAccount")
 	logger.Info("Creating the required ServiceAccount resources.")
 
-	// controller := instance.GenerateControllerServiceAccount()
 	node := instance.GenerateNodeServiceAccount()
 	controller := instance.GenerateControllerServiceAccount()
 
 	// controllerServiceAccountName := config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name)
 	nodeServiceAccountName := config.GetNameForResource(config.CSINodeServiceAccount, instance.Name)
-	// attacherServiceAccountName := config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name)
-	// provisionerServiceAccountName := config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name)
-	// snapshotterServiceAccountName := config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name)
 
 	for _, sa := range []*corev1.ServiceAccount{
-		// controller,
 		node,
 		controller,
 	} {
@@ -1362,9 +1320,10 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 	}
 }
 
+// removeStatefulset removes the deprecated k8s Statefulsets from the cluster if present.
 func (r *CSIScaleOperatorReconciler) removeStatefulset(instance *csiscaleoperator.CSIScaleOperator, name string) error {
 	logger := csiLog.WithName("removeStatefulsets")
-	logger.Info("Checking if " + name + " is deployed using statefulset.")
+	logger.Info("Checking if Statefulset " + name + " is present in cluster.")
 	STS := &appsv1.StatefulSet{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      name,
@@ -1372,7 +1331,7 @@ func (r *CSIScaleOperatorReconciler) removeStatefulset(instance *csiscaleoperato
 	}, STS)
 
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info(name + " is not deployed using statefulset.")
+		logger.Info("Statefulset " + name + " is not present in the cluster.")
 	} else if err != nil {
 		if err := r.Client.Delete(context.TODO(), STS); err != nil {
 			message := "Failed to get " + name + " statefulset information from the cluster."
@@ -1404,99 +1363,10 @@ func (r *CSIScaleOperatorReconciler) removeStatefulset(instance *csiscaleoperato
 	return nil
 }
 
-/*
-func (r *CSIScaleOperatorReconciler) removeClusterRoleBinding(instance *csiscaleoperator.CSIScaleOperator, name string) error {
-	logger := csiLog.WithName("removeClusterRoleBinding")
-	logger.Info("Checking if " + name + " is deployed using ClusterRoleBinding.")
-
-	CRB := &rbacv1.ClusterRoleBinding{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      name,
-		Namespace: instance.Namespace,
-	}, CRB)
-
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info(name + " is not deployed using ClusterRoleBinding.")
-	} else if err != nil {
-		if err := r.Client.Delete(context.TODO(), CRB); err != nil {
-			message := "Failed to get " + name + " ClusterRoleBinding information from the cluster."
-			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
-			return err
-		}
-	} else {
-		logger.Info("Found " + name + " ClusterRoleBinding. Multiple ClusterRoleBinding for sidecars are deprecated in CSI >= 2.5.0. Removing ClusterRoleBinding.")
-		if err := r.Client.Delete(context.TODO(), CRB); err != nil {
-			message := "Unable to delete " + name + " ClusterRoleBinding."
-			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceDeleteError),
-				Message: message,
-			})
-			return err
-		}
-	}
-	return nil
-}
-*/
-
-/*
-func (r *CSIScaleOperatorReconciler) removeClusterRole(instance *csiscaleoperator.CSIScaleOperator, name string) error {
-	logger := csiLog.WithName("removeClusterRole")
-	logger.Info("Checking if " + name + " is deployed using ClusterRole.")
-
-	CR := &rbacv1.ClusterRole{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      name,
-		Namespace: instance.Namespace,
-	}, CR)
-
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info(name + " is not deployed using ClusterRole.")
-	} else if err != nil {
-		if err := r.Client.Delete(context.TODO(), CR); err != nil {
-			message := "Failed to get " + name + " ClusterRole information from the cluster."
-			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
-			return err
-		}
-	} else {
-		logger.Info("Found " + name + " ClusterRole. Multiple ClusterRoles for sidecars are deprecated in CSI >= 2.5.0. Removing ClusterRole.")
-		if err := r.Client.Delete(context.TODO(), CR); err != nil {
-			message := "Unable to delete " + name + " ClusterRole."
-			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceDeleteError),
-				Message: message,
-			})
-			return err
-		}
-	}
-	return nil
-}
-*/
-
+// removeServiceAccount removes the deprecated k8s ServiceAccount from the cluster if present.
 func (r *CSIScaleOperatorReconciler) removeServiceAccount(instance *csiscaleoperator.CSIScaleOperator, name string) error {
 	logger := csiLog.WithName("removeServiceAccount")
-	logger.Info("Checking if " + name + " is deployed using ClusterRole.")
+	logger.Info("Checking if ServiceAccount " + name + " is present in cluster.")
 
 	SA := &corev1.ServiceAccount{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
@@ -1505,7 +1375,7 @@ func (r *CSIScaleOperatorReconciler) removeServiceAccount(instance *csiscaleoper
 	}, SA)
 
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info(name + " is not deployed using ServiceAccount.")
+		logger.Info("ServiceAccount " + name + " is not present in cluster.")
 	} else if err != nil {
 		if err := r.Client.Delete(context.TODO(), SA); err != nil {
 			message := "Failed to get " + name + " ServiceAccount information from the cluster."

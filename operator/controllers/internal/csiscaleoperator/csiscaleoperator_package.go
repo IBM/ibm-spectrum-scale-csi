@@ -134,121 +134,6 @@ func (c *CSIScaleOperator) GenerateControllerServiceAccount() *corev1.ServiceAcc
 	}
 }
 
-/*
-// GenerateAttacherClusterRole returns a kubernetes clusterrole object for the attacher service.
-func (c *CSIScaleOperator) GenerateSidecarClusterRole() *rbacv1.ClusterRole {
-	clusterRole := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   config.GetNameForResource(config.Sidecar, c.Name),
-			Labels: c.GetLabels(),
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{storageApiGroup},
-				Resources: []string{csiNodesResource},
-				Verbs:     []string{verbGet, verbList, verbWatch},
-			},
-			{
-				APIGroups: []string{storageApiGroup},
-				Resources: []string{volumeAttachmentsResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbPatch},
-			},
-			{
-				APIGroups: []string{storageApiGroup},
-				Resources: []string{volumeAttachmentsStatusResource},
-				Verbs:     []string{verbPatch},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{persistentVolumesResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbDelete, verbPatch, verbUpdate},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{persistentVolumeClaimsResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate},
-			},
-			{
-				APIGroups: []string{storageApiGroup},
-				Resources: []string{storageClassesResource},
-				Verbs:     []string{verbGet, verbList, verbWatch},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{eventsResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbUpdate, verbPatch},
-			},
-			{
-				APIGroups: []string{snapshotStorageApiGroup},
-				Resources: []string{volumeSnapshotsResource},
-				Verbs:     []string{verbGet, verbList},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{nodesResource},
-				Verbs:     []string{verbGet, verbList, verbWatch},
-			},
-			{
-				APIGroups: []string{snapshotStorageApiGroup},
-				Resources: []string{volumeSnapshotContentsResource},
-				Verbs:     []string{verbCreate, verbGet, verbList, verbWatch, verbUpdate, verbDelete, verbPatch},
-			},
-			{
-				APIGroups: []string{snapshotStorageApiGroup},
-				Resources: []string{volumeSnapshotContentsStatusResource},
-				Verbs:     []string{verbUpdate, verbPatch},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{podsResource},
-				Verbs:     []string{verbGet, verbList, verbWatch},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{persistentVolumeClaimsStatusResource},
-				Verbs:     []string{verbList, verbWatch, verbGet, verbCreate, verbPatch, verbUpdate},
-			},
-			{
-				APIGroups: []string{coordinationAPIGroup},
-				Resources: []string{leaseResource},
-				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
-			},
-		},
-	}
-	if len(c.Spec.CSIpspname) != 0 {
-		clusterRole.Rules = append(clusterRole.Rules, rbacv1.PolicyRule{
-			APIGroups:     []string{podSecurityPolicyApiGroup},
-			Resources:     []string{podSecurityPolicyResource},
-			ResourceNames: []string{c.Spec.CSIpspname},
-			Verbs:         []string{verbUse},
-		})
-	}
-	return clusterRole
-}
-
-// GenerateAttacherClusterRoleBinding returns a kubernetes clusterrolebinding object for the attacher service.
-func (c *CSIScaleOperator) GenerateSidecarClusterRoleBinding() *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   config.GetNameForResource(config.Sidecar, c.Name),
-			Labels: c.GetLabels(),
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      config.GetNameForResource(config.CSIControllerServiceAccount, c.Name),
-				Namespace: c.Namespace,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			Name:     config.GetNameForResource(config.Sidecar, c.Name),
-			APIGroup: rbacAuthorizationApiGroup,
-		},
-	}
-}
-*/
-
 // GenerateProvisionerClusterRole returns a kubernetes clusterrole object for the provisioner service.
 func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole {
 	clusterRole := &rbacv1.ClusterRole{
@@ -830,7 +715,7 @@ func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	//tolerationsSeconds := config.TolerationsSeconds
 	probe := corev1.Probe{
 		FailureThreshold:    int32(1),
-		InitialDelaySeconds: int32(10),
+		InitialDelaySeconds: int32(30), // TODO: With increase in sidecar containers, initial delay needs to be increased.
 		TimeoutSeconds:      int32(10),
 		PeriodSeconds:       int32(20),
 		Handler:             c.GetHandler(),

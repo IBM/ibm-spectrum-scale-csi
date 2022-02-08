@@ -111,7 +111,7 @@ func GetSidecarSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleo
 	})
 }
 
-// SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
+// SyncSidecarFn is a function which mutates the existing sidecar deployment object into it's desired state.
 func (s *csiControllerSyncer) SyncSidecarFn() error {
 
 	logger := csiLog.WithName("SyncSidecarFn")
@@ -155,8 +155,8 @@ func (s *csiControllerSyncer) SyncSidecarFn() error {
 	return nil
 }
 
-// ensureAttacherPodSpec returns an object of type corev1.PodSpec.
-// PodSpec contains description of the attacher pod.
+// ensureSidecarPodSpec returns an object of type corev1.PodSpec.
+// PodSpec contains description of the sidecars controller pod.
 func (s *csiControllerSyncer) ensureSidecarPodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
 
 	logger := csiLog.WithName("ensureSidecarPodSpec")
@@ -191,12 +191,12 @@ func (s *csiControllerSyncer) ensureSidecarPodSpec(secrets []corev1.LocalObjectR
 	return pod
 }
 
-// ensureAttacherContainersSpec returns an object of type corev1.Container.
-// Container object contains description for the container within the attacher pod.
+// ensureSidecarContainersSpec returns an object of type corev1.Container.
+// Container object contains description for the container within the sidecar pod.
 func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
 
-	logger := csiLog.WithName("ensureAttacherContainersSpec")
-	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
+	logger := csiLog.WithName("ensureSidecarContainersSpec")
+	logger.Info("Generating container description for the sidecars controller pod.")
 
 	attacher := s.ensureContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
@@ -208,9 +208,6 @@ func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
 			"--timeout=2m",
 			"--leader-election",
 			"--http-endpoint=:8080",
-			//"--leader-election-lease-duration=15s",
-			//"--leader-election-renew-deadline=10s",
-			//"--leader-election-retry-period=5s",
 		},
 	)
 	attacher.Ports = s.driver.GetAttacherContainerPort()
@@ -225,9 +222,6 @@ func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
 			"--v=5",
 			"--leader-election",
 			"--http-endpoint=:8082",
-			//"--leader-election-lease-duration=15s",
-			//"--leader-election-renew-deadline=10s",
-			//"--leader-election-retry-period=5s",
 		},
 	)
 	snapshotter.Ports = s.driver.GetSnapshotterContainerPort()
@@ -244,9 +238,6 @@ func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
 			"--workers=10",
 			"--leader-election",
 			"--http-endpoint=:8083",
-			//"--leader-election-lease-duration",
-			//"--leader-election-renew-deadline",
-			//"--leader-election-retry-period",
 		},
 	)
 	resizer.Ports = s.driver.GetResizerContainerPort()
@@ -265,40 +256,20 @@ func (s *csiControllerSyncer) ensureSidecarContainersSpec() []corev1.Container {
 			"--default-fstype=gpfs",
 			"--leader-election",
 			"--http-endpoint=:8081",
-			//"--leader-election-lease-duration=15s",
-			//"--leader-election-renew-deadline=10s",
-			//"--leader-election-retry-period=5s",
 		},
 	)
 	provisioner.Ports = s.driver.GetProvisionerContainerPort()
 	provisioner.LivenessProbe = s.driver.GetLivenessProbe()
-	//provisioner.Ports = s.driver.GetProvisionerPort()
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
-
-	/*
-		// liveness probe sidecar
-		livenessProbe := s.ensureContainer(nodeLivenessProbeContainerName,
-			s.getSidecarImage(config.LivenessProbe),
-			[]string{
-				"--health-port=" + "9821232",
-				"--csi-address=$(ADDRESS)",
-				"--v=2",
-				"--probe-timeout=3s",
-			},
-		)
-		livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
-	*/
 
 	return []corev1.Container{
 		attacher,
 		snapshotter,
 		provisioner,
 		resizer,
-		// livenessProbe,
 	}
 }
 
-// GetAttacherSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI attacher service.
 // SyncConfigMapFn is a function which mutates the existing configMap object into it's desired state.
 func (s *csiControllerSyncer) SyncConfigMapFn() error {
 
@@ -319,8 +290,6 @@ func (s *csiControllerSyncer) SyncConfigMapFn() error {
 
 	return nil
 }
-
-// SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
 
 /*
 TODO: Unused code. Remove if not required.
@@ -499,9 +468,6 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		//EnvFrom:         s.getEnvSourcesFor(name),
 		Env:          s.getEnvFor(name),
 		VolumeMounts: s.getVolumeMountsFor(name),
-		//Ports:         s.driver.GetContaninerPort(),
-		//LivenessProbe: s.driver.GetLivenessProbe(),
-		// LivenessProbe: s.getLivenessProbe(),
 	}
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {
