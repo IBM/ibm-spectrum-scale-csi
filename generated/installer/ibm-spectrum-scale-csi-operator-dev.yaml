@@ -1229,9 +1229,6 @@ spec:
                 description: livenessprobe is the image for livenessProbe container
                   (liveness probe is used to know when to restart a container).
               nodeMapping:
-                description: livenessprobe is the image for livenessProbe container
-                  (liveness probe is used to know when to restart a container).
-              nodeMapping:
                 type: array
                 description: nodeMapping specifies mapping of K8s node with Spectrum
                   Scale node.
@@ -1274,18 +1271,12 @@ spec:
                 type: string
                 description: provisioner is the provisioner sidecar image for CSI
                   (actually issues provision requests).
-                  volume expansion requests).
-              snapshotter:
-                default:
-                - value: "true"
-                  key: scale
+              resizer:
+                type: string
                 description: resizer is the resizer sidecar image for CSI (issues
                   volume expansion requests).
-                description: spectrumScale is the image name for the CSI Spectrum
-                  Scale node driver plugin container.
-                default:
-                - value: "true"
-                  key: scale
+              snapshotter:
+                type: string
                 description: snapshotter is the snapshotter sidecar image for CSI
                   (issues volume snapshot requests).
               spectrumScale:
