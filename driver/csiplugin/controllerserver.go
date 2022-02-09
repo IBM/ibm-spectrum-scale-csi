@@ -491,6 +491,30 @@ func (cs *ScaleControllerServer) getConnFromClusterID(cid string) (connectors.Sp
 	return nil, status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
 }
 
+// checkSCSupportedParams checks if given CreateVolume request parameter keys
+// are supported by Spectrum Scale CSI and returns ("", true) if all parameter
+// keys are supported, otherwise returns (<list of invalid keys seperated by
+// comma>, false)
+func checkSCSupportedParams(params map[string]string) (string, bool) {
+	var invalidParams []string
+	for k := range params {
+		switch k {
+		case "csi.storage.k8s.io/pv/name", "csi.storage.k8s.io/pvc/name",
+			"csi.storage.k8s.io/pvc/namespace", "storage.kubernetes.io/csiProvisionerIdentity",
+			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
+			"clusterId", "filesetType", "parentFileset", "inodeLimit",
+			"version", "tier", "compression":
+			// These are valid parameters, do nothing here
+		default:
+			invalidParams = append(invalidParams, k)
+		}
+	}
+	if len(invalidParams) == 0 {
+		return "", true
+	}
+	return strings.Join(invalidParams[:], ", "), false
+}
+
 // CreateVolume - Create Volume
 func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
 	glog.V(3).Infof("create volume req: %v", req)
@@ -526,6 +550,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 
+	invalidParams, allValid := checkSCSupportedParams(req.GetParameters())
+	if !allValid {
+		return nil, status.Error(codes.InvalidArgument, "The Parameter(s) not supported in storageClass: "+invalidParams)
+	}
 	scaleVol, err := getScaleVolumeOptions(req.GetParameters())
 	if err != nil {
 		return nil, err
@@ -675,6 +703,11 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.ClusterId = PCid
 	}
 
+	if isNewVolumeType {
+		if err := cs.checkCGSupport(scaleVol.Connector); err != nil {
+			return nil, err
+		}
+	}
 	if isVolSource {
 		if !scaleVol.IsFilesetBased {
 			if volFsInfo.Type == filesystemTypeRemote {
@@ -1084,6 +1117,20 @@ func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
 
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale Filesystem version for tiering support with CSI is 5.1.3-0")
+	}
+	return nil
+}
+
+func (cs *ScaleControllerServer) checkCGSupport(conn connectors.SpectrumScaleConnector) error {
+	/* Verify Spectrum Scale Version is not below 5.1.3-0 */
+
+	versionCheck, err := cs.checkMinScaleVersion(conn, "5130")
+	if err != nil {
+		return err
+	}
+
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for consistency group support with CSI is 5.1.3-0")
 	}
 	return nil
 }
