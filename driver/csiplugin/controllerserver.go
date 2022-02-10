@@ -1254,7 +1254,7 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 		return scaleSnapId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Snapshot Id : [%v]", sId))
 	}
 
-	if len(splitSid) >= 7 {
+	if len(splitSid) >= 8 {
 		/* storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;path */
 		sIdMem.StorageClassType = splitSid[0]
 		sIdMem.VolType = splitSid[1]
@@ -1263,8 +1263,9 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 		sIdMem.ConsistencyGroup = splitSid[4]
 		sIdMem.FsetName = splitSid[5]
 		sIdMem.SnapName = splitSid[6]
-		if len(splitSid) == 8 && splitSid[7] != "" {
-			sIdMem.Path = splitSid[7]
+		sIdMem.MetaSnapName = splitSid[7]
+		if len(splitSid) == 9 && splitSid[8] != "" {
+			sIdMem.Path = splitSid[8]
 		} else {
 			sIdMem.Path = "/"
 		}
@@ -1720,8 +1721,8 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumSc
 	return "", nil
 }
 
-func (cs *ScaleControllerServer) MakeSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string) (error) {
-	path := fmt.Sprintf("%s/csi-snaphot-metadata/%s", indepFileset, filesetName) 
+func (cs *ScaleControllerServer) MakeSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) (error) {
+	path := fmt.Sprintf("%s/%s/%s", indepFileset, cgSnapName, metaSnapName) 
 	glog.V(3).Infof("MakeSnapMetadataDir - creating directory [%s] for fileset: [%s:%s]", path, filesystemName, filesetName)
 	err := conn.MakeDirectory(filesystemName, path, "0", "0")
 	if err != nil {
@@ -1884,18 +1885,18 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	snapID := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-		// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName
-		snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, filesetResp.FilesetName, snapName)
+		// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName
+		snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, filesetResp.FilesetName, snapName, req.GetName())
 	} else {
 		if filesetResp.Config.Comment == connectors.FilesetComment &&
 			(cs.Driver.primary.PrimaryFset != filesetName || cs.Driver.primary.PrimaryFs != filesystemName) {
 			// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
-			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;path
-			snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s-data", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, "", filesetName, snapName, filesetName)
+			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName;path
+			snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s;%s-data", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, "", filesetName, snapName, "", filesetName)
 		} else {
 			// This is statically created PVC from an independent fileset, here path is the root of fileset
-			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;/
-			snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;/", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, "", filesetName, snapName)
+			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName;/
+			snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s;/", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, "", filesetName, snapName, "")
 		}
 	}
 
@@ -1912,7 +1913,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-		err := cs.MakeSnapMetadataDir(conn, filesystemName, filesetResp.FilesetName, filesetName)
+		err := cs.MakeSnapMetadataDir(conn, filesystemName, filesetResp.FilesetName, filesetName, snapName, req.GetName())
 		if err != nil {
 			glog.Errorf("error in creating directory for storing metadata information for advanced storageClass. Error: [%v]", err)
 			return nil, err
@@ -1981,8 +1982,8 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 	return int64(quotaResp.BlockLimit * 1024), nil
 }
 
-func (cs *ScaleControllerServer) DelSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, snapName string) (bool, error) {
-	pathDir := fmt.Sprintf("%s/csi-snaphot-metadata/%s", consistencyGroup, filesetName)
+func (cs *ScaleControllerServer) DelSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
+	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
 	err := conn.DeleteDirectory(filesystemName, pathDir)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
@@ -1993,8 +1994,8 @@ func (cs *ScaleControllerServer) DelSnapMetadataDir(conn connectors.SpectrumScal
 
 	// TODO: modify below lines of code when GUI APIs are available
 	myfspath := "/ibm/fs1"
-	// Check if directory <consistencyGroup>/csi-snaphot-metadata is empty
-	relpath := fmt.Sprintf("%s/csi-snaphot-metadata", consistencyGroup)
+	// Check if directory <consistencyGroup>/<cgSnapName> is empty
+	relpath := fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
 	fullpath := fmt.Sprintf("%s/%s", myfspath, relpath)
 	finfo, err := os.Stat(fullpath)
 	if err != nil {
@@ -2082,7 +2083,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 			deleteSnapshot := true
 			filesetName := snapIdMembers.FsetName
 			if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-				delSnap, snaperr := cs.DelSnapMetadataDir(conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName)
+				delSnap, snaperr := cs.DelSnapMetadataDir(conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName)
 				if snaperr != nil {
 					glog.Errorf("DeleteSnapshot - error while deleting snapshot %v: Error: %v", snapIdMembers.SnapName, snaperr)
 					return nil, snaperr		

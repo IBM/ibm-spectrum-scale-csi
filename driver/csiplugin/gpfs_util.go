@@ -86,6 +86,7 @@ type scaleSnapId struct {
 	FsUUID    string
 	FsetName  string
 	SnapName  string
+	MetaSnapName  string
 	Path      string
 	FsName    string
 	StorageClassType string
