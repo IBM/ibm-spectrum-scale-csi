@@ -4,7 +4,7 @@ metadata:
    name: ibm-spectrum-scale-csi-advance-expansion
 provisioner: spectrumscale.csi.ibm.com
 parameters:
+    version: "2"
     volBackendFs: "gpfs0"
-    type: "advanced"
 reclaimPolicy: Delete
 allowVolumeExpansion: true

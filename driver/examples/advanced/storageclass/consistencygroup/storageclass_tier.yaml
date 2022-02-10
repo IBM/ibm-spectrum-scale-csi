@@ -5,7 +5,7 @@ metadata:
 provisioner: spectrumscale.csi.ibm.com
 parameters:
     volBackendFs: "gpfs0"
-    type: "advanced"
+    version: "2"
     tier: "system"
 reclaimPolicy: Delete
 
