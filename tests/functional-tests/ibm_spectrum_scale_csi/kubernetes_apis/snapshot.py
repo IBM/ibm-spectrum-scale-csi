@@ -5,7 +5,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 import ibm_spectrum_scale_csi.kubernetes_apis.driver as d
-from ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions import clean_with_created_objects
+from ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions import clean_with_created_objects,get_filesetname_from_pv
 
 LOGGER = logging.getLogger()
 
@@ -249,7 +249,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
         assert False
 
     volume_name = d.get_pv_for_pvc(pvc_name, created_objects)
-    fileset_name = d.get_filesetname_from_pv(volume_name, created_objects)
+    fileset_name = get_filesetname_from_pv(volume_name, created_objects)
 
     if ff.check_snapshot_exists(snapshot_name, fileset_name):
         LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")

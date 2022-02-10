@@ -599,12 +599,19 @@ def test_driver_dynamic_pass_29():
                 "filesetType": "independent", "inodeLimit": data["inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
-#   Testcases expected to fail with valid values of parameters
-
 
 def test_driver_dynamic_pass_30():
     value_sc = {"volBackendFs": data["primaryFs"]}
     driver_object.test_dynamic(value_sc)
+
+
+def test_driver_dynamic_pass_31():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "1"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+#   Testcases expected to fail with valid values of parameters
 
 
 def test_driver_dynamic_fail_31():
@@ -3087,13 +3094,87 @@ def test_driver_cg_permissions_777_1():
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
-def test_driver_cg_temp_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "Z", "clusterId": data["id"]}
+def test_driver_cg_compression_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "z", "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
-def test_driver_cg_temp_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "1"}
+def test_driver_cg_compression_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "true"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "false"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_4():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "alphah"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_5():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "lz4"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_6():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "zfast"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_7():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "alphae"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_8():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "wrongalgo"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_compression_clone_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2",  "compression": "z"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+def test_driver_compression_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "compression": "z", "clusterId": data["id"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "compression": "alphah", "filesetType": "dependent"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "compression": "lz4", "filesetType": "independent"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_4():
+    value_sc = {"volBackendFs": data["primaryFs"], "compression": "zfast", "volDirBasePath": data["volDirBasePath"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": 'desc = The parameters "compression" and "tier" are not'}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_5():
+    value_sc = {"volBackendFs": data["primaryFs"], "compression": "wrongalgo"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
