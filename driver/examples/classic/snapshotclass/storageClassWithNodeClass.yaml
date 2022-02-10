@@ -5,6 +5,5 @@ metadata:
 provisioner: spectrumscale.csi.ibm.com
 parameters:
     volBackendFs: "gpfs0"
-    clusterId: "7118073361626808055"
     nodeClass: "ibm-spectrum-scale-nodeclass"
 reclaimPolicy: Delete
