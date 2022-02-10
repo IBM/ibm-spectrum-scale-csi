@@ -762,6 +762,10 @@ def get_and_verify_fileset_permissions(volume_name, mode):
         "7": ["x", "w", "r"],
     }
 
+    if "acl" not in response_dict:
+        LOGGER.error(f"not able to find acl in {response.text}")
+        return False
+
     # retrieve actual aces set for owner, group, everyone
     owner_aces = response_dict["acl"]["entries"][0]["permissions"]
     group_aces = response_dict["acl"]["entries"][1]["permissions"]
