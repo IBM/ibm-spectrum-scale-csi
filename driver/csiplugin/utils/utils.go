@@ -17,7 +17,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -27,50 +26,20 @@ import (
 	"github.com/golang/glog"
 )
 
-func ReadAndUnmarshal(object interface{}, dir string, fileName string) error {
-	glog.V(6).Infof("utils ReadAndUnmarshal. object: %v, dir: %s, fileName: %s", object, dir, fileName)
-
-	path := dir + string(os.PathSeparator) + fileName
-
-	bytes, err := ReadFile(path)
-	if err != nil {
-		glog.Errorf("Error in reading file %s: %v", path, err)
-		return err
-	}
-
-	err = json.Unmarshal(bytes, object)
-	if err != nil {
-		glog.Errorf("Error in unmarshalling file %s: %v", path, err)
-		return err
-	}
-
-	return nil
-}
-
-func MarshalAndRecord(object interface{}, dir string, fileName string) error {
-	glog.V(6).Infof("utils MarshalAndRecord. object: %v, dir: %s, fileName: %s", object, dir, fileName)
-
-	_ = MkDir(dir)
-	path := dir + string(os.PathSeparator) + fileName
-
-	bytes, err := json.MarshalIndent(object, "", " ")
-	if err != nil {
-		glog.Errorf("Error in MarshalIndent %v: %v", object, err)
-		return err
-	}
-
-	return WriteFile(path, bytes)
-}
-
 func ReadFile(path string) ([]byte, error) {
 	glog.V(6).Infof("utils ReadFile. path: %s", path)
 
-	file, err := os.Open(path)
+	file, err := os.Open(path) // #nosec G304 This is valid path gererated internally. it is False positive
 	if err != nil {
 		glog.Errorf("Error in opening file %s: %v", path, err)
 		return nil, err
 	}
-	defer file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			glog.Errorf("Error in closing file %s: %v", path, err)
+		}
+	}()
 
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
@@ -79,18 +48,6 @@ func ReadFile(path string) ([]byte, error) {
 	}
 
 	return bytes, nil
-}
-
-func WriteFile(path string, content []byte) error {
-	glog.V(6).Infof("utils WriteFile. path: %s", path)
-
-	err := ioutil.WriteFile(path, content, 0700)
-	if err != nil {
-		glog.Errorf("Error in write file %s: %v", path, err)
-		return err
-	}
-
-	return nil
 }
 
 func GetPath(paths []string) string {
