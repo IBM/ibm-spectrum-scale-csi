@@ -4,7 +4,7 @@ import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
-import ibm_spectrum_scale_csi.kubernetes_apis.driver as d
+import ibm_spectrum_scale_csi.kubernetes_apis.volume_functions as d
 from ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions import clean_with_created_objects,get_filesetname_from_pv
 
 LOGGER = logging.getLogger()

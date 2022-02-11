@@ -8,7 +8,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 import ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions as cleanup
-from ibm_spectrum_scale_csi.common.namegenerator import name_generator
+from ibm_spectrum_scale_csi.common_utils.namegenerator import name_generator
 
 LOGGER = logging.getLogger()
 
