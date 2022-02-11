@@ -7,7 +7,7 @@ from kubernetes.client.rest import ApiException
 import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_function as scale_function
 import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function as ob
 import ibm_spectrum_scale_csi.kubernetes_apis.volume_functions as d
-import ibm_spectrum_scale_csi.kubernetes_apis.snapshot_functions.py as snapshot
+import ibm_spectrum_scale_csi.kubernetes_apis.snapshot_functions as snapshot
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 import ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions as cleanup
 LOGGER = logging.getLogger()
