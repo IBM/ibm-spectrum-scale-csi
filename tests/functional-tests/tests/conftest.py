@@ -3,7 +3,6 @@ import pytest
 from py.xml import html
 import logging
 import ibm_spectrum_scale_csi.scale_operator as scaleop
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 
 def pytest_addoption(parser):
@@ -60,8 +59,8 @@ def check_csi_operator(request):
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
 
-    ff.cred_check(data)
-    ff.set_data(data)
+    scaleop.filesetfunc.cred_check(data)
+    scaleop.filesetfunc.set_data(data)
     operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
     operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
     condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
@@ -85,7 +84,7 @@ def check_csi_operator(request):
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
 
-    ff.create_dir(data["volDirBasePath"])
+    scaleop.filesetfunc.create_dir(data["volDirBasePath"])
 
     # driver_object.create_test_ns(kubeconfig_value)
     yield
@@ -94,5 +93,5 @@ def check_csi_operator(request):
     if condition is False and not(keep_objects):
         operator_object.delete()
         operator.delete()
-        if(ff.fileset_exists(data)):
-            ff.delete_fileset(data)
+        if(scaleop.filesetfunc.fileset_exists(data)):
+            scaleop.filesetfunc.delete_fileset(data)

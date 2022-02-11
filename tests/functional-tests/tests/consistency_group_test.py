@@ -1,7 +1,6 @@
 import logging
 import pytest
 import ibm_spectrum_scale_csi.scale_operator as scaleop
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.localcluster, pytest.mark.cg]
 
@@ -40,10 +39,10 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Cluster Details:")
     LOGGER.info("----------------")
-    ff.get_scale_version(data)
+    scaleop.filesetfunc.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.scale_function.get_operator_image()
-    scaleop.ob.get_driver_image()
+    scaleop.csioperatorfunc.get_operator_image()
+    scaleop.csiobjectfunc.get_driver_image()
 
 
 def test_driver_cg_pass_1():
@@ -104,6 +103,12 @@ def test_driver_cg_fail_4():
 def test_driver_cg_fail_5():
     value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "parentFileset": data["parentFileset"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = parentFileset and version=2"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_cg_fail_6():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "3"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": 'parameter "version" can have values only "1" or "2"'}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 

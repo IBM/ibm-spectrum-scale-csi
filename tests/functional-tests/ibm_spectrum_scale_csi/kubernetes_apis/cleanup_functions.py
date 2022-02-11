@@ -3,7 +3,7 @@ import logging
 import copy
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 
 LOGGER = logging.getLogger()
 
@@ -51,8 +51,8 @@ def clean_with_created_objects(created_objects):
         check_vs_content_deleted(vs_content_name, created_objects)
 
     for scale_snap_data in copy.deepcopy(created_objects["scalesnapshot"]):
-        ff.delete_snapshot(scale_snap_data[0], scale_snap_data[1], created_objects)
-        if ff.check_snapshot_deleted(scale_snap_data[0], scale_snap_data[1]):
+        filesetfunc.delete_snapshot(scale_snap_data[0], scale_snap_data[1], created_objects)
+        if filesetfunc.check_snapshot_deleted(scale_snap_data[0], scale_snap_data[1]):
             LOGGER.info(f"Scale Snapshot Delete : snapshot {scale_snap_data[0]} of volume {scale_snap_data[1]} deleted successfully")
         else:
             LOGGER.error(f"Scale Snapshot Delete : snapshot {scale_snap_data[0]} of {scale_snap_data[1]} not deleted, asserting")
@@ -76,7 +76,7 @@ def clean_with_created_objects(created_objects):
         check_pv_deleted(pv_name, created_objects)
 
     for dir_name in copy.deepcopy(created_objects["dir"]):
-        ff.delete_dir(dir_name)
+        filesetfunc.delete_dir(dir_name)
 
     for sc_name in copy.deepcopy(created_objects["sc"]):
         delete_storage_class(sc_name, created_objects)
@@ -187,7 +187,7 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
             LOGGER.info(f'PVC Delete : Checking deletion for pvc {pvc_name}')
         except ApiException:
             LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
-            ff.delete_created_fileset(volume_name)
+            filesetfunc.delete_created_fileset(volume_name)
             return
 
     LOGGER.error(f'pvc {pvc_name} is not deleted')

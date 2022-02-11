@@ -2,7 +2,6 @@ import logging
 import copy
 import pytest
 import ibm_spectrum_scale_csi.scale_operator as scaleop
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster]
 
@@ -18,8 +17,8 @@ def values(request, check_csi_operator):
         assert False
 
     remote_data = scaleop.get_remote_data(data)
-    ff.cred_check(remote_data)
-    ff.set_data(remote_data)
+    scaleop.filesetfunc.cred_check(remote_data)
+    scaleop.filesetfunc.set_data(remote_data)
 
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -37,7 +36,7 @@ def values(request, check_csi_operator):
 
     driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod,
                                    remote_data["id"], test_namespace, keep_objects, data["image_name"], data["pluginNodeSelector"])
-    ff.create_dir(remote_data["volDirBasePath"])
+    scaleop.filesetfunc.create_dir(remote_data["volDirBasePath"])
 
 
 #: Testcase that are expected to pass:
@@ -45,13 +44,13 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
     LOGGER.info("-----------------------")
-    ff.get_scale_version(remote_data)
+    scaleop.filesetfunc.get_scale_version(remote_data)
     LOGGER.info("Local Cluster Details:")
     LOGGER.info("-----------------------")
-    ff.get_scale_version(data)
+    scaleop.filesetfunc.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.scale_function.get_operator_image()
-    scaleop.ob.get_driver_image()
+    scaleop.csioperatorfunc.get_operator_image()
+    scaleop.csiobjectfunc.get_driver_image()
 
 
 @pytest.mark.regression
