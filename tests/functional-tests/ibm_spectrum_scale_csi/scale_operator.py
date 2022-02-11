@@ -609,7 +609,7 @@ class Snapshot():
 
             snapshot_name = d.get_random_name("snapshot")
             volume_name = d.get_pv_for_pvc(pvc_name, created_objects)
-            fileset_name = d.get_filesetname_from_pv(volume_name, created_objects)
+            fileset_name = cleanup.get_filesetname_from_pv(volume_name, created_objects)
 
             FSUID = ff.get_FSUID()
             cluster_id = self.cluster_id
