@@ -3,7 +3,7 @@ import logging
 import copy
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 
 LOGGER = logging.getLogger()
 
@@ -51,8 +51,8 @@ def clean_with_created_objects(created_objects):
         check_vs_content_deleted(vs_content_name, created_objects)
 
     for scale_snap_data in copy.deepcopy(created_objects["scalesnapshot"]):
-        ff.delete_snapshot(scale_snap_data[0], scale_snap_data[1], created_objects)
-        if ff.check_snapshot_deleted(scale_snap_data[0], scale_snap_data[1]):
+        filesetfunc.delete_snapshot(scale_snap_data[0], scale_snap_data[1], created_objects)
+        if filesetfunc.check_snapshot_deleted(scale_snap_data[0], scale_snap_data[1]):
             LOGGER.info(f"Scale Snapshot Delete : snapshot {scale_snap_data[0]} of volume {scale_snap_data[1]} deleted successfully")
         else:
             LOGGER.error(f"Scale Snapshot Delete : snapshot {scale_snap_data[0]} of {scale_snap_data[1]} not deleted, asserting")
@@ -76,7 +76,7 @@ def clean_with_created_objects(created_objects):
         check_pv_deleted(pv_name, created_objects)
 
     for dir_name in copy.deepcopy(created_objects["dir"]):
-        ff.delete_dir(dir_name)
+        filesetfunc.delete_dir(dir_name)
 
     for sc_name in copy.deepcopy(created_objects["sc"]):
         delete_storage_class(sc_name, created_objects)
@@ -146,9 +146,10 @@ def delete_pvc(pvc_name, created_objects):
         assert False
 
     volume_name = api_response.spec.volume_name
+    fileset_name = get_filesetname_from_pv(volume_name, created_objects)
 
     if keep_objects:
-        return volume_name
+        return fileset_name
 
     api_instance = client.CoreV1Api()
     try:
@@ -162,7 +163,7 @@ def delete_pvc(pvc_name, created_objects):
             created_objects["clone_pvc"].remove(pvc_name)
         else:
             created_objects["pvc"].remove(pvc_name)
-        return volume_name
+        return fileset_name
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->delete_namespaced_persistent_volume_claim: {e}")
@@ -186,7 +187,7 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
             LOGGER.info(f'PVC Delete : Checking deletion for pvc {pvc_name}')
         except ApiException:
             LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
-            ff.delete_created_fileset(volume_name)
+            filesetfunc.delete_created_fileset(volume_name)
             return
 
     LOGGER.error(f'pvc {pvc_name} is not deleted')
@@ -457,3 +458,38 @@ def check_ds_deleted(ds_name, created_objects):
         assert False
     except ApiException:
         LOGGER.info(f"Daemon Set Delete : {ds_name} deletion confirmed")
+
+
+def get_filesetname_from_pv(volume_name, created_objects):
+    """
+    return filesetname from VolumeHandle of PV
+    """
+    api_instance = client.CoreV1Api()
+    fileset_name = None
+
+    if volume_name is not None:
+        try:
+            api_response = api_instance.read_persistent_volume(
+            name=volume_name, pretty=True)
+            LOGGER.debug(str(api_response))
+            volume_handle = api_response.spec.csi.volume_handle
+            volume_handle = volume_handle.split(";")
+            if len(volume_handle)==3:
+                fileset_name = ""
+            elif len(volume_handle)<=4:
+                fileset_name= volume_handle[2][12:]
+            else:
+                fileset_name= volume_handle[5]
+            if fileset_name == "":
+                fileset_name = "LW"
+        except ApiException:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
+            LOGGER.info(f'PV {pv_name} does not exists on cluster')
+
+    if volume_name is not None and fileset_name is None:
+        LOGGER.error(f"Not able to find fileset name for PV {volume_name}")
+        clean_with_created_objects(created_objects)
+        assert False
+
+    return fileset_name

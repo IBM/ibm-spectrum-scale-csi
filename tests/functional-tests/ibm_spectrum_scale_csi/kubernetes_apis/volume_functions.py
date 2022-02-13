@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions as cleanup
-from ibm_spectrum_scale_csi.common.namegenerator import name_generator
+import ibm_spectrum_scale_csi.common_utils.namegenerator as namegenerator
 
 LOGGER = logging.getLogger()
 
@@ -37,7 +37,7 @@ def set_test_nodeselector_value(plugin_node_selector):
 
 def get_random_name(type_of):
     """ return random name of type_of"""
-    return type_of+"-"+name_generator()
+    return f"{type_of}-{namegenerator.name_generator()}"
 
 
 def create_storage_class(values, sc_name, created_objects):
@@ -57,8 +57,9 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_metadata = client.V1ObjectMeta(name=sc_name)
 
     storage_class_parameters = {}
-    list_parameters = ["volBackendFs", "clusterId", "volDirBasePath",
-                       "uid", "gid", "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions"]
+    list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
+                       "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
+                       "version", "compression", "tier"]
     for sc_parameter in list_parameters:
         if sc_parameter in values:
             storage_class_parameters[sc_parameter] = values[sc_parameter]
@@ -358,7 +359,7 @@ def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objec
         assert False
 
 
-def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
+def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created_objects):
     """
     calculates bound time for pvc and checks fileset created by
     pvc on spectrum scale
@@ -377,9 +378,16 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
     if 'storage_class_parameters' in globals():
         if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
             return True
+        if check_key(storage_class_parameters, "version") and storage_class_parameters["version"] == "2":
+            if not(filesetfunc.created_fileset_exists(namespace_value)):
+                LOGGER.error(f'PVC Check : Fileset {namespace_value} doesn\'t exists for version=2 SC')
+                return False
+            else:
+                LOGGER.info(f'PVC Check : Fileset {namespace_value} has been created successfully for version=2 SC')
 
-    if not(ff.created_fileset_exists(volume_name)):
-        LOGGER.error(f'PVC Check : Fileset {volume_name} doesn\'t exists')
+    fileset_name = cleanup.get_filesetname_from_pv(volume_name, created_objects)
+    if not(filesetfunc.created_fileset_exists(fileset_name)):
+        LOGGER.error(f'PVC Check : Fileset {fileset_name} doesn\'t exists')
         return False
 
     if not(check_pvc_size(pvc_name, pvc_values["storage"])):
@@ -392,12 +400,14 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values):
             inode = storage_class_parameters["inodeLimit"]
         elif "filesetType" in storage_class_parameters and storage_class_parameters["filesetType"] == "dependent":
             inode = 0
+        if "version" in storage_class_parameters and storage_class_parameters["version"] == "2":
+            inode = 0
 
-    if not(ff.check_fileset_quota(volume_name, pvc_values["storage"], inode)):
-        LOGGER.error(f'PVC Check : Fileset {volume_name} quota does not match requested storage or maxinode is not as expected')
+    if not(filesetfunc.check_fileset_quota(fileset_name, pvc_values["storage"], inode)):
+        LOGGER.error(f'PVC Check : Fileset {fileset_name} quota does not match requested storage or maxinode is not as expected')
         return False
 
-    LOGGER.info(f'PVC Check : Fileset {volume_name} has been created successfully')
+    LOGGER.info(f'PVC Check : Fileset {fileset_name} has been created successfully')
     return True
 
 
@@ -468,7 +478,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                 asserting the test')
                 cleanup.clean_with_created_objects(created_objects)
                 assert False
-            if(pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values)):
+            if(pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created_objects)):
                 return True
             cleanup.clean_with_created_objects(created_objects)
             assert False
@@ -1003,9 +1013,10 @@ def check_permissions_for_pvc(pvc_name, permissions, created_objects):
     get pv and verify permissions for pv
     """
     pv_name = get_pv_for_pvc(pvc_name, created_objects)
+    fileset_name = cleanup.get_filesetname_from_pv(pv_name, created_objects)
     if permissions == "":  # assign default permissions 771
         permissions = "771"
-    status = ff.get_and_verify_pv_permissions(pv_name, permissions)
+    status = filesetfunc.get_and_verify_fileset_permissions(fileset_name, permissions)
     if status is True:
         LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
     else:
