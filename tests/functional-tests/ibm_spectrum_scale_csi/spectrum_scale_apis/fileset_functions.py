@@ -709,13 +709,13 @@ def get_scale_version(test_data):
     LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
 
 
-def get_and_verify_pv_permissions(volume_name, mode):
+def get_and_verify_fileset_permissions(volume_name, mode):
     """
 
     Get permissions for pv path and ensure they match with parameter mode.
 
     Args:
-        volume_name: name of persistent volume
+        volume_name: name of fileset
         mode: expected permissions for persistent volume
 
     Returns:
@@ -761,6 +761,10 @@ def get_and_verify_pv_permissions(volume_name, mode):
         "6": ["w", "r"],
         "7": ["x", "w", "r"],
     }
+
+    if "acl" not in response_dict:
+        LOGGER.error(f"not able to find acl in {response.text}")
+        return False
 
     # retrieve actual aces set for owner, group, everyone
     owner_aces = response_dict["acl"]["entries"][0]["permissions"]
