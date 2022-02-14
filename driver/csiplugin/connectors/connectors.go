@@ -61,7 +61,8 @@ type SpectrumScaleConnector interface {
 	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
 	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
 	GetFsUid(filesystemName string) (string, error)
-	DeleteDirectory(filesystemName string, dirName string) error
+	DeleteDirectory(filesystemName string, dirName string, safe bool) error
+	StatDirectory(filesystemName string, dirName string) (string, error)
 	GetFileSetUid(filesystemName string, filesetName string) (string, error)
 	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
 	DeleteSymLnk(filesystemName string, LnkName string) error

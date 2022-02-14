@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"os"
-	"syscall"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
@@ -1206,12 +1204,12 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		// check if independent fileset is linked
 		filesetToCheck = sId.ConsistencyGroup
 		isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
-	        if err != nil {
-        	        return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-	        }
-        	if !isFsetLinked {
-                	return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
-	        }
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+		}
+		if !isFsetLinked {
+			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+		}
 	} 
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
@@ -1515,7 +1513,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		}
 	} else {
 		/* Delete Dir for Lw volume */
-		err = primaryConn.DeleteDirectory(cs.Driver.primary.GetPrimaryFs(), relPath)
+		err = primaryConn.DeleteDirectory(cs.Driver.primary.GetPrimaryFs(), relPath, false)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] Relative SymLink [%v]. Error [%v]", FilesystemName, relPath, err))
 		}
@@ -2031,37 +2029,45 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 
 func (cs *ScaleControllerServer) DelSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
 	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
-	err := conn.DeleteDirectory(filesystemName, pathDir)
+	err := conn.DeleteDirectory(filesystemName, pathDir, false)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
-                        strings.Contains(err.Error(), "does not exist")) { // directory is already deleted
+			strings.Contains(err.Error(), "does not exist")) { // directory is already deleted
 			return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] at path [%v]. Error [%v]", filesystemName, pathDir, err))
 		}
-        }
+	}
 
-	// TODO: modify below lines of code when GUI APIs are available
-	myfspath := "/ibm/fs1"
-	// Check if directory <consistencyGroup>/<cgSnapName> is empty
-	relpath := fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
-	fullpath := fmt.Sprintf("%s/%s", myfspath, relpath)
-	finfo, err := os.Stat(fullpath)
+	// Now check if consistency group snapshot metadata directory can be deleted
+	pathDir = fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	statInfo, err := conn.StatDirectory(filesystemName, pathDir)
 	if err != nil {
-		return false, status.Error(codes.Internal, fmt.Sprintf("unable to get status for path [%v]", fullpath))
+		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
+			strings.Contains(err.Error(), "does not exist")) { // directory is already deleted
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to stat directory using FS [%v] at path [%v]. Error [%v]", filesystemName, pathDir, err))
+		}
+		return true, nil
 	}
-	nlink := uint64(0)
-	if sys := finfo.Sys(); sys != nil {
-        	if stat, ok := sys.(*syscall.Stat_t); ok {
-		        nlink = uint64(stat.Nlink)
-        	}
+
+	statSplit := strings.Split(statInfo, "\n")
+	thirdLineSplit := strings.Split(statSplit[2], " ")
+	lenSplit := len(thirdLineSplit)
+	linkStr := strings.TrimRight(thirdLineSplit[lenSplit-1], "\n")
+	nlink, err := strconv.Atoi(linkStr)
+	if err != nil {
+		return false, status.Error(codes.Internal, fmt.Sprintf("invalid number of links [%v] returned in stat output for FS [%v] at path [%v]. Error [%v]", linkStr, filesystemName, pathDir, err))
 	}
-	glog.V(3).Infof("DelSnapMetadataDir - number of links for path [%v] is [%v]", fullpath, nlink)
+
+	glog.V(3).Infof("DelSnapMetadataDir - number of links for directory in FS [%v] at path [%v] is [%v]", filesystemName, pathDir, nlink)
 
 	if nlink == 2 {
 		// directory can be deleted
-		err := os.Remove(fullpath)
+		err := conn.DeleteDirectory(filesystemName, pathDir, true)
 		if err != nil {
-        	        return false, status.Error(codes.Internal, fmt.Sprintf("unable to delete directory at path [%v]", fullpath))
-	        }
+			if !(strings.Contains(err.Error(), "EFSSG0264C") ||
+				strings.Contains(err.Error(), "does not exist")) {
+				return false, status.Error(codes.Internal, fmt.Sprintf("unable to delete directory for FS [%v] at path [%v]. Error: [%v]", filesystemName, pathDir, err))
+			}
+		}
 		return true, nil
 	}
 	return false, nil
@@ -2120,8 +2126,8 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 			glog.V(5).Infof("DeleteSnapshot - for classic storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", snapIdMembers.SnapName, snapIdMembers.FsetName, filesystemName)
 			chkSnapExist, err := conn.CheckIfSnapshotExist(filesystemName, snapIdMembers.FsetName, snapIdMembers.SnapName)
 			if err != nil {
-                                return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the snapshot details. Error [%v]", err))
-                        }
+				return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the snapshot details. Error [%v]", err))
+			}
 			snapExist = chkSnapExist
 		}
 
