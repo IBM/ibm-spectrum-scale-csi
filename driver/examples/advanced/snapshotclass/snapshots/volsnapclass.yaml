@@ -4,5 +4,5 @@ metadata:
   name: ibm-spectrum-scale-snapshotclass-advance
 driver: spectrumscale.csi.ibm.com
 parameters:
-  timewindow: 1h
+  snapWindow: 1h
 deletionPolicy: Delete
