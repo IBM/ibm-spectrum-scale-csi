@@ -77,7 +77,7 @@ def create_deployment(body):
         LOGGER.debug(str(deployment_apps_api_response))
     except ApiException as e:
         LOGGER.error(
-            f"Exception when calling RbacAuthorizationV1Api->create_namespaced_deployment: {e}")
+            f"Exception when calling AppsV1Api->create_namespaced_deployment: {e}")
         assert False
 
 
