@@ -2,7 +2,6 @@ import logging
 import copy
 import pytest
 import ibm_spectrum_scale_csi.scale_operator as scaleop
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster]
 
@@ -18,8 +17,8 @@ def values(request, check_csi_operator):
         assert False
 
     remote_data = scaleop.get_remote_data(data)
-    ff.cred_check(remote_data)
-    ff.set_data(remote_data)
+    scaleop.filesetfunc.cred_check(remote_data)
+    scaleop.filesetfunc.set_data(remote_data)
 
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -37,7 +36,7 @@ def values(request, check_csi_operator):
 
     driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod,
                                    remote_data["id"], test_namespace, keep_objects, data["image_name"], data["pluginNodeSelector"])
-    ff.create_dir(remote_data["volDirBasePath"])
+    scaleop.filesetfunc.create_dir(remote_data["volDirBasePath"])
 
 
 #: Testcase that are expected to pass:
@@ -45,13 +44,13 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
     LOGGER.info("-----------------------")
-    ff.get_scale_version(remote_data)
+    scaleop.filesetfunc.get_scale_version(remote_data)
     LOGGER.info("Local Cluster Details:")
     LOGGER.info("-----------------------")
-    ff.get_scale_version(data)
+    scaleop.filesetfunc.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.scale_function.get_operator_image()
-    scaleop.ob.get_driver_image()
+    scaleop.csioperatorfunc.get_operator_image()
+    scaleop.csiobjectfunc.get_driver_image()
 
 
 @pytest.mark.regression
@@ -611,9 +610,8 @@ def test_driver_dynamic_pass_29():
 #   Testcases expected to fail with valid values of parameters
 
 
-def test_driver_dynamic_fail_30():
-    value_sc = {"volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+def test_driver_dynamic_pass_30():
+    value_sc = {"volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -635,9 +633,8 @@ def test_driver_dynamic_fail_33():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_34():
-    value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+def test_driver_dynamic_pass_34():
+    value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -660,21 +657,18 @@ def test_driver_dynamic_fail_37():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_38():
-    value_sc = {"uid": data["r_uid_number"], "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+def test_driver_dynamic_pass_38():
+    value_sc = {"uid": data["r_uid_number"], "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_39():
-    value_sc = {"gid": data["r_gid_number"], "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+def test_driver_dynamic_pass_39():
+    value_sc = {"gid": data["r_gid_number"], "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_40():
-    value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+def test_driver_dynamic_pass_40():
+    value_sc = {"filesetType": "dependent", "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -686,10 +680,9 @@ def test_driver_dynamic_fail_41():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_42():
+def test_driver_dynamic_pass_42():
     value_sc = {"inodeLimit": data["r_inodeLimit"],
-                "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -862,17 +855,15 @@ def test_driver_dynamic_fail_67():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_68():
+def test_driver_dynamic_pass_68():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r_uid_number"],
-                "gid": data["r_gid_number"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "gid": data["r_gid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_69():
+def test_driver_dynamic_pass_69():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r_uid_number"],
-                "filesetType": "dependent",
-                "reason": "Specify owning cluster ID in storageClass"}
+                "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -883,17 +874,15 @@ def test_driver_dynamic_fail_70():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_71():
+def test_driver_dynamic_pass_71():
     value_sc = {"volBackendFs": data["remoteFs"], "uid": data["r_uid_number"],
-                "inodeLimit": data["r_inodeLimit"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "inodeLimit": data["r_inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_72():
+def test_driver_dynamic_pass_72():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
-                "filesetType": "dependent",
-                "reason": "Specify owning cluster ID in storageClass"}
+                "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
@@ -904,17 +893,15 @@ def test_driver_dynamic_fail_73():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_74():
+def test_driver_dynamic_pass_74():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
-                "inodeLimit": data["r_inodeLimit"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "inodeLimit": data["r_inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_75():
+def test_driver_dynamic_pass_75():
     value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
-                "parentFileset": data["r_parentFileset"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "parentFileset": data["r_parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1349,11 +1336,10 @@ def test_driver_dynamic_fail_132():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_133():
+def test_driver_dynamic_pass_133():
     value_sc = {"gid": data["r_gid_number"], "uid": data["r_uid_number"],
                 "filesetType": "dependent",
-                "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1365,18 +1351,16 @@ def test_driver_dynamic_fail_134():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_135():
+def test_driver_dynamic_pass_135():
     value_sc = {"gid": data["r_gid_number"], "uid": data["r_uid_number"],
-                "inodeLimit": data["r_inodeLimit"], "volBackendFs": data["remoteFs"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "inodeLimit": data["r_inodeLimit"], "volBackendFs": data["remoteFs"]}
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_136():
+def test_driver_dynamic_pass_136():
     value_sc = {"uid": data["r_uid_number"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
-                "parentFileset": data["r_parentFileset"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "parentFileset": data["r_parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1395,11 +1379,10 @@ def test_driver_dynamic_fail_138():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_139():
+def test_driver_dynamic_pass_139():
     value_sc = {"gid": data["r_gid_number"], "filesetType": "dependent",
                 "volBackendFs": data["remoteFs"],
-                "parentFileset": data["r_parentFileset"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "parentFileset": data["r_parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -1916,11 +1899,10 @@ def test_driver_dynamic_fail_201():
     driver_object.test_dynamic(value_sc)
 
 
-def test_driver_dynamic_fail_202():
+def test_driver_dynamic_pass_202():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "filesetType": "dependent",
-                "parentFileset": data["r_parentFileset"],
-                "reason": "Specify owning cluster ID in storageClass"}
+                "parentFileset": data["r_parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -3010,4 +2992,41 @@ def test_driver_volume_cloning_fail_11():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "Volume cloning for directories for remote file system is not supported"},
                                         {"access_modes": "ReadWriteOnce", "storage": "1Gi", "reason": "Volume cloning for directories for remote file system is not supported"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+def test_driver_compression_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "compression": "z", "clusterId": data["remoteid"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "compression": "alphah", "filesetType": "dependent"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "compression": "lz4", "filesetType": "independent"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "compression": "zfast", "volDirBasePath": data["r_volDirBasePath"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": 'desc = The parameters "compression" and "tier" are not'}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "compression": "wrongalgo"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_compression_clone_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "compression": "z"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
