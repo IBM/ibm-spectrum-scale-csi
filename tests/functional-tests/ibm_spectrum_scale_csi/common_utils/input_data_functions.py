@@ -2,14 +2,9 @@ import copy
 import logging
 import os.path
 import yaml
-from kubernetes import client, config
-from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_function as csioperatorfunc
+from kubernetes import config
 import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function as csiobjectfunc
-import ibm_spectrum_scale_csi.kubernetes_apis.volume_functions as volfunc 
-import ibm_spectrum_scale_csi.kubernetes_apis.snapshot_functions as snapshotfunc
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
-import ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions as cleanup
 LOGGER = logging.getLogger()
 
 
