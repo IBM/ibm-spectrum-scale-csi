@@ -111,7 +111,7 @@ class Scaleoperatorobject:
         self.secret_data = {
             "username": test_dict["username"], "password": test_dict["password"]}
 
-        if check_key(test_dict, "stateful_set_not_created"):
+        if "stateful_set_not_created" in test_dict:
             self.stateful_set_not_created = test_dict["stateful_set_not_created"]
         else:
             self.stateful_set_not_created = False
@@ -140,9 +140,9 @@ class Scaleoperatorobject:
                 csiobjectfunc.check_secret_is_deleted(remote_secret_name)
                 csiobjectfunc.create_secret(remote_secret_data, remote_secret_name)
 
-        if check_key(self.temp, "local_cacert_name"):
+        if "local_cacert_name" in self.temp:
             cacert_name = self.temp["local_cacert_name"]
-            if not(check_key(self.temp, "make_cacert_wrong")):
+            if "make_cacert_wrong" not in self.temp:
                 self.temp["make_cacert_wrong"] = False
 
             if not(csiobjectfunc.check_configmap_exists(cacert_name)):
@@ -156,7 +156,7 @@ class Scaleoperatorobject:
 
         for remote_cacert_name in self.temp["remote_cacert_names"]:
 
-            if not(check_key(self.temp, "make_remote_cacert_wrong")):
+            if "make_remote_cacert_wrong" not in self.temp:
                 self.temp["make_remote_cacert_wrong"] = False
 
             if not(csiobjectfunc.check_configmap_exists(remote_cacert_name)):
@@ -192,7 +192,7 @@ class Scaleoperatorobject:
             if csiobjectfunc.check_secret_exists(remote_secret_name):
                 csiobjectfunc.delete_secret(remote_secret_name)
             csiobjectfunc.check_secret_is_deleted(remote_secret_name)
-        if check_key(self.temp, "local_cacert_name"):
+        if "local_cacert_name" in self.temp:
             if csiobjectfunc.check_configmap_exists(self.temp["local_cacert_name"]):
                 csiobjectfunc.delete_configmap(self.temp["local_cacert_name"])
             csiobjectfunc.check_configmap_is_deleted(self.temp["local_cacert_name"])
@@ -309,8 +309,8 @@ class Driver:
         volfunc.check_storage_class(sc_name)
         for num, _ in enumerate(value_pvc_passed):
             value_pvc_pass = copy.deepcopy(value_pvc_passed[num])
-            if (check_key(value_sc, "reason")):
-                if not(check_key(value_pvc_pass, "reason")):
+            if "reason" in value_sc:
+                if "reason" not in value_pvc_pass:
                     value_pvc_pass["reason"] = value_sc["reason"]
             LOGGER.info(100*"=")
             pvc_name = volfunc.get_random_name("pvc")
@@ -386,8 +386,8 @@ class Driver:
             volfunc.check_pv(pv_name)
 
             value_pvc_pass = copy.deepcopy(pvc_value[num])
-            if (check_key(pv_value, "reason")):
-                if not(check_key(value_pvc_pass, "reason")):
+            if "reason" in pv_value:
+                if "reason" not in value_pvc_pass:
                     value_pvc_pass["reason"] = pv_value["reason"]
             LOGGER.info(100*"=")
             pvc_name = volfunc.get_random_name("pvc")
@@ -706,7 +706,7 @@ def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
         if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
-            if check_key(cluster["primary"], "primaryFset"):
+            if "primaryFset" in cluster:
                 data["primaryFset"] = cluster["primary"]["primaryFset"]
             else:
                 data["primaryFset"] = "spectrum-scale-csi-volume-store"
@@ -716,7 +716,7 @@ def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
     if len(loadcr_yaml["spec"]["clusters"]) > 1:
         data["remote"] = True
 
-    if check_key(loadcr_yaml["spec"], "pluginNodeSelector"):
+    if "pluginNodeSelector" in loadcr_yaml["spec"]:
         data["pluginNodeSelector"] = loadcr_yaml["spec"]["pluginNodeSelector"]
     else:
         data["pluginNodeSelector"] = []
@@ -748,12 +748,6 @@ def get_kubernetes_version(passed_kubeconfig_value):
         LOGGER.info(f"platform is {api_response['_platform']}")
     except ApiException as e:
         LOGGER.info(f"Kubernetes version cannot be fetched due to {e}")
-
-
-def check_key(dict1, key):
-    if key in dict1.keys():
-        return True
-    return False
 
 
 def check_nodes_available(label, label_name):
@@ -807,43 +801,43 @@ def read_operator_data(clusterconfig, namespace, kubeconfig=None):
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             data["local_secret_name"] = cluster["secrets"]
-            if check_key(cluster["primary"], "primaryFset"):
+            if "primaryFset" in cluster["primary"]:
                 data["primaryFset"] = cluster["primary"]["primaryFset"]
             else:
                 data["primaryFset"] = "spectrum-scale-csi-volume-store"
-            if check_key(cluster, "cacert"):
+            if "cacert" in cluster:
                 data["local_cacert_name"] = cluster["cacert"]
         else:
             data["remote_secret_names"].append(cluster["secrets"])
-            if check_key(cluster, "cacert"):
+            if "cacert" in cluster:
                 data["remote_cacert_names"].append(cluster["cacert"])
 
-    if check_key(loadcr_yaml["spec"], "attacherNodeSelector"):
+    if "attacherNodeSelector" in loadcr_yaml:
         data["attacherNodeSelector"] = loadcr_yaml["spec"]["attacherNodeSelector"]
     else:
         data["attacherNodeSelector"] = []
 
-    if check_key(loadcr_yaml["spec"], "provisionerNodeSelector"):
+    if "provisionerNodeSelector" in loadcr_yaml["spec"]:
         data["provisionerNodeSelector"] = loadcr_yaml["spec"]["provisionerNodeSelector"]
     else:
         data["provisionerNodeSelector"] = []
 
-    if check_key(loadcr_yaml["spec"], "pluginNodeSelector"):
+    if "pluginNodeSelector" in loadcr_yaml["spec"]:
         data["pluginNodeSelector"] = loadcr_yaml["spec"]["pluginNodeSelector"]
     else:
         data["pluginNodeSelector"] = []
 
-    if check_key(loadcr_yaml["spec"], "resizerNodeSelector"):
+    if "resizerNodeSelector" in loadcr_yaml["spec"]:
         data["resizerNodeSelector"] = loadcr_yaml["spec"]["resizerNodeSelector"]
     else:
         data["resizerNodeSelector"] = []
 
-    if check_key(loadcr_yaml["spec"], "snapshotterNodeSelector"):
+    if "snapshotterNodeSelector" in loadcr_yaml["spec"]:
         data["snapshotterNodeSelector"] = loadcr_yaml["spec"]["snapshotterNodeSelector"]
     else:
         data["snapshotterNodeSelector"] = []
 
-    if check_key(data, "local_cacert_name"):
+    if "local_cacert_name" in data:
         if data["cacert_path"] == "":
             LOGGER.error("if using cacert , MUST include cacert path in test.config")
             assert False
