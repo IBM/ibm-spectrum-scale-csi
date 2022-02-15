@@ -395,6 +395,7 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
         return False
 
     inode = None
+    fileset_append_check = ""
     if 'storage_class_parameters' in globals():
         if "inodeLimit" in storage_class_parameters:
             inode = storage_class_parameters["inodeLimit"]
@@ -402,12 +403,31 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
             inode = 0
         if "version" in storage_class_parameters and storage_class_parameters["version"] == "2":
             inode = 0
+        
+        if "compression" in storage_class_parameters:
+            if storage_class_parameters["compression"] == "true":
+                comp = "Z"
+            else:
+                comp = storage_class_parameters["compression"].upper()
+            fileset_append_check = f"{fileset_append_check}-COMPRESS{comp}csi"
+            if storage_class_parameters["compression"] == "false":
+                fileset_append_check = ""
+        if "tier" in storage_class_parameters:
+            fileset_append_check = f"{fileset_append_check}-T{storage_class_parameters['tier']}csi"
 
     if not(filesetfunc.check_fileset_quota(fileset_name, pvc_values["storage"], inode)):
         LOGGER.error(f'PVC Check : Fileset {fileset_name} quota does not match requested storage or maxinode is not as expected')
         return False
 
     LOGGER.info(f'PVC Check : Fileset {fileset_name} has been created successfully')
+
+    if fileset_append_check != "":
+        search_result = re.search(fileset_append_check, fileset_name)
+        if search_result is None:
+            LOGGER.error(f"PVC Check : {fileset_append_check} is not matched for fileset name {fileset_name}")
+            return False
+        LOGGER.info(f"PVC Check : For compression and/or tier in {storage_class_parameters}, Fileset name {fileset_name} is appended with correct value {fileset_append_check}")
+
     return True
 
 

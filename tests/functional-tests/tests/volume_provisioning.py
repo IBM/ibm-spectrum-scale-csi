@@ -3012,13 +3012,13 @@ def test_driver_compression_3():
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
-def test_driver_compression_4():
+def test_driver_compression_fail_1():
     value_sc = {"volBackendFs": data["primaryFs"], "compression": "zfast", "volDirBasePath": data["volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": 'desc = The parameters "compression" and "tier" are not'}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
-def test_driver_compression_5():
+def test_driver_compression_fail_2():
     value_sc = {"volBackendFs": data["primaryFs"], "compression": "wrongalgo"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
@@ -3026,6 +3026,53 @@ def test_driver_compression_5():
 
 def test_driver_compression_clone_1():
     value_sc = {"volBackendFs": data["primaryFs"], "compression": "z"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+@pytest.mark.regression
+def test_driver_tier_pass_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_tier_pass_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "filesetType": "dependent"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_tier_fail_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": "wrongtier", "reason":"400 Invalid value in 'storagePool'"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_tier_fail_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "volDirBasePath": data["volDirBasePath"], 
+               "reason":'The parameters "compression" and "tier" are not supported in storageClass for lightweight volumes'}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+def test_driver_tier_clone_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+def test_driver_tier_compression():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "compression": "z"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+
+
+@pytest.mark.regression
+def test_driver_tier_compression_clone():
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
