@@ -3,8 +3,9 @@ import re
 import logging
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
-from ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions import clean_with_created_objects
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.volume_functions as volfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.cleanup_functions as cleanup
 
 LOGGER = logging.getLogger()
 
@@ -45,7 +46,7 @@ def create_vs_class(vs_class_name, body_params, created_objects):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -106,7 +107,7 @@ def create_vs(vs_name, vs_class_name, pvc_name, created_objects):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -143,7 +144,7 @@ def create_vs_from_content(vs_name, vs_content_name, created_objects):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -184,14 +185,14 @@ def check_vs_detail_for_static(vs_name, created_objects):
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} has been created")
     except ApiException:
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} does not exists")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
     if check_snapshot_status(vs_name):
         LOGGER.info("volume snapshot status ReadyToUse is true")
     else:
         LOGGER.error("volume snapshot status ReadyToUse is not true")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 
@@ -214,7 +215,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} has been created")
     except ApiException:
         LOGGER.info(f"Volume Snapshot Check : volume snapshot {vs_name} does not exists")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
     if check_snapshot_status(vs_name):
@@ -235,7 +236,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
                     return
 
         LOGGER.error(f"reason {reason} did not matched in volumesnapshot events")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
     uid_name = api_response["metadata"]["uid"]
@@ -244,37 +245,22 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
     time.sleep(2)
 
     if not(check_vs_content(snapcontent_name)):
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
-    volume_name = get_pv_name(pvc_name, created_objects)
+    volume_name = volfunc.get_pv_for_pvc(pvc_name, created_objects)
+    fileset_name = cleanup.get_filesetname_from_pv(volume_name, created_objects)
 
-    if ff.check_snapshot_exists(snapshot_name, volume_name):
-        LOGGER.info(f"snapshot {snapshot_name} exists for {volume_name}")
+    if filesetfunc.check_snapshot_exists(snapshot_name, fileset_name):
+        LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")
     else:
-        LOGGER.error(f"snapshot {snapshot_name} does not exists for {volume_name}")
-        clean_with_created_objects(created_objects)
+        LOGGER.error(f"snapshot {snapshot_name} does not exists for {fileset_name}")
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
     if body_params["deletionPolicy"] == "Retain":
         created_objects["vscontent"].append(snapcontent_name)
-        created_objects["scalesnapshot"].append([snapshot_name, volume_name])
-
-
-def get_pv_name(pvc_name, created_objects):
-    api_instance = client.CoreV1Api()
-    try:
-        api_response = api_instance.read_namespaced_persistent_volume_claim(
-            name=pvc_name, namespace=namespace_value, pretty=True)
-        LOGGER.debug(str(api_response))
-    except ApiException as e:
-        LOGGER.error(
-            f"Exception when calling CoreV1Api->read_namespaced_persistent_volume_claim: {e}")
-        LOGGER.error(f"PVC {pvc_name} does not exists on the cluster")
-        clean_with_created_objects(created_objects)
-        assert False
-
-    return api_response.spec.volume_name
+        created_objects["scalesnapshot"].append([snapshot_name, fileset_name])
 
 
 def check_snapshot_status(vs_name):
@@ -346,7 +332,7 @@ def create_vs_content(vs_content_name, vs_name, body_params, created_objects):
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
-        clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
         assert False
 
 

@@ -6,8 +6,6 @@ import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import ibm_spectrum_scale_csi.scale_operator as scaleop
-from ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function import randomStringDigits, randomString, check_pod_image
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 pytestmark = pytest.mark.csioperator
 
@@ -20,8 +18,8 @@ def _values(request):
     condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
     operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value, operator_yaml)
     read_file = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    ff.cred_check(read_file)
-    fileset_exist = ff.fileset_exists(read_file)
+    scaleop.filesetfunc.cred_check(read_file)
+    fileset_exist = scaleop.filesetfunc.fileset_exists(read_file)
     operator.create()
     operator.check()
     scaleop.check_nodes_available(
@@ -33,16 +31,15 @@ def _values(request):
 
     yield
     operator.delete(condition)
-    if(not(fileset_exist) and ff.fileset_exists(read_file)):
-        ff.delete_fileset(read_file)
+    if(not(fileset_exist) and scaleop.filesetfunc.fileset_exists(read_file)):
+        scaleop.filesetfunc.delete_fileset(read_file)
 
 
-@pytest.mark.regression
 def test_get_version(_values):
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    ff.get_scale_version(test)
+    scaleop.filesetfunc.get_scale_version(test)
     scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.scale_function.get_operator_image()
+    scaleop.csioperatorfunc.get_operator_image()
 
 
 def test_operator_deploy(_values):
@@ -110,7 +107,7 @@ def test_wrong_cluster_id(_values):
 def test_wrong_primaryFS(_values):
     LOGGER.info("test_wrong_primaryFS : primaryFS is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_primaryFs = randomStringDigits()
+    wrong_primaryFs = scaleop.csiobjectfunc.randomStringDigits()
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -145,7 +142,7 @@ def test_wrong_primaryFS(_values):
 def test_wrong_guihost(_values):
     LOGGER.info("test_wrong_guihost : gui host is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_guiHost = randomStringDigits()
+    wrong_guiHost = scaleop.csiobjectfunc.randomStringDigits()
     test["guiHost"] = wrong_guiHost
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -182,7 +179,7 @@ def test_wrong_guihost(_values):
 def test_wrong_gui_username(_values):
     LOGGER.info("test_wrong_gui_username : gui username is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["username"] = randomStringDigits()
+    test["username"] = scaleop.csiobjectfunc.randomStringDigits()
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
@@ -210,7 +207,7 @@ def test_wrong_gui_username(_values):
 def test_wrong_gui_password(_values):
     LOGGER.info("test_wrong_gui_password : gui password is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["password"] = randomStringDigits()
+    test["password"] = scaleop.csiobjectfunc.randomStringDigits()
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     operator_object.check()
@@ -247,7 +244,7 @@ def test_wrong_gui_password(_values):
 def test_wrong_secret_object_name(_values):
     LOGGER.info("test_wrong_secret_object_name : secret object name is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    secret_name_wrong = randomString()
+    secret_name_wrong = scaleop.csiobjectfunc.randomString()
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -262,7 +259,7 @@ def test_wrong_secret_object_name(_values):
 def test_random_gpfs_primaryFset_name(_values):
     LOGGER.info("test_random_gpfs_primaryFset_name : gpfs primary Fset name is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    random_primaryFset = randomStringDigits()
+    random_primaryFset = scaleop.csiobjectfunc.randomStringDigits()
     test["primaryFset"] = random_primaryFset
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -283,18 +280,18 @@ def test_random_gpfs_primaryFset_name(_values):
             LOGGER.error(
                 "operator custom object should be deployed but it is not deployed hence asserting")
             operator_object.delete()
-            if(ff.fileset_exists(test)):
-                ff.delete_fileset(test)
+            if(scaleop.filesetfunc.fileset_exists(test)):
+                scaleop.filesetfunc.delete_fileset(test)
             assert False
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
             operator_object.delete()
-            if(ff.fileset_exists(test)):
-                ff.delete_fileset(test)
+            if(scaleop.filesetfunc.fileset_exists(test)):
+                scaleop.filesetfunc.delete_fileset(test)
             assert False
-    if(ff.fileset_exists(test)):
-        ff.delete_fileset(test)
+    if(scaleop.filesetfunc.fileset_exists(test)):
+        scaleop.filesetfunc.delete_fileset(test)
     operator_object.delete()
 
 
@@ -336,8 +333,8 @@ def test_secureSslMode(_values):
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
             assert False
-    if(ff.fileset_exists(test)):
-        ff.delete_fileset(test)
+    if(scaleop.filesetfunc.fileset_exists(test)):
+        scaleop.filesetfunc.delete_fileset(test)
     operator_object.delete()
 
 
@@ -347,7 +344,7 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
     LOGGER.info("test_wrong_gpfs_filesystem_mount_point")
     LOGGER.info("gpfs filesystem mount point is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_scaleHostpath = randomStringDigits()
+    wrong_scaleHostpath = scaleop.csiobjectfunc.randomStringDigits()
     test["custom_object_body"]["spec"]["scaleHostpath"] = wrong_scaleHostpath
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
@@ -383,9 +380,9 @@ def test_unlinked_primaryFset(_values):
     LOGGER.info("test_unlinked_primaryFset")
     LOGGER.info("unlinked primaryFset expected : object created successfully")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    if(not(ff.fileset_exists(test))):
-        ff.create_fileset(test)
-    ff.unlink_fileset(test)
+    if(not(scaleop.filesetfunc.fileset_exists(test))):
+        scaleop.filesetfunc.create_fileset(test)
+    scaleop.filesetfunc.unlink_fileset(test)
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
@@ -415,8 +412,8 @@ def test_existing_primaryFset(_values):
     LOGGER.info(
         "linked existing primaryFset expected : object created successfully")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    if(not(ff.fileset_exists(test))):
-        ff.create_fileset(test)
+    if(not(scaleop.filesetfunc.fileset_exists(test))):
+        scaleop.filesetfunc.create_fileset(test)
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
@@ -445,14 +442,14 @@ def test_unmounted_primaryFS(_values):
     LOGGER.info(
         "primaryFS is unmounted and expected : custom object should give error")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    ff.unmount_fs(test)
+    scaleop.filesetfunc.unmount_fs(test)
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
             "Operator custom object is deployed successfully, it is not expected")
         operator_object.delete()
-        ff.mount_fs(test)
+        scaleop.filesetfunc.mount_fs(test)
         assert False
     else:
         get_logs_api_instance = client.CoreV1Api()
@@ -468,16 +465,16 @@ def test_unmounted_primaryFS(_values):
                 LOGGER.error(str(get_logs_api_response))
             LOGGER.debug(search_result)
             operator_object.delete()
-            ff.mount_fs(test)
+            scaleop.filesetfunc.mount_fs(test)
             assert search_result is not None
             LOGGER.info("'not mounted on GUI node Primary cluster' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
-            ff.mount_fs(test)
+            scaleop.filesetfunc.mount_fs(test)
             assert False
     operator_object.delete()
-    ff.mount_fs(test)
+    scaleop.filesetfunc.mount_fs(test)
 
 
 def test_non_deafult_attacher(_values):
@@ -490,7 +487,7 @@ def test_non_deafult_attacher(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
+        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -521,7 +518,7 @@ def test_non_deafult_provisioner(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
+        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -832,7 +829,7 @@ def test_non_deafult_snapshotter(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
+        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -864,7 +861,7 @@ def test_non_deafult_livenessprobe(_values):
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
         daemonset_pod_name = operator_object.get_driver_ds_pod_name()
-        check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
+        scaleop.csiobjectfunc.check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -895,7 +892,7 @@ def test_non_deafult_resizer(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
+        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -992,7 +989,7 @@ def test_wrong_kubeletRootDirPath(_values):
     LOGGER.info("test_wrong_kubeletRootDirPath : kubeletRootDirPath is wrong")
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
 
-    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{randomString()}/{randomString()}"
+    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{scaleop.csiobjectfunc.randomString()}/{scaleop.csiobjectfunc.randomString()}"
 
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()

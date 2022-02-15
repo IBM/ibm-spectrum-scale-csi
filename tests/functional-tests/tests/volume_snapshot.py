@@ -1,7 +1,6 @@
 import logging
 import pytest
 import ibm_spectrum_scale_csi.scale_operator as scaleop
-import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as ff
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumesnapshot, pytest.mark.localcluster]
 
@@ -31,10 +30,10 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Cluster Details:")
     LOGGER.info("----------------")
-    ff.get_scale_version(data)
+    scaleop.filesetfunc.get_scale_version(data)
     scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.scale_function.get_operator_image()
-    scaleop.ob.get_driver_image()
+    scaleop.csioperatorfunc.get_operator_image()
+    scaleop.csiobjectfunc.get_driver_image()
 
 
 @pytest.mark.regression
@@ -209,6 +208,7 @@ def test_snapshot_dynamic_pass_2():
 
 
 @pytest.mark.regression
+@pytest.mark.xfail
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
@@ -216,6 +216,7 @@ def test_snapshot_dynamic_expected_fail_1():
 
 
 @pytest.mark.regression
+@pytest.mark.xfail
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["primaryFs"],
                 "volDirBasePath": data["volDirBasePath"]}
