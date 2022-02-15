@@ -1,6 +1,5 @@
 import copy
 import logging
-import os.path
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
