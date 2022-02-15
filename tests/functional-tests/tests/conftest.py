@@ -3,6 +3,8 @@ import pytest
 from py.xml import html
 import logging
 import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
+
 LOGGER = logging.getLogger()
 
 def pytest_addoption(parser):
@@ -51,10 +53,10 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope='session')
 def check_csi_operator(request):
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
+    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
+    operator_data = inputfunc.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]

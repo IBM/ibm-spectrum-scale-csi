@@ -2,21 +2,22 @@ import logging
 import copy
 import pytest
 import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster]
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request, check_csi_operator):
     global data, remote_data, driver_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
+    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not("remote" in data):
         LOGGER.error("remote data is not provided in cr file")
         assert False
 
-    remote_data = scaleop.get_remote_data(data)
+    remote_data = inputfunc.get_remote_data(data)
     scaleop.filesetfunc.cred_check(remote_data)
     scaleop.filesetfunc.set_data(remote_data)
 

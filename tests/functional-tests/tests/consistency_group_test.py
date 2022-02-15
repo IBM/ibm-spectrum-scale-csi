@@ -1,6 +1,7 @@
 import logging
 import pytest
 import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.localcluster, pytest.mark.cg]
 
@@ -8,9 +9,9 @@ pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.localcluster, pytest.m
 @pytest.fixture(scope='session', autouse=True)
 def values(request, check_csi_operator):
     global data, driver_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
+    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
