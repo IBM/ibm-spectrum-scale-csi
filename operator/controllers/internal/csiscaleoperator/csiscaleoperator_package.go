@@ -364,7 +364,6 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeSnapshotContentsStatusResource},
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
-			{
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {

@@ -25,7 +25,6 @@ import (
 	"github.com/presslabs/controller-util/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -464,9 +463,6 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 	}
-
-
-
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
 	}
@@ -492,7 +488,6 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 	}
-
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
 	}
@@ -518,7 +513,6 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 	}
-
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
 	}
