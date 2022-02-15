@@ -33,7 +33,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:f94ced08ffaba8f2895b12a0ba68007af3f9df750718683fe1d01f968b70fcf9
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:702bc92e7fb07aa79965e9004b7728f68eb933138c0b3dfdebefb839ba43aae4
         args: null
         env:
         - name: METRICS_BIND_ADDRESS
@@ -43,7 +43,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:ccadf534bb8c7c97161351ec94a93d7bb97f68a0127a753da6fa73e0b9902351
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:260b38a84561eba641ad0429f57194824c46db35e5f12309df8e55c9697d28c7
         resources:
           limits:
             cpu: 600m
