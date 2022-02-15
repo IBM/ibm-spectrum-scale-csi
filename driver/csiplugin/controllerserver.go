@@ -1899,8 +1899,13 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			cgSnapName, err := cs.CheckNewSnapRequired(conn, filesystemName, filesetName, snapWindow)
 			if err != nil {
 				glog.Errorf("CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", snapName, filesystemName, filesetName, err)
+				return nil, err
 			}
 			if cgSnapName != "" {
+				usable, err := cs.isExistingSnapUseableForVol(conn, filesystemName, filesetResp.FilesetName, cgSnapName)
+				if !usable {
+					return nil, err
+				}
 				createNewSnap = false
 				snapName = cgSnapName
 			} else {
@@ -2026,6 +2031,21 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 	// REST API returns block limit in kb, convert it to bytes and return
 	return int64(quotaResp.BlockLimit * 1024), nil
 }
+
+func (cs *ScaleControllerServer) isExistingSnapUseableForVol(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, cgSnapName string) (bool, error) {
+	pathDir := fmt.Sprintf(".snapshots/%s/%s", cgSnapName, filesetName)
+	_, err := conn.StatDirectory(filesystemName, pathDir)
+	if err != nil {
+		if (strings.Contains(err.Error(), "EFSSG0264C") ||
+			strings.Contains(err.Error(), "does not exist")) { // directory does not exist
+			return false, status.Error(codes.Internal, fmt.Sprintf("snapshot for volume [%v] in filesystem [%v] is not taken. Wait till current snapWindow expires.", filesetName, filesystemName))
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
 
 func (cs *ScaleControllerServer) DelSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
 	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
