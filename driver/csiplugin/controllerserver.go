@@ -739,7 +739,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
 		if err := cs.checkVolTierSupport(volFsInfo.Version); err != nil {
-			return nil, err
+			// TODO: Remove this secondary call to local gui when GUI refreshes remote cache immediately
+			tempFsInfo, err := scaleVol.Connector.GetFilesystemDetails(scaleVol.VolBackendFs)
+			if err != nil {
+				return nil, err
+			}
+			if err := cs.checkVolTierSupport(tempFsInfo.Version); err != nil {
+				return nil, err
+			}
 		}
 
 		if err := scaleVol.Connector.GetTierInfoFromName(scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
