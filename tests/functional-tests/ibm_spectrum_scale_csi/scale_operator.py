@@ -945,3 +945,4 @@ def get_cleanup_dict():
         "ds": []
     }
     return created_object
+    LOGGER.info("Demo Message")
