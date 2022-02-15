@@ -260,8 +260,6 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)))
 	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)
-	replicas := config.ReplicaCount
-	out.Spec.Replicas = &replicas
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -302,8 +300,6 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)))
 	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)
-	replicas := config.ReplicaCount
-	out.Spec.Replicas = &replicas
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -344,8 +340,6 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)))
 	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)
-	replicas := config.ReplicaCount
-	out.Spec.Replicas = &replicas
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -471,16 +465,7 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 	}
 
-	if pod.Affinity != nil {
-		pod.Affinity.PodAntiAffinity = s.driver.GetPodAntiAffinity("provisioner")
-	} else {
-		affinity := corev1.Affinity{
-			PodAntiAffinity: s.driver.GetPodAntiAffinity("provisioner"),
-		}
-		pod.Affinity = &affinity
-	}
 
-	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
 
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
@@ -508,17 +493,6 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 	}
 
-	if pod.Affinity != nil {
-		pod.Affinity.PodAntiAffinity = s.driver.GetPodAntiAffinity("snapshotter")
-	} else {
-		affinity := corev1.Affinity{
-			PodAntiAffinity: s.driver.GetPodAntiAffinity("snapshotter"),
-		}
-		pod.Affinity = &affinity
-	}
-
-	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
-
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
 	}
@@ -544,17 +518,6 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 	}
-
-	if pod.Affinity != nil {
-		pod.Affinity.PodAntiAffinity = s.driver.GetPodAntiAffinity("resizer")
-	} else {
-		affinity := corev1.Affinity{
-			PodAntiAffinity: s.driver.GetPodAntiAffinity("resizer"),
-		}
-		pod.Affinity = &affinity
-	}
-
-	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
 
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
@@ -593,7 +556,7 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	logger := csiLog.WithName("ensureAttacherContainersSpec")
 	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
 
-	attacher := s.ensureContainer(attacherContainerName,
+	attacher := s.ensureAttacherContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
 		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:8080"},
@@ -615,7 +578,7 @@ func (s *csiControllerSyncer) ensureProvisionerContainersSpec() []corev1.Contain
 	provisioner := s.ensureContainer(provisionerContainerName,
 		s.getSidecarImage(config.CSIProvisioner),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10", "--extra-create-metadata", "--v=5", "--default-fstype=gpfs", "--leader-election=true", "--http-endpoint=:8080"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10", "--extra-create-metadata", "--v=5", "--default-fstype=gpfs"},
 	)
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
 	return []corev1.Container{
@@ -633,7 +596,7 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec() []corev1.Contain
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--leader-election=true", "--http-endpoint=:8080"},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5"},
 	)
 	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 	return []corev1.Container{
@@ -650,7 +613,7 @@ func (s *csiControllerSyncer) ensureResizerContainersSpec() []corev1.Container {
 
 	resizer := s.ensureContainer(resizerContainerName,
 		s.getSidecarImage(config.CSIResizer),
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10", "--leader-election=true", "--http-endpoint=:8080"},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10"},
 	)
 	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
 	return []corev1.Container{
@@ -749,10 +712,10 @@ func ensureNodeAffinity() *corev1.NodeAffinity {
 }
 */
 
-// ensureContainer generates k8s container object.
-func (s *csiControllerSyncer) ensureContainer(name, image string, args []string) corev1.Container {
+// ensureAttacherContainer generates k8s container object.
+func (s *csiControllerSyncer) ensureAttacherContainer(name, image string, args []string) corev1.Container {
 
-	logger := csiLog.WithName("ensureContainer")
+	logger := csiLog.WithName("ensureAttacherContainer")
 	logger.Info("Container information: ", "Name", name, "Image", image)
 
 	sc := &corev1.SecurityContext{
@@ -769,6 +732,32 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		VolumeMounts:  s.getVolumeMountsFor(name),
 		Ports:         s.driver.GetContaninerPort(),
 		LivenessProbe: s.driver.GetLivenessProbe(),
+	}
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if isOpenShift {
+		container.SecurityContext = sc
+	}
+	return container
+}
+
+// ensureContainer generates k8s container object.
+func (s *csiControllerSyncer) ensureContainer(name, image string, args []string) corev1.Container {
+
+	logger := csiLog.WithName("ensureContainer")
+	logger.Info("Container information: ", "Name", name, "Image", image)
+
+	sc := &corev1.SecurityContext{
+		//		AllowPrivilegeEscalation: boolptr.False(),
+		Privileged: boolptr.True(),
+	}
+	fillSecurityContextCapabilities(sc)
+	container := corev1.Container{
+		Name:  name,
+		Image: image,
+		Args:  args,
+		//EnvFrom:         s.getEnvSourcesFor(name),
+		Env:          s.getEnvFor(name),
+		VolumeMounts: s.getVolumeMountsFor(name),
 	}
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {
