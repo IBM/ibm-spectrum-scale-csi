@@ -228,11 +228,6 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeAttachmentsResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
-			{
-				APIGroups: []string{coordinationApiGroup},
-				Resources: []string{leaseResource},
-				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate},
-			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -370,10 +365,6 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
 			{
-				APIGroups: []string{coordinationApiGroup},
-				Resources: []string{leaseResource},
-				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate},
-			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -467,11 +458,6 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{storageClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
-			},
-			{
-				APIGroups: []string{coordinationApiGroup},
-				Resources: []string{leaseResource},
-				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate},
 			},
 		},
 	}
