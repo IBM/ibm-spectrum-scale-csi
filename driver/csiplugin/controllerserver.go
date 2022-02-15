@@ -884,7 +884,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	volID, volIDErr := cs.generateVolID(scaleVol, volFsInfo.UUID, isNewVolumeType, targetPath)
 	if volIDErr != nil {
-		return nil, err
+		return nil, volIDErr
 	}
 
 	if isVolSource {
