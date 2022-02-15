@@ -172,6 +172,7 @@ def test_snapshot_dynamic_pass_2():
 
 
 @pytest.mark.regression
+@pytest.mark.xfail
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
@@ -179,6 +180,7 @@ def test_snapshot_dynamic_expected_fail_1():
 
 
 @pytest.mark.regression
+@pytest.mark.xfail
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"]}

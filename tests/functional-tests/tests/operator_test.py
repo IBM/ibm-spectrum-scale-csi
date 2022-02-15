@@ -35,7 +35,6 @@ def _values(request):
         scaleop.filesetfunc.delete_fileset(read_file)
 
 
-@pytest.mark.regression
 def test_get_version(_values):
     test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
     scaleop.filesetfunc.get_scale_version(test)

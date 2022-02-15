@@ -121,9 +121,9 @@ func (cs *ScaleControllerServer) generateVolID(scVol *scaleVolume, uid string, i
 			glog.Errorf("unable to get connector for primary cluster")
 			return "", status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
 		}
-		fsMountPoint, err := primaryConn.GetFilesystemMountDetails(scVol.VolBackendFs)
+		fsMountPoint, err := primaryConn.GetFilesystemMountDetails(scVol.LocalFS)
 		if err != nil {
-			return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.VolBackendFs))
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.LocalFS))
 		}
 		path = fmt.Sprintf("%s/%s", fsMountPoint.MountPoint, targetPath)
 	} else {
@@ -686,10 +686,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	if scaleVol.IsFilesetBased {
 		if scaleVol.ClusterId == "" {
 			if volFsInfo.Type == filesystemTypeRemote { // if fileset based and remotely mounted.
-				glog.V(3).Infof("volume filesystem %s is remotely mounted on Primary cluster, using owning cluster ID %s.", scaleVol.VolBackendFs, remoteClusterID)
+				glog.V(3).Infof("volume filesystem %s is remotely mounted on Primary cluster, using owning cluster ID %s.", scaleVol.LocalFS, remoteClusterID)
 				scaleVol.ClusterId = remoteClusterID
 			} else {
-				glog.V(3).Infof("volume filesystem %s is locally mounted on Primary cluster, using primary cluster ID %s.", scaleVol.VolBackendFs, PCid)
+				glog.V(3).Infof("volume filesystem %s is locally mounted on Primary cluster, using primary cluster ID %s.", scaleVol.LocalFS, PCid)
 				scaleVol.ClusterId = PCid
 			}
 		}
@@ -884,7 +884,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	volID, volIDErr := cs.generateVolID(scaleVol, volFsInfo.UUID, isNewVolumeType, targetPath)
 	if volIDErr != nil {
-		return nil, err
+		return nil, volIDErr
 	}
 
 	if isVolSource {
