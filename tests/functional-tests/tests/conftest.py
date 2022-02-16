@@ -65,7 +65,7 @@ def check_csi_operator(request):
     scaleop.filesetfunc.set_data(data)
     operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
     operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
+    condition = scaleop.kubeobjectfunc.check_ns_exists(kubeconfig_value, operator_namespace)
     if condition is True:
         if not(operator_object.check(data["csiscaleoperator_name"])):
             LOGGER.error("Operator custom object is not deployed succesfully")
@@ -73,10 +73,10 @@ def check_csi_operator(request):
     else:
         operator.create()
         operator.check()
-        scaleop.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
-        scaleop.check_nodes_available(
+        scaleop.kubeobjectfunc.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
+        scaleop.kubeobjectfunc.check_nodes_available(
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
-        scaleop.check_nodes_available(
+        scaleop.kubeobjectfunc.check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
         operator_object.create()
         val = operator_object.check()

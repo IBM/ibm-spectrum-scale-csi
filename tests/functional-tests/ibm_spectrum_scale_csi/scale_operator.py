@@ -3,7 +3,7 @@ import logging
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_function as csioperatorfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.kubernetes_objects_function as kubeobjectfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function as csiobjectfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.volume_functions as volfunc 
 import ibm_spectrum_scale_csi.kubernetes_apis.snapshot_functions as snapshotfunc
@@ -16,7 +16,7 @@ class Scaleoperator:
     def __init__(self, kubeconfig_value, namespace_value, operator_yaml):
 
         self.kubeconfig = kubeconfig_value
-        csioperatorfunc.set_global_namespace_value(namespace_value)
+        kubeobjectfunc.set_global_namespace_value(namespace_value)
         csiobjectfunc.set_namespace_value(namespace_value)
         self.operator_yaml_file_path = operator_yaml
         crd_body = self.get_operator_body()
@@ -28,23 +28,23 @@ class Scaleoperator:
         config.load_kube_config(config_file=self.kubeconfig)
 
         body = self.get_operator_body()
-        if not(csioperatorfunc.check_namespace_exists()):
-            csioperatorfunc.create_namespace()
+        if not(kubeobjectfunc.check_namespace_exists()):
+            kubeobjectfunc.create_namespace()
 
-        if not(csioperatorfunc.check_deployment_exists()):
-            csioperatorfunc.create_deployment(body['Deployment'])
+        if not(kubeobjectfunc.check_deployment_exists()):
+            kubeobjectfunc.create_deployment(body['Deployment'])
 
-        if not(csioperatorfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")):
-            csioperatorfunc.create_cluster_role(body['ClusterRole'])
+        if not(kubeobjectfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")):
+            kubeobjectfunc.create_cluster_role(body['ClusterRole'])
 
-        if not(csioperatorfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator")):
-            csioperatorfunc.create_service_account(body['ServiceAccount'])
+        if not(kubeobjectfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator")):
+            kubeobjectfunc.create_service_account(body['ServiceAccount'])
 
-        if not(csioperatorfunc.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")):
-            csioperatorfunc.create_cluster_role_binding(body['ClusterRoleBinding'])
+        if not(kubeobjectfunc.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")):
+            kubeobjectfunc.create_cluster_role_binding(body['ClusterRoleBinding'])
 
-        if not(csioperatorfunc.check_crd_exists(self.crd_version)):
-            csioperatorfunc.create_crd(body['CustomResourceDefinition'])
+        if not(kubeobjectfunc.check_crd_exists(self.crd_version)):
+            kubeobjectfunc.create_crd(body['CustomResourceDefinition'])
 
     def delete(self, condition=False):
 
@@ -53,39 +53,39 @@ class Scaleoperator:
             csiobjectfunc.delete_custom_object()
             csiobjectfunc.check_scaleoperatorobject_is_deleted()
 
-        if csioperatorfunc.check_crd_exists(self.crd_version):
-            csioperatorfunc.delete_crd(self.crd_version)
-        csioperatorfunc.check_crd_deleted(self.crd_version)
+        if kubeobjectfunc.check_crd_exists(self.crd_version):
+            kubeobjectfunc.delete_crd(self.crd_version)
+        kubeobjectfunc.check_crd_deleted(self.crd_version)
 
-        if csioperatorfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator"):
-            csioperatorfunc.delete_service_account("ibm-spectrum-scale-csi-operator")
-        csioperatorfunc.check_service_account_deleted("ibm-spectrum-scale-csi-operator")
+        if kubeobjectfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator"):
+            kubeobjectfunc.delete_service_account("ibm-spectrum-scale-csi-operator")
+        kubeobjectfunc.check_service_account_deleted("ibm-spectrum-scale-csi-operator")
 
-        if csioperatorfunc.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator"):
-            csioperatorfunc.delete_cluster_role_binding("ibm-spectrum-scale-csi-operator")
-        csioperatorfunc.check_cluster_role_binding_deleted("ibm-spectrum-scale-csi-operator")
+        if kubeobjectfunc.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator"):
+            kubeobjectfunc.delete_cluster_role_binding("ibm-spectrum-scale-csi-operator")
+        kubeobjectfunc.check_cluster_role_binding_deleted("ibm-spectrum-scale-csi-operator")
 
-        if csioperatorfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator"):
-            csioperatorfunc.delete_cluster_role("ibm-spectrum-scale-csi-operator")
-        csioperatorfunc.check_cluster_role_deleted("ibm-spectrum-scale-csi-operator")
+        if kubeobjectfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator"):
+            kubeobjectfunc.delete_cluster_role("ibm-spectrum-scale-csi-operator")
+        kubeobjectfunc.check_cluster_role_deleted("ibm-spectrum-scale-csi-operator")
 
-        if csioperatorfunc.check_deployment_exists():
-            csioperatorfunc.delete_deployment()
-        csioperatorfunc.check_deployment_deleted()
+        if kubeobjectfunc.check_deployment_exists():
+            kubeobjectfunc.delete_deployment()
+        kubeobjectfunc.check_deployment_deleted()
 
-        if csioperatorfunc.check_namespace_exists() and (condition is False):
-            csioperatorfunc.delete_namespace()
-            csioperatorfunc.check_namespace_deleted()
+        if kubeobjectfunc.check_namespace_exists() and (condition is False):
+            kubeobjectfunc.delete_namespace()
+            kubeobjectfunc.check_namespace_deleted()
 
     def check(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
-        csioperatorfunc.check_namespace_exists()
-        csioperatorfunc.check_deployment_exists()
-        csioperatorfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")
-        csioperatorfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator")
-        csioperatorfunc.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")
-        csioperatorfunc.check_crd_exists(self.crd_version)
+        kubeobjectfunc.check_namespace_exists()
+        kubeobjectfunc.check_deployment_exists()
+        kubeobjectfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")
+        kubeobjectfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator")
+        kubeobjectfunc.check_cluster_role_binding_exists("ibm-spectrum-scale-csi-operator")
+        kubeobjectfunc.check_crd_exists(self.crd_version)
 
     def get_operator_body(self):
 
@@ -122,35 +122,35 @@ class Scaleoperatorobject:
         config.load_kube_config(config_file=self.kubeconfig)
         LOGGER.info(str(self.temp["custom_object_body"]["spec"]))
 
-        if not(csiobjectfunc.check_secret_exists(self.secret_name)):
-            csiobjectfunc.create_secret(self.secret_data, self.secret_name)
+        if not(kubeobjectfunc.check_secret_exists(self.secret_name)):
+            kubeobjectfunc.create_secret(self.secret_data, self.secret_name)
         else:
-            csiobjectfunc.delete_secret(self.secret_name)
-            csiobjectfunc.check_secret_is_deleted(self.secret_name)
-            csiobjectfunc.create_secret(self.secret_data, self.secret_name)
+            kubeobjectfunc.delete_secret(self.secret_name)
+            kubeobjectfunc.check_secret_is_deleted(self.secret_name)
+            kubeobjectfunc.create_secret(self.secret_data, self.secret_name)
 
         for remote_secret_name in self.temp["remote_secret_names"]:
             remote_secret_data = {"username": self.temp["remote_username"][remote_secret_name],
                                   "password": self.temp["remote_password"][remote_secret_name]}
-            if not(csiobjectfunc.check_secret_exists(remote_secret_name)):
-                csiobjectfunc.create_secret(remote_secret_data, remote_secret_name)
+            if not(kubeobjectfunc.check_secret_exists(remote_secret_name)):
+                kubeobjectfunc.create_secret(remote_secret_data, remote_secret_name)
             else:
-                csiobjectfunc.delete_secret(remote_secret_name)
-                csiobjectfunc.check_secret_is_deleted(remote_secret_name)
-                csiobjectfunc.create_secret(remote_secret_data, remote_secret_name)
+                kubeobjectfunc.delete_secret(remote_secret_name)
+                kubeobjectfunc.check_secret_is_deleted(remote_secret_name)
+                kubeobjectfunc.create_secret(remote_secret_data, remote_secret_name)
 
         if "local_cacert_name" in self.temp:
             cacert_name = self.temp["local_cacert_name"]
             if "make_cacert_wrong" not in self.temp:
                 self.temp["make_cacert_wrong"] = False
 
-            if not(csiobjectfunc.check_configmap_exists(cacert_name)):
-                csiobjectfunc.create_configmap(
+            if not(kubeobjectfunc.check_configmap_exists(cacert_name)):
+                kubeobjectfunc.create_configmap(
                     self.temp["cacert_path"], self.temp["make_cacert_wrong"], cacert_name)
             else:
-                csiobjectfunc.delete_configmap(cacert_name)
-                csiobjectfunc.check_configmap_is_deleted(cacert_name)
-                csiobjectfunc.create_configmap(
+                kubeobjectfunc.delete_configmap(cacert_name)
+                kubeobjectfunc.check_configmap_is_deleted(cacert_name)
+                kubeobjectfunc.create_configmap(
                     self.temp["cacert_path"], self.temp["make_cacert_wrong"], cacert_name)
 
         for remote_cacert_name in self.temp["remote_cacert_names"]:
@@ -158,13 +158,13 @@ class Scaleoperatorobject:
             if "make_remote_cacert_wrong" not in self.temp:
                 self.temp["make_remote_cacert_wrong"] = False
 
-            if not(csiobjectfunc.check_configmap_exists(remote_cacert_name)):
-                csiobjectfunc.create_configmap(
+            if not(kubeobjectfunc.check_configmap_exists(remote_cacert_name)):
+                kubeobjectfunc.create_configmap(
                     self.temp["remote_cacert_path"][remote_cacert_name], self.temp["make_remote_cacert_wrong"], remote_cacert_name)
             else:
-                csiobjectfunc.delete_configmap(remote_cacert_name)
-                csiobjectfunc.check_configmap_is_deleted(remote_cacert_name)
-                csiobjectfunc.create_configmap(
+                kubeobjectfunc.delete_configmap(remote_cacert_name)
+                kubeobjectfunc.check_configmap_is_deleted(remote_cacert_name)
+                kubeobjectfunc.create_configmap(
                     self.temp["remote_cacert_path"][remote_cacert_name], self.temp["make_remote_cacert_wrong"], remote_cacert_name)
 
         if not(csiobjectfunc.check_scaleoperatorobject_is_deployed()):
@@ -183,23 +183,23 @@ class Scaleoperatorobject:
             csiobjectfunc.delete_custom_object()
         csiobjectfunc.check_scaleoperatorobject_is_deleted()
 
-        if csiobjectfunc.check_secret_exists(self.secret_name):
-            csiobjectfunc.delete_secret(self.secret_name)
-        csiobjectfunc.check_secret_is_deleted(self.secret_name)
+        if kubeobjectfunc.check_secret_exists(self.secret_name):
+            kubeobjectfunc.delete_secret(self.secret_name)
+        kubeobjectfunc.check_secret_is_deleted(self.secret_name)
 
         for remote_secret_name in self.temp["remote_secret_names"]:
-            if csiobjectfunc.check_secret_exists(remote_secret_name):
-                csiobjectfunc.delete_secret(remote_secret_name)
-            csiobjectfunc.check_secret_is_deleted(remote_secret_name)
+            if kubeobjectfunc.check_secret_exists(remote_secret_name):
+                kubeobjectfunc.delete_secret(remote_secret_name)
+            kubeobjectfunc.check_secret_is_deleted(remote_secret_name)
         if "local_cacert_name" in self.temp:
-            if csiobjectfunc.check_configmap_exists(self.temp["local_cacert_name"]):
-                csiobjectfunc.delete_configmap(self.temp["local_cacert_name"])
-            csiobjectfunc.check_configmap_is_deleted(self.temp["local_cacert_name"])
+            if kubeobjectfunc.check_configmap_exists(self.temp["local_cacert_name"]):
+                kubeobjectfunc.delete_configmap(self.temp["local_cacert_name"])
+            kubeobjectfunc.check_configmap_is_deleted(self.temp["local_cacert_name"])
 
         for remote_cacert_name in self.temp["remote_cacert_names"]:
-            if csiobjectfunc.check_configmap_exists(remote_cacert_name):
-                csiobjectfunc.delete_configmap(remote_cacert_name)
-            csiobjectfunc.check_configmap_is_deleted(remote_cacert_name)
+            if kubeobjectfunc.check_configmap_exists(remote_cacert_name):
+                kubeobjectfunc.delete_configmap(remote_cacert_name)
+            kubeobjectfunc.check_configmap_is_deleted(remote_cacert_name)
 
     def check(self, csiscaleoperator_name="ibm-spectrum-scale-csi"):
         config.load_kube_config(config_file=self.kubeconfig)
@@ -222,7 +222,7 @@ class Scaleoperatorobject:
 
         val, self.desired_number_scheduled = csiobjectfunc.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
 
-        # csiobjectfunc.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
+        # kubeobjectfunc.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
         return val
 
@@ -277,16 +277,16 @@ class Driver:
 
     def create_test_ns(self, kubeconfig):
         config.load_kube_config(config_file=kubeconfig)
-        csioperatorfunc.set_global_namespace_value(self.test_ns)
-        if not(csioperatorfunc.check_namespace_exists()):
-            csioperatorfunc.create_namespace()
+        kubeobjectfunc.set_global_namespace_value(self.test_ns)
+        if not(kubeobjectfunc.check_namespace_exists()):
+            kubeobjectfunc.create_namespace()
 
     def delete_test_ns(self, kubeconfig):
         config.load_kube_config(config_file=kubeconfig)
-        csioperatorfunc.set_global_namespace_value(self.test_ns)
-        if csioperatorfunc.check_namespace_exists():
-            csioperatorfunc.delete_namespace()
-        csioperatorfunc.check_namespace_deleted()
+        kubeobjectfunc.set_global_namespace_value(self.test_ns)
+        if kubeobjectfunc.check_namespace_exists():
+            kubeobjectfunc.delete_namespace()
+        kubeobjectfunc.check_namespace_deleted()
 
     def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None, value_clone_passed=None):
         created_objects = get_cleanup_dict()
@@ -658,59 +658,6 @@ class Snapshot():
                     cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
             cleanup.clean_with_created_objects(created_objects)
-
-
-
-
-
-
-
-def check_ns_exists(passed_kubeconfig_value, namespace_value):
-    config.load_kube_config(config_file=passed_kubeconfig_value)
-    read_namespace_api_instance = client.CoreV1Api()
-    try:
-        read_namespace_api_response = read_namespace_api_instance.read_namespace(
-            name=namespace_value, pretty=True)
-        LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists checking for operator")
-        return True
-    except ApiException:
-        LOGGER.info("namespace does not exists")
-        return False
-
-
-def get_kubernetes_version(passed_kubeconfig_value):
-    config.load_kube_config(config_file=passed_kubeconfig_value)
-    api_instance = client.VersionApi()
-    try:
-        api_response = api_instance.get_code()
-        api_response = api_response.__dict__
-        LOGGER.info(f"kubernetes version is {api_response['_git_version']}")
-        LOGGER.info(f"platform is {api_response['_platform']}")
-    except ApiException as e:
-        LOGGER.info(f"Kubernetes version cannot be fetched due to {e}")
-
-
-def check_nodes_available(label, label_name):
-    """
-    checks number of nodes with label
-    if it is 0 , asserts
-    """
-    api_instance = client.CoreV1Api()
-    label_selector = ""
-    for label_val in label:
-        label_selector += str(label_val["key"])+"="+str(label_val["value"])+","
-    label_selector = label_selector[0:-1]
-    try:
-        api_response_2 = api_instance.list_node(
-            pretty=True, label_selector=label_selector)
-        if len(api_response_2.items) == 0:
-            LOGGER.error(f"0 nodes matches with {label_name}")
-            LOGGER.error("please check labels")
-            assert False
-    except ApiException as e:
-        LOGGER.error(f"Exception when calling CoreV1Api->list_node: {e}")
-        assert False
 
 
 def get_cleanup_dict():

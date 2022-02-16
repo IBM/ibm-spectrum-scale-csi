@@ -41,9 +41,9 @@ def test_get_version():
     LOGGER.info("Cluster Details:")
     LOGGER.info("----------------")
     scaleop.filesetfunc.get_scale_version(data)
-    scaleop.get_kubernetes_version(kubeconfig_value)
+    scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
     scaleop.csioperatorfunc.get_operator_image()
-    scaleop.csiobjectfunc.get_driver_image()
+    scaleop.kubeobjectfunc.get_driver_image()
 
 
 def test_driver_cg_pass_1():

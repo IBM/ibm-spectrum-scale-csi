@@ -31,6 +31,7 @@ def get_test_data():
 
     return data
 
+
 def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
 
     data = get_test_data()

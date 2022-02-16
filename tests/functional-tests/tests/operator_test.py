@@ -16,18 +16,18 @@ def _values(request):
     global kubeconfig_value, clusterconfig_value, namespace_value
     kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, _, operator_yaml = inputfunc.get_cmd_values(request)
     namespace_value = operator_namespace
-    condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
+    condition = scaleop.kubeobjectfunc.check_ns_exists(kubeconfig_value, namespace_value)
     operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value, operator_yaml)
     read_file = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     scaleop.filesetfunc.cred_check(read_file)
     fileset_exist = scaleop.filesetfunc.fileset_exists(read_file)
     operator.create()
     operator.check()
-    scaleop.check_nodes_available(
+    scaleop.kubeobjectfunc.check_nodes_available(
         read_file["pluginNodeSelector"], "pluginNodeSelector")
-    scaleop.check_nodes_available(
+    scaleop.kubeobjectfunc.check_nodes_available(
         read_file["provisionerNodeSelector"], "provisionerNodeSelector")
-    scaleop.check_nodes_available(
+    scaleop.kubeobjectfunc.check_nodes_available(
         read_file["attacherNodeSelector"], "attacherNodeSelector")
 
     yield
@@ -39,7 +39,7 @@ def _values(request):
 def test_get_version(_values):
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     scaleop.filesetfunc.get_scale_version(test)
-    scaleop.get_kubernetes_version(kubeconfig_value)
+    scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
     scaleop.csioperatorfunc.get_operator_image()
 
 
@@ -488,7 +488,7 @@ def test_non_deafult_attacher(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
+        scaleop.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -519,7 +519,7 @@ def test_non_deafult_provisioner(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
+        scaleop.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -830,7 +830,7 @@ def test_non_deafult_snapshotter(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
+        scaleop.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -862,7 +862,7 @@ def test_non_deafult_livenessprobe(_values):
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
         daemonset_pod_name = operator_object.get_driver_ds_pod_name()
-        scaleop.csiobjectfunc.check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
+        scaleop.kubeobjectfunc.check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -893,7 +893,7 @@ def test_non_deafult_resizer(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
+        scaleop.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
