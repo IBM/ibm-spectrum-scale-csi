@@ -40,7 +40,7 @@ def test_get_version(_values):
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     scaleop.filesetfunc.get_scale_version(test)
     scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
-    scaleop.csioperatorfunc.get_operator_image()
+    scaleop.kubeobjectfunc.get_operator_image()
 
 
 def test_operator_deploy(_values):

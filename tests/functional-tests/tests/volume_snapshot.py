@@ -34,7 +34,7 @@ def test_get_version():
     LOGGER.info("----------------")
     scaleop.filesetfunc.get_scale_version(data)
     scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
-    scaleop.csioperatorfunc.get_operator_image()
+    scaleop.kubeobjectfunc.get_operator_image()
     scaleop.kubeobjectfunc.get_driver_image()
 
 
