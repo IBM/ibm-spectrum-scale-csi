@@ -299,7 +299,7 @@ func (c *CSIScaleOperator) GenerateAttacherClusterRole() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{coordinationApiGroup},
 				Resources: []string{leaseResource},
-				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
 		},
 	}
