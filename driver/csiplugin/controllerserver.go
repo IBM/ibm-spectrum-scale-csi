@@ -2130,7 +2130,12 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get filesystem Name for Filesystem UID [%v] and clusterId [%v]. Error [%v]", snapIdMembers.FsUUID, snapIdMembers.ClusterId, err))
 	}
 
-	filesetExist, err := conn.CheckIfFilesetExist(filesystemName, snapIdMembers.FsetName)
+	filesetExist := false
+	if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+		filesetExist, err = conn.CheckIfFilesetExist(filesystemName, snapIdMembers.ConsistencyGroup)
+	} else {
+		filesetExist, err = conn.CheckIfFilesetExist(filesystemName, snapIdMembers.FsetName)
+	}
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the fileset %s details details. Error [%v]", snapIdMembers.FsetName, err))
 	}

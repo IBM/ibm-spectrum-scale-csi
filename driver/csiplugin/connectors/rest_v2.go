@@ -1188,8 +1188,8 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, 
 func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (string, error) {
 	glog.V(4).Infof("rest_v2 StatDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
 
-	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
-	statDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, NdirName))
+	fmtDirName := strings.ReplaceAll(dirName, "/", "%2F")
+	statDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, fmtDirName))
 	statDirResponse := GenericResponse{}
 
 	err := s.doHTTP(statDirURL, "GET", &statDirResponse, nil)
