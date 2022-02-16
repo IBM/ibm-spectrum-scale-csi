@@ -2,6 +2,8 @@ import copy
 import logging
 import os.path
 import yaml
+import string
+import random
 from kubernetes import config
 import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function as csiobjectfunc
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
@@ -220,3 +222,15 @@ def get_cmd_values(request):
         operator_file = '../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml'
 
     return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_file
+
+
+def randomStringDigits(stringLength=6):
+    """Generate a random string of letters and digits """
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+
+
+def randomString(stringLength=10):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))

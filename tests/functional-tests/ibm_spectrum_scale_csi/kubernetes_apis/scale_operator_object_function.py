@@ -262,19 +262,7 @@ def check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name="ibm-spectr
         "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
     return False, desired_number_scheduled
 
-
-def randomStringDigits(stringLength=6):
-    """Generate a random string of letters and digits """
-    lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
-
-
-def randomString(stringLength=10):
-    """Generate a random string of fixed length """
-    letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(stringLength))
-
-
+    
 def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-spectrum-scale-csi"):
     read_cr_api_instance = client.CustomObjectsApi()
     try:

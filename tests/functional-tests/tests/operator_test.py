@@ -108,7 +108,7 @@ def test_wrong_cluster_id(_values):
 def test_wrong_primaryFS(_values):
     LOGGER.info("test_wrong_primaryFS : primaryFS is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_primaryFs = scaleop.csiobjectfunc.randomStringDigits()
+    wrong_primaryFs = scaleop.inputfunc.randomStringDigits()
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -143,7 +143,7 @@ def test_wrong_primaryFS(_values):
 def test_wrong_guihost(_values):
     LOGGER.info("test_wrong_guihost : gui host is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_guiHost = scaleop.csiobjectfunc.randomStringDigits()
+    wrong_guiHost = scaleop.inputfunc.randomStringDigits()
     test["guiHost"] = wrong_guiHost
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -180,7 +180,7 @@ def test_wrong_guihost(_values):
 def test_wrong_gui_username(_values):
     LOGGER.info("test_wrong_gui_username : gui username is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    test["username"] = scaleop.csiobjectfunc.randomStringDigits()
+    test["username"] = scaleop.inputfunc.randomStringDigits()
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
@@ -208,7 +208,7 @@ def test_wrong_gui_username(_values):
 def test_wrong_gui_password(_values):
     LOGGER.info("test_wrong_gui_password : gui password is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    test["password"] = scaleop.csiobjectfunc.randomStringDigits()
+    test["password"] = scaleop.inputfunc.randomStringDigits()
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     operator_object.check()
@@ -245,7 +245,7 @@ def test_wrong_gui_password(_values):
 def test_wrong_secret_object_name(_values):
     LOGGER.info("test_wrong_secret_object_name : secret object name is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    secret_name_wrong = scaleop.csiobjectfunc.randomString()
+    secret_name_wrong = scaleop.inputfunc.randomString()
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -260,7 +260,7 @@ def test_wrong_secret_object_name(_values):
 def test_random_gpfs_primaryFset_name(_values):
     LOGGER.info("test_random_gpfs_primaryFset_name : gpfs primary Fset name is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    random_primaryFset = scaleop.csiobjectfunc.randomStringDigits()
+    random_primaryFset = scaleop.inputfunc.randomStringDigits()
     test["primaryFset"] = random_primaryFset
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -345,7 +345,7 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
     LOGGER.info("test_wrong_gpfs_filesystem_mount_point")
     LOGGER.info("gpfs filesystem mount point is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_scaleHostpath = scaleop.csiobjectfunc.randomStringDigits()
+    wrong_scaleHostpath = scaleop.inputfunc.randomStringDigits()
     test["custom_object_body"]["spec"]["scaleHostpath"] = wrong_scaleHostpath
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
@@ -990,7 +990,7 @@ def test_wrong_kubeletRootDirPath(_values):
     LOGGER.info("test_wrong_kubeletRootDirPath : kubeletRootDirPath is wrong")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
 
-    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{scaleop.csiobjectfunc.randomString()}/{scaleop.csiobjectfunc.randomString()}"
+    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{scaleop.inputfunc.randomString()}/{scaleop.inputfunc.randomString()}"
 
     operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()

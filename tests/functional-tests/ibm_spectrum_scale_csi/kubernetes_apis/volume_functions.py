@@ -13,13 +13,6 @@ import ibm_spectrum_scale_csi.common_utils.namegenerator as namegenerator
 LOGGER = logging.getLogger()
 
 
-def check_key(dict1, key):
-    """ checks key is in dictionary or not"""
-    if key in dict1.keys():
-        return True
-    return False
-
-
 def set_test_namespace_value(namespace_name=None):
     """ sets the test namespace global for use in later functions"""
     global namespace_value
@@ -376,9 +369,9 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
         LOGGER.info(f"PVC Check : It is case of static pvc , pv {pv_name} is already created")
         return True
     if 'storage_class_parameters' in globals():
-        if check_key(storage_class_parameters, "volDirBasePath") and check_key(storage_class_parameters, "volBackendFs"):
+        if "volDirBasePath" in storage_class_parameters and "volBackendFs" in storage_class_parameters:
             return True
-        if check_key(storage_class_parameters, "version") and storage_class_parameters["version"] == "2":
+        if "version" in storage_class_parameters and storage_class_parameters["version"] == "2":
             if not(filesetfunc.created_fileset_exists(namespace_value)):
                 LOGGER.error(f'PVC Check : Fileset {namespace_value} doesn\'t exists for version=2 SC')
                 return False
@@ -493,7 +486,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
             assert False
 
         if api_response.status.phase == "Bound":
-            if(check_key(pvc_values, "reason")):
+            if "reason" in pvc_values:
                 LOGGER.error(f'PVC Check : {pvc_name} is BOUND but as the failure reason is provided so\
                 asserting the test')
                 cleanup.clean_with_created_objects(created_objects)
@@ -505,11 +498,11 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
         else:
             var += 1
             time.sleep(5)
-            if(check_key(pvc_values, "reason")):
+            if "reason" in pvc_values:
                 time_count = 8
-            elif(check_key(pvc_values, "parallel")):
+            elif "parallel" in pvc_values:
                 time_count = 240
-            elif(check_key(pvc_values, "clone")):
+            elif "clone" in pvc_values:
                 time_count = 120
             else:
                 time_count = 20
@@ -518,7 +511,7 @@ def check_pvc(pvc_values,  pvc_name, created_objects, pv_name="pvnotavailable"):
                 field = "involvedObject.name="+pvc_name
                 reason = api_instance.list_namespaced_event(
                     namespace=namespace_value, pretty=True, field_selector=field)
-                if not(check_key(pvc_values, "reason")):
+                if "reason" not in pvc_values:
                     cleanup.clean_with_created_objects(created_objects)
                     LOGGER.error(str(reason))
                     LOGGER.error(
@@ -721,12 +714,12 @@ def check_pod_execution(value_pod, pod_name, created_objects):
                       command=exec_command,
                       stderr=True, stdin=False,
                       stdout=True, tty=False)
-        if check_key(value_pod, "reason"):
+        if "reason" in value_pod:
             cleanup.clean_with_created_objects(created_objects)
             LOGGER.error("Pod should not be able to create file inside the pod as failure REASON provided, so asserting")
             assert False
         return
-    if not(check_key(value_pod, "reason")):
+    if "reason" not in value_pod:
         cleanup.clean_with_created_objects(created_objects)
         LOGGER.error(str(resp))
         LOGGER.error("FAILED as reason of failure not provided")
@@ -785,7 +778,7 @@ def check_pod(value_pod, pod_name, created_objects):
                     field = "involvedObject.name="+pod_name
                     reason = api_instance.list_namespaced_event(
                         namespace=namespace_value, pretty=True, field_selector=field)
-                    if not(check_key(value_pod, "reason")):
+                    if "reason" not in value_pod:
                         LOGGER.error('FAILED as reason of failure not provided')
                         LOGGER.error(f"POD Check : Reason of failure is : {str(reason)}")
                         cleanup.clean_with_created_objects(created_objects)
