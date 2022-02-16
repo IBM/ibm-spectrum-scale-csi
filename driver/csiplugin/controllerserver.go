@@ -43,6 +43,7 @@ const (
 	filesetUnlinkedPath         = "--"
 	oneGB                uint64 = 1024 * 1024 * 1024
 	smallestVolSize      uint64 = oneGB // 1GB
+	defaultSnapWindow           = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
 
 )
 
@@ -1881,7 +1882,9 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		snapWindowSpecified := false
 		snapWindow, snapWindowSpecified = snapParams[connectors.UserSpecifiedSnapWindow]
 		if !snapWindowSpecified {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("snapWindow not specified for fileset[%s:%s]", filesetResp.FilesetName, filesystemName))
+			// use default snapshot window for consistency group
+			snapWindow = defaultSnapWindow
+			glog.V(3).Infof("snapWindow not specified. Using default snapWindow: [%s] for for fileset[%s:%s]", snapWindow, filesetResp.FilesetName, filesystemName)
 		}
 	}
 
@@ -1902,7 +1905,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 				return nil, err
 			}
 			if cgSnapName != "" {
-				usable, err := cs.isExistingSnapUseableForVol(conn, filesystemName, filesetResp.FilesetName, cgSnapName)
+				usable, err := cs.isExistingSnapUseableForVol(conn, filesystemName, filesetName, filesetResp.FilesetName, cgSnapName)
 				if !usable {
 					return nil, err
 				}
@@ -2032,8 +2035,8 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 	return int64(quotaResp.BlockLimit * 1024), nil
 }
 
-func (cs *ScaleControllerServer) isExistingSnapUseableForVol(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, cgSnapName string) (bool, error) {
-	pathDir := fmt.Sprintf(".snapshots/%s/%s", cgSnapName, filesetName)
+func (cs *ScaleControllerServer) isExistingSnapUseableForVol(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string) (bool, error) {
+	pathDir := fmt.Sprintf("%s/.snapshots/%s/%s", consistencyGroup, cgSnapName, filesetName)
 	_, err := conn.StatDirectory(filesystemName, pathDir)
 	if err != nil {
 		if (strings.Contains(err.Error(), "EFSSG0264C") ||
