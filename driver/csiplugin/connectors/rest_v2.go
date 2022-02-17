@@ -1447,16 +1447,12 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 	return nil
 }
 
-func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) error {
-	glog.V(4).Infof("rest_v2 GetTierInfoFromName. name %s, filesystem %s", tierName, filesystemName)
+func (s *spectrumRestV2) DoesTierExist(tierName string, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 DoesTierExist. name %s, filesystem %s", tierName, filesystemName)
 
-	poolURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName))
-	getPoolResponse := GenericResponse{}
-
-	err := s.doHTTP(poolURL, "GET", &getPoolResponse, nil)
+	_, err := s.GetTierInfoFromName(tierName, filesystemName)
 	if err != nil {
-		glog.Errorf("Unable to get tier: %s info %v", tierName, getPoolResponse.Status.Message)
-		if strings.Contains(getPoolResponse.Status.Message, "Invalid value in 'tier'") {
+		if strings.Contains(err.Error(), "Invalid value in 'storagePool'") {
 			return fmt.Errorf("invalid tier '%s' specified for filesystem %s", tierName, filesystemName)
 		}
 		return err
@@ -1465,17 +1461,62 @@ func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName str
 	return nil
 }
 
+func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error) {
+	glog.V(4).Infof("rest_v2 GetTierInfoFromName. name %s, filesystem %s", tierName, filesystemName)
+
+	tierUrl := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName))
+	getTierResponse := &StorageTiers{}
+
+	err := s.doHTTP(tierUrl, "GET", getTierResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get tier: %s err: %v", tierName, err)
+		return nil, err
+	}
+
+	if len(getTierResponse.StorageTiers) > 0 {
+		return &getTierResponse.StorageTiers[0], nil
+	} else {
+		return nil, fmt.Errorf("unable to fetch storage tiers for %s", filesystemName)
+	}
+}
+
 func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
-	glog.V(4).Infof("rest_v2 CheckPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
+	glog.V(4).Infof("rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
 
 	partitionURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName))
 	getPartitionResponse := GenericResponse{}
 
 	// If it does or doesn't exist and we get an error we will default to just setting it again as an override
 	err := s.doHTTP(partitionURL, "GET", &getPartitionResponse, nil)
+	return err == nil
+}
+
+func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetFirstDataTier. filesystem %s", filesystemName)
+
+	tiersURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools", filesystemName))
+	getTierResponse := &StorageTiers{}
+
+	err := s.doHTTP(tiersURL, "GET", getTierResponse, nil)
 	if err != nil {
-		return false
+		return "", err
 	}
 
-	return true
+	for _, tier := range getTierResponse.StorageTiers {
+		if tier.StorageTierName == "system" {
+			continue
+		}
+
+		tierInfo, err := s.GetTierInfoFromName(tier.StorageTierName, tier.FilesystemName)
+		if err != nil {
+			return "", err
+		}
+		if tierInfo.TotalDataInKB > 0 {
+			glog.V(2).Infof("GetFirstDataTier: Setting default tier to %s", tierInfo.StorageTierName)
+			return tierInfo.StorageTierName, nil
+		}
+	}
+
+	glog.V(2).Infof("GetFirstDataTier: Defaulting to system tier")
+	return "system", nil
 }
