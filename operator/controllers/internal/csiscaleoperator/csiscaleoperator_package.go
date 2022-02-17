@@ -678,7 +678,7 @@ func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *se
 }
 
 // getNodeSelector converts the given nodeselector array into a map.
-func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
+func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 
 	nodeSelectors := make(map[string]string)
 
@@ -691,20 +691,7 @@ func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 	return nodeSelectors
 }
 
-func (s *CSIScaleOperator) GetPodAntiAffinity(controllerName string) *corev1.PodAntiAffinity {
-
-	appName := ""
-	switch controllerName {
-	case "attacher":
-		appName = config.GetNameForResource(config.CSIControllerAttacher, s.Name)
-	case "provisioner":
-		appName = config.GetNameForResource(config.CSIControllerProvisioner, s.Name)
-	case "snapshotter":
-		appName = config.GetNameForResource(config.CSIControllerSnapshotter, s.Name)
-	case "resizer":
-		appName = config.GetNameForResource(config.CSIControllerResizer, s.Name)
-	default:
-	}
+func (c *CSIScaleOperator) GetAttacherPodAntiAffinity() *corev1.PodAntiAffinity {
 
 	podAntiAffinity := corev1.PodAntiAffinity{
 		RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
@@ -712,9 +699,9 @@ func (s *CSIScaleOperator) GetPodAntiAffinity(controllerName string) *corev1.Pod
 				LabelSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
-							Key:      "app",
+							Key:      config.LabelApp,
 							Operator: "In",
-							Values:   []string{appName},
+							Values:   []string{config.GetNameForResource(config.CSIControllerAttacher, c.Name)},
 						},
 					},
 				},
@@ -727,7 +714,7 @@ func (s *CSIScaleOperator) GetPodAntiAffinity(controllerName string) *corev1.Pod
 }
 
 // GetNodeTolerations returns an array of kubernetes object of type corev1.Tolerations
-func (s *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
+func (c *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
 	tolerationsSeconds := config.TolerationsSeconds
 	tolerations := []corev1.Toleration{
 		{
@@ -747,42 +734,42 @@ func (s *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
 	return tolerations
 }
 
-func (s *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
+func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	//tolerationsSeconds := config.TolerationsSeconds
 	probe := corev1.Probe{
 		FailureThreshold:    int32(1),
 		InitialDelaySeconds: int32(10),
 		TimeoutSeconds:      int32(10),
 		PeriodSeconds:       int32(20),
-		Handler:             s.GetHandler(),
+		Handler:             c.GetHandler(),
 	}
 	return &probe
 }
 
-func (s *CSIScaleOperator) GetContaninerPort() []corev1.ContainerPort {
+func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: int32(8080),
+			ContainerPort: config.AttacherLeaderLivenessPort,
 			Name:          "http-endpoint",
-			Protocol:      s.GetProtocol(),
+			Protocol:      c.GetProtocol(),
 		},
 	}
 	return ports
 }
 
-func (s *CSIScaleOperator) GetProtocol() corev1.Protocol {
+func (c *CSIScaleOperator) GetProtocol() corev1.Protocol {
 	var protocol corev1.Protocol = "TCP"
 	return protocol
 }
 
-func (s *CSIScaleOperator) GetHandler() corev1.Handler {
+func (c *CSIScaleOperator) GetHandler() corev1.Handler {
 	handler := corev1.Handler{
-		HTTPGet: s.GetHTTPGetAction(),
+		HTTPGet: c.GetHTTPGetAction(),
 	}
 	return handler
 }
 
-func (s CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
+func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	action := corev1.HTTPGetAction{
 		Path: "/healthz/leader-election",
 		Port: intstr.FromString("http-endpoint"),

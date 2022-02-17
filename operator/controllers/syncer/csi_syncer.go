@@ -18,6 +18,7 @@ package syncer
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/imdario/mergo"
@@ -428,10 +429,10 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 	}
 
 	if pod.Affinity != nil {
-		pod.Affinity.PodAntiAffinity = s.driver.GetPodAntiAffinity("attacher")
+		pod.Affinity.PodAntiAffinity = s.driver.GetAttacherPodAntiAffinity()
 	} else {
 		affinity := corev1.Affinity{
-			PodAntiAffinity: s.driver.GetPodAntiAffinity("attacher"),
+			PodAntiAffinity: s.driver.GetAttacherPodAntiAffinity(),
 		}
 		pod.Affinity = &affinity
 	}
@@ -553,7 +554,7 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	attacher := s.ensureAttacherContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:8080"},
+		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.AttacherLeaderLivenessPort)},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
@@ -724,7 +725,7 @@ func (s *csiControllerSyncer) ensureAttacherContainer(name, image string, args [
 		//EnvFrom:         s.getEnvSourcesFor(name),
 		Env:           s.getEnvFor(name),
 		VolumeMounts:  s.getVolumeMountsFor(name),
-		Ports:         s.driver.GetContaninerPort(),
+		Ports:         s.driver.GetContainerPort(),
 		LivenessProbe: s.driver.GetLivenessProbe(),
 	}
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
