@@ -482,7 +482,7 @@ def get_filesetname_from_pv(volume_name, created_objects):
                 fileset_name= volume_handle[5]
             if fileset_name == "":
                 fileset_name = "LW"
-        except ApiException:
+        except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
             LOGGER.info(f'PV {pv_name} does not exists on cluster')

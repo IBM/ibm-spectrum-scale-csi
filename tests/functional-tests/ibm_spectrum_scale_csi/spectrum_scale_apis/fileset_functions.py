@@ -598,7 +598,7 @@ def check_snapshot_exists(snapshot_name, volume_name):
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-        LOGGER.info(f"Snapshot Check : Checking for snapshot {snapshot_name} of volume {volume_name}")
+        LOGGER.info(f"Snapshot Fileset Check : Checking for Snapshot {snapshot_name} of Fileset {volume_name}")
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
 

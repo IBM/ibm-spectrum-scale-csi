@@ -575,12 +575,12 @@ class Snapshot():
                         if value_clone_passed is not None:
                             volfunc.clone_and_check_pvc(restore_sc_name, restore_sc, restored_pvc_name, snap_pod_name, value_pod, value_clone_passed, created_objects)
 
-                        cleanup.delete_pod(snap_pod_name, created_objects)
-                        cleanup.check_pod_deleted(snap_pod_name, created_objects)
-                    vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
-                    cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
+                        #cleanup.delete_pod(snap_pod_name, created_objects)
+                        #cleanup.check_pod_deleted(snap_pod_name, created_objects)
+                    #vol_name = cleanup.delete_pvc(restored_pvc_name, created_objects)
+                    #cleanup.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
-            cleanup.clean_with_created_objects(created_objects)
+        cleanup.clean_with_created_objects(created_objects)
 
     def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:
