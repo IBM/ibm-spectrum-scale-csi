@@ -1,6 +1,6 @@
 import logging
 import pytest
-import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 
 LOGGER = logging.getLogger()
@@ -24,7 +24,7 @@ def values(request, check_csi_operator):
 
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = scaleop.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
+    snapshot_object = baseclass.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
                                        number_of_snapshots, data["image_name"], data["id"], data["pluginNodeSelector"])
 
 
@@ -32,10 +32,10 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Cluster Details:")
     LOGGER.info("----------------")
-    scaleop.filesetfunc.get_scale_version(data)
-    scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
-    scaleop.kubeobjectfunc.get_operator_image()
-    scaleop.kubeobjectfunc.get_driver_image()
+    baseclass.filesetfunc.get_scale_version(data)
+    baseclass.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
+    baseclass.kubeobjectfunc.get_operator_image()
+    baseclass.kubeobjectfunc.get_driver_image()
 
 
 @pytest.mark.regression

@@ -1,7 +1,7 @@
 import logging
 import copy
 import pytest
-import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster, pytest.mark.cg]
@@ -18,8 +18,8 @@ def values(request, check_csi_operator):
         assert False
 
     remote_data = inputfunc.get_remote_data(data)
-    scaleop.filesetfunc.cred_check(remote_data)
-    scaleop.filesetfunc.set_data(remote_data)
+    baseclass.filesetfunc.cred_check(remote_data)
+    baseclass.filesetfunc.set_data(remote_data)
 
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -35,9 +35,9 @@ def values(request, check_csi_operator):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
 
-    driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod,
+    driver_object = baseclass.Driver(kubeconfig_value, value_pvc, value_pod,
                                    remote_data["id"], test_namespace, keep_objects, data["image_name"], data["pluginNodeSelector"])
-    scaleop.filesetfunc.create_dir(remote_data["volDirBasePath"])
+    baseclass.filesetfunc.create_dir(remote_data["volDirBasePath"])
 
 
 #: Testcase that are expected to pass:
@@ -45,13 +45,13 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
     LOGGER.info("-----------------------")
-    scaleop.filesetfunc.get_scale_version(remote_data)
+    baseclass.filesetfunc.get_scale_version(remote_data)
     LOGGER.info("Local Cluster Details:")
     LOGGER.info("-----------------------")
-    scaleop.filesetfunc.get_scale_version(data)
-    scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
-    scaleop.kubeobjectfunc.get_operator_image()
-    scaleop.kubeobjectfunc.get_driver_image()
+    baseclass.filesetfunc.get_scale_version(data)
+    baseclass.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
+    baseclass.kubeobjectfunc.get_operator_image()
+    baseclass.kubeobjectfunc.get_driver_image()
 
 
 def test_driver_cg_pass_1():

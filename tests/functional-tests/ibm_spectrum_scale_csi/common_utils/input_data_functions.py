@@ -5,7 +5,7 @@ import yaml
 import string
 import random
 from kubernetes import config
-import ibm_spectrum_scale_csi.kubernetes_apis.scale_operator_object_function as csiobjectfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.csi_object_function as csiobjectfunc
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 LOGGER = logging.getLogger()
 

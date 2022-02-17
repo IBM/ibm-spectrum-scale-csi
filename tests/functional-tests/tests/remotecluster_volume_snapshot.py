@@ -1,7 +1,7 @@
 import copy
 import logging
 import pytest
-import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 
 LOGGER = logging.getLogger()
@@ -19,8 +19,8 @@ def values(request, check_csi_operator):
         assert False
 
     remote_data = inputfunc.get_remote_data(data)
-    scaleop.filesetfunc.cred_check(remote_data)
-    scaleop.filesetfunc.set_data(remote_data)
+    baseclass.filesetfunc.cred_check(remote_data)
+    baseclass.filesetfunc.set_data(remote_data)
 
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -29,22 +29,22 @@ def values(request, check_csi_operator):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = scaleop.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
+    snapshot_object = baseclass.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
                                        number_of_snapshots, data["image_name"], remote_data["id"], data["pluginNodeSelector"])
-    scaleop.filesetfunc.create_dir(remote_data["volDirBasePath"])
+    baseclass.filesetfunc.create_dir(remote_data["volDirBasePath"])
 
 
 @pytest.mark.regression
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
     LOGGER.info("-----------------------")
-    scaleop.filesetfunc.get_scale_version(remote_data)
+    baseclass.filesetfunc.get_scale_version(remote_data)
     LOGGER.info("Local Cluster Details:")
     LOGGER.info("-----------------------")
-    scaleop.filesetfunc.get_scale_version(data)
-    scaleop.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
-    scaleop.kubeobjectfunc.get_operator_image()
-    scaleop.kubeobjectfunc.get_driver_image()
+    baseclass.filesetfunc.get_scale_version(data)
+    baseclass.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
+    baseclass.kubeobjectfunc.get_operator_image()
+    baseclass.kubeobjectfunc.get_driver_image()
 
 
 @pytest.mark.regression
