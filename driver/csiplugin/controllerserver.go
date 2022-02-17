@@ -1130,7 +1130,7 @@ func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
 	versionCheck := cs.checkMinFsVersion(version, "2700")
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale Filesystem version for tiering support with CSI is 5.1.3-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale Filesystem version for tiering support with CSI is 27.00 (5.1.3-0)")
 	}
 	return nil
 }
