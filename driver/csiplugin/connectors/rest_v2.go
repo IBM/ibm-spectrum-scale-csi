@@ -77,7 +77,7 @@ func (s *spectrumRestV2) waitForJobCompletion(statusCode int, jobID uint64) erro
 
 	if s.checkAsynchronousJob(statusCode) {
 		jobURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID))
-		err := s.AsyncJobCompletion(jobURL)
+		_, err := s.AsyncJobCompletion(jobURL)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,22 @@ func (s *spectrumRestV2) waitForJobCompletion(statusCode int, jobID uint64) erro
 	return nil
 }
 
-func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
+func (s *spectrumRestV2) waitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error) {
+	glog.V(4).Infof("rest_v2 waitForJobCompletionWithResp. jobID: %d, statusCode: %d", jobID, statusCode)
+
+	if s.checkAsynchronousJob(statusCode) {
+		response := GenericResponse{}
+		jobURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID))
+		response, err := s.AsyncJobCompletion(jobURL)
+		if err != nil {
+			return GenericResponse{}, err
+		}
+		return response, nil
+	}
+	return GenericResponse{}, nil
+}
+
+func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) (GenericResponse, error) {
 	glog.V(4).Infof("rest_v2 AsyncJobCompletion. jobURL: %s", jobURL)
 
 	jobQueryResponse := GenericResponse{}
@@ -93,10 +108,10 @@ func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
 	for {
 		err := s.doHTTP(jobURL, "GET", &jobQueryResponse, nil)
 		if err != nil {
-			return err
+			return GenericResponse{}, err
 		}
 		if len(jobQueryResponse.Jobs) == 0 {
-			return fmt.Errorf("unable to get Job details for %s: %v", jobURL, jobQueryResponse)
+			return GenericResponse{}, fmt.Errorf("unable to get Job details for %s: %v", jobURL, jobQueryResponse)
 		}
 
 		if jobQueryResponse.Jobs[0].Status == "RUNNING" {
@@ -109,10 +124,10 @@ func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
 		break
 	}
 	if jobQueryResponse.Jobs[0].Status == "COMPLETED" {
-		return nil
+		return jobQueryResponse, nil
 	} else {
 		glog.Errorf("Async Job failed: %v", jobQueryResponse)
-		return fmt.Errorf("%v", jobQueryResponse.Jobs[0].Result.Stderr)
+		return GenericResponse{}, fmt.Errorf("%v", jobQueryResponse.Jobs[0].Result.Stderr)
 	}
 }
 
@@ -458,6 +473,20 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 	}
 
 	return nil
+}
+
+func (s *spectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	glog.V(4).Infof("rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
+
+	getLatestFilesetSnapshotsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/latest", filesystemName, filesetName))
+	getLatestFilesetSnapshotsResponse := GetSnapshotResponse_v2{}
+
+	err := s.doHTTP(getLatestFilesetSnapshotsURL, "GET", &getLatestFilesetSnapshotsResponse, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get latest list of snapshots for fileset [%v]. Error [%v]", filesetName, err)
+	}
+
+	return getLatestFilesetSnapshotsResponse.Snapshots, nil
 }
 
 func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
@@ -1126,11 +1155,16 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) error {
-	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
+func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, safe bool) error {
+	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", filesystemName, dirName, safe)
 
 	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
-	deleteDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, NdirName))
+	deleteDirURL := ""
+	if safe {
+		deleteDirURL = utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s?safe=True", filesystemName, NdirName))
+	} else {
+		deleteDirURL = utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, NdirName))
+	}
 	deleteDirResponse := GenericResponse{}
 
 	err := s.doHTTP(deleteDirURL, "DELETE", &deleteDirResponse, nil)
@@ -1149,6 +1183,33 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) 
 	}
 
 	return nil
+}
+
+func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (string, error) {
+	glog.V(4).Infof("rest_v2 StatDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
+
+	fmtDirName := strings.ReplaceAll(dirName, "/", "%2F")
+	statDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, fmtDirName))
+	statDirResponse := GenericResponse{}
+
+	err := s.doHTTP(statDirURL, "GET", &statDirResponse, nil)
+	if err != nil {
+		return "", fmt.Errorf("Unable to stat dir %v.", dirName)
+	}
+
+	err = s.isRequestAccepted(statDirResponse, statDirURL)
+	if err != nil {
+		return "", err
+	}
+
+	jobResp, err := s.waitForJobCompletionWithResp(statDirResponse.Status.Code, statDirResponse.Jobs[0].JobID)
+	if err != nil {
+		return "", fmt.Errorf("Unable to stat dir %v:%v", dirName, err)
+	}
+
+	statInfo := jobResp.Jobs[0].Result.Stdout[0]
+
+	return statInfo, nil
 }
 
 func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {

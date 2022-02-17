@@ -61,7 +61,8 @@ type SpectrumScaleConnector interface {
 	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
 	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
 	GetFsUid(filesystemName string) (string, error)
-	DeleteDirectory(filesystemName string, dirName string) error
+	DeleteDirectory(filesystemName string, dirName string, safe bool) error
+	StatDirectory(filesystemName string, dirName string) (string, error)
 	GetFileSetUid(filesystemName string, filesetName string) (string, error)
 	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
 	DeleteSymLnk(filesystemName string, LnkName string) error
@@ -79,6 +80,7 @@ type SpectrumScaleConnector interface {
 	WaitForJobCompletion(statusCode int, jobID uint64) error
 	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
+	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
@@ -105,6 +107,7 @@ const (
 	UserSpecifiedStorageClassType string = "version"
 	UserSpecifiedCompression      string = "compression"
 	UserSpecifiedTier             string = "tier"
+	UserSpecifiedSnapWindow       string = "snapWindow"
 
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
