@@ -571,7 +571,7 @@ def test_snapshot_dynamic_volume_cloning_1():
 @pytest.mark.cg
 def test_snapshot_cg_pass_1():
     value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
-    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "60"}
+    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
 
 
@@ -579,7 +579,7 @@ def test_snapshot_cg_pass_1():
 def test_snapshot_cg_pass_2():
     value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
     value_vs_class={"deletionPolicy": "Delete"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class, number_of_snapshots=10)
 
 
 @pytest.mark.cg
@@ -588,3 +588,24 @@ def test_snapshot_cg_pass_3():
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "2"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 3
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class, value_pvc=value_pvc, number_of_snapshots=3)
+
+
+@pytest.mark.cg
+def test_snapshot_cg_tier():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "tier": data["tier"]}
+    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
+
+
+@pytest.mark.cg
+def test_snapshot_cg_compression():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "compression": "true"}
+    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
+
+
+@pytest.mark.cg
+def test_snapshot_cg_compression_tier():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "tier": data["tier"], "compression": "true"}
+    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)

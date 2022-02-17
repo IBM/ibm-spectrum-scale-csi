@@ -1489,11 +1489,17 @@ def get_snapshot_and_related_fileset(vs_content_name, pvc_name, created_objects)
         LOGGER.debug(api_response)
         snapshot_handle = api_response["status"]["snapshotHandle"]
         snapshot_handle = snapshot_handle.split(";")
-        snapshot_name = snapshot_handle[-2]
-        if len(snapshot_handle) > 5 and snapshot_handle[0] == "1":
-            return snapshot_name, namespace_value
+        if len(snapshot_handle) > 5:
+            snapshot_name = snapshot_handle[6]
+        else:
+            snapshot_name = snapshot_handle[3]
+
+        if snapshot_handle[0] == "1":
+            return snapshot_name, snapshot_handle[4]
+
         volume_name = get_pv_for_pvc(pvc_name, created_objects)
         fileset_name = get_filesetname_from_pv(volume_name, created_objects)
+
         return snapshot_name, fileset_name
 
     except ApiException:
