@@ -33,7 +33,8 @@ import (
 const (
 	dependentFileset     = "dependent"
 	independentFileset   = "independent"
-	storageClassAdvanced = "advanced"
+	storageClassClassic  = "1"
+	storageClassAdvanced = "2"
 )
 
 type scaleVolume struct {
@@ -73,7 +74,7 @@ type scaleVolId struct {
 	FsetId           string
 	FsetName         string
 	DirPath          string
-	SymLnkPath       string
+	Path             string
 	IsFilesetBased   bool
 	StorageClassType string
 	ConsistencyGroup string
@@ -85,8 +86,12 @@ type scaleSnapId struct {
 	FsUUID    string
 	FsetName  string
 	SnapName  string
+	MetaSnapName  string
 	Path      string
 	FsName    string
+	StorageClassType string
+	ConsistencyGroup string
+	VolType          string
 }
 
 //nolint
@@ -158,12 +163,18 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if isSCTypeSpecified && storageClassType == "" {
 		isSCTypeSpecified = false
 	}
+	isSCAdvanced := false
 	if isSCTypeSpecified {
-		//This is a new type of StorageClass
-		if storageClassType != storageClassAdvanced {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "storageClassType must be \""+storageClassAdvanced+"\" if specified.")
+		if storageClassType != storageClassClassic && storageClassType != storageClassAdvanced {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
+				"\""+storageClassClassic+"\" or \""+storageClassAdvanced+"\"")
 		}
 		scaleVol.StorageClassType = storageClassType
+		if storageClassType == storageClassAdvanced {
+			isSCAdvanced = true
+		}
+	} else {
+		scaleVol.StorageClassType = storageClassClassic
 	}
 
 	if fsSpecified && volBckFs == "" {
@@ -184,7 +195,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		volDirPathSpecified = false
 	}
 
-	if !fsTypeSpecified && !volDirPathSpecified && !isSCTypeSpecified {
+	if !fsTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
 		fsTypeSpecified = true
 		fsType = independentFileset
 	}
@@ -260,21 +271,21 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.IsFilesetBased = false
 	}
 
-	if fsTypeSpecified && isSCTypeSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"filesetType\" are mutually exclusive")
+	if isSCAdvanced && fsTypeSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
-	if fsTypeSpecified && inodeLimSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"inodeLimit\" are mutually exclusive")
+	if isSCAdvanced && isparentFilesetSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
-	if fsTypeSpecified && volDirPathSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"type\" and \"volDirBasePath\" are mutually exclusive")
+	if isSCAdvanced && volDirPathSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+storageClassAdvanced+" must not be specified together in storageClass")
 	}
- 
-	if fsTypeSpecified || isSCTypeSpecified {
+
+	if fsTypeSpecified || isSCAdvanced {
 		scaleVol.IsFilesetBased = true
 	}
 
-	if isCompressionSpecified && compression == "" {
+	if isCompressionSpecified && (compression == "" || compression == "false") {
 		isCompressionSpecified = false
 	}
 	if isTierSpecified && tier == "" {
@@ -489,7 +500,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
-		vIdMem.SymLnkPath = slnkSplit[1]
+		vIdMem.Path = slnkSplit[1]
 		vIdMem.IsFilesetBased = false
 		return vIdMem, nil
 	}
@@ -516,14 +527,14 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
-		vIdMem.SymLnkPath = slnkSplit[1]
+		vIdMem.Path = slnkSplit[1]
 		vIdMem.IsFilesetBased = true
 		return vIdMem, nil
 	}
 
 	if len(splitVid) == 7 {
 		/* Volume ID created from 2.5.0 onwards  */
-		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<symlink_path> */
+		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]
 		vIdMem.ClusterId = splitVid[2]
@@ -539,7 +550,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		} else {
 			vIdMem.IsFilesetBased = true
 		}
-		vIdMem.SymLnkPath = splitVid[6]
+		vIdMem.Path = splitVid[6]
 		return vIdMem, nil
 
 	}

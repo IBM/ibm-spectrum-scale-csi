@@ -590,7 +590,7 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec() []corev1.Contain
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--leader-election=false"},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--leader-election=false", "--worker-threads=1"},
 	)
 	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 	return []corev1.Container{

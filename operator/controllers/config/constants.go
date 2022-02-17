@@ -75,7 +75,7 @@ const (
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0"
 	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.4.0"
-	LivenessProbeImage          = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.5.0"
+	LivenessProbeImage          = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.6.0"
 	CSIAttacherImage            = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0"
 	CSIProvisionerImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0"
 	CSISnapshotterImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v5.0.1"
@@ -106,12 +106,12 @@ const (
 	Plugins                   = "/plugins"
 	CSIKubeletRootDirPath     = "/var/lib/kubelet"
 	CSISCC                    = "spectrum-scale-csiaccess"
-	SecretsMountPath          = "/var/lib/ibm/"
+	SecretsMountPath          = "/var/lib/ibm/" // #nosec G101 false positive
 	ConfigMapPath             = "/var/lib/ibm/config"
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 
-	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey"
+	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
 	DefaultLogLevel        = "DEBUG"
 )
 
