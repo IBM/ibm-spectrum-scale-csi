@@ -113,7 +113,7 @@ def read_operator_data(clusterconfig, namespace, kubeconfig=None):
             if "cacert" in cluster:
                 data["remote_cacert_names"].append(cluster["cacert"])
 
-    if "attacherNodeSelector" in loadcr_yaml:
+    if "attacherNodeSelector" in loadcr_yaml["spec"]:
         data["attacherNodeSelector"] = loadcr_yaml["spec"]["attacherNodeSelector"]
     else:
         data["attacherNodeSelector"] = []
