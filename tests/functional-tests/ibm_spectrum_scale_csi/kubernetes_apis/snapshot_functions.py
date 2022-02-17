@@ -31,6 +31,9 @@ def create_vs_class(vs_class_name, body_params, created_objects):
         "deletionPolicy": body_params["deletionPolicy"]
     }
 
+    if "snapWindow" in body_params:
+        class_body["parameters"] = {"snapWindow": body_params["snapWindow"]}
+
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
@@ -222,39 +225,38 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
         LOGGER.info("volume snapshot status ReadyToUse is true")
     else:
         LOGGER.error("volume snapshot status ReadyToUse is not true")
-        if reason is not None:
-            api_instance_events = client.CoreV1Api()
-            field = "involvedObject.name="+vs_name
-            failure_reason = api_instance_events.list_namespaced_event(
+        api_instance_events = client.CoreV1Api()
+        field = "involvedObject.name="+vs_name
+        failure_reason = api_instance_events.list_namespaced_event(
                 namespace=namespace_value, pretty=True, field_selector=field)
-            LOGGER.debug(failure_reason)
+        LOGGER.debug(failure_reason)
+        if reason is not None:
             search_result = None
             for item in failure_reason.items:
                 search_result = re.search(reason, str(item.message))
                 if search_result is not None:
                     LOGGER.info(f"reason {reason} matched in volumesnapshot events, passing the test")
                     return
-
+        
+        LOGGER.error(failure_reason)
         LOGGER.error(f"reason {reason} did not matched in volumesnapshot events")
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
     uid_name = api_response["metadata"]["uid"]
     snapcontent_name = "snapcontent-" + uid_name
-    snapshot_name = "snapshot-" + uid_name
     time.sleep(2)
 
     if not(check_vs_content(snapcontent_name)):
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
-    volume_name = volfunc.get_pv_for_pvc(pvc_name, created_objects)
-    fileset_name = cleanup.get_filesetname_from_pv(volume_name, created_objects)
+    snapshot_name, fileset_name = get_snapshot_and_related_fileset(snapcontent_name, pvc_name, created_objects)
 
     if filesetfunc.check_snapshot_exists(snapshot_name, fileset_name):
-        LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")
+        LOGGER.info(f"Snapshot Fileset Check : Snapshot {snapshot_name} exists for Fileset {fileset_name}")
     else:
-        LOGGER.error(f"snapshot {snapshot_name} does not exists for {fileset_name}")
+        LOGGER.error(f"Snapshot Fileset Check : Snapshot {snapshot_name} does not exists for Fileset {fileset_name}")
         cleanup.clean_with_created_objects(created_objects)
         assert False
 
@@ -356,3 +358,33 @@ def check_vs_content(vs_content_name):
     except ApiException:
         LOGGER.info(f"Volume Snapshot content {vs_content_name} does not exists")
         return False
+
+
+def get_snapshot_and_related_fileset(vs_content_name, pvc_name, created_objects):
+    """
+    checks volume snapshot content vs_content_name 
+    return snapshot and its related fileset name on spectrum scale
+    by parsing snapshotHandle
+    """
+    api_instance = client.CustomObjectsApi()
+    try:
+        api_response = api_instance.get_cluster_custom_object(
+            group="snapshot.storage.k8s.io",
+            version="v1",
+            plural="volumesnapshotcontents",
+            name=vs_content_name
+        )
+        LOGGER.debug(api_response)
+        snapshot_handle = api_response["status"]["snapshotHandle"]
+        snapshot_handle = snapshot_handle.split(";")
+        snapshot_name = snapshot_handle[-2]
+        if len(snapshot_handle) > 5 and snapshot_handle[0] == "1":
+            return snapshot_name, namespace_value
+        volume_name = volfunc.get_pv_for_pvc(pvc_name, created_objects)
+        fileset_name = cleanup.get_filesetname_from_pv(volume_name, created_objects)
+        return snapshot_name, fileset_name
+
+    except ApiException:
+        LOGGER.info(f"Volume Snapshot content {vs_content_name} does not exists, Unable to get snapshotHandle")
+        cleanup.clean_with_created_objects(created_objects)
+        assert False

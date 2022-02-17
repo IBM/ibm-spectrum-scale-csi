@@ -565,3 +565,26 @@ def test_snapshot_dynamic_volume_cloning_1():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc, value_clone_passed=value_clone_passed)
+
+
+@pytest.mark.regression
+@pytest.mark.cg
+def test_snapshot_cg_pass_1():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "60"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
+
+
+@pytest.mark.cg
+def test_snapshot_cg_pass_2():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_vs_class={"deletionPolicy": "Delete"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
+
+
+@pytest.mark.cg
+def test_snapshot_cg_pass_3():
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_vs_class={"deletionPolicy": "Delete", "snapWindow": "2"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 3
+    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class, value_pvc=value_pvc, number_of_snapshots=3)
