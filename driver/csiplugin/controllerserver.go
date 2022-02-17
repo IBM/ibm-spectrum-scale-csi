@@ -504,7 +504,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"csi.storage.k8s.io/pvc/namespace", "storage.kubernetes.io/csiProvisionerIdentity",
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit",
-			"version", "tier", "compression":
+			"nodeClass", "version", "tier", "compression":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -1211,7 +1211,7 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		if !isFsetLinked {
 			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
 		}
-	} 
+	}
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
 	if err != nil {
@@ -1767,8 +1767,8 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumSc
 	return "", nil
 }
 
-func (cs *ScaleControllerServer) MakeSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) (error) {
-	path := fmt.Sprintf("%s/%s/%s", indepFileset, cgSnapName, metaSnapName) 
+func (cs *ScaleControllerServer) MakeSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) error {
+	path := fmt.Sprintf("%s/%s/%s", indepFileset, cgSnapName, metaSnapName)
 	glog.V(3).Infof("MakeSnapMetadataDir - creating directory [%s] for fileset: [%s:%s]", path, filesystemName, filesetName)
 	err := conn.MakeDirectory(filesystemName, path, "0", "0")
 	if err != nil {
@@ -1806,7 +1806,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is fileset", volID))
 	}
 
-	if (volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED) && (volumeIDMembers.VolType != FILE_DEPENDENTFILESET_VOLUME){
+	if (volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED) && (volumeIDMembers.VolType != FILE_DEPENDENTFILESET_VOLUME) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is dependent fileset for new storageClass", volID))
 	}
 
@@ -2039,8 +2039,8 @@ func (cs *ScaleControllerServer) isExistingSnapUseableForVol(conn connectors.Spe
 	pathDir := fmt.Sprintf("%s/.snapshots/%s/%s", consistencyGroup, cgSnapName, filesetName)
 	_, err := conn.StatDirectory(filesystemName, pathDir)
 	if err != nil {
-		if (strings.Contains(err.Error(), "EFSSG0264C") ||
-			strings.Contains(err.Error(), "does not exist")) { // directory does not exist
+		if strings.Contains(err.Error(), "EFSSG0264C") ||
+			strings.Contains(err.Error(), "does not exist") { // directory does not exist
 			return false, status.Error(codes.Internal, fmt.Sprintf("snapshot for volume [%v] in filesystem [%v] is not taken. Wait till current snapWindow expires.", filesetName, filesystemName))
 		} else {
 			return false, err
@@ -2048,7 +2048,6 @@ func (cs *ScaleControllerServer) isExistingSnapUseableForVol(conn connectors.Spe
 	}
 	return true, nil
 }
-
 
 func (cs *ScaleControllerServer) DelSnapMetadataDir(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
 	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
@@ -2145,7 +2144,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		snapExist := false
 		if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 			glog.V(5).Infof("DeleteSnapshot - for advanced storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", snapIdMembers.SnapName, snapIdMembers.ConsistencyGroup, filesystemName)
-			chkSnapExist, err := conn.CheckIfSnapshotExist(filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName) 
+			chkSnapExist, err := conn.CheckIfSnapshotExist(filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the snapshot details. Error [%v]", err))
 			}
@@ -2167,7 +2166,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 				delSnap, snaperr := cs.DelSnapMetadataDir(conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName)
 				if snaperr != nil {
 					glog.Errorf("DeleteSnapshot - error while deleting snapshot %v: Error: %v", snapIdMembers.SnapName, snaperr)
-					return nil, snaperr		
+					return nil, snaperr
 				}
 				if delSnap {
 					filesetName = snapIdMembers.ConsistencyGroup
