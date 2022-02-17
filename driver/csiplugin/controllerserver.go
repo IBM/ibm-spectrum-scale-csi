@@ -750,7 +750,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			}
 		}
 
-		if err := scaleVol.Connector.GetTierInfoFromName(scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
+		if err := scaleVol.Connector.DoesTierExist(scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
 			return nil, err
 		}
 
@@ -772,13 +772,16 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		// then all files that do not match our rules will have no defined place to go. This sets a default rule with
 		// "lower" priority than the main policy as a catch all. If there is already a default rule in the main policy
 		// file then that will take precedence
-		// TODO: get pool info and find first non-system data pool and use that if possible, otherwise system
 		defaultPartitionName := "csi-defaultRule"
 		if !scaleVol.Connector.CheckIfDefaultPolicyPartitionExists(defaultPartitionName, scaleVol.VolBackendFs) {
 			glog.Infof("createvolume: setting default policy partition rule")
 
+			dataTierName, err := scaleVol.Connector.GetFirstDataTier(scaleVol.VolBackendFs)
+			if err != nil {
+				return nil, status.Error(codes.Unavailable, fmt.Sprintf("tier info request could not be completed: filesystemName %s", scaleVol.VolBackendFs))
+			}
 			defaultPolicy := connectors.Policy{}
-			defaultPolicy.Policy = "RULE 'csi-defaultRule' SET POOL 'system'"
+			defaultPolicy.Policy = fmt.Sprintf("RULE 'csi-defaultRule' SET POOL '%s'", dataTierName)
 			defaultPolicy.Priority = 5
 			defaultPolicy.Partition = defaultPartitionName
 			err = scaleVol.Connector.SetFilesystemPolicy(&defaultPolicy, scaleVol.VolBackendFs)

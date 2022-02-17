@@ -665,6 +665,23 @@ type Policy struct {
 	Priority  int    `json:"priority,omitempty"`
 }
 
+type StorageTiers struct {
+	StorageTiers []StorageTier `json:"storagePool,omitempty"`
+	Status       Status        `json:"status,omitempty"`
+	Paging       Pages         `json:"paging,omitempty"`
+}
+
+type StorageTier struct {
+	FilesystemName  string `json:"filesystemName"`
+	StorageTierName string `json:"storagePoolName"`
+	TotalDataInKB   int64  `json:"totalDataInKB,omitempty"`
+	FreeDataInKB    int64  `json:"freeDataInKB,omitempty"`
+	TotalMetaInKB   int64  `json:"totalMetaInKB,omitempty"`
+	FreeMetaInKB    int64  `json:"freeMetaInKB,omitempty"`
+	Status          Status `json:"status,omitempty"`
+	Paging          Pages  `json:"paging,omitempty"`
+}
+
 const (
 	UserSpecifiedUID string = "uid"
 	UserSpecifiedGID string = "gid"
