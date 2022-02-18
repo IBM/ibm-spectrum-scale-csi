@@ -4,5 +4,5 @@ metadata:
   name: ibm-spectrum-scale-snapshotclass-advance
 driver: spectrumscale.csi.ibm.com
 parameters:
-  snapWindow: "60"  #Time in minute
+  snapWindow: "60"  #Optional : Time in minutes (default=30)
 deletionPolicy: Delete
