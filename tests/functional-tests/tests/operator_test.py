@@ -5,7 +5,8 @@ import logging
 import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.base_class as baseclass
+import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = pytest.mark.csioperator
 
@@ -13,41 +14,41 @@ pytestmark = pytest.mark.csioperator
 def _values(request):
 
     global kubeconfig_value, clusterconfig_value, namespace_value
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, _, operator_yaml = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, _, operator_yaml = inputfunc.get_cmd_values(request)
     namespace_value = operator_namespace
-    condition = scaleop.check_ns_exists(kubeconfig_value, namespace_value)
-    operator = scaleop.Scaleoperator(kubeconfig_value, namespace_value, operator_yaml)
-    read_file = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    scaleop.filesetfunc.cred_check(read_file)
-    fileset_exist = scaleop.filesetfunc.fileset_exists(read_file)
+    condition = baseclass.kubeobjectfunc.check_ns_exists(kubeconfig_value, namespace_value)
+    operator = baseclass.Scaleoperator(kubeconfig_value, namespace_value, operator_yaml)
+    read_file = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    baseclass.filesetfunc.cred_check(read_file)
+    fileset_exist = baseclass.filesetfunc.fileset_exists(read_file)
     operator.create()
     operator.check()
-    scaleop.check_nodes_available(
+    baseclass.kubeobjectfunc.check_nodes_available(
         read_file["pluginNodeSelector"], "pluginNodeSelector")
-    scaleop.check_nodes_available(
+    baseclass.kubeobjectfunc.check_nodes_available(
         read_file["provisionerNodeSelector"], "provisionerNodeSelector")
-    scaleop.check_nodes_available(
+    baseclass.kubeobjectfunc.check_nodes_available(
         read_file["attacherNodeSelector"], "attacherNodeSelector")
 
     yield
     operator.delete(condition)
-    if(not(fileset_exist) and scaleop.filesetfunc.fileset_exists(read_file)):
-        scaleop.filesetfunc.delete_fileset(read_file)
+    if(not(fileset_exist) and baseclass.filesetfunc.fileset_exists(read_file)):
+        baseclass.filesetfunc.delete_fileset(read_file)
 
 
 def test_get_version(_values):
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    scaleop.filesetfunc.get_scale_version(test)
-    scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.csioperatorfunc.get_operator_image()
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    baseclass.filesetfunc.get_scale_version(test)
+    baseclass.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
+    baseclass.kubeobjectfunc.get_operator_image()
 
 
 def test_operator_deploy(_values):
 
     LOGGER.info("test_operator_deploy")
     LOGGER.info("Every input is correct should run without any error")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -71,14 +72,14 @@ def test_operator_deploy(_values):
 
 def test_wrong_cluster_id(_values):
     LOGGER.info("test_wrong_cluster_id : cluster ID is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     wrong_id = str(random.randint(0, 999999999999999999))
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
             cluster["id"] = wrong_id
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
@@ -106,14 +107,14 @@ def test_wrong_cluster_id(_values):
 
 def test_wrong_primaryFS(_values):
     LOGGER.info("test_wrong_primaryFS : primaryFS is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_primaryFs = scaleop.csiobjectfunc.randomStringDigits()
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    wrong_primaryFs = inputfunc.randomStringDigits()
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
             cluster["primary"]["primaryFs"] = wrong_primaryFs
     test["primaryFs"] = wrong_primaryFs
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
@@ -141,14 +142,14 @@ def test_wrong_primaryFS(_values):
 
 def test_wrong_guihost(_values):
     LOGGER.info("test_wrong_guihost : gui host is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_guiHost = scaleop.csiobjectfunc.randomStringDigits()
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    wrong_guiHost = inputfunc.randomStringDigits()
     test["guiHost"] = wrong_guiHost
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
             cluster["restApi"][0]["guiHost"] = wrong_guiHost
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
@@ -178,9 +179,9 @@ def test_wrong_guihost(_values):
 
 def test_wrong_gui_username(_values):
     LOGGER.info("test_wrong_gui_username : gui username is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["username"] = scaleop.csiobjectfunc.randomStringDigits()
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    test["username"] = inputfunc.randomStringDigits()
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
@@ -206,9 +207,9 @@ def test_wrong_gui_username(_values):
 
 def test_wrong_gui_password(_values):
     LOGGER.info("test_wrong_gui_password : gui password is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    test["password"] = scaleop.csiobjectfunc.randomStringDigits()
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    test["password"] = inputfunc.randomStringDigits()
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     operator_object.check()
     LOGGER.info("Checkig if failure reason matches")
@@ -243,29 +244,29 @@ def test_wrong_gui_password(_values):
 
 def test_wrong_secret_object_name(_values):
     LOGGER.info("test_wrong_secret_object_name : secret object name is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    secret_name_wrong = scaleop.csiobjectfunc.randomString()
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    secret_name_wrong = inputfunc.randomString()
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
             cluster["secrets"] = secret_name_wrong
 
     test["stateful_set_not_created"] = True
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     operator_object.delete()
 
 
 def test_random_gpfs_primaryFset_name(_values):
     LOGGER.info("test_random_gpfs_primaryFset_name : gpfs primary Fset name is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    random_primaryFset = scaleop.csiobjectfunc.randomStringDigits()
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    random_primaryFset = inputfunc.randomStringDigits()
     test["primaryFset"] = random_primaryFset
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
             cluster["primary"]["primaryFset"] = random_primaryFset
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -280,25 +281,25 @@ def test_random_gpfs_primaryFset_name(_values):
             LOGGER.error(
                 "operator custom object should be deployed but it is not deployed hence asserting")
             operator_object.delete()
-            if(scaleop.filesetfunc.fileset_exists(test)):
-                scaleop.filesetfunc.delete_fileset(test)
+            if(baseclass.filesetfunc.fileset_exists(test)):
+                baseclass.filesetfunc.delete_fileset(test)
             assert False
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
             operator_object.delete()
-            if(scaleop.filesetfunc.fileset_exists(test)):
-                scaleop.filesetfunc.delete_fileset(test)
+            if(baseclass.filesetfunc.fileset_exists(test)):
+                baseclass.filesetfunc.delete_fileset(test)
             assert False
-    if(scaleop.filesetfunc.fileset_exists(test)):
-        scaleop.filesetfunc.delete_fileset(test)
+    if(baseclass.filesetfunc.fileset_exists(test)):
+        baseclass.filesetfunc.delete_fileset(test)
     operator_object.delete()
 
 
 def test_secureSslMode(_values):
     LOGGER.info("test_secureSslMode")
     LOGGER.info("secureSslMode is True while cacert is not available")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
 
     for cluster in test["custom_object_body"]["spec"]["clusters"]:
         if "primary" in cluster.keys():
@@ -306,7 +307,7 @@ def test_secureSslMode(_values):
             if "cacert" in cluster.keys():
                 cluster.pop("cacert")
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
@@ -333,8 +334,8 @@ def test_secureSslMode(_values):
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
             assert False
-    if(scaleop.filesetfunc.fileset_exists(test)):
-        scaleop.filesetfunc.delete_fileset(test)
+    if(baseclass.filesetfunc.fileset_exists(test)):
+        baseclass.filesetfunc.delete_fileset(test)
     operator_object.delete()
 
 
@@ -343,10 +344,10 @@ Removing this testcase as scaleHostpath is no longer needed
 def test_wrong_gpfs_filesystem_mount_point(_values):
     LOGGER.info("test_wrong_gpfs_filesystem_mount_point")
     LOGGER.info("gpfs filesystem mount point is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    wrong_scaleHostpath = scaleop.csiobjectfunc.randomStringDigits()
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    wrong_scaleHostpath = inputfunc.randomStringDigits()
     test["custom_object_body"]["spec"]["scaleHostpath"] = wrong_scaleHostpath
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
 
     if operator_object.check() is True:
@@ -379,11 +380,11 @@ def test_wrong_gpfs_filesystem_mount_point(_values):
 def test_unlinked_primaryFset(_values):
     LOGGER.info("test_unlinked_primaryFset")
     LOGGER.info("unlinked primaryFset expected : object created successfully")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    if(not(scaleop.filesetfunc.fileset_exists(test))):
-        scaleop.filesetfunc.create_fileset(test)
-    scaleop.filesetfunc.unlink_fileset(test)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    if(not(baseclass.filesetfunc.fileset_exists(test))):
+        baseclass.filesetfunc.create_fileset(test)
+    baseclass.filesetfunc.unlink_fileset(test)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -411,10 +412,10 @@ def test_existing_primaryFset(_values):
     LOGGER.info("test_existing_primaryFset")
     LOGGER.info(
         "linked existing primaryFset expected : object created successfully")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    if(not(scaleop.filesetfunc.fileset_exists(test))):
-        scaleop.filesetfunc.create_fileset(test)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    if(not(baseclass.filesetfunc.fileset_exists(test))):
+        baseclass.filesetfunc.create_fileset(test)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -441,15 +442,15 @@ def test_unmounted_primaryFS(_values):
     LOGGER.info("test_unmounted_primaryFS")
     LOGGER.info(
         "primaryFS is unmounted and expected : custom object should give error")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    scaleop.filesetfunc.unmount_fs(test)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    baseclass.filesetfunc.unmount_fs(test)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(
             "Operator custom object is deployed successfully, it is not expected")
         operator_object.delete()
-        scaleop.filesetfunc.mount_fs(test)
+        baseclass.filesetfunc.mount_fs(test)
         assert False
     else:
         get_logs_api_instance = client.CoreV1Api()
@@ -465,29 +466,29 @@ def test_unmounted_primaryFS(_values):
                 LOGGER.error(str(get_logs_api_response))
             LOGGER.debug(search_result)
             operator_object.delete()
-            scaleop.filesetfunc.mount_fs(test)
+            baseclass.filesetfunc.mount_fs(test)
             assert search_result is not None
             LOGGER.info("'not mounted on GUI node Primary cluster' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
-            scaleop.filesetfunc.mount_fs(test)
+            baseclass.filesetfunc.mount_fs(test)
             assert False
     operator_object.delete()
-    scaleop.filesetfunc.mount_fs(test)
+    baseclass.filesetfunc.mount_fs(test)
 
 
 def test_non_deafult_attacher(_values):
     LOGGER.info("test_non_deafult_attacher")
     LOGGER.info("attacher image name is changed")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     deployment_attacher_image = "quay.io/k8scsi/csi-attacher:v1.2.1"
     test["custom_object_body"]["spec"]["attacher"] = deployment_attacher_image
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
+        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -511,14 +512,14 @@ def test_non_deafult_attacher(_values):
 def test_non_deafult_provisioner(_values):
     LOGGER.info("test_non_deafult_provisioner")
     LOGGER.info("provisioner image name is changed")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     deployment_provisioner_image = "quay.io/k8scsi/csi-provisioner:v1.6.0"
     test["custom_object_body"]["spec"]["provisioner"] = deployment_provisioner_image
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
+        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -542,7 +543,7 @@ def test_non_deafult_provisioner(_values):
 def test_correct_cacert(_values):
     LOGGER.info("test_secureSslMode with correct cacert file")
     LOGGER.info("correct cacert file is given")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
 
     if not("local_cacert_name" in test):
         test["local_cacert_name"] = "test-cacert-configmap"
@@ -553,7 +554,7 @@ def test_correct_cacert(_values):
             if not("cacert" in cluster.keys()):
                 cluster["cacert"] = "test-cacert-configmap"
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     if test["cacert_path"] == "":
         LOGGER.info("skipping the test as cacert file path is not given in test.config")
         pytest.skip("path of cacert file is not given")
@@ -584,7 +585,7 @@ def test_correct_cacert(_values):
 def test_cacert_with_secureSslMode_false(_values):
     LOGGER.info("test_cacert_with_secureSslMode_false")
     LOGGER.info("secureSslMode is false with correct cacert file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
 
     if not("local_cacert_name" in test):
         test["local_cacert_name"] = "test-cacert-configmap"
@@ -595,7 +596,7 @@ def test_cacert_with_secureSslMode_false(_values):
             if not("cacert" in cluster.keys()):
                 cluster["cacert"] = "test-cacert-configmap"
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     if test["cacert_path"] == "":
         LOGGER.info("skipping the test as cacert file path is not given in test.config")
         pytest.skip("path of cacert file is not given")
@@ -626,7 +627,7 @@ def test_cacert_with_secureSslMode_false(_values):
 def test_wrong_cacert(_values):
     LOGGER.info("secureSslMode true with wrong cacert file")
     LOGGER.info("test_wrong_cacert")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
 
     if not("local_cacert_name" in test):
         test["local_cacert_name"] = "test-cacert-configmap"
@@ -638,7 +639,7 @@ def test_wrong_cacert(_values):
                 cluster["cacert"] = "test-cacert-configmap"
 
     test["make_cacert_wrong"] = True
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     if test["cacert_path"] == "":
         LOGGER.info("skipping the test as cacert file path is not given in test.config")
         pytest.skip("path of cacert file is not given")
@@ -680,9 +681,9 @@ def test_wrong_cacert(_values):
 def test_nodeMapping(_values):
     LOGGER.info("test_nodeMapping")
     LOGGER.info("nodeMapping is added to the cr file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     LOGGER.debug(test)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
 
     if "nodeMapping" not in test['custom_object_body']['spec']:
         LOGGER.info("skipping the test as nodeMapping is not given in cr.yaml file")
@@ -714,8 +715,8 @@ def test_nodeMapping(_values):
 def test_attacherNodeSelector(_values):
     LOGGER.info("test_attacherNodeSelector")
     LOGGER.info("attacherNodeSelector is added to the cr file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -750,8 +751,8 @@ def test_attacherNodeSelector(_values):
 def test_provisionerNodeSelector(_values):
     LOGGER.info("test_provisionerNodeSelector")
     LOGGER.info("provisionerNodeSelector is added to the cr file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -786,8 +787,8 @@ def test_provisionerNodeSelector(_values):
 def test_pluginNodeSelector(_values):
     LOGGER.info("test_pluginNodeSelector")
     LOGGER.info("pluginNodeSelector is added to the cr file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -822,14 +823,14 @@ def test_pluginNodeSelector(_values):
 def test_non_deafult_snapshotter(_values):
     LOGGER.info("test_non_deafult_snapshotter")
     LOGGER.info("snapshotter image name is changed")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     deployment_snapshotter_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1"
     test["custom_object_body"]["spec"]["snapshotter"] = deployment_snapshotter_image
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
+        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -853,15 +854,15 @@ def test_non_deafult_snapshotter(_values):
 def test_non_deafult_livenessprobe(_values):
     LOGGER.info("test_non_deafult_livenessprobe")
     LOGGER.info("livenessprobe image name is changed")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     deployment_livenessprobe_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
     test["custom_object_body"]["spec"]["livenessprobe"] = deployment_livenessprobe_image
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
         daemonset_pod_name = operator_object.get_driver_ds_pod_name()
-        scaleop.csiobjectfunc.check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
+        baseclass.kubeobjectfunc.check_pod_image(daemonset_pod_name, deployment_livenessprobe_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -885,14 +886,14 @@ def test_non_deafult_livenessprobe(_values):
 def test_non_deafult_resizer(_values):
     LOGGER.info("test_non_deafult_resizer")
     LOGGER.info("resizer image name is changed")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
     deployment_resizer_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
     test["custom_object_body"]["spec"]["resizer"] = deployment_resizer_image
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        scaleop.csiobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
+        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -916,8 +917,8 @@ def test_non_deafult_resizer(_values):
 def test_snapshotterNodeSelector(_values):
     LOGGER.info("test_snapshotterNodeSelector")
     LOGGER.info("snapshotterNodeSelector is added to the cr file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -952,8 +953,8 @@ def test_snapshotterNodeSelector(_values):
 def test_resizerNodeSelector(_values):
     LOGGER.info("test_resizerNodeSelector")
     LOGGER.info("resizerNodeSelector is added to the cr file")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
@@ -987,11 +988,11 @@ def test_resizerNodeSelector(_values):
 
 def test_wrong_kubeletRootDirPath(_values):
     LOGGER.info("test_wrong_kubeletRootDirPath : kubeletRootDirPath is wrong")
-    test = scaleop.read_operator_data(clusterconfig_value, namespace_value)
+    test = inputfunc.read_operator_data(clusterconfig_value, namespace_value)
 
-    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{scaleop.csiobjectfunc.randomString()}/{scaleop.csiobjectfunc.randomString()}"
+    test["custom_object_body"]["spec"]["kubeletRootDirPath"] = f"/{inputfunc.randomString()}/{inputfunc.randomString()}"
 
-    operator_object = scaleop.Scaleoperatorobject(test, kubeconfig_value)
+    operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.error(

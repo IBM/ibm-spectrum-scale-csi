@@ -1,24 +1,25 @@
 import logging
 import copy
 import pytest
-import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.base_class as baseclass
+import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster]
 
 @pytest.fixture(scope='session', autouse=True)
 def values(request, check_csi_operator):
     global data, remote_data, driver_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
+    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not("remote" in data):
         LOGGER.error("remote data is not provided in cr file")
         assert False
 
-    remote_data = scaleop.get_remote_data(data)
-    scaleop.filesetfunc.cred_check(remote_data)
-    scaleop.filesetfunc.set_data(remote_data)
+    remote_data = inputfunc.get_remote_data(data)
+    baseclass.filesetfunc.cred_check(remote_data)
+    baseclass.filesetfunc.set_data(remote_data)
 
     if runslow_val:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -34,9 +35,9 @@ def values(request, check_csi_operator):
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
 
-    driver_object = scaleop.Driver(kubeconfig_value, value_pvc, value_pod,
+    driver_object = baseclass.Driver(kubeconfig_value, value_pvc, value_pod,
                                    remote_data["id"], test_namespace, keep_objects, data["image_name"], data["pluginNodeSelector"])
-    scaleop.filesetfunc.create_dir(remote_data["volDirBasePath"])
+    baseclass.filesetfunc.create_dir(remote_data["volDirBasePath"])
 
 
 #: Testcase that are expected to pass:
@@ -44,13 +45,13 @@ def values(request, check_csi_operator):
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
     LOGGER.info("-----------------------")
-    scaleop.filesetfunc.get_scale_version(remote_data)
+    baseclass.filesetfunc.get_scale_version(remote_data)
     LOGGER.info("Local Cluster Details:")
     LOGGER.info("-----------------------")
-    scaleop.filesetfunc.get_scale_version(data)
-    scaleop.get_kubernetes_version(kubeconfig_value)
-    scaleop.csioperatorfunc.get_operator_image()
-    scaleop.csiobjectfunc.get_driver_image()
+    baseclass.filesetfunc.get_scale_version(data)
+    baseclass.kubeobjectfunc.get_kubernetes_version(kubeconfig_value)
+    baseclass.kubeobjectfunc.get_operator_image()
+    baseclass.kubeobjectfunc.get_driver_image()
 
 
 @pytest.mark.regression
@@ -3046,7 +3047,7 @@ def test_driver_tier_pass_2():
 
 
 def test_driver_tier_fail_1():
-    value_sc = {"volBackendFs": data["remoteFs"], "tier": "wrongtier", "reason":"400 Invalid value in 'storagePool'"}
+    value_sc = {"volBackendFs": data["remoteFs"], "tier": "wrongtier", "reason":"invalid tier 'wrongtier' specified for filesystem"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
