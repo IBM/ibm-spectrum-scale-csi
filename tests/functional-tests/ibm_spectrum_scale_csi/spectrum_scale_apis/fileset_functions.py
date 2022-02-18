@@ -37,7 +37,8 @@ def delete_fileset(test_data):
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/'
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
-    search_format = '"'+test_data["primaryFset"]+'",'
+    search_format = f'"{test_data["primaryFset"]}",'
+
     search_result = re.search(search_format, str(response.text))
     LOGGER.debug(search_result)
     if search_result is None:
@@ -96,7 +97,8 @@ def fileset_exists(test_data):
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
-    search_format = '"'+test_data["primaryFset"]+'",'
+    search_format = f'"{test_data["primaryFset"]}",'
+
     search_result = re.search(search_format, str(response.text))
     if search_result is None:
         return False
@@ -177,9 +179,8 @@ def create_fileset(test_data):
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{"filesetName":"'+test_data["primaryFset"]+'","path":"' + \
-        scalehostpath+'/'+test_data["primaryFset"]+'"}'
-
+    data = f'{{"filesetName":"{test_data["primaryFset"]}","path":"{scalehostpath}/{test_data["primaryFset"]}"}}'
+   
     response = requests.post(create_fileset_link, headers=headers,
                              data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -208,7 +209,7 @@ def unmount_fs(test_data):
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{"nodes":["'+test_data["guiHost"]+'"],"force": false}'
+    data = f'{{"nodes":["{test_data["guiHost"]}"],"force": false}}'
     response = requests.put(unmount_link, headers=headers,
                             data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -247,7 +248,7 @@ def mount_fs(test_data):
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{"nodes":["'+test_data["guiHost"]+'"]}'
+    data = f'{{"nodes":["{test_data["guiHost"]}"]}}'
     response = requests.put(mount_link, headers=headers,
                             data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -380,7 +381,7 @@ def created_fileset_exists(volume_name):
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    search_format = '"'+volume_name+'",'
+    search_format = f'"{volume_name}",'
     search_result = re.search(search_format, str(response.text))
     if search_result is None:
         return False
@@ -408,8 +409,7 @@ def create_dir(dir_name):
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{ "user":"' + test["uid_name"]+'", "uid":'+test["uid_number"] + \
-        ', "group":"'+test["gid_name"]+'", "gid":' + test["gid_number"]+' }'
+    data = f'{{ "user":"{test["uid_name"]}", "uid":{test["uid_number"]}, "group":"{test["gid_name"]}", "gid":{test["gid_number"]} }}'
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -583,7 +583,7 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
         'accept': 'application/json',
     }
 
-    data = '{ "snapshotName": "'+snapshot_name+'" }'
+    data= f'{{ "snapshotName": "{snapshot_name}" }}'
     snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
     response = requests.post(snap_link, headers=headers, data=data, verify=False,
                              auth=(test["username"], test["password"]))
