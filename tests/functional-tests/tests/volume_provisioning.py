@@ -3046,7 +3046,7 @@ def test_driver_tier_pass_2():
 
 
 def test_driver_tier_fail_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": "wrongtier", "reason":"400 Invalid value in 'storagePool'"}
+    value_sc = {"volBackendFs": data["primaryFs"], "tier": "wrongtier", "reason":"invalid tier 'wrongtier' specified for filesystem"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
