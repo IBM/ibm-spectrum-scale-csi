@@ -539,7 +539,7 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	attacher := s.ensureContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m"},
+		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--default-fstype=gpfs"},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
