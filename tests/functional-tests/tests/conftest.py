@@ -2,7 +2,9 @@ from datetime import datetime
 import pytest
 from py.xml import html
 import logging
-import ibm_spectrum_scale_csi.scale_operator as scaleop
+import ibm_spectrum_scale_csi.base_class as baseclass
+import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
+
 LOGGER = logging.getLogger()
 
 def pytest_addoption(parser):
@@ -51,19 +53,19 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope='session')
 def check_csi_operator(request):
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = scaleop.get_cmd_values(request)
+    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
 
-    data = scaleop.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
-    operator_data = scaleop.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
+    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
+    operator_data = inputfunc.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
 
-    scaleop.filesetfunc.cred_check(data)
-    scaleop.filesetfunc.set_data(data)
-    operator = scaleop.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
-    operator_object = scaleop.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = scaleop.check_ns_exists(kubeconfig_value, operator_namespace)
+    baseclass.filesetfunc.cred_check(data)
+    baseclass.filesetfunc.set_data(data)
+    operator = baseclass.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
+    operator_object = baseclass.Scaleoperatorobject(operator_data, kubeconfig_value)
+    condition = baseclass.kubeobjectfunc.check_ns_exists(kubeconfig_value, operator_namespace)
     if condition is True:
         if not(operator_object.check(data["csiscaleoperator_name"])):
             LOGGER.error("Operator custom object is not deployed succesfully")
@@ -71,10 +73,10 @@ def check_csi_operator(request):
     else:
         operator.create()
         operator.check()
-        scaleop.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
-        scaleop.check_nodes_available(
+        baseclass.kubeobjectfunc.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
+        baseclass.kubeobjectfunc.check_nodes_available(
             operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
-        scaleop.check_nodes_available(
+        baseclass.kubeobjectfunc.check_nodes_available(
             operator_data["attacherNodeSelector"], "attacherNodeSelector")
         operator_object.create()
         val = operator_object.check()
@@ -84,7 +86,7 @@ def check_csi_operator(request):
             LOGGER.error("Operator custom object is not deployed succesfully")
             assert False
 
-    scaleop.filesetfunc.create_dir(data["volDirBasePath"])
+    baseclass.filesetfunc.create_dir(data["volDirBasePath"])
 
     # driver_object.create_test_ns(kubeconfig_value)
     yield
@@ -93,5 +95,5 @@ def check_csi_operator(request):
     if condition is False and not(keep_objects):
         operator_object.delete()
         operator.delete()
-        if(scaleop.filesetfunc.fileset_exists(data)):
-            scaleop.filesetfunc.delete_fileset(data)
+        if(baseclass.filesetfunc.fileset_exists(data)):
+            baseclass.filesetfunc.delete_fileset(data)
