@@ -941,7 +941,12 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 		return err
 	}
 
-	targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
+	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isprimaryConnPresent {
+		glog.Errorf("unable to get connector for primary cluster")
+		return status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
+	}
+	targetFsDetails, err := primaryConn.GetFilesystemDetails(targetFsName)
 	if err != nil {
 		return err
 	}
@@ -1831,7 +1836,13 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, chkSnapshotErr
 	}
 
-	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
+	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isprimaryConnPresent {
+		glog.Errorf("CreateSnapshot - unable to get connector for primary cluster")
+		return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+	}
+
+	filesystemName, err := primaryConn.GetFilesystemName(volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
@@ -1859,11 +1870,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	relPath := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		glog.V(3).Infof("CreateSnapshot - creating snapshot for advanced storageClass")
-		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-		if !isprimaryConnPresent {
-			glog.Errorf("CreateSnapshot - unable to get connector for primary cluster")
-			return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
-		}
 		mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
