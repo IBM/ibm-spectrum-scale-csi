@@ -35,7 +35,11 @@ spec:
             nodeSelectorTerms:
               - matchExpressions:
                   - key: kubernetes.io/arch
-                    operator: Exists
+                    operator: In
+                    values:
+                    - amd64
+                    - ppc64le
+                    - s390x
       containers:
         - args: null
           env:
