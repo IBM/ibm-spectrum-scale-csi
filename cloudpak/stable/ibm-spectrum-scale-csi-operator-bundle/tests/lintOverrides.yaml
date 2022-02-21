@@ -91,3 +91,7 @@ overrides:
     reason: "Will fix soon in future release"
     reduceTo: WARNING
 
+  - rule: PodHasArchBasedNodeAffinity
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
