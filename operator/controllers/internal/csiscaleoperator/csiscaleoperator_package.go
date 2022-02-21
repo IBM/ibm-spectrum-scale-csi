@@ -22,6 +22,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	v1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
@@ -33,6 +34,7 @@ const (
 	securityOpenshiftApiGroup            string = "security.openshift.io"
 	storageApiGroup                      string = "storage.k8s.io"
 	rbacAuthorizationApiGroup            string = "rbac.authorization.k8s.io"
+	coordinationApiGroup                 string = "coordination.k8s.io"
 	podSecurityPolicyApiGroup            string = "extensions"
 	storageClassesResource               string = "storageclasses"
 	persistentVolumesResource            string = "persistentvolumes"
@@ -51,6 +53,7 @@ const (
 	namespacesResource                   string = "namespaces"
 	securityContextConstraintsResource   string = "securitycontextconstraints"
 	podSecurityPolicyResource            string = "podsecuritypolicies"
+	leaseResource                        string = "leases"
 	verbGet                              string = "get"
 	verbList                             string = "list"
 	verbWatch                            string = "watch"
@@ -292,6 +295,11 @@ func (c *CSIScaleOperator) GenerateAttacherClusterRole() *rbacv1.ClusterRole {
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{volumeAttachmentsStatusResource},
 				Verbs:     []string{verbPatch},
+			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
 		},
 	}
@@ -670,7 +678,7 @@ func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *se
 }
 
 // getNodeSelector converts the given nodeselector array into a map.
-func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
+func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 
 	nodeSelectors := make(map[string]string)
 
@@ -681,4 +689,90 @@ func (s *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 	}
 
 	return nodeSelectors
+}
+
+func (c *CSIScaleOperator) GetAttacherPodAntiAffinity() *corev1.PodAntiAffinity {
+
+	podAntiAffinity := corev1.PodAntiAffinity{
+		RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+			{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      config.LabelApp,
+							Operator: "In",
+							Values:   []string{config.GetNameForResource(config.CSIControllerAttacher, c.Name)},
+						},
+					},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			},
+		},
+	}
+
+	return &podAntiAffinity
+}
+
+// GetNodeTolerations returns an array of kubernetes object of type corev1.Tolerations
+func (c *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
+	tolerationsSeconds := config.TolerationsSeconds
+	tolerations := []corev1.Toleration{
+		{
+			Key:               "node.kubernetes.io/unreachable",
+			Operator:          "Exists",
+			Effect:            "NoExecute",
+			TolerationSeconds: &tolerationsSeconds,
+		},
+		{
+			Key:               "node.kubernetes.io/not-ready",
+			Operator:          "Exists",
+			Effect:            "NoExecute",
+			TolerationSeconds: &tolerationsSeconds,
+		},
+	}
+
+	return tolerations
+}
+
+func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
+	//tolerationsSeconds := config.TolerationsSeconds
+	probe := corev1.Probe{
+		FailureThreshold:    int32(1),
+		InitialDelaySeconds: int32(10),
+		TimeoutSeconds:      int32(10),
+		PeriodSeconds:       int32(20),
+		Handler:             c.GetHandler(),
+	}
+	return &probe
+}
+
+func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
+	ports := []corev1.ContainerPort{
+		{
+			ContainerPort: config.AttacherLeaderLivenessPort,
+			Name:          "http-endpoint",
+			Protocol:      c.GetProtocol(),
+		},
+	}
+	return ports
+}
+
+func (c *CSIScaleOperator) GetProtocol() corev1.Protocol {
+	var protocol corev1.Protocol = "TCP"
+	return protocol
+}
+
+func (c *CSIScaleOperator) GetHandler() corev1.Handler {
+	handler := corev1.Handler{
+		HTTPGet: c.GetHTTPGetAction(),
+	}
+	return handler
+}
+
+func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
+	action := corev1.HTTPGetAction{
+		Path: "/healthz/leader-election",
+		Port: intstr.FromString("http-endpoint"),
+	}
+	return &action
 }

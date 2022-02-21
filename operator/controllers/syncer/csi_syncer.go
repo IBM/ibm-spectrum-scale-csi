@@ -18,6 +18,7 @@ package syncer
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/imdario/mergo"
@@ -217,6 +218,8 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)))
 	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
+	replicas := config.ReplicaCount
+	out.Spec.Replicas = &replicas
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -424,6 +427,18 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 	}
+
+	if pod.Affinity != nil {
+		pod.Affinity.PodAntiAffinity = s.driver.GetAttacherPodAntiAffinity()
+	} else {
+		affinity := corev1.Affinity{
+			PodAntiAffinity: s.driver.GetAttacherPodAntiAffinity(),
+		}
+		pod.Affinity = &affinity
+	}
+
+	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
+
 	if len(secrets) != 0 {
 		pod.ImagePullSecrets = secrets
 	}
@@ -536,10 +551,10 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	logger := csiLog.WithName("ensureAttacherContainersSpec")
 	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
 
-	attacher := s.ensureContainer(attacherContainerName,
+	attacher := s.ensureAttacherContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m"},
+		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.AttacherLeaderLivenessPort)},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
@@ -691,6 +706,34 @@ func ensureNodeAffinity() *corev1.NodeAffinity {
 	}
 }
 */
+
+// ensureAttacherContainer generates k8s container object.
+func (s *csiControllerSyncer) ensureAttacherContainer(name, image string, args []string) corev1.Container {
+
+	logger := csiLog.WithName("ensureAttacherContainer")
+	logger.Info("Container information: ", "Name", name, "Image", image)
+
+	sc := &corev1.SecurityContext{
+		//		AllowPrivilegeEscalation: boolptr.False(),
+		Privileged: boolptr.True(),
+	}
+	fillSecurityContextCapabilities(sc)
+	container := corev1.Container{
+		Name:  name,
+		Image: image,
+		Args:  args,
+		//EnvFrom:         s.getEnvSourcesFor(name),
+		Env:           s.getEnvFor(name),
+		VolumeMounts:  s.getVolumeMountsFor(name),
+		Ports:         s.driver.GetContainerPort(),
+		LivenessProbe: s.driver.GetLivenessProbe(),
+	}
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if isOpenShift {
+		container.SecurityContext = sc
+	}
+	return container
+}
 
 // ensureContainer generates k8s container object.
 func (s *csiControllerSyncer) ensureContainer(name, image string, args []string) corev1.Container {
