@@ -31,8 +31,10 @@ import (
 )
 
 const (
-	dependentFileset   = "dependent"
-	independentFileset = "independent"
+	dependentFileset     = "dependent"
+	independentFileset   = "independent"
+	storageClassClassic  = "1"
+	storageClassAdvanced = "2"
 )
 
 type scaleVolume struct {
@@ -59,17 +61,24 @@ type scaleVolume struct {
 	FsetLinkPath       string                            `json:"fsetLinkPath"`
 	FsMountPoint       string                            `json:"fsMountPoint"`
 	NodeClass          string                            `json:"nodeClass"`
+	StorageClassType   string                            `json:"storageClassType"`
+	ConsistencyGroup   string                            `json:"consistencyGroup"`
+	Compression        string                            `json:"compression"`
+	Tier               string                            `json:"tier"`
 }
 
 type scaleVolId struct {
-	ClusterId      string
-	FsUUID         string
-	FsName         string
-	FsetId         string
-	FsetName       string
-	DirPath        string
-	SymLnkPath     string
-	IsFilesetBased bool
+	ClusterId        string
+	FsUUID           string
+	FsName           string
+	FsetId           string
+	FsetName         string
+	DirPath          string
+	Path             string
+	IsFilesetBased   bool
+	StorageClassType string
+	ConsistencyGroup string
+	VolType          string
 }
 
 type scaleSnapId struct {
@@ -77,8 +86,12 @@ type scaleSnapId struct {
 	FsUUID    string
 	FsetName  string
 	SnapName  string
+	MetaSnapName  string
 	Path      string
 	FsName    string
+	StorageClassType string
+	ConsistencyGroup string
+	VolType          string
 }
 
 //nolint
@@ -98,6 +111,19 @@ type scaleVolSnapId struct {
 	FsetId    string
 	SnapId    string
 } //nolint
+
+func IsValidCompressionAlgorithm(input string) bool {
+	switch strings.ToLower(input) {
+	case
+		"z",
+		"lz4",
+		"zfast",
+		"alphae",
+		"alphah":
+		return true
+	}
+	return false
+}
 
 func getRemoteFsName(remoteDeviceName string) string {
 	splitDevName := strings.Split(remoteDeviceName, ":")
@@ -119,6 +145,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
 	permissions, isPermissionsSpecified := volOptions[connectors.UserSpecifiedPermissions]
+	storageClassType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedStorageClassType]
+	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
+	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -126,6 +155,27 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	scaleVol.FilesetType = ""
 	scaleVol.ClusterId = ""
 	scaleVol.NodeClass = ""
+	scaleVol.ConsistencyGroup = ""
+	scaleVol.StorageClassType = ""
+	scaleVol.Compression = ""
+	scaleVol.Tier = ""
+
+	if isSCTypeSpecified && storageClassType == "" {
+		isSCTypeSpecified = false
+	}
+	isSCAdvanced := false
+	if isSCTypeSpecified {
+		if storageClassType != storageClassClassic && storageClassType != storageClassAdvanced {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
+				"\""+storageClassClassic+"\" or \""+storageClassAdvanced+"\"")
+		}
+		scaleVol.StorageClassType = storageClassType
+		if storageClassType == storageClassAdvanced {
+			isSCAdvanced = true
+		}
+	} else {
+		scaleVol.StorageClassType = storageClassClassic
+	}
 
 	if fsSpecified && volBckFs == "" {
 		fsSpecified = false
@@ -145,7 +195,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		volDirPathSpecified = false
 	}
 
-	if !fsTypeSpecified && !volDirPathSpecified {
+	if !fsTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
 		fsTypeSpecified = true
 		fsType = independentFileset
 	}
@@ -220,8 +270,38 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.VolDirBasePath = volDirPath
 		scaleVol.IsFilesetBased = false
 	}
-	if fsTypeSpecified {
+
+	if isSCAdvanced && fsTypeSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+storageClassAdvanced+" must not be specified together in storageClass")
+	}
+	if isSCAdvanced && isparentFilesetSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+storageClassAdvanced+" must not be specified together in storageClass")
+	}
+	if isSCAdvanced && volDirPathSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+storageClassAdvanced+" must not be specified together in storageClass")
+	}
+
+	if fsTypeSpecified || isSCAdvanced {
 		scaleVol.IsFilesetBased = true
+	}
+
+	if isCompressionSpecified && (compression == "" || compression == "false") {
+		isCompressionSpecified = false
+	}
+	if isTierSpecified && tier == "" {
+		isTierSpecified = false
+	}
+	if scaleVol.IsFilesetBased {
+		if isCompressionSpecified {
+			scaleVol.Compression = compression
+		}
+		if isTierSpecified {
+			scaleVol.Tier = tier
+		}
+	} else {
+		if isCompressionSpecified || isTierSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"compression\" and \"tier\" are not supported in storageClass for lightweight volumes")
+		}
 	}
 
 	/* Get UID/GID */
@@ -262,6 +342,30 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	if isNodeClassSpecified {
 		scaleVol.NodeClass = nodeClass
+	}
+
+	scaleVol.ConsistencyGroup = volOptions["csi.storage.k8s.io/pvc/namespace"]
+
+	if isCompressionSpecified {
+		// Default compression will be Z if set but not specified
+		if strings.ToLower(compression) == "true" {
+			glog.V(5).Infof("gpfs_util compression was set to true. Defaulting to Z")
+			compression = "z"
+		}
+
+		if !IsValidCompressionAlgorithm(compression) {
+			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
+				compression)
+			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
+				"invalid compression algorithm specified: %s", compression)
+		}
+		scaleVol.Compression = compression
+		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
+	}
+
+	if isTierSpecified && tier != "" {
+		scaleVol.Tier = tier
+		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
 	}
 
 	return scaleVol, nil
@@ -380,4 +484,76 @@ func numberInSlice(a int, list []int) bool {
 		}
 	}
 	return false
+}
+
+func getVolIDMembers(vID string) (scaleVolId, error) {
+	splitVid := strings.Split(vID, ";")
+	var vIdMem scaleVolId
+
+	if len(splitVid) == 3 {
+		/* This is LW volume */
+		/* <cluster_id>;<filesystem_uuid>;path=<symlink_path> */
+		vIdMem.ClusterId = splitVid[0]
+		vIdMem.FsUUID = splitVid[1]
+		SlnkPart := splitVid[2]
+		slnkSplit := strings.Split(SlnkPart, "=")
+		if len(slnkSplit) < 2 {
+			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+		}
+		vIdMem.Path = slnkSplit[1]
+		vIdMem.IsFilesetBased = false
+		return vIdMem, nil
+	}
+
+	if len(splitVid) == 4 {
+		/* This is fileset Based volume */
+		/* <cluster_id>;<filesystem_uuid>;fileset=<fileset_id>;path=<symlink_path> */
+		vIdMem.ClusterId = splitVid[0]
+		vIdMem.FsUUID = splitVid[1]
+		fileSetPart := splitVid[2]
+		fileSetSplit := strings.Split(fileSetPart, "=")
+		if len(fileSetSplit) < 2 {
+			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+		}
+
+		if fileSetSplit[0] == "filesetName" {
+			vIdMem.FsetName = fileSetSplit[1]
+		} else {
+			vIdMem.FsetId = fileSetSplit[1]
+		}
+
+		SlnkPart := splitVid[3]
+		slnkSplit := strings.Split(SlnkPart, "=")
+		if len(slnkSplit) < 2 {
+			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+		}
+		vIdMem.Path = slnkSplit[1]
+		vIdMem.IsFilesetBased = true
+		return vIdMem, nil
+	}
+
+	if len(splitVid) == 7 {
+		/* Volume ID created from 2.5.0 onwards  */
+		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path> */
+		vIdMem.StorageClassType = splitVid[0]
+		vIdMem.VolType = splitVid[1]
+		vIdMem.ClusterId = splitVid[2]
+		vIdMem.FsUUID = splitVid[3]
+		vIdMem.ConsistencyGroup = splitVid[4]
+		vIdMem.FsetName = splitVid[5]
+		if vIdMem.StorageClassType == STORAGECLASS_CLASSIC {
+			if vIdMem.VolType == FILE_DIRECTORYBASED_VOLUME {
+				vIdMem.IsFilesetBased = false
+			} else {
+				vIdMem.IsFilesetBased = true
+			}
+		} else {
+			vIdMem.IsFilesetBased = true
+		}
+		vIdMem.Path = splitVid[6]
+		return vIdMem, nil
+
+	}
+
+	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 }

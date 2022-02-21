@@ -43,6 +43,11 @@ import (
 
 const OCPControllerNamespace = "openshift-controller-manager"
 
+// gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
+var (
+	gitCommit string
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -95,6 +100,15 @@ func main() {
 	var enableLeaderElection bool
 	//	var probeAddr string
 
+	opts := zap.Options{
+		Development: true,
+	}
+	opts.BindFlags(flag.CommandLine)
+	flag.Parse()
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	setupLog.Info("Version Info", "commit", gitCommit)
+
 	watchNamespace, err := getWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
@@ -108,13 +122,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 	namespaces := []string{watchNamespace, OCPControllerNamespace}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,

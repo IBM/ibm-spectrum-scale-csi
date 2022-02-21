@@ -77,7 +77,7 @@ func (s *spectrumRestV2) waitForJobCompletion(statusCode int, jobID uint64) erro
 
 	if s.checkAsynchronousJob(statusCode) {
 		jobURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID))
-		err := s.AsyncJobCompletion(jobURL)
+		_, err := s.AsyncJobCompletion(jobURL)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,22 @@ func (s *spectrumRestV2) waitForJobCompletion(statusCode int, jobID uint64) erro
 	return nil
 }
 
-func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
+func (s *spectrumRestV2) waitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error) {
+	glog.V(4).Infof("rest_v2 waitForJobCompletionWithResp. jobID: %d, statusCode: %d", jobID, statusCode)
+
+	if s.checkAsynchronousJob(statusCode) {
+		response := GenericResponse{}
+		jobURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID))
+		response, err := s.AsyncJobCompletion(jobURL)
+		if err != nil {
+			return GenericResponse{}, err
+		}
+		return response, nil
+	}
+	return GenericResponse{}, nil
+}
+
+func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) (GenericResponse, error) {
 	glog.V(4).Infof("rest_v2 AsyncJobCompletion. jobURL: %s", jobURL)
 
 	jobQueryResponse := GenericResponse{}
@@ -93,10 +108,10 @@ func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
 	for {
 		err := s.doHTTP(jobURL, "GET", &jobQueryResponse, nil)
 		if err != nil {
-			return err
+			return GenericResponse{}, err
 		}
 		if len(jobQueryResponse.Jobs) == 0 {
-			return fmt.Errorf("unable to get Job details for %s: %v", jobURL, jobQueryResponse)
+			return GenericResponse{}, fmt.Errorf("unable to get Job details for %s: %v", jobURL, jobQueryResponse)
 		}
 
 		if jobQueryResponse.Jobs[0].Status == "RUNNING" {
@@ -109,10 +124,10 @@ func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) error {
 		break
 	}
 	if jobQueryResponse.Jobs[0].Status == "COMPLETED" {
-		return nil
+		return jobQueryResponse, nil
 	} else {
 		glog.Errorf("Async Job failed: %v", jobQueryResponse)
-		return fmt.Errorf("%v", jobQueryResponse.Jobs[0].Result.Stderr)
+		return GenericResponse{}, fmt.Errorf("%v", jobQueryResponse.Jobs[0].Result.Stderr)
 	}
 }
 
@@ -135,10 +150,11 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		if ok := caCertPool.AppendCertsFromPEM(scaleConfig.CacertValue); !ok {
 			return &spectrumRestV2{}, fmt.Errorf("Parsing CA cert %v failed", scaleConfig.Cacert)
 		}
-		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool}}
+		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		glog.V(4).Infof("Created Spectrum Scale connector with SSL mode for %v", guiHost)
 	} else {
-		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec //InsecureSkipVerify was requested by user.
+		//#nosec G402 InsecureSkipVerify was requested by user.
+		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
 		glog.V(4).Infof("Created Spectrum Scale connector without SSL mode for %v", guiHost)
 	}
 
@@ -166,6 +182,21 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	}
 	cid_str := fmt.Sprintf("%v", getClusterResponse.Cluster.ClusterSummary.ClusterID)
 	return cid_str, nil
+}
+
+// GetClusterSummary function returns the information details of the cluster.
+func (s *spectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
+	glog.V(4).Infof("rest_v2 GetClusterSummary")
+
+	getClusterURL := utils.FormatURL(s.endpoint, "scalemgmt/v2/cluster")
+	getClusterResponse := GetClusterResponse{}
+
+	err := s.doHTTP(getClusterURL, "GET", &getClusterResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get cluster summary: %v", err)
+		return ClusterSummary{}, err
+	}
+	return getClusterResponse.Cluster.ClusterSummary, nil
 }
 
 func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
@@ -444,6 +475,20 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 	return nil
 }
 
+func (s *spectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	glog.V(4).Infof("rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
+
+	getLatestFilesetSnapshotsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/latest", filesystemName, filesetName))
+	getLatestFilesetSnapshotsResponse := GetSnapshotResponse_v2{}
+
+	err := s.doHTTP(getLatestFilesetSnapshotsURL, "GET", &getLatestFilesetSnapshotsResponse, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get latest list of snapshots for fileset [%v]. Error [%v]", filesetName, err)
+	}
+
+	return getLatestFilesetSnapshotsResponse.Snapshots, nil
+}
+
 func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
 	glog.V(4).Infof("rest_v2 UpdateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
 	filesetreq := CreateFilesetRequest{}
@@ -650,6 +695,21 @@ func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) 
 	}
 
 	return getFilesetResponse.Filesets[0], nil
+}
+
+func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
+	glog.V(4).Infof("rest_v2 ListAllFilesets. filesystem: %s", filesystemName)
+
+	getFilesetsURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.inodeSpace=%d", filesystemName, inodeSpace))
+	getFilesetsResponse := GetFilesetResponse_v2{}
+
+	err := s.doHTTP(getFilesetsURL, "GET", &getFilesetsResponse, nil)
+	if err != nil {
+		glog.Errorf("Error in list filesets request: %v", err)
+		return nil, err
+	}
+
+	return getFilesetsResponse.Filesets, nil
 }
 
 func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
@@ -1095,11 +1155,16 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) error {
-	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
+func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, safe bool) error {
+	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", filesystemName, dirName, safe)
 
 	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
-	deleteDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, NdirName))
+	deleteDirURL := ""
+	if safe {
+		deleteDirURL = utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s?safe=True", filesystemName, NdirName))
+	} else {
+		deleteDirURL = utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, NdirName))
+	}
 	deleteDirResponse := GenericResponse{}
 
 	err := s.doHTTP(deleteDirURL, "DELETE", &deleteDirResponse, nil)
@@ -1118,6 +1183,33 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string) 
 	}
 
 	return nil
+}
+
+func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (string, error) {
+	glog.V(4).Infof("rest_v2 StatDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
+
+	fmtDirName := strings.ReplaceAll(dirName, "/", "%2F")
+	statDirURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, fmtDirName))
+	statDirResponse := GenericResponse{}
+
+	err := s.doHTTP(statDirURL, "GET", &statDirResponse, nil)
+	if err != nil {
+		return "", fmt.Errorf("Unable to stat dir %v.", dirName)
+	}
+
+	err = s.isRequestAccepted(statDirResponse, statDirURL)
+	if err != nil {
+		return "", err
+	}
+
+	jobResp, err := s.waitForJobCompletionWithResp(statDirResponse.Status.Code, statDirResponse.Jobs[0].JobID)
+	if err != nil {
+		return "", fmt.Errorf("Unable to stat dir %v:%v", dirName, err)
+	}
+
+	statInfo := jobResp.Jobs[0].Result.Stdout[0]
+
+	return statInfo, nil
 }
 
 func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {
@@ -1332,4 +1424,99 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component strin
 	}
 
 	return true, nil
+}
+
+func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 setFilesystemPolicy for filesystem %s", filesystemName)
+
+	setPolicyURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName))
+	setPolicyResponse := GenericResponse{}
+
+	err := s.doHTTP(setPolicyURL, "PUT", &setPolicyResponse, policy)
+	if err != nil {
+		glog.Errorf("unable to send filesystem policy: %v", setPolicyResponse.Status.Message)
+		return err
+	}
+
+	err = s.waitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
+	if err != nil {
+		glog.Errorf("setting policy rule %s for filesystem %s failed with error %v", policy.Policy, filesystemName, err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *spectrumRestV2) DoesTierExist(tierName string, filesystemName string) error {
+	glog.V(4).Infof("rest_v2 DoesTierExist. name %s, filesystem %s", tierName, filesystemName)
+
+	_, err := s.GetTierInfoFromName(tierName, filesystemName)
+	if err != nil {
+		if strings.Contains(err.Error(), "Invalid value in 'storagePool'") {
+			return fmt.Errorf("invalid tier '%s' specified for filesystem %s", tierName, filesystemName)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error) {
+	glog.V(4).Infof("rest_v2 GetTierInfoFromName. name %s, filesystem %s", tierName, filesystemName)
+
+	tierUrl := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName))
+	getTierResponse := &StorageTiers{}
+
+	err := s.doHTTP(tierUrl, "GET", getTierResponse, nil)
+	if err != nil {
+		glog.Errorf("Unable to get tier: %s err: %v", tierName, err)
+		return nil, err
+	}
+
+	if len(getTierResponse.StorageTiers) > 0 {
+		return &getTierResponse.StorageTiers[0], nil
+	} else {
+		return nil, fmt.Errorf("unable to fetch storage tiers for %s", filesystemName)
+	}
+}
+
+func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
+	glog.V(4).Infof("rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
+
+	partitionURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName))
+	getPartitionResponse := GenericResponse{}
+
+	// If it does or doesn't exist and we get an error we will default to just setting it again as an override
+	err := s.doHTTP(partitionURL, "GET", &getPartitionResponse, nil)
+	return err == nil
+}
+
+func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetFirstDataTier. filesystem %s", filesystemName)
+
+	tiersURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools", filesystemName))
+	getTierResponse := &StorageTiers{}
+
+	err := s.doHTTP(tiersURL, "GET", getTierResponse, nil)
+	if err != nil {
+		return "", err
+	}
+
+	for _, tier := range getTierResponse.StorageTiers {
+		if tier.StorageTierName == "system" {
+			continue
+		}
+
+		tierInfo, err := s.GetTierInfoFromName(tier.StorageTierName, tier.FilesystemName)
+		if err != nil {
+			return "", err
+		}
+		if tierInfo.TotalDataInKB > 0 {
+			glog.V(2).Infof("GetFirstDataTier: Setting default tier to %s", tierInfo.StorageTierName)
+			return tierInfo.StorageTierName, nil
+		}
+	}
+
+	glog.V(2).Infof("GetFirstDataTier: Defaulting to system tier")
+	return "system", nil
 }

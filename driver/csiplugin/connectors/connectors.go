@@ -25,6 +25,7 @@ import (
 type SpectrumScaleConnector interface {
 	//Cluster operations
 	GetClusterId() (string, error)
+	GetClusterSummary() (ClusterSummary, error)
 	GetTimeZoneOffset() (string, error)
 	GetScaleVersion() (string, error)
 	//Filesystem operations
@@ -42,6 +43,7 @@ type SpectrumScaleConnector interface {
 	UnlinkFileset(filesystemName string, filesetName string) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(filesystemName string, filesetName string) (Fileset_v2, error)
+	GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error)
 	IsFilesetLinked(filesystemName string, filesetName string) (bool, error)
 	FilesetRefreshTask() error
 	//TODO modify quota from string to Capacity (see kubernetes)
@@ -59,20 +61,26 @@ type SpectrumScaleConnector interface {
 	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
 	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
 	GetFsUid(filesystemName string) (string, error)
-	DeleteDirectory(filesystemName string, dirName string) error
+	DeleteDirectory(filesystemName string, dirName string, safe bool) error
+	StatDirectory(filesystemName string, dirName string) (string, error)
 	GetFileSetUid(filesystemName string, filesetName string) (string, error)
 	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
 	DeleteSymLnk(filesystemName string, LnkName string) error
 	GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error)
 	GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error)
-
+	SetFilesystemPolicy(policy *Policy, filesystemName string) error
+	DoesTierExist(tierName string, filesystemName string) error
+	GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error)
+	GetFirstDataTier(filesystemName string) (string, error)
 	IsValidNodeclass(nodeclass string) (bool, error)
 	IsSnapshotSupported() (bool, error)
+	CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool
 
 	//Snapshot operations
 	WaitForJobCompletion(statusCode int, jobID uint64) error
 	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
+	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
@@ -84,18 +92,22 @@ type SpectrumScaleConnector interface {
 }
 
 const (
-	UserSpecifiedFilesetType    string = "filesetType"
-	UserSpecifiedFilesetTypeDep string = "fileset-type"
-	UserSpecifiedInodeLimit     string = "inodeLimit"
-	UserSpecifiedInodeLimitDep  string = "inode-limit"
-	UserSpecifiedUid            string = "uid"
-	UserSpecifiedGid            string = "gid"
-	UserSpecifiedClusterId      string = "clusterId"
-	UserSpecifiedParentFset     string = "parentFileset"
-	UserSpecifiedVolBackendFs   string = "volBackendFs"
-	UserSpecifiedVolDirPath     string = "volDirBasePath"
-	UserSpecifiedNodeClass      string = "nodeClass"
-	UserSpecifiedPermissions    string = "permissions"
+	UserSpecifiedFilesetType      string = "filesetType"
+	UserSpecifiedFilesetTypeDep   string = "fileset-type"
+	UserSpecifiedInodeLimit       string = "inodeLimit"
+	UserSpecifiedInodeLimitDep    string = "inode-limit"
+	UserSpecifiedUid              string = "uid"
+	UserSpecifiedGid              string = "gid"
+	UserSpecifiedClusterId        string = "clusterId"
+	UserSpecifiedParentFset       string = "parentFileset"
+	UserSpecifiedVolBackendFs     string = "volBackendFs"
+	UserSpecifiedVolDirPath       string = "volDirBasePath"
+	UserSpecifiedNodeClass        string = "nodeClass"
+	UserSpecifiedPermissions      string = "permissions"
+	UserSpecifiedStorageClassType string = "version"
+	UserSpecifiedCompression      string = "compression"
+	UserSpecifiedTier             string = "tier"
+	UserSpecifiedSnapWindow       string = "snapWindow"
 
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )

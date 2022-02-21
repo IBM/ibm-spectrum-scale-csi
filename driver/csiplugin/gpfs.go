@@ -21,6 +21,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
@@ -42,6 +43,16 @@ const (
 	VOLCOPY_JOB_RUNNING     = 5
 	VOLCOPY_JOB_COMPLETED   = 6
 	VOLCOPY_JOB_NOT_STARTED = 7
+
+	STORAGECLASS_CLASSIC  = "0"
+	STORAGECLASS_ADVANCED = "1"
+
+	// Volume types
+	FILE_DIRECTORYBASED_VOLUME     = "0"
+	FILE_DEPENDENTFILESET_VOLUME   = "1"
+	FILE_INDEPENDENTFILESET_VOLUME = "2"
+
+//	BLOCK_FILESET_VOLUME = 3
 )
 
 type SnapCopyJobDetails struct {
@@ -54,6 +65,30 @@ type VolCopyJobDetails struct {
 	volID     string
 }
 
+// ClusterDetails stores information of the cluster.
+type ClusterDetails struct {
+	// id of the Spectrum Scale cluster
+	id string
+	// name of the Spectrum Scale cluster
+	name string
+	// time when the object was last updated.
+	lastupdated time.Time
+	// expiry duration in hours.
+	expiryDuration float64
+}
+
+// ClusterName stores the name of the cluster.
+type ClusterName struct {
+	// name of the Spectrum Scale cluster
+	name string
+}
+
+// ClusterID stores the id of the cluster.
+type ClusterID struct {
+	// id of the Spectrum Scale cluster
+	id string
+}
+
 type ScaleDriver struct {
 	name          string
 	vendorVersion string
@@ -63,14 +98,16 @@ type ScaleDriver struct {
 	ns  *ScaleNodeServer
 	cs  *ScaleControllerServer
 
-	connmap              map[string]connectors.SpectrumScaleConnector
-	cmap                 settings.ScaleSettingsConfigMap
-	primary              settings.Primary
-	reqmap               map[string]int64
+	connmap map[string]connectors.SpectrumScaleConnector
+	cmap    settings.ScaleSettingsConfigMap
+	primary settings.Primary
+	reqmap  map[string]int64
 
-	snapjobstatusmap     sync.Map
-	volcopyjobstatusmap  sync.Map
+	snapjobstatusmap    sync.Map
+	volcopyjobstatusmap sync.Map
 
+	// clusterMap map stores the cluster name as key and cluster details as value.
+	clusterMap sync.Map
 
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
