@@ -1,11 +1,11 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-   name: ibm-spectrum-scale-csi-advance-tier
+   name: ibm-spectrum-scale-csi-advance-compress
 provisioner: spectrumscale.csi.ibm.com
 parameters:
+    version: "2"
     volBackendFs: "gpfs0"
-    type: "advanced"
-    tier: "system"
+    compression: "true"
 reclaimPolicy: Delete
 
