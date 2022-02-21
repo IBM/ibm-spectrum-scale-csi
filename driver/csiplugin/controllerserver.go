@@ -1847,7 +1847,13 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
+	}
+
 	filesetResp := connectors.Fileset_v2{}
+	filesystemName = getRemoteFsName(mountInfo.RemoteDeviceName)
 	if volumeIDMembers.FsetName != "" {
 		filesetResp, err = conn.GetFileSetResponseFromName(filesystemName, volumeIDMembers.FsetName)
 		if err != nil {
@@ -1870,10 +1876,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	relPath := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		glog.V(3).Infof("CreateSnapshot - creating snapshot for advanced storageClass")
-		mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
-		}
 		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		glog.V(3).Infof("CreateSnapshot - creating snapshot for classic storageClass")
