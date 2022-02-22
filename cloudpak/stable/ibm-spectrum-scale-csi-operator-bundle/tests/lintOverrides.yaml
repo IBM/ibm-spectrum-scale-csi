@@ -59,3 +59,39 @@ overrides:
     reason: "Not applicable to Spectrum Scale CSI Driver"
     reduceTo: WARNING
 
+  - rule: ContainerDefinesResources
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: NoHostPath
+    reason: "Hostpath is required for CSI driver's pod to communicate with driver socket dir, so not applicable to Spectrum Scale CSI Driver"
+    reduceTo: INFO
+
+  - rule: ContainerHasLivenessProbe
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: NoPodPrivilegeConflicts
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: NoPrivilegedContainers
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: EphemeralStorageLimitsAndRequestsDeclared
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: PodSecurityContextDefined
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: NoHostNetwork
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
+  - rule: PodHasArchBasedNodeAffinity
+    reason: "Will fix soon in future release"
+    reduceTo: WARNING
+
