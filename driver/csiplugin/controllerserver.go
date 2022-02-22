@@ -941,12 +941,7 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 		return err
 	}
 
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
-		glog.Errorf("unable to get connector for primary cluster")
-		return status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
-	}
-	targetFsDetails, err := primaryConn.GetFilesystemDetails(targetFsName)
+	targetFsDetails, err := conn.GetFilesystemDetails(targetFsName)
 	if err != nil {
 		return err
 	}
