@@ -37,7 +37,8 @@ spec:
                   - key: kubernetes.io/arch
                     operator: Exists
       containers:
-        - args: null
+        - args:
+          - --leader-elect=true
           env:
           - name: METRICS_BIND_ADDRESS
             value: "8383"

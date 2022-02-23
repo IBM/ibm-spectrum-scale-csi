@@ -34,7 +34,8 @@ spec:
       containers:
       - name: operator
         image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:9ead15139fe0a1e523d6c93fbed3e71b7f896631e59da18919dc5e18ac418e0f
-        args: null
+        args:
+        - --leader-elect=true
         env:
         - name: METRICS_BIND_ADDRESS
           value: "8383"
