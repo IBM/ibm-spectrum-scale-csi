@@ -123,6 +123,12 @@ rules:
   - get
   - update
 - resources:
+  - leases
+  apiGroups:
+  - coordination.k8s.io
+  verbs:
+  - '*'
+- resources:
   - '*'
   apiGroups:
   - csi.ibm.com

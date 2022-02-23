@@ -128,9 +128,10 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		//		HealthProbeBindAddress: probeAddr,
-		LeaderElection:   enableLeaderElection,
-		LeaderElectionID: "ibm-spectrum-scale-csi-operator",
-		NewCache:         cache.MultiNamespacedCacheBuilder(namespaces),
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        "ibm-spectrum-scale-csi-operator",
+		LeaderElectionNamespace: watchNamespace, // TODO: Flag should be set to select the namespace where operator is running. Needed for running operator locally.
+		NewCache:                cache.MultiNamespacedCacheBuilder(namespaces),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

@@ -13,8 +13,6 @@ metadata:
     productVersion: 2.5.0
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
@@ -124,6 +122,12 @@ rules:
   verbs:
   - get
   - update
+- resources:
+  - leases
+  apiGroups:
+  - coordination.k8s.io
+  verbs:
+  - '*'
 - resources:
   - '*'
   apiGroups:
