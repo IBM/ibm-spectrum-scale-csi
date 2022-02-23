@@ -35,7 +35,11 @@ spec:
             nodeSelectorTerms:
               - matchExpressions:
                   - key: kubernetes.io/arch
-                    operator: Exists
+                    operator: In
+                    values:
+                    - amd64
+                    - ppc64le
+                    - s390x
       containers:
         - args:
           - --leader-elect=true
@@ -47,8 +51,8 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: CSI_DRIVER_IMAGE
-            value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:d985f283c7f6cfcedbb0bd7519391292dfb917f6c2514c7930358f6020750bf7
-          image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:9ead15139fe0a1e523d6c93fbed3e71b7f896631e59da18919dc5e18ac418e0f
+            value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:aa636fa026a1bfbb7243062f849b8a91418b3bd58fe19a04883374f246c30434
+          image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:c0f55c830442d2eab2cf609257cf00cfc27593825ebb0758366ad021b942a29e
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:

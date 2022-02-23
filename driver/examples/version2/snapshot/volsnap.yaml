@@ -2,8 +2,7 @@ apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshot
 metadata:
   name: ibm-spectrum-scale-snapshot
-  namespace: default
 spec:
   volumeSnapshotClassName: ibm-spectrum-scale-snapshotclass-advance
   source:
-    persistentVolumeClaimName: ibm-spectrum-scale-pvc
+    persistentVolumeClaimName: scale-advance-pvc

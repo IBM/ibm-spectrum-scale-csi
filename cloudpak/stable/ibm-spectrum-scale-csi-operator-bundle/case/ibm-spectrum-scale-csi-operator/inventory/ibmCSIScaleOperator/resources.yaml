@@ -10,7 +10,7 @@ resources:
         name: ibm_spectrum_scale_csi_driver
       image: cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver
       tag: v2.5.0
-      digest: sha256:4d8c41138f2fddac351f82db19c32fe5ad1282e7886f78fe2669f0c30ea5badb
+      digest: sha256:aa636fa026a1bfbb7243062f849b8a91418b3bd58fe19a04883374f246c30434
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
