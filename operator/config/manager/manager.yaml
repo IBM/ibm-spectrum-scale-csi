@@ -42,7 +42,7 @@ spec:
                     - s390x
       containers:
         - args:
-          - --leader-elect=true
+          - --leaderElection=true
           env:
           - name: METRICS_BIND_ADDRESS
             value: "8383"
