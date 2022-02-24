@@ -1202,25 +1202,16 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		}
 	}
 
-	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, sId.FsetName)
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sId.FsetName))
-	}
-	if !isFsetLinked {
-		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", sId.FsetName))
-	}
-
 	filesetToCheck := sId.FsetName
 	if sId.StorageClassType == STORAGECLASS_ADVANCED {
-		// check if independent fileset is linked
 		filesetToCheck = sId.ConsistencyGroup
-		isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-		}
-		if !isFsetLinked {
-			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
-		}
+	}
+	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	}
+	if !isFsetLinked {
+		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
 	}
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
