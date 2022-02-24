@@ -100,6 +100,14 @@ func main() {
 	var enableLeaderElection bool
 	//	var probeAddr string
 
+	bindAddr := getMetricsBindAddress()
+
+	flag.StringVar(&metricsAddr, "metrics-bind-address", bindAddr, "The address the metric endpoint binds to.")
+	//	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&enableLeaderElection, "leaderElection", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -115,23 +123,16 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
-	bindAddr := getMetricsBindAddress()
-
-	flag.StringVar(&metricsAddr, "metrics-bind-address", bindAddr, "The address the metric endpoint binds to.")
-	//	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-
 	namespaces := []string{watchNamespace, OCPControllerNamespace}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		//		HealthProbeBindAddress: probeAddr,
-		LeaderElection:   enableLeaderElection,
-		LeaderElectionID: "ibm-spectrum-scale-csi-operator",
-		NewCache:         cache.MultiNamespacedCacheBuilder(namespaces),
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        "ibm-spectrum-scale-csi-operator",
+		LeaderElectionNamespace: watchNamespace, // TODO: Flag should be set to select the namespace where operator is running. Needed for running operator locally.
+		NewCache:                cache.MultiNamespacedCacheBuilder(namespaces),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
