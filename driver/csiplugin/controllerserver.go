@@ -1831,12 +1831,24 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, chkSnapshotErr
 	}
 
-	filesystemName, err := conn.GetFilesystemName(volumeIDMembers.FsUUID)
+	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isprimaryConnPresent {
+		glog.Errorf("CreateSnapshot - unable to get connector for primary cluster")
+		return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+	}
+
+	filesystemName, err := primaryConn.GetFilesystemName(volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
+	}
+
 	filesetResp := connectors.Fileset_v2{}
+	filesystemName = getRemoteFsName(mountInfo.RemoteDeviceName)
 	if volumeIDMembers.FsetName != "" {
 		filesetResp, err = conn.GetFileSetResponseFromName(filesystemName, volumeIDMembers.FsetName)
 		if err != nil {
@@ -1859,15 +1871,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	relPath := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		glog.V(3).Infof("CreateSnapshot - creating snapshot for advanced storageClass")
-		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-		if !isprimaryConnPresent {
-			glog.Errorf("CreateSnapshot - unable to get connector for primary cluster")
-			return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
-		}
-		mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
-		}
 		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		glog.V(3).Infof("CreateSnapshot - creating snapshot for classic storageClass")
