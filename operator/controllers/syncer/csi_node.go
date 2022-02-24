@@ -118,7 +118,6 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	if len(secrets) != 0 {
 		out.Spec.Template.Spec.ImagePullSecrets = secrets
 	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
