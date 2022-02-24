@@ -40,6 +40,12 @@ rules:
   - get
   - update
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
   - csi.ibm.com
   resources:
   - '*'
