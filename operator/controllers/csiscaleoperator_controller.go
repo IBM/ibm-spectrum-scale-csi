@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/google/uuid"
+	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/presslabs/controller-util/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -377,7 +379,19 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Synchronizing node/driver daemonset
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue)
+	CGPrefix := r.GetUUID(instance)
+
+	if instance.Spec.CGPrefix == "" {
+		instance.Spec.CGPrefix = CGPrefix
+		err := r.Client.Update(ctx, instance.Unwrap())
+		if err != nil {
+			logger.Error(err, "Error")
+		}
+		logger.V(1).Info("success")
+
+	}
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -1344,4 +1358,43 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 			}
 		}
 	}
+}
+
+func (r *CSIScaleOperatorReconciler) GetUUID(instance *csiscaleoperator.CSIScaleOperator) string {
+
+	logger := csiLog.WithName("GetUUID")
+
+	// Check if CGPrefix is passed in the CR.
+	// If CG Prefix exits, use it as UUID for cluster.
+	if instance.Spec.CGPrefix != "" {
+		return instance.Spec.CGPrefix
+	}
+
+	// CGPrefix is empty, Checking if cluster is OCP or Vanilla k8s
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if !isOpenShift {
+		logger.Info("This is not an OpenShift cluster, so generating UUID.")
+		UUID := r.GenerateUUID()
+		return UUID.String()
+	}
+
+	// CGPrefix is empty, Cluster is OCP, using ClusterID as UUID.
+	CV := &configv1.ClusterVersion{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name: "version",
+	}, CV)
+
+	if err != nil {
+		logger.Info("Unable to get Cluster ID from cluster scoped resource. Generating UUID.")
+		UUID := r.GenerateUUID()
+		return UUID.String()
+	}
+	UUID := string(CV.Spec.ClusterID)
+	return UUID
+
+}
+
+func (r *CSIScaleOperatorReconciler) GenerateUUID() uuid.UUID {
+	UUID := uuid.New()
+	return UUID
 }

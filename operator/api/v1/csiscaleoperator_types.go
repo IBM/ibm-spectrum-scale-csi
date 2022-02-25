@@ -127,6 +127,11 @@ type CSIScaleOperatorSpec struct {
 	// PodSecurityPolicy name for CSI driver and sidecar pods.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="CSI Pod Security Policy Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	CSIpspname string `json:"csipspname,omitempty"`
+
+	// CGPrefix uniquely identifies the cluster.
+	// This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
+	// This ensures consistency groups are unique across clusters.
+	CGPrefix string `json:"cgPrefix,omitempty"`
 }
 
 // CSIScaleOperatorStatus defines the observed state of CSIScaleOperator

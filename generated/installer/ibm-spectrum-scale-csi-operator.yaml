@@ -548,7 +548,7 @@ spec:
                                     field and the ones listed in the namespaces field.
                                     null selector and null or empty namespaces list
                                     means "this pod's namespace". An empty selector
-                                    ({}) matches all namespaces. This field is alpha-level
+                                    ({}) matches all namespaces. This field is beta-level
                                     and is only honored when PodAffinityNamespaceSelector
                                     feature is enabled.
                                   properties:
@@ -703,7 +703,7 @@ spec:
                                 the ones listed in the namespaces field. null selector
                                 and null or empty namespaces list means "this pod's
                                 namespace". An empty selector ({}) matches all namespaces.
-                                This field is alpha-level and is only honored when
+                                This field is beta-level and is only honored when
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
@@ -857,7 +857,7 @@ spec:
                                     field and the ones listed in the namespaces field.
                                     null selector and null or empty namespaces list
                                     means "this pod's namespace". An empty selector
-                                    ({}) matches all namespaces. This field is alpha-level
+                                    ({}) matches all namespaces. This field is beta-level
                                     and is only honored when PodAffinityNamespaceSelector
                                     feature is enabled.
                                   properties:
@@ -1012,7 +1012,7 @@ spec:
                                 the ones listed in the namespaces field. null selector
                                 and null or empty namespaces list means "this pod's
                                 namespace". An empty selector ({}) matches all namespaces.
-                                This field is alpha-level and is only honored when
+                                This field is beta-level and is only honored when
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
@@ -1152,6 +1152,12 @@ spec:
                   type: object
                   description: Defines the fields of a Spectrum Scale cluster specification
                   properties:
+                    CGPrefix:
+                      type: string
+                      description: CGPrefix uniquely identifies the cluster. This
+                        is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+                        in hexadecimal values) This ensures consistency groups are
+                        unique across clusters.
                     cacert:
                       type: string
                       description: cacert is the name of the configMap storing GUI

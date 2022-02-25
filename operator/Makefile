@@ -96,7 +96,7 @@ fmt: ## Run go fmt against code.
 
 lint: ## Run go lint against code.
 	@echo "****** LINTING ******"
-	go get -u golang.org/x/lint/golint
+	go get -d golang.org/x/lint/golint
 	golint ./... > ./docs/dev/security/results.golint.txt
 
 sec: ## Run gosec against code.
