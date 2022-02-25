@@ -388,6 +388,12 @@ spec:
           - get
           - update
         - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - '*'
+        - apiGroups:
           - csi.ibm.com
           resources:
           - '*'
@@ -456,7 +462,9 @@ spec:
                         - ppc64le
                         - s390x
               containers:
-              - env:
+              - args:
+                - --leaderElection=true
+                env:
                 - name: METRICS_BIND_ADDRESS
                   value: "8383"
                 - name: WATCH_NAMESPACE

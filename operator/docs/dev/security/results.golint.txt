@@ -10,10 +10,10 @@ api/v1/csiscaleoperator_types.go:350:6: type RestApi should be RestAPI
 api/v1/csiscaleoperator_types.go:393:6: exported type CSIReason should have comment or be unexported
 api/v1/csiscaleoperator_types.go:396:2: exported const CSIConfigured should have comment (or a comment on this block) or be unexported
 controllers/csiscaleoperator_controller.go:67:7: exported const MinControllerReplicas should have comment or be unexported
-controllers/csiscaleoperator_controller.go:514:1: exported function Contains should have comment or be unexported
-controllers/csiscaleoperator_controller.go:1097:2: don't use underscores in Go names; var csiaccess_users_new should be csiaccessUsersNew
-controllers/csiscaleoperator_controller.go:1136:3: don't use underscores in Go names; var csiaccess_users should be csiaccessUsers
-controllers/csiscaleoperator_controller.go:1203:1: comment on exported method CSIScaleOperatorReconciler.SetStatus should be of the form "SetStatus ..."
+controllers/csiscaleoperator_controller.go:517:1: exported function Contains should have comment or be unexported
+controllers/csiscaleoperator_controller.go:1100:2: don't use underscores in Go names; var csiaccess_users_new should be csiaccessUsersNew
+controllers/csiscaleoperator_controller.go:1139:3: don't use underscores in Go names; var csiaccess_users should be csiaccessUsers
+controllers/csiscaleoperator_controller.go:1206:1: comment on exported method CSIScaleOperatorReconciler.SetStatus should be of the form "SetStatus ..."
 controllers/config/constants.go:123:2: exported const StatusConditionReady should have comment (or a comment on this block) or be unexported
 controllers/config/resources.go:29:2: exported const CSIController should have comment (or a comment on this block) or be unexported
 controllers/config/resources.go:37:2: comment on exported const CSINodeServiceAccount should be of the form "CSINodeServiceAccount ..."
