@@ -228,8 +228,9 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
 	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
+		// Use default imagePullSecrets
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+			corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 	}
 
 	// ensure template
@@ -267,8 +268,9 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
 	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
+		// Use default imagePullSecrets
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+			corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 	}
 
 	// ensure template
@@ -306,8 +308,9 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
 	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
+		// Use default imagePullSecrets
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+			corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 	}
 
 	// ensure template
@@ -345,8 +348,9 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
 	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
+		// Use default imagePullSecrets
+		secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+			corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 	}
 
 	// ensure template
