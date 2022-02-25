@@ -379,15 +379,17 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Synchronizing node/driver daemonset
 
-	CGPrefix := r.GetUUID(instance)
+	CGPrefix := r.GetConsistencyGroupPrefix(instance)
 
 	if instance.Spec.CGPrefix == "" {
+		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
 		instance.Spec.CGPrefix = CGPrefix
 		err := r.Client.Update(ctx, instance.Unwrap())
 		if err != nil {
-			logger.Error(err, "Error")
+			logger.Error(err, "Reconciler Client.Update() failed.")
+			return ctrl.Result{}, err
 		}
-		logger.V(1).Info("success")
+		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
 
 	}
 
@@ -1360,32 +1362,35 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 	}
 }
 
-func (r *CSIScaleOperatorReconciler) GetUUID(instance *csiscaleoperator.CSIScaleOperator) string {
+// GetConsistencyGroupPrefix returns a universal unique ideintiier(UUID) of string format.
+// For Redhat Openshift Cluster Platform, Cluster ID as string is returned.
+// For Vanilla kubernetes cluster, generated UUID is returned.
+func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscaleoperator.CSIScaleOperator) string {
+	logger := csiLog.WithName("GetConsistencyGroupPrefix")
 
-	logger := csiLog.WithName("GetUUID")
-
-	// Check if CGPrefix is passed in the CR.
-	// If CG Prefix exits, use it as UUID for cluster.
+	logger.Info("Checking if consistency group prefix is passed in CSIScaleOperator specs.")
 	if instance.Spec.CGPrefix != "" {
+		logger.Info("Consistency group prefix found in CSIScaleOperator specs.")
 		return instance.Spec.CGPrefix
 	}
 
-	// CGPrefix is empty, Checking if cluster is OCP or Vanilla k8s
+	logger.Info("Consistency group prefix is not found in CSIScaleOperator specs.")
+	logger.Info("Fetching cluster information.")
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if !isOpenShift {
-		logger.Info("This is not an OpenShift cluster, so generating UUID.")
+		logger.Info("Cluster is a Kubernetes Platform.")
 		UUID := r.GenerateUUID()
 		return UUID.String()
 	}
 
-	// CGPrefix is empty, Cluster is OCP, using ClusterID as UUID.
+	logger.Info("Cluster is Redhat Openshift Cluster Platform.")
+	logger.Info("Fetching cluster ID from ClusterVersion resource.")
 	CV := &configv1.ClusterVersion{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
 		Name: "version",
 	}, CV)
-
 	if err != nil {
-		logger.Info("Unable to get Cluster ID from cluster scoped resource. Generating UUID.")
+		logger.Info("Unable to fetch the cluster scoped resource.")
 		UUID := r.GenerateUUID()
 		return UUID.String()
 	}
@@ -1394,7 +1399,10 @@ func (r *CSIScaleOperatorReconciler) GetUUID(instance *csiscaleoperator.CSIScale
 
 }
 
+// GenerateUUID returns a new random UUID.
 func (r *CSIScaleOperatorReconciler) GenerateUUID() uuid.UUID {
+	logger := csiLog.WithName("GenerateUUID")
+	logger.Info("Generating a unique cluster ID.")
 	UUID := uuid.New()
 	return UUID
 }

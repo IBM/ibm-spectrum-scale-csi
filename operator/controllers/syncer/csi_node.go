@@ -62,7 +62,9 @@ const (
 )
 
 var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
-var CGPrefix string
+
+// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
+var UUID string
 
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -71,7 +73,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, UUID string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -86,7 +88,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 		obj:    obj,
 	}
 
-	CGPrefix = UUID
+	UUID = CGPrefix
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -309,8 +311,8 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		EnvVars = append(EnvVars, shortNodeNameMappingObj)
 
 		CGPrefixObj := corev1.EnvVar{}
-		CGPrefixObj.Name = "CSI_CG_PREFIX"
-		CGPrefixObj.Value = CGPrefix
+		CGPrefixObj.Name = config.ENVCGPrefix
+		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
 		return append(EnvVars, []corev1.EnvVar{

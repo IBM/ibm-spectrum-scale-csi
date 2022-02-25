@@ -898,12 +898,6 @@ spec:
                   - value
                   type: object
                 type: array
-              cgPrefix:
-                description: CGPrefix uniquely identifies the cluster. This is expected
-                  to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-                  in hexadecimal values) This ensures consistency groups are unique
-                  across clusters.
-                type: string
               clusters:
                 description: clusters is a collection of Spectrum Scale cluster properties
                   for the CSI driver to mount.
@@ -977,6 +971,11 @@ spec:
                   - secureSslMode
                   type: object
                 type: array
+              consistencyGroupPrefix:
+                description: consistencyGroupPrefix uniquely identifies the platform.
+                  This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+                  in hexadecimal values)
+                type: string
               csipspname:
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
                 type: string
