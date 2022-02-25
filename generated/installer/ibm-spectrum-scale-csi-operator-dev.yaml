@@ -1144,6 +1144,12 @@ spec:
                   required:
                   - key
                   - value
+              cgPrefix:
+                type: string
+                description: CGPrefix uniquely identifies the cluster. This is expected
+                  to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+                  in hexadecimal values) This ensures consistency groups are unique
+                  across clusters.
               clusters:
                 type: array
                 description: clusters is a collection of Spectrum Scale cluster properties
@@ -1152,12 +1158,6 @@ spec:
                   type: object
                   description: Defines the fields of a Spectrum Scale cluster specification
                   properties:
-                    CGPrefix:
-                      type: string
-                      description: CGPrefix uniquely identifies the cluster. This
-                        is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-                        in hexadecimal values) This ensures consistency groups are
-                        unique across clusters.
                     cacert:
                       type: string
                       description: cacert is the name of the configMap storing GUI
