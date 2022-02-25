@@ -29,18 +29,16 @@ def delete_fileset(test_data):
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     unlink_fileset(test_data)
-    delete_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/" + \
-        test_data["primaryFs"]+"/filesets/"+test_data["primaryFset"]
+    delete_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/{test_data["primaryFset"]}'
     response = requests.delete(
         delete_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     time.sleep(10)
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/filesets/"
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/'
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
-    search_format = '"'+test_data["primaryFset"]+'",'
+    search_format = f'"{test_data["primaryFset"]}",'
+
     search_result = re.search(search_format, str(response.text))
     LOGGER.debug(search_result)
     if search_result is None:
@@ -70,9 +68,7 @@ def unlink_fileset(test_data):
     """
     time.sleep(10)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    unlink_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/" + \
-        test_data["primaryFs"]+"/filesets/"+test_data["primaryFset"]+"/link"
+    unlink_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/{test_data["primaryFset"]}/link'
     response = requests.delete(
         unlink_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -97,12 +93,12 @@ def fileset_exists(test_data):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/filesets/"
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/'
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
-    search_format = '"'+test_data["primaryFset"]+'",'
+    search_format = f'"{test_data["primaryFset"]}",'
+
     search_result = re.search(search_format, str(response.text))
     if search_result is None:
         return False
@@ -117,8 +113,7 @@ def cred_check(test_data):
     if API gives any error , It asserts
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/cluster"
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/cluster'
     try:
         response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
         LOGGER.debug(response.text)
@@ -150,9 +145,7 @@ def link_fileset(test_data):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    fileset_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/" + \
-        test_data["primaryFs"]+"/filesets/"+test_data["primaryFset"]+"/link"
+    fileset_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/{test_data["primaryFset"]}/link'
     response = requests.post(fileset_link, verify=False,
                              auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -175,22 +168,19 @@ def create_fileset(test_data):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/"
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/'
     time.sleep(2)
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     response_dict = json.loads(response.text)
     scalehostpath = response_dict["filesystems"][0]["mount"]["mountPoint"]
-    create_fileset_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/filesets"
+    create_fileset_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets'
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{"filesetName":"'+test_data["primaryFset"]+'","path":"' + \
-        scalehostpath+'/'+test_data["primaryFset"]+'"}'
-
+    data = f'{{"filesetName":"{test_data["primaryFset"]}","path":"{scalehostpath}/{test_data["primaryFset"]}"}}'
+   
     response = requests.post(create_fileset_link, headers=headers,
                              data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -213,21 +203,19 @@ def unmount_fs(test_data):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    unmount_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/unmount"
+    unmount_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/unmount'
     LOGGER.debug(unmount_link)
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{"nodes":["'+test_data["guiHost"]+'"],"force": false}'
+    data = f'{{"nodes":["{test_data["guiHost"]}"],"force": false}}'
     response = requests.put(unmount_link, headers=headers,
                             data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     time.sleep(5)
 
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}'
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     response_dict = json.loads(response.text)
     mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
@@ -254,21 +242,19 @@ def mount_fs(test_data):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    mount_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]+"/mount"
+    mount_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/mount'
     LOGGER.debug(mount_link)
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{"nodes":["'+test_data["guiHost"]+'"]}'
+    data = f'{{"nodes":["{test_data["guiHost"]}"]}}'
     response = requests.put(mount_link, headers=headers,
                             data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     time.sleep(5)
 
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["primaryFs"]
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}'
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     response_dict = json.loads(response.text)
     mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
@@ -292,8 +278,7 @@ def cleanup():
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/'
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     lst = re.findall(r'\S+pvc-\S+', response.text)
     lst2 = []
@@ -301,23 +286,18 @@ def cleanup():
         lst2.append(la[1:-2])
     for res in lst2:
         volume_name = res
-        unlink_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/" + \
-            test["primaryFs"]+"/filesets/"+volume_name+"/link"
+        unlink_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/link'
         response = requests.delete(
             unlink_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         LOGGER.info(f"Fileset {volume_name} unlinked")
         time.sleep(5)
-        delete_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/" + \
-            test["primaryFs"]+"/filesets/"+volume_name
+        delete_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/link'
         response = requests.delete(
             delete_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         time.sleep(10)
-        get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
+        get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/'
         response = requests.get(get_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
@@ -346,8 +326,7 @@ def delete_created_fileset(volume_name):
     if volume_name is None:
         return
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/'
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     search_result = re.search(volume_name, str(response.text))
@@ -355,24 +334,19 @@ def delete_created_fileset(volume_name):
     if search_result is None:
         LOGGER.info(f'Fileset Delete : Fileset {volume_name} has already been deleted')
     else:
-        unlink_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/" + \
-            test["primaryFs"]+"/filesets/"+volume_name+"/link"
+        unlink_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/link'
         response = requests.delete(
             unlink_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         LOGGER.info(f'Fileset {volume_name} has been unlinked')
         time.sleep(5)
-        delete_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/" + \
-            test["primaryFs"]+"/filesets/"+volume_name
+        delete_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}'
         response = requests.delete(
             delete_link, verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
 
         for _ in range(0, 12):
-            get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-                "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"
+            get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/'
             response = requests.get(get_link, verify=False,
                                     auth=(test["username"], test["password"]))
             LOGGER.debug(response.text)
@@ -403,12 +377,11 @@ def created_fileset_exists(volume_name):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}'
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
-    search_format = '"'+volume_name+'",'
+    search_format = f'"{volume_name}",'
     search_result = re.search(search_format, str(response.text))
     if search_result is None:
         return False
@@ -430,15 +403,13 @@ def create_dir(dir_name):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/directory/"+dir_name
+    dir_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/directory/{dir_name}'
     LOGGER.debug(dir_link)
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
     }
-    data = '{ "user":"' + test["uid_name"]+'", "uid":'+test["uid_number"] + \
-        ', "group":"'+test["gid_name"]+'", "gid":' + test["gid_number"]+' }'
+    data = f'{{ "user":"{test["uid_name"]}", "uid":{test["uid_number"]}, "group":"{test["gid_name"]}", "gid":{test["gid_number"]} }}'
     response = requests.post(dir_link, headers=headers,
                              data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -454,8 +425,7 @@ def check_dir(dir_name):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
     while val < 12:
-        check_dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/owner/"+dir_name
+        check_dir_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/owner/{dir_name}'
         LOGGER.debug(check_dir_link)
         headers = {
             'accept': 'application/json',
@@ -490,8 +460,7 @@ def delete_dir(dir_name):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    dir_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/directory/"+dir_name
+    dir_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/directory/{dir_name}'
     LOGGER.debug(dir_link)
     headers = {
         'content-type': 'application/json',
@@ -518,8 +487,7 @@ def get_FSUID():
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
+    info_filesystem = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}?fields=:all:'
     response = requests.get(info_filesystem, verify=False,
                             auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -546,13 +514,11 @@ def get_mount_point():
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     if "type_remote" in test:
-        info_filesystem = "https://"+test["type_remote"]["guiHost"]+":"+test["type_remote"]["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["remoteFs"]+"?fields=:all:"
+        info_filesystem = f'https://{test["type_remote"]["guiHost"]}:{test["type_remote"]["port"]}/scalemgmt/v2/filesystems/{test["remoteFs"]}?fields=:all:'
         response = requests.get(info_filesystem, verify=False,
                                 auth=(test["type_remote"]["username"], test["type_remote"]["password"]))
     else:
-        info_filesystem = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"?fields=:all:"
+        info_filesystem = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}?fields=:all:'
         response = requests.get(info_filesystem, verify=False,
                                 auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -566,8 +532,7 @@ def get_remoteFs_remotename(test_data):
     """ return name of remote filesystem's remote name """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    info_filesystem = "https://"+test_data["guiHost"]+":"+test_data["port"] + \
-        "/scalemgmt/v2/filesystems/"+test_data["remoteFs"]
+    info_filesystem = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["remoteFs"]}'
     response = requests.get(info_filesystem, verify=False,
                             auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -592,9 +557,7 @@ def check_snapshot_exists(snapshot_name, volume_name):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
     while val < 12:
-        snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
-            volume_name+"/snapshots"
+        snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
@@ -620,10 +583,8 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
         'accept': 'application/json',
     }
 
-    data = '{ "snapshotName": "'+snapshot_name+'" }'
-    snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
-        volume_name+"/snapshots"
+    data= f'{{ "snapshotName": "{snapshot_name}" }}'
+    snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
     response = requests.post(snap_link, headers=headers, data=data, verify=False,
                              auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -633,9 +594,7 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
 
 def delete_snapshot(snapshot_name, volume_name, created_objects):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
-        volume_name+"/snapshots/"+snapshot_name
+    snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots/{snapshot_name}'
     response = requests.delete(snap_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     created_objects["scalesnapshot"].remove([snapshot_name, volume_name])
@@ -646,9 +605,7 @@ def check_snapshot_deleted(snapshot_name, volume_name):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     val = 0
     while val < 12:
-        snap_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/" + \
-            volume_name+"/snapshots"
+        snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
@@ -685,7 +642,7 @@ def return_scale_version():
     get spectrum scale version and return it
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test["guiHost"]+":"+test["port"] + "/scalemgmt/v2/info"
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/info'
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
 
@@ -701,7 +658,7 @@ def get_scale_version(test_data):
     get spectrum scale version and display it
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test_data["guiHost"]+":"+test_data["port"] + "/scalemgmt/v2/info"
+    get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/info'
     response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
 
@@ -742,9 +699,7 @@ def get_and_verify_fileset_permissions(volume_name, mode):
 
     # get acl for a path
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/acl/" + \
-        volume_name + "%2F" + volume_name + "-data"
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/acl/{volume_name}%2F{volume_name}-data'
 
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -811,8 +766,7 @@ def get_and_verify_fileset_permissions(volume_name, mode):
 
 def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-        "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/quotas?filter=objectName="+volume_name
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/quotas?filter=objectName={volume_name}'
     LOGGER.debug(get_link)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -851,8 +805,7 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     count = 15
     while count > 0:
-        get_link = "https://"+test["guiHost"]+":"+test["port"] + \
-            "/scalemgmt/v2/filesystems/"+test["primaryFs"]+"/filesets/"+volume_name
+        get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}'
         response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
 
         if not(response.status_code == 200):

@@ -41,7 +41,8 @@ spec:
                     - ppc64le
                     - s390x
       containers:
-        - args: null
+        - args:
+          - --leaderElection=true
           env:
           - name: METRICS_BIND_ADDRESS
             value: "8383"

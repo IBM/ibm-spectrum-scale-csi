@@ -10,9 +10,10 @@ pytestmark = [pytest.mark.volumesnapshot, pytest.mark.remotecluster]
 @pytest.fixture(scope='session', autouse=True)
 def values(request, check_csi_operator):
     global data, remote_data, snapshot_object, kubeconfig_value  # are required in every testcase
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
+    cmd_values = inputfunc.get_pytest_cmd_values(request)
+    kubeconfig_value = cmd_values["kubeconfig_value"]
+    data = inputfunc.read_driver_data(cmd_values)
 
-    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
     keep_objects = data["keepobjects"]
     if not("remote" in data):
         LOGGER.error("remote data is not provided in cr file")
@@ -22,14 +23,14 @@ def values(request, check_csi_operator):
     baseclass.filesetfunc.cred_check(remote_data)
     baseclass.filesetfunc.set_data(remote_data)
 
-    if runslow_val:
+    if cmd_values["runslow_val"]:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                      {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     else:
         value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    snapshot_object = baseclass.Snapshot(kubeconfig_value, test_namespace, keep_objects, value_pvc, value_vs_class,
+    snapshot_object = baseclass.Snapshot(kubeconfig_value, cmd_values["test_namespace"], keep_objects, value_pvc, value_vs_class,
                                        number_of_snapshots, data["image_name"], remote_data["id"], data["pluginNodeSelector"])
     baseclass.filesetfunc.create_dir(remote_data["volDirBasePath"])
 

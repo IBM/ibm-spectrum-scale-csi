@@ -238,7 +238,6 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 	if len(secrets) != 0 {
 		out.Spec.Template.Spec.ImagePullSecrets = secrets
 	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -278,7 +277,6 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 	if len(secrets) != 0 {
 		out.Spec.Template.Spec.ImagePullSecrets = secrets
 	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ProvisionerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -318,7 +316,6 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 	if len(secrets) != 0 {
 		out.Spec.Template.Spec.ImagePullSecrets = secrets
 	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.SnapshotterNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -358,7 +355,6 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 	if len(secrets) != 0 {
 		out.Spec.Template.Spec.ImagePullSecrets = secrets
 	}
-	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ResizerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
