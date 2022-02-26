@@ -69,11 +69,11 @@ const (
 	OperatorVersion = "2.5.0"
 
 	// Number of replica pods for CSI Sidecar deployment
-	ReplicaCount       = int32(2)
+	ReplicaCount = int32(2)
 	// Tolerations seconds for the CSI Sidecar deployment
 	TolerationsSeconds = int64(60)
 	// ContainerPort for /healthz/leader-election endpoint
-	AttacherLeaderLivenessPort    = int32(8080)
+	AttacherLeaderLivenessPort = int32(8080)
 
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0"
@@ -113,9 +113,11 @@ const (
 	ConfigMapPath             = "/var/lib/ibm/config"
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
+	DefaultLogLevel           = "DEBUG"
 
-	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
-	DefaultLogLevel        = "DEBUG"
+	//Default imagePullSecrets
+	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
+	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
 )
 
 const (
