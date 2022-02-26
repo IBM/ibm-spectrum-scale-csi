@@ -227,17 +227,13 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 			logger.Info("SyncAttacherFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
+	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -266,17 +262,13 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 			logger.Info("SyncProvisionerFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
+	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ProvisionerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -305,17 +297,13 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 			logger.Info("SyncSnapshotterFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
+	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.SnapshotterNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -344,17 +332,13 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 			logger.Info("SyncResizerFn: Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
+	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ResizerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
@@ -422,6 +406,7 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		Affinity:           s.driver.Spec.Affinity,
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
+		ImagePullSecrets:   secrets,
 	}
 
 	if pod.Affinity != nil {
@@ -434,10 +419,6 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
-
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
-	}
 	return pod
 }
 
@@ -459,9 +440,7 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 		Affinity:           s.driver.Spec.Affinity,
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
+		ImagePullSecrets:   secrets,
 	}
 	return pod
 }
@@ -484,9 +463,7 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 		Affinity:           s.driver.Spec.Affinity,
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
+		ImagePullSecrets:   secrets,
 	}
 	return pod
 }
@@ -509,9 +486,7 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 		Affinity:           s.driver.Spec.Affinity,
 		Tolerations:        s.driver.Spec.Tolerations,
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
+		ImagePullSecrets:   secrets,
 	}
 	return pod
 }

@@ -107,10 +107,9 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 			logger.Info("Got ", "ImagePullSecret:", s)
 			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
 		}
-	} else {
-		// Use default imagePullSecret
-		secrets = append(secrets, corev1.LocalObjectReference{Name: config.DefaultImagePullSecret})
 	}
+	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
+		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
 	annotations["kubectl.kubernetes.io/default-container"] = config.Product
@@ -120,9 +119,6 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSINodePodLabels(config.GetNameForResource(config.CSINode, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = annotations
-	if len(secrets) != 0 {
-		out.Spec.Template.Spec.ImagePullSecrets = secrets
-	}
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
@@ -144,10 +140,8 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
 		// Affinity:           s.driver.Spec.Node.Affinity,
-		Tolerations: s.driver.Spec.Tolerations,
-	}
-	if len(secrets) != 0 {
-		pod.ImagePullSecrets = secrets
+		Tolerations:      s.driver.Spec.Tolerations,
+		ImagePullSecrets: secrets,
 	}
 	return pod
 }

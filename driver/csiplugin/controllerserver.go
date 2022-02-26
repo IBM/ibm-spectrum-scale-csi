@@ -1989,6 +1989,11 @@ func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.Spec
 		return timestamp, err
 	}
 
+	// for GMT, REST API returns Z instead of 00:00
+	if timezoneOffset == "Z" {
+		timezoneOffset = "+00:00"
+	}
+
 	// Rest API returns create timestamp in the format 2006-01-02 15:04:05,000
 	// irrespective of the cluster timezone. We replace the last part of this date
 	// with the timezone offset returned by cluster config REST API and then parse

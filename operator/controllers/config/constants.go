@@ -114,9 +114,11 @@ const (
 	ConfigMapPath             = "/var/lib/ibm/config"
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
+	DefaultLogLevel           = "DEBUG"
 
-	DefaultImagePullSecret = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
-	DefaultLogLevel        = "DEBUG"
+	//Default imagePullSecrets
+	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
+	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
 )
 
 const (
