@@ -1714,7 +1714,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	return &csi.ControllerPublishVolumeResponse{}, nil
 }
 
-func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, snapWindow string) (string, error) {
+func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, snapWindow int) (string, error) {
 	latestSnapList, err := conn.GetLatestFilesetSnapshots(filesystemName, filesetName)
 	if err != nil {
 		glog.Errorf("CheckNewSnapRequired - getting latest snapshot list failed for fileset: [%s:%s]. Error: [%v]", filesystemName, filesetName, err)
@@ -1738,11 +1738,7 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(conn connectors.SpectrumSc
 	passedTime := time.Now().Sub(lastSnapTime).Seconds()
 	glog.V(3).Infof("for fileset [%s:%s], last snapshot time: [%v], current time: [%v], passed time: %v seconds, snapWindow: %v minutes", filesystemName, filesetName, lastSnapTime, time.Now(), int64(passedTime), snapWindow)
 
-	snapWindowInt, err := strconv.Atoi(snapWindow)
-	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("CheckNewSnapRequired - invalid snapWindow value: [%v]", snapWindow))
-	}
-	snapWindowSeconds := snapWindowInt * 60
+	snapWindowSeconds := snapWindow * 60
 
 	if passedTime < float64(snapWindowSeconds) {
 		// we don't need to take new snapshot
@@ -1866,15 +1862,18 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}
 
 	snapName := req.GetName()
-	snapWindow := ""
+	snapWindowInt := 0
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		snapParams := req.GetParameters()
-		snapWindowSpecified := false
-		snapWindow, snapWindowSpecified = snapParams[connectors.UserSpecifiedSnapWindow]
+		snapWindow, snapWindowSpecified := snapParams[connectors.UserSpecifiedSnapWindow]
 		if !snapWindowSpecified {
 			// use default snapshot window for consistency group
 			snapWindow = defaultSnapWindow
 			glog.V(3).Infof("snapWindow not specified. Using default snapWindow: [%s] for for fileset[%s:%s]", snapWindow, filesetResp.FilesetName, filesystemName)
+		}
+		snapWindowInt, err = strconv.Atoi(snapWindow)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot [%s] - invalid snapWindow value: [%v]", snapName, snapWindow))
 		}
 	}
 
@@ -1889,7 +1888,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		 * snapWindow then return existing snapshot */
 		createNewSnap := true
 		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-			cgSnapName, err := cs.CheckNewSnapRequired(conn, filesystemName, filesetName, snapWindow)
+			cgSnapName, err := cs.CheckNewSnapRequired(conn, filesystemName, filesetName, snapWindowInt)
 			if err != nil {
 				glog.Errorf("CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", snapName, filesystemName, filesetName, err)
 				return nil, err
