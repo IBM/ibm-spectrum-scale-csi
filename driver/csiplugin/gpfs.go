@@ -65,6 +65,11 @@ type VolCopyJobDetails struct {
 	volID     string
 }
 
+type CGSnapReadyDetails struct {
+	snapStatus bool
+	snapName   string
+}
+
 // ClusterDetails stores information of the cluster.
 type ClusterDetails struct {
 	// id of the Spectrum Scale cluster
@@ -105,6 +110,9 @@ type ScaleDriver struct {
 
 	snapjobstatusmap    sync.Map
 	volcopyjobstatusmap sync.Map
+
+	cgsnapreadystatusmap sync.Map
+	cgsnapmutex          sync.Mutex
 
 	// clusterMap map stores the cluster name as key and cluster details as value.
 	clusterMap sync.Map

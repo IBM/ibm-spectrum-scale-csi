@@ -1912,6 +1912,13 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		 * snapWindow then return existing snapshot */
 		createNewSnap := true
 		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+			// check if snapshot creation already in progress
+			snapIdentifier := fmt.Sprintf("%s:%s", filesystemName, filesetName)
+			snapReadyStatus, found := cs.Driver.cgsnapreadystatusmap.Load(snapIdentifier)
+			if found && !snapReadyStatus.(CGSnapReadyDetails).snapStatus {
+				// snapshot not yet ready
+				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot [%s] not yet ready for [%s:%s]", snapReadyStatus.(CGSnapReadyDetails).snapName, filesystemName, filesetName))	
+			}
 			cgSnapName, err := cs.CheckNewSnapRequired(conn, filesystemName, filesetName, snapWindow)
 			if err != nil {
 				glog.Errorf("CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", snapName, filesystemName, filesetName, err)
@@ -1925,6 +1932,18 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 				createNewSnap = false
 				snapName = cgSnapName
 			} else {
+				cs.Driver.cgsnapmutex.Lock()
+				// re-check if snapshot creation was started by another thread or not
+				snapReadyStatus, found := cs.Driver.cgsnapreadystatusmap.Load(snapIdentifier)
+				if found && !snapReadyStatus.(CGSnapReadyDetails).snapStatus {
+					// another thread already started creating snapshot
+					cs.Driver.cgsnapmutex.Unlock()
+					return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot [%s] not yet ready for [%s:%s]", snapReadyStatus.(CGSnapReadyDetails).snapName, filesystemName, filesetName))
+				}
+				snapReadyDetails := CGSnapReadyDetails{false, snapName}
+				cs.Driver.cgsnapreadystatusmap.Store(snapIdentifier, snapReadyDetails)
+				cs.Driver.cgsnapmutex.Unlock()
+
 				glog.V(3).Infof("CreateSnapshot - creating new snapshot for consistency group for fileset: [%s:%s]", filesystemName, filesetName)
 			}
 		}
@@ -1945,6 +1964,11 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			if snaperr != nil {
 				glog.Errorf("snapshot [%s] - Unable to create snapshot. Error [%v]", snapName, snaperr)
 				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
+			}
+			if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
+				snapIdentifier := fmt.Sprintf("%s:%s", filesystemName, filesetName)
+				snapReadyDetails := CGSnapReadyDetails{true, snapName}
+				cs.Driver.cgsnapreadystatusmap.Store(snapIdentifier, snapReadyDetails)
 			}
 		}
 	}
