@@ -10,8 +10,8 @@ import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfu
 LOGGER = logging.getLogger()
 
 
-def get_test_data():
-    filepath = "config/test.config"
+def get_test_data(test_config):
+    filepath = test_config
     try:
         with open(filepath, "r") as f:
             data = yaml.full_load(f.read())
@@ -34,21 +34,21 @@ def get_test_data():
     return data
 
 
-def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
+def read_driver_data(cmd_values):
 
-    data = get_test_data()
+    data = get_test_data(cmd_values["test_config"])
 
-    data["namespace"] = namespace
+    data["namespace"] = cmd_values["test_namespace"]
 
-    config.load_kube_config(config_file=kubeconfig)
-    loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(operator_namespace, data["csiscaleoperator_name"])
+    config.load_kube_config(config_file=cmd_values["kubeconfig_value"])
+    loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(cmd_values["operator_namespace"], data["csiscaleoperator_name"])
 
     if loadcr_yaml is False:
         try:
-            with open(clusterconfig, "r") as f:
+            with open(cmd_values["clusterconfig_value"], "r") as f:
                 loadcr_yaml = yaml.full_load(f.read())
         except yaml.YAMLError as exc:
-            LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
+            LOGGER.error(f'Error in parsing the cr file {cmd_values["clusterconfig_value"]} : {exc}')
             assert False
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
@@ -73,9 +73,9 @@ def read_driver_data(clusterconfig, namespace, operator_namespace, kubeconfig):
     return data
 
 
-def read_operator_data(clusterconfig, namespace, kubeconfig=None):
+def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
 
-    data = get_test_data()
+    data = get_test_data(testconfig)
 
     data["namespace"] = namespace
 
@@ -192,7 +192,13 @@ def get_remote_data(data_passed):
     return remote_data
 
 
-def get_cmd_values(request):
+def get_pytest_cmd_values(request):
+    """
+    Get pytest commmand line parameters and convert them to dict
+    """
+
+    cmd_value_dict = {}
+
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
         if os.path.isfile('config/kubeconfig'):
@@ -221,7 +227,20 @@ def get_cmd_values(request):
     if operator_file is None:
         operator_file = '../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml'
 
-    return kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_file
+    test_config = request.config.option.testconfig
+    if test_config is None:
+        test_config = "config/test.config"
+
+    cmd_value_dict = {"kubeconfig_value": kubeconfig_value,
+                      "clusterconfig_value":clusterconfig_value, 
+                      "test_namespace": test_namespace,
+                      "operator_namespace":operator_namespace,
+                      "runslow_val":runslow_val,
+                      "operator_file":operator_file, 
+                      "test_config":test_config
+                     }
+
+    return cmd_value_dict
 
 
 def randomStringDigits(stringLength=6):

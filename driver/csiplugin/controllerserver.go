@@ -1202,25 +1202,16 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		}
 	}
 
-	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, sId.FsetName)
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sId.FsetName))
-	}
-	if !isFsetLinked {
-		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", sId.FsetName))
-	}
-
 	filesetToCheck := sId.FsetName
 	if sId.StorageClassType == STORAGECLASS_ADVANCED {
-		// check if independent fileset is linked
 		filesetToCheck = sId.ConsistencyGroup
-		isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-		}
-		if !isFsetLinked {
-			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
-		}
+	}
+	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	}
+	if !isFsetLinked {
+		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
 	}
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
@@ -1353,7 +1344,7 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, Fileset
 	}
 
 	if len(snapshotList) > 0 {
-		return false, status.Error(codes.InvalidArgument, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+		return false, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
 	}
 	glog.V(4).Infof("there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", FilesetName)
 
@@ -1370,19 +1361,9 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(FilesystemName string, Fileset
 }
 
 // This function deletes fileset for Consitency Group
-func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpace int, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) error {
+func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) error {
 	glog.V(4).Infof("trying to delete independent fileset for consistency group [%v]", volumeIdMembers.ConsistencyGroup)
-	filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("listing of filesets for filesystem: [%v] failed. Error: [%v]", FilesystemName, err))
-	}
 
-	if len(filesets) > 1 {
-		glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
-		return nil
-	}
-
-	// Check if fileset was created by IBM Spectrum Scale CSI Driver
 	filesetDetails, err := conn.ListFileset(FilesystemName, volumeIdMembers.ConsistencyGroup)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
@@ -1393,9 +1374,24 @@ func (cs *ScaleControllerServer) DeleteCGFileset(FilesystemName string, inodeSpa
 		return status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v]. Error: [%v]", volumeIdMembers.ConsistencyGroup, err))
 	}
 
+	// Check if fileset was created by IBM Spectrum Scale CSI Driver
 	if filesetDetails.Config.Comment == connectors.FilesetComment {
+		// before deletion of fileset get its inodeSpace.
+		// this will help to identify if there are one or more dependent filesets for same inodeSpace
+		// which is shared with independent fileset
+		inodeSpace := filesetDetails.Config.InodeSpace
+		filesets, err := conn.GetFilesetsInodeSpace(FilesystemName, inodeSpace)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("listing of filesets for filesystem: [%v] failed. Error: [%v]", FilesystemName, err))
+		}
+
+		if len(filesets) > 1 {
+			glog.V(4).Infof("found atleast one dependent fileset for consistency group: [%v]", volumeIdMembers.ConsistencyGroup)
+			return nil
+		}
+
 		// Delete independent fileset for consistency group
-		_, err := cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+		_, err = cs.DeleteFilesetVol(FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
 		if err != nil {
 			return err
 		}
@@ -1479,25 +1475,6 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(relPath)
 			if pvName == FilesetName {
-				// before deletion of fileset get its inodeSpace if storageClassType=STORAGECLASS_ADVANCED
-				// this will help to identify if there are one or more dependent filesets for same inodeSpace
-				// which is shared with independent fileset
-				inodeSpace := 0
-				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					// Save inodeSpace information
-					filesetDetails, err := conn.ListFileset(FilesystemName, FilesetName)
-					if err != nil {
-						if strings.Contains(err.Error(), "EFSSG0072C") ||
-							strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-
-							glog.V(4).Infof("fileset seems already deleted - %v", err)
-							return &csi.DeleteVolumeResponse{}, nil
-						}
-						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
-					}
-					inodeSpace = filesetDetails.Config.InodeSpace
-				}
-
 				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(FilesystemName, FilesetName, volumeIdMembers, conn)
 				if err != nil {
 					return nil, err
@@ -1512,7 +1489,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				}
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					err := cs.DeleteCGFileset(FilesystemName, inodeSpace, volumeIdMembers, conn)
+					err := cs.DeleteCGFileset(FilesystemName, volumeIdMembers, conn)
 					if err != nil {
 						return nil, err
 					}
@@ -2034,6 +2011,11 @@ func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(conn connectors.Spec
 	if err != nil {
 		glog.Errorf("snapshot [%s] - Unable to get cluster timezone", snap)
 		return timestamp, err
+	}
+
+	// for GMT, REST API returns Z instead of 00:00
+	if timezoneOffset == "Z" {
+		timezoneOffset = "+00:00"
 	}
 
 	// Rest API returns create timestamp in the format 2006-01-02 15:04:05,000

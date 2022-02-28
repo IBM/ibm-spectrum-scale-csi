@@ -34,7 +34,8 @@ spec:
       containers:
       - name: operator
         image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
-        args: null
+        args:
+        - --leaderElection=true
         env:
         - name: METRICS_BIND_ADDRESS
           value: "8383"
@@ -127,6 +128,12 @@ rules:
   - get
   - update
 - resources:
+  - leases
+  apiGroups:
+  - coordination.k8s.io
+  verbs:
+  - '*'
+- resources:
   - '*'
   apiGroups:
   - csi.ibm.com
@@ -193,6 +200,7 @@ metadata:
     release: ibm-spectrum-scale-csi-operator
 imagePullSecrets:
 - name: ibm-spectrum-scale-csi-registrykey
+- name: ibm-entitlement-key
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
