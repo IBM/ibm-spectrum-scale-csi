@@ -1,0 +1,46 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Adds namespace to all resources.
+namespace: ibm-spectrum-scale-csi-driver
+
+bases:
+- ../../manager/
+- ../../rbac/
+- ../../crd/
+
+images:
+  - name: csi-operator
+    newName: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator
+    digest: sha256:0ec50ce354216dc3b872b1fda06c6e723cf22121057383cd42d5dc238ba47d5f
+
+patches:
+  - target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ibm-spectrum-scale-csi-operator
+      spec:
+        template:
+          spec:
+            containers:
+              - name: operator
+                env:
+                  - name: CSI_SNAPSHOTTER_IMAGE
+                    value: sys-spectrum-scale-team-cloud-native-docker-local.artifactory.swg-devops.com/csi/csi-snapshotter@sha256:89e900a160a986a1a7a4eba7f5259e510398fa87ca9b8a729e7dec59e04c7709
+                  - name: CSI_ATTACHER_IMAGE
+                    value: sys-spectrum-scale-team-cloud-native-docker-local.artifactory.swg-devops.com/csi/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b
+                  - name: CSI_PROVISIONER_IMAGE
+                    value: sys-spectrum-scale-team-cloud-native-docker-local.artifactory.swg-devops.com/csi/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119
+                  - name: CSI_LIVENESSPROBE_IMAGE
+                    value: sys-spectrum-scale-team-cloud-native-docker-local.artifactory.swg-devops.com/csi/livenessprobe@sha256:406f59599991916d2942d8d02f076d957ed71b541ee19f09fc01723a6e6f5932
+                  - name: CSI_NODE_REGISTRAR_IMAGE
+                    value: sys-spectrum-scale-team-cloud-native-docker-local.artifactory.swg-devops.com/csi/csi-node-driver-registrar@sha256:fc39de92284cc45240417f48549ee1c98da7baef7d0290bc29b232756dfce7c0
+                  - name: CSI_RESIZER_IMAGE
+                    value: sys-scale-containers-csi-docker-local.artifactory.swg-devops.com/csi/csi-resizer@sha256:6e0546563b18872b0aa0cad7255a26bb9a87cb879b7fc3e2383c867ef4f706fb
+                  - name: CSI_DRIVER_IMAGE
+                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:cab17303df75d2ac9dcb7327a4deeb70991de29ffd58f027c50afe0e8b8428fb

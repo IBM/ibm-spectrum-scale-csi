@@ -52,7 +52,7 @@ spec:
                 fieldPath: metadata.namespace
           - name: CSI_DRIVER_IMAGE
             value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:cab17303df75d2ac9dcb7327a4deeb70991de29ffd58f027c50afe0e8b8428fb
-          image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:0ec50ce354216dc3b872b1fda06c6e723cf22121057383cd42d5dc238ba47d5f
+          image: csi-operator
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:

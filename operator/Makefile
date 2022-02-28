@@ -78,7 +78,7 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 
 generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
-	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	$(KUSTOMIZE) build --reorder none config/overlays/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
@@ -138,10 +138,10 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build config/overlays/default | kubectl apply -f -
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+	$(KUSTOMIZE) build config/overlays/default | kubectl delete -f -
 
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
