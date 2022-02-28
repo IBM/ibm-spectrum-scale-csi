@@ -35,6 +35,7 @@ pytest  tests/volume_provisioning.py --kubeconfig <kubeconfig_file_path>
 - To run the tests in namespace other than ibm-spectrum-scale-csi-driver (default) , please use --testnamespace parameter 
 - If operator is not running in namespace ibm-spectrum-scale-csi-driver (default) , please use --operatornamespace with value where operator is already running 
 - If operator yaml file is not at ../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml (default), please use --operatoryaml with value of operator yaml file path
+- If test.config file is not at config/test.config (default), please use --testconfig with value of test.config file path
 - For changing the name of html report, pass the `--html` with remote file name (optional).For example :
 ```
 pytest  tests/volume_provisioning.py --html report.html

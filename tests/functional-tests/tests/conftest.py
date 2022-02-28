@@ -14,8 +14,7 @@ def pytest_addoption(parser):
     parser.addoption("--operatornamespace", action="store")
     parser.addoption("--runslow", action="store_true", help="run slow tests")
     parser.addoption("--operatoryaml", action="store")
-
-
+    parser.addoption("--testconfig", action="store")
 
 def pytest_html_results_table_header(cells):
     cells.pop()
@@ -50,22 +49,20 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow)
 
 
-
 @pytest.fixture(scope='session')
 def check_csi_operator(request):
-    kubeconfig_value, clusterconfig_value, operator_namespace, test_namespace, runslow_val, operator_yaml = inputfunc.get_cmd_values(request)
-
-    data = inputfunc.read_driver_data(clusterconfig_value, test_namespace, operator_namespace, kubeconfig_value)
-    operator_data = inputfunc.read_operator_data(clusterconfig_value, operator_namespace, kubeconfig_value)
+    cmd_values = inputfunc.get_pytest_cmd_values(request)
+    data = inputfunc.read_driver_data(cmd_values)
+    operator_data = inputfunc.read_operator_data(cmd_values["clusterconfig_value"], cmd_values["operator_namespace"], cmd_values["test_config"], cmd_values["kubeconfig_value"])
     keep_objects = data["keepobjects"]
     if not(data["volBackendFs"] == ""):
         data["primaryFs"] = data["volBackendFs"]
 
     baseclass.filesetfunc.cred_check(data)
     baseclass.filesetfunc.set_data(data)
-    operator = baseclass.Scaleoperator(kubeconfig_value, operator_namespace, operator_yaml)
-    operator_object = baseclass.Scaleoperatorobject(operator_data, kubeconfig_value)
-    condition = baseclass.kubeobjectfunc.check_ns_exists(kubeconfig_value, operator_namespace)
+    operator = baseclass.Scaleoperator(cmd_values["kubeconfig_value"], cmd_values["operator_namespace"], cmd_values["operator_file"])
+    operator_object = baseclass.Scaleoperatorobject(operator_data, cmd_values["kubeconfig_value"])
+    condition = baseclass.kubeobjectfunc.check_ns_exists(cmd_values["kubeconfig_value"], cmd_values["operator_namespace"])
     if condition is True:
         if not(operator_object.check(data["csiscaleoperator_name"])):
             LOGGER.error("Operator custom object is not deployed succesfully")
@@ -88,9 +85,9 @@ def check_csi_operator(request):
 
     baseclass.filesetfunc.create_dir(data["volDirBasePath"])
 
-    # driver_object.create_test_ns(kubeconfig_value)
+    # driver_object.create_test_ns(cmd_values["kubeconfig_value"])
     yield
-    # driver_object.delete_test_ns(kubeconfig_value)
+    # driver_object.delete_test_ns(cmd_values["kubeconfig_value"])
     # delete_dir(data, data["volDirBasePath"])
     if condition is False and not(keep_objects):
         operator_object.delete()
