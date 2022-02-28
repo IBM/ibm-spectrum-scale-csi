@@ -40,6 +40,12 @@ rules:
   - get
   - update
 - apiGroups:
+  - config.openshift.io
+  resources:
+  - clusterversions
+  verbs:
+  - '*'
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
