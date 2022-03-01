@@ -91,6 +91,9 @@ var crStatus = csiv1.CSIScaleOperatorStatus{}
 // +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;create
 // +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=*
 
+// TODO: In case of multiple controllers, define role and rolebinding separately for leases.
+// +kubebuilder:rbac:groups="coordination.k8s.io",resources={leases},verbs=*
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
