@@ -64,6 +64,9 @@ type CSIScaleOperatorReconciler struct {
 
 const MinControllerReplicas = 1
 
+const eventReasonFailed string = "Failed"
+const eventMessageErrImagePull string = "Failed to pull image"
+
 var daemonSetRestartedKey = ""
 var daemonSetRestartedValue = ""
 
@@ -494,6 +497,18 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					}
 				},
 			}, preds).
+		Watches(&source.Kind{Type: &corev1.Event{}},
+			handler.Funcs{
+				CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
+					event := e.Object.(*corev1.Event)
+					if event.InvolvedObject.Kind == "Pod" &&
+						strings.Contains(event.InvolvedObject.Name, config.Product) &&
+						event.Reason == eventReasonFailed &&
+						strings.Contains(event.Message, eventMessageErrImagePull) {
+						logger.Error(err, "Pod "+event.InvolvedObject.Name+": "+event.Message)
+					}
+				},
+			}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
