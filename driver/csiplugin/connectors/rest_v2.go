@@ -555,11 +555,15 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 
 	uid, uidSpecified := opts[UserSpecifiedUID]
 	gid, gidSpecified := opts[UserSpecifiedGID]
+	permissions, permissionsSpecified := opts[UserSpecifiedPermissions]
 
 	if uidSpecified && gidSpecified {
 		filesetreq.Owner = fmt.Sprintf("%s:%s", uid, gid)
 	} else if uidSpecified {
 		filesetreq.Owner = fmt.Sprintf("%s", uid)
+	}
+	if permissionsSpecified {
+		filesetreq.Permissions = fmt.Sprintf("%s", permissions)
 	}
 
 	createFilesetURL := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName))
