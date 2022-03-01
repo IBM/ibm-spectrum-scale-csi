@@ -350,6 +350,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(scVol *scaleVolume, isNew
 		if scVol.VolGid != "" {
 			opt[connectors.UserSpecifiedGid] = scVol.VolGid
 		}
+		if scVol.VolPermissions != "" {
+			opt[connectors.UserSpecifiedPermissions] = scVol.VolPermissions
+		}
+
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
 		filesetPath, err = cs.createFilesetVol(scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
