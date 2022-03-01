@@ -970,9 +970,9 @@ spec:
                   type: object
                 type: array
               consistencyGroupPrefix:
-                description: consistencyGroupPrefix uniquely identifies the platform.
-                  This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-                  in hexadecimal values)
+                description: consistencyGroupPrefix is a prefix of consistency group
+                  of an application. This is expected to be an RFC4122 UUID value
+                  (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
                 type: string
               csipspname:
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
