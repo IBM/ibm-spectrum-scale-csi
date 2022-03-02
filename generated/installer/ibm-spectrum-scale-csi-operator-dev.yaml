@@ -1175,14 +1175,12 @@ spec:
                       properties:
                         inodeLimit:
                           type: string
-                          default: 1M
                           description: Inode limit for Primary Fileset
                         primaryFs:
                           type: string
                           description: The name of the primary CSIFilesystem
                         primaryFset:
                           type: string
-                          default: spectrum-scale-csi-volume-store
                           description: The name of the primary fileset, created in
                             primaryFs
                         remoteCluster:
@@ -1201,7 +1199,6 @@ spec:
                               Scale GUI node.
                           guiPort:
                             type: integer
-                            default: 443
                             description: guiPort is the port number of the Spectrum
                               Scale GUI node.
                         required:
@@ -1232,7 +1229,6 @@ spec:
                   CSI Spectrum Scale plugin pods.
               kubeletRootDirPath:
                 type: string
-                default: /var/lib/kubelet
                 description: kubeletRootDirPath is the path for kubelet root directory.
               livenessprobe:
                 type: string
