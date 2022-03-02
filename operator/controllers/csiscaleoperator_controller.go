@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/google/uuid"
+	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/presslabs/controller-util/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -90,6 +92,7 @@ var crStatus = csiv1.CSIScaleOperatorStatus{}
 // +kubebuilder:rbac:groups="storage.k8s.io",resources={volumeattachments,storageclasses,csidrivers},verbs=*
 // +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;create
 // +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=*
+// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=*
 
 // TODO: In case of multiple controllers, define role and rolebinding separately for leases.
 // +kubebuilder:rbac:groups="coordination.k8s.io",resources={leases},verbs=*
@@ -380,7 +383,21 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Synchronizing node/driver daemonset
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue)
+	CGPrefix := r.GetConsistencyGroupPrefix(instance)
+
+	if instance.Spec.CGPrefix == "" {
+		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
+		instance.Spec.CGPrefix = CGPrefix
+		err := r.Client.Update(ctx, instance.Unwrap())
+		if err != nil {
+			logger.Error(err, "Reconciler Client.Update() failed.")
+			return ctrl.Result{}, err
+		}
+		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
+
+	}
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -1347,4 +1364,49 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 			}
 		}
 	}
+}
+
+// GetConsistencyGroupPrefix returns a universal unique ideintiier(UUID) of string format.
+// For Redhat Openshift Cluster Platform, Cluster ID as string is returned.
+// For Vanilla kubernetes cluster, generated UUID is returned.
+func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscaleoperator.CSIScaleOperator) string {
+	logger := csiLog.WithName("GetConsistencyGroupPrefix")
+
+	logger.Info("Checking if consistency group prefix is passed in CSIScaleOperator specs.")
+	if instance.Spec.CGPrefix != "" {
+		logger.Info("Consistency group prefix found in CSIScaleOperator specs.")
+		return instance.Spec.CGPrefix
+	}
+
+	logger.Info("Consistency group prefix is not found in CSIScaleOperator specs.")
+	logger.Info("Fetching cluster information.")
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if !isOpenShift {
+		logger.Info("Cluster is a Kubernetes Platform.")
+		UUID := r.GenerateUUID()
+		return UUID.String()
+	}
+
+	logger.Info("Cluster is Redhat Openshift Cluster Platform.")
+	logger.Info("Fetching cluster ID from ClusterVersion resource.")
+	CV := &configv1.ClusterVersion{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name: "version",
+	}, CV)
+	if err != nil {
+		logger.Info("Unable to fetch the cluster scoped resource.")
+		UUID := r.GenerateUUID()
+		return UUID.String()
+	}
+	UUID := string(CV.Spec.ClusterID)
+	return UUID
+
+}
+
+// GenerateUUID returns a new random UUID.
+func (r *CSIScaleOperatorReconciler) GenerateUUID() uuid.UUID {
+	logger := csiLog.WithName("GenerateUUID")
+	logger.Info("Generating a unique cluster ID.")
+	UUID := uuid.New()
+	return UUID
 }

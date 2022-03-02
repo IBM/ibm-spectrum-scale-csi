@@ -30,6 +30,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -37,6 +38,7 @@ import (
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers"
 
+	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	//+kubebuilder:scaffold:imports
 )
@@ -58,6 +60,7 @@ func init() {
 
 	utilruntime.Must(csiv1.AddToScheme(scheme))
 	utilruntime.Must(securityv1.AddToScheme(scheme))
+	utilruntime.Must(configv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
