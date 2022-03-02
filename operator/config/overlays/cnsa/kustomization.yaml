@@ -30,6 +30,9 @@ patches:
             containers:
               - name: operator
                 env:
+                  # do not remove: this is required SHORTNAME_NODE_MAPPING="yes" for split hostNetwork node mapping.
+                  - name: SHORTNAME_NODE_MAPPING
+                    value: "yes"
                   - name: CSI_SNAPSHOTTER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:89e900a160a986a1a7a4eba7f5259e510398fa87ca9b8a729e7dec59e04c7709
                   - name: CSI_ATTACHER_IMAGE
