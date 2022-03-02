@@ -1188,8 +1188,6 @@ spec:
                         remoteCluster:
                           type: string
                           description: Remote Spectrum Scale cluster ID
-                      required:
-                      - primaryFs
                     restApi:
                       type: array
                       description: restApi is a collection of targets for REST calls

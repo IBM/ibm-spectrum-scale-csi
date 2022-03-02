@@ -331,7 +331,7 @@ type CSIFilesystem struct {
 	InodeLimit string `json:"inodeLimit"`
 
 	// The name of the primary CSIFilesystem
-	PrimaryFs string `json:"primaryFs"`
+	PrimaryFs string `json:"primaryFs,omitempty"`
 
 	// +optional
 	// +kubebuilder:default:=spectrum-scale-csi-volume-store
