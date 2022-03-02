@@ -127,10 +127,6 @@ type CSIScaleOperatorSpec struct {
 	// PodSecurityPolicy name for CSI driver and sidecar pods.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="CSI Pod Security Policy Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	CSIpspname string `json:"csipspname,omitempty"`
-
-	// consistencyGroupPrefix is a prefix of consistency group of an application.
-	// This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
-	CGPrefix string `json:"consistencyGroupPrefix,omitempty"`
 }
 
 // CSIScaleOperatorStatus defines the observed state of CSIScaleOperator

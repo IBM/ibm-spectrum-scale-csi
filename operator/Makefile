@@ -94,12 +94,10 @@ fmt: ## Run go fmt against code.
 	go fmt ./...
 	go mod tidy
 
-## TODO: GoLint is deprecated, should look for alternatives. 
-## More info: https://github.com/golang/go/issues/38968
-lint: ## Run go lint against code. 
+lint: ## Run go lint against code.
 	@echo "****** LINTING ******"
-	go get -d golang.org/x/lint/golint
-	golint ./... | grep -v vendor/ > ./docs/dev/security/results.golint.txt
+	go get -u golang.org/x/lint/golint
+	golint ./... > ./docs/dev/security/results.golint.txt
 
 sec: ## Run gosec against code.
 	@echo "****** SECURITY SCANNING ******"

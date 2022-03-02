@@ -388,18 +388,6 @@ spec:
           - get
           - update
         - apiGroups:
-          - config.openshift.io
-          resources:
-          - clusterversions
-          verbs:
-          - '*'
-        - apiGroups:
-          - coordination.k8s.io
-          resources:
-          - leases
-          verbs:
-          - '*'
-        - apiGroups:
           - csi.ibm.com
           resources:
           - '*'
@@ -462,15 +450,9 @@ spec:
                     nodeSelectorTerms:
                     - matchExpressions:
                       - key: kubernetes.io/arch
-                        operator: In
-                        values:
-                        - amd64
-                        - ppc64le
-                        - s390x
+                        operator: Exists
               containers:
-              - args:
-                - --leaderElection=true
-                env:
+              - env:
                 - name: METRICS_BIND_ADDRESS
                   value: "8383"
                 - name: WATCH_NAMESPACE

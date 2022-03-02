@@ -108,7 +108,6 @@ const (
 	UserSpecifiedCompression      string = "compression"
 	UserSpecifiedTier             string = "tier"
 	UserSpecifiedSnapWindow       string = "snapWindow"
-	UserSpecifiedConsistencyGroup string = "consistencyGroup"
 
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )

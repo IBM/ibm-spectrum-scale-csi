@@ -128,12 +128,6 @@ rules:
   - get
   - update
 - resources:
-  - clusterversions
-  apiGroups:
-  - config.openshift.io
-  verbs:
-  - '*'
-- resources:
   - leases
   apiGroups:
   - coordination.k8s.io
@@ -562,7 +556,7 @@ spec:
                                     field and the ones listed in the namespaces field.
                                     null selector and null or empty namespaces list
                                     means "this pod's namespace". An empty selector
-                                    ({}) matches all namespaces. This field is beta-level
+                                    ({}) matches all namespaces. This field is alpha-level
                                     and is only honored when PodAffinityNamespaceSelector
                                     feature is enabled.
                                   properties:
@@ -717,7 +711,7 @@ spec:
                                 the ones listed in the namespaces field. null selector
                                 and null or empty namespaces list means "this pod's
                                 namespace". An empty selector ({}) matches all namespaces.
-                                This field is beta-level and is only honored when
+                                This field is alpha-level and is only honored when
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
@@ -871,7 +865,7 @@ spec:
                                     field and the ones listed in the namespaces field.
                                     null selector and null or empty namespaces list
                                     means "this pod's namespace". An empty selector
-                                    ({}) matches all namespaces. This field is beta-level
+                                    ({}) matches all namespaces. This field is alpha-level
                                     and is only honored when PodAffinityNamespaceSelector
                                     feature is enabled.
                                   properties:
@@ -1026,7 +1020,7 @@ spec:
                                 the ones listed in the namespaces field. null selector
                                 and null or empty namespaces list means "this pod's
                                 namespace". An empty selector ({}) matches all namespaces.
-                                This field is beta-level and is only honored when
+                                This field is alpha-level and is only honored when
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
@@ -1231,11 +1225,6 @@ spec:
                   - restApi
                   - secrets
                   - secureSslMode
-              consistencyGroupPrefix:
-                type: string
-                description: consistencyGroupPrefix is a prefix of consistency group
-                  of an application. This is expected to be an RFC4122 UUID value
-                  (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
               csipspname:
                 type: string
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.

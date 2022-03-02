@@ -741,7 +741,7 @@ func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 		InitialDelaySeconds: int32(10),
 		TimeoutSeconds:      int32(10),
 		PeriodSeconds:       int32(20),
-		ProbeHandler:        c.GetHandler(),
+		Handler:             c.GetHandler(),
 	}
 	return &probe
 }
@@ -762,8 +762,8 @@ func (c *CSIScaleOperator) GetProtocol() corev1.Protocol {
 	return protocol
 }
 
-func (c *CSIScaleOperator) GetHandler() corev1.ProbeHandler {
-	handler := corev1.ProbeHandler{
+func (c *CSIScaleOperator) GetHandler() corev1.Handler {
+	handler := corev1.Handler{
 		HTTPGet: c.GetHTTPGetAction(),
 	}
 	return handler
