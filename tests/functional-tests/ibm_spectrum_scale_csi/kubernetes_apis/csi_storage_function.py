@@ -372,11 +372,12 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
         if "volDirBasePath" in storage_class_parameters and "volBackendFs" in storage_class_parameters:
             return True
         if "version" in storage_class_parameters and storage_class_parameters["version"] == "2":
-            if not(filesetfunc.created_fileset_exists(namespace_value)):
-                LOGGER.error(f'PVC Check : Fileset {namespace_value} doesn\'t exists for version=2 SC')
+            cg_fileset_name = get_cg_filesetname_from_pv(volume_name, created_objects)
+            if not(filesetfunc.created_fileset_exists(cg_fileset_name)):
+                LOGGER.error(f'PVC Check : Fileset {cg_fileset_name} doesn\'t exists for version=2 SC')
                 return False
             else:
-                LOGGER.info(f'PVC Check : Fileset {namespace_value} has been created successfully for version=2 SC')
+                LOGGER.info(f'PVC Check : Fileset {cg_fileset_name} has been created successfully for version=2 SC')
 
     fileset_name = get_filesetname_from_pv(volume_name, created_objects)
     if not(filesetfunc.created_fileset_exists(fileset_name)):
@@ -1987,3 +1988,31 @@ def get_filesetname_from_pv(volume_name, created_objects):
         assert False
 
     return fileset_name
+
+
+def get_cg_filesetname_from_pv(volume_name, created_objects):
+    """
+    return consistency group filesetname from VolumeHandle of PV
+    """
+    api_instance = client.CoreV1Api()
+    cg_fileset_name = None
+
+    if volume_name is not None:
+        try:
+            api_response = api_instance.read_persistent_volume(
+            name=volume_name, pretty=True)
+            LOGGER.debug(str(api_response))
+            volume_handle = api_response.spec.csi.volume_handle
+            volume_handle = volume_handle.split(";")
+            cg_fileset_name= volume_handle[4]
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->read_persistent_volume: {e}")
+            LOGGER.info(f'PV {volume_name} does not exists on cluster')
+
+    if volume_name is not None and cg_fileset_name is None:
+        LOGGER.error(f"Not able to find cg fileset name for PV {volume_name}")
+        clean_with_created_objects(created_objects)
+        assert False
+
+    return cg_fileset_name
