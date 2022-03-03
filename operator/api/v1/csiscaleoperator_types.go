@@ -119,7 +119,6 @@ type CSIScaleOperatorSpec struct {
 	// status defines the observed state of CSIScaleOperator
 	// Status CSIScaleOperatorStatus `json:"status,omitempty"`
 
-	// +kubebuilder:default:=/var/lib/kubelet
 	// kubeletRootDirPath is the path for kubelet root directory.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubelet Root Directory Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	KubeletRootDirPath string `json:"kubeletRootDirPath,omitempty"`
@@ -330,15 +329,13 @@ type CSICluster struct {
 type CSIFilesystem struct {
 
 	// +optional
-	// +kubebuilder:default:="1M"
 	// Inode limit for Primary Fileset
 	InodeLimit string `json:"inodeLimit"`
 
 	// The name of the primary CSIFilesystem
-	PrimaryFs string `json:"primaryFs"`
+	PrimaryFs string `json:"primaryFs,omitempty"`
 
 	// +optional
-	// +kubebuilder:default:=spectrum-scale-csi-volume-store
 	// The name of the primary fileset, created in primaryFs
 	PrimaryFset string `json:"primaryFset"`
 
@@ -354,7 +351,6 @@ type RestApi struct {
 	GuiHost string `json:"guiHost"`
 
 	// guiPort is the port number of the Spectrum Scale GUI node.
-	// +kubebuilder:default:=443
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="GUI Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	GuiPort int `json:"guiPort,omitempty"`
 }
