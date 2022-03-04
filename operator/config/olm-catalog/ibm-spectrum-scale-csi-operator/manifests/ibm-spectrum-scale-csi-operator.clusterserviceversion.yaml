@@ -182,6 +182,13 @@ spec:
         path: clusters[0].secureSslMode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: consistencyGroupPrefix is a prefix of consistency group of an
+          application. This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+          in hexadecimal values)
+        displayName: Consistency Group Prefix
+        path: consistencyGroupPrefix
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: PodSecurityPolicy name for CSI driver and sidecar pods.
         displayName: CSI Pod Security Policy Name
         path: csipspname
@@ -478,8 +485,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: CSI_DRIVER_IMAGE
-                  value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
+                  value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:cab17303df75d2ac9dcb7327a4deeb70991de29ffd58f027c50afe0e8b8428fb
+                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:0ec50ce354216dc3b872b1fda06c6e723cf22121057383cd42d5dc238ba47d5f
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:

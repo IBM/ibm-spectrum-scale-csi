@@ -5,10 +5,10 @@ api/v1/csiscaleoperator_types.go:297:1: comment on exported type CSICluster shou
 api/v1/csiscaleoperator_types.go:307:2: struct field Id should be ID
 api/v1/csiscaleoperator_types.go:316:2: struct field RestApi should be RestAPI
 api/v1/csiscaleoperator_types.go:329:1: comment on exported type CSIFilesystem should be of the form "CSIFilesystem ..." (with optional leading article)
-api/v1/csiscaleoperator_types.go:349:1: comment on exported type RestApi should be of the form "RestApi ..." (with optional leading article)
-api/v1/csiscaleoperator_types.go:350:6: type RestApi should be RestAPI
-api/v1/csiscaleoperator_types.go:393:6: exported type CSIReason should have comment or be unexported
-api/v1/csiscaleoperator_types.go:396:2: exported const CSIConfigured should have comment (or a comment on this block) or be unexported
+api/v1/csiscaleoperator_types.go:347:1: comment on exported type RestApi should be of the form "RestApi ..." (with optional leading article)
+api/v1/csiscaleoperator_types.go:348:6: type RestApi should be RestAPI
+api/v1/csiscaleoperator_types.go:390:6: exported type CSIReason should have comment or be unexported
+api/v1/csiscaleoperator_types.go:393:2: exported const CSIConfigured should have comment (or a comment on this block) or be unexported
 controllers/csiscaleoperator_controller.go:67:7: exported const MinControllerReplicas should have comment or be unexported
 controllers/csiscaleoperator_controller.go:518:1: exported function Contains should have comment or be unexported
 controllers/csiscaleoperator_controller.go:1101:2: don't use underscores in Go names; var csiaccess_users_new should be csiaccessUsersNew

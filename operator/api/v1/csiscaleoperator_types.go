@@ -129,6 +129,7 @@ type CSIScaleOperatorSpec struct {
 
 	// consistencyGroupPrefix is a prefix of consistency group of an application.
 	// This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Consistency Group Prefix",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	CGPrefix string `json:"consistencyGroupPrefix,omitempty"`
 }
 
