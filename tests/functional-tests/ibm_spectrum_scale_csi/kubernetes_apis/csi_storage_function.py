@@ -52,7 +52,11 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
                        "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
-                       "version", "compression", "tier"]
+                       "version", "compression", "tier", "consistencyGroup"]
+    
+    if "version" in values and values["version"] == "2" and "consistencyGroup" not in values:
+        values["consistencyGroup"] = get_random_name("cg")
+
     for sc_parameter in list_parameters:
         if sc_parameter in values:
             storage_class_parameters[sc_parameter] = values[sc_parameter]

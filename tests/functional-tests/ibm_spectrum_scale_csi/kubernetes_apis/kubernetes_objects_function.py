@@ -178,7 +178,6 @@ def create_crd(body):
         Raises an ValueError exception but it is expected. hence we pass.
 
     """
-
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
