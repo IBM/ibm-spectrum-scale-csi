@@ -178,9 +178,7 @@ def create_crd(body):
         Raises an ValueError exception but it is expected. hence we pass.
 
     """
-    version = body["apiVersion"].split("/")
-    crd_version = version[1]
-    LOGGER.info(f"CRD apiVersion is {crd_version}")
+
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
@@ -377,7 +375,7 @@ def check_crd_deleted():
         try:
             custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
                 group="apiextensions.k8s.io",
-                version=crd_version,
+                version="v1",
                 plural="customresourcedefinitions",
                 name=crd_name
             )
