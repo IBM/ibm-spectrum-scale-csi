@@ -491,9 +491,9 @@ class Snapshot():
         if value_pvc is None:
             value_pvc = copy.deepcopy(self.value_pvc)
 
+        created_objects = get_cleanup_dict()
         for pvc_value in value_pvc:
 
-            created_objects = get_cleanup_dict()
             LOGGER.info("-"*100)
             sc_name = csistoragefunc.get_random_name("sc")
             csistoragefunc.create_storage_class(value_sc, sc_name, created_objects)
@@ -671,6 +671,7 @@ def get_cleanup_dict():
         "clone_pvc": [],
         "pv": [],
         "dir": [],
-        "ds": []
+        "ds": [],
+        "cg": []
     }
     return created_object
