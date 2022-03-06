@@ -178,14 +178,11 @@ def create_crd(body):
         Raises an ValueError exception but it is expected. hence we pass.
 
     """
-    version = body["apiVersion"].split("/")
-    crd_version = version[1]
-    LOGGER.info(f"CRD apiVersion is {crd_version}")
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
             group="apiextensions.k8s.io",
-            version=crd_version,
+            version="v1",
             plural="customresourcedefinitions",
             body=body,
             pretty=True
@@ -200,7 +197,7 @@ def create_crd(body):
         assert False
 
 
-def delete_crd(crd_version):
+def delete_crd():
     """
     Delete existing IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
 
@@ -219,7 +216,7 @@ def delete_crd(crd_version):
     try:
         custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
             group="apiextensions.k8s.io",
-            version=crd_version,
+            version="v1",
             plural="customresourcedefinitions",
             name=crd_name
         )
@@ -355,7 +352,7 @@ def delete_cluster_role_binding(cluster_role_binding_name):
         assert False
 
 
-def check_crd_deleted(crd_version):
+def check_crd_deleted():
     """
     Function for checking CRD (Custom Resource Defination) is deleted or not
     If CRD is not deleted in 60 seconds,function asserts
@@ -377,7 +374,7 @@ def check_crd_deleted(crd_version):
         try:
             custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
                 group="apiextensions.k8s.io",
-                version=crd_version,
+                version="v1",
                 plural="customresourcedefinitions",
                 name=crd_name
             )
@@ -538,7 +535,7 @@ def check_cluster_role_binding_deleted(cluster_role_binding_name):
     assert False
 
 
-def check_crd_exists(crd_version):
+def check_crd_exists():
     """
     Checks custom resource defination exists or not
 
@@ -558,7 +555,7 @@ def check_crd_exists(crd_version):
     try:
         custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
             group="apiextensions.k8s.io",
-            version=crd_version,
+            version="v1",
             plural="customresourcedefinitions",
             name=crd_name
         )

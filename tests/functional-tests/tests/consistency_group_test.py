@@ -48,14 +48,14 @@ def test_get_version():
 
 
 def test_driver_cg_pass_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "consistencyGroup": "local-test_driver_cg_pass_1-cg"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 5
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 @pytest.mark.regression
 def test_driver_cg_pass_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "consistencyGroup": None}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
