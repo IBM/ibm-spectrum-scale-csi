@@ -52,7 +52,11 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
                        "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
-                       "version", "compression", "tier"]
+                       "version", "compression", "tier", "consistencyGroup"]
+    
+    if "version" in values and values["version"] == "2" and "consistencyGroup" not in values:
+        values["consistencyGroup"] = get_random_name("cg")
+
     for sc_parameter in list_parameters:
         if sc_parameter in values:
             storage_class_parameters[sc_parameter] = values[sc_parameter]
@@ -376,8 +380,9 @@ def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created
             if not(filesetfunc.created_fileset_exists(cg_fileset_name)):
                 LOGGER.error(f'PVC Check : Fileset {cg_fileset_name} doesn\'t exists for version=2 SC')
                 return False
-            else:
-                LOGGER.info(f'PVC Check : Fileset {cg_fileset_name} has been created successfully for version=2 SC')
+            LOGGER.info(f'PVC Check : Fileset {cg_fileset_name} has been created successfully for version=2 SC')
+            if cg_fileset_name not in created_objects["cg"]:
+                created_objects["cg"].append(cg_fileset_name)
 
     fileset_name = get_filesetname_from_pv(volume_name, created_objects)
     if not(filesetfunc.created_fileset_exists(fileset_name)):
@@ -1577,6 +1582,9 @@ def clean_with_created_objects(created_objects):
         delete_storage_class(sc_name, created_objects)
         check_storage_class_deleted(sc_name, created_objects)
 
+    for cg_fileset_name in copy.deepcopy(created_objects["cg"]):
+        check_cg_fileset_deleted(cg_fileset_name, created_objects)
+
 
 def delete_pod(pod_name, created_objects):
     """ deletes pod pod_name """
@@ -2016,3 +2024,19 @@ def get_cg_filesetname_from_pv(volume_name, created_objects):
         assert False
 
     return cg_fileset_name
+
+
+def check_cg_fileset_deleted(cg_fileset_name, created_objects):
+    if keep_objects:
+        return
+
+    for _ in range(0,24):
+        if not(filesetfunc.created_fileset_exists(cg_fileset_name)):
+            created_objects["cg"].remove(cg_fileset_name)
+            LOGGER.info(f"Consistency group fileset {cg_fileset_name} is deleted")
+            break
+    else:
+        created_objects["cg"].remove(cg_fileset_name)
+        LOGGER.error(f"Consistency group fileset {cg_fileset_name} is not deleted")
+        clean_with_created_objects(created_objects)
+        assert False

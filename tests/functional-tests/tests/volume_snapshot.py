@@ -571,14 +571,14 @@ def test_snapshot_dynamic_volume_cloning_1():
 @pytest.mark.regression
 @pytest.mark.cg
 def test_snapshot_cg_pass_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "consistencyGroup": None}
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
 
 
 @pytest.mark.cg
 def test_snapshot_cg_pass_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "consistencyGroup": "local-test_snapshot_cg_pass_2-cg"}
     value_vs_class={"deletionPolicy": "Delete"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class, number_of_snapshots=10)
 
