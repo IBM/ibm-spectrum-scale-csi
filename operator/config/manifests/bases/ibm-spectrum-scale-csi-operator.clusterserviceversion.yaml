@@ -116,6 +116,13 @@ spec:
         path: clusters[0].secureSslMode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: consistencyGroupPrefix is a prefix of consistency group of an
+          application. This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+          in hexadecimal values)
+        displayName: Consistency Group Prefix
+        path: consistencyGroupPrefix
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: PodSecurityPolicy name for CSI driver and sidecar pods.
         displayName: CSI Pod Security Policy Name
         path: csipspname
