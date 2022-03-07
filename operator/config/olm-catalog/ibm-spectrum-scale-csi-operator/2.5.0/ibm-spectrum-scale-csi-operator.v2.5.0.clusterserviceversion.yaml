@@ -182,6 +182,13 @@ spec:
         path: clusters[0].secureSslMode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: consistencyGroupPrefix is a prefix of consistency group of an
+          application. This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+          in hexadecimal values)
+        displayName: Consistency Group Prefix
+        path: consistencyGroupPrefix
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: PodSecurityPolicy name for CSI driver and sidecar pods.
         displayName: CSI Pod Security Policy Name
         path: csipspname
@@ -388,6 +395,18 @@ spec:
           - get
           - update
         - apiGroups:
+          - config.openshift.io
+          resources:
+          - clusterversions
+          verbs:
+          - '*'
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - '*'
+        - apiGroups:
           - csi.ibm.com
           resources:
           - '*'
@@ -450,9 +469,15 @@ spec:
                     nodeSelectorTerms:
                     - matchExpressions:
                       - key: kubernetes.io/arch
-                        operator: Exists
+                        operator: In
+                        values:
+                        - amd64
+                        - ppc64le
+                        - s390x
               containers:
-              - env:
+              - args:
+                - --leaderElection=true
+                env:
                 - name: METRICS_BIND_ADDRESS
                   value: "8383"
                 - name: WATCH_NAMESPACE
@@ -460,8 +485,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: CSI_DRIVER_IMAGE
-                  value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.0
-                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
+                  value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:c61b14b2dd3a2ac7c27187019acf97eb3bae57c1f67a8cea7f8ac069519f9b53
+                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:241ab702e62c087b99eb5f2416675bc09b0f1d96365c34b3f292a6ca1429a9e7
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:

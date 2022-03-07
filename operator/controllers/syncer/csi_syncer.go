@@ -864,12 +864,12 @@ func ensurePorts(ports ...corev1.ContainerPort) []corev1.ContainerPort {
 	return ports
 }
 
-func ensureProbe(delay, timeout, period int32, handler corev1.Handler) *corev1.Probe {
+func ensureProbe(delay, timeout, period int32, handler corev1.ProbeHandler) *corev1.Probe {
 	return &corev1.Probe{
 		InitialDelaySeconds: delay,
 		TimeoutSeconds:      timeout,
 		PeriodSeconds:       period,
-		Handler:             handler,
+		ProbeHandler:        handler,
 		SuccessThreshold:    1,
 		FailureThreshold:    30,
 	}

@@ -64,6 +64,7 @@ const (
 	ENVNodeName    = "NODE_NAME"
 	ENVKubeVersion = "KUBE_VERSION"
 	ENVIsOpenShift = "IS_OpenShift"
+	ENVCGPrefix    = "CSI_CG_PREFIX"
 
 	DriverVersion   = "2.5.0"
 	OperatorVersion = "2.5.0"

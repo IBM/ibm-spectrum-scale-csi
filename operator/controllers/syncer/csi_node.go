@@ -63,6 +63,9 @@ const (
 
 var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
 
+// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
+var UUID string
+
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
 	obj    runtime.Object
@@ -70,7 +73,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -84,6 +87,8 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 		driver: driver,
 		obj:    obj,
 	}
+
+	UUID = CGPrefix
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -181,7 +186,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			logger.Info("Invalid liveness probe port number", "received port: ", healthPortStr)
 		}
 	}
-	nodePlugin.LivenessProbe = ensureProbe(10, 3, 10, corev1.Handler{
+	nodePlugin.LivenessProbe = ensureProbe(10, 3, 10, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
 			Port:   healthPort,
@@ -215,7 +220,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 	registrar.Lifecycle = &corev1.Lifecycle{
-		PreStop: &corev1.Handler{
+		PreStop: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{"/bin/sh", "-c", "rm -rf", s.driver.GetSocketPath()},
 			},
@@ -297,6 +302,11 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 			shortNodeNameMappingObj.Value = shortNodeNameMapping
 		}
 		EnvVars = append(EnvVars, shortNodeNameMappingObj)
+
+		CGPrefixObj := corev1.EnvVar{}
+		CGPrefixObj.Name = config.ENVCGPrefix
+		CGPrefixObj.Value = UUID
+		EnvVars = append(EnvVars, CGPrefixObj)
 
 		return append(EnvVars, []corev1.EnvVar{
 			{
