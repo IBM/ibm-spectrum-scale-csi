@@ -29,7 +29,8 @@ def pytest_runtest_makereport(item, call):
 
 now = datetime.now()
 dt_string = now.strftime("%d-%m-%Y-%H-%M-%S")
-default_html_path = 'report-'+dt_string+'.html'
+
+default_html_path = 'html-reports/csi-test-report-'+dt_string+'.html'
 
 
 @pytest.hookimpl(tryfirst=True)

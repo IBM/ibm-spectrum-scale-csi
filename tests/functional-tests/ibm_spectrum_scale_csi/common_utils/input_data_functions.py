@@ -52,16 +52,11 @@ def read_driver_data(cmd_values):
             assert False
 
     else:
-        for cluster in loadcr_yaml["spec"]["clusters"]:
-            if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
-                local_secret_name=cluster["secrets"]
-                data["username"],data["password"]= csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],local_secret_name)
-            else:
-                remote_secret_name= cluster["secrets"]
-                data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]=csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],remote_secret_name) 
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data)
+
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
-        if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             if "primaryFset" in cluster:
@@ -102,13 +97,7 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
             LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
             assert False
     else:
-        for cluster in loadcr_yaml["spec"]["clusters"]:
-            if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
-                local_secret_name=cluster["secrets"]
-                data["username"],data["password"]= csiobjectfunc.get_gui_creds_for_username_password(namespace,local_secret_name)
-            else:
-                remote_secret_name= cluster["secrets"]
-                data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]=csiobjectfunc.get_gui_creds_for_username_password(namespace,remote_secret_name) 
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data)
 
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
@@ -116,7 +105,7 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
     data["remote_secret_names"] = []
     data["remote_cacert_names"] = []
     for cluster in loadcr_yaml["spec"]["clusters"]:
-        if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             data["local_secret_name"] = cluster["secrets"]
@@ -271,3 +260,18 @@ def randomString(stringLength=10):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
+
+
+def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data):
+    for cluster in loadcr_yaml["spec"]["clusters"]:
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
+            local_secret_name=cluster["secrets"]
+            data["username"],data["password"]= \
+                csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],local_secret_name)
+            if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
+                data["remoteFs"] = cluster["primary"]["primaryFs"]
+                data["remoteid"] = cluster["primary"]["remoteCluster"]
+        else:
+            remote_secret_name= cluster["secrets"]
+            data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
+                csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],remote_secret_name)

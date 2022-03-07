@@ -282,13 +282,10 @@ def get_gui_creds_for_username_password(ns_name, secret_name):
             name=secret_name, namespace=ns_name, pretty=True)
         encoded_username = api_response.data['username']
         encoded_password = api_response.data['password']
-        base64_bytes_username = encoded_username.encode('ascii')
-        message_bytes_username = base64.b64decode(base64_bytes_username)
-        decoded_username = message_bytes_username.decode('ascii')
-        base64_bytes_password = encoded_password.encode('ascii')
-        message_bytes_password = base64.b64decode(base64_bytes_password)
-        decoded_password = message_bytes_password.decode('ascii')
-        LOGGER.info(f"UserName: {decoded_username} Password: {decoded_password}")
+        decoded_username = base64.b64decode(encoded_username)
+        decoded_username = decoded_username.decode('ascii')
+        decoded_password = base64.b64decode(encoded_password)
+        decoded_password = decoded_password.decode('ascii')
         return decoded_username,decoded_password
     except ApiException as e:
         LOGGER.error(f'Secret {secret_name} does not exist: {e}')
