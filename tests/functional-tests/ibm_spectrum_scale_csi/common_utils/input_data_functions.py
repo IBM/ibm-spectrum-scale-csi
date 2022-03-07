@@ -39,7 +39,7 @@ def read_driver_data(cmd_values):
     data = get_test_data(cmd_values["test_config"])
 
     data["namespace"] = cmd_values["test_namespace"]
-
+    
     config.load_kube_config(config_file=cmd_values["kubeconfig_value"])
     loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(cmd_values["operator_namespace"], data["csiscaleoperator_name"])
 
@@ -50,6 +50,15 @@ def read_driver_data(cmd_values):
         except yaml.YAMLError as exc:
             LOGGER.error(f'Error in parsing the cr file {cmd_values["clusterconfig_value"]} : {exc}')
             assert False
+
+    else:
+        for cluster in loadcr_yaml["spec"]["clusters"]:
+            if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+                local_secret_name=cluster["secrets"]
+                data["username"],data["password"]= csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],local_secret_name)
+            else:
+                remote_secret_name= cluster["secrets"]
+                data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]=csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],remote_secret_name) 
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
@@ -92,6 +101,15 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
         except yaml.YAMLError as exc:
             LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
             assert False
+    else:
+        for cluster in loadcr_yaml["spec"]["clusters"]:
+            if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+                local_secret_name=cluster["secrets"]
+                data["username"],data["password"]= csiobjectfunc.get_gui_creds_for_username_password(namespace,local_secret_name)
+            else:
+                remote_secret_name= cluster["secrets"]
+                data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]=csiobjectfunc.get_gui_creds_for_username_password(namespace,remote_secret_name) 
+
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
     data["custom_object_body"]["metadata"]["namespace"] = namespace
