@@ -9,3 +9,27 @@ bases:
 - ../../manager/
 - ../../rbac/
 - ../../crd/
+
+images:
+- name: csi-operator
+  newName: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver
+  digest: sha256:241ab702e62c087b99eb5f2416675bc09b0f1d96365c34b3f292a6ca1429a9e7
+  # newTag: v2.5.0
+
+patches:
+  - target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ibm-spectrum-scale-csi-operator
+      spec:
+        template:
+          spec:
+            containers:
+              - name: operator
+                env:
+                  - name: CSI_DRIVER_IMAGE
+                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:c61b14b2dd3a2ac7c27187019acf97eb3bae57c1f67a8cea7f8ac069519f9b53

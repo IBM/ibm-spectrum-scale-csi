@@ -13,7 +13,7 @@ bases:
 images:
   - name: csi-operator
     newName: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator
-    digest: sha256:0ec50ce354216dc3b872b1fda06c6e723cf22121057383cd42d5dc238ba47d5f
+    digest: sha256:241ab702e62c087b99eb5f2416675bc09b0f1d96365c34b3f292a6ca1429a9e7
 
 patches:
   - target:
@@ -30,7 +30,7 @@ patches:
             containers:
               - name: operator
                 env:
-                  # do not remove: this is required SHORTNAME_NODE_MAPPING="yes" for split hostNetwork node mapping.
+                  # do not remove: this is required for CNSA; SHORTNAME_NODE_MAPPING="yes" for split hostNetwork node mapping.
                   - name: SHORTNAME_NODE_MAPPING
                     value: "yes"
                   - name: CSI_SNAPSHOTTER_IMAGE
@@ -46,4 +46,4 @@ patches:
                   - name: CSI_RESIZER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:6e0546563b18872b0aa0cad7255a26bb9a87cb879b7fc3e2383c867ef4f706fb
                   - name: CSI_DRIVER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:cab17303df75d2ac9dcb7327a4deeb70991de29ffd58f027c50afe0e8b8428fb
+                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:c61b14b2dd3a2ac7c27187019acf97eb3bae57c1f67a8cea7f8ac069519f9b53

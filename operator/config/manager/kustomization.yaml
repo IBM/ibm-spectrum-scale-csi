@@ -5,10 +5,11 @@ kind: Kustomization
 resources:
 - manager.yaml
 
-images:
-- name: csi-operator
-  newName: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator
   # digest: sha256:0ec50ce354216dc3b872b1fda06c6e723cf22121057383cd42d5dc238ba47d5f
-  newTag: v2.5.0
+# images:
+# - name: csi-operator
+#   newName: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator
+#   newTag: v2.5.0
+
 commonAnnotations:
   productVersion: 2.5.0
