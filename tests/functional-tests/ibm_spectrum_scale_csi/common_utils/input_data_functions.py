@@ -269,8 +269,9 @@ def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data):
             data["username"],data["password"]= \
                 csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],local_secret_name)
             if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
-                data["remoteFs"] = cluster["primary"]["primaryFs"]
-                data["remoteid"] = cluster["primary"]["remoteCluster"]
+                if data["remoteFs"] is "" and data["remoteid"] is "":
+                    data["remoteFs"] = cluster["primary"]["primaryFs"]
+                    data["remoteid"] = cluster["primary"]["remoteCluster"]
         else:
             remote_secret_name= cluster["secrets"]
             data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
