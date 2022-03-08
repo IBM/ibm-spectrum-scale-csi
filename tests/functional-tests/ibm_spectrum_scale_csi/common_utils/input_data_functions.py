@@ -210,6 +210,8 @@ def get_pytest_cmd_values(request):
     if kubeconfig_value is None:
         if os.path.isfile('config/kubeconfig'):
             kubeconfig_value = 'config/kubeconfig'
+        elif os.path.isfile('/root/auth/kubeconfig'):
+            kubeconfig_value = '/root/auth/kubeconfig'
         else:
             kubeconfig_value = '~/.kube/config'
 
