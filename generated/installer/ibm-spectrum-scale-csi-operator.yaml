@@ -134,6 +134,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - resources:
   - leases
   apiGroups:
