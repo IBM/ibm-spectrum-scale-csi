@@ -132,7 +132,8 @@ rules:
   apiGroups:
   - config.openshift.io
   verbs:
-  - '*'
+  - get
+  - list
 - resources:
   - leases
   apiGroups:

@@ -92,7 +92,7 @@ var crStatus = csiv1.CSIScaleOperatorStatus{}
 // +kubebuilder:rbac:groups="storage.k8s.io",resources={volumeattachments,storageclasses,csidrivers},verbs=*
 // +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;create
 // +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=*
-// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=*
+// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get;list
 
 // TODO: In case of multiple controllers, define role and rolebinding separately for leases.
 // +kubebuilder:rbac:groups="coordination.k8s.io",resources={leases},verbs=*
