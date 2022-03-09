@@ -52,7 +52,7 @@ def read_driver_data(cmd_values):
             assert False
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
-        if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             if "primaryFset" in cluster:
@@ -98,7 +98,7 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
     data["remote_secret_names"] = []
     data["remote_cacert_names"] = []
     for cluster in loadcr_yaml["spec"]["clusters"]:
-        if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             data["local_secret_name"] = cluster["secrets"]
