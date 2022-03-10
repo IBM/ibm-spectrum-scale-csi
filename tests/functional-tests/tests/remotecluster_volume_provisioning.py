@@ -1,5 +1,4 @@
 import logging
-import copy
 import pytest
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
