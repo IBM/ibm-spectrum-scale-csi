@@ -642,6 +642,11 @@ def create_file_inside_pod(value_pod, pod_name, created_objects):
     if resp == "":
         LOGGER.info("file snaptestfile created successfully on SpectrumScale mount point inside the pod")
         return
+
+    if "reason" in value_pod:
+        LOGGER.warning(f"Cannot write data in pod due to {value_pod}")
+        return
+
     LOGGER.error("file snaptestfile not created")
     LOGGER.error(resp)
     clean_with_created_objects(created_objects)
@@ -668,9 +673,14 @@ def check_file_inside_pod(value_pod, pod_name, created_objects, volume_name=None
                   stderr=True, stdin=False,
                   stdout=True, tty=False)
     if resp[0:12] == "snaptestfile":
-        LOGGER.info("POD Check : snaptestfile is succesfully restored from snapshot")
+        LOGGER.info("POD Check : snaptestfile is succesfully restored from snapshot or clone")
         return
-    LOGGER.error("snaptestfile is not restored from snapshot")
+
+    if "reason" in value_pod:
+        LOGGER.warning(f"As snaptestfile cannot be written in pod due to {value_pod}, snaptestfile is not restored")
+        return
+
+    LOGGER.error("snaptestfile is not restored from snapshot or clone")
     clean_with_created_objects(created_objects)
     assert False
 
