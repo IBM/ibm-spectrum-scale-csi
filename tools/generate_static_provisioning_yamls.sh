@@ -350,6 +350,15 @@ fi
 
 
 # Generate Volume Handle
+# Volume handle format from CSI 2.5.0 onwards:
+# <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
+# For static volumes, storageclass_type=0 and consistency_group="" always.
+
+scType="0"
+cg=""
+volType=""
+filesetName=""
+path=""
 if [[ ! -z "${FSETNAME}" ]]; then
   fsetId=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
     --header 'accept:application/json' \
@@ -374,10 +383,32 @@ if [[ ! -z "${FSETNAME}" ]]; then
     echo "ERROR: Fileset ${FSETNAME} is not linked."
     exit 2
   fi
-  VolumeHandle="${clusterID};${fileSystemID};fileset=${fsetId};path=${fsetLinkPath}"
+
+  parentId=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
+    --header 'accept:application/json' \
+    "https://${URL}:443/scalemgmt/v2/filesystems/${FSNAME}/filesets/${FSETNAME}" \
+    2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['filesets'][0]['config']['parentId'])" 2>>${ERROROUT})
+  if [[ $? -ne 0 ]] || [[ -z "$parentId" ]]; then
+    echo "ERROR: Failed to get the parentId of fileset ${FSETNAME}."
+    exit 2
+  fi
+
+  if [[ "${parentId}" == "0" ]]; then
+    volType="2"
+  else
+    volType="1"
+  fi
+
+  filesetName="${FSETNAME}"
+  path=${fsetLinkPath}
+  
+  
 else
-  VolumeHandle="${clusterID};${fileSystemID};path=${VOLPATH}"
+  volType="0"
+  filesetName=""
+  path=${VOLPATH}
 fi
+VolumeHandle="${scType};${volType};${clusterID};${fileSystemID};${cg};${filesetName};${path}"
 
 # Gererate yaml file
 generate_pv_yaml "${VolumeHandle}" "${VOLNAME}" "${VOLSIZE}" "${ACCESSMODE}"
