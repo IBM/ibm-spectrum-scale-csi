@@ -402,7 +402,6 @@ if [[ ! -z "${FSETNAME}" ]]; then
   filesetName="${FSETNAME}"
   path=${fsetLinkPath}
   
-  
 else
   volType="0"
   filesetName=""
