@@ -84,7 +84,7 @@ spec:
     - ${accessmode}
   claimRef:
     name: pvc-${volname}
-    namespace: ibm-spectrum-scale-csi
+    namespace: <PVC namespace>
   csi:
     driver: spectrumscale.csi.ibm.com
     volumeHandle: ${volhandle}
@@ -110,7 +110,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pvc-${volname}
-  namespace: ibm-spectrum-scale-csi
+  namespace: <PVC namespace> 
 spec:
   accessModes:
     - ${accessmode}
