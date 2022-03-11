@@ -485,7 +485,7 @@ def test_non_deafult_attacher(_values):
     LOGGER.info("test_non_deafult_attacher")
     LOGGER.info("attacher image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
-    deployment_attacher_image = "quay.io/k8scsi/csi-attacher:v1.2.1"
+    deployment_attacher_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.3.0"
     test["custom_object_body"]["spec"]["attacher"] = deployment_attacher_image
     operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
@@ -516,7 +516,7 @@ def test_non_deafult_provisioner(_values):
     LOGGER.info("test_non_deafult_provisioner")
     LOGGER.info("provisioner image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
-    deployment_provisioner_image = "quay.io/k8scsi/csi-provisioner:v1.6.0"
+    deployment_provisioner_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.0.0"
     test["custom_object_body"]["spec"]["provisioner"] = deployment_provisioner_image
     operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
