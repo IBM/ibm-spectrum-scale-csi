@@ -306,10 +306,9 @@ type CSICluster struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Cluster ID",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	Id string `json:"id"` // TODO: Rename to ID or id
 
-	// +optional
 	// primary is the primary file system for the Spectrum Scale cluster.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Primary",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
-	Primary CSIFilesystem `json:"primary"`
+	Primary *CSIFilesystem `json:"primary,omitempty"`
 
 	// restApi is a collection of targets for REST calls
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="REST API",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
@@ -329,16 +328,14 @@ type CSICluster struct {
 // Defines the fields for CSI for Spectrum Scale file system
 type CSIFilesystem struct {
 
-	// +optional
 	// Inode limit for Primary Fileset
-	InodeLimit string `json:"inodeLimit"`
+	InodeLimit string `json:"inodeLimit,omitempty"`
 
 	// The name of the primary CSIFilesystem
 	PrimaryFs string `json:"primaryFs,omitempty"`
 
-	// +optional
 	// The name of the primary fileset, created in primaryFs
-	PrimaryFset string `json:"primaryFset"`
+	PrimaryFset string `json:"primaryFset,omitempty"`
 
 	// Remote Spectrum Scale cluster ID
 	RemoteCluster string `json:"remoteCluster,omitempty"`
