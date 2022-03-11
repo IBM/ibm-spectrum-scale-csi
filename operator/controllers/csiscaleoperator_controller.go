@@ -164,12 +164,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.V(1).Info("Updated resource status.", "Status", cr.Status)
 	}()
 
-	r.Scheme.Default(instanceUnwrap)
-	err = r.Client.Update(context.TODO(), instanceUnwrap)
-	if err != nil {
-		logger.Error(err, "Reconciler Client.Update() failed")
-		return ctrl.Result{}, err
-	}
+	// r.Scheme.Default(instanceUnwrap)
+	// err = r.Client.Update(context.TODO(), instanceUnwrap)
+	// if err != nil {
+	// 	logger.Error(err, "Reconciler Client.Update() failed")
+	// 	return ctrl.Result{}, err
+	// }
 
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
