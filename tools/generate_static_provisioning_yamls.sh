@@ -82,9 +82,6 @@ spec:
     storage: ${volsize}Gi
   accessModes:
     - ${accessmode}
-  claimRef:
-    name: pvc-${volname}
-    namespace: <PVC namespace>
   csi:
     driver: spectrumscale.csi.ibm.com
     volumeHandle: ${volhandle}
@@ -112,6 +109,7 @@ metadata:
   name: pvc-${volname}
   namespace: <PVC namespace> 
 spec:
+  volumeName: ${volname}
   accessModes:
     - ${accessmode}
   resources:
