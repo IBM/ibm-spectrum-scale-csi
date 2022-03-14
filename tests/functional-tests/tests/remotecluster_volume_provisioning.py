@@ -1,5 +1,4 @@
 import logging
-import copy
 import pytest
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
@@ -2824,7 +2823,8 @@ def test_driver_volume_expansion_1():
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_volume_expansion_2():
@@ -2834,7 +2834,8 @@ def test_driver_volume_expansion_2():
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_volume_expansion_3():
@@ -2845,7 +2846,8 @@ def test_driver_volume_expansion_3():
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_volume_cloning_pass_1():

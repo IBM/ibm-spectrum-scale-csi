@@ -1,5 +1,4 @@
 import logging
-import copy
 import pytest
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
@@ -125,13 +124,15 @@ def test_driver_cg_fail_6():
 def test_driver_cg_expansion_1():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "16Gi"]}] * 2
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_cg_expansion_2():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["100Gi", "250Gi"]}] * 2
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_cg_cloning_1():
