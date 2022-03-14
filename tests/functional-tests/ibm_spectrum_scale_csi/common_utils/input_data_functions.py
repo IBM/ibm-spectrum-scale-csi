@@ -52,7 +52,7 @@ def read_driver_data(cmd_values):
             assert False
 
     else:
-        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data)
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, cmd_values["operator_namespace"])
 
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
@@ -97,7 +97,7 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
             LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
             assert False
     else:
-        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data)
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, namespace)
 
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
@@ -264,12 +264,12 @@ def randomString(stringLength=10):
     return ''.join(random.choice(letters) for i in range(stringLength))
 
 
-def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data):
+def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_namespace):
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             local_secret_name=cluster["secrets"]
             data["username"],data["password"]= \
-                csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],local_secret_name)
+                csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
             if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
                 if data["remoteFs"] is "" and data["remoteid"] is "":
                     data["remoteFs"] = cluster["primary"]["primaryFs"]
@@ -277,4 +277,4 @@ def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data):
         else:
             remote_secret_name= cluster["secrets"]
             data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
-                csiobjectfunc.get_gui_creds_for_username_password(data["namespace"],remote_secret_name)
+                csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, remote_secret_name)
