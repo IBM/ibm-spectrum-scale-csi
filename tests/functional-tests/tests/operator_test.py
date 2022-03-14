@@ -254,9 +254,31 @@ def test_wrong_secret_object_name(_values):
         if "primary" in cluster.keys():
             cluster["secrets"] = secret_name_wrong
 
-    test["stateful_set_not_created"] = True
     operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
+    if operator_object.check() is True:
+        LOGGER.error(
+            "Operator custom object is deployed successfully not expected")
+        assert False
+    else:
+        daemonset_pod_name = operator_object.get_driver_ds_pod_name()
+        api_instance = client.CoreV1Api()
+        try:
+            LOGGER.info(f"Checking for failure reason match in {daemonset_pod_name} pod logs")
+            field = "involvedObject.name="+daemonset_pod_name
+            api_response = api_instance.list_namespaced_event(
+                namespace=namespace_value, pretty="True", field_selector=field)
+            LOGGER.debug(str(api_response))
+            failure_reason = f'secret "{secret_name_wrong}" not found'
+            search_result = re.search(
+                failure_reason, str(api_response))
+            LOGGER.debug(search_result)
+            assert search_result is not None
+            LOGGER.info(f"'{failure_reason}' failure reason matched")
+        except ApiException as e:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->list_namespaced_event: {e}")
+            assert False
     operator_object.delete()
 
 
@@ -485,7 +507,7 @@ def test_non_deafult_attacher(_values):
     LOGGER.info("test_non_deafult_attacher")
     LOGGER.info("attacher image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
-    deployment_attacher_image = "quay.io/k8scsi/csi-attacher:v1.2.1"
+    deployment_attacher_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.3.0"
     test["custom_object_body"]["spec"]["attacher"] = deployment_attacher_image
     operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
@@ -516,7 +538,7 @@ def test_non_deafult_provisioner(_values):
     LOGGER.info("test_non_deafult_provisioner")
     LOGGER.info("provisioner image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
-    deployment_provisioner_image = "quay.io/k8scsi/csi-provisioner:v1.6.0"
+    deployment_provisioner_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.0.0"
     test["custom_object_body"]["spec"]["provisioner"] = deployment_provisioner_image
     operator_object = baseclass.Scaleoperatorobject(test, kubeconfig_value)
     operator_object.create()
