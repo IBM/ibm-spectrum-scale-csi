@@ -1179,7 +1179,6 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 	return nil
 }
 
-
 // Note: Reason to clean SCC using finalizer, since CSIscaleOperator is a namespaced resource,
 // it cannot own SCC as SCC is a cluster-scoped resource.
 
@@ -1191,7 +1190,7 @@ func (r *CSIScaleOperatorReconciler) deleteSCC(instance *csiscaleoperator.CSISca
 
 	SCC := &securityv1.SecurityContextConstraints{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      config.CSISCC,
+		Name: config.CSISCC,
 	}, SCC)
 
 	if err == nil {
@@ -1209,7 +1208,6 @@ func (r *CSIScaleOperatorReconciler) deleteSCC(instance *csiscaleoperator.CSISca
 	logger.Info("Deletion of SecurityContextConstraints resource is successful.")
 	return nil
 }
-
 
 func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteClusterRoleBindings")
