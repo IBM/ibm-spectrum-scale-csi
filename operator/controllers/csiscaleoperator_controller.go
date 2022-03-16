@@ -202,6 +202,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
+		if err := r.deleteSCC(instance); err != nil {
+			logger.Error(err, "Failed to delete SecurityContextConstraints resource.")
+			return ctrl.Result{}, err
+		}
+
 		if err := r.removeFinalizer(instance); err != nil {
 			logger.Error(err, "Failed to remove Finalizer")
 			return ctrl.Result{}, err
@@ -1171,6 +1176,42 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 	}
 
 	logger.V(1).Info("Reconciliation of SecurityContextConstraints is successful")
+	return nil
+}
+
+// Note: Reason to clean SCC using finalizer, since CSIscaleOperator is a namespaced resource,
+// it cannot own SCC as SCC is a cluster-scoped resource.
+
+// deleteSCC method removes the cluster-scoped SecurityContextConstraint resource from cluster.
+func (r *CSIScaleOperatorReconciler) deleteSCC(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("deleteSCC").WithValues("Name", config.CSISCC)
+
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if !isOpenShift {
+		logger.Info("This is not Redhat OpenShift Cluster Platform, so skipping deletion of SecurityContextConstraints resource.")
+		return nil
+	}
+
+	logger.Info("Deleting SecurityContextConstraints resource.")
+
+	SCC := &securityv1.SecurityContextConstraints{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name: config.CSISCC,
+	}, SCC)
+
+	if err == nil {
+		if err := r.Client.Delete(context.TODO(), SCC); err != nil {
+			logger.Error(err, "Failed to delete SecurityContextConstraints resource.")
+			return err
+		}
+	} else if errors.IsNotFound(err) {
+		logger.Info("SecurityContextConstraints resource not found for deletion.")
+		return nil
+	} else {
+		logger.Error(err, "Failed to get SecurityContextConstraints resource.")
+		return err
+	}
+	logger.Info("Deletion of SecurityContextConstraints resource is successful.")
 	return nil
 }
 
