@@ -1186,6 +1186,12 @@ func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance
 func (r *CSIScaleOperatorReconciler) deleteSCC(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteSCC").WithValues("Name", config.CSISCC)
 
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if !isOpenShift {
+		logger.Info("This is not Redhat OpenShift Cluster Platform, so skipping deletion of SecurityContextConstraints resource.")
+		return nil
+	}
+
 	logger.Info("Deleting SecurityContextConstraints resource.")
 
 	SCC := &securityv1.SecurityContextConstraints{}
