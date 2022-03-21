@@ -50,6 +50,8 @@ def read_driver_data(cmd_values):
         except yaml.YAMLError as exc:
             LOGGER.error(f'Error in parsing the cr file {cmd_values["clusterconfig_value"]} : {exc}')
             assert False
+    else:
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, cmd_values["operator_namespace"])
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
@@ -92,6 +94,8 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
         except yaml.YAMLError as exc:
             LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
             assert False
+    else:
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, namespace)
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
     data["custom_object_body"]["metadata"]["namespace"] = namespace
@@ -210,6 +214,8 @@ def get_pytest_cmd_values(request):
     if clusterconfig_value is None:
         if os.path.isfile('config/csiscaleoperators.csi.ibm.com_cr.yaml'):
             clusterconfig_value = 'config/csiscaleoperators.csi.ibm.com_cr.yaml'
+        elif os.path.isfile('/root/auth/kubeconfig'):
+            kubeconfig_value = '/root/auth/kubeconfig'
         else:
             clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
@@ -253,3 +259,19 @@ def randomString(stringLength=10):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
+
+
+def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_namespace):
+     for cluster in loadcr_yaml["spec"]["clusters"]:
+         if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
+             local_secret_name=cluster["secrets"]
+             data["username"],data["password"]= \
+                 csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
+             if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
+                 if data["remoteFs"] is "" and data["remoteid"] is "":
+                     data["remoteFs"] = cluster["primary"]["primaryFs"]
+                     data["remoteid"] = cluster["primary"]["remoteCluster"]
+         else:
+             remote_secret_name= cluster["secrets"]
+             data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
+                 csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, remote_secret_name)
