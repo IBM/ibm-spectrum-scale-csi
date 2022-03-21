@@ -207,6 +207,8 @@ def get_pytest_cmd_values(request):
     if kubeconfig_value is None:
         if os.path.isfile('config/kubeconfig'):
             kubeconfig_value = 'config/kubeconfig'
+        elif os.path.isfile('/root/auth/kubeconfig'):
+            kubeconfig_value = '/root/auth/kubeconfig'
         else:
             kubeconfig_value = '~/.kube/config'
 
@@ -214,8 +216,6 @@ def get_pytest_cmd_values(request):
     if clusterconfig_value is None:
         if os.path.isfile('config/csiscaleoperators.csi.ibm.com_cr.yaml'):
             clusterconfig_value = 'config/csiscaleoperators.csi.ibm.com_cr.yaml'
-        elif os.path.isfile('/root/auth/kubeconfig'):
-            kubeconfig_value = '/root/auth/kubeconfig'
         else:
             clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
@@ -262,16 +262,16 @@ def randomString(stringLength=10):
 
 
 def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_namespace):
-     for cluster in loadcr_yaml["spec"]["clusters"]:
-         if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
-             local_secret_name=cluster["secrets"]
-             data["username"],data["password"]= \
-                 csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
-             if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
-                 if data["remoteFs"] is "" and data["remoteid"] is "":
-                     data["remoteFs"] = cluster["primary"]["primaryFs"]
-                     data["remoteid"] = cluster["primary"]["remoteCluster"]
-         else:
-             remote_secret_name= cluster["secrets"]
-             data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
+    for cluster in loadcr_yaml["spec"]["clusters"]:
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
+            local_secret_name=cluster["secrets"]
+            data["username"],data["password"]= \
+                csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
+            if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
+                if data["remoteFs"] is "" and data["remoteid"] is "":
+                    data["remoteFs"] = cluster["primary"]["primaryFs"]
+                    data["remoteid"] = cluster["primary"]["remoteCluster"]
+        else:
+            remote_secret_name= cluster["secrets"]
+            data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
                  csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, remote_secret_name)
