@@ -13,6 +13,11 @@ spec:
     command: [ "/bin/sh", "-c", "--" ]
     args: [ "while true; do sleep 120; done;" ]
     imagePullPolicy: "Always"
+    env:
+    - name: APISERVER
+      value: "<APISERVER VALUE>"
+    - name: TOKEN
+      value: "<TOKEN VALUE>"
     volumeMounts:
     - mountPath: /data
       name: report

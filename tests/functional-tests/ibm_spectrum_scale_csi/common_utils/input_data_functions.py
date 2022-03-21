@@ -1,6 +1,6 @@
 import copy
 import logging
-import os.path
+import os
 import yaml
 import string
 import random
@@ -16,7 +16,7 @@ def get_test_data(test_config):
         with open(filepath, "r") as f:
             data = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        print(f"Error in configuration file {filepath} :", exc)
+        LOGGER.error(f"Error in configuration file {filepath} :", exc)
         assert False
 
     if data['keepobjects'] == "True" or data['keepobjects'] == "true":
@@ -205,7 +205,10 @@ def get_pytest_cmd_values(request):
 
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
-        if os.path.isfile('config/kubeconfig'):
+        if 'TOKEN' in os.environ and 'APISERVER' in os.environ:
+            kubeconfig_value = 'ibm_spectrum_scale_csi/common_utils/createdkubeconfig'
+            create_kubeconfig_file(os.environ['TOKEN'], os.environ['APISERVER'], kubeconfig_value) 
+        elif os.path.isfile('config/kubeconfig'):
             kubeconfig_value = 'config/kubeconfig'
         elif os.path.isfile('/root/auth/kubeconfig'):
             kubeconfig_value = '/root/auth/kubeconfig'
@@ -275,3 +278,29 @@ def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_names
             remote_secret_name= cluster["secrets"]
             data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
                  csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, remote_secret_name)
+
+
+def create_kubeconfig_file(token, apiserver, file_path):
+    if os.path.isfile(file_path):
+        return
+
+    try:
+        file_data = {
+                      "apiVersion": "v1",
+                      "clusters": [
+                        {"cluster": {"insecure-skip-tls-verify": True,"server": apiserver},
+                          "name": "kubernetes"}],
+                      "contexts": [
+                        {"context": {"cluster": "kubernetes","namespace": "default","user": "kubernetes-admin"},
+                          "name": "kubernetes-admin@kubernetes"}],
+                      "current-context": "kubernetes-admin@kubernetes",
+                      "kind": "Config",
+                      "preferences": {},
+                      "users": [{"name": "kubernetes-admin","user": {"token": token}}]
+                    }
+        with open(file_path, "w") as f:
+            yaml.dump(file_data, f)
+        LOGGER.info("Created Kubeconfig file using given token")
+    except yaml.YAMLError as exc:
+        LOGGER.error(f"Error in creating kubernetes configuration file {filepath} :", exc)
+        assert False
