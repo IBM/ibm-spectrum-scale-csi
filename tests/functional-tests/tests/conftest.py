@@ -4,6 +4,8 @@ from py.xml import html
 import logging
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.csi_object_function as csiobjectfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.csi_storage_function as csistoragefunc
 import ibm_spectrum_scale_csi.kubernetes_apis.kubernetes_objects_function as kubeobjectfunc
 
 LOGGER = logging.getLogger()
@@ -12,10 +14,10 @@ def pytest_addoption(parser):
     parser.addoption("--kubeconfig", action="store")
     parser.addoption("--clusterconfig", action="store")
     parser.addoption("--testnamespace", action="store")
-    parser.addoption("--operatornamespace", action="store")
+    parser.addoption("--operatornamespace", default="ibm-spectrum-scale-csi-driver", action="store")
     parser.addoption("--runslow", action="store_true", help="run slow tests")
     parser.addoption("--operatoryaml", action="store")
-    parser.addoption("--testconfig", action="store")
+    parser.addoption("--testconfig", default="config/test.config", action="store")
 
 def pytest_html_results_table_header(cells):
     cells.pop()
@@ -49,12 +51,12 @@ def pytest_collection_modifyitems(config, items):
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
 
+
 @pytest.fixture(scope='session')
 def data_fixture(request):
     data_fixture = {}
     data_fixture["cmd_values"] = inputfunc.get_pytest_cmd_values(request)
     data_fixture["driver_data"] = inputfunc.read_driver_data(data_fixture["cmd_values"])
-    #data_fixture["operator_data"] = inputfunc.read_operator_data(data_fixture["cmd_values"]["clusterconfig_value"], data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["test_config"], data_fixture["cmd_values"]["kubeconfig_value"])
     return data_fixture
 
     
@@ -62,15 +64,10 @@ def data_fixture(request):
 def check_csi_operator(data_fixture):
     baseclass.filesetfunc.cred_check(data_fixture["driver_data"])
     baseclass.filesetfunc.set_data(data_fixture["driver_data"])
-    """
-    operator = baseclass.Scaleoperator(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["operator_file"])
-    operator_object = baseclass.Scaleoperatorobject(data_fixture["operator_data"], data_fixture["cmd_values"]["kubeconfig_value"])
-    condition = baseclass.kubeobjectfunc.check_ns_exists(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["cmd_values"]["operator_namespace"])
-    if condition is True:
-        if not(operator_object.check(data_fixture["driver_data"]["csiscaleoperator_name"])):
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
-    """
+    kubeobjectfunc.set_global_namespace_value(data_fixture["cmd_values"]["operator_namespace"])
+    csiobjectfunc.set_namespace_value(data_fixture["cmd_values"]["operator_namespace"])
+    kubeobjectfunc.get_pod_list_and_check_running("product=ibm-spectrum-scale-csi",5)
+
 
 @pytest.fixture(scope='session')
 def new_namespace(data_fixture):
@@ -83,6 +80,7 @@ def new_namespace(data_fixture):
     if data_fixture["cmd_values"]["test_namespace"] is None and data_fixture["driver_data"]["keepobjects"] is False:
         kubeobjectfunc.delete_namespace(data_fixture["test_namespace"])
         kubeobjectfunc.check_namespace_deleted(data_fixture["test_namespace"])
+
 
 @pytest.fixture(scope='session')
 def local_cluster_fixture(data_fixture, check_csi_operator, new_namespace):

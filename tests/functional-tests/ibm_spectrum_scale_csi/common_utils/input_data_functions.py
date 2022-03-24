@@ -223,12 +223,8 @@ def get_pytest_cmd_values(request):
             clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
     test_namespace = request.config.option.testnamespace
-    #if test_namespace is None:
-    #    test_namespace = 'ibm-spectrum-scale-csi-driver'
 
     operator_namespace = request.config.option.operatornamespace
-    if operator_namespace is None:
-        operator_namespace = 'ibm-spectrum-scale-csi-driver'
 
     runslow_val = request.config.option.runslow
 
@@ -237,8 +233,6 @@ def get_pytest_cmd_values(request):
         operator_file = '../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml'
 
     test_config = request.config.option.testconfig
-    if test_config is None:
-        test_config = "config/test.config"
 
     cmd_value_dict = {"kubeconfig_value": kubeconfig_value,
                       "clusterconfig_value":clusterconfig_value, 
