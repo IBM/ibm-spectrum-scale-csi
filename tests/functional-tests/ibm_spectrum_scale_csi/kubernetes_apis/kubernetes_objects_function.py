@@ -400,7 +400,7 @@ def check_namespace_deleted(namespace_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    count = 12
+    count = 18
     list_namespace_api_instance = client.CoreV1Api()
     while (count > 0):
         try:
@@ -409,7 +409,7 @@ def check_namespace_deleted(namespace_name):
             LOGGER.debug(str(list_namespace_api_response))
             LOGGER.info(f'Still deleting namespace {namespace_name}')
             count = count-1
-            time.sleep(20)
+            time.sleep(10)
         except ApiException:
             LOGGER.info(f'namespace {namespace_name} is deleted')
             return

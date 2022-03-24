@@ -6,8 +6,8 @@ LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.localcluster]
 
 
-@pytest.fixture(scope='session', autouse=True)
-def values(data_fixture, local_cluster_fixture):
+@pytest.fixture(autouse=True)
+def values(data_fixture, check_csi_operator, local_cluster_fixture):
     global data, driver_object, kubeconfig_value  # are required in every testcase
     data = data_fixture["driver_data"]
     kubeconfig_value = data_fixture["cmd_values"]["kubeconfig_value"]

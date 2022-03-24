@@ -69,7 +69,7 @@ def check_csi_operator(data_fixture):
     kubeobjectfunc.get_pod_list_and_check_running("product=ibm-spectrum-scale-csi",5)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def new_namespace(data_fixture):
     if data_fixture["cmd_values"]["test_namespace"] is None:
         data_fixture["test_namespace"] = csistoragefunc.get_random_name("ns")
@@ -82,8 +82,8 @@ def new_namespace(data_fixture):
         kubeobjectfunc.check_namespace_deleted(data_fixture["test_namespace"])
 
 
-@pytest.fixture(scope='session')
-def local_cluster_fixture(data_fixture, check_csi_operator, new_namespace):
+@pytest.fixture
+def local_cluster_fixture(data_fixture, new_namespace):
     
     if not(data_fixture["driver_data"]["volBackendFs"] == ""):
         data_fixture["driver_data"]["primaryFs"] = data_fixture["driver_data"]["volBackendFs"]
