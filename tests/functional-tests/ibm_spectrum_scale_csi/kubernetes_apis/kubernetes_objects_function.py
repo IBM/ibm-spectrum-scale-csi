@@ -26,7 +26,7 @@ def set_global_namespace_value(namespace_name):
     namespace_value = namespace_name
 
 
-def create_namespace():
+def create_namespace(namespace_name):
     """
     Create namespace namespace_value(global parameter)
 
@@ -42,13 +42,13 @@ def create_namespace():
     """
     namespace_api_instance = client.CoreV1Api()
     namespace_metadata = client.V1ObjectMeta(
-        name=namespace_value,
+        name=namespace_name,
         labels={"product": "ibm-spectrum-scale-csi"}
     )
     namespace_body = client.V1Namespace(
         api_version="v1", kind="Namespace", metadata=namespace_metadata)
     try:
-        LOGGER.info(f'Creating new Namespace {namespace_value}')
+        LOGGER.info(f'Creating new Namespace {namespace_name}')
         namespace_api_response = namespace_api_instance.create_namespace(
             body=namespace_body, pretty=True)
         LOGGER.debug(str(namespace_api_response))
@@ -227,7 +227,7 @@ def delete_crd():
         assert False
 
 
-def delete_namespace():
+def delete_namespace(namespace_name):
     """
     Delete IBM Spectrum Scale CSI Operator namespace
 
@@ -244,7 +244,7 @@ def delete_namespace():
     delete_namespace_api_instance = client.CoreV1Api()
     try:
         delete_namespace_api_response = delete_namespace_api_instance.delete_namespace(
-            name=namespace_value, pretty=True)
+            name=namespace_name, pretty=True)
         LOGGER.debug(str(delete_namespace_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -391,7 +391,7 @@ def check_crd_deleted():
     assert False
 
 
-def check_namespace_deleted():
+def check_namespace_deleted(namespace_name):
     """
     Function for checking namespace object is deleted or not
     If namespace is not deleted in 120 seconds, Function asserts
@@ -405,16 +405,16 @@ def check_namespace_deleted():
     while (count > 0):
         try:
             list_namespace_api_response = list_namespace_api_instance.read_namespace(
-                name=namespace_value, pretty=True)
+                name=namespace_name, pretty=True)
             LOGGER.debug(str(list_namespace_api_response))
-            LOGGER.info(f'Still deleting namespace {namespace_value}')
+            LOGGER.info(f'Still deleting namespace {namespace_name}')
             count = count-1
             time.sleep(5)
         except ApiException:
-            LOGGER.info(f'namespace {namespace_value} is deleted')
+            LOGGER.info(f'namespace {namespace_name} is deleted')
             return
 
-    LOGGER.error(f'namespace  {namespace_value} is not deleted')
+    LOGGER.error(f'namespace  {namespace_name} is not deleted')
     assert False
 
 
@@ -567,9 +567,9 @@ def check_crd_exists():
         return False
 
 
-def check_namespace_exists():
+def check_namespace_exists(namespace_name):
     """
-    Checks namespace namespace_value exists or not
+    Checks namespace namespace_name exists or not
 
     Args:
        None
@@ -585,12 +585,12 @@ def check_namespace_exists():
     read_namespace_api_instance = client.CoreV1Api()
     try:
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
-            name=namespace_value, pretty=True)
+            name=namespace_name, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists")
+        LOGGER.info(f"namespace {namespace_name} exists")
         return True
     except ApiException:
-        LOGGER.info("namespace does not exists")
+        LOGGER.info(f"namespace {namespace_name} does not exists")
         return False
 
 

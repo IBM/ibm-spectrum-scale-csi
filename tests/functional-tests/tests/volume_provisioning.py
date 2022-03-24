@@ -7,32 +7,11 @@ pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.localcluster]
 
 
 @pytest.fixture(scope='session', autouse=True)
-def values(request, check_csi_operator):
+def values(data_fixture, local_cluster_fixture):
     global data, driver_object, kubeconfig_value  # are required in every testcase
-    cmd_values = inputfunc.get_pytest_cmd_values(request)
-    kubeconfig_value = cmd_values["kubeconfig_value"]
-    data = inputfunc.read_driver_data(cmd_values)
-
-    keep_objects = data["keepobjects"]
-    if not(data["volBackendFs"] == ""):
-        data["primaryFs"] = data["volBackendFs"]
-
-    if cmd_values["runslow_val"]:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
-                     {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                      "reason": "ReadOnlyMany is not supported"}
-                     ]
-        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
-                     {"mount_path": "/usr/share/nginx/html/scale",
-                      "read_only": "True", "reason": "Read-only file system"}
-                     ]
-    else:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
-
-    driver_object = baseclass.Driver(kubeconfig_value, value_pvc, value_pod, data["id"],
-                                   cmd_values["test_namespace"], keep_objects, data["image_name"], data["pluginNodeSelector"])
+    data = data_fixture["driver_data"]
+    kubeconfig_value = data_fixture["cmd_values"]["kubeconfig_value"]
+    driver_object = data_fixture["local_driver_object"]
 
 
 #: Testcase that are expected to pass:

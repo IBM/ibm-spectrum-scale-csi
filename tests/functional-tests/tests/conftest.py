@@ -4,6 +4,7 @@ from py.xml import html
 import logging
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
+import ibm_spectrum_scale_csi.kubernetes_apis.kubernetes_objects_function as kubeobjectfunc
 
 LOGGER = logging.getLogger()
 
@@ -48,49 +49,76 @@ def pytest_collection_modifyitems(config, items):
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
 
+@pytest.fixture(scope='session')
+def data_fixture(request):
+    data_fixture = {}
+    data_fixture["cmd_values"] = inputfunc.get_pytest_cmd_values(request)
+    data_fixture["driver_data"] = inputfunc.read_driver_data(data_fixture["cmd_values"])
+    #data_fixture["operator_data"] = inputfunc.read_operator_data(data_fixture["cmd_values"]["clusterconfig_value"], data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["test_config"], data_fixture["cmd_values"]["kubeconfig_value"])
+    return data_fixture
+
+    
+@pytest.fixture(scope='session')
+def check_csi_operator(data_fixture):
+    baseclass.filesetfunc.cred_check(data_fixture["driver_data"])
+    baseclass.filesetfunc.set_data(data_fixture["driver_data"])
+    """
+    operator = baseclass.Scaleoperator(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["operator_file"])
+    operator_object = baseclass.Scaleoperatorobject(data_fixture["operator_data"], data_fixture["cmd_values"]["kubeconfig_value"])
+    condition = baseclass.kubeobjectfunc.check_ns_exists(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["cmd_values"]["operator_namespace"])
+    if condition is True:
+        if not(operator_object.check(data_fixture["driver_data"]["csiscaleoperator_name"])):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False
+    """
 
 @pytest.fixture(scope='session')
-def check_csi_operator(request):
-    cmd_values = inputfunc.get_pytest_cmd_values(request)
-    data = inputfunc.read_driver_data(cmd_values)
-    operator_data = inputfunc.read_operator_data(cmd_values["clusterconfig_value"], cmd_values["operator_namespace"], cmd_values["test_config"], cmd_values["kubeconfig_value"])
-    keep_objects = data["keepobjects"]
-    if not(data["volBackendFs"] == ""):
-        data["primaryFs"] = data["volBackendFs"]
-
-    baseclass.filesetfunc.cred_check(data)
-    baseclass.filesetfunc.set_data(data)
-    operator = baseclass.Scaleoperator(cmd_values["kubeconfig_value"], cmd_values["operator_namespace"], cmd_values["operator_file"])
-    operator_object = baseclass.Scaleoperatorobject(operator_data, cmd_values["kubeconfig_value"])
-    condition = baseclass.kubeobjectfunc.check_ns_exists(cmd_values["kubeconfig_value"], cmd_values["operator_namespace"])
-    if condition is True:
-        if not(operator_object.check(data["csiscaleoperator_name"])):
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
+def new_namespace(data_fixture):
+    if data_fixture["cmd_values"]["test_namespace"] is None:
+        data_fixture["test_namespace"] = "me-vrushal-why"
+        kubeobjectfunc.create_namespace(data_fixture["test_namespace"])
     else:
-        operator.create()
-        operator.check()
-        baseclass.kubeobjectfunc.check_nodes_available(operator_data["pluginNodeSelector"], "pluginNodeSelector")
-        baseclass.kubeobjectfunc.check_nodes_available(
-            operator_data["provisionerNodeSelector"], "provisionerNodeSelector")
-        baseclass.kubeobjectfunc.check_nodes_available(
-            operator_data["attacherNodeSelector"], "attacherNodeSelector")
-        operator_object.create()
-        val = operator_object.check()
-        if val is True:
-            LOGGER.info("Operator custom object is deployed succesfully")
-        else:
-            LOGGER.error("Operator custom object is not deployed succesfully")
-            assert False
-
-    baseclass.filesetfunc.create_dir(data["volDirBasePath"])
-
-    # driver_object.create_test_ns(cmd_values["kubeconfig_value"])
+        data_fixture["test_namespace"] = data_fixture["cmd_values"]["test_namespace"]
     yield
-    # driver_object.delete_test_ns(cmd_values["kubeconfig_value"])
-    # delete_dir(data, data["volDirBasePath"])
-    if condition is False and not(keep_objects):
-        operator_object.delete()
-        operator.delete()
-        if(baseclass.filesetfunc.fileset_exists(data)):
-            baseclass.filesetfunc.delete_fileset(data)
+    if data_fixture["cmd_values"]["test_namespace"] is None and data_fixture["driver_data"]["keepobjects"] is False:
+        kubeobjectfunc.delete_namespace(data_fixture["test_namespace"])
+        kubeobjectfunc.check_namespace_deleted(data_fixture["test_namespace"])
+
+@pytest.fixture(scope='session')
+def local_cluster_fixture(data_fixture, check_csi_operator, new_namespace):
+    
+    if not(data_fixture["driver_data"]["volBackendFs"] == ""):
+        data_fixture["driver_data"]["primaryFs"] = data_fixture["driver_data"]["volBackendFs"]
+
+    if data_fixture["cmd_values"]["runslow_val"]:
+        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                     {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                      "reason": "ReadOnlyMany is not supported"}
+                     ]
+        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
+                     {"mount_path": "/usr/share/nginx/html/scale",
+                      "read_only": "True", "reason": "Read-only file system"}
+                     ]
+        snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
+    else:
+        value_pvc = snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+
+    data_fixture["local_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], value_pvc, value_pod, data_fixture["driver_data"]["id"],
+                                   data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"], data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["pluginNodeSelector"])
+
+    value_vs_class = {"deletionPolicy": "Delete"}
+    number_of_snapshots = 1
+    data_fixture["local_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
+                                    snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"],
+                                    data_fixture["driver_data"]["pluginNodeSelector"])
+
+    cg_snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+    data_fixture["local_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
+                                    cg_snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"],
+                                    data_fixture["driver_data"]["pluginNodeSelector"])
+                                    
+    baseclass.filesetfunc.create_dir(data_fixture["driver_data"]["volDirBasePath"])
+    

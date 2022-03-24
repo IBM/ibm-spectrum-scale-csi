@@ -223,8 +223,8 @@ def get_pytest_cmd_values(request):
             clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
     test_namespace = request.config.option.testnamespace
-    if test_namespace is None:
-        test_namespace = 'ibm-spectrum-scale-csi-driver'
+    #if test_namespace is None:
+    #    test_namespace = 'ibm-spectrum-scale-csi-driver'
 
     operator_namespace = request.config.option.operatornamespace
     if operator_namespace is None:
