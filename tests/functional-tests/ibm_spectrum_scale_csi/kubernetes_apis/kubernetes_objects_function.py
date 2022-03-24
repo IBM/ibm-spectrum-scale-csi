@@ -48,7 +48,7 @@ def create_namespace(namespace_name):
     namespace_body = client.V1Namespace(
         api_version="v1", kind="Namespace", metadata=namespace_metadata)
     try:
-        LOGGER.info(f'Creating new Namespace {namespace_name}')
+        LOGGER.info(f'Namespace Create : {namespace_name}')
         namespace_api_response = namespace_api_instance.create_namespace(
             body=namespace_body, pretty=True)
         LOGGER.debug(str(namespace_api_response))
@@ -400,7 +400,7 @@ def check_namespace_deleted(namespace_name):
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    count = 24
+    count = 12
     list_namespace_api_instance = client.CoreV1Api()
     while (count > 0):
         try:
@@ -409,7 +409,7 @@ def check_namespace_deleted(namespace_name):
             LOGGER.debug(str(list_namespace_api_response))
             LOGGER.info(f'Still deleting namespace {namespace_name}')
             count = count-1
-            time.sleep(5)
+            time.sleep(20)
         except ApiException:
             LOGGER.info(f'namespace {namespace_name} is deleted')
             return

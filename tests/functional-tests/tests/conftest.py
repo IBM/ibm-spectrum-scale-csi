@@ -72,7 +72,7 @@ def check_csi_operator(data_fixture):
 @pytest.fixture(scope='session')
 def new_namespace(data_fixture):
     if data_fixture["cmd_values"]["test_namespace"] is None:
-        data_fixture["test_namespace"] = "me-vrushal-why"
+        data_fixture["test_namespace"] = csistoragefunc.get_random_name("ns")
         kubeobjectfunc.create_namespace(data_fixture["test_namespace"])
     else:
         data_fixture["test_namespace"] = data_fixture["cmd_values"]["test_namespace"]

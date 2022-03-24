@@ -403,6 +403,9 @@ def create_dir(dir_name):
 
     """
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    if check_dir(dir_name) is True:
+        return
+
     dir_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/directory/{dir_name}'
     LOGGER.debug(dir_link)
     headers = {
@@ -414,8 +417,13 @@ def create_dir(dir_name):
                              data=data, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     LOGGER.info(f'Directory Create : Creating directory {dir_name}')
-    check_dir(dir_name)
-
+    if check_dir(dir_name) is True:
+        LOGGER.info(f'Directory Check : directory {dir_name} created successfully')
+        return
+    LOGGER.error(f'directory {dir_name} not created successfully')
+    LOGGER.error(str(response))
+    LOGGER.error(str(response.text))
+    assert False
 
 def check_dir(dir_name):
     """
@@ -434,15 +442,11 @@ def check_dir(dir_name):
                                 verify=False, auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
         if response.status_code == 200:
-            LOGGER.info(f'Directory Check : directory {dir_name} created successfully')
-            return
+            return True
         time.sleep(15)
         LOGGER.info(f'Directory Check : Checking for directory {dir_name}')
         val += 1
-    LOGGER.error(f'directory {dir_name} not created successfully')
-    LOGGER.error(str(response))
-    LOGGER.error(str(response.text))
-    assert False
+    return False
 
 
 def delete_dir(dir_name):

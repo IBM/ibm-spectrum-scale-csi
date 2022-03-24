@@ -206,7 +206,7 @@ def get_pytest_cmd_values(request):
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
         if 'TOKEN' in os.environ and 'APISERVER' in os.environ:
-            kubeconfig_value = 'ibm_spectrum_scale_csi/common_utils/createdkubeconfig'
+            kubeconfig_value = f"ibm_spectrum_scale_csi/common_utils/{os.environ['APISERVER'].translate({ord(i): None for i in ':/'})}"
             create_kubeconfig_file(os.environ['TOKEN'], os.environ['APISERVER'], kubeconfig_value) 
         elif os.path.isfile('config/kubeconfig'):
             kubeconfig_value = 'config/kubeconfig'
@@ -294,7 +294,7 @@ def create_kubeconfig_file(token, apiserver, file_path):
                     }
         with open(file_path, "w") as f:
             yaml.dump(file_data, f)
-        LOGGER.info("Created Kubeconfig file using given token")
+        LOGGER.info(f"Created Kubeconfig file using given token for {apiserver}")
     except yaml.YAMLError as exc:
         LOGGER.error(f"Error in creating kubernetes configuration file {filepath} :", exc)
         assert False
