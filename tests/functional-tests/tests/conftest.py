@@ -104,19 +104,23 @@ def local_cluster_fixture(data_fixture, check_csi_operator, new_namespace):
         value_pvc = snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
         value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
 
-    data_fixture["local_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], value_pvc, value_pod, data_fixture["driver_data"]["id"],
-                                   data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"], data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["local_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], value_pvc, 
+                               value_pod, data_fixture["driver_data"]["id"], data_fixture["test_namespace"], 
+                               data_fixture["driver_data"]["keepobjects"], data_fixture["driver_data"]["image_name"], 
+                               data_fixture["driver_data"]["pluginNodeSelector"])
 
     value_vs_class = {"deletionPolicy": "Delete"}
     number_of_snapshots = 1
-    data_fixture["local_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                                    snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"],
-                                    data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["local_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
+                               data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
+                               snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], 
+                               data_fixture["driver_data"]["id"], data_fixture["driver_data"]["pluginNodeSelector"])
 
     cg_snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    data_fixture["local_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                                    cg_snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"],
-                                    data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["local_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
+                               data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
+                               cg_snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], 
+                               data_fixture["driver_data"]["id"], data_fixture["driver_data"]["pluginNodeSelector"])
                                     
     baseclass.filesetfunc.create_dir(data_fixture["driver_data"]["volDirBasePath"])
     
