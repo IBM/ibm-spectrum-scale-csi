@@ -234,13 +234,16 @@ def get_pytest_cmd_values(request):
 
     test_config = request.config.option.testconfig
 
+    createnamespace = request.config.option.createnamespace
+
     cmd_value_dict = {"kubeconfig_value": kubeconfig_value,
                       "clusterconfig_value":clusterconfig_value, 
                       "test_namespace": test_namespace,
                       "operator_namespace":operator_namespace,
                       "runslow_val":runslow_val,
                       "operator_file":operator_file, 
-                      "test_config":test_config
+                      "test_config":test_config,
+                      "createnamespace":createnamespace
                      }
 
     return cmd_value_dict
