@@ -57,6 +57,26 @@ def data_fixture(request):
     data_fixture = {}
     data_fixture["cmd_values"] = inputfunc.get_pytest_cmd_values(request)
     data_fixture["driver_data"] = inputfunc.read_driver_data(data_fixture["cmd_values"])
+    if data_fixture["cmd_values"]["runslow_val"]:
+        data_fixture["value_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
+                     {"access_modes": "ReadOnlyMany", "storage": "1Gi",
+                      "reason": "ReadOnlyMany is not supported"}
+                     ]
+        data_fixture["value_pod"] = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
+                     {"mount_path": "/usr/share/nginx/html/scale",
+                      "read_only": "True", "reason": "Read-only file system"}
+                     ]
+        data_fixture["snap_value_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
+    else:
+        data_fixture["value_pvc"] = data_fixture["snap_value_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+        data_fixture["value_pod"] = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    
+    data_fixture["value_vs_class"] = {"deletionPolicy": "Delete"}
+    data_fixture["number_of_snapshots"] = 1
+    data_fixture["cg_snap_value_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+
     return data_fixture
 
     
@@ -88,39 +108,51 @@ def local_cluster_fixture(data_fixture, new_namespace):
     if not(data_fixture["driver_data"]["volBackendFs"] == ""):
         data_fixture["driver_data"]["primaryFs"] = data_fixture["driver_data"]["volBackendFs"]
 
-    if data_fixture["cmd_values"]["runslow_val"]:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
-                     {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                      "reason": "ReadOnlyMany is not supported"}
-                     ]
-        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
-                     {"mount_path": "/usr/share/nginx/html/scale",
-                      "read_only": "True", "reason": "Read-only file system"}
-                     ]
-        snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
-    else:
-        value_pvc = snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
-
-    data_fixture["local_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], value_pvc, 
-                               value_pod, data_fixture["driver_data"]["id"], data_fixture["test_namespace"], 
+    data_fixture["local_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["value_pvc"], 
+                               data_fixture["value_pod"], data_fixture["driver_data"]["id"], data_fixture["test_namespace"], 
                                data_fixture["driver_data"]["keepobjects"], data_fixture["driver_data"]["image_name"], 
                                data_fixture["driver_data"]["pluginNodeSelector"])
 
-    value_vs_class = {"deletionPolicy": "Delete"}
-    number_of_snapshots = 1
     data_fixture["local_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
                                data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                               snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], 
-                               data_fixture["driver_data"]["id"], data_fixture["driver_data"]["pluginNodeSelector"])
+                               data_fixture["snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
+                               data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"], 
+                               data_fixture["driver_data"]["pluginNodeSelector"])
 
-    cg_snap_value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     data_fixture["local_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
                                data_fixture["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                               cg_snap_value_pvc, value_vs_class, number_of_snapshots, data_fixture["driver_data"]["image_name"], 
-                               data_fixture["driver_data"]["id"], data_fixture["driver_data"]["pluginNodeSelector"])
+                               data_fixture["cg_snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
+                               data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"], 
+                               data_fixture["driver_data"]["pluginNodeSelector"])
                                     
     baseclass.filesetfunc.create_dir(data_fixture["driver_data"]["volDirBasePath"])
     
+
+@pytest.fixture
+def remote_cluster_fixture(data_fixture, new_namespace):
+
+    if not("remote" in data_fixture["driver_data"]):
+        LOGGER.error("remote data is not provided in CSO")
+        assert False
+
+    data_fixture["remote_data"] = inputfunc.get_remote_data(data_fixture["driver_data"])
+    baseclass.filesetfunc.cred_check(data_fixture["remote_data"])
+    baseclass.filesetfunc.set_data(data_fixture["remote_data"])
+
+    data_fixture["remote_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["value_pvc"],
+                                data_fixture["value_pod"], data_fixture["remote_data"]["id"], data_fixture["cmd_values"]["test_namespace"], 
+                                data_fixture["driver_data"]["keepobjects"],data_fixture["driver_data"]["image_name"], 
+                                data_fixture["driver_data"]["pluginNodeSelector"])
+    
+    data_fixture["remote_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["cmd_values"]["test_namespace"], 
+                                data_fixture["driver_data"]["keepobjects"], data_fixture["snap_value_pvc"], data_fixture["value_vs_class"],
+                                data_fixture["number_of_snapshots"], data_fixture["driver_data"]["image_name"], data_fixture["remote_data"]["id"], 
+                                data_fixture["driver_data"]["pluginNodeSelector"])
+
+    data_fixture["remote_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["cmd_values"]["test_namespace"], 
+                                data_fixture["driver_data"]["keepobjects"], data_fixture["cg_snap_value_pvc"], data_fixture["value_vs_class"],
+                                data_fixture["number_of_snapshots"], data_fixture["driver_data"]["image_name"], data_fixture["remote_data"]["id"], 
+                                data_fixture["driver_data"]["pluginNodeSelector"])
+
+    baseclass.filesetfunc.create_dir(data_fixture["remote_data"]["volDirBasePath"])
+
