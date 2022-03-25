@@ -7,7 +7,7 @@ pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster, pytest.
 
 
 @pytest.fixture(autouse=True)
-def values(data_fixture, check_csi_operator, local_cluster_fixture):
+def values(data_fixture, check_csi_operator, remote_cluster_fixture):
     global data, remote_data, driver_object, kubeconfig_value  # are required in every testcase
     data = data_fixture["driver_data"]
     remote_data = data_fixture["remote_data"]

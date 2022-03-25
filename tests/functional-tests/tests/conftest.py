@@ -2,6 +2,7 @@ from datetime import datetime
 import pytest
 from py.xml import html
 import logging
+import copy
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.csi_object_function as csiobjectfunc
@@ -78,6 +79,17 @@ def data_fixture(request):
     data_fixture["number_of_snapshots"] = 1
     data_fixture["cg_snap_value_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
 
+    data_fixture["driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["value_pvc"], 
+                           data_fixture["value_pod"], data_fixture["driver_data"]["id"], data_fixture["cmd_values"]["test_namespace"], 
+                           data_fixture["driver_data"]["keepobjects"], data_fixture["driver_data"]["image_name"], 
+                           data_fixture["driver_data"]["pluginNodeSelector"])
+
+    data_fixture["snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
+                           data_fixture["cmd_values"]["test_namespace"], data_fixture["driver_data"]["keepobjects"],
+                           data_fixture["snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
+                           data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"], 
+                           data_fixture["driver_data"]["pluginNodeSelector"])
+
     return data_fixture
 
     
@@ -107,22 +119,12 @@ def local_cluster_fixture(data_fixture, new_namespace):
     if not(data_fixture["driver_data"]["volBackendFs"] == ""):
         data_fixture["driver_data"]["primaryFs"] = data_fixture["driver_data"]["volBackendFs"]
 
-    data_fixture["local_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["value_pvc"], 
-                               data_fixture["value_pod"], data_fixture["driver_data"]["id"], data_fixture["cmd_values"]["test_namespace"], 
-                               data_fixture["driver_data"]["keepobjects"], data_fixture["driver_data"]["image_name"], 
-                               data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["local_driver_object"] = copy.deepcopy(data_fixture["driver_object"])
 
-    data_fixture["local_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
-                               data_fixture["cmd_values"]["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                               data_fixture["snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
-                               data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"], 
-                               data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["local_snapshot_object"] = copy.deepcopy(data_fixture["snapshot_object"])
 
-    data_fixture["local_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
-                               data_fixture["cmd_values"]["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                               data_fixture["cg_snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
-                               data_fixture["driver_data"]["image_name"], data_fixture["driver_data"]["id"], 
-                               data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["local_cg_snapshot_object"] = copy.deepcopy(data_fixture["snapshot_object"])
+    data_fixture["local_cg_snapshot_object"].value_pvc = copy.deepcopy(data_fixture["cg_snap_value_pvc"])
                                     
     baseclass.filesetfunc.create_dir(data_fixture["driver_data"]["volDirBasePath"])
     
@@ -138,22 +140,14 @@ def remote_cluster_fixture(data_fixture, new_namespace):
     baseclass.filesetfunc.cred_check(data_fixture["remote_data"])
     baseclass.filesetfunc.set_data(data_fixture["remote_data"])
 
-    data_fixture["remote_driver_object"] = baseclass.Driver(data_fixture["cmd_values"]["kubeconfig_value"], data_fixture["value_pvc"],
-                                data_fixture["value_pod"], data_fixture["remote_data"]["id"], data_fixture["cmd_values"]["test_namespace"], 
-                                data_fixture["driver_data"]["keepobjects"],data_fixture["driver_data"]["image_name"], 
-                                data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["remote_driver_object"] = copy.deepcopy(data_fixture["driver_object"])
+    data_fixture["remote_driver_object"].cluster_id = copy.deepcopy(data_fixture["remote_data"]["id"])
     
-    data_fixture["remote_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
-                                data_fixture["cmd_values"]["test_namespace"], data_fixture["driver_data"]["keepobjects"], 
-                                data_fixture["snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
-                                data_fixture["driver_data"]["image_name"], data_fixture["remote_data"]["id"], 
-                                data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["remote_snapshot_object"] = copy.deepcopy(data_fixture["snapshot_object"])
+    data_fixture["remote_snapshot_object"].cluster_id = copy.deepcopy(data_fixture["remote_data"]["id"])
 
-    data_fixture["remote_cg_snapshot_object"] = baseclass.Snapshot(data_fixture["cmd_values"]["kubeconfig_value"], 
-                                data_fixture["cmd_values"]["test_namespace"], data_fixture["driver_data"]["keepobjects"],
-                                data_fixture["cg_snap_value_pvc"], data_fixture["value_vs_class"], data_fixture["number_of_snapshots"], 
-                                data_fixture["driver_data"]["image_name"], data_fixture["remote_data"]["id"], 
-                                data_fixture["driver_data"]["pluginNodeSelector"])
+    data_fixture["remote_cg_snapshot_object"] = copy.deepcopy(data_fixture["snapshot_object"])
+    data_fixture["remote_snapshot_object"].cluster_id = copy.deepcopy(data_fixture["remote_data"]["id"])
+    data_fixture["remote_snapshot_object"].value_pvc = copy.deepcopy(data_fixture["cg_snap_value_pvc"])
 
     baseclass.filesetfunc.create_dir(data_fixture["remote_data"]["volDirBasePath"])
-
