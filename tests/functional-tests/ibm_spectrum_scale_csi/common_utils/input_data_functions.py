@@ -62,7 +62,10 @@ def read_driver_data(cmd_values):
             else:
                 data["primaryFset"] = "spectrum-scale-csi-volume-store"
             data["id"] = cluster["id"]
+            if cluster["primary"].get("remoteCluster") in [None,""] and data["localFs"] is "":
+                data["localFs"] = cluster["primary"]["primaryFs"]
 
+    data["primaryFs"] = data["localFs"]               
     data["clusters"] = loadcr_yaml["spec"]["clusters"]
     if len(loadcr_yaml["spec"]["clusters"]) > 1:
         data["remote"] = True

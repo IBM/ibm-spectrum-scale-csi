@@ -171,7 +171,7 @@ def test_driver_static_12():
 
 
 def test_driver_static_sc_13():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
                 "reclaim_policy": "Retain"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -185,7 +185,7 @@ def test_driver_static_sc_13():
 
 @pytest.mark.regression
 def test_driver_static_sc_14():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
                 "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -198,7 +198,7 @@ def test_driver_static_sc_14():
 
 
 def test_driver_static_sc_15():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
                 "reclaim_policy": "Recycle"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -211,7 +211,7 @@ def test_driver_static_sc_15():
 
 
 def test_driver_static_sc_16():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                 "reclaim_policy": "Retain"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -224,7 +224,7 @@ def test_driver_static_sc_16():
 
 
 def test_driver_static_sc_17():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                 "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -237,7 +237,7 @@ def test_driver_static_sc_17():
 
 
 def test_driver_static_sc_18():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                 "reclaim_policy": "Recycle"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -250,7 +250,7 @@ def test_driver_static_sc_18():
 
 
 def test_driver_static_sc_19():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                 "reclaim_policy": "Retain"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -263,7 +263,7 @@ def test_driver_static_sc_19():
 
 
 def test_driver_static_sc_20():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                 "reclaim_policy": "Delete"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -276,7 +276,7 @@ def test_driver_static_sc_20():
 
 
 def test_driver_static_sc_21():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                 "reclaim_policy": "Recycle"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -289,7 +289,7 @@ def test_driver_static_sc_21():
 
 
 def test_driver_static_sc_22():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteMany", "storage": "1Gi",
                 "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
@@ -302,7 +302,7 @@ def test_driver_static_sc_22():
 
 
 def test_driver_static_sc_23():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadWriteOnce", "storage": "1Gi",
                 "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
@@ -315,7 +315,7 @@ def test_driver_static_sc_23():
 
 
 def test_driver_static_sc_24():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pv = {"access_modes": "ReadOnlyMany", "storage": "1Gi", "reclaim_policy": "Default"}
     value_pvc_custom = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
                          "reason": "incompatible accessMode"},
@@ -356,12 +356,12 @@ def test_driver_static_26():
 
 @pytest.mark.regression
 def test_driver_dynamic_pass_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_2():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "clusterId": data["id"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc)
 
@@ -377,37 +377,37 @@ def test_driver_dynamic_pass_3():
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "clusterId": data["id"], "gid": data["gid_number"]}
     driver_object.test_dynamic(value_sc, value_pvc, value_pod)
 
 
 def test_driver_dynamic_pass_4():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "clusterId": data["id"], "inodeLimit": data["inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_5():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"],
                 "inodeLimit": data["inodeLimit"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_6():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"],
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_7():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"],
                 "inodeLimit": data["inodeLimit"], "gid": data["gid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_8():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"],
                 "inodeLimit": data["inodeLimit"], "uid": data["uid_number"],
                 "gid": data["gid_number"]}
     driver_object.test_dynamic(value_sc)
@@ -425,13 +425,13 @@ def test_driver_dynamic_pass_9():
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"]}
     driver_object.test_dynamic(value_sc, value_pvc, value_pod)
 
 
 def test_driver_dynamic_pass_10():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"]}
     driver_object.test_dynamic(value_sc)
@@ -439,47 +439,47 @@ def test_driver_dynamic_pass_10():
 
 @pytest.mark.regression
 def test_driver_dynamic_pass_11():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_12():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_13():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_14():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"], "clusterId": data["id"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_15():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "clusterId": data["id"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_16():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_17():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
@@ -495,28 +495,28 @@ def test_driver_dynamic_pass_18():
                      "read_only": "True", "reason": "Read-only file system"}
                  ]
 
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc, value_pvc, value_pod)
 
 
 def test_driver_dynamic_pass_19():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "inodeLimit": data["inodeLimit"],
                 "clusterId": data["id"], "filesetType": "independent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_20():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_21():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "clusterId": data["id"]}
@@ -524,49 +524,49 @@ def test_driver_dynamic_pass_21():
 
 
 def test_driver_dynamic_pass_22():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "clusterId": data["id"],
                 "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_23():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_name"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_name"],
                 "uid": data["uid_number"], "clusterId": data["id"],
                 "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_24():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_name"], "clusterId": data["id"],
                 "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_25():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_name"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_name"],
                 "uid": data["uid_name"], "clusterId": data["id"],
                 "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_26():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "clusterId": data["id"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_27():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "clusterId": data["id"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_28():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "clusterId": data["id"],
                 "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
@@ -574,19 +574,19 @@ def test_driver_dynamic_pass_28():
 
 
 def test_driver_dynamic_pass_29():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "clusterId": data["id"],
                 "filesetType": "independent", "inodeLimit": data["inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_30():
-    value_sc = {"volBackendFs": data["primaryFs"]}
+    value_sc = {"volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_31():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "1"}
+    value_sc = {"volBackendFs": data["localFs"], "version": "1"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
@@ -613,7 +613,7 @@ def test_driver_dynamic_fail_33():
 
 
 def test_driver_dynamic_pass_34():
-    value_sc = {"filesetType": "dependent", "volBackendFs": data["primaryFs"]}
+    value_sc = {"filesetType": "dependent", "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -637,31 +637,31 @@ def test_driver_dynamic_fail_37():
 
 
 def test_driver_dynamic_pass_38():
-    value_sc = {"uid": data["uid_number"], "volBackendFs": data["primaryFs"]}
+    value_sc = {"uid": data["uid_number"], "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_39():
-    value_sc = {"gid": data["gid_number"], "volBackendFs": data["primaryFs"]}
+    value_sc = {"gid": data["gid_number"], "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_40():
-    value_sc = {"filesetType": "dependent", "volBackendFs": data["primaryFs"]}
+    value_sc = {"filesetType": "dependent", "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 @pytest.mark.regression
 def test_driver_dynamic_fail_41():
     value_sc = {"parentFileset": data["parentFileset"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_42():
     value_sc = {"inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"]}
+                "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
@@ -803,7 +803,7 @@ def test_driver_dynamic_fail_63():
 
 
 def test_driver_dynamic_fail_64():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -811,7 +811,7 @@ def test_driver_dynamic_fail_64():
 
 @pytest.mark.regression
 def test_driver_dynamic_fail_65():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "filesetType": "dependent",
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
@@ -819,7 +819,7 @@ def test_driver_dynamic_fail_65():
 
 
 def test_driver_dynamic_fail_66():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "parentFileset": data["parentFileset"],
                 "reason": "parentFileset and volDirBasePath must not be specified together in storageClass"}
@@ -827,7 +827,7 @@ def test_driver_dynamic_fail_66():
 
 
 def test_driver_dynamic_fail_67():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "inodeLimit": data["inodeLimit"],
                 "reason": "inodeLimit and volDirBasePath must not be specified together in storageClass"}
@@ -835,64 +835,64 @@ def test_driver_dynamic_fail_67():
 
 
 def test_driver_dynamic_pass_68():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_69():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_70():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_71():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_72():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "filesetType": "dependent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_73():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_74():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_75():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_76():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "inodeLimit": data["inodeLimit"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_77():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
@@ -1160,14 +1160,14 @@ def test_driver_dynamic_fail_112():
 
 def test_driver_dynamic_fail_113():
     value_sc = {"clusterId": data["id"],  "filesetType":  "dependent",
-                "volBackendFs":  data["primaryFs"],
+                "volBackendFs":  data["localFs"],
                 "volDirBasePath":  data["volDirBasePath"],
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_114():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "parentFileset and volDirBasePath must not be specified together in storageClass"}
@@ -1176,7 +1176,7 @@ def test_driver_dynamic_fail_114():
 
 def test_driver_dynamic_fail_115():
     value_sc = {"clusterId": data["id"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "inodeLimit and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
@@ -1184,13 +1184,13 @@ def test_driver_dynamic_fail_115():
 
 def test_driver_dynamic_pass_116():
     value_sc = {"clusterId": data["id"], "gid": data["gid_number"],
-                "uid": data["uid_number"], "volBackendFs": data["primaryFs"]}
+                "uid": data["uid_number"], "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_117():
     value_sc = {"clusterId": data["id"], "uid": data["uid_number"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1199,13 +1199,13 @@ def test_driver_dynamic_fail_117():
 def test_driver_dynamic_pass_118():
     value_sc = {"clusterId": data["id"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"]}
+                "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_119():
     value_sc = {"clusterId": data["id"], "gid": data["gid_number"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1214,13 +1214,13 @@ def test_driver_dynamic_fail_119():
 def test_driver_dynamic_pass_120():
     value_sc = {"clusterId": data["id"], "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"]}
+                "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_121():
     value_sc = {"clusterId": data["id"], "filesetType": "independent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1229,14 +1229,14 @@ def test_driver_dynamic_fail_121():
 @pytest.mark.regression
 def test_driver_dynamic_fail_122():
     value_sc = {"clusterId": data["id"], "inodeLimit": data["inodeLimit"],
-                "filesetType": "dependent", "volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "volBackendFs": data["localFs"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_123():
     value_sc = {"clusterId": data["id"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1244,14 +1244,14 @@ def test_driver_dynamic_fail_123():
 
 def test_driver_dynamic_fail_124():
     value_sc = {"uid": data["uid_number"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_125():
-    value_sc = {"uid": data["uid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"uid": data["uid_number"], "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "parentFileset and volDirBasePath must not be specified together in storageClass"}
@@ -1260,7 +1260,7 @@ def test_driver_dynamic_fail_125():
 
 def test_driver_dynamic_fail_126():
     value_sc = {"uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "inodeLimit and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
@@ -1268,14 +1268,14 @@ def test_driver_dynamic_fail_126():
 
 def test_driver_dynamic_fail_127():
     value_sc = {"gid": data["gid_number"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_128():
-    value_sc = {"gid": data["gid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"gid": data["gid_number"], "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "parentFileset and volDirBasePath must not be specified together in storageClass"}
@@ -1284,14 +1284,14 @@ def test_driver_dynamic_fail_128():
 
 def test_driver_dynamic_fail_129():
     value_sc = {"gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "inodeLimit and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_130():
-    value_sc = {"filesetType": "dependent", "volBackendFs": data["primaryFs"],
+    value_sc = {"filesetType": "dependent", "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
@@ -1300,7 +1300,7 @@ def test_driver_dynamic_fail_130():
 
 def test_driver_dynamic_fail_131():
     value_sc = {"inodeLimit": data["inodeLimit"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
@@ -1308,7 +1308,7 @@ def test_driver_dynamic_fail_131():
 
 def test_driver_dynamic_fail_132():
     value_sc = {"inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
                 "reason": "parentFileset and volDirBasePath must not be specified together in storageClass"}
@@ -1318,13 +1318,13 @@ def test_driver_dynamic_fail_132():
 def test_driver_dynamic_pass_133():
     value_sc = {"gid": data["gid_number"], "uid": data["uid_number"],
                 "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"]}
+                "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_134():
     value_sc = {"gid": data["gid_number"], "uid": data["uid_number"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1333,27 +1333,27 @@ def test_driver_dynamic_fail_134():
 def test_driver_dynamic_pass_135():
     value_sc = {"gid": data["gid_number"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"]}
+                "volBackendFs": data["localFs"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_pass_136():
     value_sc = {"uid": data["uid_number"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_137():
     value_sc = {"uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
-                "filesetType": "dependent", "volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "volBackendFs": data["localFs"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_138():
     value_sc = {"uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1361,21 +1361,21 @@ def test_driver_dynamic_fail_138():
 
 def test_driver_dynamic_pass_139():
     value_sc = {"gid": data["gid_number"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_140():
     value_sc = {"gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
-                "filesetType": "dependent", "volBackendFs": data["primaryFs"],
+                "filesetType": "dependent", "volBackendFs": data["localFs"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_141():
     value_sc = {"gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -1383,7 +1383,7 @@ def test_driver_dynamic_fail_141():
 
 def test_driver_dynamic_fail_142():
     value_sc = {"inodeLimit": data["inodeLimit"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
@@ -1667,7 +1667,7 @@ def test_driver_dynamic_fail_177():
 
 
 def test_driver_dynamic_fail_178():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"],
                 "filesetType": "dependent",
@@ -1676,7 +1676,7 @@ def test_driver_dynamic_fail_178():
 
 
 def test_driver_dynamic_fail_179():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"],
                 "parentFileset": data["parentFileset"],
@@ -1685,7 +1685,7 @@ def test_driver_dynamic_fail_179():
 
 
 def test_driver_dynamic_fail_180():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"],
@@ -1694,7 +1694,7 @@ def test_driver_dynamic_fail_180():
 
 
 def test_driver_dynamic_fail_181():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"],
                 "filesetType": "dependent",
@@ -1703,7 +1703,7 @@ def test_driver_dynamic_fail_181():
 
 
 def test_driver_dynamic_fail_182():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"],
                 "parentFileset": data["parentFileset"],
@@ -1712,7 +1712,7 @@ def test_driver_dynamic_fail_182():
 
 
 def test_driver_dynamic_fail_183():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"],
@@ -1721,7 +1721,7 @@ def test_driver_dynamic_fail_183():
 
 
 def test_driver_dynamic_fail_184():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
@@ -1730,7 +1730,7 @@ def test_driver_dynamic_fail_184():
 
 
 def test_driver_dynamic_fail_185():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "inodeLimit": data["inodeLimit"],
                 "filesetType": "dependent",
@@ -1739,7 +1739,7 @@ def test_driver_dynamic_fail_185():
 
 
 def test_driver_dynamic_fail_186():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
@@ -1748,7 +1748,7 @@ def test_driver_dynamic_fail_186():
 
 
 def test_driver_dynamic_fail_187():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
@@ -1756,14 +1756,14 @@ def test_driver_dynamic_fail_187():
 
 
 def test_driver_dynamic_pass_188():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_189():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "filesetType": "independent",
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
@@ -1771,7 +1771,7 @@ def test_driver_dynamic_fail_189():
 
 
 def test_driver_dynamic_fail_190():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"],
                 "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"],
@@ -1780,7 +1780,7 @@ def test_driver_dynamic_fail_190():
 
 
 def test_driver_dynamic_fail_191():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "gid": data["gid_number"],
                 "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"], "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
@@ -1788,7 +1788,7 @@ def test_driver_dynamic_fail_191():
 
 
 def test_driver_dynamic_fail_192():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "filesetType": "dependent",
@@ -1797,7 +1797,7 @@ def test_driver_dynamic_fail_192():
 
 
 def test_driver_dynamic_fail_193():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "parentFileset": data["parentFileset"],
@@ -1806,7 +1806,7 @@ def test_driver_dynamic_fail_193():
 
 
 def test_driver_dynamic_fail_194():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"],
@@ -1815,7 +1815,7 @@ def test_driver_dynamic_fail_194():
 
 
 def test_driver_dynamic_fail_195():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
@@ -1824,7 +1824,7 @@ def test_driver_dynamic_fail_195():
 
 
 def test_driver_dynamic_fail_196():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
                 "filesetType": "dependent",
@@ -1833,7 +1833,7 @@ def test_driver_dynamic_fail_196():
 
 
 def test_driver_dynamic_fail_197():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "uid": data["uid_number"],
                 "parentFileset": data["parentFileset"],
@@ -1843,7 +1843,7 @@ def test_driver_dynamic_fail_197():
 
 
 def test_driver_dynamic_fail_198():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
@@ -1852,7 +1852,7 @@ def test_driver_dynamic_fail_198():
 
 
 def test_driver_dynamic_fail_199():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
                 "filesetType": "dependent",
@@ -1861,7 +1861,7 @@ def test_driver_dynamic_fail_199():
 
 
 def test_driver_dynamic_fail_200():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "gid": data["gid_number"],
                 "parentFileset": data["parentFileset"],
@@ -1871,7 +1871,7 @@ def test_driver_dynamic_fail_200():
 
 
 def test_driver_dynamic_fail_201():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"], "filesetType": "dependent",
@@ -1880,14 +1880,14 @@ def test_driver_dynamic_fail_201():
 
 
 def test_driver_dynamic_pass_202():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_203():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "filesetType": "dependent",
                 "inodeLimit": data["inodeLimit"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
@@ -1895,7 +1895,7 @@ def test_driver_dynamic_fail_203():
 
 
 def test_driver_dynamic_fail_204():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
@@ -1903,7 +1903,7 @@ def test_driver_dynamic_fail_204():
 
 
 def test_driver_dynamic_fail_205():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"],
@@ -1912,7 +1912,7 @@ def test_driver_dynamic_fail_205():
 
 
 def test_driver_dynamic_fail_206():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"],
@@ -2103,7 +2103,7 @@ def test_driver_dynamic_fail_227():
 
 def test_driver_dynamic_fail_228():
     value_sc = {"gid": data["gid_number"], "uid": data["uid_number"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId":  data["id"], "filesetType": "dependent",
                 "reason": "filesetType and volDirBasePath must not be specified together in storageClass"}
@@ -2112,7 +2112,7 @@ def test_driver_dynamic_fail_228():
 
 def test_driver_dynamic_fail_229():
     value_sc = {"gid": data["gid_number"], "uid": data["uid_number"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"], "parentFileset": data["parentFileset"],
                 "reason": "parentFileset and volDirBasePath must not be specified together in storageClass"}
@@ -2121,7 +2121,7 @@ def test_driver_dynamic_fail_229():
 
 def test_driver_dynamic_fail_230():
     value_sc = {"gid": data["gid_number"], "uid": data["uid_number"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"], "inodeLimit": data["inodeLimit"],
                 "reason": "inodeLimit and volDirBasePath must not be specified together in storageClass"}
@@ -2129,7 +2129,7 @@ def test_driver_dynamic_fail_230():
 
 
 def test_driver_dynamic_fail_231():
-    value_sc = {"uid": data["uid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"uid": data["uid_number"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
@@ -2138,7 +2138,7 @@ def test_driver_dynamic_fail_231():
 
 
 def test_driver_dynamic_fail_232():
-    value_sc = {"uid": data["uid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"uid": data["uid_number"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"],
                 "filesetType": "dependent", "inodeLimit": data["inodeLimit"],
@@ -2147,7 +2147,7 @@ def test_driver_dynamic_fail_232():
 
 
 def test_driver_dynamic_fail_233():
-    value_sc = {"uid": data["uid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"uid": data["uid_number"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
@@ -2156,7 +2156,7 @@ def test_driver_dynamic_fail_233():
 
 
 def test_driver_dynamic_fail_234():
-    value_sc = {"gid": data["gid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"gid": data["gid_number"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
@@ -2165,7 +2165,7 @@ def test_driver_dynamic_fail_234():
 
 
 def test_driver_dynamic_fail_235():
-    value_sc = {"gid": data["gid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"gid": data["gid_number"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"],
                 "filesetType": "dependent", "inodeLimit": data["inodeLimit"],
@@ -2174,7 +2174,7 @@ def test_driver_dynamic_fail_235():
 
 
 def test_driver_dynamic_fail_236():
-    value_sc = {"gid": data["gid_number"], "volBackendFs": data["primaryFs"],
+    value_sc = {"gid": data["gid_number"], "volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"],
                 "clusterId": data["id"], "parentFileset": data["parentFileset"],
                 "inodeLimit": data["inodeLimit"],
@@ -2183,7 +2183,7 @@ def test_driver_dynamic_fail_236():
 
 
 def test_driver_dynamic_fail_237():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"],
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"],
                 "volDirBasePath": data["volDirBasePath"],
                 "filesetType": "dependent", "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
@@ -2192,7 +2192,7 @@ def test_driver_dynamic_fail_237():
 
 
 def test_driver_dynamic_fail_238():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "gid": data["gid_number"],
@@ -2201,7 +2201,7 @@ def test_driver_dynamic_fail_238():
 
 
 def test_driver_dynamic_fail_239():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2210,7 +2210,7 @@ def test_driver_dynamic_fail_239():
 
 
 def test_driver_dynamic_fail_240():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "independent",
@@ -2219,7 +2219,7 @@ def test_driver_dynamic_fail_240():
 
 
 def test_driver_dynamic_fail_241():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"], "filesetType": "dependent",
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
@@ -2228,7 +2228,7 @@ def test_driver_dynamic_fail_241():
 
 
 def test_driver_dynamic_fail_242():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
                 "filesetType": "dependent",
                 "volDirBasePath": data["volDirBasePath"],
@@ -2237,7 +2237,7 @@ def test_driver_dynamic_fail_242():
 
 
 def test_driver_dynamic_fail_243():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "volDirBasePath": data["volDirBasePath"],
@@ -2246,7 +2246,7 @@ def test_driver_dynamic_fail_243():
 
 
 def test_driver_dynamic_fail_244():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2256,7 +2256,7 @@ def test_driver_dynamic_fail_244():
 
 
 def test_driver_dynamic_fail_245():
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2266,7 +2266,7 @@ def test_driver_dynamic_fail_245():
 
 
 def test_driver_dynamic_fail_246():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2342,7 +2342,7 @@ def test_driver_dynamic_fail_253():
 
 
 def test_driver_dynamic_fail_254():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "gid": data["gid_number"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2352,7 +2352,7 @@ def test_driver_dynamic_fail_254():
 
 
 def test_driver_dynamic_fail_255():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"],
                 "filesetType": "dependent",
@@ -2362,7 +2362,7 @@ def test_driver_dynamic_fail_255():
 
 
 def test_driver_dynamic_fail_256():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
@@ -2372,7 +2372,7 @@ def test_driver_dynamic_fail_256():
 
 
 def test_driver_dynamic_fail_257():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2382,7 +2382,7 @@ def test_driver_dynamic_fail_257():
 
 
 def test_driver_dynamic_fail_258():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2392,7 +2392,7 @@ def test_driver_dynamic_fail_258():
 
 
 def test_driver_dynamic_fail_259():
-    value_sc = {"volBackendFs": data["primaryFs"], "uid": data["uid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "uid": data["uid_number"],
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
                 "filesetType": "dependent",
@@ -2412,7 +2412,7 @@ def test_driver_dynamic_fail_260():
 
 
 def test_driver_dynamic_fail_261():
-    value_sc = {"clusterId": data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId": data["id"], "volBackendFs": data["localFs"],
                 "uid": data["uid_number"], "gid": data["gid_number"],
                 "inodeLimit": data["inodeLimit"],
                 "parentFileset": data["parentFileset"],
@@ -2424,7 +2424,7 @@ def test_driver_dynamic_fail_261():
 def test_driver_dynamic_fail_262():
     value_sc = {"clusterId": data["id"], "filesetType": "dependent",
                 "uid": data["uid_number"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
@@ -2432,7 +2432,7 @@ def test_driver_dynamic_fail_262():
 def test_driver_dynamic_fail_263():
     value_sc = {"clusterId": data["id"], "filesetType": "dependent",
                 "gid": data["gid_number"], "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
 
@@ -2440,7 +2440,7 @@ def test_driver_dynamic_fail_263():
 def test_driver_dynamic_fail_264():
     value_sc = {"clusterId": data["id"], "filesetType": "independent",
                 "inodeLimit": data["inodeLimit"],
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": data["parentFileset"],
                 "reason": "InvalidArgument desc = parentFileset and filesetType=independent"}
     driver_object.test_dynamic(value_sc)
@@ -2450,7 +2450,7 @@ def test_driver_dynamic_fail_264():
 
 invaliddata = {
     "volDirBasePath": "/invalid",
-    "primaryFs": "invalid",
+    "localFs": "invalid",
     "parentFileset": "invalid",
     "inodeLimit": "1023",
     "gid_number": "9999",
@@ -2461,7 +2461,7 @@ invaliddata = {
 
 
 def test_driver_dynamic_fail_invalid_input_265():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": invaliddata["volDirBasePath"],
                 "reason": "directory base path /invalid not present in"}
     driver_object.test_dynamic(value_sc)
@@ -2469,14 +2469,14 @@ def test_driver_dynamic_fail_invalid_input_265():
 
 def test_driver_dynamic_fail_invalid_input_266():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
-                "volBackendFs": invaliddata["primaryFs"],
+                "volBackendFs": invaliddata["localFs"],
                 "reason": "filesystem invalid in not known to primary cluster"}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_dynamic_fail_invalid_input_267():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "parentFileset": invaliddata["parentFileset"],
                 "reason": "unable to create fileset"}
     driver_object.test_dynamic(value_sc)
@@ -2484,7 +2484,7 @@ def test_driver_dynamic_fail_invalid_input_267():
 
 def test_driver_dynamic_fail_invalid_input_268():
     value_sc = {"clusterId":  data["id"], "filesetType": "dependent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "inodeLimit": invaliddata["inodeLimit"],
                 "reason": "inodeLimit and filesetType=dependent must not be specified together in storageClass"}
     driver_object.test_dynamic(value_sc)
@@ -2492,7 +2492,7 @@ def test_driver_dynamic_fail_invalid_input_268():
 
 def test_driver_dynamic_fail_invalid_input_269():
     value_sc = {"clusterId":  data["id"], "filesetType": "independent",
-                "volBackendFs": data["primaryFs"],
+                "volBackendFs": data["localFs"],
                 "inodeLimit": invaliddata["inodeLimit"],
                 "reason": "inodeLimit specified in storageClass must be equal to or greater than 1024"}
     driver_object.test_dynamic(value_sc)
@@ -2500,7 +2500,7 @@ def test_driver_dynamic_fail_invalid_input_269():
 
 @pytest.mark.skip
 def test_driver_dynamic_fail_invalid_input_270():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "filesetType": "dependent", "gid": invaliddata["gid_number"],
                 "uid": invaliddata["uid_number"],
                 "reason": 'The object "9999" specified for "user" does not exist'}
@@ -2508,7 +2508,7 @@ def test_driver_dynamic_fail_invalid_input_270():
 
 
 def test_driver_dynamic_fail_invalid_input_271():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "filesetType": "dependent", "gid": data["gid_number"],
                 "uid": invaliddata["uid_name"],
                 "reason": 'The object "invalid_name" specified for "user" does not exist'}
@@ -2516,7 +2516,7 @@ def test_driver_dynamic_fail_invalid_input_271():
 
 
 def test_driver_dynamic_fail_invalid_input_272():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "filesetType": "dependent", "gid": invaliddata["gid_name"],
                 "uid": invaliddata["uid_name"],
                 "reason": 'The object "invalid_name" specified for "user" does not exist'}
@@ -2524,7 +2524,7 @@ def test_driver_dynamic_fail_invalid_input_272():
 
 
 def test_driver_dynamic_fail_invalid_input_273():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "filesetType": "dependent", "gid": invaliddata["gid_name"],
                 "uid": data["uid_number"],
                 "reason": 'The object "invalid_name" specified for "group" does not exist'}
@@ -2532,7 +2532,7 @@ def test_driver_dynamic_fail_invalid_input_273():
 
 
 def test_driver_dynamic_fail_invalid_input_274():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "gid": data["gid_number"], "uid": data["uid_number"],
                 "parentFileset": invaliddata["parentFileset"],
                 "reason": "parentFileset and filesetType=independent"}
@@ -2543,7 +2543,7 @@ def test_driver_dynamic_fail_invalid_input_274():
 def test_driver_one_pvc_two_pod_pass_1():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId":  data["id"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
 
@@ -2552,7 +2552,7 @@ def test_driver_one_pvc_two_pod_fail_1():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
                 "reason": "Multi-Attach error for volume"}
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId":  data["id"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
 
@@ -2560,7 +2560,7 @@ def test_driver_one_pvc_two_pod_fail_1():
 def test_driver_one_pvc_two_pod_pass_2():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
 
@@ -2569,7 +2569,7 @@ def test_driver_one_pvc_two_pod_fail_2():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
                 "reason": "Multi-Attach error for volume"}
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
 
@@ -2577,7 +2577,7 @@ def test_driver_one_pvc_two_pod_fail_2():
 def test_driver_one_pvc_two_pod_pass_3():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
@@ -2587,7 +2587,7 @@ def test_driver_one_pvc_two_pod_fail_3():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
                 "reason": "Multi-Attach error for volume"}
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "clusterId": data["id"], "filesetType": "dependent"}
     driver_object.one_pvc_two_pod(value_sc, value_pvc, value_ds)
 
@@ -2596,7 +2596,7 @@ def test_driver_one_pvc_two_pod_fail_3():
 def test_driver_one_pvc_two_pod_pass_4():
     value_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "clusterId": data["id"],
                 "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
@@ -2608,7 +2608,7 @@ def test_driver_one_pvc_two_pod_fail_4():
     value_pvc = {"access_modes": "ReadWriteOnce", "storage": "1Gi"}
     value_ds = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
                 "reason": "Multi-Attach error for volume"}
-    value_sc = {"volBackendFs": data["primaryFs"], "gid": data["gid_number"],
+    value_sc = {"volBackendFs": data["localFs"], "gid": data["gid_number"],
                 "uid": data["uid_number"], "clusterId": data["id"],
                 "filesetType": "dependent",
                 "parentFileset": data["parentFileset"]}
@@ -2619,14 +2619,14 @@ def test_driver_one_pvc_two_pod_fail_4():
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_1():
     # this testcase contains sequential pod creation after all pvc are bound
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
 
 
 @pytest.mark.slow
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId":  data["id"], "inodeLimit": "1024"}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
 
 
@@ -2634,7 +2634,7 @@ def test_driver_parallel_pvc_2():
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_3():
     # this testcase contains sequential pod creation after all pvc are bound
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
 
@@ -2642,7 +2642,7 @@ def test_driver_parallel_pvc_3():
 @pytest.mark.slow
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_4():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "filesetType": "dependent", "clusterId": data["id"]}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
 
@@ -2651,7 +2651,7 @@ def test_driver_parallel_pvc_4():
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_5():
     # this testcase contains sequential pod creation after all pvc are bound
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"]}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
 
@@ -2659,7 +2659,7 @@ def test_driver_parallel_pvc_5():
 @pytest.mark.slow
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_6():
-    value_sc = {"volBackendFs": data["primaryFs"],
+    value_sc = {"volBackendFs": data["localFs"],
                 "volDirBasePath": data["volDirBasePath"]}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
 
@@ -2673,7 +2673,7 @@ def test_driver_sc_permissions_empty_independent_pass_1():
                   "read_only": "True", "reason": "Read-only file system"}
                  ]
     # to test default behavior i.e. directory should be created with 771 permissions
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
@@ -2686,7 +2686,7 @@ def test_driver_sc_permissions_777_independent_pass_2():
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system"}
                  ]
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
@@ -2698,7 +2698,7 @@ def test_driver_sc_permissions_666_independent_pass_3():
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
                   "read_only": "True", "reason": "Read-only file system"}
                  ]
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "666",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "666",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
@@ -2711,7 +2711,7 @@ def test_driver_sc_permissions_777_independent_pass_4():
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, False], "reason": "Read-only file system"}
                  ]
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
@@ -2723,7 +2723,7 @@ def test_driver_sc_permissions_777_dependent_pass_1():
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system"}
                  ]
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
@@ -2735,7 +2735,7 @@ def test_driver_sc_permissions_666_dependent_pass_2():
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
                   "read_only": "True", "reason": "Read-only file system"}
                  ]
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "666",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "666",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
@@ -2748,55 +2748,55 @@ def test_driver_sc_permissions_777_dependent_pass_3():
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, False], "reason": "Read-only file system"}
                  ]
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
 
 
 def test_driver_sc_permissions_invalid_input_1():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "permissions": "   ",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_invalid_input_2():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "permissions": "abcd",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_invalid_input_3():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "permissions": "0x309",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_invalid_input_4():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "permissions": "o777",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_invalid_input_5():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "permissions": "77",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_sc_permissions_invalid_input_6():
-    value_sc = {"clusterId":  data["id"], "volBackendFs": data["primaryFs"],
+    value_sc = {"clusterId":  data["id"], "volBackendFs": data["localFs"],
                 "permissions": "778",
                 "reason": 'invalid value specified for permissions'}
     driver_object.test_dynamic(value_sc)
 
 
 def test_driver_volume_expansion_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "12Gi"]},
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
@@ -2807,7 +2807,7 @@ def test_driver_volume_expansion_1():
 
 
 def test_driver_volume_expansion_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "12Gi"]},
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
@@ -2818,7 +2818,7 @@ def test_driver_volume_expansion_2():
 
 
 def test_driver_volume_expansion_3():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "clusterId": data["id"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "16Gi"]},
                  {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
@@ -2830,14 +2830,14 @@ def test_driver_volume_expansion_3():
 
 
 def test_driver_volume_cloning_pass_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_pass_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
@@ -2845,21 +2845,21 @@ def test_driver_volume_cloning_pass_2():
 
 
 def test_driver_volume_cloning_pass_3():
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_pass_4():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_multiple_clones():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}],
                           "number_of_clones": 5}
@@ -2867,7 +2867,7 @@ def test_driver_volume_cloning_multiple_clones():
 
 
 def test_driver_volume_cloning_chain_clones():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}],
                           "clone_chain": 1}
@@ -2875,7 +2875,7 @@ def test_driver_volume_cloning_chain_clones():
 
 
 def test_driver_volume_cloning_expand_before():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "9Gi", "volume_expansion_storage": ["11Gi"]}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"},
                                         {"access_modes": "ReadWriteMany", "storage": "9Gi", "reason": "new PVC request must be greater than or equal in size"}]}
@@ -2883,7 +2883,7 @@ def test_driver_volume_cloning_expand_before():
 
 
 def test_driver_volume_cloning_with_subpath():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"], "permissions": "777",
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
@@ -2893,85 +2893,85 @@ def test_driver_volume_cloning_with_subpath():
 
 
 def test_driver_volume_cloning_fail_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}}
+                          "clone_sc": {"volBackendFs": data["localFs"], "clusterId": data["id"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+                          "clone_sc": {"volBackendFs": data["localFs"], "filesetType": "dependent",
                                        "clusterId": data["id"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_3():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}}
+                          "clone_sc": {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_4():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}}
+                          "clone_sc": {"volBackendFs": data["localFs"], "clusterId": data["id"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_5():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc":  [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+                          "clone_sc": {"volBackendFs": data["localFs"], "filesetType": "dependent",
                                        "clusterId": data["id"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_6():
-    value_sc = {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+    value_sc = {"volBackendFs": data["localFs"], "filesetType": "dependent",
                 "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}}
+                          "clone_sc": {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_7():
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}}
+                          "clone_sc": {"volBackendFs": data["localFs"], "clusterId": data["id"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_8():
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "filesetType": "dependent",
+                          "clone_sc": {"volBackendFs": data["localFs"], "filesetType": "dependent",
                                        "clusterId": data["id"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_9():
-    value_sc = {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
-                          "clone_sc": {"volBackendFs": data["primaryFs"], "volDirBasePath": data["volDirBasePath"]}}
+                          "clone_sc": {"volBackendFs": data["localFs"], "volDirBasePath": data["volDirBasePath"]}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_10():
-    value_sc = {"volBackendFs": data["primaryFs"], "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "5Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "new PVC request must be greater than or equal in size"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
@@ -2979,37 +2979,37 @@ def test_driver_volume_cloning_fail_10():
 
 @pytest.mark.regression
 def test_driver_compression_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "compression": "z"}
+    value_sc = {"volBackendFs": data["localFs"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "compression": "alphah", "filesetType": "dependent"}
+    value_sc = {"volBackendFs": data["localFs"], "compression": "alphah", "filesetType": "dependent"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_3():
-    value_sc = {"volBackendFs": data["primaryFs"], "compression": "lz4", "filesetType": "independent", "clusterId": data["id"]}
+    value_sc = {"volBackendFs": data["localFs"], "compression": "lz4", "filesetType": "independent", "clusterId": data["id"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_fail_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "compression": "zfast", "volDirBasePath": data["volDirBasePath"]}
+    value_sc = {"volBackendFs": data["localFs"], "compression": "zfast", "volDirBasePath": data["volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": 'desc = The parameters "compression" and "tier" are not'}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_fail_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "compression": "wrongalgo"}
+    value_sc = {"volBackendFs": data["localFs"], "compression": "wrongalgo"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_clone_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "compression": "z"}
+    value_sc = {"volBackendFs": data["localFs"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
@@ -3017,46 +3017,46 @@ def test_driver_compression_clone_1():
 
 @pytest.mark.regression
 def test_driver_tier_pass_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"]}
+    value_sc = {"volBackendFs": data["localFs"], "tier": data["tier"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_pass_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "filesetType": "dependent"}
+    value_sc = {"volBackendFs": data["localFs"], "tier": data["tier"], "filesetType": "dependent"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_fail_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": "wrongtier", "reason":"invalid tier 'wrongtier' specified for filesystem"}
+    value_sc = {"volBackendFs": data["localFs"], "tier": "wrongtier", "reason":"invalid tier 'wrongtier' specified for filesystem"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_fail_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "volDirBasePath": data["volDirBasePath"], 
+    value_sc = {"volBackendFs": data["localFs"], "tier": data["tier"], "volDirBasePath": data["volDirBasePath"], 
                "reason":'The parameters "compression" and "tier" are not supported in storageClass for lightweight volumes'}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_clone_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"]}
+    value_sc = {"volBackendFs": data["localFs"], "tier": data["tier"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
 
 
 def test_driver_tier_compression():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "compression": "z"}
+    value_sc = {"volBackendFs": data["localFs"], "tier": data["tier"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 @pytest.mark.regression
 def test_driver_tier_compression_clone():
-    value_sc = {"volBackendFs": data["primaryFs"], "tier": data["tier"], "compression": "z"}
+    value_sc = {"volBackendFs": data["localFs"], "tier": data["tier"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)

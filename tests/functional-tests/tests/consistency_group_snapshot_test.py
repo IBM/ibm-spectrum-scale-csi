@@ -27,38 +27,38 @@ def test_get_version():
 
 @pytest.mark.regression
 def test_snapshot_cg_pass_1():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "consistencyGroup": None}
+    value_sc = {"volBackendFs": data["localFs"], "version": "2", "consistencyGroup": None}
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
 
 
 def test_snapshot_cg_pass_2():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "consistencyGroup": "local-test_snapshot_cg_pass_2-cg"}
+    value_sc = {"volBackendFs": data["localFs"], "version": "2", "consistencyGroup": "local-test_snapshot_cg_pass_2-cg"}
     value_vs_class={"deletionPolicy": "Delete"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class, number_of_snapshots=10)
 
 
 @pytest.mark.regression
 def test_snapshot_cg_pass_3():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2"}
+    value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "2"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 3
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class, value_pvc=value_pvc, number_of_snapshots=3)
 
 
 def test_snapshot_cg_tier():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "tier": data["tier"]}
+    value_sc = {"volBackendFs": data["localFs"], "version": "2", "tier": data["tier"]}
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
 
 
 def test_snapshot_cg_compression():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "compression": "true"}
+    value_sc = {"volBackendFs": data["localFs"], "version": "2", "compression": "true"}
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)
 
 
 def test_snapshot_cg_compression_tier():
-    value_sc = {"volBackendFs": data["primaryFs"], "version": "2", "tier": data["tier"], "compression": "true"}
+    value_sc = {"volBackendFs": data["localFs"], "version": "2", "tier": data["tier"], "compression": "true"}
     value_vs_class={"deletionPolicy": "Delete", "snapWindow": "15"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class=value_vs_class)

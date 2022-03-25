@@ -540,8 +540,13 @@ def get_remoteFs_remotename(test_data):
     response = requests.get(info_filesystem, verify=False,
                             auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
+    if not(response.status_code == 200):
+        LOGGER.error(response.text)
+        LOGGER.error(f'Not able to find filesystem {test_data["remoteFs"]} on GUI {test_data["guiHost"]}')
+        assert False
 
     response_dict = json.loads(response.text)
+
     for filesystem in response_dict["filesystems"]:
         if filesystem["name"] == test_data["remoteFs"]:
             device_name = filesystem["mount"]["remoteDeviceName"]

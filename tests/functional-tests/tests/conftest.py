@@ -116,8 +116,9 @@ def new_namespace(data_fixture):
 @pytest.fixture
 def local_cluster_fixture(data_fixture, new_namespace):
     
-    if not(data_fixture["driver_data"]["volBackendFs"] == ""):
-        data_fixture["driver_data"]["primaryFs"] = data_fixture["driver_data"]["volBackendFs"]
+    if data_fixture["driver_data"]["localFs"] in [None,""]:
+        LOGGER.error("Local Filesystem not provided in test.config file")
+        assert False
 
     data_fixture["local_driver_object"] = copy.deepcopy(data_fixture["driver_object"])
 
@@ -134,6 +135,10 @@ def remote_cluster_fixture(data_fixture, new_namespace):
 
     if not("remote" in data_fixture["driver_data"]):
         LOGGER.error("remote data is not provided in CSO")
+        assert False
+
+    if data_fixture["driver_data"]["remoteFs"] is "" or data_fixture["driver_data"]["remoteid"] is "":
+        LOGGER.error("Remote Filesystem or Remote Cluster ID not provided in test.config file")
         assert False
 
     data_fixture["remote_data"] = inputfunc.get_remote_data(data_fixture["driver_data"])
