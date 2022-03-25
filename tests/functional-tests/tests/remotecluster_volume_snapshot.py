@@ -183,6 +183,7 @@ def test_snapshot_dynamic_multiple_snapshots_256():
     snapshot_object.test_dynamic(value_sc, test_restore=True, number_of_snapshots=256)
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_257():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
