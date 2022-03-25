@@ -2,8 +2,8 @@
 # i.e.  python3.7 -m pip install -r requirements.txt  
 
 kubernetes == 23.3.0
-pytest == 5.4.1
-pytest-html == 2.1.1
-PyYAML > 5.1.2
-ansi2html == 1.5.2
-pytest-parallel == 0.0.10
+pytest == 7.0.1
+pytest-html == 3.1.1
+PyYAML == 6.0
+ansi2html == 1.7.0
+pytest-parallel == 0.1.1
