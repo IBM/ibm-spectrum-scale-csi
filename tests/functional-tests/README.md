@@ -44,8 +44,9 @@ Example
 kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml
  
 ```
-- To run the tests in namespace other than ibm-spectrum-scale-csi-driver (default) , please use --testnamespace parameter
-- If operator is not running in namespace ibm-spectrum-scale-csi-driver (default) , please use --operatornamespace with value where operator is already running
+- To run the tests in namespace other than default namespace (default) , please use --testnamespace parameter
+- To run each testcase in its own namespace, please use --createnamespace parameter
+- If operator is not running in namespace ibm-spectrum-scale-csi-driver namespace (default) , please use --operatornamespace with value where operator is already running
 - If operator yaml file is not at ../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml (default), please use --operatoryaml with value of operator yaml file path
 
 - if you want to use SSL=enable, for cacert configmap use following command and change the path in test.config file as `config/local.crt`
@@ -56,7 +57,7 @@ Note : for remote crt, pass remote.crt file in the same configmap and user in th
 
 - Configure sample [csi-test-pod.yaml](./csi-test-pod.yaml) file 
 
-How to get "APISERVER VALUE" and "TOKEN VALUE"
+- How to get "APISERVER VALUE" and "TOKEN VALUE"
 on Kubernetes or Openshift cluster where kubernetes objects will be created
 ```
 export APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
