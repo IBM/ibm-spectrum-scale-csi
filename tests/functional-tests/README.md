@@ -56,7 +56,7 @@ Note : for remote crt, pass remote.crt file in the same configmap and user in th
 
 - Configure sample [csi-test-pod.yaml](./csi-test-pod.yaml) file 
 
-How to get <APISERVER VALUE> and <TOKEN VALUE> ?
+How to get "APISERVER VALUE" and "TOKEN VALUE"
 on Kubernetes or Openshift cluster where kubernetes objects will be created
 ```
 export APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
