@@ -87,13 +87,13 @@ func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscal
 	})
 }
 
-// GetAttacherSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI attacher service.
+// GetAttacherSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI attacher service.
 func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
 	logger := csiLog.WithName("GetAttacherSyncer")
-	logger.Info("Creating a syncer object for the attacher statefulset.")
+	logger.Info("Creating a syncer object for the attacher deployment.")
 
-	obj := &appsv1.StatefulSet{
+	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSIControllerAttacher, driver.Name),
 			Namespace:   driver.Namespace,
@@ -112,13 +112,13 @@ func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscale
 	})
 }
 
-// GetProvisionerSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI provisioner service.
+// GetProvisionerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI provisioner service.
 func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
 	logger := csiLog.WithName("GetProvisionerSyncer")
-	logger.Info("Creating a syncer object for the provisioner statefulset.")
+	logger.Info("Creating a syncer object for the provisioner deployment.")
 
-	obj := &appsv1.StatefulSet{
+	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSIControllerProvisioner, driver.Name),
 			Namespace:   driver.Namespace,
@@ -137,13 +137,13 @@ func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 	})
 }
 
-// GetSnapshotterSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI snapshotter service.
+// GetSnapshotterSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI snapshotter service.
 func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
 	logger := csiLog.WithName("GetSnapshotterSyncer")
-	logger.Info("Creating a syncer object for the snapshotter statefulset.")
+	logger.Info("Creating a syncer object for the snapshotter deployment.")
 
-	obj := &appsv1.StatefulSet{
+	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSIControllerSnapshotter, driver.Name),
 			Namespace:   driver.Namespace,
@@ -162,13 +162,13 @@ func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 	})
 }
 
-// GetResizerSyncer returns a new kubernetes.Object syncer for k8s statefulset object for CSI resizer service.
+// GetResizerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI resizer service.
 func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
 	logger := csiLog.WithName("GetResizerSyncer")
-	logger.Info("Creating a syncer object for the resizer statefulset.")
+	logger.Info("Creating a syncer object for the resizer deployment.")
 
-	obj := &appsv1.StatefulSet{
+	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSIControllerResizer, driver.Name),
 			Namespace:   driver.Namespace,
@@ -208,16 +208,16 @@ func (s *csiControllerSyncer) SyncConfigMapFn() error {
 	return nil
 }
 
-// SyncAttacherFn is a function which mutates the existing attacher statefulset object into it's desired state.
+// SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
 func (s *csiControllerSyncer) SyncAttacherFn() error {
 
 	logger := csiLog.WithName("SyncAttacherFn")
-	logger.Info("Mutating the attacher statefulset object into it's desired state.")
+	logger.Info("Mutating the attacher deployment object into it's desired state.")
 
-	out := s.obj.(*appsv1.StatefulSet)
+	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
+	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
 	replicas := config.ReplicaCount
 	out.Spec.Replicas = &replicas
 
@@ -245,16 +245,16 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 	return nil
 }
 
-// SyncProvisionerFn is a function which mutates the existing provisioner statefulset object into it's desired state.
+// SyncProvisionerFn is a function which mutates the existing provisioner deployment object into it's desired state.
 func (s *csiControllerSyncer) SyncProvisionerFn() error {
 
 	logger := csiLog.WithName("SyncProvisionerFn")
-	logger.Info("Mutating the provisioner statefulset object into it's desired state.")
+	logger.Info("Mutating the provisioner deployment object into it's desired state.")
 
-	out := s.obj.(*appsv1.StatefulSet)
+	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)
+	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -280,16 +280,16 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 	return nil
 }
 
-// SyncSnapshotterFn is a function which mutates the existing snapshotter statefulset object into it's desired state.
+// SyncSnapshotterFn is a function which mutates the existing snapshotter deployment object into it's desired state.
 func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 
 	logger := csiLog.WithName("SyncSnapshotterFn")
-	logger.Info("Mutating the snapshotter statefulset object into it's desired state.")
+	logger.Info("Mutating the snapshotter deployment object into it's desired state.")
 
-	out := s.obj.(*appsv1.StatefulSet)
+	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)
+	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -315,16 +315,16 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 	return nil
 }
 
-// SyncResizerFn is a function which mutates the existing resizer statefulset object into it's desired state.
+// SyncResizerFn is a function which mutates the existing resizer deployment object into it's desired state.
 func (s *csiControllerSyncer) SyncResizerFn() error {
 
 	logger := csiLog.WithName("SyncResizerFn")
-	logger.Info("Mutating the resizer statefulset object into it's desired state.")
+	logger.Info("Mutating the resizer deployment object into it's desired state.")
 
-	out := s.obj.(*appsv1.StatefulSet)
+	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)))
-	out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)
+	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -356,7 +356,7 @@ func (s *csiControllerSyncer) SyncFn() error {
 	logger := csiLog.WithName("SyncFn")
 	logger.Info("in SyncFn")
 
-	out := s.obj.(*appsv1.StatefulSet)
+	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels())
 	out.Spec.ServiceName = config.GetNameForResource(config.CSIController, s.driver.Name)
@@ -525,7 +525,7 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	attacher := s.ensureAttacherContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.AttacherLeaderLivenessPort)},
+		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
@@ -544,7 +544,7 @@ func (s *csiControllerSyncer) ensureProvisionerContainersSpec() []corev1.Contain
 	provisioner := s.ensureContainer(provisionerContainerName,
 		s.getSidecarImage(config.CSIProvisioner),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10", "--extra-create-metadata", "--v=5", "--default-fstype=gpfs"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10", "--extra-create-metadata", "--v=5", "--default-fstype=gpfs", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
 	return []corev1.Container{
@@ -562,7 +562,7 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec() []corev1.Contain
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--leader-election=false", "--worker-threads=1"},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--worker-threads=1", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 	return []corev1.Container{
@@ -579,7 +579,7 @@ func (s *csiControllerSyncer) ensureResizerContainersSpec() []corev1.Container {
 
 	resizer := s.ensureContainer(resizerContainerName,
 		s.getSidecarImage(config.CSIResizer),
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10"},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
 	return []corev1.Container{
@@ -722,8 +722,10 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		Image: image,
 		Args:  args,
 		//EnvFrom:         s.getEnvSourcesFor(name),
-		Env:          s.getEnvFor(name),
-		VolumeMounts: s.getVolumeMountsFor(name),
+		Env:           s.getEnvFor(name),
+		VolumeMounts:  s.getVolumeMountsFor(name),
+		Ports:         s.driver.GetContainerPort(),
+		LivenessProbe: s.driver.GetLivenessProbe(),
 	}
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {

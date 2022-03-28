@@ -300,10 +300,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing the resources which change over time.
 	// Resource list:
 	// 1. Cluster configMap
-	// 2. Attacher statefulset
-	// 3. Provisioner statefulset
-	// 4. Snapshotter statefulset
-	// 5. Resizer statefulset
+	// 2. Attacher deployment
+	// 3. Provisioner deployment
+	// 4. Snapshotter deployment
+	// 5. Resizer deployment
 	// 6. Driver daemonset
 
 	// Synchronizing cluster configMap
@@ -322,7 +322,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Synchronization of ConfigMap is successful")
 
-	// Synchronizing attacher statefulset
+	// Synchronizing attacher deployment
 	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, r.recorder); err != nil {
 		message := "Synchronization of attacher interface failed."
@@ -336,9 +336,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	logger.Info("Synchronization of attacher interface is successful")
 
-	// Synchronizing provisioner statefulset
+	// Synchronizing provisioner deployment
 	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, r.recorder); err != nil {
 		message := "Synchronization of provisioner interface failed."
@@ -352,9 +355,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	logger.Info("Synchronization of provisioner interface is successful")
 
-	// Synchronizing snapshotter statefulset
+	// Synchronizing snapshotter deployment
 	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, r.recorder); err != nil {
 		message := "Synchronization of snapshotter interface failed."
@@ -368,9 +374,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		})
 		return ctrl.Result{}, err
 	}
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	logger.Info("Synchronization of snapshotter interface is successful")
 
-	// Synchronizing resizer statefulset
+	// Synchronizing resizer deployment
 	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, r.recorder); err != nil {
 		message := "Synchronization of resizer interface failed."
@@ -382,6 +391,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			Reason:  string(csiv1.ResourceSyncError),
 			Message: message,
 		})
+		return ctrl.Result{}, err
+	}
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of resizer interface is successful")
@@ -1450,4 +1462,45 @@ func (r *CSIScaleOperatorReconciler) GenerateUUID() uuid.UUID {
 	logger.Info("Generating a unique cluster ID.")
 	UUID := uuid.New()
 	return UUID
+}
+
+func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.WithName("removeDeprecatedStatefulset").WithValues("Name", name)
+	logger.Info("Removing deprecated statefulset resource from the cluster.")
+
+	STS := &appsv1.StatefulSet{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, STS)
+
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Statefulset resource not found in the cluster.")
+	} else if err != nil {
+		message := "Failed to get statefulset information from the cluster."
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+		return err
+	} else {
+		logger.Info("Found statefulset resource. Sidecar controllers as statefulsets are replaced by deployments in CSI >= 2.6.0. Removing statefulset.")
+		if err := r.Client.Delete(context.TODO(), STS); err != nil {
+			message := "Unable to delete " + name + " statefulset."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
+			return err
+		}
+	}
+	return nil
 }

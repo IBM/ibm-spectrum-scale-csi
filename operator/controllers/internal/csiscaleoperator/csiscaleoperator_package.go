@@ -228,6 +228,11 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeAttachmentsResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -364,6 +369,11 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeSnapshotContentsStatusResource},
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -457,6 +467,11 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{storageClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
 		},
 	}
@@ -749,7 +764,7 @@ func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: config.AttacherLeaderLivenessPort,
+			ContainerPort: config.LeaderLivenessPort,
 			Name:          "http-endpoint",
 			Protocol:      c.GetProtocol(),
 		},
