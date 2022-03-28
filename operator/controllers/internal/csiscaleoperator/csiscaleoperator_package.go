@@ -692,7 +692,7 @@ func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *se
 	}
 }
 
-// getNodeSelector converts the given nodeselector array into a map.
+// GetNodeSelectors converts the given nodeselector array into a map.
 func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 
 	nodeSelectors := make(map[string]string)
@@ -706,6 +706,7 @@ func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 	return nodeSelectors
 }
 
+// GetAttacherPodAntiAffinity returns kubernetes podAntiAffinity for the attacher sidecar controller pod.
 func (c *CSIScaleOperator) GetAttacherPodAntiAffinity() *corev1.PodAntiAffinity {
 
 	podAntiAffinity := corev1.PodAntiAffinity{
@@ -749,6 +750,7 @@ func (c *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
 	return tolerations
 }
 
+// GetLivenessProbe returns liveness probe information for sidecar controller.
 func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	//tolerationsSeconds := config.TolerationsSeconds
 	probe := corev1.Probe{
@@ -761,6 +763,7 @@ func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	return &probe
 }
 
+// GetContainerPort returns port details for the sidecar controller containers.
 func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
@@ -772,11 +775,13 @@ func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
 	return ports
 }
 
+// GetProtocol returns the protocol to be used by liveness probe with httpGet request.
 func (c *CSIScaleOperator) GetProtocol() corev1.Protocol {
 	var protocol corev1.Protocol = "TCP"
 	return protocol
 }
 
+// GetHandler returns a handler with httpGet information.
 func (c *CSIScaleOperator) GetHandler() corev1.ProbeHandler {
 	handler := corev1.ProbeHandler{
 		HTTPGet: c.GetHTTPGetAction(),
@@ -784,6 +789,7 @@ func (c *CSIScaleOperator) GetHandler() corev1.ProbeHandler {
 	return handler
 }
 
+// GetHTTPGetAction returns httpGet information for the liveness probe.
 func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	action := corev1.HTTPGetAction{
 		Path: "/healthz/leader-election",
