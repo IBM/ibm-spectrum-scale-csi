@@ -3,8 +3,10 @@ import logging
 import copy
 import re
 import base64
+import urllib3
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 LOGGER = logging.getLogger()
 
 
