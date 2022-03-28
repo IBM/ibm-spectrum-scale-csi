@@ -70,7 +70,7 @@ metadata:
     capabilities: Basic Install
     categories: Storage
     certified: "false"
-    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.5.0
+    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:66c8c36e5e1f7f9095a0f6133c57b3598997f1d412cbe9c3ebbea75af2ccc534
     createdAt: Mon Dec 20 14:55:05 IST 2021
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
@@ -487,8 +487,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: CSI_DRIVER_IMAGE
-                  value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:c61b14b2dd3a2ac7c27187019acf97eb3bae57c1f67a8cea7f8ac069519f9b53
-                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:241ab702e62c087b99eb5f2416675bc09b0f1d96365c34b3f292a6ca1429a9e7
+                  value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:695b7107c16fce429f559fc6e26686712f8670bfd1d051b85279efd48a7eb413
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:66c8c36e5e1f7f9095a0f6133c57b3598997f1d412cbe9c3ebbea75af2ccc534
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
