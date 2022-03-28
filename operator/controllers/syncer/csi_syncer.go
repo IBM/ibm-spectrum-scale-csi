@@ -522,7 +522,7 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	logger := csiLog.WithName("ensureAttacherContainersSpec")
 	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
 
-	attacher := s.ensureAttacherContainer(attacherContainerName,
+	attacher := s.ensureContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
 		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
@@ -677,34 +677,6 @@ func ensureNodeAffinity() *corev1.NodeAffinity {
 	}
 }
 */
-
-// ensureAttacherContainer generates k8s container object.
-func (s *csiControllerSyncer) ensureAttacherContainer(name, image string, args []string) corev1.Container {
-
-	logger := csiLog.WithName("ensureAttacherContainer")
-	logger.Info("Container information: ", "Name", name, "Image", image)
-
-	sc := &corev1.SecurityContext{
-		//		AllowPrivilegeEscalation: boolptr.False(),
-		Privileged: boolptr.True(),
-	}
-	fillSecurityContextCapabilities(sc)
-	container := corev1.Container{
-		Name:  name,
-		Image: image,
-		Args:  args,
-		//EnvFrom:         s.getEnvSourcesFor(name),
-		Env:           s.getEnvFor(name),
-		VolumeMounts:  s.getVolumeMountsFor(name),
-		Ports:         s.driver.GetContainerPort(),
-		LivenessProbe: s.driver.GetLivenessProbe(),
-	}
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if isOpenShift {
-		container.SecurityContext = sc
-	}
-	return container
-}
 
 // ensureContainer generates k8s container object.
 func (s *csiControllerSyncer) ensureContainer(name, image string, args []string) corev1.Container {
