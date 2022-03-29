@@ -7,3 +7,4 @@ pytest-html == 3.1.1
 PyYAML == 6.0
 ansi2html == 1.7.0
 pytest-parallel == 0.1.1
+pytest-rerunfailures == 10.2
