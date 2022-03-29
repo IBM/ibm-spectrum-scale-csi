@@ -102,12 +102,12 @@ spec:
       - kind: DaemonSet
         name: ""
         version: v1beta2
-      - kind: Deployment
-        name: ""
-        version: v1beta2
       - kind: Pod
         name: ""
         version: v1
+      - kind: StatefulSet
+        name: ""
+        version: v1beta2
       specDescriptors:
       - description: affinity is a group of affinity scheduling rules.
         displayName: Affinity
@@ -382,6 +382,7 @@ spec:
           - daemonsets
           - deployments
           - replicasets
+          - statefulsets
           verbs:
           - '*'
         - apiGroups:
