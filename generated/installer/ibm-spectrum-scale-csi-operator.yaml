@@ -113,6 +113,7 @@ rules:
   - daemonsets
   - deployments
   - replicasets
+  - statefulsets
   apiGroups:
   - apps
   verbs:
