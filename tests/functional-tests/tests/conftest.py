@@ -59,6 +59,9 @@ def data_fixture(request):
     data_fixture = {}
     data_fixture["cmd_values"] = inputfunc.get_pytest_cmd_values(request)
     data_fixture["driver_data"] = inputfunc.read_driver_data(data_fixture["cmd_values"])
+    data_fixture["operator_data"] = inputfunc.read_operator_data(data_fixture["cmd_values"]["clusterconfig_value"], 
+                 data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["test_config"], 
+                 data_fixture["cmd_values"]["kubeconfig_value"])
     if data_fixture["cmd_values"]["runslow_val"]:
         data_fixture["value_pvc"] = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
                      {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
@@ -97,9 +100,24 @@ def data_fixture(request):
 def check_csi_operator(data_fixture):
     baseclass.filesetfunc.cred_check(data_fixture["driver_data"])
     baseclass.filesetfunc.set_data(data_fixture["driver_data"])
-    kubeobjectfunc.set_global_namespace_value(data_fixture["cmd_values"]["operator_namespace"])
-    csiobjectfunc.set_namespace_value(data_fixture["cmd_values"]["operator_namespace"])
-    kubeobjectfunc.get_pod_list_and_check_running("product=ibm-spectrum-scale-csi",5)
+    operator = baseclass.Scaleoperator(data_fixture["cmd_values"]["kubeconfig_value"],
+                           data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["operator_file"])
+    operator_object = baseclass.Scaleoperatorobject(data_fixture["operator_data"], data_fixture["cmd_values"]["kubeconfig_value"])
+    condition = baseclass.kubeobjectfunc.check_ns_exists(data_fixture["cmd_values"]["kubeconfig_value"], 
+                           data_fixture["cmd_values"]["operator_namespace"])
+    if condition is True:
+        if not(operator_object.check(data_fixture["driver_data"]["csiscaleoperator_name"])):
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False
+    else:
+        operator.create()
+        operator.check()
+        operator_object.create()
+        if operator_object.check():
+            LOGGER.info("Operator custom object is deployed succesfully")
+        else:
+            LOGGER.error("Operator custom object is not deployed succesfully")
+            assert False
 
 
 @pytest.fixture

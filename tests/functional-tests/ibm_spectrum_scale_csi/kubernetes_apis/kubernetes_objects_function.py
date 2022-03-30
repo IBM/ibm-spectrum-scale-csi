@@ -737,10 +737,10 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
             name=namespace_value, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists checking for operator")
+        LOGGER.info(f"Namespace Check  : CSI Operator Namespace {namespace_value} exists")
         return True
     except ApiException:
-        LOGGER.info("namespace does not exists")
+        LOGGER.info(f"Namespace Check  : CSI Operator Namespace {namespace_value} does not exists")
         return False
 
 
@@ -1129,17 +1129,3 @@ def check_pod_image(pod_name, image_name):
     LOGGER.error(f"Image {image_name} not matched for pod {pod_name}")
     LOGGER.error(str(api_response))
     assert False
-
-
-def get_pod_list_and_check_running(label,min_required_pods):
-    api_instance = client.CoreV1Api()
-    try:
-        api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
-        for pod_info in api_response.items:
-            assert pod_info.status.phase == "Running"
-        assert len(api_response.items) >=  min_required_pods
-        LOGGER.info(f"Spectrum Scale CSI is Running")
-    except ApiException as e:
-        LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
-        assert False
-
