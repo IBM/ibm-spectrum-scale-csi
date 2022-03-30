@@ -166,6 +166,7 @@ def remote_cluster_fixture(data_fixture, new_namespace):
         assert False
 
     data_fixture["remote_data"] = inputfunc.get_remote_data(data_fixture["driver_data"])
+    data_fixture["driver_data"]["remoteid"] = data_fixture["remote_data"]["remoteid"]
     baseclass.filesetfunc.cred_check(data_fixture["remote_data"])
     baseclass.filesetfunc.set_data(data_fixture["remote_data"])
 

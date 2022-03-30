@@ -556,7 +556,7 @@ def get_remoteFs_remotename_and_remoteid(test_data):
             response_dict = json.loads(response.text)
             this_cluster_name = response_dict["cluster"]["clusterSummary"]["clusterName"]          
             if this_cluster_name == remote_cluster_name:
-                remoteid = response_dict["cluster"]["clusterSummary"]["clusterId"]
+                remoteid = str(response_dict["cluster"]["clusterSummary"]["clusterId"])
                 return fs_remote_name, remoteid
     return fs_remote_name, remoteid
 
