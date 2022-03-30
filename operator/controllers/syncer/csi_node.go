@@ -49,6 +49,8 @@ const (
 	pluginDir                        = "plugin-dir"
 	registrationDir                  = "registration-dir"
 	registrationDirPath              = "/registration"
+	fsDir                            = "fs-dir"
+	fsDirPath                        = "/mnt"
 	secretUsername                   = "username"
 	secretPassword                   = "password"
 
@@ -172,6 +174,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	//})
 
 	nodePlugin.ImagePullPolicy = config.CSIDriverImagePullPolicy
+	nodePlugin.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True()}
 
 	// Check if there is any environment variable passing liveness
 	// health port number
@@ -355,7 +358,7 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 // getVolumeMountsFor returns volume mounts for given container name.
 func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
-	// mountPropagationB := corev1.MountPropagationBidirectional
+	mountPropagationB := corev1.MountPropagationBidirectional
 	switch name {
 	case nodeContainerName:
 		volumeMounts := []corev1.VolumeMount{
@@ -365,9 +368,14 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 				MountPath: s.driver.GetSocketDir(),
 			},
 			{
-				Name:      podMountDir,
-				MountPath: s.driver.GetKubeletRootDirPath(),
-				// MountPropagation: &mountPropagationB,
+				Name:             podMountDir,
+				MountPath:        s.driver.GetKubeletRootDirPath(),
+				MountPropagation: &mountPropagationB,
+			},
+			{
+				Name:             fsDir,
+				MountPath:        fsDirPath,
+				MountPropagation: &mountPropagationB,
 			},
 			{
 				Name:      hostDev,
@@ -427,6 +435,7 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	logger := csiLog.WithName("ensureVolumes")
 	volumes := []corev1.Volume{
+		k8sutil.EnsureVolume(fsDir, k8sutil.EnsureHostPathVolumeSource(fsDirPath, "Directory")),
 		k8sutil.EnsureVolume(pluginDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetSocketDir(), "DirectoryOrCreate")),
 		k8sutil.EnsureVolume(registrationDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath()+config.PluginsRegistry, "Directory")),
 		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath(), "Directory")),

@@ -44,7 +44,7 @@ const (
 	oneGB                uint64 = 1024 * 1024 * 1024
 	smallestVolSize      uint64 = oneGB // 1GB
 	defaultSnapWindow           = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
-
+	rwManyPermissions           = "2771"
 )
 
 type ScaleControllerServer struct {
@@ -546,12 +546,16 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.InvalidArgument, "Volume Capabilities is a required field")
 	}
 
+	isRWMany := false
 	for _, reqCap := range reqCapabilities {
 		if reqCap.GetBlock() != nil {
 			return nil, status.Error(codes.Unimplemented, "Block Volume is not supported")
 		}
 		if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
 			return nil, status.Error(codes.Unimplemented, "Volume with Access Mode ReadOnlyMany is not supported")
+		}
+		if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
+			isRWMany = true
 		}
 	}
 
@@ -564,6 +568,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
+	if isRWMany {
+		scaleVol.VolPermissions = rwManyPermissions
+	}
 	isNewVolumeType := false
 	if scaleVol.StorageClassType == storageClassAdvanced {
 		isNewVolumeType = true
