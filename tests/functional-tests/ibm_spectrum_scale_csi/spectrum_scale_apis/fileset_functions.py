@@ -537,12 +537,28 @@ def get_remoteFs_remotename_and_remoteid(test_data):
             temp_split = device_name.split(":")
             fs_remote_name =  temp_split[1]
             remote_cluster_name = temp_split[0]
+    
+    if fs_remote_name is None:
+        return fs_remote_name, remoteid
 
-            for cluster in test_data["clusters"]:
-                remote_sec_name = cluster["secrets"]
-                remote_gui_host = cluster["restApi"][0]["guiHost"]
-                LOGGER.warning(f"{remote_gui_host} {remote_sec_name} {test_data['remote_username'][remote_sec_name]} {test_data['remote_password'][remote_sec_name]}")
-    return fs_remote_name, "6551742611889582128"
+    for cluster in test_data["clusters"]:
+        if test_data["guiHost"] != cluster["restApi"][0]["guiHost"]:
+            remote_sec_name = cluster["secrets"]
+            remote_gui_host = cluster["restApi"][0]["guiHost"]
+            remote_username = test_data['remote_username'][remote_sec_name]
+            remote_password = test_data['remote_password'][remote_sec_name]
+            get_link = f'https://{remote_gui_host}:{test_data["remote_port"]}/scalemgmt/v2/cluster'
+            response = requests.get(get_link, verify=False, auth=(remote_username, remote_password))
+            if not(response.status_code == 200):
+                LOGGER.error(response.text)
+                LOGGER.error(get_link)
+                assert False
+            response_dict = json.loads(response.text)
+            this_cluster_name = response_dict["cluster"]["clusterSummary"]["clusterName"]          
+            if this_cluster_name == remote_cluster_name:
+                remoteid = response_dict["cluster"]["clusterSummary"]["clusterId"]
+                return fs_remote_name, remoteid
+    return fs_remote_name, remoteid
 
 
 def check_snapshot_exists(snapshot_name, volume_name):

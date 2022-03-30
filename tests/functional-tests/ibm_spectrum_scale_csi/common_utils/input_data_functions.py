@@ -168,7 +168,7 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
 
 def get_remote_data(data_passed):
     remote_data = copy.deepcopy(data_passed)
-    remote_data["remoteFs_remote_name"], remote_data["remoteid"] = filesetfunc.get_remoteFs_remotename_and_remoteid(copy.deepcopy(remote_data), data_passed["id"])
+    remote_data["remoteFs_remote_name"], remote_data["remoteid"] = filesetfunc.get_remoteFs_remotename_and_remoteid(copy.deepcopy(remote_data))
     if remote_data["remoteFs_remote_name"] is None or remote_data["remoteid"] is None:
         LOGGER.error("Unable to get remoteFs name on remote cluster or remotecluster id")
         assert False
