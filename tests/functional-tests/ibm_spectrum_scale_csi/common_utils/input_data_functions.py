@@ -168,9 +168,9 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
 
 def get_remote_data(data_passed):
     remote_data = copy.deepcopy(data_passed)
-    remote_data["remoteFs_remote_name"] = filesetfunc.get_remoteFs_remotename(copy.deepcopy(remote_data))
-    if remote_data["remoteFs_remote_name"] is None:
-        LOGGER.error("Unable to get remoteFs , name on remote cluster")
+    remote_data["remoteFs_remote_name"], remote_data["remoteid"] = filesetfunc.get_remoteFs_remotename_and_remoteid(copy.deepcopy(remote_data), data_passed["id"])
+    if remote_data["remoteFs_remote_name"] is None or remote_data["remoteid"] is None:
+        LOGGER.error("Unable to get remoteFs name on remote cluster or remotecluster id")
         assert False
 
     remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
@@ -195,7 +195,6 @@ def get_remote_data(data_passed):
                                   "password": data_passed["password"],
                                   "port": data_passed["port"],
                                   "guiHost": data_passed["guiHost"]}
-
     return remote_data
 
 
@@ -271,7 +270,7 @@ def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_names
             data["username"],data["password"]= \
                 csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
             if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
-                if data["remoteFs"] is "" and data["remoteid"] is "":
+                if data["remoteFs"] is "":
                     data["remoteFs"] = cluster["primary"]["primaryFs"]
                     data["remoteid"] = cluster["primary"]["remoteCluster"]
         else:
@@ -298,6 +297,9 @@ def create_kubeconfig_file(token, apiserver, file_path):
                       "preferences": {},
                       "users": [{"name": "kubernetes-admin","user": {"token": token}}]
                     }
+        if 'CACRT' in os.environ:
+            file_data["clusters"][0]["cluster"]["certificate-authority-data"] = os.environ['CACRT']
+            file_data["clusters"][0]["cluster"]["insecure-skip-tls-verify"] = False
         with open(file_path, "w") as f:
             yaml.dump(file_data, f)
         LOGGER.info(f"Created Kubeconfig file using given token for {apiserver}")

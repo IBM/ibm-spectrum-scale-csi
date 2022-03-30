@@ -517,9 +517,8 @@ def get_mount_point():
     return mount_point
 
 
-def get_remoteFs_remotename(test_data):
+def get_remoteFs_remotename_and_remoteid(test_data):
     """ return name of remote filesystem's remote name """
-
     info_filesystem = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["remoteFs"]}'
     response = requests.get(info_filesystem, verify=False,
                             auth=(test_data["username"], test_data["password"]))
@@ -530,14 +529,20 @@ def get_remoteFs_remotename(test_data):
         assert False
 
     response_dict = json.loads(response.text)
-
+    fs_remote_name, remoteid = None,None
     for filesystem in response_dict["filesystems"]:
         if filesystem["name"] == test_data["remoteFs"]:
             device_name = filesystem["mount"]["remoteDeviceName"]
             LOGGER.debug(device_name)
             temp_split = device_name.split(":")
-            return temp_split[1]
-    return None
+            fs_remote_name =  temp_split[1]
+            remote_cluster_name = temp_split[0]
+
+            for cluster in test_data["clusters"]:
+                remote_sec_name = cluster["secrets"]
+                remote_gui_host = cluster["restApi"][0]["guiHost"]
+                LOGGER.warning(f"{remote_gui_host} {remote_sec_name} {test_data['remote_username'][remote_sec_name]} {test_data['remote_password'][remote_sec_name]}")
+    return fs_remote_name, "6551742611889582128"
 
 
 def check_snapshot_exists(snapshot_name, volume_name):

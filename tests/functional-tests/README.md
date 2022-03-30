@@ -70,7 +70,11 @@ kubectl create clusterrolebinding test-automation-crb --clusterrole=cluster-admi
 export TOKEN=$(kubectl get secret $(kubectl get secrets -n default | grep test-automation-token | awk 'NR==1{print $1}')  -o jsonpath='{.data.token}' -n default | base64 --decode)
 echo "TOKEN is " $TOKEN
 ```
-
+Optional: ca.crt value
+```
+export CACRT=$(kubectl get secret $(kubectl get secrets -n default | grep test-automation-token | awk 'NR==1{print $1}')  -o jsonpath='{.data.ca\.crt}' -n default)
+echo "CACRT is " $CACRT
+```
 
 ```
 kind: Pod
@@ -93,6 +97,8 @@ spec:
       value: "<APISERVER VALUE>"
     - name: TOKEN
       value: "<TOKEN VALUE>"
+#    - name: CACRT
+#      value: "<CACRT VALUE>"
     volumeMounts:
     - mountPath: /data
       name: report

@@ -18,6 +18,8 @@ spec:
       value: "<APISERVER VALUE>"
     - name: TOKEN
       value: "<TOKEN VALUE>"
+#    - name: CACRT
+#      value: "<CACRT VALUE>"
     volumeMounts:
     - mountPath: /data
       name: report
