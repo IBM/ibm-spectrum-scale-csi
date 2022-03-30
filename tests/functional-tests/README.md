@@ -44,7 +44,7 @@ Example
 kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml
  
 ```
-- To run the tests in namespace other than default namespace (default) , please use --testnamespace parameter
+- To run the tests in namespace other than ibm-spectrum-scale-csi-test namespace (default) , please use --testnamespace parameter
 - To run each testcase in its own namespace, please use --createnamespace parameter
 - If operator is not running in namespace ibm-spectrum-scale-csi-driver namespace (default) , please use --operatornamespace with value where operator is already running
 - If operator yaml file is not at ../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml (default), please use --operatoryaml with value of operator yaml file path

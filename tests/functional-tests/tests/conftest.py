@@ -14,7 +14,7 @@ LOGGER = logging.getLogger()
 def pytest_addoption(parser):
     parser.addoption("--kubeconfig", action="store")
     parser.addoption("--clusterconfig", action="store")
-    parser.addoption("--testnamespace", default="default",action="store")
+    parser.addoption("--testnamespace", default="ibm-spectrum-scale-csi-test",action="store")
     parser.addoption("--operatornamespace", default="ibm-spectrum-scale-csi-driver", action="store")
     parser.addoption("--runslow", action="store_true", help="run slow tests")
     parser.addoption("--operatoryaml", action="store")
@@ -105,11 +105,14 @@ def check_csi_operator(data_fixture):
 @pytest.fixture
 def new_namespace(data_fixture):
     if data_fixture["cmd_values"]["createnamespace"] is True:
-        data_fixture["cmd_values"]["test_namespace"] = csistoragefunc.get_random_name("ns")
+        data_fixture["cmd_values"]["test_namespace"] = csistoragefunc.get_random_name("csi-test")
+
+    if not(kubeobjectfunc.check_namespace_exists(data_fixture["cmd_values"]["test_namespace"])):
         kubeobjectfunc.create_namespace(data_fixture["cmd_values"]["test_namespace"])
-        data_fixture["driver_object"].test_ns = data_fixture["cmd_values"]["test_namespace"]
-        data_fixture["snapshot_object"].test_namespace = data_fixture["cmd_values"]["test_namespace"]
-        csistoragefunc.set_test_namespace_value(data_fixture["cmd_values"]["test_namespace"])       
+
+    data_fixture["driver_object"].test_ns = data_fixture["cmd_values"]["test_namespace"]
+    data_fixture["snapshot_object"].test_namespace = data_fixture["cmd_values"]["test_namespace"]
+    csistoragefunc.set_test_namespace_value(data_fixture["cmd_values"]["test_namespace"])       
     yield
     if data_fixture["cmd_values"]["createnamespace"] is True and data_fixture["driver_data"]["keepobjects"] is False:
         kubeobjectfunc.delete_namespace(data_fixture["cmd_values"]["test_namespace"])

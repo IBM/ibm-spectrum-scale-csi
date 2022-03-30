@@ -50,10 +50,10 @@ def create_namespace(namespace_name):
     namespace_body = client.V1Namespace(
         api_version="v1", kind="Namespace", metadata=namespace_metadata)
     try:
-        LOGGER.info(f'Namespace Create : {namespace_name}')
         namespace_api_response = namespace_api_instance.create_namespace(
             body=namespace_body, pretty=True)
         LOGGER.debug(str(namespace_api_response))
+        LOGGER.info(f'Namespace Create : {namespace_name} is created')
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespace: {e}")
@@ -409,11 +409,11 @@ def check_namespace_deleted(namespace_name):
             list_namespace_api_response = list_namespace_api_instance.read_namespace(
                 name=namespace_name, pretty=True)
             LOGGER.debug(str(list_namespace_api_response))
-            LOGGER.info(f'Still deleting namespace {namespace_name}')
+            LOGGER.info(f'Namespace Delete : still deleting {namespace_name}')
             count = count-1
             time.sleep(10)
         except ApiException:
-            LOGGER.info(f'namespace {namespace_name} is deleted')
+            LOGGER.info(f'Namespace Delete : {namespace_name} is deleted')
             return
 
     LOGGER.error(f'namespace  {namespace_name} is not deleted')
@@ -589,10 +589,10 @@ def check_namespace_exists(namespace_name):
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
             name=namespace_name, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info(f"namespace {namespace_name} exists")
+        LOGGER.info(f"Namespace Check  : {namespace_name} exists")
         return True
     except ApiException:
-        LOGGER.info(f"namespace {namespace_name} does not exists")
+        LOGGER.info(f"Namespace Check  : {namespace_name} does not exists")
         return False
 
 
