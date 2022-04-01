@@ -1,9 +1,12 @@
 import time
 import logging
+import base64
 import string
 import random
+import urllib3
 from kubernetes import client
 from kubernetes.client.rest import ApiException
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 LOGGER = logging.getLogger()
 
 
@@ -272,3 +275,21 @@ def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-s
         return read_cr_api_response
     except ApiException:
         return False
+
+
+def get_gui_creds_for_username_password(ns_name, secret_name):
+     api_instance = client.CoreV1Api()
+     try:
+         api_response = api_instance.read_namespaced_secret(
+             name=secret_name, namespace=ns_name, pretty=True)
+         encoded_username = api_response.data['username']
+         encoded_password = api_response.data['password']
+         decoded_username = base64.b64decode(encoded_username)
+         decoded_username = decoded_username.decode('ascii')
+         decoded_password = base64.b64decode(encoded_password)
+         decoded_password = decoded_password.decode('ascii')
+         return decoded_username,decoded_password
+     except ApiException as e:
+         LOGGER.error(f'Secret {secret_name} does not exist: {e}')
+         LOGGER.error("Not able to fetch username and pasword")
+         assert False
