@@ -552,5 +552,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v2.4.0
+  replaces: ibm-spectrum-scale-csi-operator.v2.5.0
   version: 2.6.0
