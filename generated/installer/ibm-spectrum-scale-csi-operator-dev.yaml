@@ -33,7 +33,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:241ab702e62c087b99eb5f2416675bc09b0f1d96365c34b3f292a6ca1429a9e7
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
         args:
         - --leaderElection=true
         env:

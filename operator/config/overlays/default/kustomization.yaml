@@ -12,7 +12,7 @@ bases:
 
 images:
 - name: csi-operator
-  newName: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver
+  newName: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator
   digest: sha256:241ab702e62c087b99eb5f2416675bc09b0f1d96365c34b3f292a6ca1429a9e7
   # newTag: v2.5.0
 
