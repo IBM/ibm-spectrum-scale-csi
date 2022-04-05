@@ -58,7 +58,7 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "GPFS")
 	if ghealthy == false {
 		glog.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
-		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
+		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 	}
 
 	// nhealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "NODE")
