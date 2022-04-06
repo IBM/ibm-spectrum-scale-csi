@@ -9,11 +9,9 @@ api/v1/csiscaleoperator_types.go:344:1: comment on exported type RestApi should 
 api/v1/csiscaleoperator_types.go:345:6: type RestApi should be RestAPI
 api/v1/csiscaleoperator_types.go:387:6: exported type CSIReason should have comment or be unexported
 api/v1/csiscaleoperator_types.go:390:2: exported const CSIConfigured should have comment (or a comment on this block) or be unexported
-controllers/csiscaleoperator_controller.go:67:7: exported const MinControllerReplicas should have comment or be unexported
-controllers/csiscaleoperator_controller.go:534:1: exported function Contains should have comment or be unexported
-controllers/csiscaleoperator_controller.go:1117:2: don't use underscores in Go names; var csiaccess_users_new should be csiaccessUsersNew
-controllers/csiscaleoperator_controller.go:1156:3: don't use underscores in Go names; var csiaccess_users should be csiaccessUsers
-controllers/csiscaleoperator_controller.go:1259:1: comment on exported method CSIScaleOperatorReconciler.SetStatus should be of the form "SetStatus ..."
+controllers/csiscaleoperator_controller.go:66:7: exported const MinControllerReplicas should have comment or be unexported
+controllers/csiscaleoperator_controller.go:527:1: exported function Contains should have comment or be unexported
+controllers/csiscaleoperator_controller.go:1128:1: comment on exported method CSIScaleOperatorReconciler.SetStatus should be of the form "SetStatus ..."
 controllers/config/constants.go:125:2: exported const StatusConditionReady should have comment (or a comment on this block) or be unexported
 controllers/config/resources.go:29:2: exported const CSIController should have comment (or a comment on this block) or be unexported
 controllers/config/resources.go:37:2: comment on exported const CSINodeServiceAccount should be of the form "CSINodeServiceAccount ..."
@@ -27,13 +25,12 @@ controllers/internal/csiscaleoperator/csiscaleoperator.go:151:1: exported method
 controllers/internal/csiscaleoperator/csiscaleoperator.go:162:1: exported method CSIScaleOperator.GetSocketPath should have comment or be unexported
 controllers/internal/csiscaleoperator/csiscaleoperator.go:170:1: exported method CSIScaleOperator.GetSocketDir should have comment or be unexported
 controllers/internal/csiscaleoperator/csiscaleoperator.go:178:1: exported method CSIScaleOperator.GetCSIEndpoint should have comment or be unexported
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:33:2: const snapshotStorageApiGroup should be snapshotStorageAPIGroup
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:34:2: const securityOpenshiftApiGroup should be securityOpenshiftAPIGroup
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:35:2: const storageApiGroup should be storageAPIGroup
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:36:2: const rbacAuthorizationApiGroup should be rbacAuthorizationAPIGroup
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:37:2: const coordinationApiGroup should be coordinationAPIGroup
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:38:2: const podSecurityPolicyApiGroup should be podSecurityPolicyAPIGroup
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:249:1: comment on exported method CSIScaleOperator.GenerateProvisionerClusterRoleBinding should be of the form "GenerateProvisionerClusterRoleBinding ..."
-controllers/internal/csiscaleoperator/csiscaleoperator_package.go:643:1: receiver name s should be consistent with previous receiver name c for CSIScaleOperator
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:32:2: const snapshotStorageApiGroup should be snapshotStorageAPIGroup
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:33:2: const securityOpenshiftApiGroup should be securityOpenshiftAPIGroup
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:34:2: const storageApiGroup should be storageAPIGroup
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:35:2: const rbacAuthorizationApiGroup should be rbacAuthorizationAPIGroup
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:36:2: const coordinationApiGroup should be coordinationAPIGroup
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:37:2: const podSecurityPolicyApiGroup should be podSecurityPolicyAPIGroup
+controllers/internal/csiscaleoperator/csiscaleoperator_package.go:248:1: comment on exported method CSIScaleOperator.GenerateProvisionerClusterRoleBinding should be of the form "GenerateProvisionerClusterRoleBinding ..."
 controllers/syncer/csi_node.go:58:2: exported const EnvVarForCSINodeRegistrarImage should have comment (or a comment on this block) or be unexported
 controllers/syncer/csi_syncer.go:50:2: exported const EnvVarForCSIAttacherImage should have comment (or a comment on this block) or be unexported

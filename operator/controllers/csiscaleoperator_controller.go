@@ -26,7 +26,6 @@ import (
 
 	uuid "github.com/google/uuid"
 	configv1 "github.com/openshift/api/config/v1"
-	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/presslabs/controller-util/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -202,11 +201,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		if err := r.deleteSCC(instance); err != nil {
-			logger.Error(err, "Failed to delete SecurityContextConstraints resource.")
-			return ctrl.Result{}, err
-		}
-
 		if err := r.removeFinalizer(instance); err != nil {
 			logger.Error(err, "Failed to remove Finalizer")
 			return ctrl.Result{}, err
@@ -222,7 +216,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		r.reconcileServiceAccount,
 		r.reconcileClusterRole,
 		r.reconcileClusterRoleBinding,
-		r.reconcileSecurityContextConstraint,
 	} {
 		if err = rec(instance); err != nil {
 			return ctrl.Result{}, err
@@ -1099,130 +1092,6 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 		}
 	}
 	logger.V(1).Info("Reconciliation of ClusterRoleBindings is successful")
-	return nil
-}
-
-// reconcileSecurityContextConstraint handles creation/updating of SecurityContextConstraints resource in cluster.
-// It returns error if fails to create/update SecurityContextConstraints resource.
-func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance *csiscaleoperator.CSIScaleOperator) error {
-
-	logger := csiLog.WithName("reconcileSecurityContextConstraint")
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if !isOpenShift {
-		logger.Info("This is not an OpenShift cluster, so skipping reconciliation of SecurityContextConstraints")
-		return nil
-	}
-
-	logger.Info("Creating required SecurityContextConstraints resource.")
-	csiaccess_users_new := []string{
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSINodeServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIResizerServiceAccount, instance.Name),
-	}
-
-	// Check if  SCC "spectrum-scale-csiaccess" exists in cluster
-	SCC := &securityv1.SecurityContextConstraints{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      config.CSISCC,
-		Namespace: instance.Namespace,
-	}, SCC)
-	// If SCC does not exist, create a new SCC resource.
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating SecurityContextConstraints.")
-		SCC := instance.GenerateSecurityContextConstraint(csiaccess_users_new)
-		err = r.Client.Create(context.TODO(), SCC)
-		if err != nil {
-			message := "Failed to create SecurityContextConstraints." + SCC.GetName()
-			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceCreateError),
-				Message: message,
-			})
-			return err
-		}
-		logger.Info("SecurityContextConstraint created successfully.")
-	} else if err != nil { // If fetching SCC fails with error, return error.
-		logger.Error(err, "Failed to fetch SecurityContextConstraints from the cluster. Ignore if it's not Redhat Openshift Container Platform.")
-		// Discuss: Should log level be changed to type Info?
-		// return err
-	} else { // If SCC already exists.
-		// Get list of existing users
-		logger.Info("SecurityContextConstraint already exists in cluster. Fetching users and service accounts details.")
-		csiaccess_users := SCC.Users
-		// Append new users, if it doesn't already exist.
-		updateRequired := false
-		for _, user := range csiaccess_users_new {
-			if !containsString(csiaccess_users, user) {
-				csiaccess_users = append(csiaccess_users, user)
-				updateRequired = true
-			}
-		}
-		// Update SCC resource
-		if updateRequired {
-			logger.Info("Updating SecurityContextConstraint with new users.")
-			newSCC := instance.GenerateSecurityContextConstraint(csiaccess_users)
-			newSCC.SetResourceVersion(SCC.GetResourceVersion())
-			err = r.Client.Update(context.TODO(), newSCC)
-			if err != nil {
-				message := "Failed to update SecurityContextConstraints " + newSCC.GetName()
-				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceUpdateError),
-					Message: message,
-				})
-				return err
-			}
-			logger.Info("SecurityContextConstraint updated successfully.", "Users", csiaccess_users)
-		} else {
-			logger.Info("SecurityContextConstraint is up to date, no updates required.")
-		}
-	}
-
-	logger.V(1).Info("Reconciliation of SecurityContextConstraints is successful")
-	return nil
-}
-
-// Note: Reason to clean SCC using finalizer, since CSIscaleOperator is a namespaced resource,
-// it cannot own SCC as SCC is a cluster-scoped resource.
-
-// deleteSCC method removes the cluster-scoped SecurityContextConstraint resource from cluster.
-func (r *CSIScaleOperatorReconciler) deleteSCC(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("deleteSCC").WithValues("Name", config.CSISCC)
-
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if !isOpenShift {
-		logger.Info("This is not Redhat OpenShift Cluster Platform, so skipping deletion of SecurityContextConstraints resource.")
-		return nil
-	}
-
-	logger.Info("Deleting SecurityContextConstraints resource.")
-
-	SCC := &securityv1.SecurityContextConstraints{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name: config.CSISCC,
-	}, SCC)
-
-	if err == nil {
-		if err := r.Client.Delete(context.TODO(), SCC); err != nil {
-			logger.Error(err, "Failed to delete SecurityContextConstraints resource.")
-			return err
-		}
-	} else if errors.IsNotFound(err) {
-		logger.Info("SecurityContextConstraints resource not found for deletion.")
-		return nil
-	} else {
-		logger.Error(err, "Failed to get SecurityContextConstraints resource.")
-		return err
-	}
-	logger.Info("Deletion of SecurityContextConstraints resource is successful.")
 	return nil
 }
 
