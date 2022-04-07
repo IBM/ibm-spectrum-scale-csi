@@ -107,11 +107,6 @@ class Scaleoperatorobject:
         self.secret_data = {
             "username": test_dict["username"], "password": test_dict["password"]}
 
-        if "stateful_set_not_created" in test_dict:
-            self.stateful_set_not_created = test_dict["stateful_set_not_created"]
-        else:
-            self.stateful_set_not_created = False
-
         csiobjectfunc.set_namespace_value(self.operator_namespace)
 
     def create(self):
@@ -166,11 +161,11 @@ class Scaleoperatorobject:
 
         if not(csiobjectfunc.check_scaleoperatorobject_is_deployed()):
 
-            csiobjectfunc.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
+            csiobjectfunc.create_custom_object(self.temp["custom_object_body"])
         else:
             csiobjectfunc.delete_custom_object()
             csiobjectfunc.check_scaleoperatorobject_is_deleted()
-            csiobjectfunc.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
+            csiobjectfunc.create_custom_object(self.temp["custom_object_body"])
 
     def delete(self):
 
@@ -205,17 +200,11 @@ class Scaleoperatorobject:
         if(is_deployed is False):
             return False
 
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-attacher")
-
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-provisioner")
-
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-snapshotter")
-
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-resizer")
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-attacher",2)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-provisioner",1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-resizer",1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-snapshotter",1)
+        LOGGER.info("CSI driver Sidecar pods are Running")
 
         val, self.desired_number_scheduled = csiobjectfunc.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
 

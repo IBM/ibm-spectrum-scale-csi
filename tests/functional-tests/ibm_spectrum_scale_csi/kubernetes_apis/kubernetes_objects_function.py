@@ -1129,3 +1129,15 @@ def check_pod_image(pod_name, image_name):
     LOGGER.error(f"Image {image_name} not matched for pod {pod_name}")
     LOGGER.error(str(api_response))
     assert False
+
+
+def get_pod_list_and_check_running(label, required_pods):
+     api_instance = client.CoreV1Api()
+     try:
+         api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+         for pod_info in api_response.items:
+             assert pod_info.status.phase == "Running"
+         assert len(api_response.items) ==  required_pods
+     except ApiException as e:
+         LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
+         assert False
