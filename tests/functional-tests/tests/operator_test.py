@@ -503,8 +503,8 @@ def test_unmounted_primaryFS(_values):
     baseclass.filesetfunc.mount_fs(test)
 
 
-def test_non_deafult_attacher(_values):
-    LOGGER.info("test_non_deafult_attacher")
+def test_non_default_attacher(_values):
+    LOGGER.info("test_non_default_attacher")
     LOGGER.info("attacher image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
     deployment_attacher_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.3.0"
@@ -513,7 +513,9 @@ def test_non_deafult_attacher(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-attacher-0", deployment_attacher_image)
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-attacher")
+        for pod_name in pod_list:
+            baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_attacher_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -534,8 +536,8 @@ def test_non_deafult_attacher(_values):
     operator_object.delete()
 
 
-def test_non_deafult_provisioner(_values):
-    LOGGER.info("test_non_deafult_provisioner")
+def test_non_default_provisioner(_values):
+    LOGGER.info("test_non_default_provisioner")
     LOGGER.info("provisioner image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
     deployment_provisioner_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.0.0"
@@ -544,7 +546,9 @@ def test_non_deafult_provisioner(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-provisioner-0", deployment_provisioner_image)       
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-provisioner")
+        for pod_name in pod_list:
+            baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_provisioner_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -845,8 +849,8 @@ def test_pluginNodeSelector(_values):
     operator_object.delete()
 
 
-def test_non_deafult_snapshotter(_values):
-    LOGGER.info("test_non_deafult_snapshotter")
+def test_non_default_snapshotter(_values):
+    LOGGER.info("test_non_default_snapshotter")
     LOGGER.info("snapshotter image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
     deployment_snapshotter_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v4.1.1"
@@ -855,7 +859,9 @@ def test_non_deafult_snapshotter(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-snapshotter-0", deployment_snapshotter_image)
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-snapshotter")
+        for pod_name in pod_list:
+            baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_snapshotter_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
@@ -876,8 +882,8 @@ def test_non_deafult_snapshotter(_values):
     operator_object.delete()
 
 
-def test_non_deafult_livenessprobe(_values):
-    LOGGER.info("test_non_deafult_livenessprobe")
+def test_non_default_livenessprobe(_values):
+    LOGGER.info("test_non_default_livenessprobe")
     LOGGER.info("livenessprobe image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
     deployment_livenessprobe_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.3.0"
@@ -908,8 +914,8 @@ def test_non_deafult_livenessprobe(_values):
     operator_object.delete()
 
 
-def test_non_deafult_resizer(_values):
-    LOGGER.info("test_non_deafult_resizer")
+def test_non_default_resizer(_values):
+    LOGGER.info("test_non_default_resizer")
     LOGGER.info("resizer image name is changed")
     test = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
     deployment_resizer_image = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
@@ -918,7 +924,9 @@ def test_non_deafult_resizer(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        baseclass.kubeobjectfunc.check_pod_image(test["csiscaleoperator_name"]+"-resizer-0", deployment_resizer_image)
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-resizer")
+        for pod_name in pod_list:
+            baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_resizer_image)
     else:
         get_logs_api_instance = client.CoreV1Api()
         try:
