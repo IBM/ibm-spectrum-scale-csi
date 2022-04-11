@@ -147,7 +147,7 @@ resources:
     - metadata:
         name: livenessprobe
       image: cp/spectrum/scale/csi/livenessprobe
-      tag: v2.5.1
+      tag: v2.6.0
       digest: sha256:406f59599991916d2942d8d02f076d957ed71b541ee19f09fc01723a6e6f5932
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
@@ -158,19 +158,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.5.1-amd64
+        tag: v2.6.0-amd64
       - digest: sha256:218dba5e3768e788451a7571d8a53548c69c53e57f06769956171b8f60a911f0
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.5.1-ppc64le
+        tag: v2.6.0-ppc64le
       - digest: sha256:a7bfc3daebcc7c500748e48dcfb06d649b7707f0240397f0b8f8611c9648df2e   
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.5.1-s390x
+        tag: v2.6.0-s390x
     - metadata:
         name: csi_resizer
       image: cp/spectrum/scale/csi/csi-resizer
