@@ -78,9 +78,18 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 
 generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
+
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-excluding-scc.yaml
+	$(KUSTOMIZE) build --reorder none config/operator/delete_operator_security_context_constraints > ../generated/installer/ibm-spectrum-scale-csi-operator-excluding-scc.yaml
+	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator-excluding-scc.yaml
+	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator-excluding-scc.yaml
+
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|v$(VERSION)|dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:dev|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
