@@ -1132,12 +1132,35 @@ def check_pod_image(pod_name, image_name):
 
 
 def get_pod_list_and_check_running(label, required_pods):
-     api_instance = client.CoreV1Api()
-     try:
-         api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
-         for pod_info in api_response.items:
-             assert pod_info.status.phase == "Running"
-         assert len(api_response.items) ==  required_pods
-     except ApiException as e:
-         LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
-         assert False
+    api_instance = client.CoreV1Api()
+    for _ in range(0,24):
+        try:
+            api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+            pod_status = True
+            for pod_info in api_response.items:
+                if not(pod_info.status.phase == "Running"):
+                    pod_status = False
+                    break
+            if pod_status is True and (len(api_response.items) ==  required_pods):
+                return 
+            time.sleep(20)
+            LOGGER.info(f"Checking for pod with label {label}")
+        except ApiException as e:
+            LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
+            assert False
+    else:
+        LOGGER.error(f"Pods with label {label} are not in expected state {api_response}")
+        assert False
+
+
+def get_pod_list_with_label(label):
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+        pod_list = []
+        for pod_info in api_response.items:
+            pod_list.append(pod_info.metadata.name)
+        return pod_list
+    except ApiException as e:
+        LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
+        assert False
