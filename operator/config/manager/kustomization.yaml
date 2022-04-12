@@ -7,3 +7,6 @@ kind: Kustomization
 #  newTag: v2.5.1
 commonAnnotations:
   productVersion: 2.5.1
+images:
+- name: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
+  newTag: v2.5.1
