@@ -66,8 +66,8 @@ const (
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
 
-	DriverVersion   = "2.5.0"
-	OperatorVersion = "2.5.0"
+	DriverVersion   = "2.5.1"
+	OperatorVersion = "2.5.1"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
