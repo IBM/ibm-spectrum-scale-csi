@@ -31,13 +31,14 @@ function find_versions()
   attacher_image="null"
   provisioner_image="null"
   snapshotter_image="null"
+  resizer_image="null"
 
   driver_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi -o jsonpath="{.items[0].metadata.name}"`
   operator_pod=`$cmd -n $ns get pod -l name=ibm-spectrum-scale-csi-operator -o jsonpath="{.items[0].metadata.name}"`
-  attacher_pod="ibm-spectrum-scale-csi-attacher-0"
-  provisioner_pod="ibm-spectrum-scale-csi-provisioner-0"
-  snapshotter_pod="ibm-spectrum-scale-csi-snapshotter-0"
-  resizer_pod="ibm-spectrum-scale-csi-resizer-0"
+  attacher_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-attacher -o jsonpath="{.items[0].metadata.name}"`
+  provisioner_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-provisioner -o jsonpath="{.items[0].metadata.name}"`
+  snapshotter_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-snapshotter -o jsonpath="{.items[0].metadata.name}"`
+  resizer_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-resizer -o jsonpath="{.items[0].metadata.name}"`
 
   #get operator image
   if [[ $operator_pod != ibm-spectrum-scale-csi-operator* ]]
@@ -71,7 +72,7 @@ function find_versions()
   then
     echo "ibm-spectrum-scale-csi provisioner pod is not running in namespace $ns. Can't extract provisioner version."
   else
-    provisioner_image=`$cmd -n $ns get pod $provisioner_pod -o jsonpath='{.status.containerStatuses[?(@.name=="csi-provisioner")].image}'`
+    provisioner_image=`$cmd -n $ns get pod $provisioner_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi-provisioner")].image}'`
   fi
 
   #get snapshotter image
@@ -79,7 +80,7 @@ function find_versions()
   then
     echo "ibm-spectrum-scale-csi snapshotter pod is not running in namespace $ns. Can't extract snapshotter version."
   else
-    snapshotter_image=`$cmd -n $ns get pod $snapshotter_pod -o jsonpath='{.status.containerStatuses[?(@.name=="csi-snapshotter")].image}'`
+    snapshotter_image=`$cmd -n $ns get pod $snapshotter_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi-snapshotter")].image}'`
   fi
 
   #get resizer image
@@ -188,10 +189,10 @@ get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 get_version_images=${logdir}/ibm-spectrum-scale-csi-versions
 
-for statefulSetName in `$cmd -n $ns get StatefulSet --no-headers -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" |  awk '{print $1}'`; do
-  echo "$klog StatefulSet/${statefulSetName}"
-  $klog StatefulSet/"${statefulSetName}" > "${logdir}"/"${statefulSetName}".log 2>&1 || :
-  $cmd describe --namespace "$ns" StatefulSet/"${statefulSetName}" > "${logdir}"/"${statefulSetName}" 2>&1 || :
+for deploymentName in `$cmd -n $ns get deployment --no-headers -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" |  awk '{print $1}'`; do
+  echo "$klog deployment/${deploymentName}"
+  $klog deployment/"${deploymentName}" > "${logdir}"/"${deploymentName}".log 2>&1 || :
+  $cmd describe --namespace "$ns" deployment/"${deploymentName}" > "${logdir}"/"${deploymentName}" 2>&1 || :
 done
 
 # kubectl logs on operator pods
