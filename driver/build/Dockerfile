@@ -18,7 +18,7 @@ ARG commit
 ENV REVISION $commit
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
-RUN chmod +x _output/ibm-spectrum-scale-csi
+RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi8-minimal:latest
 ARG version=2.6.0
@@ -43,4 +43,10 @@ LABEL name="IBM Spectrum Scale CSI driver" \
 
 COPY licenses /licenses
 COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/_output/ibm-spectrum-scale-csi /ibm-spectrum-scale-csi
+
+RUN microdnf update -y \
+    && microdnf install util-linux \
+    && microdnf install sudo
+
+USER 1111
 ENTRYPOINT ["/ibm-spectrum-scale-csi"]
