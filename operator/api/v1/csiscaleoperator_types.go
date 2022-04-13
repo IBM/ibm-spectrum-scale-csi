@@ -362,7 +362,7 @@ type RestApi struct {
 // +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
 // CSIScaleOperator is the Schema for the csiscaleoperators API
-//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{StatefulSet,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
+//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{Deployment,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
 type CSIScaleOperator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -387,11 +387,12 @@ func init() {
 type CSIReason string
 
 const (
-	CSIConfigured       CSIReason = "Successful"
+	CSIConfigured       CSIReason = "successful"
 	CSINotConfigured    CSIReason = "CSIError"
-	ResourceSyncError   CSIReason = "SyncError"
-	ResourceCreateError CSIReason = "CreateError"
-	ResourceReadError   CSIReason = "ReadError"
-	ResourceUpdateError CSIReason = "UpdateError"
-	Unknown             CSIReason = "Unknown"
+	ResourceSyncError   CSIReason = "syncError"
+	ResourceCreateError CSIReason = "createError"
+	ResourceReadError   CSIReason = "readError"
+	ResourceUpdateError CSIReason = "updateError"
+	ResourceDeleteError CSIReason = "deleteError"
+	Unknown             CSIReason = "unknown"
 )
