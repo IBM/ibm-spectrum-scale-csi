@@ -45,8 +45,10 @@ COPY licenses /licenses
 COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/_output/ibm-spectrum-scale-csi /ibm-spectrum-scale-csi
 
 RUN microdnf update -y \
-    && microdnf install util-linux \
-    && microdnf install sudo
+    && microdnf install util-linux
 
-USER 1111
+RUN groupadd -g 100006 default
+RUN useradd -u 100005 -g default -r default
+
+USER default
 ENTRYPOINT ["/ibm-spectrum-scale-csi"]

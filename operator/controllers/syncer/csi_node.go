@@ -52,6 +52,12 @@ const (
 	secretUsername                   = "username"
 	secretPassword                   = "password"
 
+	// FS-Group requirement.
+	// Mount `/` filesystem from host machine to driver container on path `/host`
+	hostDir          = "host-dir"
+	hostDirPath      = "/"
+	hostDirMountPath = "/host"
+
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
 	EnvVarForDriverImage           = "CSI_DRIVER_IMAGE"
@@ -194,21 +200,18 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	/*
-		nodePlugin.SecurityContext = &corev1.SecurityContext{
-			Privileged:               boolptr.True(),
-			AllowPrivilegeEscalation: boolptr.True(),
-		}
-		fillSecurityContextCapabilities(
-			nodePlugin.SecurityContext,
-			"CHOWN",
-			"FSETID",
-			"FOWNER",
-			"SETGID",
-			"SETUID",
-			"DAC_OVERRIDE",
-		)
-	*/
+	sc := &corev1.SecurityContext{
+		Privileged:               boolptr.True(),
+		AllowPrivilegeEscalation: boolptr.True(),
+	}
+	fillSecurityContextCapabilities(sc)
+
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if isOpenShift {
+		nodePlugin.SecurityContext = sc
+	}
+
+	//nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, )
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
@@ -355,7 +358,10 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 // getVolumeMountsFor returns volume mounts for given container name.
 func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
-	// mountPropagationB := corev1.MountPropagationBidirectional
+	// TODO: Do we need bidirectional mount? IMO no. mountPropagationH seems better option.
+	// More information here: https://kubernetes.io/docs/concepts/storage/volumes/
+	mountPropagationB := corev1.MountPropagationBidirectional
+	//mountPropagationH := corev1.MountPropagationHostToContainer
 	switch name {
 	case nodeContainerName:
 		volumeMounts := []corev1.VolumeMount{
@@ -376,6 +382,11 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 			{
 				Name:      config.CSIConfigMap,
 				MountPath: config.ConfigMapPath,
+			},
+			{
+				Name:             hostDir,
+				MountPath:        hostDirMountPath,
+				MountPropagation: &mountPropagationB, // TODO: shall we have mountPropagationH here?
 			},
 		}
 
@@ -432,6 +443,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath(), "Directory")),
 		k8sutil.EnsureVolume(hostDev, k8sutil.EnsureHostPathVolumeSource(hostDevPath, "Directory")),
 		k8sutil.EnsureVolume(config.CSIConfigMap, k8sutil.EnsureConfigMapVolumeSource(config.CSIConfigMap)),
+		k8sutil.EnsureVolume(hostDir, k8sutil.EnsureHostPathVolumeSource(hostDirPath, "Directory")),
 	}
 
 	for _, cluster := range s.driver.Spec.Clusters {
