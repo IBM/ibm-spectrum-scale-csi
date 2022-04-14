@@ -413,7 +413,13 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
+	hostPaths, err := r.getAdditionalHostPaths(instance)
+	if err != nil {
+		// LOG: unable to get hostPaths from configMap
+		return ctrl.Result{}, err
+	}
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, hostPaths)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -1502,4 +1508,37 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 		}
 	}
 	return nil
+}
+
+// getAdditionalHostpaths method parses the key `FILESYSTEM_SHARED_PATH`
+// from `ibm-spectrum-scale-csi-config` configmap and retruns it as a list of strings.
+func (r *CSIScaleOperatorReconciler) getAdditionalHostPaths(instance *csiscaleoperator.CSIScaleOperator) ([]string, error) {
+	// LOG: add logger object
+	// LOG: add entry log
+	// Fetching the CSI configurations from `ibm=spectrum-scale-csi-config` configMap.
+	hostPaths := []string{}
+	csiConfig := &corev1.ConfigMap{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      config.CSIConfigurations,
+		Namespace: instance.Namespace,
+	}, csiConfig)
+	// If configMap does not exist return empty list
+	if err != nil && errors.IsNotFound(err) {
+		// LOG: No additional hostpaths are provided to mount inside driver pods.
+	} else if err != nil { // If unable to read configMap return error.
+		message := "Failed to get configMap information from the cluster."
+		// LOG: logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+		return hostPaths, err
+	} else { // if configMap is found, parsing the configMap data
+		hostPaths = strings.Split(csiConfig.Data[config.HostPathsKey], ",")
+	}
+	// LOG: add exit log
+	return hostPaths, nil
 }

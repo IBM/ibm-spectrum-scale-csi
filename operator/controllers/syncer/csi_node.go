@@ -19,6 +19,7 @@ package syncer
 import (
 	"errors"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/imdario/mergo"
@@ -54,9 +55,9 @@ const (
 
 	// FS-Group requirement.
 	// Mount `/` filesystem from host machine to driver container on path `/host`
-	hostDir          = "host-dir"
-	hostDirPath      = "/"
-	hostDirMountPath = "/host"
+	//hostDir          = "host-dir"
+	//hostDirPath      = "/"
+	//hostDirMountPath = "/host"
 
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
@@ -79,7 +80,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, hostPaths []string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -97,12 +98,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	UUID = CGPrefix
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, hostPaths)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string, hostPaths []string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -127,7 +128,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, hostPaths), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err
 	}
@@ -137,9 +138,34 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, hostPaths []string) corev1.PodSpec {
+	logger := csiLog.WithName("ensurePodSpec")
+
+	uniqueHostPaths, removeHostPaths := s.getHostPaths(hostPaths)
+
+	pathsToMount := []string{}
+	pathsNotToMount := []string{}
+
+	for path := range uniqueHostPaths {
+		pathsToMount = append(pathsToMount, path)
+	}
+
+	for path := range removeHostPaths {
+		pathsNotToMount = append(pathsNotToMount, path)
+	}
+
+	// LOG: Following list of hostPaths will not be mounted because either it's
+	// parent path is already mounted or path is invalid. LIST: pathsNotToMount
+	logger.Info("", pathsNotToMount)
+
+	// LOG: Following list of additional hostPaths will be mounted to the CSI driver pods. LIST: pathsToMount
+	logger.Info("", pathsToMount)
+
+	// Adding additional volume source
+	volumes := s.ensureAdditionalVolumes(pathsToMount)
+
 	pod := corev1.PodSpec{
-		Containers:         s.ensureContainersSpec(),
+		Containers:         s.ensureContainersSpec(volumes),
 		Volumes:            s.ensureVolumes(),
 		HostIPC:            false,
 		HostNetwork:        true,
@@ -149,13 +175,15 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		Tolerations:      s.driver.Spec.Tolerations,
 		ImagePullSecrets: secrets,
 	}
+
+	pod.Volumes = append(pod.Volumes, volumes...)
 	return pod
 }
 
 // ensureContainersSpec returns array of containers which has the desired
 // fields for all 3 containers driver plugin, driver registrar and
 // liveness probe.
-func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
+func (s *csiNodeSyncer) ensureContainersSpec(volumes []corev1.Volume) []corev1.Container {
 
 	logger := csiLog.WithName("ensureContainersSpec")
 
@@ -211,7 +239,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		nodePlugin.SecurityContext = sc
 	}
 
-	//nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, )
+	nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, s.ensureAdditionalVolumeMounts(volumes)...)
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
@@ -360,7 +388,7 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 	// TODO: Do we need bidirectional mount? IMO no. mountPropagationH seems better option.
 	// More information here: https://kubernetes.io/docs/concepts/storage/volumes/
-	mountPropagationB := corev1.MountPropagationBidirectional
+	//mountPropagationB := corev1.MountPropagationBidirectional
 	//mountPropagationH := corev1.MountPropagationHostToContainer
 	switch name {
 	case nodeContainerName:
@@ -382,11 +410,6 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 			{
 				Name:      config.CSIConfigMap,
 				MountPath: config.ConfigMapPath,
-			},
-			{
-				Name:             hostDir,
-				MountPath:        hostDirMountPath,
-				MountPropagation: &mountPropagationB, // TODO: shall we have mountPropagationH here?
 			},
 		}
 
@@ -443,7 +466,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath(), "Directory")),
 		k8sutil.EnsureVolume(hostDev, k8sutil.EnsureHostPathVolumeSource(hostDevPath, "Directory")),
 		k8sutil.EnsureVolume(config.CSIConfigMap, k8sutil.EnsureConfigMapVolumeSource(config.CSIConfigMap)),
-		k8sutil.EnsureVolume(hostDir, k8sutil.EnsureHostPathVolumeSource(hostDirPath, "Directory")),
+		//k8sutil.EnsureVolume(hostDir, k8sutil.EnsureHostPathVolumeSource(hostDirPath, "Directory")),
 	}
 
 	for _, cluster := range s.driver.Spec.Clusters {
@@ -470,6 +493,93 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 		}
 	}
 	return volumes
+}
+
+// ensureAdditionalVolumes retruns a list of corev1.Volume
+func (s *csiNodeSyncer) ensureAdditionalVolumes(hostPaths []string) []corev1.Volume {
+	// LOG: add logger object
+	// LOG: add entry log
+	additionalVolumes := []corev1.Volume{}
+	// if no hostpaths are present in CSI configurations for mounting then return empty list
+	if len(hostPaths) == 0 {
+		// LOG: no hostpaths are provided in CSI configurations configMap
+	} else {
+		for i, hostPath := range hostPaths {
+			additionalVolumes = append(
+				additionalVolumes,
+				k8sutil.EnsureVolume("host-"+strconv.Itoa(i), k8sutil.EnsureHostPathVolumeSource(hostPath, "Directory")),
+			)
+		}
+	}
+	// LOG: add exit log
+	return additionalVolumes
+}
+
+// removeSubHostPaths removes the sub paths from given list of hostPaths if parent path already exists
+func (s *csiNodeSyncer) getHostPaths(configHostPaths []string) (map[string]bool, map[string]bool) {
+	// Assuming all the paths mentioned in configMap start from /
+	// LOG: add logger object
+	// LOG: add entry log
+	// adding CNSA mount path /mnt to the list
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if isOpenShift {
+		configHostPaths = append(configHostPaths, "/mnt")
+	}
+
+	// ensure host paths are unique and valid
+	// valid criteria: path must start with `/`
+	// TODO: Add more validity rules if required, regex can be preferred.
+	// if path is not valid or duplicate add it to removeHostPath list
+	uniqueHostPaths := map[string]bool{}
+	removeHostPaths := map[string]bool{}
+	for _, path := range configHostPaths {
+		if path[0] == '/' {
+			uniqueHostPaths[path] = true
+		} else {
+			removeHostPaths[path] = true
+		}
+	}
+
+	for path := range uniqueHostPaths {
+		for temp := range uniqueHostPaths {
+			if path == temp {
+			} else {
+				match, _ := regexp.MatchString("^"+path, temp)
+				if match == true {
+					removeHostPaths[temp] = true
+				}
+			}
+		}
+	}
+
+	// remove sub-paths whose parents path already exists in list
+	for path := range removeHostPaths {
+		delete(uniqueHostPaths, path)
+	}
+	return uniqueHostPaths, removeHostPaths
+}
+
+func (s *csiNodeSyncer) ensureAdditionalVolumeMounts(volumes []corev1.Volume) []corev1.VolumeMount {
+	// LOG: add logger object
+	// LOG: add entry log
+	mountPropagationB := corev1.MountPropagationBidirectional
+	additionalVolumeMounts := []corev1.VolumeMount{}
+	// if no hostpaths are present in CSI configurations for mounting then return empty list
+	if len(volumes) == 0 {
+		// LOG: no hostpaths are provided in CSI configurations configMap
+	} else {
+		for _, volume := range volumes {
+			additionalVolumeMounts = append(additionalVolumeMounts,
+				corev1.VolumeMount{
+					Name:             volume.Name,
+					MountPath:        "/host" + volume.VolumeSource.HostPath.Path,
+					MountPropagation: &mountPropagationB,
+				},
+			)
+		}
+	}
+	// LOG: add exit log
+	return additionalVolumeMounts
 }
 
 // getImage gets and returns the images for CSI driver from CR
