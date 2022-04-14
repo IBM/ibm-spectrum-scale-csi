@@ -235,6 +235,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(volumes []corev1.Volume) []corev1.C
 	}
 	fillSecurityContextCapabilities(sc)
 
+	// TODO: check if this works in k8s
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {
 		nodePlugin.SecurityContext = sc
@@ -540,7 +541,7 @@ func (s *csiNodeSyncer) getHostPaths(configHostPaths []string) (map[string]bool,
 			removeHostPaths[path] = true
 		}
 	}
-
+	// TODO: check if we have a better solution
 	for path := range uniqueHostPaths {
 		for temp := range uniqueHostPaths {
 			if path == temp {
