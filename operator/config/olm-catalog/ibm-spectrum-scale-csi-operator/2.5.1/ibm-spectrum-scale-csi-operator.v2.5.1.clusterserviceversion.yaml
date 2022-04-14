@@ -2,14 +2,80 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "csi.ibm.com/v1",
+          "kind": "CSIScaleOperator",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/instance": "ibm-spectrum-scale-csi-operator",
+              "app.kubernetes.io/managed-by": "ibm-spectrum-scale-csi-operator",
+              "app.kubernetes.io/name": "ibm-spectrum-scale-csi-operator",
+              "release": "ibm-spectrum-scale-csi-operator"
+            },
+            "name": "ibm-spectrum-scale-csi",
+            "namespace": "ibm-spectrum-scale-csi-driver"
+          },
+          "spec": {
+            "attacherNodeSelector": [
+              {
+                "key": "scale",
+                "value": "true"
+              }
+            ],
+            "clusters": [
+              {
+                "id": "\u003cPrimary Cluster ID\u003e",
+                "primary": {
+                  "primaryFs": "\u003c Primary Filesystem \u003e"
+                },
+                "restApi": [
+                  {
+                    "guiHost": "\u003c Primary cluster GUI IP/Hostname \u003e"
+                  }
+                ],
+                "secrets": "secret1",
+                "secureSslMode": false
+              }
+            ],
+            "pluginNodeSelector": [
+              {
+                "key": "scale",
+                "value": "true"
+              }
+            ],
+            "provisionerNodeSelector": [
+              {
+                "key": "scale",
+                "value": "true"
+              }
+            ],
+            "resizerNodeSelector": [
+              {
+                "key": "scale",
+                "value": "true"
+              }
+            ],
+            "snapshotterNodeSelector": [
+              {
+                "key": "scale",
+                "value": "true"
+              }
+            ]
+          },
+          "status": {}
+        }
+      ]
     capabilities: Basic Install
     categories: Storage
     certified: "false"
-    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
-    createdAt: Mon Dec 20 14:55:05 IST 2021
+    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:f3645991a4eacd02a55bd2dd4c0550a6fc16e38ce893704158ab53f421b9db7a
+    createdAt: Mon Apr 12 12:45:45 IST 2022
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
+    operators.operatorframework.io/builder: operator-sdk-v1.14.0+git
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/IBM/ibm-spectrum-scale-csi/
     support: IBM
   labels:
@@ -19,7 +85,7 @@ metadata:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: ibm-spectrum-scale-csi-operator.v0.0.0
+  name: ibm-spectrum-scale-csi-operator.v2.5.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -36,12 +102,12 @@ spec:
       - kind: DaemonSet
         name: ""
         version: v1beta2
-      - kind: Deployment
-        name: ""
-        version: v1beta2
       - kind: Pod
         name: ""
         version: v1
+      - kind: StatefulSet
+        name: ""
+        version: v1beta2
       specDescriptors:
       - description: affinity is a group of affinity scheduling rules.
         displayName: Affinity
@@ -286,15 +352,177 @@ spec:
 
     **Note:** Custom Resource example represents the minimum settings needed to run
     the operator. If your environment needs more advanced settings (e.g. remote clusters,
-    node mapping, image pull secret, Taint and Toleration etc.) please refer to  the sample [Custom Resource](https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/v2.6.0/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml).
+    node mapping, image pull secret, Taint and Toleration etc.) please refer to  the sample [Custom Resource](https://raw.githubusercontent.com/IBM/ibm-spectrum-scale-csi/v2.5.1/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml).
   displayName: IBM Spectrum Scale CSI Plugin Operator
   icon:
   - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMzIgMzIiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiMzczZDkxNi0zNWQzLTQ4NDAtOWI5Ni1jMWFhNzkyNTI4NzYiIHgxPSIxLjcxIiB5MT0iMjIuNTAyIiB4Mj0iMTcuMjkiIHkyPSIzMS40OTgiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjIiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZjZmYjQ4MDgtMDdjYS00N2RlLWI5NjYtYjkzZTQ4YWQwNGZhIiB4MT0iMzU0MS41IiB5MT0iMjciIHgyPSIzNTQxLjUiIHkyPSIxOCIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgxLCAwLCAwLCAtMSwgLTM1MjAsIDQ1KSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuMiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxtYXNrIGlkPSJhZjgzNjFhYy05Y2M3LTRmN2ItYjExMi0wM2Q3ZDdhOTE0NTQiIHg9IjAiIHk9IjAiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxwYXRoIGQ9Ik0xNS41LDMwLjg2NGwtMTItN0ExLDEsMCwwLDEsMywyM1Y5YTEsMSwwLDAsMSwuNS0uODY0bDEyLTdhMSwxLDAsMCwxLDEuMDA4LDBsMTIsN0ExLDEsMCwwLDEsMjksOVYyM0gyN1Y5LjU3NEwxNiwzLjE1OCw1LDkuNTc0VjIyLjQyNmwxMS41LDYuNzFaIiBmaWxsPSIjZmZmIi8+CiAgICAgIDxyZWN0IHg9IjIiIHk9IjIyIiB3aWR0aD0iMTUiIGhlaWdodD0iMTAiIGZpbGw9InVybCgjYjM3M2Q5MTYtMzVkMy00ODQwLTliOTYtYzFhYTc5MjUyODc2KSIvPgogICAgICA8cGF0aCBkPSJNMjEsMjUuNWgydi05YTEsMSwwLDAsMC0uNS0uODY0bC02LTMuNWExLDEsMCwwLDAtMS4wMDgsMGwtNiwzLjVBMSwxLDAsMCwwLDksMTYuNVYyMWgyVjE3LjA3NGw1LTIuOTE2LDUsMi45MTZaIiBmaWxsPSIjZmZmIi8+CiAgICAgIDxyZWN0IHg9IjE5IiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDMgNDUpIHJvdGF0ZSgxODApIiBmaWxsPSJ1cmwoI2Y2ZmI0ODA4LTA3Y2EtNDdkZS1iOTY2LWI5M2U0OGFkMDRmYSkiLz4KICAgIDwvbWFzaz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYWY4YWM3NjAtNzY5YS00MDc4LWI2ZmUtYTlmOGRjMzU3OThjIiB5MT0iMzIiIHgyPSIzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuMSIgc3RvcC1jb2xvcj0iIzQyYmU2NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjAuOSIgc3RvcC1jb2xvcj0iIzAwN2Q3OSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGcgaWQ9ImI0ODI0ZTUxLWRmMWMtNDdmMS1iMTc4LTQzZjYyOTUwYmJiNSIgZGF0YS1uYW1lPSJMYXllciAyIj4KICAgIDxnIGlkPSJiZjg4ZTFmMy1hYWFiLTRjNWEtYWVlYi02NDU2OTJiYWMxY2UiIGRhdGEtbmFtZT0iTGlnaHQgdGhlbWUgaWNvbnMiPgogICAgICA8Zz4KICAgICAgICA8ZyBtYXNrPSJ1cmwoI2FmODM2MWFjLTljYzctNGY3Yi1iMTEyLTAzZDdkN2E5MTQ1NCkiPgogICAgICAgICAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSJ1cmwoI2FmOGFjNzYwLTc2OWEtNDA3OC1iNmZlLWE5ZjhkYzM1Nzk4YykiLz4KICAgICAgICA8L2c+CiAgICAgICAgPHBhdGggZD0iTTE2LDMxYTEsMSwwLDAsMS0uNS0uMTM2bC0zLTEuNzVhMSwxLDAsMCwxLS41LS44NjR2LTMuNWExLDEsMCwwLDEsLjUtLjg2NGwzLTEuNzVhMSwxLDAsMCwxLDEuMDA4LDBsMywxLjc1YTEsMSwwLDAsMSwuNS44NjR2My41YTEsMSwwLDAsMS0uNS44NjRsLTMsMS43NUExLDEsMCwwLDEsMTYsMzFabS0yLTMuMzI0LDIsMS4xNjYsMi0xLjE2NlYyNS4zMjRsLTItMS4xNjYtMiwxLjE2NloiIGZpbGw9IiMwMDFkNmMiLz4KICAgICAgPC9nPgogICAgPC9nPgogIDwvZz4KPC9zdmc+Cg==
     mediatype: image/svg+xml
   install:
     spec:
-      deployments: null
-    strategy: ""
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - endpoints
+          - events
+          - persistentvolumeclaims
+          - pods
+          - secrets
+          - secrets/status
+          - serviceaccounts
+          - services
+          - services/finalizers
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps
+          resources:
+          - daemonsets
+          - deployments
+          - replicasets
+          - statefulsets
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps
+          resourceNames:
+          - ibm-spectrum-scale-csi-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - get
+          - update
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - clusterversions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - '*'
+        - apiGroups:
+          - csi.ibm.com
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - create
+          - get
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          - clusterroles
+          verbs:
+          - '*'
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - '*'
+        - apiGroups:
+          - storage.k8s.io
+          resources:
+          - csidrivers
+          - storageclasses
+          - volumeattachments
+          verbs:
+          - '*'
+        serviceAccountName: ibm-spectrum-scale-csi-operator
+      deployments:
+      - name: ibm-spectrum-scale-csi-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                productID: ibm-spectrum-scale-csi-operator
+                productName: IBM Spectrum Scale CSI Operator
+                productVersion: 2.5.1
+              labels:
+                app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+                app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+                app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+                name: ibm-spectrum-scale-csi-operator
+                product: ibm-spectrum-scale-csi
+                release: ibm-spectrum-scale-csi-operator
+            spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
+                        - ppc64le
+                        - s390x
+              containers:
+              - args:
+                - --leaderElection=true
+                env:
+                - name: METRICS_BIND_ADDRESS
+                  value: "8383"
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: CSI_DRIVER_IMAGE
+                  value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:875c3c7a3c13831664b88c000708e49c149d1fa90be3d2bd761c38456b424927
+                image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:f3645991a4eacd02a55bd2dd4c0550a6fc16e38ce893704158ab53f421b9db7a
+                imagePullPolicy: IfNotPresent
+                livenessProbe:
+                  exec:
+                    command:
+                    - ./health_check.sh
+                  initialDelaySeconds: 10
+                  periodSeconds: 30
+                name: operator
+                readinessProbe:
+                  exec:
+                    command:
+                    - ./health_check.sh
+                  initialDelaySeconds: 3
+                  periodSeconds: 1
+                resources:
+                  limits:
+                    cpu: 600m
+                    ephemeral-storage: 5Gi
+                    memory: 600Mi
+                  requests:
+                    cpu: 50m
+                    ephemeral-storage: 5Gi
+                    memory: 50Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  privileged: false
+                  readOnlyRootFilesystem: false
+                  runAsNonRoot: true
+                  runAsUser: 1001
+              serviceAccountName: ibm-spectrum-scale-csi-operator
+    strategy: deployment
   installModes:
   - supported: true
     type: OwnNamespace
@@ -309,6 +537,8 @@ spec:
   - GPFS
   - Spectrum Scale
   - CSI Driver
+  labels:
+    operator: ibm-spectrum-scale-csi-operator
   links:
   - name: IBM CSI Spectrum Scale Documentation
     url: https://www.ibm.com/docs/en/spectrum-scale-csi
@@ -325,4 +555,4 @@ spec:
   provider:
     name: IBM
   replaces: ibm-spectrum-scale-csi-operator.v2.5.0
-  version: 0.0.0
+  version: 2.5.1
