@@ -1542,3 +1542,4 @@ func (r *CSIScaleOperatorReconciler) getAdditionalHostPaths(instance *csiscaleop
 	// LOG: add exit log
 	return hostPaths, nil
 }
+

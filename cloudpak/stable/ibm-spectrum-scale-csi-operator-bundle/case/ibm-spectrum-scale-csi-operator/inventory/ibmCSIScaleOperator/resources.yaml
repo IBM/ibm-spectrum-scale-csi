@@ -15,7 +15,7 @@ resources:
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:cc694e255a7e5c0d989f182cc0be58c9c2eb4da49000a5d6641bfe4b086ef937
+      - digest: sha256:f53a85f30603d539c091f0ac23fad9e6fec700658e833a1aec462fe968aa04e6
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64

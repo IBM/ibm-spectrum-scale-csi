@@ -6,32 +6,14 @@ import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumesnapshot, pytest.mark.remotecluster]
 
-@pytest.fixture(scope='session', autouse=True)
-def values(request, check_csi_operator):
+
+@pytest.fixture(autouse=True)
+def values(data_fixture, check_csi_operator, remote_cluster_fixture):
     global data, remote_data, snapshot_object, kubeconfig_value  # are required in every testcase
-    cmd_values = inputfunc.get_pytest_cmd_values(request)
-    kubeconfig_value = cmd_values["kubeconfig_value"]
-    data = inputfunc.read_driver_data(cmd_values)
-
-    keep_objects = data["keepobjects"]
-    if not("remote" in data):
-        LOGGER.error("remote data is not provided in cr file")
-        assert False
-
-    remote_data = inputfunc.get_remote_data(data)
-    baseclass.filesetfunc.cred_check(remote_data)
-    baseclass.filesetfunc.set_data(remote_data)
-
-    if cmd_values["runslow_val"]:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
-    else:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_vs_class = {"deletionPolicy": "Delete"}
-    number_of_snapshots = 1
-    snapshot_object = baseclass.Snapshot(kubeconfig_value, cmd_values["test_namespace"], keep_objects, value_pvc, value_vs_class,
-                                       number_of_snapshots, data["image_name"], remote_data["id"], data["pluginNodeSelector"])
-    baseclass.filesetfunc.create_dir(remote_data["volDirBasePath"])
+    data = data_fixture["driver_data"]
+    remote_data = data_fixture["remote_data"]
+    kubeconfig_value = data_fixture["cmd_values"]["kubeconfig_value"]
+    snapshot_object = data_fixture["remote_snapshot_object"]
 
 
 @pytest.mark.regression
@@ -201,6 +183,7 @@ def test_snapshot_dynamic_multiple_snapshots_256():
     snapshot_object.test_dynamic(value_sc, test_restore=True, number_of_snapshots=256)
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 def test_snapshot_dynamic_multiple_snapshots_257():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
