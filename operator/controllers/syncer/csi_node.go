@@ -18,6 +18,7 @@ package syncer
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -139,7 +140,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
 func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, hostPaths []string) corev1.PodSpec {
-	logger := csiLog.WithName("ensurePodSpec")
+	// LOG: add logger object
 
 	uniqueHostPaths, removeHostPaths := s.getHostPaths(hostPaths)
 
@@ -156,10 +157,10 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, hos
 
 	// LOG: Following list of hostPaths will not be mounted because either it's
 	// parent path is already mounted or path is invalid. LIST: pathsNotToMount
-	logger.Info("", pathsNotToMount)
+	fmt.Println(pathsNotToMount)
 
 	// LOG: Following list of additional hostPaths will be mounted to the CSI driver pods. LIST: pathsToMount
-	logger.Info("", pathsToMount)
+	fmt.Println(pathsToMount)
 
 	// Adding additional volume source
 	volumes := s.ensureAdditionalVolumes(pathsToMount)
@@ -545,7 +546,7 @@ func (s *csiNodeSyncer) getHostPaths(configHostPaths []string) (map[string]bool,
 			if path == temp {
 			} else {
 				match, _ := regexp.MatchString("^"+path, temp)
-				if match == true {
+				if match {
 					removeHostPaths[temp] = true
 				}
 			}
