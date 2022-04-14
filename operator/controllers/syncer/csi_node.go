@@ -520,10 +520,10 @@ func (s *csiNodeSyncer) getHostPaths(configHostPaths []string) (map[string]bool,
 	// Assuming all the paths mentioned in configMap start from /
 	// LOG: add logger object
 	// LOG: add entry log
-	// adding CNSA mount path /mnt to the list
+	// adding CNSA mount path /var/mnt to the list
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {
-		configHostPaths = append(configHostPaths, "/mnt")
+		configHostPaths = append(configHostPaths, "/var/mnt")
 	}
 
 	// ensure host paths are unique and valid
