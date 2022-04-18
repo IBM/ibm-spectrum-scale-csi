@@ -235,11 +235,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(volumes []corev1.Volume) []corev1.C
 	}
 	fillSecurityContextCapabilities(sc)
 
-	// TODO: check if this works in k8s
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if isOpenShift {
-		nodePlugin.SecurityContext = sc
-	}
+	nodePlugin.SecurityContext = sc
 
 	nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, s.ensureAdditionalVolumeMounts(volumes)...)
 
