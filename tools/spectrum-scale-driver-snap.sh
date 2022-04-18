@@ -24,20 +24,20 @@ function find_versions()
   cmd=$2
 
   operator_image="null"
-  csi_version="null"
   driver_image="null"
   registrar_image="null"
   liveness_probe_image="null"
   attacher_image="null"
   provisioner_image="null"
   snapshotter_image="null"
+  resizer_image="null"
 
   driver_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi -o jsonpath="{.items[0].metadata.name}"`
   operator_pod=`$cmd -n $ns get pod -l name=ibm-spectrum-scale-csi-operator -o jsonpath="{.items[0].metadata.name}"`
-  attacher_pod="ibm-spectrum-scale-csi-attacher-0"
-  provisioner_pod="ibm-spectrum-scale-csi-provisioner-0"
-  snapshotter_pod="ibm-spectrum-scale-csi-snapshotter-0"
-  resizer_pod="ibm-spectrum-scale-csi-resizer-0"
+  attacher_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-attacher -o jsonpath="{.items[0].metadata.name}"`
+  provisioner_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-provisioner -o jsonpath="{.items[0].metadata.name}"`
+  snapshotter_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-snapshotter -o jsonpath="{.items[0].metadata.name}"`
+  resizer_pod=`$cmd -n $ns get pod -l app=ibm-spectrum-scale-csi-resizer -o jsonpath="{.items[0].metadata.name}"`
 
   #get operator image
   if [[ $operator_pod != ibm-spectrum-scale-csi-operator* ]]
@@ -55,7 +55,6 @@ function find_versions()
     driver_image=`$cmd -n $ns get pod $driver_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi")].image}'`
     registrar_image=`$cmd -n $ns get pod $driver_pod -o jsonpath='{.status.containerStatuses[?(@.name=="driver-registrar")].image}'`
     liveness_probe_image=`$cmd -n $ns get pod $driver_pod -o jsonpath='{.status.containerStatuses[?(@.name=="liveness-probe")].image}'`
-    csi_version=`echo $driver_image | cut -f2 -d:`
   fi
 
   #get attacher image
@@ -71,7 +70,7 @@ function find_versions()
   then
     echo "ibm-spectrum-scale-csi provisioner pod is not running in namespace $ns. Can't extract provisioner version."
   else
-    provisioner_image=`$cmd -n $ns get pod $provisioner_pod -o jsonpath='{.status.containerStatuses[?(@.name=="csi-provisioner")].image}'`
+    provisioner_image=`$cmd -n $ns get pod $provisioner_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi-provisioner")].image}'`
   fi
 
   #get snapshotter image
@@ -79,7 +78,7 @@ function find_versions()
   then
     echo "ibm-spectrum-scale-csi snapshotter pod is not running in namespace $ns. Can't extract snapshotter version."
   else
-    snapshotter_image=`$cmd -n $ns get pod $snapshotter_pod -o jsonpath='{.status.containerStatuses[?(@.name=="csi-snapshotter")].image}'`
+    snapshotter_image=`$cmd -n $ns get pod $snapshotter_pod -o jsonpath='{.status.containerStatuses[?(@.name=="ibm-spectrum-scale-csi-snapshotter")].image}'`
   fi
 
   #get resizer image
@@ -92,7 +91,6 @@ function find_versions()
 
 
   #print collected data
-  echo "IBM Spectrum Scale CSI driver : $csi_version"
   echo "Operator Image                : $operator_image"
   echo "Driver Image                  : $driver_image"
   echo "Node Registrar Image          : $registrar_image"
@@ -184,15 +182,10 @@ describe_all_per_label=${logdir}/ibm-spectrum-scale-csi-describe-all-by-label
 get_all_per_label=${logdir}/ibm-spectrum-scale-csi-get-all-by-label
 get_configmap=${logdir}/ibm-spectrum-scale-csi-configmap
 get_k8snodes=${logdir}/ibm-spectrum-scale-csi-k8snodes
+get_csinodes=${logdir}/ibm-spectrum-scale-csi-csinodes
 get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 get_version_images=${logdir}/ibm-spectrum-scale-csi-versions
-
-for statefulSetName in `$cmd -n $ns get StatefulSet --no-headers -l "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator" |  awk '{print $1}'`; do
-  echo "$klog StatefulSet/${statefulSetName}"
-  $klog StatefulSet/"${statefulSetName}" > "${logdir}"/"${statefulSetName}".log 2>&1 || :
-  $cmd describe --namespace "$ns" StatefulSet/"${statefulSetName}" > "${logdir}"/"${statefulSetName}" 2>&1 || :
-done
 
 # kubectl logs on operator pods
 operatorName=$($cmd get deployment ibm-spectrum-scale-csi-operator  --namespace "$ns"  | grep -v NAME | awk '{print $1}')
@@ -213,7 +206,7 @@ describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccou
 echo "$describe_label_cmd"
 $describe_label_cmd > "$describe_all_per_label" 2>&1 || :
 
-get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
+get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings,csidriver --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
 echo "$get_label_cmd"
 $get_label_cmd > "$get_all_per_label" 2>&1 || :
 
@@ -232,6 +225,14 @@ $get_k8snodes_cmd > "$get_k8snodes" 2>&1 || :
 get_k8snodes_cmd="$cmd describe nodes"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd >> "$get_k8snodes" 2>&1 || :
+
+get_csinodes_cmd="$cmd get csinodes"
+echo "$get_csinodes_cmd"
+$get_csinodes_cmd > "$get_csinodes" 2>&1 || :
+
+get_csinodes_cmd="$cmd describe csinodes"
+echo "$get_csinodes_cmd"
+$get_csinodes_cmd >> "$get_csinodes" 2>&1 || :
 
 get_spectrum_cmd="$cmd describe ds -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator -n $ns"
 echo "$get_spectrum_cmd"
