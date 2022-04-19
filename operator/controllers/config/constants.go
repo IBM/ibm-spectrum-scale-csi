@@ -66,18 +66,18 @@ const (
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
 
-	DriverVersion   = "2.5.1"
-	OperatorVersion = "2.5.1"
+	DriverVersion   = "2.6.0"
+	OperatorVersion = "2.6.0"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
 	// Tolerations seconds for the CSI Sidecar deployment
 	TolerationsSeconds = int64(60)
 	// ContainerPort for /healthz/leader-election endpoint
-	AttacherLeaderLivenessPort = int32(8080)
+	LeaderLivenessPort = int32(8080)
 
 	//  Default images for containers
-	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.5.1"
+	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
 	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0"
 	LivenessProbeImage          = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.6.0"
 	CSIAttacherImage            = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0"
