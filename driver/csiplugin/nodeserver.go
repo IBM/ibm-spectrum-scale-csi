@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
+	"k8s.io/mount-utils"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
@@ -34,6 +35,8 @@ type ScaleNodeServer struct {
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
 	mux sync.Mutex
 }
+
+const hostDir = "/host"
 
 func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodePublishVolume")
@@ -62,20 +65,56 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	volScalePath := volumeIDMembers.Path
 
 	glog.V(4).Infof("Target SpectrumScale Path : %v\n", volScalePath)
-	// Check if mount dir/slink exists, if yes delete it
-	if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
-		glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
-		err := os.Remove(targetPath)
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete the target path - [%s]. Error [%v]", targetPath, err.Error()))
-		}
+
+	// Check if /host directory exists, if exists use bind mount,
+	// otherwise use symlink
+	hostDirMounted := false
+	if _, err = os.Stat(hostDir); err == nil {
+		hostDirMounted = true
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to get stat of [%s]. Error [%v]", hostDir, err)
 	}
 
-	// create symlink
-	glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, volScalePath)
-	symlinkerr := os.Symlink(volScalePath, targetPath)
-	if symlinkerr != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, volScalePath, symlinkerr.Error()))
+	if !hostDirMounted {
+		//Use symlink
+		//Check if mount dir/slink exists, if yes delete it
+		if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
+			glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
+			err := os.Remove(targetPath)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete the target path - [%s]. Error [%v]", targetPath, err.Error()))
+			}
+		}
+
+		// create symlink
+		glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, volScalePath)
+		symlinkerr := os.Symlink(volScalePath, targetPath)
+		if symlinkerr != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, volScalePath, symlinkerr.Error()))
+		}
+	} else {
+		//Use bind mount
+		notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if err = os.Mkdir(targetPath, 0750); err != nil {
+					return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
+				}
+			} else {
+				return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
+			}
+		}
+		if !notMP {
+			return &csi.NodePublishVolumeResponse{}, nil
+		}
+
+		// create bind mount
+		options := []string{"bind"}
+		mounter := mount.New("")
+		glog.V(4).Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
+		if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
+			return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		}
 	}
 
 	glog.V(4).Infof("successfully mounted %s", targetPath)
@@ -96,9 +135,46 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	}
 
 	glog.V(4).Infof("NodeUnpublishVolume - deleting the targetPath - [%v]", targetPath)
-	if err := os.Remove(targetPath); err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove targetPath - [%v]. Error [%v]", targetPath, err.Error()))
+
+	//Check if target is a symlink or bind mount and cleanup accordingly
+	f, err := os.Lstat(targetPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lstat of target path [%s]. Error %v", targetPath, err)
 	}
+	if f.Mode()&os.ModeSymlink != 0 {
+		glog.V(4).Infof("%v is a symlink", targetPath)
+		if err := os.Remove(targetPath); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
+		}
+	} else {
+		glog.V(4).Infof("%v is a bind mount", targetPath)
+		targetPathInContainer := hostDir + targetPath
+		notMP, err := mount.IsNotMountPoint(mount.New(""), targetPathInContainer)
+		if err != nil {
+			if os.IsNotExist(err) {
+				glog.V(4).Infof("target path %v is already deleted", targetPathInContainer)
+				return &csi.NodeUnpublishVolumeResponse{}, nil
+			}
+			return nil, fmt.Errorf("failed to check if target path [%s] is mount point. Error %v", targetPathInContainer, err)
+		}
+		if notMP {
+			if err = os.Remove(targetPathInContainer); err != nil {
+				return nil, fmt.Errorf("failed to remove targetPath [%s]. Error %v", targetPathInContainer, err)
+			}
+		} else {
+			// Unmount the targetPath
+			err = mount.New("").Unmount(targetPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmount the mount point [%s]. Error %v", targetPath, err)
+			}
+			glog.V(4).Infof("%v is a unmounted successfully", targetPath)
+		}
+		// Delete the mount point
+		if err = os.Remove(targetPathInContainer); err != nil {
+			return nil, fmt.Errorf("failed to remove the mount point [%s]. Error %v", targetPathInContainer, err)
+		}
+	}
+	glog.V(4).Infof("volume with target path [%s] is unpublished successfully", targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
