@@ -174,7 +174,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 			return nil, fmt.Errorf("failed to remove the mount point [%s]. Error %v", targetPathInContainer, err)
 		}
 	}
-	glog.V(4).Infof("volume with target path [%s] is unpublished successfully", targetPath)
+	glog.V(4).Infof("successfully unpublished %s", targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 

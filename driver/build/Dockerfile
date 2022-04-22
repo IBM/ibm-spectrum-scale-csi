@@ -61,4 +61,3 @@ RUN ln -s /chroot/chroot-wrapper.sh /chroot/umount
 ENV PATH="/chroot:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 ENTRYPOINT ["/ibm-spectrum-scale-csi"]
-
