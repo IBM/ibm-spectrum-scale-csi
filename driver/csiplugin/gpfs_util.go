@@ -321,7 +321,6 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.VolGid = gid
 	}
 
-	scaleVol.Shared = false
 	if isSharedSpecified {
 		//ignore case of passed "shared" parameter
 		icShared := strings.ToLower(shared)
@@ -330,6 +329,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		}
 		if icShared == "false" {
 			isSharedSpecified = false
+			scaleVol.Shared = false
 		} else {
 			scaleVol.Shared = true
 		}
