@@ -49,8 +49,8 @@ COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/_output
 # RUN useradd -u 100006 -g default -r default
 # USER default
 
-RUN microdnf update -y \
-    && microdnf install util-linux
+# RUN microdnf update -y \
+#     && microdnf install util-linux
 
 RUN mkdir /chroot
 COPY chroot-wrapper.sh /chroot
