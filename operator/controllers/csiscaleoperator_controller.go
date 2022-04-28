@@ -413,13 +413,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	hostPaths, err := r.getAdditionalHostPaths(instance)
+	envVars, err := r.setEnvVars(instance)
 	if err != nil {
-		// LOG: unable to get hostPaths from configMap
 		return ctrl.Result{}, err
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, hostPaths)
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, envVars)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -1510,36 +1509,39 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 	return nil
 }
 
-// getAdditionalHostpaths method parses the key `FILESYSTEM_SHARED_PATH`
-// from `ibm-spectrum-scale-csi-config` configmap and retruns it as a list of strings.
-func (r *CSIScaleOperatorReconciler) getAdditionalHostPaths(instance *csiscaleoperator.CSIScaleOperator) ([]string, error) {
-	// LOG: add logger object
-	// LOG: add entry log
-	// Fetching the CSI configurations from `ibm=spectrum-scale-csi-config` configMap.
-	hostPaths := []string{}
+// setEnvVars reads data from  a `ibm-spectrum-scale-csi-config`
+// ConfigMap and sets environmental variables with the key-value pair
+// from the data such that, if the data key contains "ENV_", "ENV_" is
+// removed from the key while setting the environmental variable.
+//TODO: Add a watch over this ConfigMap, so that when ConfigMap is updated,
+//reconciliation happens again and new environmental variables are updated.
+func (r *CSIScaleOperatorReconciler) setEnvVars(instance *csiscaleoperator.CSIScaleOperator) (map[string]string, error) {
+	logger := csiLog.WithName("setEnvVars")
+	logger.Info("Getting environmental variables from ConfigMap")
+	envVars := make(map[string]string)
 	csiConfig := &corev1.ConfigMap{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      config.CSIConfigurations,
 		Namespace: instance.Namespace,
 	}, csiConfig)
-	// If configMap does not exist return empty list
 	if err != nil && errors.IsNotFound(err) {
-		// LOG: No additional hostpaths are provided to mount inside driver pods.
-	} else if err != nil { // If unable to read configMap return error.
-		message := "Failed to get configMap information from the cluster."
-		// LOG: logger.Error(err, message)
-		// TODO: Add event.
+		logger.Info("ConfigMap " + config.CSIConfigurations + " does not exist")
+	} else if err != nil {
+		message := "Failed to get ConfigMap information from the cluster."
+		logger.Info(message)
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
 			Type:    string(config.StatusConditionSuccess),
 			Status:  metav1.ConditionFalse,
 			Reason:  string(csiv1.ResourceReadError),
 			Message: message,
 		})
-		return hostPaths, err
-	} else { // if configMap is found, parsing the configMap data
-		hostPaths = strings.Split(csiConfig.Data[config.HostPathsKey], ",")
+		return envVars, err
+	} else {
+		for k, v := range csiConfig.Data {
+			if strings.HasPrefix(k, "ENV_") {
+				envVars[strings.TrimPrefix(k, "ENV_")] = v
+			}
+		}
 	}
-	// LOG: add exit log
-	return hostPaths, nil
+	return envVars, nil
 }
-

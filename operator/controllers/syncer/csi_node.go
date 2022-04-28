@@ -18,9 +18,7 @@ package syncer
 
 import (
 	"errors"
-	"fmt"
 	"os"
-	"regexp"
 	"strconv"
 
 	"github.com/imdario/mergo"
@@ -73,6 +71,7 @@ var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
 
 // UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
 var UUID string
+var envVarsMap map[string]string = make(map[string]string)
 
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -81,7 +80,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, hostPaths []string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -97,14 +96,15 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
+	envVarsMap = envVars
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, hostPaths)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string, hostPaths []string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -129,7 +129,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, hostPaths), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err
 	}
@@ -139,34 +139,11 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, hostPaths []string) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
 	// LOG: add logger object
 
-	uniqueHostPaths, removeHostPaths := s.getHostPaths(hostPaths)
-
-	pathsToMount := []string{}
-	pathsNotToMount := []string{}
-
-	for path := range uniqueHostPaths {
-		pathsToMount = append(pathsToMount, path)
-	}
-
-	for path := range removeHostPaths {
-		pathsNotToMount = append(pathsNotToMount, path)
-	}
-
-	// LOG: Following list of hostPaths will not be mounted because either it's
-	// parent path is already mounted or path is invalid. LIST: pathsNotToMount
-	fmt.Println(pathsNotToMount)
-
-	// LOG: Following list of additional hostPaths will be mounted to the CSI driver pods. LIST: pathsToMount
-	fmt.Println(pathsToMount)
-
-	// Adding additional volume source
-	volumes := s.ensureAdditionalVolumes(pathsToMount)
-
 	pod := corev1.PodSpec{
-		Containers:         s.ensureContainersSpec(volumes),
+		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
 		HostIPC:            false,
 		HostNetwork:        true,
@@ -177,14 +154,13 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, hos
 		ImagePullSecrets: secrets,
 	}
 
-	pod.Volumes = append(pod.Volumes, volumes...)
 	return pod
 }
 
 // ensureContainersSpec returns array of containers which has the desired
 // fields for all 3 containers driver plugin, driver registrar and
 // liveness probe.
-func (s *csiNodeSyncer) ensureContainersSpec(volumes []corev1.Volume) []corev1.Container {
+func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 
 	logger := csiLog.WithName("ensureContainersSpec")
 
@@ -237,7 +213,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(volumes []corev1.Volume) []corev1.C
 
 	nodePlugin.SecurityContext = sc
 
-	nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, s.ensureAdditionalVolumeMounts(volumes)...)
+	// nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, s.ensureAdditionalVolumeMounts(volumes)...)
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
@@ -336,6 +312,13 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Name = config.ENVCGPrefix
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
+
+		for k, v := range envVarsMap {
+			envObj := corev1.EnvVar{}
+			envObj.Name = k
+			envObj.Value = v
+			EnvVars = append(EnvVars, envObj)
+		}
 
 		return append(EnvVars, []corev1.EnvVar{
 			{
@@ -517,50 +500,6 @@ func (s *csiNodeSyncer) ensureAdditionalVolumes(hostPaths []string) []corev1.Vol
 	}
 	// LOG: add exit log
 	return additionalVolumes
-}
-
-// removeSubHostPaths removes the sub paths from given list of hostPaths if parent path already exists
-func (s *csiNodeSyncer) getHostPaths(configHostPaths []string) (map[string]bool, map[string]bool) {
-	// Assuming all the paths mentioned in configMap start from /
-	// LOG: add logger object
-	// LOG: add entry log
-	// adding CNSA mount path /var/mnt to the list
-	// _, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	// if isOpenShift {
-	// 	configHostPaths = append(configHostPaths, "/var/mnt")
-	// }
-
-	// ensure host paths are unique and valid
-	// valid criteria: path must start with `/`
-	// TODO: Add more validity rules if required, regex can be preferred.
-	// if path is not valid or duplicate add it to removeHostPath list
-	uniqueHostPaths := map[string]bool{}
-	removeHostPaths := map[string]bool{}
-	for _, path := range configHostPaths {
-		if path[0] == '/' {
-			uniqueHostPaths[path] = true
-		} else {
-			removeHostPaths[path] = true
-		}
-	}
-	// TODO: check if we have a better solution
-	for path := range uniqueHostPaths {
-		for temp := range uniqueHostPaths {
-			if path == temp {
-			} else {
-				match, _ := regexp.MatchString("^"+path, temp)
-				if match {
-					removeHostPaths[temp] = true
-				}
-			}
-		}
-	}
-
-	// remove sub-paths whose parents path already exists in list
-	for path := range removeHostPaths {
-		delete(uniqueHostPaths, path)
-	}
-	return uniqueHostPaths, removeHostPaths
 }
 
 func (s *csiNodeSyncer) ensureAdditionalVolumeMounts(volumes []corev1.Volume) []corev1.VolumeMount {
