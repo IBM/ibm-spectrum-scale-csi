@@ -120,9 +120,6 @@ const (
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
 	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
 
-	// CSI Configurations
-	CSIConfigurations = "ibm-spectrum-scale-csi-config"
-	HostPathsKey      = "FILESYSTEM_SHARED_PATH"
 )
 
 const (
