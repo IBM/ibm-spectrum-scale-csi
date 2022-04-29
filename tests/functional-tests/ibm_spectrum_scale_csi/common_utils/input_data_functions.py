@@ -1,6 +1,6 @@
 import copy
 import logging
-import os.path
+import os
 import yaml
 import string
 import random
@@ -16,7 +16,7 @@ def get_test_data(test_config):
         with open(filepath, "r") as f:
             data = yaml.full_load(f.read())
     except yaml.YAMLError as exc:
-        print(f"Error in configuration file {filepath} :", exc)
+        LOGGER.error(f"Error in configuration file {filepath} :", exc)
         assert False
 
     if data['keepobjects'] == "True" or data['keepobjects'] == "true":
@@ -50,9 +50,11 @@ def read_driver_data(cmd_values):
         except yaml.YAMLError as exc:
             LOGGER.error(f'Error in parsing the cr file {cmd_values["clusterconfig_value"]} : {exc}')
             assert False
+    else:
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, cmd_values["operator_namespace"])
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
-        if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             if "primaryFset" in cluster:
@@ -60,7 +62,10 @@ def read_driver_data(cmd_values):
             else:
                 data["primaryFset"] = "spectrum-scale-csi-volume-store"
             data["id"] = cluster["id"]
+            if cluster["primary"].get("remoteCluster") in [None,""] and data["localFs"] is "":
+                data["localFs"] = cluster["primary"]["primaryFs"]
 
+    data["primaryFs"] = data["localFs"]               
     data["clusters"] = loadcr_yaml["spec"]["clusters"]
     if len(loadcr_yaml["spec"]["clusters"]) > 1:
         data["remote"] = True
@@ -92,13 +97,15 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
         except yaml.YAMLError as exc:
             LOGGER.error(f"Error in parsing the cr file {clusterconfig} : {exc}")
             assert False
+    else:
+        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, namespace)
 
     data["custom_object_body"] = copy.deepcopy(loadcr_yaml)
     data["custom_object_body"]["metadata"]["namespace"] = namespace
     data["remote_secret_names"] = []
     data["remote_cacert_names"] = []
     for cluster in loadcr_yaml["spec"]["clusters"]:
-        if "primary" in cluster.keys() and cluster["primary"]["primaryFs"] is not '':
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
             data["primaryFs"] = cluster["primary"]["primaryFs"]
             data["guiHost"] = cluster["restApi"][0]["guiHost"]
             data["local_secret_name"] = cluster["secrets"]
@@ -161,9 +168,9 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
 
 def get_remote_data(data_passed):
     remote_data = copy.deepcopy(data_passed)
-    remote_data["remoteFs_remote_name"] = filesetfunc.get_remoteFs_remotename(copy.deepcopy(remote_data))
-    if remote_data["remoteFs_remote_name"] is None:
-        LOGGER.error("Unable to get remoteFs , name on remote cluster")
+    remote_data["remoteFs_remote_name"], remote_data["remoteid"] = filesetfunc.get_remoteFs_remotename_and_remoteid(copy.deepcopy(remote_data))
+    if remote_data["remoteFs_remote_name"] is None or remote_data["remoteid"] is None:
+        LOGGER.error("Unable to get remoteFs name on remote cluster or remotecluster id")
         assert False
 
     remote_data["primaryFs"] = remote_data["remoteFs_remote_name"]
@@ -188,7 +195,6 @@ def get_remote_data(data_passed):
                                   "password": data_passed["password"],
                                   "port": data_passed["port"],
                                   "guiHost": data_passed["guiHost"]}
-
     return remote_data
 
 
@@ -201,8 +207,13 @@ def get_pytest_cmd_values(request):
 
     kubeconfig_value = request.config.option.kubeconfig
     if kubeconfig_value is None:
-        if os.path.isfile('config/kubeconfig'):
+        if 'TOKEN' in os.environ and 'APISERVER' in os.environ:
+            kubeconfig_value = f"ibm_spectrum_scale_csi/common_utils/{os.environ['APISERVER'].translate({ord(i): None for i in ':/'})}"
+            create_kubeconfig_file(os.environ['TOKEN'], os.environ['APISERVER'], kubeconfig_value) 
+        elif os.path.isfile('config/kubeconfig'):
             kubeconfig_value = 'config/kubeconfig'
+        elif os.path.isfile('/root/auth/kubeconfig'):
+            kubeconfig_value = '/root/auth/kubeconfig'
         else:
             kubeconfig_value = '~/.kube/config'
 
@@ -214,12 +225,8 @@ def get_pytest_cmd_values(request):
             clusterconfig_value = '../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml'
 
     test_namespace = request.config.option.testnamespace
-    if test_namespace is None:
-        test_namespace = 'ibm-spectrum-scale-csi-driver'
 
     operator_namespace = request.config.option.operatornamespace
-    if operator_namespace is None:
-        operator_namespace = 'ibm-spectrum-scale-csi-driver'
 
     runslow_val = request.config.option.runslow
 
@@ -228,8 +235,8 @@ def get_pytest_cmd_values(request):
         operator_file = '../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml'
 
     test_config = request.config.option.testconfig
-    if test_config is None:
-        test_config = "config/test.config"
+
+    createnamespace = request.config.option.createnamespace
 
     cmd_value_dict = {"kubeconfig_value": kubeconfig_value,
                       "clusterconfig_value":clusterconfig_value, 
@@ -237,7 +244,8 @@ def get_pytest_cmd_values(request):
                       "operator_namespace":operator_namespace,
                       "runslow_val":runslow_val,
                       "operator_file":operator_file, 
-                      "test_config":test_config
+                      "test_config":test_config,
+                      "createnamespace":createnamespace
                      }
 
     return cmd_value_dict
@@ -253,3 +261,47 @@ def randomString(stringLength=10):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
+
+
+def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_namespace):
+    for cluster in loadcr_yaml["spec"]["clusters"]:
+        if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
+            local_secret_name=cluster["secrets"]
+            data["username"],data["password"]= \
+                csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
+            if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
+                if data["remoteFs"] is "":
+                    data["remoteFs"] = cluster["primary"]["primaryFs"]
+        else:
+            remote_secret_name= cluster["secrets"]
+            data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
+                 csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, remote_secret_name)
+
+
+def create_kubeconfig_file(token, apiserver, file_path):
+    if os.path.isfile(file_path):
+        return
+
+    try:
+        file_data = {
+                      "apiVersion": "v1",
+                      "clusters": [
+                        {"cluster": {"insecure-skip-tls-verify": True,"server": apiserver},
+                          "name": "kubernetes"}],
+                      "contexts": [
+                        {"context": {"cluster": "kubernetes","namespace": "default","user": "kubernetes-admin"},
+                          "name": "kubernetes-admin@kubernetes"}],
+                      "current-context": "kubernetes-admin@kubernetes",
+                      "kind": "Config",
+                      "preferences": {},
+                      "users": [{"name": "kubernetes-admin","user": {"token": token}}]
+                    }
+        if 'CACRT' in os.environ:
+            file_data["clusters"][0]["cluster"]["certificate-authority-data"] = os.environ['CACRT']
+            file_data["clusters"][0]["cluster"]["insecure-skip-tls-verify"] = False
+        with open(file_path, "w") as f:
+            yaml.dump(file_data, f)
+        LOGGER.info(f"Created Kubeconfig file using given token for {apiserver}")
+    except yaml.YAMLError as exc:
+        LOGGER.error(f"Error in creating kubernetes configuration file {filepath} :", exc)
+        assert False

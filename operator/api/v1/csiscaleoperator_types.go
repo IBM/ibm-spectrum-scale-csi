@@ -119,7 +119,6 @@ type CSIScaleOperatorSpec struct {
 	// status defines the observed state of CSIScaleOperator
 	// Status CSIScaleOperatorStatus `json:"status,omitempty"`
 
-	// +kubebuilder:default:=/var/lib/kubelet
 	// kubeletRootDirPath is the path for kubelet root directory.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubelet Root Directory Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	KubeletRootDirPath string `json:"kubeletRootDirPath,omitempty"`
@@ -127,6 +126,11 @@ type CSIScaleOperatorSpec struct {
 	// PodSecurityPolicy name for CSI driver and sidecar pods.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="CSI Pod Security Policy Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	CSIpspname string `json:"csipspname,omitempty"`
+
+	// consistencyGroupPrefix is a prefix of consistency group of an application.
+	// This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Consistency Group Prefix",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
+	CGPrefix string `json:"consistencyGroupPrefix,omitempty"`
 }
 
 // CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
@@ -302,10 +306,9 @@ type CSICluster struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Cluster ID",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	Id string `json:"id"` // TODO: Rename to ID or id
 
-	// +optional
 	// primary is the primary file system for the Spectrum Scale cluster.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Primary",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
-	Primary CSIFilesystem `json:"primary"`
+	Primary *CSIFilesystem `json:"primary,omitempty"`
 
 	// restApi is a collection of targets for REST calls
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="REST API",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
@@ -325,18 +328,14 @@ type CSICluster struct {
 // Defines the fields for CSI for Spectrum Scale file system
 type CSIFilesystem struct {
 
-	// +optional
-	// +kubebuilder:default:="1M"
 	// Inode limit for Primary Fileset
-	InodeLimit string `json:"inodeLimit"`
+	InodeLimit string `json:"inodeLimit,omitempty"`
 
 	// The name of the primary CSIFilesystem
-	PrimaryFs string `json:"primaryFs"`
+	PrimaryFs string `json:"primaryFs,omitempty"`
 
-	// +optional
-	// +kubebuilder:default:=spectrum-scale-csi-volume-store
 	// The name of the primary fileset, created in primaryFs
-	PrimaryFset string `json:"primaryFset"`
+	PrimaryFset string `json:"primaryFset,omitempty"`
 
 	// Remote Spectrum Scale cluster ID
 	RemoteCluster string `json:"remoteCluster,omitempty"`
@@ -350,7 +349,6 @@ type RestApi struct {
 	GuiHost string `json:"guiHost"`
 
 	// guiPort is the port number of the Spectrum Scale GUI node.
-	// +kubebuilder:default:=443
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="GUI Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	GuiPort int `json:"guiPort,omitempty"`
 }

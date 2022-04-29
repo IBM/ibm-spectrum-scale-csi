@@ -10,7 +10,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.5.0
+    productVersion: 2.5.1
 spec:
   replicas: 1
   selector:
@@ -28,7 +28,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.5.0
+        productVersion: 2.5.1
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
@@ -127,6 +127,14 @@ rules:
   verbs:
   - get
   - update
+- resources:
+  - clusterversions
+  apiGroups:
+  - config.openshift.io
+  verbs:
+  - get
+  - list
+  - watch
 - resources:
   - leases
   apiGroups:
@@ -556,7 +564,7 @@ spec:
                                     field and the ones listed in the namespaces field.
                                     null selector and null or empty namespaces list
                                     means "this pod's namespace". An empty selector
-                                    ({}) matches all namespaces. This field is alpha-level
+                                    ({}) matches all namespaces. This field is beta-level
                                     and is only honored when PodAffinityNamespaceSelector
                                     feature is enabled.
                                   properties:
@@ -711,7 +719,7 @@ spec:
                                 the ones listed in the namespaces field. null selector
                                 and null or empty namespaces list means "this pod's
                                 namespace". An empty selector ({}) matches all namespaces.
-                                This field is alpha-level and is only honored when
+                                This field is beta-level and is only honored when
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
@@ -865,7 +873,7 @@ spec:
                                     field and the ones listed in the namespaces field.
                                     null selector and null or empty namespaces list
                                     means "this pod's namespace". An empty selector
-                                    ({}) matches all namespaces. This field is alpha-level
+                                    ({}) matches all namespaces. This field is beta-level
                                     and is only honored when PodAffinityNamespaceSelector
                                     feature is enabled.
                                   properties:
@@ -1020,7 +1028,7 @@ spec:
                                 the ones listed in the namespaces field. null selector
                                 and null or empty namespaces list means "this pod's
                                 namespace". An empty selector ({}) matches all namespaces.
-                                This field is alpha-level and is only honored when
+                                This field is beta-level and is only honored when
                                 PodAffinityNamespaceSelector feature is enabled.
                               properties:
                                 matchExpressions:
@@ -1175,21 +1183,17 @@ spec:
                       properties:
                         inodeLimit:
                           type: string
-                          default: 1M
                           description: Inode limit for Primary Fileset
                         primaryFs:
                           type: string
                           description: The name of the primary CSIFilesystem
                         primaryFset:
                           type: string
-                          default: spectrum-scale-csi-volume-store
                           description: The name of the primary fileset, created in
                             primaryFs
                         remoteCluster:
                           type: string
                           description: Remote Spectrum Scale cluster ID
-                      required:
-                      - primaryFs
                     restApi:
                       type: array
                       description: restApi is a collection of targets for REST calls
@@ -1203,7 +1207,6 @@ spec:
                               Scale GUI node.
                           guiPort:
                             type: integer
-                            default: 443
                             description: guiPort is the port number of the Spectrum
                               Scale GUI node.
                         required:
@@ -1225,6 +1228,11 @@ spec:
                   - restApi
                   - secrets
                   - secureSslMode
+              consistencyGroupPrefix:
+                type: string
+                description: consistencyGroupPrefix is a prefix of consistency group
+                  of an application. This is expected to be an RFC4122 UUID value
+                  (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
               csipspname:
                 type: string
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
@@ -1234,7 +1242,6 @@ spec:
                   CSI Spectrum Scale plugin pods.
               kubeletRootDirPath:
                 type: string
-                default: /var/lib/kubelet
                 description: kubeletRootDirPath is the path for kubelet root directory.
               livenessprobe:
                 type: string

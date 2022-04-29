@@ -3,8 +3,10 @@ import logging
 import copy
 import re
 import base64
+import urllib3
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 LOGGER = logging.getLogger()
 
 
@@ -26,7 +28,7 @@ def set_global_namespace_value(namespace_name):
     namespace_value = namespace_name
 
 
-def create_namespace():
+def create_namespace(namespace_name):
     """
     Create namespace namespace_value(global parameter)
 
@@ -42,16 +44,16 @@ def create_namespace():
     """
     namespace_api_instance = client.CoreV1Api()
     namespace_metadata = client.V1ObjectMeta(
-        name=namespace_value,
+        name=namespace_name,
         labels={"product": "ibm-spectrum-scale-csi"}
     )
     namespace_body = client.V1Namespace(
         api_version="v1", kind="Namespace", metadata=namespace_metadata)
     try:
-        LOGGER.info(f'Creating new Namespace {namespace_value}')
         namespace_api_response = namespace_api_instance.create_namespace(
             body=namespace_body, pretty=True)
         LOGGER.debug(str(namespace_api_response))
+        LOGGER.info(f'Namespace Create : {namespace_name} is created')
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->create_namespace: {e}")
@@ -178,14 +180,11 @@ def create_crd(body):
         Raises an ValueError exception but it is expected. hence we pass.
 
     """
-    version = body["apiVersion"].split("/")
-    crd_version = version[1]
-    LOGGER.info(f"CRD apiVersion is {crd_version}")
     custom_object_api_instance = client.CustomObjectsApi()
     try:
         custom_object_api_response = custom_object_api_instance.create_cluster_custom_object(
             group="apiextensions.k8s.io",
-            version=crd_version,
+            version="v1",
             plural="customresourcedefinitions",
             body=body,
             pretty=True
@@ -200,7 +199,7 @@ def create_crd(body):
         assert False
 
 
-def delete_crd(crd_version):
+def delete_crd():
     """
     Delete existing IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
 
@@ -219,7 +218,7 @@ def delete_crd(crd_version):
     try:
         custom_object_api_response = custom_object_api_instance.delete_cluster_custom_object(
             group="apiextensions.k8s.io",
-            version=crd_version,
+            version="v1",
             plural="customresourcedefinitions",
             name=crd_name
         )
@@ -230,7 +229,7 @@ def delete_crd(crd_version):
         assert False
 
 
-def delete_namespace():
+def delete_namespace(namespace_name):
     """
     Delete IBM Spectrum Scale CSI Operator namespace
 
@@ -247,7 +246,7 @@ def delete_namespace():
     delete_namespace_api_instance = client.CoreV1Api()
     try:
         delete_namespace_api_response = delete_namespace_api_instance.delete_namespace(
-            name=namespace_value, pretty=True)
+            name=namespace_name, pretty=True)
         LOGGER.debug(str(delete_namespace_api_response))
     except ApiException as e:
         LOGGER.error(
@@ -355,7 +354,7 @@ def delete_cluster_role_binding(cluster_role_binding_name):
         assert False
 
 
-def check_crd_deleted(crd_version):
+def check_crd_deleted():
     """
     Function for checking CRD (Custom Resource Defination) is deleted or not
     If CRD is not deleted in 60 seconds,function asserts
@@ -377,7 +376,7 @@ def check_crd_deleted(crd_version):
         try:
             custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
                 group="apiextensions.k8s.io",
-                version=crd_version,
+                version="v1",
                 plural="customresourcedefinitions",
                 name=crd_name
             )
@@ -394,7 +393,7 @@ def check_crd_deleted(crd_version):
     assert False
 
 
-def check_namespace_deleted():
+def check_namespace_deleted(namespace_name):
     """
     Function for checking namespace object is deleted or not
     If namespace is not deleted in 120 seconds, Function asserts
@@ -403,21 +402,21 @@ def check_namespace_deleted():
         Raises an exception on kubernetes client api failure and asserts
 
     """
-    count = 24
+    count = 18
     list_namespace_api_instance = client.CoreV1Api()
     while (count > 0):
         try:
             list_namespace_api_response = list_namespace_api_instance.read_namespace(
-                name=namespace_value, pretty=True)
+                name=namespace_name, pretty=True)
             LOGGER.debug(str(list_namespace_api_response))
-            LOGGER.info(f'Still deleting namespace {namespace_value}')
+            LOGGER.info(f'Namespace Delete : still deleting {namespace_name}')
             count = count-1
-            time.sleep(5)
+            time.sleep(10)
         except ApiException:
-            LOGGER.info(f'namespace {namespace_value} is deleted')
+            LOGGER.info(f'Namespace Delete : {namespace_name} is deleted')
             return
 
-    LOGGER.error(f'namespace  {namespace_value} is not deleted')
+    LOGGER.error(f'namespace  {namespace_name} is not deleted')
     assert False
 
 
@@ -538,7 +537,7 @@ def check_cluster_role_binding_deleted(cluster_role_binding_name):
     assert False
 
 
-def check_crd_exists(crd_version):
+def check_crd_exists():
     """
     Checks custom resource defination exists or not
 
@@ -558,7 +557,7 @@ def check_crd_exists(crd_version):
     try:
         custom_object_api_response = custom_object_api_instance.get_cluster_custom_object(
             group="apiextensions.k8s.io",
-            version=crd_version,
+            version="v1",
             plural="customresourcedefinitions",
             name=crd_name
         )
@@ -570,9 +569,9 @@ def check_crd_exists(crd_version):
         return False
 
 
-def check_namespace_exists():
+def check_namespace_exists(namespace_name):
     """
-    Checks namespace namespace_value exists or not
+    Checks namespace namespace_name exists or not
 
     Args:
        None
@@ -588,12 +587,12 @@ def check_namespace_exists():
     read_namespace_api_instance = client.CoreV1Api()
     try:
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
-            name=namespace_value, pretty=True)
+            name=namespace_name, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists")
+        LOGGER.info(f"Namespace Check  : {namespace_name} exists")
         return True
     except ApiException:
-        LOGGER.info("namespace does not exists")
+        LOGGER.info(f"Namespace Check  : {namespace_name} does not exists")
         return False
 
 
@@ -738,10 +737,10 @@ def check_ns_exists(passed_kubeconfig_value, namespace_value):
         read_namespace_api_response = read_namespace_api_instance.read_namespace(
             name=namespace_value, pretty=True)
         LOGGER.debug(str(read_namespace_api_response))
-        LOGGER.info("namespace exists checking for operator")
+        LOGGER.info(f"Namespace Check  : CSI Operator Namespace {namespace_value} exists")
         return True
     except ApiException:
-        LOGGER.info("namespace does not exists")
+        LOGGER.info(f"Namespace Check  : CSI Operator Namespace {namespace_value} does not exists")
         return False
 
 
@@ -1130,3 +1129,38 @@ def check_pod_image(pod_name, image_name):
     LOGGER.error(f"Image {image_name} not matched for pod {pod_name}")
     LOGGER.error(str(api_response))
     assert False
+
+
+def get_pod_list_and_check_running(label, required_pods):
+    api_instance = client.CoreV1Api()
+    for _ in range(0,24):
+        try:
+            api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+            pod_status = True
+            for pod_info in api_response.items:
+                if not(pod_info.status.phase == "Running"):
+                    pod_status = False
+                    break
+            if pod_status is True and (len(api_response.items) ==  required_pods):
+                return 
+            time.sleep(20)
+            LOGGER.info(f"Checking for pod with label {label}")
+        except ApiException as e:
+            LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
+            assert False
+    else:
+        LOGGER.error(f"Pods with label {label} are not in expected state {api_response}")
+        assert False
+
+
+def get_pod_list_with_label(label):
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+        pod_list = []
+        for pod_info in api_response.items:
+            pod_list.append(pod_info.metadata.name)
+        return pod_list
+    except ApiException as e:
+        LOGGER.error(f"Exception when calling CoreV1Api->list_pod_for_all_namespaces: {e}")
+        assert False

@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 2.5.0
+VERSION ?= 2.5.1
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -94,10 +94,12 @@ fmt: ## Run go fmt against code.
 	go fmt ./...
 	go mod tidy
 
-lint: ## Run go lint against code.
+## TODO: GoLint is deprecated, should look for alternatives. 
+## More info: https://github.com/golang/go/issues/38968
+lint: ## Run go lint against code. 
 	@echo "****** LINTING ******"
-	go get -u golang.org/x/lint/golint
-	golint ./... > ./docs/dev/security/results.golint.txt
+	go get -d golang.org/x/lint/golint
+	golint ./... | grep -v vendor/ > ./docs/dev/security/results.golint.txt
 
 sec: ## Run gosec against code.
 	@echo "****** SECURITY SCANNING ******"

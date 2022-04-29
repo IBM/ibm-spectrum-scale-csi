@@ -1,45 +1,18 @@
 import logging
-import copy
 import pytest
 import ibm_spectrum_scale_csi.base_class as baseclass
 import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = [pytest.mark.volumeprovisioning, pytest.mark.remotecluster]
 
-@pytest.fixture(scope='session', autouse=True)
-def values(request, check_csi_operator):
+
+@pytest.fixture(autouse=True)
+def values(data_fixture, check_csi_operator, remote_cluster_fixture):
     global data, remote_data, driver_object, kubeconfig_value  # are required in every testcase
-    cmd_values = inputfunc.get_pytest_cmd_values(request)
-    kubeconfig_value = cmd_values["kubeconfig_value"]
-    data = inputfunc.read_driver_data(cmd_values)
-
-    keep_objects = data["keepobjects"]
-    if not("remote" in data):
-        LOGGER.error("remote data is not provided in cr file")
-        assert False
-
-    remote_data = inputfunc.get_remote_data(data)
-    baseclass.filesetfunc.cred_check(remote_data)
-    baseclass.filesetfunc.set_data(remote_data)
-
-    if cmd_values["runslow_val"]:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
-                     {"access_modes": "ReadWriteOnce", "storage": "1Gi"},
-                     {"access_modes": "ReadOnlyMany", "storage": "1Gi",
-                      "reason": "ReadOnlyMany is not supported"}
-                     ]
-        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"},
-                     {"mount_path": "/usr/share/nginx/html/scale",
-                      "read_only": "True", "reason": "Read-only file system"}
-                     ]
-    else:
-        value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-        value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
-
-    driver_object = baseclass.Driver(kubeconfig_value, value_pvc, value_pod,
-                                   remote_data["id"], cmd_values["test_namespace"], keep_objects, data["image_name"], data["pluginNodeSelector"])
-    baseclass.filesetfunc.create_dir(remote_data["volDirBasePath"])
-
+    data = data_fixture["driver_data"]
+    remote_data = data_fixture["remote_data"]
+    kubeconfig_value = data_fixture["cmd_values"]["kubeconfig_value"]
+    driver_object = data_fixture["remote_driver_object"]
 
 #: Testcase that are expected to pass:
 @pytest.mark.regression
@@ -2824,7 +2797,8 @@ def test_driver_volume_expansion_1():
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_volume_expansion_2():
@@ -2834,7 +2808,8 @@ def test_driver_volume_expansion_2():
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_volume_expansion_3():
@@ -2845,7 +2820,8 @@ def test_driver_volume_expansion_3():
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
 def test_driver_volume_cloning_pass_1():

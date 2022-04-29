@@ -82,13 +82,13 @@ type scaleVolId struct {
 }
 
 type scaleSnapId struct {
-	ClusterId string
-	FsUUID    string
-	FsetName  string
-	SnapName  string
-	MetaSnapName  string
-	Path      string
-	FsName    string
+	ClusterId        string
+	FsUUID           string
+	FsetName         string
+	SnapName         string
+	MetaSnapName     string
+	Path             string
+	FsName           string
 	StorageClassType string
 	ConsistencyGroup string
 	VolType          string
@@ -148,6 +148,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	storageClassType, isSCTypeSpecified := volOptions[connectors.UserSpecifiedStorageClassType]
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
+	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -189,6 +190,10 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 
 	if fsTypeSpecified && fsType == "" {
 		fsTypeSpecified = false
+	}
+
+	if isCGSpecified && cg == "" {
+		isCGSpecified = false
 	}
 
 	if volDirPathSpecified && volDirPath == "" {
@@ -344,7 +349,15 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.NodeClass = nodeClass
 	}
 
-	scaleVol.ConsistencyGroup = volOptions["csi.storage.k8s.io/pvc/namespace"]
+	if isCGSpecified {
+		scaleVol.ConsistencyGroup = cg
+	} else {
+		cgPrefix := utils.GetEnv("CSI_CG_PREFIX", notFound)
+		if cgPrefix == notFound {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Failed to extract the consistencyGroup prefix")
+		}
+		scaleVol.ConsistencyGroup = fmt.Sprintf("%s-%s", cgPrefix, volOptions["csi.storage.k8s.io/pvc/namespace"])
+	}
 
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
