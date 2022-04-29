@@ -66,6 +66,7 @@ const (
 
 // GenerateCSIDriver returns a non-namespaced CSIDriver object.
 func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
+	// fileFSGroupPolicy := storagev1.FileFSGroupPolicy
 	return &storagev1.CSIDriver{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   config.DriverName,
@@ -74,6 +75,7 @@ func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
 		Spec: storagev1.CSIDriverSpec{
 			AttachRequired: boolptr.True(),
 			PodInfoOnMount: boolptr.True(),
+			// FSGroupPolicy:  &fileFSGroupPolicy,
 		},
 	}
 }
