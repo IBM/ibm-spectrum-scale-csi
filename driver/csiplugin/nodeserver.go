@@ -157,11 +157,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 			}
 			return nil, fmt.Errorf("failed to check if target path [%s] is mount point. Error %v", targetPathInContainer, err)
 		}
-		if notMP {
-			if err = os.Remove(targetPathInContainer); err != nil {
-				return nil, fmt.Errorf("failed to remove targetPath [%s]. Error %v", targetPathInContainer, err)
-			}
-		} else {
+		if !notMP {
 			// Unmount the targetPath
 			err = mount.New("").Unmount(targetPath)
 			if err != nil {
