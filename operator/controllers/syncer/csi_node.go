@@ -140,8 +140,6 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
 func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
-	// LOG: add logger object
-
 	pod := corev1.PodSpec{
 		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
@@ -153,7 +151,6 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		Tolerations:      s.driver.Spec.Tolerations,
 		ImagePullSecrets: secrets,
 	}
-
 	return pod
 }
 
@@ -212,8 +209,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	fillSecurityContextCapabilities(sc)
 
 	nodePlugin.SecurityContext = sc
-
-	// nodePlugin.VolumeMounts = append(nodePlugin.VolumeMounts, s.ensureAdditionalVolumeMounts(volumes)...)
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
@@ -480,49 +475,6 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 		}
 	}
 	return volumes
-}
-
-// ensureAdditionalVolumes retruns a list of corev1.Volume
-func (s *csiNodeSyncer) ensureAdditionalVolumes(hostPaths []string) []corev1.Volume {
-	// LOG: add logger object
-	// LOG: add entry log
-	additionalVolumes := []corev1.Volume{}
-	// if no hostpaths are present in CSI configurations for mounting then return empty list
-	if len(hostPaths) == 0 {
-		// LOG: no hostpaths are provided in CSI configurations configMap
-	} else {
-		for i, hostPath := range hostPaths {
-			additionalVolumes = append(
-				additionalVolumes,
-				k8sutil.EnsureVolume("host-"+strconv.Itoa(i), k8sutil.EnsureHostPathVolumeSource(hostPath, "Directory")),
-			)
-		}
-	}
-	// LOG: add exit log
-	return additionalVolumes
-}
-
-func (s *csiNodeSyncer) ensureAdditionalVolumeMounts(volumes []corev1.Volume) []corev1.VolumeMount {
-	// LOG: add logger object
-	// LOG: add entry log
-	mountPropagationB := corev1.MountPropagationBidirectional
-	additionalVolumeMounts := []corev1.VolumeMount{}
-	// if no hostpaths are present in CSI configurations for mounting then return empty list
-	if len(volumes) == 0 {
-		// LOG: no hostpaths are provided in CSI configurations configMap
-	} else {
-		for _, volume := range volumes {
-			additionalVolumeMounts = append(additionalVolumeMounts,
-				corev1.VolumeMount{
-					Name:             volume.Name,
-					MountPath:        "/host" + volume.VolumeSource.HostPath.Path,
-					MountPropagation: &mountPropagationB,
-				},
-			)
-		}
-	}
-	// LOG: add exit log
-	return additionalVolumeMounts
 }
 
 // getImage gets and returns the images for CSI driver from CR
