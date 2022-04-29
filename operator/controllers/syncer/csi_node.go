@@ -71,7 +71,6 @@ var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
 
 // UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
 var UUID string
-var envVarsMap map[string]string = make(map[string]string)
 
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -80,7 +79,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -96,7 +95,6 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
-	envVarsMap = envVars
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -307,13 +305,6 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Name = config.ENVCGPrefix
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
-
-		for k, v := range envVarsMap {
-			envObj := corev1.EnvVar{}
-			envObj.Name = k
-			envObj.Value = v
-			EnvVars = append(EnvVars, envObj)
-		}
 
 		return append(EnvVars, []corev1.EnvVar{
 			{
