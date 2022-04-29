@@ -1894,7 +1894,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			snapReadyStatus, found := cs.Driver.cgsnapreadystatusmap.Load(snapIdentifier)
 			if found && !snapReadyStatus.(CGSnapReadyDetails).snapStatus {
 				// snapshot not yet ready
-				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot [%s] not yet ready for [%s:%s]", snapReadyStatus.(CGSnapReadyDetails).snapName, filesystemName, filesetName))	
+				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot [%s] not yet ready for [%s:%s]", snapReadyStatus.(CGSnapReadyDetails).snapName, filesystemName, filesetName))
 			}
 			cgSnapName, err := cs.CheckNewSnapRequired(conn, filesystemName, filesetName, snapWindow)
 			if err != nil {
@@ -1944,8 +1944,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			}
 			if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 				snapIdentifier := fmt.Sprintf("%s:%s", filesystemName, filesetName)
-				snapReadyDetails := CGSnapReadyDetails{true, snapName}
-				cs.Driver.cgsnapreadystatusmap.Store(snapIdentifier, snapReadyDetails)
+				cs.Driver.cgsnapreadystatusmap.Delete(snapIdentifier)
 			}
 		}
 	}
