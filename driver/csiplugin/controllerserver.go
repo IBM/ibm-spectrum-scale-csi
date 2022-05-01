@@ -2034,8 +2034,14 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(conn connectors.SpectrumScal
 }
 
 func (cs *ScaleControllerServer) isExistingSnapUseableForVol(conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string) (bool, error) {
-	pathDir := fmt.Sprintf("%s/.snapshots/%s/%s", consistencyGroup, cgSnapName, filesetName)
-	_, err := conn.StatDirectory(filesystemName, pathDir)
+	// get snapshots directory for the filesystem
+	snapDir, err := conn.GetSnapDir(filesystemName)
+	if err != nil {
+		return false, err
+	}
+
+	pathDir := fmt.Sprintf("%s/%s/%s/%s", consistencyGroup, snapDir, cgSnapName, filesetName)
+	_, err = conn.StatDirectory(filesystemName, pathDir)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0264C") ||
 			strings.Contains(err.Error(), "does not exist") { // directory does not exist

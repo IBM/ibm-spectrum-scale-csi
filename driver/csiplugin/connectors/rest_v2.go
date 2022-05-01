@@ -1362,6 +1362,24 @@ func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName
 	return listFilesetSnapshotResponse.Snapshots, nil
 }
 
+//GetSnapDir Return snapshots directory for a filesystem
+func (s *spectrumRestV2) GetSnapDir(filesystemName string) (string, error) {
+	glog.V(4).Infof("rest_v2 GetSnapDir. filesystem: %s", filesystemName)
+
+	getSnapDirUrl := utils.FormatURL(s.endpoint, fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/snapDir", filesystemName))
+
+	getSnapDirResp := GetSnapDirResponse_v2{}
+
+	err := s.doHTTP(getSnapDirUrl, "GET", &getSnapDirResp, nil)
+	if err != nil {
+		return "", err
+	}
+	if len(getSnapDirResp.SnapDir) == 0 {
+		return "", fmt.Errorf("unable to get snapshot directory for filesystem: %s", filesystemName)
+	}
+	return getSnapDirResp.SnapDir[0].snapDir, err
+}
+
 func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
 	glog.V(4).Infof("rest_v2 CheckIfFileDirPresent. filesystem: %s, path: %s", filesystemName, relPath)
 

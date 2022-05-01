@@ -528,6 +528,19 @@ type GetSnapshotResponse_v2 struct {
 	Paging    Pages         `json:"paging,omitempty"`
 }
 
+type SnapDir_v2 struct {
+	snapDir       string
+	snapDirtype   string
+	globalType    string
+	globalSnapDir string
+}
+
+type GetSnapDirResponse_v2 struct {
+	SnapDir   []SnapDir_v2  `json:"snapdir,omitempty"`
+	Status    Status        `json:"status,omitempty"`
+	Paging    Pages         `json:"paging,omitempty"`
+}
+
 type Fileset_v2 struct {
 	AFM         AFM              `json:"afm,omitempty"`
 	Config      FilesetConfig_v2 `json:"config,omitempty"`
