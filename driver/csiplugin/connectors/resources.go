@@ -529,10 +529,11 @@ type GetSnapshotResponse_v2 struct {
 }
 
 type SnapDir_v2 struct {
-	snapDir       string
-	snapDirtype   string
-	globalType    string
-	globalSnapDir string
+	FilesystemName string `json:"filesystemName,omitempty"`
+	SnapDir        string `json:"snapDir,omitempty"`
+	SnapDirtype    string `json:"type,omitempty"`
+	GlobalType     string `json:"globalType,omitempty"`
+	GlobalSnapDir  string `json:"globalSnapDir,omitempty"`
 }
 
 type GetSnapDirResponse_v2 struct {

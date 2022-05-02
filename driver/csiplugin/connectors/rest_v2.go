@@ -1377,7 +1377,7 @@ func (s *spectrumRestV2) GetSnapDir(filesystemName string) (string, error) {
 	if len(getSnapDirResp.SnapDir) == 0 {
 		return "", fmt.Errorf("unable to get snapshot directory for filesystem: %s", filesystemName)
 	}
-	return getSnapDirResp.SnapDir[0].snapDir, err
+	return getSnapDirResp.SnapDir[0].SnapDir, err
 }
 
 func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
