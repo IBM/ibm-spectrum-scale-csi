@@ -892,6 +892,8 @@ func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	return &action
 }
 
+// GetAffinity method returns corev1.Affinity object based on resource name passed.
+// Expected resource names: attacher, provisioner, resizer, snapshotter, node.
 func (c CSIScaleOperator) GetAffinity(resource string) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 
