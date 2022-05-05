@@ -1,9 +1,12 @@
 import time
 import logging
+import base64
 import string
 import random
+import urllib3
 from kubernetes import client
 from kubernetes.client.rest import ApiException
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 LOGGER = logging.getLogger()
 
 
@@ -25,13 +28,12 @@ def set_namespace_value(namespace_name):
     namespace_value = namespace_name
 
 
-def create_custom_object(custom_object_body, stateful_set_not_created):
+def create_custom_object(custom_object_body):
     """
-    Create custom object and waits until stateful sets are created.
+    Create custom object .
 
     Args:
        param1: custom_object_body - custom object body
-       param2: stateful_set_not_created - for operator testcases
 
     Returns:
        None
@@ -56,35 +58,6 @@ def create_custom_object(custom_object_body, stateful_set_not_created):
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
         assert False
-
-    num = 0
-    while (num < 30):
-        read_statefulset_api_instance = client.AppsV1Api()
-        try:
-            read_statefulset_api_response = read_statefulset_api_instance.read_namespaced_stateful_set(
-                name="ibm-spectrum-scale-csi-attacher", namespace=namespace_value, pretty=True)
-            LOGGER.debug(str(read_statefulset_api_response))
-            LOGGER.info("waiting for statefulsets")
-            ready_replicas = read_statefulset_api_response.status.ready_replicas
-            replicas = read_statefulset_api_response.status.replicas
-            if ready_replicas == replicas:
-                if stateful_set_not_created is True:
-                    LOGGER.error("Statefulsets should not have been created")
-                    assert False
-                else:
-                    return
-            num = num + 1
-            time.sleep(20)
-        except ApiException:
-            LOGGER.info("waiting for statefulsets")
-            num = num+1
-            time.sleep(20)
-
-    if stateful_set_not_created is True:
-        LOGGER.info("Expected Failure ,testcase is passed")
-        return
-    LOGGER.error("problem while creating custom object, (statefulsets are not created)")
-    assert False
 
 
 def delete_custom_object():
@@ -180,6 +153,7 @@ def check_scaleoperatorobject_is_deployed(csiscaleoperator_name="ibm-spectrum-sc
 
 def check_scaleoperatorobject_statefulsets_state(stateful_name):
     """
+    Function is no longer used
     Checks statefulset exists or not
     if not exists , It asserts
     if exists :
@@ -272,3 +246,21 @@ def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-s
         return read_cr_api_response
     except ApiException:
         return False
+
+
+def get_gui_creds_for_username_password(ns_name, secret_name):
+     api_instance = client.CoreV1Api()
+     try:
+         api_response = api_instance.read_namespaced_secret(
+             name=secret_name, namespace=ns_name, pretty=True)
+         encoded_username = api_response.data['username']
+         encoded_password = api_response.data['password']
+         decoded_username = base64.b64decode(encoded_username)
+         decoded_username = decoded_username.decode('ascii')
+         decoded_password = base64.b64decode(encoded_password)
+         decoded_password = decoded_password.decode('ascii')
+         return decoded_username,decoded_password
+     except ApiException as e:
+         LOGGER.error(f'Secret {secret_name} does not exist: {e}')
+         LOGGER.error("Not able to fetch username and pasword")
+         assert False

@@ -16,38 +16,37 @@ Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platf
 
 #### In case IBM Spectrum Scale CSI operator and driver is already deployed
 
-- Configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
+- Configuring parameters such as remote/local filesystem name, uid/gid, you must modify relevant fields in [test.config](./config/test.config) file.
 
-- Create config map using [test.config](./config/test.config) & kubeconfig file (default location `~/.kube/config`)
-
-```
-kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=kubeconfig=<kubeconfig file path>
+- Create config map using [test.config](./config/test.config)
 
 ```
-
+kubectl create configmap  test-config  --from-file=test.config=<test.config file path>
 ```
-eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=kubeconfig=/root/.kube/config
-
+Example
+```
+kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config 
 ```
 
 #### In case IBM Spectrum Scale CSI operator and driver is not deployed
 - Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 
-- Configuring parameters such as uid/gid, secret username/password, cacert path & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
+- Configuring parameters such as secret username/password, cacert path, uid/gid  & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
 
-- Create config map using [test.config](./config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](../..//operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) & kubeconfig file (default location `~/.kube/config`)
-
-```
-kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path> --from-file=kubeconfig=<kubeconfig file path>
+- Create config map using [test.config](./config/test.config),[csiscaleoperators.csi.ibm.com_cr.yaml](../..//operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml)
 
 ```
+kubectl create configmap  test-config  --from-file=test.config=<test.config file path>  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=<csiscaleoperators.csi.ibm.com_cr.yaml file path>
 
 ```
-eg. kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml --from-file=kubeconfig=/root/.kube/config
+Example
+```
+kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config  --from-file=csiscaleoperators.csi.ibm.com_cr.yaml=/root/ibm-spectrum-scale-csi/operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml
  
 ```
-- To run the tests in namespace other than ibm-spectrum-scale-csi-driver (default) , please use --testnamespace parameter
-- If operator is not running in namespace ibm-spectrum-scale-csi-driver (default) , please use --operatornamespace with value where operator is already running
+- To run the tests in namespace other than ibm-spectrum-scale-csi-test namespace (default) , please use --testnamespace parameter
+- To run each testcase in its own namespace, please use --createnamespace parameter
+- If operator is not running in namespace ibm-spectrum-scale-csi-driver namespace (default) , please use --operatornamespace with value where operator is already running
 - If operator yaml file is not at ../../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml (default), please use --operatoryaml with value of operator yaml file path
 
 - if you want to use SSL=enable, for cacert configmap use following command and change the path in test.config file as `config/local.crt`
@@ -58,11 +57,30 @@ Note : for remote crt, pass remote.crt file in the same configmap and user in th
 
 - Configure sample [csi-test-pod.yaml](./csi-test-pod.yaml) file 
 
+- How to get "APISERVER VALUE" and "TOKEN VALUE"
+on Kubernetes or Openshift cluster where kubernetes objects will be created
+```
+export APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+echo "APISERVER is " $APISERVER
+```
+```
+kubectl create serviceaccount test-automation -n default
+kubectl create clusterrolebinding test-automation-crb --clusterrole=cluster-admin --serviceaccount=default:test-automation
+
+export TOKEN=$(kubectl get secret $(kubectl get secrets -n default | grep test-automation-token | awk 'NR==1{print $1}')  -o jsonpath='{.data.token}' -n default | base64 --decode)
+echo "TOKEN is " $TOKEN
+```
+Optional: ca.crt value
+```
+export CACRT=$(kubectl get secret $(kubectl get secrets -n default | grep test-automation-token | awk 'NR==1{print $1}')  -o jsonpath='{.data.ca\.crt}' -n default)
+echo "CACRT is " $CACRT
+```
+
 ```
 kind: Pod
 apiVersion: v1
 metadata:
-  name: ibm-spectrum-scale-csi-test-pod  
+  name: ibm-spectrum-scale-csi-test-pod
 spec:
   containers:
   - name: csi-test
@@ -74,6 +92,13 @@ spec:
     command: [ "/bin/sh", "-c", "--" ]
     args: [ "while true; do sleep 120; done;" ]
     imagePullPolicy: "Always"
+    env:
+    - name: APISERVER
+      value: "<APISERVER VALUE>"
+    - name: TOKEN
+      value: "<TOKEN VALUE>"
+#    - name: CACRT
+#      value: "<CACRT VALUE>"
     volumeMounts:
     - mountPath: /data
       name: report
@@ -82,15 +107,14 @@ spec:
   volumes:
   - configMap:
       defaultMode: 420
-      name: test-config  
+      name: test-config  #test-config configmap for configuration files
     name: test-config
   - hostPath:
       path: /ibm/gpfs0    #local path for saving the test reports files on node of running pod
     name: report
   restartPolicy: "Never"
   nodeSelector:
-     kubernetes.io/hostname: <Worker Node name> #node selector for scheduling the test pod
-
+     kubernetes.io/hostname: "<Worker Node name>" #node selector for scheduling the test pod
 ```
 
 - Create test pod 

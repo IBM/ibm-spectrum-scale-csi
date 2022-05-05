@@ -78,22 +78,20 @@ const (
 	TolerationsSeconds = int64(60)
 	// ContainerPort for /healthz/leader-election endpoint
 	LeaderLivenessPort = int32(8080)
-
 	// 64-Bit machine architecture supported by Spectrum Scale CSI.
 	AMD64 = "amd64"
 	// Power PC machine architecture supported by Spectrum Scale CSI.
 	PPC = "ppc64le"
 	// IBM zSystems machine architecture supported by Spectrum Scale CSI.
 	IBMSystem390 = "s390x"
-
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
-	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.4.0"
+	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0"
 	LivenessProbeImage          = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.6.0"
 	CSIAttacherImage            = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0"
 	CSIProvisionerImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0"
 	CSISnapshotterImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v5.0.1"
-	CSIResizerImage             = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.3.0"
+	CSIResizerImage             = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.4.0"
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
@@ -129,6 +127,7 @@ const (
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
 	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
+
 )
 
 const (

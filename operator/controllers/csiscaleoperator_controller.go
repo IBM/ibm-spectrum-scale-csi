@@ -413,6 +413,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."

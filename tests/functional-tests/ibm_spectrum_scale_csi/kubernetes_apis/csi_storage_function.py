@@ -2,14 +2,14 @@ import time
 import re
 import logging
 import copy
+import urllib3
 from datetime import datetime, timezone
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 import ibm_spectrum_scale_csi.common_utils.namegenerator as namegenerator
-
-
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 LOGGER = logging.getLogger()
 
 

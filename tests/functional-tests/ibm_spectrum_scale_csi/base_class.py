@@ -15,17 +15,18 @@ class Scaleoperator:
     def __init__(self, kubeconfig_value, namespace_value, operator_yaml):
 
         self.kubeconfig = kubeconfig_value
-        kubeobjectfunc.set_global_namespace_value(namespace_value)
-        csiobjectfunc.set_namespace_value(namespace_value)
+        self.operator_namespace = namespace_value
         self.operator_yaml_file_path = operator_yaml
+        kubeobjectfunc.set_global_namespace_value(self.operator_namespace)
+        csiobjectfunc.set_namespace_value(self.operator_namespace)
 
     def create(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
 
         body = self.get_operator_body()
-        if not(kubeobjectfunc.check_namespace_exists()):
-            kubeobjectfunc.create_namespace()
+        if not(kubeobjectfunc.check_namespace_exists(self.operator_namespace)):
+            kubeobjectfunc.create_namespace(self.operator_namespace)
 
         if not(kubeobjectfunc.check_deployment_exists()):
             kubeobjectfunc.create_deployment(body['Deployment'])
@@ -69,14 +70,14 @@ class Scaleoperator:
             kubeobjectfunc.delete_deployment()
         kubeobjectfunc.check_deployment_deleted()
 
-        if kubeobjectfunc.check_namespace_exists() and (condition is False):
-            kubeobjectfunc.delete_namespace()
-            kubeobjectfunc.check_namespace_deleted()
+        if kubeobjectfunc.check_namespace_exists(self.operator_namespace) and (condition is False):
+            kubeobjectfunc.delete_namespace(self.operator_namespace)
+            kubeobjectfunc.check_namespace_deleted(self.operator_namespace)
 
     def check(self):
 
         config.load_kube_config(config_file=self.kubeconfig)
-        kubeobjectfunc.check_namespace_exists()
+        kubeobjectfunc.check_namespace_exists(self.operator_namespace)
         kubeobjectfunc.check_deployment_exists()
         kubeobjectfunc.check_cluster_role_exists("ibm-spectrum-scale-csi-operator")
         kubeobjectfunc.check_service_account_exists("ibm-spectrum-scale-csi-operator")
@@ -102,16 +103,11 @@ class Scaleoperatorobject:
         self.kubeconfig = kubeconfig_value
         self.temp = test_dict
         self.secret_name = test_dict["local_secret_name"]
-        self.namespace = test_dict["namespace"]
+        self.operator_namespace = test_dict["namespace"]
         self.secret_data = {
             "username": test_dict["username"], "password": test_dict["password"]}
 
-        if "stateful_set_not_created" in test_dict:
-            self.stateful_set_not_created = test_dict["stateful_set_not_created"]
-        else:
-            self.stateful_set_not_created = False
-
-        csiobjectfunc.set_namespace_value(self.namespace)
+        csiobjectfunc.set_namespace_value(self.operator_namespace)
 
     def create(self):
 
@@ -165,11 +161,11 @@ class Scaleoperatorobject:
 
         if not(csiobjectfunc.check_scaleoperatorobject_is_deployed()):
 
-            csiobjectfunc.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
+            csiobjectfunc.create_custom_object(self.temp["custom_object_body"])
         else:
             csiobjectfunc.delete_custom_object()
             csiobjectfunc.check_scaleoperatorobject_is_deleted()
-            csiobjectfunc.create_custom_object(self.temp["custom_object_body"], self.stateful_set_not_created)
+            csiobjectfunc.create_custom_object(self.temp["custom_object_body"])
 
     def delete(self):
 
@@ -204,17 +200,11 @@ class Scaleoperatorobject:
         if(is_deployed is False):
             return False
 
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-attacher")
-
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-provisioner")
-
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-snapshotter")
-
-        csiobjectfunc.check_scaleoperatorobject_statefulsets_state(
-            csiscaleoperator_name+"-resizer")
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-attacher",2)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-provisioner",1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-resizer",1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-snapshotter",1)
+        LOGGER.info("CSI driver Sidecar pods are Running")
 
         val, self.desired_number_scheduled = csiobjectfunc.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
 
@@ -227,7 +217,7 @@ class Scaleoperatorobject:
         try:
             pod_list_api_instance = client.CoreV1Api()
             pod_list_api_response = pod_list_api_instance.list_namespaced_pod(
-                namespace=self.namespace, pretty=True, field_selector="spec.serviceAccountName=ibm-spectrum-scale-csi-node")
+                namespace=self.operator_namespace, pretty=True, field_selector="spec.serviceAccountName=ibm-spectrum-scale-csi-node")
             daemonset_pod_name = pod_list_api_response.items[0].metadata.name
             LOGGER.debug(str(pod_list_api_response))
             return daemonset_pod_name
@@ -269,20 +259,6 @@ class Driver:
         csistoragefunc.set_test_namespace_value(self.test_ns)
         csistoragefunc.set_test_nodeselector_value(plugin_nodeselector_labels)
         csistoragefunc.set_keep_objects(self.keep_objects)
-        csistoragefunc.set_test_namespace_value(self.test_ns)
-
-    def create_test_ns(self, kubeconfig):
-        config.load_kube_config(config_file=kubeconfig)
-        kubeobjectfunc.set_global_namespace_value(self.test_ns)
-        if not(kubeobjectfunc.check_namespace_exists()):
-            kubeobjectfunc.create_namespace()
-
-    def delete_test_ns(self, kubeconfig):
-        config.load_kube_config(config_file=kubeconfig)
-        kubeobjectfunc.set_global_namespace_value(self.test_ns)
-        if kubeobjectfunc.check_namespace_exists():
-            kubeobjectfunc.delete_namespace()
-        kubeobjectfunc.check_namespace_deleted()
 
     def test_dynamic(self, value_sc, value_pvc_passed=None, value_pod_passed=None, value_clone_passed=None):
         created_objects = get_cleanup_dict()
@@ -472,9 +448,7 @@ class Snapshot():
         self.cluster_id = cluster_id
         csistoragefunc.set_test_namespace_value(test_namespace)
         csistoragefunc.set_test_nodeselector_value(plugin_nodeselector_labels)
-        csistoragefunc.set_test_namespace_value(test_namespace)
         csistoragefunc.set_keep_objects(keep_objects)
-        csistoragefunc.set_test_namespace_value(test_namespace)
 
     def test_dynamic(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, reason=None, restore_sc=None, restore_pvc=None, value_pod=None, value_pvc=None, value_clone_passed=None):
         if value_vs_class is None:
