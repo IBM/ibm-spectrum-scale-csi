@@ -37,14 +37,14 @@ spec:
         args:
         - --leaderElection=true
         env:
+        - name: CSI_DRIVER_IMAGE
+          value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5309279274378742d64d42a97ab94a6e4a564ccf09fe08607b1f3e9fbfd79e86
         - name: METRICS_BIND_ADDRESS
           value: "8383"
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: CSI_DRIVER_IMAGE
-          value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5309279274378742d64d42a97ab94a6e4a564ccf09fe08607b1f3e9fbfd79e86
         resources:
           limits:
             cpu: 600m
