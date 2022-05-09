@@ -185,7 +185,7 @@ endef
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests -q --package "ibm-spectrum-scale-csi-operator"
-	cd config/manager && $(KUSTOMIZE) edit set image $(IMAGE_TAG_BASE):v$(VERSION) && $(KUSTOMIZE) edit add annotation productVersion:$(VERSION) --force
+	cd config/manager && $(KUSTOMIZE) edit add annotation productVersion:$(VERSION) --force
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --package "ibm-spectrum-scale-csi-operator" --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 	sed -i  "s|containerImage:.*|containerImage: $(IMAGE_TAG_BASE):v$(VERSION)|" bundle/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml
