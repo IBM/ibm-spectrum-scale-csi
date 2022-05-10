@@ -84,6 +84,7 @@ const (
 	PPC = "ppc64le"
 	// IBM zSystems machine architecture supported by Spectrum Scale CSI.
 	IBMSystem390 = "s390x"
+
 	//  Default images for containers
 	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
 	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0"
