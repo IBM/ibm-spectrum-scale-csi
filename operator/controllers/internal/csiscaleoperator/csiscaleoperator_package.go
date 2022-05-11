@@ -640,6 +640,7 @@ func (c *CSIScaleOperator) GenerateSCCForNodeClusterRoleBinding() *rbacv1.Cluste
 }
 */
 
+
 // GetNodeSelectors converts the given nodeselector array into a map.
 func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 

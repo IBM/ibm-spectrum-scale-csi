@@ -71,7 +71,7 @@ metadata:
     categories: Storage
     certified: "false"
     containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.6.0
-    createdAt: Mon Dec 20 14:55:05 IST 2021
+    createdAt: Thu May 5 04:42:15 IST 2022
     description: An operator for deploying and managing the IBM Spectrum Scale CSI
       Driver.
     operators.operatorframework.io/builder: operator-sdk-v1.14.0+git
@@ -487,8 +487,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: CSI_DRIVER_IMAGE
-                  value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5309279274378742d64d42a97ab94a6e4a564ccf09fe08607b1f3e9fbfd79e86
-                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:0ab8ff664b8c9bca0c240b07bd919384b016aa3d12895169739025002bebb4de
+                  value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:695b7107c16fce429f559fc6e26686712f8670bfd1d051b85279efd48a7eb413
+                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:66c8c36e5e1f7f9095a0f6133c57b3598997f1d412cbe9c3ebbea75af2ccc534
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
@@ -552,5 +552,5 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  replaces: ibm-spectrum-scale-csi-operator.v2.5.0
+  replaces: ibm-spectrum-scale-csi-operator.v2.5.1
   version: 2.6.0
