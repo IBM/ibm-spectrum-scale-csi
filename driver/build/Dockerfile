@@ -18,10 +18,10 @@ ARG commit
 ENV REVISION $commit
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
-RUN chmod +x _output/ibm-spectrum-scale-csi
+# RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi8-minimal:latest
-ARG version=2.5.1
+ARG version=2.6.0
 ARG commit
 ARG build_date
 
@@ -43,4 +43,21 @@ LABEL name="IBM Spectrum Scale CSI driver" \
 
 COPY licenses /licenses
 COPY --from=builder /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/_output/ibm-spectrum-scale-csi /ibm-spectrum-scale-csi
+
+## non-root user
+# RUN groupadd -g 100006 default
+# RUN useradd -u 100006 -g default -r default
+# USER default
+
+# RUN microdnf update -y \
+#     && microdnf install util-linux
+
+RUN mkdir /chroot
+COPY chroot-wrapper.sh /chroot
+RUN chmod +x /chroot/chroot-wrapper.sh
+RUN ln -s /chroot/chroot-wrapper.sh /chroot/mount
+RUN ln -s /chroot/chroot-wrapper.sh /chroot/umount
+
+ENV PATH="/chroot:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 ENTRYPOINT ["/ibm-spectrum-scale-csi"]

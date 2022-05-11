@@ -66,6 +66,7 @@ const (
 
 // GenerateCSIDriver returns a non-namespaced CSIDriver object.
 func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
+	// fileFSGroupPolicy := storagev1.FileFSGroupPolicy
 	return &storagev1.CSIDriver{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   config.DriverName,
@@ -74,6 +75,7 @@ func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
 		Spec: storagev1.CSIDriverSpec{
 			AttachRequired: boolptr.True(),
 			PodInfoOnMount: boolptr.True(),
+			// FSGroupPolicy:  &fileFSGroupPolicy,
 		},
 	}
 }
@@ -228,6 +230,11 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeAttachmentsResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -364,6 +371,11 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				Resources: []string{volumeSnapshotContentsStatusResource},
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
 		},
 	}
 	if len(c.Spec.CSIpspname) != 0 {
@@ -457,6 +469,11 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{storageClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{coordinationApiGroup},
+				Resources: []string{leaseResource},
+				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
 			},
 		},
 	}
@@ -677,7 +694,7 @@ func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *se
 	}
 }
 
-// getNodeSelector converts the given nodeselector array into a map.
+// GetNodeSelectors converts the given nodeselector array into a map.
 func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 
 	nodeSelectors := make(map[string]string)
@@ -691,6 +708,7 @@ func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 	return nodeSelectors
 }
 
+// GetAttacherPodAntiAffinity returns kubernetes podAntiAffinity for the attacher sidecar controller pod.
 func (c *CSIScaleOperator) GetAttacherPodAntiAffinity() *corev1.PodAntiAffinity {
 
 	podAntiAffinity := corev1.PodAntiAffinity{
@@ -734,6 +752,7 @@ func (c *CSIScaleOperator) GetNodeTolerations() []corev1.Toleration {
 	return tolerations
 }
 
+// GetLivenessProbe returns liveness probe information for sidecar controller.
 func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	//tolerationsSeconds := config.TolerationsSeconds
 	probe := corev1.Probe{
@@ -746,10 +765,11 @@ func (c *CSIScaleOperator) GetLivenessProbe() *corev1.Probe {
 	return &probe
 }
 
+// GetContainerPort returns port details for the sidecar controller containers.
 func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
 	ports := []corev1.ContainerPort{
 		{
-			ContainerPort: config.AttacherLeaderLivenessPort,
+			ContainerPort: config.LeaderLivenessPort,
 			Name:          "http-endpoint",
 			Protocol:      c.GetProtocol(),
 		},
@@ -757,11 +777,13 @@ func (c *CSIScaleOperator) GetContainerPort() []corev1.ContainerPort {
 	return ports
 }
 
+// GetProtocol returns the protocol to be used by liveness probe with httpGet request.
 func (c *CSIScaleOperator) GetProtocol() corev1.Protocol {
 	var protocol corev1.Protocol = "TCP"
 	return protocol
 }
 
+// GetHandler returns a handler with httpGet information.
 func (c *CSIScaleOperator) GetHandler() corev1.ProbeHandler {
 	handler := corev1.ProbeHandler{
 		HTTPGet: c.GetHTTPGetAction(),
@@ -769,6 +791,7 @@ func (c *CSIScaleOperator) GetHandler() corev1.ProbeHandler {
 	return handler
 }
 
+// GetHTTPGetAction returns httpGet information for the liveness probe.
 func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	action := corev1.HTTPGetAction{
 		Path: "/healthz/leader-election",
