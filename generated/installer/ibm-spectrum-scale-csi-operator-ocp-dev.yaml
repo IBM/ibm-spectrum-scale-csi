@@ -33,7 +33,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:0ab8ff664b8c9bca0c240b07bd919384b016aa3d12895169739025002bebb4de
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
         args:
         - --leaderElection=true
         env:
@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5309279274378742d64d42a97ab94a6e4a564ccf09fe08607b1f3e9fbfd79e86
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
         resources:
           limits:
             cpu: 600m
@@ -66,7 +66,7 @@ spec:
             - ./health_check.sh
           initialDelaySeconds: 3
           periodSeconds: 1
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -209,6 +209,53 @@ metadata:
 imagePullSecrets:
 - name: ibm-spectrum-scale-csi-registrykey
 - name: ibm-entitlement-key
+---
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: spectrum-scale-csiaccess
+  namespace: ibm-spectrum-scale-csi-driver
+  annotations:
+    kubernetes.io/description: allows hostpath and host network to be accessible
+priority: null
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- hostPath
+- persistentVolumeClaim
+- projected
+- secret
+allowHostDirVolumePlugin: true
+allowHostIPC: false
+allowHostNetwork: true
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: true
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: MustRunAs
+groups: []
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+- KILL
+- MKNOD
+- SETUID
+- SETGID
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+users:
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-attacher
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-provisioner
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-node
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-snapshotter
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-resizer
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
