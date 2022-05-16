@@ -237,6 +237,7 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
+	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
@@ -272,6 +273,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ProvisionerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
+	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
@@ -307,6 +309,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.SnapshotterNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
+	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
@@ -342,6 +345,7 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ResizerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
+	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
