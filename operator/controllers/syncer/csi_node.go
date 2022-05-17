@@ -366,11 +366,11 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 				MountPath:        hostDirMountPath,
 				MountPropagation: &mountPropagationB,
 			},
-
-			{
-				Name:      pluginDir,
-				MountPath: s.driver.GetSocketDir(),
-			},
+			// warning: do not mount pluginDir if it exists within the podMountDir
+			// doing so will cause excessive systemd load if this pod fails in crash loop backoff.
+			// Instead, opt for only podMountDir as it will mount pluginDir because it is a subdir.
+			// for now, this code assumes the pluginDir is a subdir.
+			// future improvement would be to actually get both paths and validate this.
 			{
 				Name:             podMountDir,
 				MountPath:        s.driver.GetKubeletRootDirPath(),
