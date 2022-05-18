@@ -126,8 +126,6 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSINodePodLabels(config.GetNameForResource(config.CSINode, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
-	out.Spec.Template.Spec.Containers = []corev1.Container{}
-	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
