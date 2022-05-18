@@ -366,14 +366,13 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 				MountPath:        hostDirMountPath,
 				MountPropagation: &mountPropagationB,
 			},
-			// warning: do not mount pluginDir if it exists within the podMountDir
-			// doing so will cause excessive systemd load if this pod fails in crash loop backoff.
-			// Instead, opt for only podMountDir as it will mount pluginDir because it is a subdir.
-			// for now, this code assumes the pluginDir is a subdir.
-			// future improvement would be to actually get both paths and validate this.
+			{
+				Name:      pluginDir,
+				MountPath: s.driver.GetSocketDir(),
+			},
 			{
 				Name:             podMountDir,
-				MountPath:        s.driver.GetKubeletRootDirPath(),
+				MountPath:        s.driver.GetKubeletPodsDir(),
 				MountPropagation: &mountPropagationB,
 			},
 			{
@@ -436,7 +435,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	volumes := []corev1.Volume{
 		k8sutil.EnsureVolume(pluginDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetSocketDir(), "DirectoryOrCreate")),
 		k8sutil.EnsureVolume(registrationDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath()+config.PluginsRegistry, "Directory")),
-		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath(), "Directory")),
+		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletPodsDir(), "Directory")),
 		k8sutil.EnsureVolume(hostDev, k8sutil.EnsureHostPathVolumeSource(hostDevPath, "Directory")),
 		k8sutil.EnsureVolume(config.CSIConfigMap, k8sutil.EnsureConfigMapVolumeSource(config.CSIConfigMap)),
 		k8sutil.EnsureVolume(hostDir, k8sutil.EnsureHostPathVolumeSource(hostDirPath, "Directory")),
