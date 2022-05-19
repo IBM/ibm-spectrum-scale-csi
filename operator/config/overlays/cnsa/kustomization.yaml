@@ -24,7 +24,7 @@ patches:
           spec:
             containers:
               - name: operator
-                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:0ab8ff664b8c9bca0c240b07bd919384b016aa3d12895169739025002bebb4de
+                image: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator@sha256:6eecb931bac6a9d6ae16a522ee30225fbbeca77a32a108b696c91d02c5ac87e1
                 env:
                   # do not remove: this is required for CNSA; SHORTNAME_NODE_MAPPING="yes" for split hostNetwork node mapping.
                   - name: SHORTNAME_NODE_MAPPING
@@ -42,4 +42,4 @@ patches:
                   - name: CSI_RESIZER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:6e0546563b18872b0aa0cad7255a26bb9a87cb879b7fc3e2383c867ef4f706fb
                   - name: CSI_DRIVER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5309279274378742d64d42a97ab94a6e4a564ccf09fe08607b1f3e9fbfd79e86
+                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:28ec5a43ae1fee3daa124aaf61727405c36161aa4d754a6a24d16d4802bd8afe
