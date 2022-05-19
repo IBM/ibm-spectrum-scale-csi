@@ -542,6 +542,8 @@ spec:
     url: https://www.ibm.com/docs/en/spectrum-scale-csi
   - name: CSI Developer Documentation
     url: https://kubernetes-csi.github.io/docs/
+  labels:
+    operator: ibm-spectrum-scale-csi-operator
   maintainers:
   - email: madhu.punjabi@in.ibm.com
     name: Madhu Thorat
