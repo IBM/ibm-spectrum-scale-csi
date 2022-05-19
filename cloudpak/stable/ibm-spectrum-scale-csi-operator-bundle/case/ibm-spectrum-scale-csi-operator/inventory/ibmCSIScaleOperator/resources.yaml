@@ -147,30 +147,30 @@ resources:
     - metadata:
         name: livenessprobe
       image: cp/spectrum/scale/csi/livenessprobe
-      tag: v2.6.0
-      digest: sha256:406f59599991916d2942d8d02f076d957ed71b541ee19f09fc01723a6e6f5932
+      tag: v2.7.0
+      digest: sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:bdbde5ff0bd4bbb46a70bd797b4752ddb33e42e36178946fc78439412c150a54
+      - digest: sha256:b4f471dd1498411a5d94bc1c851461e7aa9027783bb036d0a0108900b3c7eeae
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v2.6.0-amd64
-      - digest: sha256:218dba5e3768e788451a7571d8a53548c69c53e57f06769956171b8f60a911f0
+        tag: v2.7.0-amd64
+      - digest: sha256:a7a43f993e3ee92033a078ff47ab103f143320e366a6c0bf316d23e91ea7e248
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.6.0-ppc64le
-      - digest: sha256:a7bfc3daebcc7c500748e48dcfb06d649b7707f0240397f0b8f8611c9648df2e   
+        tag: v2.7.0-ppc64le
+      - digest: sha256:f87da54a7bf4a553812506edd0b3dbcd0819e6853c7d2d654711f119a80f9102
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.6.0-s390x
+        tag: v2.7.0-s390x
     - metadata:
         name: csi_resizer
       image: cp/spectrum/scale/csi/csi-resizer
