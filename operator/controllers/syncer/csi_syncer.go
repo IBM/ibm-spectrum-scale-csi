@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/mergo/transformers"
@@ -863,8 +864,7 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 	}
 
 	for _, toleration := range tolerations {
-		// if reflect.DeepEqual(toleration, noScheduleToleration) || reflect.DeepEqual(toleration, noExecuteToleration) {
-		if toleration != noScheduleToleration || toleration != noExecuteToleration {
+		if !(reflect.DeepEqual(toleration, noScheduleToleration)) && !(reflect.DeepEqual(toleration, noExecuteToleration)) {
 			podTolerations = append(podTolerations, toleration)
 		}
 	}
