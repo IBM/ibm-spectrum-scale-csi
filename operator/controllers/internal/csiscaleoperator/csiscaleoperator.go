@@ -148,6 +148,13 @@ func (c *CSIScaleOperator) GetDefaultImage(name string) string {
 	return image
 }
 
+func (c *CSIScaleOperator) GetKubeletPodsDir() string {
+	logger := csiLog.WithName("GetKubeletPodsDir")
+	kubeletPodsDir := c.GetKubeletRootDirPath() + "/pods"
+	logger.Info("GetKubeletPodsDir", "kubeletPodsDir: ", kubeletPodsDir)
+	return kubeletPodsDir
+}
+
 func (c *CSIScaleOperator) GetKubeletRootDirPath() string {
 	logger := csiLog.WithName("GetKubeletRootDirPath")
 
