@@ -410,6 +410,8 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
 	}
+
+	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
 	return pod
 }
 
