@@ -17,6 +17,7 @@
 package config
 
 // Kubernetes built-in well-known constants
+// For more information: https://kubernetes.io/docs/reference/labels-annotations-taints/
 const (
 	// LabelAppName is the name of the component application.
 	LabelAppName = "app.kubernetes.io/name"
@@ -24,6 +25,8 @@ const (
 	LabelAppInstance = "app.kubernetes.io/instance"
 	// LabelAppManagedBy is the controller/user who created the resource.
 	LabelAppManagedBy = "app.kubernetes.io/managed-by"
+	// LabelArchitecture is the label applied on node, used to identify the architecture of node.
+	LabelArchitecture = "kubernetes.io/arch"
 )
 
 // CSI resource labels
@@ -75,6 +78,12 @@ const (
 	TolerationsSeconds = int64(300)
 	// ContainerPort for /healthz/leader-election endpoint
 	LeaderLivenessPort = int32(8080)
+	// 64-Bit machine architecture supported by Spectrum Scale CSI.
+	AMD64 = "amd64"
+	// Power PC machine architecture supported by Spectrum Scale CSI.
+	PPC = "ppc64le"
+	// IBM zSystems machine architecture supported by Spectrum Scale CSI.
+	IBMSystem390 = "s390x"
 
 	//  Default images for containers
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
