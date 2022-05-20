@@ -1509,8 +1509,8 @@ seLinuxContext:
 supplementalGroups:
   type: RunAsAny
 users:
-- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-attacher
-- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-provisioner
-- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-node
-- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-snapshotter
-- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-resizer
+- system:serviceaccount:ibm-spectrum-scale-csi:ibm-spectrum-scale-csi-attacher
+- system:serviceaccount:ibm-spectrum-scale-csi:ibm-spectrum-scale-csi-provisioner
+- system:serviceaccount:ibm-spectrum-scale-csi:ibm-spectrum-scale-csi-node
+- system:serviceaccount:ibm-spectrum-scale-csi:ibm-spectrum-scale-csi-snapshotter
+- system:serviceaccount:ibm-spectrum-scale-csi:ibm-spectrum-scale-csi-resizer
