@@ -17,7 +17,6 @@ limitations under the License.
 package csiscaleoperator
 
 import (
-	securityv1 "github.com/openshift/api/security/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -640,59 +639,6 @@ func (c *CSIScaleOperator) GenerateSCCForNodeClusterRoleBinding() *rbacv1.Cluste
 	}
 }
 */
-
-// GenerateSecurityContextConstraint returns an openshift securitycontextconstraints object.
-func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *securityv1.SecurityContextConstraints {
-
-	var (
-		FSTypeHostPath              securityv1.FSType = "hostPath"
-		FSTypeEmptyDir              securityv1.FSType = "emptyDir"
-		FSTypeSecret                securityv1.FSType = "secret"
-		FSTypePersistentVolumeClaim securityv1.FSType = "persistentVolumeClaim"
-		FSTypeDownwardAPI           securityv1.FSType = "downwardAPI"
-		FSTypeConfigMap             securityv1.FSType = "configMap"
-		FSProjected                 securityv1.FSType = "projected"
-	)
-
-	return &securityv1.SecurityContextConstraints{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: config.CSISCC,
-		},
-		ReadOnlyRootFilesystem:   false,
-		RequiredDropCapabilities: []corev1.Capability{"KILL", "MKNOD", "SETUID", "SETGID"},
-		RunAsUser: securityv1.RunAsUserStrategyOptions{
-			Type: securityv1.RunAsUserStrategyType("RunAsAny"),
-		},
-		SELinuxContext: securityv1.SELinuxContextStrategyOptions{
-			Type: securityv1.SELinuxContextStrategyType("RunAsAny"),
-		},
-		SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
-			Type: securityv1.SupplementalGroupsStrategyType("RunAsAny"),
-		},
-		Volumes: []securityv1.FSType{
-			FSTypeHostPath,
-			FSTypeEmptyDir,
-			FSTypeSecret,
-			FSTypePersistentVolumeClaim,
-			FSTypeDownwardAPI,
-			FSTypeConfigMap,
-			FSProjected,
-		},
-		AllowHostDirVolumePlugin: true,
-		AllowHostIPC:             false,
-		AllowHostNetwork:         true,
-		AllowHostPID:             false,
-		AllowHostPorts:           false,
-		// AllowPrivilegedEscalation: true, // Note: Not supported by the package, If not specificed, defaults to true.
-		AllowPrivilegedContainer: true,
-		AllowedCapabilities:      []corev1.Capability{},
-		DefaultAddCapabilities:   []corev1.Capability{},
-		FSGroup: securityv1.FSGroupStrategyOptions{
-			Type: securityv1.FSGroupStrategyType("MustRunAs"),
-		},
-		Users: users,
-	}
-}
 
 // GetNodeSelectors converts the given nodeselector array into a map.
 func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
