@@ -80,12 +80,12 @@ generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, Dee
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
 
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-ocp.yaml
-	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator-ocp.yaml
+	$(KUSTOMIZE) build --reorder none config/overlays/cnsa > ../generated/installer/ibm-spectrum-scale-csi-operator-ocp.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator-ocp.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator-ocp.yaml
 
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator.yaml
-	$(KUSTOMIZE) build --reorder none config/operator/delete_operator_security_context_constraints > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	$(KUSTOMIZE) build --reorder none config/overlays/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 

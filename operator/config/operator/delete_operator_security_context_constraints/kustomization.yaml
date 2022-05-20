@@ -1,5 +1,0 @@
-bases:
-  - ../../default
-
-patchesStrategicMerge:
-  - delete_operator_scc.yaml
