@@ -17,6 +17,7 @@
 package config
 
 // Kubernetes built-in well-known constants
+// For more information: https://kubernetes.io/docs/reference/labels-annotations-taints/
 const (
 	// LabelAppName is the name of the component application.
 	LabelAppName = "app.kubernetes.io/name"
@@ -24,6 +25,8 @@ const (
 	LabelAppInstance = "app.kubernetes.io/instance"
 	// LabelAppManagedBy is the controller/user who created the resource.
 	LabelAppManagedBy = "app.kubernetes.io/managed-by"
+	// LabelArchitecture is the label applied on node, used to identify the architecture of node.
+	LabelArchitecture = "kubernetes.io/arch"
 )
 
 // CSI resource labels
@@ -75,21 +78,27 @@ const (
 	TolerationsSeconds = int64(60)
 	// ContainerPort for /healthz/leader-election endpoint
 	LeaderLivenessPort = int32(8080)
+	// 64-Bit machine architecture supported by Spectrum Scale CSI.
+	AMD64 = "amd64"
+	// Power PC machine architecture supported by Spectrum Scale CSI.
+	PPC = "ppc64le"
+	// IBM zSystems machine architecture supported by Spectrum Scale CSI.
+	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage        = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
-        //  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0
 	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar@sha256:4fd21f36075b44d1a423dfb262ad79202ce54e95f5cbc4622a6c1c38ab287ad6"
-        //  us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.7.0
-	LivenessProbeImage          = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe@sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e"
-        //  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0
-	CSIAttacherImage            = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b"
-        //  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0
-	CSIProvisionerImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119"
-        //  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v5.0.1
-	CSISnapshotterImage         = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter@sha256:89e900a160a986a1a7a4eba7f5259e510398fa87ca9b8a729e7dec59e04c7709"
-        //  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.4.0
-	CSIResizerImage             = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer@sha256:9ebbf9f023e7b41ccee3d52afe39a89e3ddacdbb69269d583abfc25847cfd9e4"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.7.0
+	LivenessProbeImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe@sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0
+	CSIAttacherImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0
+	CSIProvisionerImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v5.0.1
+	CSISnapshotterImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter@sha256:89e900a160a986a1a7a4eba7f5259e510398fa87ca9b8a729e7dec59e04c7709"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.4.0
+	CSIResizerImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer@sha256:9ebbf9f023e7b41ccee3d52afe39a89e3ddacdbb69269d583abfc25847cfd9e4"
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"

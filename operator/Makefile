@@ -78,16 +78,23 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 
 generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
-	$(KUSTOMIZE) build --reorder none config/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	$(KUSTOMIZE) build --reorder none config/overlays/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+	$(KUSTOMIZE) build --reorder none config/overlays/ocp-rhel > ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|v$(VERSION)|dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:dev|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:dev|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|IfNotPresent|Always|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|productVersion:.*|productVersion: $(VERSION)|" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-
 
 fmt: ## Run go fmt against code.
 	@echo "***** FORMATTING ******"
@@ -171,7 +178,7 @@ endef
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests -q --package "ibm-spectrum-scale-csi-operator"
-	cd config/manager && $(KUSTOMIZE) edit set image $(IMAGE_TAG_BASE):v$(VERSION) && $(KUSTOMIZE) edit add annotation productVersion:$(VERSION) --force
+	cd config/manager && $(KUSTOMIZE) edit add annotation productVersion:$(VERSION) --force
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --package "ibm-spectrum-scale-csi-operator" --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 	sed -i  "s|containerImage:.*|containerImage: $(IMAGE_TAG_BASE):v$(VERSION)|" bundle/manifests/ibm-spectrum-scale-csi-operator.clusterserviceversion.yaml
