@@ -89,6 +89,12 @@ generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, Dee
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 
+    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+	$(KUSTOMIZE) build --reorder none config/overlays/ocp-rhel > ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
+
+
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-ocp-dev.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator-ocp.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-dev.yaml
 	sed -i "s|cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-dev.yaml
