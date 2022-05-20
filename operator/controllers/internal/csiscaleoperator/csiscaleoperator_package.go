@@ -18,6 +18,7 @@ package csiscaleoperator
 
 import (
 	securityv1 "github.com/openshift/api/security/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -798,4 +799,30 @@ func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 		Port: intstr.FromString("http-endpoint"),
 	}
 	return &action
+}
+
+// GetDeploymentStrategy returns update strategy details for kubernetes deployment.
+func (c CSIScaleOperator) GetDeploymentStrategy() appsv1.DeploymentStrategy {
+	strategy := appsv1.DeploymentStrategy{
+		RollingUpdate: c.GetRollingUpdateDeployment(),
+		Type:          c.GetDeploymentStrategyType(),
+	}
+	return strategy
+}
+
+// GetRollingUpdateDeployment returns rollingUpdate details. MaxSurge as 25% and MaxUnavailable as 50%.
+func (c CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDeployment {
+	maxSurge := intstr.FromString("25%")
+	maxUnavailable := intstr.FromString("50%")
+	deploy := appsv1.RollingUpdateDeployment{
+		MaxSurge:       &maxSurge,
+		MaxUnavailable: &maxUnavailable,
+	}
+	return &deploy
+}
+
+// GetDeploymentStrategyType returns deployment strategy type as `RollingUpdate` for kubernetes deployment.
+func (c *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategyType {
+	var StrategyType appsv1.DeploymentStrategyType = "RollingUpdate"
+	return StrategyType
 }

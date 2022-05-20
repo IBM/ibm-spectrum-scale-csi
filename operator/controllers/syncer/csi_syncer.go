@@ -217,7 +217,7 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)))
-	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name)
+	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 	replicas := config.ReplicaCount
 	out.Spec.Replicas = &replicas
 
@@ -254,7 +254,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)))
-	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)
+	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -289,7 +289,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)))
-	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)
+	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
@@ -324,7 +324,7 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 	out := s.obj.(*appsv1.Deployment)
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)))
-	//out.Spec.ServiceName = config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)
+	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 
 	secrets := []corev1.LocalObjectReference{}
 	if len(s.driver.Spec.ImagePullSecrets) > 0 {
