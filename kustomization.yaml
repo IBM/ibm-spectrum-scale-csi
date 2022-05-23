@@ -1,2 +1,2 @@
 resources:
-  - operator/config/default
+  - operator/config/overlays/default

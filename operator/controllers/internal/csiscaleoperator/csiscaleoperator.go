@@ -148,6 +148,8 @@ func (c *CSIScaleOperator) GetDefaultImage(name string) string {
 	return image
 }
 
+// GetKubeletPodsDir returns the kubelet pods directory
+// TODO: Unexport these functions to fix lint warnings
 func (c *CSIScaleOperator) GetKubeletPodsDir() string {
 	logger := csiLog.WithName("GetKubeletPodsDir")
 	kubeletPodsDir := c.GetKubeletRootDirPath() + "/pods"

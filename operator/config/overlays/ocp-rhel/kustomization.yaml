@@ -1,0 +1,24 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Adds namespace to all resources.
+namespace: ibm-spectrum-scale-csi-driver
+
+bases:
+- ../cnsa
+
+patches:
+  - target:
+      kind: SecurityContextConstraints
+    patch: |-
+      apiVersion: security.openshift.io/v1
+      kind: SecurityContextConstraints
+      metadata:
+        name: spectrum-scale-csiaccess
+      users:
+      - system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-attacher
+      - system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-provisioner
+      - system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-node
+      - system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-snapshotter
+      - system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-resizer
