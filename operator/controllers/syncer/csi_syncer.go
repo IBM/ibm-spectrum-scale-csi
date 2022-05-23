@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/mergo/transformers"
@@ -395,6 +396,7 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 	logger := csiLog.WithName("ensureAttacherPodSpec")
 	logger.Info("Generating pod description for the attacher pod.")
 
+	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
 		Containers: s.ensureAttacherContainersSpec(),
@@ -403,19 +405,10 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		//			FSGroup:   &fsGroup,
 		//			RunAsUser: &fsGroup,
 		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
+		Tolerations:        s.ensurePodTolerations(tolerations),
+		Affinity:           s.driver.GetAffinity(config.Attacher.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
-	}
-
-	if pod.Affinity != nil {
-		pod.Affinity.PodAntiAffinity = s.driver.GetAttacherPodAntiAffinity()
-	} else {
-		affinity := corev1.Affinity{
-			PodAntiAffinity: s.driver.GetAttacherPodAntiAffinity(),
-		}
-		pod.Affinity = &affinity
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -429,6 +422,7 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 	logger := csiLog.WithName("ensureProvisionerPodSpec")
 	logger.Info("Generating pod description for the provisioner pod.")
 
+	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
 		Containers: s.ensureProvisionerContainersSpec(),
@@ -437,11 +431,13 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 		//			FSGroup:   &fsGroup,
 		//			RunAsUser: &fsGroup,
 		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
+		Tolerations:        s.ensurePodTolerations(tolerations),
+		Affinity:           s.driver.GetAffinity(config.Provisioner.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
 	}
+
+	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
 	return pod
 }
 
@@ -452,6 +448,7 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 	logger := csiLog.WithName("ensureSnapshotterPodSpec")
 	logger.Info("Generating pod description for the snapshotter pod.")
 
+	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
 		Containers: s.ensureSnapshotterContainersSpec(),
@@ -460,11 +457,13 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 		//			FSGroup:   &fsGroup,
 		//			RunAsUser: &fsGroup,
 		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
+		Tolerations:        s.ensurePodTolerations(tolerations),
+		Affinity:           s.driver.GetAffinity(config.Snapshotter.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
 	}
+
+	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
 	return pod
 }
 
@@ -475,6 +474,7 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 	logger := csiLog.WithName("ensureResizerPodSpec")
 	logger.Info("Generating pod description for the resizer pod.")
 
+	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
 		Containers: s.ensureResizerContainersSpec(),
@@ -483,11 +483,13 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 		//			FSGroup:   &fsGroup,
 		//			RunAsUser: &fsGroup,
 		//		},
-		Affinity:           s.driver.Spec.Affinity,
-		Tolerations:        s.driver.Spec.Tolerations,
+		Tolerations:        s.ensurePodTolerations(tolerations),
+		Affinity:           s.driver.GetAffinity(config.Resizer.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
 	}
+
+	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
 	return pod
 }
 
@@ -832,6 +834,33 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 		logger.Info("Got image for", " resizer: ", image)
 	}
 	return image
+}
+
+// ensurePodTolerations method removes the `NoExecute` & `NoSchedule` toleration for all taints
+// from existing list of tolerations.
+func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
+	logger := csiLog.WithName("ensurePodTolerations")
+	logger.Info("Fetching tolerations for sidecar controller pods.")
+
+	podTolerations := []corev1.Toleration{}
+
+	noScheduleToleration := corev1.Toleration{
+		Effect:   corev1.TaintEffectNoSchedule,
+		Operator: corev1.TolerationOpExists,
+	}
+
+	noExecuteToleration := corev1.Toleration{
+		Effect:   corev1.TaintEffectNoExecute,
+		Operator: corev1.TolerationOpExists,
+	}
+
+	for _, toleration := range tolerations {
+		if !(reflect.DeepEqual(toleration, noScheduleToleration)) && !(reflect.DeepEqual(toleration, noExecuteToleration)) {
+			podTolerations = append(podTolerations, toleration)
+		}
+	}
+
+	return podTolerations
 }
 
 func ensurePorts(ports ...corev1.ContainerPort) []corev1.ContainerPort {

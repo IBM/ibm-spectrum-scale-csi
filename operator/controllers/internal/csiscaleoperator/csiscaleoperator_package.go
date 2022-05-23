@@ -17,7 +17,6 @@ limitations under the License.
 package csiscaleoperator
 
 import (
-	securityv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -642,59 +641,6 @@ func (c *CSIScaleOperator) GenerateSCCForNodeClusterRoleBinding() *rbacv1.Cluste
 }
 */
 
-// GenerateSecurityContextConstraint returns an openshift securitycontextconstraints object.
-func (s *CSIScaleOperator) GenerateSecurityContextConstraint(users []string) *securityv1.SecurityContextConstraints {
-
-	var (
-		FSTypeHostPath              securityv1.FSType = "hostPath"
-		FSTypeEmptyDir              securityv1.FSType = "emptyDir"
-		FSTypeSecret                securityv1.FSType = "secret"
-		FSTypePersistentVolumeClaim securityv1.FSType = "persistentVolumeClaim"
-		FSTypeDownwardAPI           securityv1.FSType = "downwardAPI"
-		FSTypeConfigMap             securityv1.FSType = "configMap"
-		FSProjected                 securityv1.FSType = "projected"
-	)
-
-	return &securityv1.SecurityContextConstraints{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: config.CSISCC,
-		},
-		ReadOnlyRootFilesystem:   false,
-		RequiredDropCapabilities: []corev1.Capability{"KILL", "MKNOD", "SETUID", "SETGID"},
-		RunAsUser: securityv1.RunAsUserStrategyOptions{
-			Type: securityv1.RunAsUserStrategyType("RunAsAny"),
-		},
-		SELinuxContext: securityv1.SELinuxContextStrategyOptions{
-			Type: securityv1.SELinuxContextStrategyType("RunAsAny"),
-		},
-		SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
-			Type: securityv1.SupplementalGroupsStrategyType("RunAsAny"),
-		},
-		Volumes: []securityv1.FSType{
-			FSTypeHostPath,
-			FSTypeEmptyDir,
-			FSTypeSecret,
-			FSTypePersistentVolumeClaim,
-			FSTypeDownwardAPI,
-			FSTypeConfigMap,
-			FSProjected,
-		},
-		AllowHostDirVolumePlugin: true,
-		AllowHostIPC:             false,
-		AllowHostNetwork:         true,
-		AllowHostPID:             false,
-		AllowHostPorts:           false,
-		// AllowPrivilegedEscalation: true, // Note: Not supported by the package, If not specificed, defaults to true.
-		AllowPrivilegedContainer: true,
-		AllowedCapabilities:      []corev1.Capability{},
-		DefaultAddCapabilities:   []corev1.Capability{},
-		FSGroup: securityv1.FSGroupStrategyOptions{
-			Type: securityv1.FSGroupStrategyType("MustRunAs"),
-		},
-		Users: users,
-	}
-}
-
 // GetNodeSelectors converts the given nodeselector array into a map.
 func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector) map[string]string {
 
@@ -710,10 +656,27 @@ func (c *CSIScaleOperator) GetNodeSelectors(nodeSelectorObj []v1.CSINodeSelector
 }
 
 // GetAttacherPodAntiAffinity returns kubernetes podAntiAffinity for the attacher sidecar controller pod.
-func (c *CSIScaleOperator) GetAttacherPodAntiAffinity() *corev1.PodAntiAffinity {
+func (c *CSIScaleOperator) GetPodAntiAffinity(resource string) *corev1.PodAntiAffinity {
+
+	podAffinityTerms := c.GetPodAffinityTerms(resource)
+
+	if podAffinityTerms == nil {
+		return nil
+	}
 
 	podAntiAffinity := corev1.PodAntiAffinity{
-		RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+		RequiredDuringSchedulingIgnoredDuringExecution: podAffinityTerms,
+	}
+	return &podAntiAffinity
+}
+
+// GetPodAffinityTerms returns corev1 podAffinityTerms for the attacher sidecar controller pod.
+func (c *CSIScaleOperator) GetPodAffinityTerms(resource string) []corev1.PodAffinityTerm {
+
+	podAffinityTerms := []corev1.PodAffinityTerm{}
+
+	if resource == config.Attacher.String() {
+		podAffinityTerms = []corev1.PodAffinityTerm{
 			{
 				LabelSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -726,10 +689,85 @@ func (c *CSIScaleOperator) GetAttacherPodAntiAffinity() *corev1.PodAntiAffinity 
 				},
 				TopologyKey: "kubernetes.io/hostname",
 			},
+		}
+	}
+
+	if c.Spec.Affinity == nil {
+		if resource != config.Attacher.String() {
+			return nil
+		}
+		return podAffinityTerms
+	}
+
+	if c.Spec.Affinity.PodAntiAffinity == nil {
+		if resource != config.Attacher.String() {
+			return nil
+		}
+		return podAffinityTerms
+	}
+
+	if c.Spec.Affinity.PodAntiAffinity != nil && c.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		podAffinityTerms = append(
+			podAffinityTerms,
+			c.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution...,
+		)
+	}
+
+	return podAffinityTerms
+}
+
+// GetNodeAffinity returns kubernetes nodeAffinity based on architectures supported by Spectrum Scale CSI.
+func (c *CSIScaleOperator) GetNodeAffinity(resource string) *corev1.NodeAffinity {
+
+	nodeSelector := &corev1.NodeSelector{
+		NodeSelectorTerms: c.GetNodeSelectorTerms(resource),
+	}
+
+	nodeAffinity := corev1.NodeAffinity{
+		RequiredDuringSchedulingIgnoredDuringExecution: nodeSelector,
+	}
+	return &nodeAffinity
+}
+
+// GetNodeSelectorTerms returns corev1 NodeSelectorTerms based on architectures supported by Spectrum Scale CSI.
+func (c *CSIScaleOperator) GetNodeSelectorTerms(resource string) []corev1.NodeSelectorTerm {
+
+	nodeSelectorTerms := []corev1.NodeSelectorTerm{
+		{
+			MatchExpressions: []corev1.NodeSelectorRequirement{
+				{
+					Key:      config.LabelArchitecture,
+					Operator: "In",
+					Values: []string{
+						config.AMD64,
+						config.PPC,
+						config.IBMSystem390,
+					},
+				},
+			},
 		},
 	}
 
-	return &podAntiAffinity
+	if resource == config.NodePlugin.String() || c.Spec.Affinity == nil {
+		return nodeSelectorTerms
+	}
+
+	if c.Spec.Affinity.NodeAffinity != nil && c.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		nodeSelectorTerms = append(
+			nodeSelectorTerms,
+			c.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms...,
+		)
+	}
+
+	return nodeSelectorTerms
+}
+
+// GetPodAffinity returns kubernetes corev1 podAffinity from csiScaleOperator spec.affinity.podAffinity
+func (c *CSIScaleOperator) GetPodAffinity() *corev1.PodAffinity {
+	if c.Spec.Affinity != nil && c.Spec.Affinity.PodAffinity != nil {
+		return c.Spec.Affinity.PodAffinity
+	}
+	return nil
 }
 
 // GetNodeTolerations returns an array of kubernetes object of type corev1.Tolerations
@@ -825,4 +863,29 @@ func (c CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDepl
 func (c *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategyType {
 	var StrategyType appsv1.DeploymentStrategyType = "RollingUpdate"
 	return StrategyType
+}
+
+// GetAffinity method returns corev1.Affinity object based on resource name passed.
+// Expected resource names: attacher, provisioner, resizer, snapshotter, node.
+func (c CSIScaleOperator) GetAffinity(resource string) *corev1.Affinity {
+	affinity := &corev1.Affinity{}
+
+	if resource == config.Attacher.String() {
+		affinity = &corev1.Affinity{
+			NodeAffinity:    c.GetNodeAffinity(resource),
+			PodAntiAffinity: c.GetPodAntiAffinity(resource),
+			PodAffinity:     c.GetPodAffinity(),
+		}
+	} else if resource == config.NodePlugin.String() {
+		affinity = &corev1.Affinity{
+			NodeAffinity: c.GetNodeAffinity(resource),
+		}
+	} else {
+		affinity = &corev1.Affinity{
+			NodeAffinity:    c.GetNodeAffinity(resource),
+			PodAntiAffinity: c.GetPodAntiAffinity(resource),
+			PodAffinity:     c.GetPodAffinity(),
+		}
+	}
+	return affinity
 }
