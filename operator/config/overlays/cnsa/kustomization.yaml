@@ -9,7 +9,7 @@ bases:
 - ../../manager/
 - ../../rbac/
 - ../../crd/
-- ./security_context_constraint.yaml
+- ../../scc/
 
 patches:
   - target:

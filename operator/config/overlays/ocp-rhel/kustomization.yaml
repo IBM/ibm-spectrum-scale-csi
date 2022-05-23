@@ -6,7 +6,8 @@ kind: Kustomization
 namespace: ibm-spectrum-scale-csi-driver
 
 bases:
-- ../cnsa
+- ../default
+- ../../scc
 
 patches:
   - target:
