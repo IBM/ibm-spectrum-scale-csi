@@ -870,22 +870,12 @@ func (c *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategy
 func (c CSIScaleOperator) GetAffinity(resource string) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 
+	affinity = &corev1.Affinity{
+		NodeAffinity: c.GetNodeAffinity(resource),
+		PodAffinity:  c.GetPodAffinity(),
+	}
 	if resource == config.Attacher.String() {
-		affinity = &corev1.Affinity{
-			NodeAffinity:    c.GetNodeAffinity(resource),
-			PodAntiAffinity: c.GetPodAntiAffinity(resource),
-			PodAffinity:     c.GetPodAffinity(),
-		}
-	} else if resource == config.NodePlugin.String() {
-		affinity = &corev1.Affinity{
-			NodeAffinity: c.GetNodeAffinity(resource),
-		}
-	} else {
-		affinity = &corev1.Affinity{
-			NodeAffinity:    c.GetNodeAffinity(resource),
-			PodAntiAffinity: c.GetPodAntiAffinity(resource),
-			PodAffinity:     c.GetPodAffinity(),
-		}
+		affinity.PodAntiAffinity = c.GetPodAntiAffinity(resource)
 	}
 	return affinity
 }

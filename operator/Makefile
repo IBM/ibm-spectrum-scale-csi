@@ -91,8 +91,8 @@ generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, Dee
 
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-operator.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|IfNotPresent|Always|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|productVersion:.*|productVersion: $(VERSION)|" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 
