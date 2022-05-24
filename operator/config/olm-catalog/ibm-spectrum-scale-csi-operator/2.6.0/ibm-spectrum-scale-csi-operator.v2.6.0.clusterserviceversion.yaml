@@ -487,8 +487,8 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: CSI_DRIVER_IMAGE
-                  value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:437dbc38b9eae3135954192ccc482dddf492f084fa3dbdbd79fb48a6fdd20be5
-                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:ed3acd8541e1d3749cf4735977e31710b40e31d5916d067246cb65f1b223827e
+                  value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:f689ab2a53ef950473e017582350cf1b9323032e58e16b0ad0e52c0a206bf51b
+                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:86a99eb8271834f6d55139937b6d4c1139d30ed6398d1a839e9bfe81a6778f91
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   exec:
