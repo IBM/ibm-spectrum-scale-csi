@@ -37,7 +37,7 @@ resources:
     - metadata:
         name: csi_snapshotter
       image: cp/spectrum/scale/csi/csi-snapshotter
-      tag: v5.0.1
+      tag: v6.0.0
       digest: sha256:89e900a160a986a1a7a4eba7f5259e510398fa87ca9b8a729e7dec59e04c7709
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
@@ -48,19 +48,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v5.0.1-amd64
+        tag: v6.0.0-amd64
       - digest: sha256:973a35a3737c74b12b2f691e4a778b7745a1214a97c8952d2e240fd44c5b4d5a
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v5.0.1-ppc64le
+        tag: v6.0.0-ppc64le
       - digest: sha256:5296a26795ddc8c99a5ff84cc601addf481e8977002d9ef5f7c2904c505b421d
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v5.0.1-s390x
+        tag: v6.0.0-s390x
     
     - metadata:
         name: csi_provisioner
