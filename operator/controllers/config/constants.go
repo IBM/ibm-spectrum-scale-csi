@@ -75,7 +75,7 @@ const (
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
 	// Tolerations seconds for the CSI Sidecar deployment
-	TolerationsSeconds = int64(60)
+	TolerationsSeconds = int64(300)
 	// ContainerPort for /healthz/leader-election endpoint
 	LeaderLivenessPort = int32(8080)
 	// 64-Bit machine architecture supported by Spectrum Scale CSI.
