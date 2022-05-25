@@ -38,24 +38,24 @@ resources:
         name: csi_snapshotter
       image: cp/spectrum/scale/csi/csi-snapshotter
       tag: v6.0.0
-      digest: sha256:89e900a160a986a1a7a4eba7f5259e510398fa87ca9b8a729e7dec59e04c7709
+      digest: sha256:780754d371551de7f3c7f24b3250f70ee0b1d57bdcba022ec4526f302927cacf
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:c05f6486a668baedf09a97c3209e087db51d3d026ad5bd8330b7b9f1883faacc
+      - digest: sha256:c634bd73cdf837104baf0cee19939b5b3680efcb25ff7730584975570d72b4b8
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
         tag: v6.0.0-amd64
-      - digest: sha256:973a35a3737c74b12b2f691e4a778b7745a1214a97c8952d2e240fd44c5b4d5a
+      - digest: sha256:552c364373e10f33e5b657f56cb3297046fc2d68d157a99f776b333682ffac4b
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
         tag: v6.0.0-ppc64le
-      - digest: sha256:5296a26795ddc8c99a5ff84cc601addf481e8977002d9ef5f7c2904c505b421d
+      - digest: sha256:bf49d05a2d82565d5f1a6eb436cfb7d67f7516b1da2c66130bf9890b4b967115
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
