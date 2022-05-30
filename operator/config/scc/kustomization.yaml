@@ -1,0 +1,2 @@
+resources:
+- ./security_context_constraint.yaml
