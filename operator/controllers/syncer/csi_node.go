@@ -52,6 +52,12 @@ const (
 	secretUsername                   = "username"
 	secretPassword                   = "password"
 
+	// FS-Group requirement.
+	// Mount `/` filesystem from host machine to driver container on path `/host`
+	hostDir          = "host-dir"
+	hostDirPath      = "/"
+	hostDirMountPath = "/host"
+
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
 	EnvVarForDriverImage           = "CSI_DRIVER_IMAGE"
@@ -139,9 +145,9 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		HostNetwork:        true,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
-		// Affinity:           s.driver.Spec.Node.Affinity,
 		Tolerations:      s.driver.Spec.Tolerations,
 		ImagePullSecrets: secrets,
+		Affinity:         s.driver.GetAffinity(config.NodePlugin.String()),
 	}
 	return pod
 }
@@ -194,21 +200,13 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	/*
-		nodePlugin.SecurityContext = &corev1.SecurityContext{
-			Privileged:               boolptr.True(),
-			AllowPrivilegeEscalation: boolptr.True(),
-		}
-		fillSecurityContextCapabilities(
-			nodePlugin.SecurityContext,
-			"CHOWN",
-			"FSETID",
-			"FOWNER",
-			"SETGID",
-			"SETUID",
-			"DAC_OVERRIDE",
-		)
-	*/
+	sc := &corev1.SecurityContext{
+		Privileged:               boolptr.True(),
+		AllowPrivilegeEscalation: boolptr.True(),
+	}
+	fillSecurityContextCapabilities(sc)
+
+	nodePlugin.SecurityContext = sc
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
@@ -355,19 +353,27 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 // getVolumeMountsFor returns volume mounts for given container name.
 func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
-	// mountPropagationB := corev1.MountPropagationBidirectional
+	// TODO: Keeping mount propogation as Bidirectional for now, investigate and
+	// use an appropriate mount propogation.
+	// More information here: https://kubernetes.io/docs/concepts/storage/volumes/
+	mountPropagationB := corev1.MountPropagationBidirectional
+	//mountPropagationH := corev1.MountPropagationHostToContainer
 	switch name {
 	case nodeContainerName:
 		volumeMounts := []corev1.VolumeMount{
-
+			{
+				Name:             hostDir,
+				MountPath:        hostDirMountPath,
+				MountPropagation: &mountPropagationB,
+			},
 			{
 				Name:      pluginDir,
 				MountPath: s.driver.GetSocketDir(),
 			},
 			{
-				Name:      podMountDir,
-				MountPath: s.driver.GetKubeletRootDirPath(),
-				// MountPropagation: &mountPropagationB,
+				Name:             podMountDir,
+				MountPath:        s.driver.GetKubeletPodsDir(),
+				MountPropagation: &mountPropagationB,
 			},
 			{
 				Name:      hostDev,
@@ -429,9 +435,10 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	volumes := []corev1.Volume{
 		k8sutil.EnsureVolume(pluginDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetSocketDir(), "DirectoryOrCreate")),
 		k8sutil.EnsureVolume(registrationDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath()+config.PluginsRegistry, "Directory")),
-		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath(), "Directory")),
+		k8sutil.EnsureVolume(podMountDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletPodsDir(), "Directory")),
 		k8sutil.EnsureVolume(hostDev, k8sutil.EnsureHostPathVolumeSource(hostDevPath, "Directory")),
 		k8sutil.EnsureVolume(config.CSIConfigMap, k8sutil.EnsureConfigMapVolumeSource(config.CSIConfigMap)),
+		k8sutil.EnsureVolume(hostDir, k8sutil.EnsureHostPathVolumeSource(hostDirPath, "Directory")),
 	}
 
 	for _, cluster := range s.driver.Spec.Clusters {

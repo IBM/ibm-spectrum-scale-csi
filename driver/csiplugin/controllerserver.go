@@ -507,8 +507,8 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 		case "csi.storage.k8s.io/pv/name", "csi.storage.k8s.io/pvc/name",
 			"csi.storage.k8s.io/pvc/namespace", "storage.kubernetes.io/csiProvisionerIdentity",
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
-			"clusterId", "filesetType", "parentFileset", "inodeLimit",
-			"nodeClass", "version", "tier", "compression", "consistencyGroup":
+			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
+			"version", "tier", "compression", "consistencyGroup", "shared":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)

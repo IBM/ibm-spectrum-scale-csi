@@ -35,6 +35,7 @@ const (
 	independentFileset   = "independent"
 	storageClassClassic  = "1"
 	storageClassAdvanced = "2"
+	sharedPermissions    = "777"
 )
 
 type scaleVolume struct {
@@ -65,6 +66,7 @@ type scaleVolume struct {
 	ConsistencyGroup   string                            `json:"consistencyGroup"`
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
+	Shared             bool                              `json:"shared"`
 }
 
 type scaleVolId struct {
@@ -149,6 +151,7 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	compression, isCompressionSpecified := volOptions[connectors.UserSpecifiedCompression]
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
+	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -318,6 +321,26 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		scaleVol.VolGid = gid
 	}
 
+	if isSharedSpecified {
+		//ignore case of passed "shared" parameter
+		icShared := strings.ToLower(shared)
+		if !(icShared == "true" || icShared == "false") {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "invalid value specified for parameter shared")
+		}
+		if icShared == "false" {
+			isSharedSpecified = false
+			scaleVol.Shared = false
+		} else {
+			scaleVol.Shared = true
+		}
+	}
+
+	if isSharedSpecified && isPermissionsSpecified {
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "shared=true and permissions must not be specified together in storageClass")
+	}
+	if isSharedSpecified {
+		scaleVol.VolPermissions = sharedPermissions
+	}
 	if isPermissionsSpecified {
 		_, err := strconv.Atoi(permissions)
 		if err != nil || len(permissions) != 3 {

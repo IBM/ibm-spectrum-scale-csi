@@ -1,0 +1,32 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Adds namespace to all resources.
+namespace: ibm-spectrum-scale-csi-driver
+
+bases:
+- ../../manager/
+- ../../rbac/
+- ../../crd/
+
+patches:
+  - target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/name=ibm-spectrum-scale-csi-operator"
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ibm-spectrum-scale-csi-operator
+      spec:
+        template:
+          spec:
+            containers:
+              - name: operator
+                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:86a99eb8271834f6d55139937b6d4c1139d30ed6398d1a839e9bfe81a6778f91
+                env:
+                  - name: METRICS_BIND_ADDRESS
+                  - name: WATCH_NAMESPACE
+                  - name: CSI_DRIVER_IMAGE
+                    value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:f689ab2a53ef950473e017582350cf1b9323032e58e16b0ad0e52c0a206bf51b

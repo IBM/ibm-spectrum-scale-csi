@@ -33,7 +33,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:86a99eb8271834f6d55139937b6d4c1139d30ed6398d1a839e9bfe81a6778f91
         args:
         - --leaderElection=true
         env:
@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:f689ab2a53ef950473e017582350cf1b9323032e58e16b0ad0e52c0a206bf51b
         resources:
           limits:
             cpu: 600m
@@ -66,7 +66,7 @@ spec:
             - ./health_check.sh
           initialDelaySeconds: 3
           periodSeconds: 1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -1453,3 +1453,49 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+---
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: spectrum-scale-csiaccess
+  namespace: ibm-spectrum-scale-csi-driver
+  annotations:
+    kubernetes.io/description: allows hostpath and host network to be accessible
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- hostPath
+- persistentVolumeClaim
+- projected
+- secret
+allowHostDirVolumePlugin: true
+allowHostIPC: false
+allowHostNetwork: true
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: true
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: MustRunAs
+groups: []
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+- KILL
+- MKNOD
+- SETUID
+- SETGID
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+users:
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-attacher
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-provisioner
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-node
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-snapshotter
+- system:serviceaccount:ibm-spectrum-scale-csi-driver:ibm-spectrum-scale-csi-resizer

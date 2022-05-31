@@ -26,7 +26,6 @@ import (
 
 	uuid "github.com/google/uuid"
 	configv1 "github.com/openshift/api/config/v1"
-	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/presslabs/controller-util/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -202,11 +201,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		if err := r.deleteSCC(instance); err != nil {
-			logger.Error(err, "Failed to delete SecurityContextConstraints resource.")
-			return ctrl.Result{}, err
-		}
-
 		if err := r.removeFinalizer(instance); err != nil {
 			logger.Error(err, "Failed to remove Finalizer")
 			return ctrl.Result{}, err
@@ -222,7 +216,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		r.reconcileServiceAccount,
 		r.reconcileClusterRole,
 		r.reconcileClusterRoleBinding,
-		r.reconcileSecurityContextConstraint,
 	} {
 		if err = rec(instance); err != nil {
 			return ctrl.Result{}, err
@@ -300,10 +293,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing the resources which change over time.
 	// Resource list:
 	// 1. Cluster configMap
-	// 2. Attacher statefulset
-	// 3. Provisioner statefulset
-	// 4. Snapshotter statefulset
-	// 5. Resizer statefulset
+	// 2. Attacher deployment
+	// 3. Provisioner deployment
+	// 4. Snapshotter deployment
+	// 5. Resizer deployment
 	// 6. Driver daemonset
 
 	// Synchronizing cluster configMap
@@ -322,7 +315,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Synchronization of ConfigMap is successful")
 
-	// Synchronizing attacher statefulset
+	// Synchronizing attacher deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, r.recorder); err != nil {
 		message := "Synchronization of attacher interface failed."
@@ -338,7 +334,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Synchronization of attacher interface is successful")
 
-	// Synchronizing provisioner statefulset
+	// Synchronizing provisioner deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, r.recorder); err != nil {
 		message := "Synchronization of provisioner interface failed."
@@ -354,7 +353,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Synchronization of provisioner interface is successful")
 
-	// Synchronizing snapshotter statefulset
+	// Synchronizing snapshotter deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, r.recorder); err != nil {
 		message := "Synchronization of snapshotter interface failed."
@@ -370,7 +372,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info("Synchronization of snapshotter interface is successful")
 
-	// Synchronizing resizer statefulset
+	// Synchronizing resizer deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
 	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, r.recorder); err != nil {
 		message := "Synchronization of resizer interface failed."
@@ -387,7 +392,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Synchronization of resizer interface is successful")
 
 	// Synchronizing node/driver daemonset
-
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
 
 	if instance.Spec.CGPrefix == "" {
@@ -400,6 +404,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
 
+	}
+
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
@@ -1091,130 +1099,6 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 	return nil
 }
 
-// reconcileSecurityContextConstraint handles creation/updating of SecurityContextConstraints resource in cluster.
-// It returns error if fails to create/update SecurityContextConstraints resource.
-func (r *CSIScaleOperatorReconciler) reconcileSecurityContextConstraint(instance *csiscaleoperator.CSIScaleOperator) error {
-
-	logger := csiLog.WithName("reconcileSecurityContextConstraint")
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if !isOpenShift {
-		logger.Info("This is not an OpenShift cluster, so skipping reconciliation of SecurityContextConstraints")
-		return nil
-	}
-
-	logger.Info("Creating required SecurityContextConstraints resource.")
-	csiaccess_users_new := []string{
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSINodeServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name),
-		"system:serviceaccount:" + instance.Namespace + ":" + config.GetNameForResource(config.CSIResizerServiceAccount, instance.Name),
-	}
-
-	// Check if  SCC "spectrum-scale-csiaccess" exists in cluster
-	SCC := &securityv1.SecurityContextConstraints{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      config.CSISCC,
-		Namespace: instance.Namespace,
-	}, SCC)
-	// If SCC does not exist, create a new SCC resource.
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating SecurityContextConstraints.")
-		SCC := instance.GenerateSecurityContextConstraint(csiaccess_users_new)
-		err = r.Client.Create(context.TODO(), SCC)
-		if err != nil {
-			message := "Failed to create SecurityContextConstraints." + SCC.GetName()
-			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceCreateError),
-				Message: message,
-			})
-			return err
-		}
-		logger.Info("SecurityContextConstraint created successfully.")
-	} else if err != nil { // If fetching SCC fails with error, return error.
-		logger.Error(err, "Failed to fetch SecurityContextConstraints from the cluster. Ignore if it's not Redhat Openshift Container Platform.")
-		// Discuss: Should log level be changed to type Info?
-		// return err
-	} else { // If SCC already exists.
-		// Get list of existing users
-		logger.Info("SecurityContextConstraint already exists in cluster. Fetching users and service accounts details.")
-		csiaccess_users := SCC.Users
-		// Append new users, if it doesn't already exist.
-		updateRequired := false
-		for _, user := range csiaccess_users_new {
-			if !containsString(csiaccess_users, user) {
-				csiaccess_users = append(csiaccess_users, user)
-				updateRequired = true
-			}
-		}
-		// Update SCC resource
-		if updateRequired {
-			logger.Info("Updating SecurityContextConstraint with new users.")
-			newSCC := instance.GenerateSecurityContextConstraint(csiaccess_users)
-			newSCC.SetResourceVersion(SCC.GetResourceVersion())
-			err = r.Client.Update(context.TODO(), newSCC)
-			if err != nil {
-				message := "Failed to update SecurityContextConstraints " + newSCC.GetName()
-				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceUpdateError),
-					Message: message,
-				})
-				return err
-			}
-			logger.Info("SecurityContextConstraint updated successfully.", "Users", csiaccess_users)
-		} else {
-			logger.Info("SecurityContextConstraint is up to date, no updates required.")
-		}
-	}
-
-	logger.V(1).Info("Reconciliation of SecurityContextConstraints is successful")
-	return nil
-}
-
-// Note: Reason to clean SCC using finalizer, since CSIscaleOperator is a namespaced resource,
-// it cannot own SCC as SCC is a cluster-scoped resource.
-
-// deleteSCC method removes the cluster-scoped SecurityContextConstraint resource from cluster.
-func (r *CSIScaleOperatorReconciler) deleteSCC(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("deleteSCC").WithValues("Name", config.CSISCC)
-
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if !isOpenShift {
-		logger.Info("This is not Redhat OpenShift Cluster Platform, so skipping deletion of SecurityContextConstraints resource.")
-		return nil
-	}
-
-	logger.Info("Deleting SecurityContextConstraints resource.")
-
-	SCC := &securityv1.SecurityContextConstraints{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name: config.CSISCC,
-	}, SCC)
-
-	if err == nil {
-		if err := r.Client.Delete(context.TODO(), SCC); err != nil {
-			logger.Error(err, "Failed to delete SecurityContextConstraints resource.")
-			return err
-		}
-	} else if errors.IsNotFound(err) {
-		logger.Info("SecurityContextConstraints resource not found for deletion.")
-		return nil
-	} else {
-		logger.Error(err, "Failed to get SecurityContextConstraints resource.")
-		return err
-	}
-	logger.Info("Deletion of SecurityContextConstraints resource is successful.")
-	return nil
-}
-
 func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("deleteClusterRoleBindings")
 
@@ -1450,4 +1334,45 @@ func (r *CSIScaleOperatorReconciler) GenerateUUID() uuid.UUID {
 	logger.Info("Generating a unique cluster ID.")
 	UUID := uuid.New()
 	return UUID
+}
+
+func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.WithName("removeDeprecatedStatefulset").WithValues("Name", name)
+	logger.Info("Removing deprecated statefulset resource from the cluster.")
+
+	STS := &appsv1.StatefulSet{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, STS)
+
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Statefulset resource not found in the cluster.")
+	} else if err != nil {
+		message := "Failed to get statefulset information from the cluster."
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+		return err
+	} else {
+		logger.Info("Found statefulset resource. Sidecar controllers as statefulsets are replaced by deployments in CSI >= 2.6.0. Removing statefulset.")
+		if err := r.Client.Delete(context.TODO(), STS); err != nil {
+			message := "Unable to delete " + name + " statefulset."
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
+			return err
+		}
+	}
+	return nil
 }
