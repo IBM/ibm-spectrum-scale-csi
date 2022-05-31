@@ -52,7 +52,7 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
                        "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
-                       "version", "compression", "tier", "consistencyGroup"]
+                       "version", "compression", "tier", "consistencyGroup", "shared"]
     
     if "version" in values and values["version"] == "2" and "consistencyGroup" not in values:
         values["consistencyGroup"] = get_random_name("cg")
@@ -572,9 +572,10 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
     if "sub_path" not in value_pod:
         pod_volume_mounts = client.V1VolumeMount(
             name="mypvc", mount_path=value_pod["mount_path"])
-
+        command = ["/bin/sh", "-c", "--"]
+        args = ["while true; do sleep 30; done;"]
         pod_containers = client.V1Container(
-            name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
+            name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports], command=command, args=args)
     else:
         list_pod_volume_mount = []
         for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
@@ -587,14 +588,22 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
             name="web-server", image=image_name, volume_mounts=list_pod_volume_mount, ports=[pod_ports],
             command=command, args=args)
 
-    if "gid" in value_pod and "uid" in value_pod:
-        pod_security_context = client.V1PodSecurityContext(
+    if "fsgroup" in value_pod or "gid" in value_pod and "uid" in value_pod:
+        if "gid" in value_pod and "uid" in value_pod and "fsgroup" in value_pod and "runasnonroot" in value_pod:
+           pod_security_context = client.V1PodSecurityContext(
+                run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]),
+                fs_group=int(value_pod["fsgroup"]), run_as_non_root=value_pod["runasnonroot"])
+        elif "gid" in value_pod and "uid" in value_pod:
+            pod_security_context = client.V1PodSecurityContext(
             run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]))
+        elif "fsgroup" in value_pod:
+            pod_security_context = client.V1PodSecurityContext(fs_group=int(value_pod["fsgroup"]))
         pod_spec = client.V1PodSpec(
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
     else:
         pod_spec = client.V1PodSpec(
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
+
 
     pod_body = client.V1Pod(
         api_version="v1",
