@@ -3060,3 +3060,19 @@ def test_driver_tier_compression_clone():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+
+
+def test_driver_fsgroup_nonroot_rwo():
+    value_sc = {"volBackendFs": data["localFs"]}
+    value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "fsgroup": "3000",
+                 "uid": "2000", "gid": "5000", "runasnonroot": True}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
+
+
+def test_driver_fsgroup_nonroot_rwx():
+    value_sc = {"volBackendFs": data["localFs"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "fsgroup": "3000",
+                 "uid": "2000", "gid": "5000", "runasnonroot": True, "reason": "Permission denied"}]
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
