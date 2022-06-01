@@ -527,7 +527,11 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec() []corev1.Container 
 	attacher := s.ensureContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
+		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m",
+			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
+			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
+			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
+			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
@@ -546,7 +550,12 @@ func (s *csiControllerSyncer) ensureProvisionerContainersSpec() []corev1.Contain
 	provisioner := s.ensureContainer(provisionerContainerName,
 		s.getSidecarImage(config.CSIProvisioner),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10", "--extra-create-metadata", "--v=5", "--default-fstype=gpfs", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10",
+			"--extra-create-metadata", "--v=5", "--default-fstype=gpfs",
+			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
+			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
+			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
+			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
 	return []corev1.Container{
@@ -564,7 +573,11 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec() []corev1.Contain
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--worker-threads=1", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--worker-threads=1",
+			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
+			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
+			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
+			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 	return []corev1.Container{
@@ -581,7 +594,11 @@ func (s *csiControllerSyncer) ensureResizerContainersSpec() []corev1.Container {
 
 	resizer := s.ensureContainer(resizerContainerName,
 		s.getSidecarImage(config.CSIResizer),
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10", "--leader-election=true", "--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10",
+			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
+			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
+			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
+			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 	)
 	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
 	return []corev1.Container{
@@ -748,6 +765,18 @@ func (s *csiControllerSyncer) getEnvFor(name string) []corev1.EnvVar {
 			{
 				Name:  "ADDRESS",
 				Value: s.driver.GetSocketPath(),
+			},
+			{
+				Name:  "LEADER_ELECTION_LEASE_DURATION",
+				Value: "137s",
+			},
+			{
+				Name:  "LEADER_ELECTION_RENEW_DEADLINE",
+				Value: "107s",
+			},
+			{
+				Name:  "LEADER_ELECTION_RETRY_PERIOD",
+				Value: "26s",
 			},
 		}
 	}
