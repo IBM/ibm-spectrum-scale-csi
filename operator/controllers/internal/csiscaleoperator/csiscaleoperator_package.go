@@ -17,6 +17,7 @@ limitations under the License.
 package csiscaleoperator
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -838,27 +839,43 @@ func (c CSIScaleOperator) GetHTTPGetAction() *corev1.HTTPGetAction {
 	return &action
 }
 
+// GetDeploymentStrategy returns update strategy details for kubernetes deployment.
+func (c CSIScaleOperator) GetDeploymentStrategy() appsv1.DeploymentStrategy {
+	strategy := appsv1.DeploymentStrategy{
+		RollingUpdate: c.GetRollingUpdateDeployment(),
+		Type:          c.GetDeploymentStrategyType(),
+	}
+	return strategy
+}
+
+// GetRollingUpdateDeployment returns rollingUpdate details. MaxSurge as 25% and MaxUnavailable as 50%.
+func (c CSIScaleOperator) GetRollingUpdateDeployment() *appsv1.RollingUpdateDeployment {
+	maxSurge := intstr.FromString("25%")
+	maxUnavailable := intstr.FromString("50%")
+	deploy := appsv1.RollingUpdateDeployment{
+		MaxSurge:       &maxSurge,
+		MaxUnavailable: &maxUnavailable,
+	}
+	return &deploy
+}
+
+// GetDeploymentStrategyType returns deployment strategy type as `RollingUpdate` for kubernetes deployment.
+func (c *CSIScaleOperator) GetDeploymentStrategyType() appsv1.DeploymentStrategyType {
+	var StrategyType appsv1.DeploymentStrategyType = "RollingUpdate"
+	return StrategyType
+}
+
 // GetAffinity method returns corev1.Affinity object based on resource name passed.
 // Expected resource names: attacher, provisioner, resizer, snapshotter, node.
 func (c CSIScaleOperator) GetAffinity(resource string) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 
+	affinity = &corev1.Affinity{
+		NodeAffinity: c.GetNodeAffinity(resource),
+		PodAffinity:  c.GetPodAffinity(),
+	}
 	if resource == config.Attacher.String() {
-		affinity = &corev1.Affinity{
-			NodeAffinity:    c.GetNodeAffinity(resource),
-			PodAntiAffinity: c.GetPodAntiAffinity(resource),
-			PodAffinity:     c.GetPodAffinity(),
-		}
-	} else if resource == config.NodePlugin.String() {
-		affinity = &corev1.Affinity{
-			NodeAffinity: c.GetNodeAffinity(resource),
-		}
-	} else {
-		affinity = &corev1.Affinity{
-			NodeAffinity:    c.GetNodeAffinity(resource),
-			PodAntiAffinity: c.GetPodAntiAffinity(resource),
-			PodAffinity:     c.GetPodAffinity(),
-		}
+		affinity.PodAntiAffinity = c.GetPodAntiAffinity(resource)
 	}
 	return affinity
 }
