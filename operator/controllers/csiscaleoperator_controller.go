@@ -499,23 +499,26 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					}
 				},
 				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-					// TODO: Check if data in e.ObjectNew and e.ObjectOld are same or modified.
-					// Daemon set should update only when data in secret is modified.
-					// Daemon set should not update when secret is updated but not the data.
-					// e.g Secret type, resource version etc is modified.
 					// TODO: Update only those daemon set which are in the same namespace as the secret that triggered the event.
-					daemonSets := CSIDaemonListFunc()
-					for i := range daemonSets {
-						logger.Info("Secrets were modified. Daemon Set will be updated. Restarting node specific pods.")
-						err = r.rolloutRestartNode(&daemonSets[i])
-						if err != nil {
-							logger.Error(err, "Unable to update daemon set. Please restart node specific pods manually.")
-						} else {
-							daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
+
+					olObject := e.ObjectOld.(*corev1.Secret)
+					newObject := e.ObjectNew.(*corev1.Secret)
+					oldData := fmt.Sprintf("%v", olObject.Data)
+					newData := fmt.Sprintf("%v", newObject.Data)
+					if oldData != newData {
+						daemonSets := CSIDaemonListFunc()
+						for i := range daemonSets {
+							logger.Info("Secret " + olObject.Name + " is modified. DaemonSet will be updated. Restarting node specific pods.")
+							err = r.rolloutRestartNode(&daemonSets[i])
+							if err != nil {
+								logger.Error(err, "Unable to update daemon set. Please restart node specific pods manually.")
+							} else {
+								daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
+							}
 						}
-					}
-					for _, request := range CSIReconcileRequestFunc() {
-						q.Add(request)
+						for _, request := range CSIReconcileRequestFunc() {
+							q.Add(request)
+						}
 					}
 				},
 				DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
