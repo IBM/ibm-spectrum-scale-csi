@@ -588,14 +588,14 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
             name="web-server", image=image_name, volume_mounts=list_pod_volume_mount, ports=[pod_ports],
             command=command, args=args)
 
-    if "fsgroup" in value_pod or "gid" in value_pod and "uid" in value_pod:
-        if "gid" in value_pod and "uid" in value_pod and "fsgroup" in value_pod and "runasnonroot" in value_pod:
+    if "fsgroup" in value_pod or "runAsGroup" in value_pod and "runAsUser" in value_pod:
+        if "runAsGroup" in value_pod and "runAsUser" in value_pod and "fsgroup" in value_pod and "runasnonroot" in value_pod:
            pod_security_context = client.V1PodSecurityContext(
-                run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]),
+                run_as_group=int(value_pod["runAsGroup"]), run_as_user=int(value_pod["runAsUser"]),
                 fs_group=int(value_pod["fsgroup"]), run_as_non_root=value_pod["runasnonroot"])
-        elif "gid" in value_pod and "uid" in value_pod:
+        elif "runAsGroup" in value_pod and "runAsUser" in value_pod:
             pod_security_context = client.V1PodSecurityContext(
-            run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]))
+            run_as_group=int(value_pod["runAsGroup"]), run_as_user=int(value_pod["runAsUser"]))
         elif "fsgroup" in value_pod:
             pod_security_context = client.V1PodSecurityContext(fs_group=int(value_pod["fsgroup"]))
         pod_spec = client.V1PodSpec(

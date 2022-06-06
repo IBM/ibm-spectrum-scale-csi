@@ -250,7 +250,7 @@ def test_driver_shared_fsgroup_nonroot_rwo():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "fsgroup": "3000",
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -258,7 +258,7 @@ def test_driver_shared_fsgroup_nonroot_rwo_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "fsgroup": "3000", "uid": "2000", "gid": "5000"}]
+                 "fsgroup": "3000", "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -280,7 +280,7 @@ def test_driver_shared_nonroot_rwo():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -288,7 +288,7 @@ def test_driver_shared_nonroot_rwo_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -311,7 +311,7 @@ def test_driver_fsgroup_nonroot_rwo():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "fsgroup": "3000",
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -319,7 +319,7 @@ def test_driver_fsgroup_nonroot_rwo_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "fsgroup": "3000", "uid": "2000", "gid": "5000"}]
+                 "fsgroup": "3000", "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -340,7 +340,7 @@ def test_driver_rwo_subpath():
 def test_driver_nonroot_rwo():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "uid": "2000", "gid": "5000", "reason": "Permission denied"}]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "runAsUser": "2000", "runAsGroup": "5000", "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -348,7 +348,7 @@ def test_driver_nonroot_rwo_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "uid": "2000", "gid": "5000",  "reason": "Permission denied"}]
+                 "runAsUser": "2000", "runAsGroup": "5000",  "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -371,7 +371,7 @@ def test_driver_shared_fsgroup_nonroot_rwx():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "fsgroup": "3000",
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -379,7 +379,7 @@ def test_driver_shared_fsgroup_nonroot_rwx_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "fsgroup": "3000", "uid": "2000", "gid": "5000"}]
+                 "fsgroup": "3000", "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -401,7 +401,7 @@ def test_driver_shared_nonroot_rwx():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -409,7 +409,7 @@ def test_driver_shared_nonroot_rwx_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "shared": "True"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "uid": "2000", "gid": "5000"}]
+                 "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -432,7 +432,7 @@ def test_driver_fsgroup_nonroot_rwx():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "fsgroup": "3000",
-                 "uid": "2000", "gid": "5000", "reason": "Permission denied"}]
+                 "runAsUser": "2000", "runAsGroup": "5000", "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -440,7 +440,7 @@ def test_driver_fsgroup_nonroot_rwx_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "fsgroup": "3000", "uid": "2000", "gid": "5000", "reason": "Permission denied"}]
+                 "fsgroup": "3000", "runAsUser": "2000", "runAsGroup": "5000", "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -461,7 +461,7 @@ def test_driver_rwx_subpath():
 def test_driver_nonroot_rwx():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "uid": "2000", "gid": "5000", "reason": "Permission denied"}]
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "runAsUser": "2000", "runAsGroup": "5000", "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
@@ -469,5 +469,5 @@ def test_driver_nonroot_rwx_subpath():
     value_sc = {"volBackendFs": data["localFs"], "version": "2"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                 "uid": "2000", "gid": "5000",  "reason": "Permission denied"}]
+                 "runAsUser": "2000", "runAsGroup": "5000",  "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
