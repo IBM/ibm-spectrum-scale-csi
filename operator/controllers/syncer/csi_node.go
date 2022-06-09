@@ -127,8 +127,8 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 	if out.Spec.Template.Spec.Containers != nil {
-		for _, container := range out.Spec.Template.Spec.Containers {
-			container.Env = []corev1.EnvVar{}
+		for i := range out.Spec.Template.Spec.Containers {
+			out.Spec.Template.Spec.Containers[i].Env = []corev1.EnvVar{}
 		}
 	}
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
