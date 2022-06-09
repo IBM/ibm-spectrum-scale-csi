@@ -1149,8 +1149,8 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
     for pvc_name in copy.deepcopy(created_objects["clone_pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
 
 def create_vs_class(vs_class_name, body_params, created_objects):
@@ -1550,16 +1550,16 @@ def clean_with_created_objects(created_objects):
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["restore_pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
     for pod_name in copy.deepcopy(created_objects["clone_pod"]):
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["clone_pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
     for vs_name in copy.deepcopy(created_objects["vs"]):
         delete_vs(vs_name, created_objects)
@@ -1587,8 +1587,8 @@ def clean_with_created_objects(created_objects):
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
     for pv_name in copy.deepcopy(created_objects["pv"]):
         delete_pv(pv_name, created_objects)
@@ -1603,6 +1603,9 @@ def clean_with_created_objects(created_objects):
 
     for cg_fileset_name in copy.deepcopy(created_objects["cg"]):
         check_cg_fileset_deleted(cg_fileset_name, created_objects)
+
+    for scale_fileset in copy.deepcopy(created_objects["fileset"]):
+        filesetfunc.delete_created_fileset(scale_fileset)
 
 
 def delete_pod(pod_name, created_objects):
@@ -1685,7 +1688,7 @@ def delete_pvc(pvc_name, created_objects):
             created_objects["clone_pvc"].remove(pvc_name)
         else:
             created_objects["pvc"].remove(pvc_name)
-        return fileset_name
+        created_objects["fileset"].append(fileset_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->delete_namespaced_persistent_volume_claim: {e}")
@@ -1693,7 +1696,7 @@ def delete_pvc(pvc_name, created_objects):
         assert False
 
 
-def check_pvc_deleted(pvc_name, volume_name, created_objects):
+def check_pvc_deleted(pvc_name, created_objects):
     """ check pvc deleted or not , if not deleted , asserts """
     if keep_objects:
         return
@@ -1709,7 +1712,6 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
             LOGGER.info(f'PVC Delete : Checking deletion for pvc {pvc_name}')
         except ApiException:
             LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
-            filesetfunc.delete_created_fileset(volume_name)
             return
 
     LOGGER.error(f'pvc {pvc_name} is not deleted')
