@@ -295,8 +295,8 @@ class Driver:
                     LOGGER.info(100*"-")
                     pod_name = csistoragefunc.get_random_name("pod")
                     if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                        value_pod_passed[num2]["gid"] = value_sc["gid"]
-                        value_pod_passed[num2]["uid"] = value_sc["uid"]
+                        value_pod_passed[num2]["runAsGroup"] = value_sc["gid"]
+                        value_pod_passed[num2]["runAsUser"]  = value_sc["uid"]
                     csistoragefunc.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     csistoragefunc.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     if "volume_expansion_storage" in value_pvc_pass:
@@ -304,8 +304,6 @@ class Driver:
                                                pod_name, value_pod_passed[num2], created_objects)
                     if value_clone_passed is not None:
                         csistoragefunc.clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod_passed[num2], value_clone_passed, created_objects)
-                    #csistoragefunc.delete_pod(pod_name, created_objects)
-                    #csistoragefunc.check_pod_deleted(pod_name, created_objects)
                     if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (num2 < (len(value_pod_passed)-1))):#and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
                         pvc_name = csistoragefunc.get_random_name("pvc")
                         csistoragefunc.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
@@ -313,8 +311,6 @@ class Driver:
                         if val is not True:
                             break
                 LOGGER.info(100*"-")
-            #vol_name = csistoragefunc.delete_pvc(pvc_name, created_objects)
-            #csistoragefunc.check_pvc_deleted(pvc_name, vol_name, created_objects)
         LOGGER.info(100*"=")
         csistoragefunc.clean_with_created_objects(created_objects)
 
@@ -375,8 +371,8 @@ class Driver:
                     if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
                         break
                 LOGGER.info(100*"-")
-            vol_name = csistoragefunc.delete_pvc(pvc_name, created_objects)
-            csistoragefunc.check_pvc_deleted(pvc_name, vol_name, created_objects)
+            csistoragefunc.delete_pvc(pvc_name, created_objects)
+            csistoragefunc.check_pvc_deleted(pvc_name, created_objects)
             csistoragefunc.delete_pv(pv_name, created_objects)
             csistoragefunc.check_pv_deleted(pv_name, created_objects)
         LOGGER.info(100*"=")
@@ -485,8 +481,8 @@ class Snapshot():
                 value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
 
             if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                value_pod["gid"] = value_sc["gid"]
-                value_pod["uid"] = value_sc["uid"]
+                value_pod["runAsGroup"] = value_sc["gid"]
+                value_pod["runAsUser"]  = value_sc["uid"]
             csistoragefunc.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
             csistoragefunc.check_pod(value_pod, pod_name, created_objects)
             csistoragefunc.create_file_inside_pod(value_pod, pod_name, created_objects)
@@ -544,10 +540,6 @@ class Snapshot():
                         if value_clone_passed is not None:
                             csistoragefunc.clone_and_check_pvc(restore_sc_name, restore_sc, restored_pvc_name, snap_pod_name, value_pod, value_clone_passed, created_objects)
 
-                        #csistoragefunc.delete_pod(snap_pod_name, created_objects)
-                        #csistoragefunc.check_pod_deleted(snap_pod_name, created_objects)
-                    #vol_name = csistoragefunc.delete_pvc(restored_pvc_name, created_objects)
-                    #csistoragefunc.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
 
         csistoragefunc.clean_with_created_objects(created_objects)
 
@@ -624,8 +616,8 @@ class Snapshot():
                         csistoragefunc.check_file_inside_pod(value_pod, snap_pod_name, created_objects, fileset_name)
                         csistoragefunc.delete_pod(snap_pod_name, created_objects)
                         csistoragefunc.check_pod_deleted(snap_pod_name, created_objects)
-                    vol_name = csistoragefunc.delete_pvc(restored_pvc_name, created_objects)
-                    csistoragefunc.check_pvc_deleted(restored_pvc_name, vol_name, created_objects)
+                    csistoragefunc.delete_pvc(restored_pvc_name, created_objects)
+                    csistoragefunc.check_pvc_deleted(restored_pvc_name, created_objects)
 
             csistoragefunc.clean_with_created_objects(created_objects)
 
@@ -646,6 +638,7 @@ def get_cleanup_dict():
         "pv": [],
         "dir": [],
         "ds": [],
-        "cg": []
+        "cg": [],
+        "fileset": []
     }
     return created_object
