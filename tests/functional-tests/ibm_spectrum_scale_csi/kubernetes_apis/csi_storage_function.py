@@ -1134,8 +1134,8 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
                     check_permissions_for_pvc(clone_pvc_name, value_sc["permissions"], created_objects)
 
                 if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                    value_pod["gid"] = value_sc["gid"]
-                    value_pod["uid"] = value_sc["uid"]
+                    value_pod["runAsGroup"] = value_sc["gid"]
+                    value_pod["runAsUser"]  = value_sc["uid"]
                 clone_pod_name = f"clone-pod-{pvc_name}-{clone_pvc_number}-{iter_clone}"
                 create_pod(value_pod, clone_pvc_name, clone_pod_name, created_objects)
                 check_pod(value_pod, clone_pod_name, created_objects)

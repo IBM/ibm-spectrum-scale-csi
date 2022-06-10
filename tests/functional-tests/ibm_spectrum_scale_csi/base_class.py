@@ -295,8 +295,8 @@ class Driver:
                     LOGGER.info(100*"-")
                     pod_name = csistoragefunc.get_random_name("pod")
                     if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                        value_pod_passed[num2]["gid"] = value_sc["gid"]
-                        value_pod_passed[num2]["uid"] = value_sc["uid"]
+                        value_pod_passed[num2]["runAsGroup"] = value_sc["gid"]
+                        value_pod_passed[num2]["runAsUser"]  = value_sc["uid"]
                     csistoragefunc.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     csistoragefunc.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     if "volume_expansion_storage" in value_pvc_pass:
@@ -481,8 +481,8 @@ class Snapshot():
                 value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
 
             if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                value_pod["gid"] = value_sc["gid"]
-                value_pod["uid"] = value_sc["uid"]
+                value_pod["runAsGroup"] = value_sc["gid"]
+                value_pod["runAsUser"]  = value_sc["uid"]
             csistoragefunc.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
             csistoragefunc.check_pod(value_pod, pod_name, created_objects)
             csistoragefunc.create_file_inside_pod(value_pod, pod_name, created_objects)

@@ -2667,7 +2667,7 @@ def test_driver_parallel_pvc_6():
 @pytest.mark.regression
 def test_driver_sc_permissions_empty_independent_pass_1():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                 "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied"},
+                 "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],"runAsUser": "99", "runAsGroup": "99", "reason": "Permission denied"},
                  {"mount_path": "/usr/share/nginx/html/scale",
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
                   "read_only": "True", "reason": "Read-only file system"}
