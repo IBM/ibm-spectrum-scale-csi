@@ -52,7 +52,7 @@ def create_storage_class(values, sc_name, created_objects):
     storage_class_parameters = {}
     list_parameters = ["volBackendFs", "clusterId", "volDirBasePath", "uid", "gid", 
                        "filesetType", "parentFileset", "inodeLimit", "nodeClass", "permissions",
-                       "version", "compression", "tier", "consistencyGroup"]
+                       "version", "compression", "tier", "consistencyGroup", "shared"]
     
     if "version" in values and values["version"] == "2" and "consistencyGroup" not in values:
         values["consistencyGroup"] = get_random_name("cg")
@@ -572,9 +572,10 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
     if "sub_path" not in value_pod:
         pod_volume_mounts = client.V1VolumeMount(
             name="mypvc", mount_path=value_pod["mount_path"])
-
+        command = ["/bin/sh", "-c", "--"]
+        args = ["while true; do sleep 30; done;"]
         pod_containers = client.V1Container(
-            name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports])
+            name="web-server", image=image_name, volume_mounts=[pod_volume_mounts], ports=[pod_ports], command=command, args=args)
     else:
         list_pod_volume_mount = []
         for iter_num, single_sub_path in enumerate(value_pod["sub_path"]):
@@ -587,14 +588,22 @@ def create_pod(value_pod, pvc_name, pod_name, created_objects, image_name="nginx
             name="web-server", image=image_name, volume_mounts=list_pod_volume_mount, ports=[pod_ports],
             command=command, args=args)
 
-    if "gid" in value_pod and "uid" in value_pod:
-        pod_security_context = client.V1PodSecurityContext(
-            run_as_group=int(value_pod["gid"]), run_as_user=int(value_pod["uid"]))
+    if "fsgroup" in value_pod or "runAsGroup" in value_pod and "runAsUser" in value_pod:
+        if "runAsGroup" in value_pod and "runAsUser" in value_pod and "fsgroup" in value_pod and "runasnonroot" in value_pod:
+           pod_security_context = client.V1PodSecurityContext(
+                run_as_group=int(value_pod["runAsGroup"]), run_as_user=int(value_pod["runAsUser"]),
+                fs_group=int(value_pod["fsgroup"]), run_as_non_root=value_pod["runasnonroot"])
+        elif "runAsGroup" in value_pod and "runAsUser" in value_pod:
+            pod_security_context = client.V1PodSecurityContext(
+            run_as_group=int(value_pod["runAsGroup"]), run_as_user=int(value_pod["runAsUser"]))
+        elif "fsgroup" in value_pod:
+            pod_security_context = client.V1PodSecurityContext(fs_group=int(value_pod["fsgroup"]))
         pod_spec = client.V1PodSpec(
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector, security_context=pod_security_context)
     else:
         pod_spec = client.V1PodSpec(
             containers=[pod_containers], volumes=[pod_volumes], node_selector=nodeselector)
+
 
     pod_body = client.V1Pod(
         api_version="v1",
@@ -1125,8 +1134,8 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
                     check_permissions_for_pvc(clone_pvc_name, value_sc["permissions"], created_objects)
 
                 if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                    value_pod["gid"] = value_sc["gid"]
-                    value_pod["uid"] = value_sc["uid"]
+                    value_pod["runAsGroup"] = value_sc["gid"]
+                    value_pod["runAsUser"]  = value_sc["uid"]
                 clone_pod_name = f"clone-pod-{pvc_name}-{clone_pvc_number}-{iter_clone}"
                 create_pod(value_pod, clone_pvc_name, clone_pod_name, created_objects)
                 check_pod(value_pod, clone_pod_name, created_objects)
@@ -1140,8 +1149,8 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
     for pvc_name in copy.deepcopy(created_objects["clone_pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
 
 def create_vs_class(vs_class_name, body_params, created_objects):
@@ -1541,16 +1550,16 @@ def clean_with_created_objects(created_objects):
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["restore_pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
     for pod_name in copy.deepcopy(created_objects["clone_pod"]):
         delete_pod(pod_name, created_objects)
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["clone_pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
     for vs_name in copy.deepcopy(created_objects["vs"]):
         delete_vs(vs_name, created_objects)
@@ -1578,8 +1587,8 @@ def clean_with_created_objects(created_objects):
         check_pod_deleted(pod_name, created_objects)
 
     for pvc_name in copy.deepcopy(created_objects["pvc"]):
-        vol_name = delete_pvc(pvc_name, created_objects)
-        check_pvc_deleted(pvc_name, vol_name, created_objects)
+        delete_pvc(pvc_name, created_objects)
+        check_pvc_deleted(pvc_name, created_objects)
 
     for pv_name in copy.deepcopy(created_objects["pv"]):
         delete_pv(pv_name, created_objects)
@@ -1594,6 +1603,9 @@ def clean_with_created_objects(created_objects):
 
     for cg_fileset_name in copy.deepcopy(created_objects["cg"]):
         check_cg_fileset_deleted(cg_fileset_name, created_objects)
+
+    for scale_fileset in copy.deepcopy(created_objects["fileset"]):
+        filesetfunc.delete_created_fileset(scale_fileset)
 
 
 def delete_pod(pod_name, created_objects):
@@ -1676,7 +1688,7 @@ def delete_pvc(pvc_name, created_objects):
             created_objects["clone_pvc"].remove(pvc_name)
         else:
             created_objects["pvc"].remove(pvc_name)
-        return fileset_name
+        created_objects["fileset"].append(fileset_name)
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CoreV1Api->delete_namespaced_persistent_volume_claim: {e}")
@@ -1684,7 +1696,7 @@ def delete_pvc(pvc_name, created_objects):
         assert False
 
 
-def check_pvc_deleted(pvc_name, volume_name, created_objects):
+def check_pvc_deleted(pvc_name, created_objects):
     """ check pvc deleted or not , if not deleted , asserts """
     if keep_objects:
         return
@@ -1700,7 +1712,6 @@ def check_pvc_deleted(pvc_name, volume_name, created_objects):
             LOGGER.info(f'PVC Delete : Checking deletion for pvc {pvc_name}')
         except ApiException:
             LOGGER.info(f'PVC Delete : pvc {pvc_name} deleted')
-            filesetfunc.delete_created_fileset(volume_name)
             return
 
     LOGGER.error(f'pvc {pvc_name} is not deleted')
