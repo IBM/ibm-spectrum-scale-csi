@@ -477,54 +477,31 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	}
 
-	CSIDaemonListFunc := func() []appsv1.DaemonSet {
-		var CSIDaemonSets = []appsv1.DaemonSet{}
-		var DaemonSets = appsv1.DaemonSetList{}
-		_ = mgr.GetClient().List(context.TODO(), &DaemonSets)
-
-		for _, DaemonSet := range DaemonSets.Items {
-			if DaemonSet.Labels[config.LabelProduct] == config.Product {
-				CSIDaemonSets = append(CSIDaemonSets, DaemonSet)
-			}
-		}
-		return CSIDaemonSets
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &corev1.Secret{}},
 			handler.Funcs{
 				CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-					for _, request := range CSIReconcileRequestFunc() {
-						q.Add(request)
-					}
-				},
-				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-					// TODO: Update only those daemon set which are in the same namespace as the secret that triggered the event.
-
-					olObject := e.ObjectOld.(*corev1.Secret)
-					newObject := e.ObjectNew.(*corev1.Secret)
-					oldData := fmt.Sprintf("%v", olObject.Data)
-					newData := fmt.Sprintf("%v", newObject.Data)
-					if oldData != newData {
-						daemonSets := CSIDaemonListFunc()
-						for i := range daemonSets {
-							logger.Info("Secret " + olObject.Name + " is modified. DaemonSet will be updated. Restarting node specific pods.")
-							err = r.rolloutRestartNode(&daemonSets[i])
-							if err != nil {
-								logger.Error(err, "Unable to update daemon set. Please restart node specific pods manually.")
-							} else {
-								daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
-							}
-						}
+					creationTime := e.Object.GetCreationTimestamp().Time
+					if time.Since(creationTime).Minutes() <= float64(2) {
+						r.restartDriverPods(mgr, "created", "Secret", e.Object.GetName())
 						for _, request := range CSIReconcileRequestFunc() {
 							q.Add(request)
 						}
 					}
 				},
 				DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+					r.restartDriverPods(mgr, "deleted", "Secret", e.Object.GetName())
 					for _, request := range CSIReconcileRequestFunc() {
 						q.Add(request)
+					}
+				},
+				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+						r.restartDriverPods(mgr, "updated", "Secret", e.ObjectOld.GetName())
+						for _, request := range CSIReconcileRequestFunc() {
+							q.Add(request)
+						}
 					}
 				},
 			}, preds).
@@ -546,7 +523,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					}
 				},
 				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-					if reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+					if !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 						r.restartDriverPods(mgr, "updated", "ConfigMap", e.ObjectOld.GetName())
 						for _, request := range CSIReconcileRequestFunc() {
 							q.Add(request)
