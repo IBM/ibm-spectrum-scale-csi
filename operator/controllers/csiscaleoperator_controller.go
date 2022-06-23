@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -527,8 +528,64 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					}
 				},
 			}, preds).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
+			handler.Funcs{
+				CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
+					creationTime := e.Object.GetCreationTimestamp().Time
+					if time.Since(creationTime).Minutes() <= float64(2) {
+						r.restartDriverPods(mgr, "created", "ConfigMap", e.Object.GetName())
+						for _, request := range CSIReconcileRequestFunc() {
+							q.Add(request)
+						}
+					}
+				},
+				DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+					r.restartDriverPods(mgr, "deleted", "ConfigMap", e.Object.GetName())
+					for _, request := range CSIReconcileRequestFunc() {
+						q.Add(request)
+					}
+				},
+				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+					if reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+						r.restartDriverPods(mgr, "updated", "ConfigMap", e.ObjectOld.GetName())
+						for _, request := range CSIReconcileRequestFunc() {
+							q.Add(request)
+						}
+					}
+				},
+			}, preds).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
+}
+
+func (r *CSIScaleOperatorReconciler) restartDriverPods(mgr ctrl.Manager, event string, resourceKind string, resourceName string) {
+
+	logger := csiLog.WithName("restartDriverPods").WithValues("Kind", resourceKind, "Name", resourceName, "Event", event)
+
+	CSIDaemonListFunc := func() []appsv1.DaemonSet {
+		var CSIDaemonSets = []appsv1.DaemonSet{}
+		var DaemonSets = appsv1.DaemonSetList{}
+		_ = mgr.GetClient().List(context.TODO(), &DaemonSets)
+
+		for _, DaemonSet := range DaemonSets.Items {
+			if DaemonSet.Labels[config.LabelProduct] == config.Product {
+				CSIDaemonSets = append(CSIDaemonSets, DaemonSet)
+			}
+		}
+		return CSIDaemonSets
+	}
+
+	daemonSets := CSIDaemonListFunc()
+	for i := range daemonSets {
+		logger.Info("Watched resource is modified. Driver pods will be restarted.")
+		err := r.rolloutRestartNode(&daemonSets[i])
+		if err != nil {
+			logger.Error(err, "Unable to restart driver pods. Please restart node specific pods manually.")
+		} else {
+			daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
+		}
+	}
+
 }
 
 func Contains(list []string, s string) bool {
