@@ -69,8 +69,8 @@ const (
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
 
-	DriverVersion   = "2.6.0"
-	OperatorVersion = "2.6.0"
+	DriverVersion   = "2.7.0"
+	OperatorVersion = "2.7.0"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
@@ -86,7 +86,7 @@ const (
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.6.0"
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.7.0"
 	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0
 	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar@sha256:4fd21f36075b44d1a423dfb262ad79202ce54e95f5cbc4622a6c1c38ab287ad6"
 	//  us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.7.0

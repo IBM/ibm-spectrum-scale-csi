@@ -28,7 +28,7 @@ patches:
                 env:
                   # do not remove: this is required for CNSA; SHORTNAME_NODE_MAPPING="yes" for split hostNetwork node mapping.
                   - name: SHORTNAME_NODE_MAPPING
-                    value: "yes"
+                    value: "no"
                   - name: CSI_SNAPSHOTTER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:ad16874e2140256a809cada2b4ac3d931d5b73b0bee23ed0f8d60bdd778cfec2
                   - name: CSI_ATTACHER_IMAGE
