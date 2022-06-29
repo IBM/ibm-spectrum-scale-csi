@@ -145,9 +145,9 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		HostNetwork:        true,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
-		Tolerations:      s.driver.Spec.Tolerations,
-		ImagePullSecrets: secrets,
-		Affinity:         s.driver.GetAffinity(config.NodePlugin.String()),
+		Tolerations:        s.driver.Spec.Tolerations,
+		ImagePullSecrets:   secrets,
+		Affinity:           s.driver.GetAffinity(config.NodePlugin.String()),
 	}
 	return pod
 }
