@@ -236,12 +236,12 @@ def check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name="ibm-spectr
         "Expected CSI driver daemonset ibm-spectrum-scale-csi's pods are not Running")
     return False, desired_number_scheduled
 
-    
+
 def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-spectrum-scale-csi"):
     read_cr_api_instance = client.CustomObjectsApi()
     try:
         read_cr_api_response = read_cr_api_instance.get_namespaced_custom_object(group="csi.ibm.com",
-                                  version="v1", namespace=namespace_value, plural="csiscaleoperators", name=csiscaleoperator_name)
+                                                                                 version="v1", namespace=namespace_value, plural="csiscaleoperators", name=csiscaleoperator_name)
         LOGGER.debug(str(read_cr_api_response))
         return read_cr_api_response
     except ApiException:
@@ -249,18 +249,18 @@ def get_scaleoperatorobject_values(namespace_value, csiscaleoperator_name="ibm-s
 
 
 def get_gui_creds_for_username_password(ns_name, secret_name):
-     api_instance = client.CoreV1Api()
-     try:
-         api_response = api_instance.read_namespaced_secret(
-             name=secret_name, namespace=ns_name, pretty=True)
-         encoded_username = api_response.data['username']
-         encoded_password = api_response.data['password']
-         decoded_username = base64.b64decode(encoded_username)
-         decoded_username = decoded_username.decode('ascii')
-         decoded_password = base64.b64decode(encoded_password)
-         decoded_password = decoded_password.decode('ascii')
-         return decoded_username,decoded_password
-     except ApiException as e:
-         LOGGER.error(f'Secret {secret_name} does not exist: {e}')
-         LOGGER.error("Not able to fetch username and pasword")
-         assert False
+    api_instance = client.CoreV1Api()
+    try:
+        api_response = api_instance.read_namespaced_secret(
+            name=secret_name, namespace=ns_name, pretty=True)
+        encoded_username = api_response.data['username']
+        encoded_password = api_response.data['password']
+        decoded_username = base64.b64decode(encoded_username)
+        decoded_username = decoded_username.decode('ascii')
+        decoded_password = base64.b64decode(encoded_password)
+        decoded_password = decoded_password.decode('ascii')
+        return decoded_username, decoded_password
+    except ApiException as e:
+        LOGGER.error(f'Secret {secret_name} does not exist: {e}')
+        LOGGER.error("Not able to fetch username and pasword")
+        assert False
