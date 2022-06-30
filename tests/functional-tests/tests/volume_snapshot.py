@@ -564,3 +564,12 @@ def test_snapshot_dynamic_volume_expansion_3():
                   "post_presnap_volume_expansion_storage": ["5Gi", "15Gi"], "postsnap_volume_expansion_storage": ["10Gi", "15Gi"]}]
     snapshot_object.test_dynamic(value_sc, test_restore=True,
                                  value_pvc=value_pvc, restore_sc=restore_sc)
+
+
+def test_snapshot_dynamic_volume_cloning_1():
+    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,
+                                 value_pvc=value_pvc, value_clone_passed=value_clone_passed)

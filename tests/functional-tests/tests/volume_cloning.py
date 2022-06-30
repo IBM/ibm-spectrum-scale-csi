@@ -215,12 +215,3 @@ def test_driver_cg_cloning_2():
         "access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
                                value_clone_passed=value_clone_passed)
-
-
-def test_snapshot_dynamic_volume_cloning_1():
-    value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"]}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
-        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True,
-                                 value_pvc=value_pvc, value_clone_passed=value_clone_passed)
