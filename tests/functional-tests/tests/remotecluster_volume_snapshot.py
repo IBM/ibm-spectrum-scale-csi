@@ -445,7 +445,7 @@ def test_snapshot_static_nodeclass_3():
 def test_snapshot_dynamic_permissions_777_independent():
     LOGGER.warning("Testcase will fail if scale version < 5.1.1-4")
     value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
-                 "volumemount_readonly": [False]}
+                 "volumemount_readonly": [False], "runAsUser": "2000", "runAsGroup": "5000"}
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)

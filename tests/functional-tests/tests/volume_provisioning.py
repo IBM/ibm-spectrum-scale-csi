@@ -2667,10 +2667,10 @@ def test_driver_parallel_pvc_6():
 @pytest.mark.regression
 def test_driver_sc_permissions_empty_independent_pass_1():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                 "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied"},
+                 "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale",
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                  "read_only": "True", "reason": "Read-only file system"}
+                  "read_only": "True", "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     # to test default behavior i.e. directory should be created with 771 permissions
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "",
@@ -2680,11 +2680,11 @@ def test_driver_sc_permissions_empty_independent_pass_1():
 
 @pytest.mark.regression
 def test_driver_sc_permissions_777_independent_pass_2():
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False]},
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[True],
-                  "reason": "Read-only file system"},
+                  "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
@@ -2693,10 +2693,10 @@ def test_driver_sc_permissions_777_independent_pass_2():
 
 def test_driver_sc_permissions_666_independent_pass_3():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied"},
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale",
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                  "read_only": "True", "reason": "Read-only file system"}
+                  "read_only": "True", "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "666",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
@@ -2705,11 +2705,11 @@ def test_driver_sc_permissions_666_independent_pass_3():
 
 def test_driver_sc_permissions_777_independent_pass_4():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, True, True]},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, True, True], "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[True, False, False], "reason": "Read-only file system"},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[True, False, False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, False], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
@@ -2717,11 +2717,11 @@ def test_driver_sc_permissions_777_independent_pass_4():
 
 
 def test_driver_sc_permissions_777_dependent_pass_1():
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False]},
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[True],
-                  "reason": "Read-only file system"},
+                  "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
@@ -2730,10 +2730,10 @@ def test_driver_sc_permissions_777_dependent_pass_1():
 
 def test_driver_sc_permissions_666_dependent_pass_2():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied"},
+                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Permission denied", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale",
                   "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
-                  "read_only": "True", "reason": "Read-only file system"}
+                  "read_only": "True", "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "666",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
@@ -2742,11 +2742,11 @@ def test_driver_sc_permissions_666_dependent_pass_2():
 
 def test_driver_sc_permissions_777_dependent_pass_3():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, True, True]},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, True, True], "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[True, False, False], "reason": "Read-only file system"},
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[True, False, False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, False], "reason": "Read-only file system"}
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "clusterId": data["id"], "filesetType": "dependent", "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
@@ -2907,7 +2907,7 @@ def test_driver_volume_cloning_with_subpath():
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
         "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
-                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, True]}]
+                  "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, True], "runAsUser": "2000", "runAsGroup": "5000"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
                                value_pod_passed=value_pod, value_clone_passed=value_clone_passed)
 

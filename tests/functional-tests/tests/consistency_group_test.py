@@ -141,11 +141,11 @@ def test_driver_cg_cloning_2():
 
 @pytest.mark.xfail
 def test_driver_cg_permissions_777_1():
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False]},
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "runAsUser": "2000", "runAsGroup": "5000"},
                  {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[True],
-                  "reason": "Read-only file system"},
-                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True",
-                  "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "reason": "Read-only file system"}
+                  "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "True", "sub_path": ["sub_path_mnt"],
+                 "volumemount_readonly":[False], "reason": "Read-only file system", "runAsUser": "2000", "runAsGroup": "5000"}
                  ]
     value_sc = {"volBackendFs": data["localFs"], "version": "2", "permissions": "777",
                 "gid": data["gid_number"], "uid": data["uid_number"]}
