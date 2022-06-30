@@ -21,6 +21,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/mount-utils"
@@ -234,6 +235,63 @@ func (ns *ScaleNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfo
 func (ns *ScaleNodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
+
 func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "")
+	glog.V(4).Infof("NodeGetVolumeStats called with req: %#v", req)
+
+	if len(req.VolumeId) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "NodeGetVolumeStats Volume ID must be provided")
+	}
+	if len(req.VolumePath) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "NodeGetVolumeStats Target Path must be provided")
+	}
+
+	if _, err := os.Lstat(req.VolumePath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, status.Errorf(codes.NotFound, "path %s does not exist", req.VolumePath)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to stat path %s: %v", req.VolumePath, err)
+	}
+
+	volumeIDMembers, err := getVolIDMembers(req.GetVolumeId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "NodeGetVolumeStats : VolumeID is not in proper format")
+	}
+
+	if !volumeIDMembers.IsFilesetBased {
+		return nil, status.Error(codes.InvalidArgument, "volume stats are not supported for lightweight volumes")
+	}
+
+	available, capacity, used, inodes, inodesFree, inodesUsed, err := utils.FsStatInfo(req.GetVolumePath())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume stat failed with error %v", err))
+	}
+
+	if available > capacity || used > capacity {
+		glog.V(4).Infof("incorrect values reported for volume (%v) against Available(%v) or Capacity(%v)",
+			volumeIDMembers.FsetName, available, capacity)
+
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("incorrect values reported for volume (%v) against Available(%v) or Capacity(%v)",
+			volumeIDMembers.FsetName, available, capacity))
+	}
+
+	glog.V(4).Infof("stat for volume:%v, Total:%v, Used:%v Available:%v, Total Inodes:%v, Used Inodes:%v, Available Inodes:%v,",
+		volumeIDMembers.FsetName, capacity, used, available, inodes, inodesUsed, inodesFree)
+
+	return &csi.NodeGetVolumeStatsResponse{
+		Usage: []*csi.VolumeUsage{
+			{
+				Available: available,
+				Total:     capacity,
+				Used:      used,
+				Unit:      csi.VolumeUsage_BYTES,
+			}, {
+				Available: inodesFree,
+				Used:      inodesUsed,
+				Total:     inodes,
+				Unit:      csi.VolumeUsage_INODES,
+			},
+		},
+	}, nil
+
 }
