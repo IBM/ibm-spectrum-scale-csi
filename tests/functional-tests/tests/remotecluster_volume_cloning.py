@@ -8,12 +8,11 @@ pytestmark = [pytest.mark.volumecloning, pytest.mark.remotecluster]
 
 @pytest.fixture(autouse=True)
 def values(data_fixture, check_csi_operator, remote_cluster_fixture):
-    global data, remote_data, driver_object, snapshot_object, kubeconfig_value  # are required in every testcase
+    global data, remote_data, driver_object, kubeconfig_value  # are required in every testcase
     data = data_fixture["driver_data"]
     remote_data = data_fixture["remote_data"]
     kubeconfig_value = data_fixture["cmd_values"]["kubeconfig_value"]
     driver_object = data_fixture["remote_driver_object"]
-    snapshot_object = data_fixture["remote_snapshot_object"]
 
 
 #: Testcase that are expected to pass:
