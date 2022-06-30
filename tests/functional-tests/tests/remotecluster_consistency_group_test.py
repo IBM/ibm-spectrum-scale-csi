@@ -470,3 +470,14 @@ def test_driver_nonroot_rwx_subpath():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False],
                  "runAsUser": "2000", "runAsGroup": "5000", "runasnonroot": True,  "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
+
+
+def test_driver_sc_gid_runasgroup_cg_pass_1():
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "reason": "Permission denied", "runAsUser": "2000", "runAsGroup": "5000"},
+                 {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
+                  "runAsUser": data["r_uid_number"], "runAsGroup": data["r_gid_number"]}
+                ]
+    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    driver_object.test_dynamic(value_sc, value_pod_passed=value_pod)
