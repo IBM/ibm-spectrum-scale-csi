@@ -724,6 +724,27 @@ def check_pod_execution(value_pod, pod_name, created_objects):
     """
     api_instance = client.CoreV1Api()
     LOGGER.info("POD Check : Trying to create testfile on SpectrumScale mount point inside the pod")
+    if "fsgroup" in value_pod:
+        exec_command1 = "id"
+        exec_command = [
+            '/bin/sh',
+            '-c',
+            exec_command1]
+        resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                      pod_name,
+                      namespace_value,
+                      command=exec_command,
+                      stderr=True, stdin=False,
+                      stdout=True, tty=False)
+        fsgroup_id = resp.split(",")
+        fsgroup_id = fsgroup_id[1].strip()
+        if value_pod['fsgroup'] == fsgroup_id:
+            LOGGER.info(f"fsGroup ID is {fsgroup_id}")
+        else:
+            LOGGER.error(f"fsGroup IDs are not matching")
+            LOGGER.info(f"Given fsGroup ID : {value_pod['fsgroup']}")
+            LOGGER.info(f"Received fsGroup ID : {fsgroup_id}")
+            assert False
     exec_command1 = "touch "+value_pod["mount_path"]+"/testfile"
     exec_command = [
         '/bin/sh',
