@@ -41,17 +41,20 @@ def read_driver_data(cmd_values):
     data["namespace"] = cmd_values["test_namespace"]
 
     config.load_kube_config(config_file=cmd_values["kubeconfig_value"])
-    loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(cmd_values["operator_namespace"], data["csiscaleoperator_name"])
+    loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(
+        cmd_values["operator_namespace"], data["csiscaleoperator_name"])
 
     if loadcr_yaml is False:
         try:
             with open(cmd_values["clusterconfig_value"], "r") as f:
                 loadcr_yaml = yaml.full_load(f.read())
         except yaml.YAMLError as exc:
-            LOGGER.error(f'Error in parsing the cr file {cmd_values["clusterconfig_value"]} : {exc}')
+            LOGGER.error(
+                f'Error in parsing the cr file {cmd_values["clusterconfig_value"]} : {exc}')
             assert False
     else:
-        auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, cmd_values["operator_namespace"])
+        auto_fetch_gui_creds_and_remote_filesystem(
+            loadcr_yaml, data, cmd_values["operator_namespace"])
 
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
@@ -62,10 +65,10 @@ def read_driver_data(cmd_values):
             else:
                 data["primaryFset"] = "spectrum-scale-csi-volume-store"
             data["id"] = cluster["id"]
-            if cluster["primary"].get("remoteCluster") in [None,""] and data["localFs"] is "":
+            if cluster["primary"].get("remoteCluster") in [None, ""] and data["localFs"] is "":
                 data["localFs"] = cluster["primary"]["primaryFs"]
 
-    data["primaryFs"] = data["localFs"]               
+    data["primaryFs"] = data["localFs"]
     data["clusters"] = loadcr_yaml["spec"]["clusters"]
     if len(loadcr_yaml["spec"]["clusters"]) > 1:
         data["remote"] = True
@@ -86,7 +89,8 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
 
     if kubeconfig is not None:
         config.load_kube_config(config_file=kubeconfig)
-        loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(namespace, data["csiscaleoperator_name"])
+        loadcr_yaml = csiobjectfunc.get_scaleoperatorobject_values(
+            namespace, data["csiscaleoperator_name"])
     else:
         loadcr_yaml = False
 
@@ -168,7 +172,8 @@ def read_operator_data(clusterconfig, namespace, testconfig, kubeconfig=None):
 
 def get_remote_data(data_passed):
     remote_data = copy.deepcopy(data_passed)
-    remote_data["remoteFs_remote_name"], remote_data["remoteid"] = filesetfunc.get_remoteFs_remotename_and_remoteid(copy.deepcopy(remote_data))
+    remote_data["remoteFs_remote_name"], remote_data["remoteid"] = filesetfunc.get_remoteFs_remotename_and_remoteid(
+        copy.deepcopy(remote_data))
     if remote_data["remoteFs_remote_name"] is None or remote_data["remoteid"] is None:
         LOGGER.error("Unable to get remoteFs name on remote cluster or remotecluster id")
         assert False
@@ -209,7 +214,7 @@ def get_pytest_cmd_values(request):
     if kubeconfig_value is None:
         if 'TOKEN' in os.environ and 'APISERVER' in os.environ:
             kubeconfig_value = f"ibm_spectrum_scale_csi/common_utils/{os.environ['APISERVER'].translate({ord(i): None for i in ':/'})}"
-            create_kubeconfig_file(os.environ['TOKEN'], os.environ['APISERVER'], kubeconfig_value) 
+            create_kubeconfig_file(os.environ['TOKEN'], os.environ['APISERVER'], kubeconfig_value)
         elif os.path.isfile('config/kubeconfig'):
             kubeconfig_value = 'config/kubeconfig'
         elif os.path.isfile('/root/auth/kubeconfig'):
@@ -239,14 +244,14 @@ def get_pytest_cmd_values(request):
     createnamespace = request.config.option.createnamespace
 
     cmd_value_dict = {"kubeconfig_value": kubeconfig_value,
-                      "clusterconfig_value":clusterconfig_value, 
+                      "clusterconfig_value": clusterconfig_value,
                       "test_namespace": test_namespace,
-                      "operator_namespace":operator_namespace,
-                      "runslow_val":runslow_val,
-                      "operator_file":operator_file, 
-                      "test_config":test_config,
-                      "createnamespace":createnamespace
-                     }
+                      "operator_namespace": operator_namespace,
+                      "runslow_val": runslow_val,
+                      "operator_file": operator_file,
+                      "test_config": test_config,
+                      "createnamespace": createnamespace
+                      }
 
     return cmd_value_dict
 
@@ -266,16 +271,18 @@ def randomString(stringLength=10):
 def auto_fetch_gui_creds_and_remote_filesystem(loadcr_yaml, data, operator_namespace):
     for cluster in loadcr_yaml["spec"]["clusters"]:
         if "primary" in cluster and "primaryFs" in cluster["primary"] and cluster["primary"]["primaryFs"] is not '':
-            local_secret_name=cluster["secrets"]
-            data["username"],data["password"]= \
-                csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, local_secret_name)
+            local_secret_name = cluster["secrets"]
+            data["username"], data["password"] = \
+                csiobjectfunc.get_gui_creds_for_username_password(
+                    operator_namespace, local_secret_name)
             if "remoteCluster" in cluster["primary"] and cluster["primary"]["remoteCluster"] is not '':
                 if data["remoteFs"] is "":
                     data["remoteFs"] = cluster["primary"]["primaryFs"]
         else:
-            remote_secret_name= cluster["secrets"]
-            data["remote_username"][remote_secret_name],data["remote_password"][remote_secret_name]= \
-                 csiobjectfunc.get_gui_creds_for_username_password(operator_namespace, remote_secret_name)
+            remote_secret_name = cluster["secrets"]
+            data["remote_username"][remote_secret_name], data["remote_password"][remote_secret_name] = \
+                csiobjectfunc.get_gui_creds_for_username_password(
+                    operator_namespace, remote_secret_name)
 
 
 def create_kubeconfig_file(token, apiserver, file_path):
@@ -284,18 +291,18 @@ def create_kubeconfig_file(token, apiserver, file_path):
 
     try:
         file_data = {
-                      "apiVersion": "v1",
-                      "clusters": [
-                        {"cluster": {"insecure-skip-tls-verify": True,"server": apiserver},
-                          "name": "kubernetes"}],
-                      "contexts": [
-                        {"context": {"cluster": "kubernetes","namespace": "default","user": "kubernetes-admin"},
-                          "name": "kubernetes-admin@kubernetes"}],
-                      "current-context": "kubernetes-admin@kubernetes",
-                      "kind": "Config",
-                      "preferences": {},
-                      "users": [{"name": "kubernetes-admin","user": {"token": token}}]
-                    }
+            "apiVersion": "v1",
+            "clusters": [
+                          {"cluster": {"insecure-skip-tls-verify": True, "server": apiserver},
+                           "name": "kubernetes"}],
+            "contexts": [
+                {"context": {"cluster": "kubernetes", "namespace": "default", "user": "kubernetes-admin"},
+                 "name": "kubernetes-admin@kubernetes"}],
+            "current-context": "kubernetes-admin@kubernetes",
+            "kind": "Config",
+            "preferences": {},
+            "users": [{"name": "kubernetes-admin", "user": {"token": token}}]
+        }
         if 'CACRT' in os.environ:
             file_data["clusters"][0]["cluster"]["certificate-authority-data"] = os.environ['CACRT']
             file_data["clusters"][0]["cluster"]["insecure-skip-tls-verify"] = False

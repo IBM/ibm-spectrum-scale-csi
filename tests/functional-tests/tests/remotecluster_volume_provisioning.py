@@ -15,6 +15,8 @@ def values(data_fixture, check_csi_operator, remote_cluster_fixture):
     driver_object = data_fixture["remote_driver_object"]
 
 #: Testcase that are expected to pass:
+
+
 @pytest.mark.regression
 def test_get_version():
     LOGGER.info("Remote Cluster Details:")
@@ -2614,14 +2616,16 @@ def test_driver_one_pvc_two_pod_fail_4():
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_1():
     # this testcase contains sequential pod creation after all pvc are bound
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId":  data["remoteid"], "inodeLimit": "1024"}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=True)
 
 
 @pytest.mark.slow
 @pytest.mark.stresstest
 def test_driver_parallel_pvc_2():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId":  data["remoteid"], "inodeLimit": "1024"}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId":  data["remoteid"], "inodeLimit": "1024"}
     driver_object.parallel_pvc(value_sc, data["number_of_parallel_pvc"], pod_creation=False)
 
 
@@ -2791,9 +2795,11 @@ def test_driver_sc_permissions_invalid_input_6():
 
 
 def test_driver_volume_expansion_1():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
-                 {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "12Gi"]},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                     "volume_expansion_storage": ["4Gi", "12Gi"]},
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
@@ -2802,9 +2808,11 @@ def test_driver_volume_expansion_1():
 
 
 def test_driver_volume_expansion_2():
-    value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "volDirBasePath": data["r_volDirBasePath"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
-                 {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "12Gi"]},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                     "volume_expansion_storage": ["4Gi", "12Gi"]},
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
@@ -2816,7 +2824,8 @@ def test_driver_volume_expansion_3():
     value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                 "clusterId": data["remoteid"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "volume_expansion_storage": ["4Gi", "16Gi"]},
-                 {"access_modes": "ReadWriteOnce", "storage": "1Gi", "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
+                 {"access_modes": "ReadWriteOnce", "storage": "1Gi",
+                     "volume_expansion_storage": ["5Gi", "15Gi", "25Gi"]},
                  {"access_modes": "ReadOnlyMany", "storage": "1Gi",
                   "reason": "ReadOnlyMany is not supported"}
                  ]
@@ -2827,23 +2836,29 @@ def test_driver_volume_expansion_3():
 def test_driver_volume_cloning_pass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                 "clusterId": data["remoteid"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_pass_3():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_multiple_clones():
@@ -2851,7 +2866,8 @@ def test_driver_volume_cloning_multiple_clones():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}],
                           "number_of_clones": 5}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_chain_clones():
@@ -2859,25 +2875,31 @@ def test_driver_volume_cloning_chain_clones():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}],
                           "clone_chain": 1}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_expand_before():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "allow_volume_expansion": True}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "9Gi", "volume_expansion_storage": ["11Gi"]}]
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_pvc = [{"access_modes": "ReadWriteMany",
+                  "storage": "9Gi", "volume_expansion_storage": ["11Gi"]}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"},
                                         {"access_modes": "ReadWriteMany", "storage": "9Gi", "reason": "new PVC request must be greater than or equal in size"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_with_subpath():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False",
                   "sub_path": ["sub_path_mnt", "sub_path_mnt_2", "sub_path_mnt3"], "volumemount_readonly":[False, False, True]}]
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_pod_passed=value_pod, value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_1():
@@ -2885,7 +2907,8 @@ def test_driver_volume_cloning_fail_1():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_2():
@@ -2894,7 +2917,8 @@ def test_driver_volume_cloning_fail_2():
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                                        "clusterId": data["remoteid"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_3():
@@ -2902,7 +2926,8 @@ def test_driver_volume_cloning_fail_3():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_4():
@@ -2911,7 +2936,8 @@ def test_driver_volume_cloning_fail_4():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_5():
@@ -2921,7 +2947,8 @@ def test_driver_volume_cloning_fail_5():
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                                        "clusterId": data["remoteid"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_6():
@@ -2930,7 +2957,8 @@ def test_driver_volume_cloning_fail_6():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "r_volDirBasePath": data["volDirBasePath"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_7():
@@ -2938,7 +2966,8 @@ def test_driver_volume_cloning_fail_7():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_8():
@@ -2947,7 +2976,8 @@ def test_driver_volume_cloning_fail_8():
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "filesetType": "dependent",
                                        "clusterId": data["remoteid"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_9():
@@ -2955,14 +2985,17 @@ def test_driver_volume_cloning_fail_9():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "same storage class for cloning"}],
                           "clone_sc": {"volBackendFs": data["remoteFs"], "r_volDirBasePath": data["volDirBasePath"]}}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_10():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "5Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "new PVC request must be greater than or equal in size"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                                         "reason": "new PVC request must be greater than or equal in size"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_volume_cloning_fail_11():
@@ -2970,7 +3003,8 @@ def test_driver_volume_cloning_fail_11():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
     value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "Volume cloning for directories for remote file system is not supported"},
                                         {"access_modes": "ReadWriteOnce", "storage": "1Gi", "reason": "Volume cloning for directories for remote file system is not supported"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_compression_1():
@@ -2980,34 +3014,41 @@ def test_driver_compression_1():
 
 
 def test_driver_compression_2():
-    value_sc = {"volBackendFs": data["remoteFs"], "compression": "alphah", "filesetType": "dependent"}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "compression": "alphah", "filesetType": "dependent"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_3():
-    value_sc = {"volBackendFs": data["remoteFs"], "compression": "lz4", "filesetType": "independent"}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "compression": "lz4", "filesetType": "independent"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_fail_1():
-    value_sc = {"volBackendFs": data["remoteFs"], "compression": "zfast", "volDirBasePath": data["r_volDirBasePath"]}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": 'desc = The parameters "compression" and "tier" are not'}] * 2
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "compression": "zfast", "volDirBasePath": data["r_volDirBasePath"]}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                  "reason": 'desc = The parameters "compression" and "tier" are not'}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"], "compression": "wrongalgo"}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi",
+                  "reason": "InvalidArgument desc = invalid compression algorithm"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_compression_clone_1():
     value_sc = {"volBackendFs": data["remoteFs"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 @pytest.mark.regression
@@ -3018,34 +3059,41 @@ def test_driver_tier_pass_1():
 
 
 def test_driver_tier_pass_2():
-    value_sc = {"volBackendFs": data["remoteFs"], "tier": data["r_tier"], "filesetType": "dependent"}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "tier": data["r_tier"], "filesetType": "dependent"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_fail_1():
-    value_sc = {"volBackendFs": data["remoteFs"], "tier": "wrongtier", "reason":"invalid tier 'wrongtier' specified for filesystem"}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+    value_sc = {"volBackendFs": data["remoteFs"], "tier": "wrongtier",
+                "reason": "invalid tier 'wrongtier' specified for filesystem"}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                 {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"], "tier": data["r_tier"], "volDirBasePath": data["volDirBasePath"],
-               "reason":'The parameters "compression" and "tier" are not supported in storageClass for lightweight volumes'}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+                "reason": 'The parameters "compression" and "tier" are not supported in storageClass for lightweight volumes'}
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                 {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
 def test_driver_tier_clone_1():
     value_sc = {"volBackendFs": data["remoteFs"], "tier": data["r_tier"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_tier_compression():
     value_sc = {"volBackendFs": data["remoteFs"], "tier": data["r_tier"], "compression": "z"}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
+    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"},
+                 {"access_modes": "ReadWriteMany", "storage": "8Gi"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc)
 
 
@@ -3053,8 +3101,10 @@ def test_driver_tier_compression():
 def test_driver_tier_compression_clone():
     value_sc = {"volBackendFs": data["remoteFs"], "tier": data["r_tier"], "compression": "z"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {"access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_clone_passed=value_clone_passed)    
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
+    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
+                               value_clone_passed=value_clone_passed)
 
 
 def test_driver_shared_fsgroup_rwo():
@@ -3156,7 +3206,7 @@ def test_driver_fsgroup_nonroot_rwo_subpath():
 def test_driver_nonroot_rwo():
     value_sc = {"volBackendFs": data["remoteFs"]}
     value_pvc = [{"access_modes": "ReadWriteOnce", "storage": "1Gi"}]
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "runAsUser": "2000", "runAsGroup": "5000", 
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "runAsUser": "2000", "runAsGroup": "5000",
                  "runasnonroot": True, "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
@@ -3268,7 +3318,7 @@ def test_driver_fsgroup_nonroot_rwx_subpath():
 def test_driver_nonroot_rwx():
     value_sc = {"volBackendFs": data["remoteFs"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "runAsUser": "2000", "runAsGroup": "5000", 
+    value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "runAsUser": "2000", "runAsGroup": "5000",
                  "runasnonroot": True, "reason": "Permission denied"}]
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
