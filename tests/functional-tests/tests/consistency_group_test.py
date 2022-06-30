@@ -120,25 +120,6 @@ def test_driver_cg_expansion_2():
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc, value_pod_passed=value_pod)
 
 
-def test_driver_cg_cloning_1():
-    value_sc = {"volBackendFs": data["localFs"], "version": "2"}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
-        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
-                               value_clone_passed=value_clone_passed)
-
-
-@pytest.mark.regression
-def test_driver_cg_cloning_2():
-    value_sc = {"volBackendFs": data["localFs"], "version": "2"}
-    value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}] * 2
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "11Gi"}, {
-        "access_modes": "ReadWriteOnce", "storage": "8Gi"}]}
-    driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
-                               value_clone_passed=value_clone_passed)
-
-
 @pytest.mark.xfail
 def test_driver_cg_permissions_777_1():
     value_pod = [{"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"], "volumemount_readonly":[False], "runAsUser": "2000", "runAsGroup": "5000"},
