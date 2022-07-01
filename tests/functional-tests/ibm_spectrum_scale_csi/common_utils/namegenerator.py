@@ -35,5 +35,6 @@ def name_generator():
         "bats", "dolphin"
     ]
 
-    name = prefix_list[randint(0, len(prefix_list)-1)]+"-"+postfix_list[randint(0, len(postfix_list)-1)]+"-"+str(randint(100, 999))
+    name = prefix_list[randint(0, len(prefix_list)-1)]+"-" + \
+        postfix_list[randint(0, len(postfix_list)-1)]+"-"+str(randint(100, 999))
     return name
