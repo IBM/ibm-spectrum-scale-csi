@@ -35,7 +35,8 @@ def delete_fileset(test_data):
     LOGGER.debug(response.text)
     time.sleep(10)
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/'
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response = requests.get(get_link, verify=False, auth=(
+        test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     search_format = f'"{test_data["primaryFset"]}",'
 
@@ -93,7 +94,8 @@ def fileset_exists(test_data):
     """
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/filesets/'
     time.sleep(10)
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response = requests.get(get_link, verify=False, auth=(
+        test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     search_format = f'"{test_data["primaryFset"]}",'
 
@@ -112,10 +114,12 @@ def cred_check(test_data):
     """
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/cluster'
     try:
-        response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+        response = requests.get(get_link, verify=False, auth=(
+            test_data["username"], test_data["password"]))
         LOGGER.debug(response.text)
     except:
-        LOGGER.error(f'not able to use Scale REST API , Check cr file (guiHost = {test_data["guiHost"]})')
+        LOGGER.error(
+            f'not able to use Scale REST API , Check cr file (guiHost = {test_data["guiHost"]})')
         assert False
 
     if not(response.status_code == 200):
@@ -165,7 +169,8 @@ def create_fileset(test_data):
     """
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}/'
     time.sleep(2)
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response = requests.get(get_link, verify=False, auth=(
+        test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
     response_dict = json.loads(response.text)
     scalehostpath = response_dict["filesystems"][0]["mount"]["mountPoint"]
@@ -175,7 +180,7 @@ def create_fileset(test_data):
         'accept': 'application/json',
     }
     data = f'{{"filesetName":"{test_data["primaryFset"]}","path":"{scalehostpath}/{test_data["primaryFset"]}"}}'
-   
+
     response = requests.post(create_fileset_link, headers=headers,
                              data=data, verify=False, auth=(test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
@@ -210,7 +215,8 @@ def unmount_fs(test_data):
     time.sleep(5)
 
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}'
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response = requests.get(get_link, verify=False, auth=(
+        test_data["username"], test_data["password"]))
     response_dict = json.loads(response.text)
     mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
 
@@ -248,7 +254,8 @@ def mount_fs(test_data):
     time.sleep(5)
 
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["primaryFs"]}'
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response = requests.get(get_link, verify=False, auth=(
+        test_data["username"], test_data["password"]))
     response_dict = json.loads(response.text)
     mounted_on = response_dict["filesystems"][0]["mount"]["nodesMountedReadWrite"]
 
@@ -414,6 +421,7 @@ def create_dir(dir_name):
     LOGGER.error(str(response.text))
     assert False
 
+
 def check_dir(dir_name):
     """
     checks directory dir_name is present or not
@@ -525,19 +533,20 @@ def get_remoteFs_remotename_and_remoteid(test_data):
     LOGGER.debug(response.text)
     if not(response.status_code == 200):
         LOGGER.error(response.text)
-        LOGGER.error(f'Not able to find filesystem {test_data["remoteFs"]} on GUI {test_data["guiHost"]}')
+        LOGGER.error(
+            f'Not able to find filesystem {test_data["remoteFs"]} on GUI {test_data["guiHost"]}')
         assert False
 
     response_dict = json.loads(response.text)
-    fs_remote_name, remoteid = None,None
+    fs_remote_name, remoteid = None, None
     for filesystem in response_dict["filesystems"]:
         if filesystem["name"] == test_data["remoteFs"]:
             device_name = filesystem["mount"]["remoteDeviceName"]
             LOGGER.debug(device_name)
             temp_split = device_name.split(":")
-            fs_remote_name =  temp_split[1]
+            fs_remote_name = temp_split[1]
             remote_cluster_name = temp_split[0]
-    
+
     if fs_remote_name is None:
         return fs_remote_name, remoteid
 
@@ -554,7 +563,7 @@ def get_remoteFs_remotename_and_remoteid(test_data):
                 LOGGER.error(get_link)
                 assert False
             response_dict = json.loads(response.text)
-            this_cluster_name = response_dict["cluster"]["clusterSummary"]["clusterName"]          
+            this_cluster_name = response_dict["cluster"]["clusterSummary"]["clusterName"]
             if this_cluster_name == remote_cluster_name:
                 remoteid = str(response_dict["cluster"]["clusterSummary"]["clusterId"])
                 return fs_remote_name, remoteid
@@ -574,7 +583,8 @@ def check_snapshot_exists(snapshot_name, volume_name):
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-        LOGGER.info(f"Snapshot Fileset Check : Checking for Snapshot {snapshot_name} of Fileset {volume_name}")
+        LOGGER.info(
+            f"Snapshot Fileset Check : Checking for Snapshot {snapshot_name} of Fileset {volume_name}")
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
 
@@ -595,13 +605,14 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
         'accept': 'application/json',
     }
 
-    data= f'{{ "snapshotName": "{snapshot_name}" }}'
+    data = f'{{ "snapshotName": "{snapshot_name}" }}'
     snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
     response = requests.post(snap_link, headers=headers, data=data, verify=False,
                              auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     created_objects["scalesnapshot"].append([snapshot_name, volume_name])
-    LOGGER.info(f"Static Snapshot Create :snapshot {snapshot_name} created for volume {volume_name}")
+    LOGGER.info(
+        f"Static Snapshot Create :snapshot {snapshot_name} created for volume {volume_name}")
 
 
 def delete_snapshot(snapshot_name, volume_name, created_objects):
@@ -609,7 +620,8 @@ def delete_snapshot(snapshot_name, volume_name, created_objects):
     response = requests.delete(snap_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
     created_objects["scalesnapshot"].remove([snapshot_name, volume_name])
-    LOGGER.info(f"Scale Snapshot Delete :snapshot {snapshot_name} of volume {volume_name} is deleted")
+    LOGGER.info(
+        f"Scale Snapshot Delete :snapshot {snapshot_name} of volume {volume_name} is deleted")
 
 
 def check_snapshot_deleted(snapshot_name, volume_name):
@@ -619,7 +631,8 @@ def check_snapshot_deleted(snapshot_name, volume_name):
         response = requests.get(snap_link, verify=False,
                                 auth=(test["username"], test["password"]))
         LOGGER.debug(response.text)
-        LOGGER.info(f"Snapshot Check : Checking for deletion of snapshot {snapshot_name} of volume {volume_name}")
+        LOGGER.info(
+            f"Snapshot Check : Checking for deletion of snapshot {snapshot_name} of volume {volume_name}")
         response_dict = json.loads(response.text)
         LOGGER.debug(response_dict)
 
@@ -667,7 +680,8 @@ def get_scale_version(test_data):
     get spectrum scale version and display it
     """
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/info'
-    response = requests.get(get_link, verify=False, auth=(test_data["username"], test_data["password"]))
+    response = requests.get(get_link, verify=False, auth=(
+        test_data["username"], test_data["password"]))
     LOGGER.debug(response.text)
 
     response_dict = json.loads(response.text)
@@ -733,12 +747,14 @@ def get_and_verify_fileset_permissions(volume_name, mode):
     group_aces = response_dict["acl"]["entries"][1]["permissions"]
     everyone_aces = response_dict["acl"]["entries"][2]["permissions"]
     # LOGGER.info(owner_aces) #, group_aces, everyone_aces)
-    LOGGER.info(f'Permissions Check : acebits for owner : {owner_aces} , group : {group_aces} , everyone : {everyone_aces}')
+    LOGGER.info(
+        f'Permissions Check : acebits for owner : {owner_aces} , group : {group_aces} , everyone : {everyone_aces}')
 
     # expected permissions for owner, group, everyone
     owner, group, everyone = [c for c in mode]
     # LOGGER.info(owner) #, group, everyone)
-    LOGGER.info(f'Permissions Check : modebits for owner : {owner} , group : {group}, everyone : {everyone}')
+    LOGGER.info(
+        f'Permissions Check : modebits for owner : {owner} , group : {group}, everyone : {everyone}')
 
     # verify requred ace bits are set for owner, group, everyone
     owner_aces_matched = all([c in owner_aces for c in mode_to_ace_bits[owner]])
@@ -753,7 +769,8 @@ def get_and_verify_fileset_permissions(volume_name, mode):
     group_excluded_aces = [ace for ace in possible_aces if ace not in mode_to_ace_bits[group]]
     everyone_excluded_aces = [ace for ace in possible_aces if ace not in mode_to_ace_bits[everyone]]
     # LOGGER.info(owner_excluded_aces) #, group_excluded_aces, everyone_excluded_aces)
-    LOGGER.info(f'Permissions Check : acebits missing for owner : {owner_excluded_aces} , group : {group_excluded_aces} , everyone : {everyone_excluded_aces}')
+    LOGGER.info(
+        f'Permissions Check : acebits missing for owner : {owner_excluded_aces} , group : {group_excluded_aces} , everyone : {everyone_excluded_aces}')
 
     # ensure expected and actual missing aces should match
     owner_excluded_aces_missing = all([c not in owner_aces for c in owner_excluded_aces])
@@ -796,7 +813,8 @@ def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
     if quota_from_pvc < int(1024**2):
         quota_from_pvc = int(1024**2)
 
-    LOGGER.info(f"PVC Check : Minimum quota expected = {quota_from_pvc}   Actual quota set = {quota_from_api}")
+    LOGGER.info(
+        f"PVC Check : Minimum quota expected = {quota_from_pvc}   Actual quota set = {quota_from_api}")
 
     if quota_from_api >= quota_from_pvc:
         if max_inode_from_sc is None:
@@ -823,7 +841,8 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
         if "maxNumInodes" in response_dict["filesets"][0]["config"]:
             actual_max_inode = int(response_dict["filesets"][0]["config"]['maxNumInodes'])
             if actual_max_inode >= expected_max_inode:
-                LOGGER.info(f"PVC Check : Actual maximun number of inodes {actual_max_inode} is greater than expected maximum inodes {expected_max_inode}")
+                LOGGER.info(
+                    f"PVC Check : Actual maximun number of inodes {actual_max_inode} is greater than expected maximum inodes {expected_max_inode}")
                 return True
         count -= 1
         time.sleep(20)

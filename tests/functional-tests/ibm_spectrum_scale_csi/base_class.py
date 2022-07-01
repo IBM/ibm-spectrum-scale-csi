@@ -5,7 +5,7 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import ibm_spectrum_scale_csi.kubernetes_apis.kubernetes_objects_function as kubeobjectfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.csi_object_function as csiobjectfunc
-import ibm_spectrum_scale_csi.kubernetes_apis.csi_storage_function as csistoragefunc 
+import ibm_spectrum_scale_csi.kubernetes_apis.csi_storage_function as csistoragefunc
 import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 
 LOGGER = logging.getLogger()
@@ -200,13 +200,14 @@ class Scaleoperatorobject:
         if(is_deployed is False):
             return False
 
-        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-attacher",2)
-        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-provisioner",1)
-        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-resizer",1)
-        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-snapshotter",1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-attacher", 2)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-provisioner", 1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-resizer", 1)
+        kubeobjectfunc.get_pod_list_and_check_running("app=ibm-spectrum-scale-csi-snapshotter", 1)
         LOGGER.info("CSI driver Sidecar pods are Running")
 
-        val, self.desired_number_scheduled = csiobjectfunc.check_scaleoperatorobject_daemonsets_state(csiscaleoperator_name)
+        val, self.desired_number_scheduled = csiobjectfunc.check_scaleoperatorobject_daemonsets_state(
+            csiscaleoperator_name)
 
         # kubeobjectfunc.check_pod_running("ibm-spectrum-scale-csi-snapshotter-0")
 
@@ -268,7 +269,8 @@ class Driver:
             value_pod_passed = copy.deepcopy(self.value_pod)
 
         if "permissions" in value_sc.keys() and not(filesetfunc.feature_available("permissions")):
-            LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+            LOGGER.warning(
+                "Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
 
@@ -289,24 +291,26 @@ class Driver:
             val = csistoragefunc.check_pvc(value_pvc_pass, pvc_name, created_objects)
             if val is True:
                 if "permissions" in value_sc.keys():
-                    csistoragefunc.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
+                    csistoragefunc.check_permissions_for_pvc(
+                        pvc_name, value_sc["permissions"], created_objects)
 
                 for num2, _ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
                     pod_name = csistoragefunc.get_random_name("pod")
-                    if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                        value_pod_passed[num2]["runAsGroup"] = value_sc["gid"]
-                        value_pod_passed[num2]["runAsUser"]  = value_sc["uid"]
-                    csistoragefunc.create_pod(value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
+                    csistoragefunc.create_pod(
+                        value_pod_passed[num2], pvc_name, pod_name, created_objects, self.image_name)
                     csistoragefunc.check_pod(value_pod_passed[num2], pod_name, created_objects)
                     if "volume_expansion_storage" in value_pvc_pass:
                         csistoragefunc.expand_and_check_pvc(sc_name, pvc_name, value_pvc_pass, "volume_expansion_storage",
-                                               pod_name, value_pod_passed[num2], created_objects)
+                                                            pod_name, value_pod_passed[num2], created_objects)
                     if value_clone_passed is not None:
-                        csistoragefunc.clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod_passed[num2], value_clone_passed, created_objects)
-                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (num2 < (len(value_pod_passed)-1))):#and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
+                        csistoragefunc.clone_and_check_pvc(
+                            sc_name, value_sc, pvc_name, pod_name, value_pod_passed[num2], value_clone_passed, created_objects)
+                    # and (self.keep_objects is True) and (num2 < (len(value_pod_passed)-1))):
+                    if ((value_pvc_pass["access_modes"] == "ReadWriteOnce") and (num2 < (len(value_pod_passed)-1))):
                         pvc_name = csistoragefunc.get_random_name("pvc")
-                        csistoragefunc.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
+                        csistoragefunc.create_pvc(value_pvc_pass, sc_name,
+                                                  pvc_name, created_objects)
                         val = csistoragefunc.check_pvc(value_pvc_pass, pvc_name, created_objects)
                         if val is not True:
                             break
@@ -364,7 +368,8 @@ class Driver:
                 for num2 in range(0, len(self.value_pod)):
                     LOGGER.info(100*"-")
                     pod_name = csistoragefunc.get_random_name("pod")
-                    csistoragefunc.create_pod(self.value_pod[num2], pvc_name, pod_name, created_objects, self.image_name)
+                    csistoragefunc.create_pod(
+                        self.value_pod[num2], pvc_name, pod_name, created_objects, self.image_name)
                     csistoragefunc.check_pod(self.value_pod[num2], pod_name, created_objects)
                     csistoragefunc.delete_pod(pod_name, created_objects)
                     csistoragefunc.check_pod_deleted(pod_name, created_objects)
@@ -426,7 +431,8 @@ class Driver:
             LOGGER.info(100*"-")
             pod_name = csistoragefunc.get_random_name("pod")
             pod_names.append(pod_name)
-            csistoragefunc.create_pod(self.value_pod[0], pvc_name, pod_name, created_objects, self.image_name)
+            csistoragefunc.create_pod(
+                self.value_pod[0], pvc_name, pod_name, created_objects, self.image_name)
             csistoragefunc.check_pod(self.value_pod[0], pod_name, created_objects)
             csistoragefunc.delete_pod(pod_name, created_objects)
             csistoragefunc.check_pod_deleted(pod_name, created_objects)
@@ -454,7 +460,8 @@ class Snapshot():
         number_of_restore = 1
 
         if "permissions" in value_sc.keys() and not(filesetfunc.feature_available("permissions")):
-            LOGGER.warning("Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+            LOGGER.warning(
+                "Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
 
@@ -474,22 +481,21 @@ class Snapshot():
             val = csistoragefunc.check_pvc(pvc_value, pvc_name, created_objects)
 
             if val is True and "permissions" in value_sc.keys():
-                csistoragefunc.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
+                csistoragefunc.check_permissions_for_pvc(
+                    pvc_name, value_sc["permissions"], created_objects)
 
             pod_name = csistoragefunc.get_random_name("snap-start-pod")
             if value_pod is None:
                 value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
 
-            if value_sc.keys() >= {"permissions", "gid", "uid"}:
-                value_pod["runAsGroup"] = value_sc["gid"]
-                value_pod["runAsUser"]  = value_sc["uid"]
-            csistoragefunc.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
+            csistoragefunc.create_pod(value_pod, pvc_name, pod_name,
+                                      created_objects, self.image_name)
             csistoragefunc.check_pod(value_pod, pod_name, created_objects)
             csistoragefunc.create_file_inside_pod(value_pod, pod_name, created_objects)
 
             if "presnap_volume_expansion_storage" in pvc_value:
                 csistoragefunc.expand_and_check_pvc(sc_name, pvc_name, pvc_value, "presnap_volume_expansion_storage",
-                                       pod_name, value_pod, created_objects)
+                                                    pod_name, value_pod, created_objects)
 
             vs_class_name = csistoragefunc.get_random_name("vsclass")
             csistoragefunc.create_vs_class(vs_class_name, value_vs_class, created_objects)
@@ -502,14 +508,17 @@ class Snapshot():
 
             vs_name = csistoragefunc.get_random_name("vs")
             for num in range(0, number_of_snapshots):
-                csistoragefunc.create_vs(vs_name+"-"+str(num), vs_class_name, pvc_name, created_objects)
-                csistoragefunc.check_vs_detail(vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
+                csistoragefunc.create_vs(vs_name+"-"+str(num), vs_class_name,
+                                         pvc_name, created_objects)
+                csistoragefunc.check_vs_detail(
+                    vs_name+"-"+str(num), pvc_name, value_vs_class, reason, created_objects)
 
             if test_restore:
                 restore_sc_name = sc_name
                 if restore_sc is not None:
                     restore_sc_name = "restore-" + restore_sc_name
-                    csistoragefunc.create_storage_class(restore_sc, restore_sc_name, created_objects)
+                    csistoragefunc.create_storage_class(
+                        restore_sc, restore_sc_name, created_objects)
                     csistoragefunc.check_storage_class(restore_sc_name)
                 else:
                     restore_sc = value_sc
@@ -519,27 +528,31 @@ class Snapshot():
                 for num in range(0, number_of_restore):
                     restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
-                    csistoragefunc.create_pvc_from_snapshot(pvc_value, restore_sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
+                    csistoragefunc.create_pvc_from_snapshot(
+                        pvc_value, restore_sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
                     if val is True and "permissions" in value_sc.keys():
-                        csistoragefunc.check_permissions_for_pvc(pvc_name, value_sc["permissions"], created_objects)
+                        csistoragefunc.check_permissions_for_pvc(
+                            pvc_name, value_sc["permissions"], created_objects)
 
                     if val is True:
-                        csistoragefunc.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
+                        csistoragefunc.create_pod(
+                            value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         csistoragefunc.check_pod(value_pod, snap_pod_name, created_objects)
-                        csistoragefunc.check_file_inside_pod(value_pod, snap_pod_name, created_objects)
+                        csistoragefunc.check_file_inside_pod(
+                            value_pod, snap_pod_name, created_objects)
 
                         if "postsnap_volume_expansion_storage" in pvc_value:
                             csistoragefunc.expand_and_check_pvc(restore_sc_name, restored_pvc_name, pvc_value, "postsnap_volume_expansion_storage",
-                                                   snap_pod_name, value_pod, created_objects)
+                                                                snap_pod_name, value_pod, created_objects)
 
                         if "post_presnap_volume_expansion_storage" in pvc_value:
                             csistoragefunc.expand_and_check_pvc(sc_name, pvc_name, pvc_value, "post_presnap_volume_expansion_storage",
-                                                   pod_name, value_pod, created_objects)
+                                                                pod_name, value_pod, created_objects)
 
                         if value_clone_passed is not None:
-                            csistoragefunc.clone_and_check_pvc(restore_sc_name, restore_sc, restored_pvc_name, snap_pod_name, value_pod, value_clone_passed, created_objects)
-
+                            csistoragefunc.clone_and_check_pvc(
+                                restore_sc_name, restore_sc, restored_pvc_name, snap_pod_name, value_pod, value_clone_passed, created_objects)
 
         csistoragefunc.clean_with_created_objects(created_objects)
 
@@ -564,7 +577,8 @@ class Snapshot():
 
             pod_name = csistoragefunc.get_random_name("snap-start-pod")
             value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False"}
-            csistoragefunc.create_pod(value_pod, pvc_name, pod_name, created_objects, self.image_name)
+            csistoragefunc.create_pod(value_pod, pvc_name, pod_name,
+                                      created_objects, self.image_name)
             csistoragefunc.check_pod(value_pod, pod_name, created_objects)
             csistoragefunc.create_file_inside_pod(value_pod, pod_name, created_objects)
 
@@ -578,7 +592,8 @@ class Snapshot():
 
             vs_name = csistoragefunc.get_random_name("vs")
             for num in range(0, number_of_snapshots):
-                filesetfunc.create_snapshot(snapshot_name+"-"+str(num), fileset_name, created_objects)
+                filesetfunc.create_snapshot(snapshot_name+"-"+str(num),
+                                            fileset_name, created_objects)
                 if filesetfunc.check_snapshot_exists(snapshot_name+"-"+str(num), fileset_name):
                     LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")
                 else:
@@ -586,12 +601,15 @@ class Snapshot():
                     csistoragefunc.clean_with_created_objects(created_objects)
                     assert False
 
-                snapshot_handle = cluster_id+';'+FSUID+';'+fileset_name+';'+snapshot_name+"-"+str(num)
+                snapshot_handle = cluster_id+';'+FSUID+';' + \
+                    fileset_name+';'+snapshot_name+"-"+str(num)
                 body_params = {"deletionPolicy": "Retain", "snapshotHandle": snapshot_handle}
-                csistoragefunc.create_vs_content(vs_content_name+"-"+str(num), vs_name+"-"+str(num), body_params, created_objects)
+                csistoragefunc.create_vs_content(
+                    vs_content_name+"-"+str(num), vs_name+"-"+str(num), body_params, created_objects)
                 csistoragefunc.check_vs_content(vs_content_name+"-"+str(num))
 
-                csistoragefunc.create_vs_from_content(vs_name+"-"+str(num), vs_content_name+"-"+str(num), created_objects)
+                csistoragefunc.create_vs_from_content(
+                    vs_name+"-"+str(num), vs_content_name+"-"+str(num), created_objects)
                 csistoragefunc.check_vs_detail_for_static(vs_name+"-"+str(num), created_objects)
 
             if not(filesetfunc.feature_available("snapshot")):
@@ -608,12 +626,15 @@ class Snapshot():
                 for num in range(0, number_of_restore):
                     restored_pvc_name = "restored-pvc"+vs_name[2:]+"-"+str(num)
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
-                    csistoragefunc.create_pvc_from_snapshot(pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
+                    csistoragefunc.create_pvc_from_snapshot(
+                        pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
                     if val is True:
-                        csistoragefunc.create_pod(value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
+                        csistoragefunc.create_pod(
+                            value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         csistoragefunc.check_pod(value_pod, snap_pod_name, created_objects)
-                        csistoragefunc.check_file_inside_pod(value_pod, snap_pod_name, created_objects, fileset_name)
+                        csistoragefunc.check_file_inside_pod(
+                            value_pod, snap_pod_name, created_objects, fileset_name)
                         csistoragefunc.delete_pod(snap_pod_name, created_objects)
                         csistoragefunc.check_pod_deleted(snap_pod_name, created_objects)
                     csistoragefunc.delete_pvc(restored_pvc_name, created_objects)
