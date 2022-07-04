@@ -190,7 +190,8 @@ def create_crd(body):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info("Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
+        LOGGER.info(
+            "Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
     except ValueError as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -725,7 +726,8 @@ def get_operator_image():
         api_response = api_instance.read_namespaced_pod(
             name=pod_name, namespace=namespace_value, pretty=True)
         LOGGER.info(f"CSI operator image : {api_response.status.container_statuses[-1].image}")
-        LOGGER.info(f"CSI operator image id : {api_response.status.container_statuses[-1].image_id}")
+        LOGGER.info(
+            f"CSI operator image id : {api_response.status.container_statuses[-1].image_id}")
     except ApiException:
         LOGGER.info("Unable to get operator image")
 
@@ -989,7 +991,7 @@ def delete_configmap(configmap_name):
             f"Exception when calling CoreV1Api->create_namespaced_config_map: {e}")
         assert False
 
-    
+
 def check_configmap_exists(configmap_name):
     """
     Checks configmap configmap_name exists or not
@@ -1123,7 +1125,7 @@ def check_pod_image(pod_name, image_name):
             return
     except ApiException as e:
         LOGGER.error(
-                f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
+            f"Exception when calling CoreV1Api->read_namespaced_pod: {e}")
         assert False
 
     LOGGER.error(f"Image {image_name} not matched for pod {pod_name}")
@@ -1133,16 +1135,17 @@ def check_pod_image(pod_name, image_name):
 
 def get_pod_list_and_check_running(label, required_pods):
     api_instance = client.CoreV1Api()
-    for _ in range(0,24):
+    for _ in range(0, 24):
         try:
-            api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+            api_response = api_instance.list_pod_for_all_namespaces(
+                pretty=True, label_selector=label)
             pod_status = True
             for pod_info in api_response.items:
                 if not(pod_info.status.phase == "Running"):
                     pod_status = False
                     break
-            if pod_status is True and (len(api_response.items) ==  required_pods):
-                return 
+            if pod_status is True and (len(api_response.items) == required_pods):
+                return
             time.sleep(20)
             LOGGER.info(f"Checking for pod with label {label}")
         except ApiException as e:
@@ -1156,7 +1159,7 @@ def get_pod_list_and_check_running(label, required_pods):
 def get_pod_list_with_label(label):
     api_instance = client.CoreV1Api()
     try:
-        api_response = api_instance.list_pod_for_all_namespaces( pretty=True,label_selector=label)
+        api_response = api_instance.list_pod_for_all_namespaces(pretty=True, label_selector=label)
         pod_list = []
         for pod_info in api_response.items:
             pod_list.append(pod_info.metadata.name)

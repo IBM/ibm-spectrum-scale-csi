@@ -152,7 +152,8 @@ def test_snapshot_dynamic_pass_1():
 
 def test_snapshot_dynamic_pass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, value_vs_class={"deletionPolicy": "Retain"})
+    snapshot_object.test_dynamic(value_sc, test_restore=True,
+                                 value_vs_class={"deletionPolicy": "Retain"})
 
 
 @pytest.mark.regression
@@ -160,7 +161,8 @@ def test_snapshot_dynamic_pass_2():
 def test_snapshot_dynamic_expected_fail_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
+    snapshot_object.test_dynamic(value_sc, test_restore=False,
+                                 reason="Volume snapshot can only be created when source volume is independent fileset")
 
 
 @pytest.mark.regression
@@ -168,7 +170,8 @@ def test_snapshot_dynamic_expected_fail_1():
 def test_snapshot_dynamic_expected_fail_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=False, reason="Volume snapshot can only be created when source volume is independent fileset")
+    snapshot_object.test_dynamic(value_sc, test_restore=False,
+                                 reason="Volume snapshot can only be created when source volume is independent fileset")
 
 
 @pytest.mark.regression
@@ -392,79 +395,96 @@ def test_snapshot_static_different_sc_6():
 @pytest.mark.regression
 def test_snapshot_dynamic_nodeclass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                  "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
 
 
 @pytest.mark.regression
 def test_snapshot_dynamic_nodeclass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                  "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
 
 
 def test_snapshot_dynamic_nodeclass_3():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "randomnodeclassx"}
-    restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, restore_pvc=restore_pvc)
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                  "clusterId": data["remoteid"], "nodeClass": "randomnodeclassx"}
+    restore_pvc = {"access_modes": "ReadWriteMany",
+                   "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,
+                                 restore_sc=restore_sc, restore_pvc=restore_pvc)
 
 
 def test_snapshot_static_nodeclass_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                  "clusterId": data["remoteid"], "nodeClass": "GUI_MGMT_SERVERS"}
     snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc)
 
 
 def test_snapshot_static_nodeclass_2():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                  "clusterId": data["remoteid"], "nodeClass": "GUI_SERVERS"}
     snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc)
 
 
 def test_snapshot_static_nodeclass_3():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "nodeClass": "randomnodeclassx"}
-    restore_pvc = {"access_modes": "ReadWriteMany", "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
-    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc, restore_pvc=restore_pvc)
+    restore_sc = {"volBackendFs": data["remoteFs"],
+                  "clusterId": data["remoteid"], "nodeClass": "randomnodeclassx"}
+    restore_pvc = {"access_modes": "ReadWriteMany",
+                   "storage": "1Gi", "reason": "NotFound desc = nodeclass"}
+    snapshot_object.test_static(value_sc, test_restore=True,
+                                restore_sc=restore_sc, restore_pvc=restore_pvc)
 
 
 def test_snapshot_dynamic_permissions_777_independent():
     LOGGER.warning("Testcase will fail if scale version < 5.1.1-4")
     value_pod = {"mount_path": "/usr/share/nginx/html/scale", "read_only": "False", "sub_path": ["sub_path_mnt"],
-                 "volumemount_readonly": [False]}
+                 "volumemount_readonly": [False], "runAsUser": "2000", "runAsGroup": "5000"}
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "permissions": "777",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pod=value_pod)
 
 
 def test_snapshot_dynamic_volume_expansion_1():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["2Gi"],
                   "post_presnap_volume_expansion_storage": ["5Gi", "15Gi"], "postsnap_volume_expansion_storage": ["10Gi", "15Gi"]}]
     snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc)
 
 
 def test_snapshot_dynamic_volume_expansion_2():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "allow_volume_expansion": True}
     restore_sc = {"volBackendFs": data["remoteFs"],
                   "filesetType": "dependent", "clusterId": data["remoteid"], "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["3Gi"],
                   "post_presnap_volume_expansion_storage": ["5Gi", "12Gi"], "postsnap_volume_expansion_storage": ["8Gi", "12Gi"]}]
-    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc, restore_sc=restore_sc)
+    snapshot_object.test_dynamic(value_sc, test_restore=True,
+                                 value_pvc=value_pvc, restore_sc=restore_sc)
 
 
 def test_snapshot_dynamic_volume_expansion_3():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"], "allow_volume_expansion": True}
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "clusterId": data["remoteid"], "allow_volume_expansion": True}
     restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                   "allow_volume_expansion": True}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["2Gi"],
                   "post_presnap_volume_expansion_storage": ["5Gi", "15Gi"], "postsnap_volume_expansion_storage": ["10Gi", "15Gi"]}]
-    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc, restore_sc=restore_sc)
+    snapshot_object.test_dynamic(value_sc, test_restore=True,
+                                 value_pvc=value_pvc, restore_sc=restore_sc)
 
 
 def test_snapshot_dynamic_volume_cloning_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
-    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {"access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, value_pvc=value_pvc, value_clone_passed=value_clone_passed)
+    value_clone_passed = {"clone_pvc": [{"access_modes": "ReadWriteMany", "storage": "1Gi"}, {
+        "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True,
+                                 value_pvc=value_pvc, value_clone_passed=value_clone_passed)
