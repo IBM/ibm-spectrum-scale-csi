@@ -10,6 +10,7 @@ import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 LOGGER = logging.getLogger()
 pytestmark = pytest.mark.csioperator
 
+
 @pytest.fixture(scope='session')
 def _values(request):
 
@@ -20,7 +21,8 @@ def _values(request):
     kubeconfig_value = cmd_values["kubeconfig_value"]
     testconfig = cmd_values["test_config"]
     condition = baseclass.kubeobjectfunc.check_ns_exists(kubeconfig_value, namespace_value)
-    operator = baseclass.Scaleoperator(kubeconfig_value, namespace_value, cmd_values["operator_file"])
+    operator = baseclass.Scaleoperator(
+        kubeconfig_value, namespace_value, cmd_values["operator_file"])
     read_file = inputfunc.read_operator_data(clusterconfig_value, namespace_value, testconfig)
     baseclass.filesetfunc.cred_check(read_file)
     fileset_exist = baseclass.filesetfunc.fileset_exists(read_file)
@@ -354,7 +356,8 @@ def test_secureSslMode(_values):
                 LOGGER.error(str(get_logs_api_response))
                 LOGGER.error("Reason of failure does not match")
             assert search_result is not None
-            LOGGER.info("'CA certificate not specified in secure SSL mode for cluster' failure reason matched")
+            LOGGER.info(
+                "'CA certificate not specified in secure SSL mode for cluster' failure reason matched")
         except ApiException as e:
             LOGGER.error(
                 f"Exception when calling CoreV1Api->read_namespaced_pod_log: {e}")
@@ -513,7 +516,8 @@ def test_non_default_attacher(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-attacher")
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label(
+            "app=ibm-spectrum-scale-csi-attacher")
         for pod_name in pod_list:
             baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_attacher_image)
     else:
@@ -546,7 +550,8 @@ def test_non_default_provisioner(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-provisioner")
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label(
+            "app=ibm-spectrum-scale-csi-provisioner")
         for pod_name in pod_list:
             baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_provisioner_image)
     else:
@@ -859,7 +864,8 @@ def test_non_default_snapshotter(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-snapshotter")
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label(
+            "app=ibm-spectrum-scale-csi-snapshotter")
         for pod_name in pod_list:
             baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_snapshotter_image)
     else:
@@ -924,7 +930,8 @@ def test_non_default_resizer(_values):
     operator_object.create()
     if operator_object.check() is True:
         LOGGER.info("Operator custom object is deployed successfully")
-        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label("app=ibm-spectrum-scale-csi-resizer")
+        pod_list = baseclass.kubeobjectfunc.get_pod_list_with_label(
+            "app=ibm-spectrum-scale-csi-resizer")
         for pod_name in pod_list:
             baseclass.kubeobjectfunc.check_pod_image(pod_name, deployment_resizer_image)
     else:
