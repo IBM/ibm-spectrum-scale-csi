@@ -20,9 +20,14 @@ def get_test_data(test_config):
         assert False
 
     if data['keepobjects'] == "True" or data['keepobjects'] == "true":
-        data['keepobjects'] = True
+        data['keepobjects'] = "True"
+    elif data['keepobjects'] == "onfailure":
+        data['keepobjects'] = "onfailure"
+    elif data['keepobjects']== "False" or data['keepobjects'] == "false":
+        data['keepobjects'] = "False"
     else:
-        data['keepobjects'] = False
+        LOGGER.error(f"keepobjects value "{data['keepobjects']}" provided in config file is invalid")
+        assert False
 
     if data.get('remote_username') is None:
         data['remote_username'] = {}
