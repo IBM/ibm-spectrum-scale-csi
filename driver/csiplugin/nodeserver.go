@@ -19,6 +19,7 @@ package scale
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -95,6 +96,17 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		}
 	} else {
 		//Use bind mount
+		volScalePathInContainer := hostDir + volScalePath
+		args := []string{"-f", "-c", "%T", volScalePathInContainer}
+		out, err := executeCmd("stat", args)
+		if err != nil {
+			return nil, fmt.Errorf("NodePublishVolume: failed to get stat of [%s]. Error [%v]", volScalePathInContainer, err)
+		}
+		outString := fmt.Sprintf("%s", out)
+		outString = strings.TrimRight(outString, "\n")
+		if outString != "gpfs" {
+			return nil, fmt.Errorf("NodePublishVolume: the path [%s] is not a valid gpfs path, the path is of type [%s]", volScalePath, outString)
+		}
 		notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
 		if err != nil {
 			if os.IsNotExist(err) {
