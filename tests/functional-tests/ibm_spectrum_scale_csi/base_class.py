@@ -292,7 +292,7 @@ class Driver:
             if val is True:
                 if "permissions" in value_sc.keys():
                     csistoragefunc.check_permissions_for_pvc(
-                        pvc_name, value_sc["permissions"], created_objects)
+                        pvc_name, value_sc, created_objects)
 
                 for num2, _ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
@@ -482,7 +482,7 @@ class Snapshot():
 
             if val is True and "permissions" in value_sc.keys():
                 csistoragefunc.check_permissions_for_pvc(
-                    pvc_name, value_sc["permissions"], created_objects)
+                    pvc_name, value_sc, created_objects)
 
             pod_name = csistoragefunc.get_random_name("snap-start-pod")
             if value_pod is None:
@@ -533,7 +533,7 @@ class Snapshot():
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
                     if val is True and "permissions" in value_sc.keys():
                         csistoragefunc.check_permissions_for_pvc(
-                            pvc_name, value_sc["permissions"], created_objects)
+                            pvc_name, value_sc, created_objects)
 
                     if val is True:
                         csistoragefunc.create_pod(
