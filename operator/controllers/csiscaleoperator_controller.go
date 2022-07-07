@@ -1427,27 +1427,35 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 	// get list of secrets from custom resource
 	secrets := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		secrets = append(secrets, cluster.Secrets)
+		if len(cluster.Secrets) != 0 {
+			secrets = append(secrets, cluster.Secrets)
+		}
 	}
 
 	// get list of configMaps from custom resource
 	configMaps := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		configMaps = append(configMaps, cluster.Cacert)
+		if len(cluster.Cacert) != 0 {
+			configMaps = append(configMaps, cluster.Cacert)
+		}
 	}
 
-	for _, secret := range secrets {
-		if exists, err := r.resourceExists(instance, secret, "secret"); !exists {
-			return false, err
+	if len(secrets) != 0 {
+		for _, secret := range secrets {
+			if exists, err := r.resourceExists(instance, secret, "secret"); !exists {
+				return false, err
+			}
+			logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
 		}
-		logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
 	}
 
-	for _, configMap := range configMaps {
-		if exists, err := r.resourceExists(instance, configMap, "configMap"); !exists {
-			return false, err
+	if len(configMaps) != 0 {
+		for _, configMap := range configMaps {
+			if exists, err := r.resourceExists(instance, configMap, "configMap"); !exists {
+				return false, err
+			}
+			logger.Info(fmt.Sprintf("ConfigMap resource %s found.", configMap))
 		}
-		logger.Info(fmt.Sprintf("ConfigMap resource %s found.", configMap))
 	}
 
 	return true, nil
@@ -1472,7 +1480,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}, found.(client.Object))
 
 	if err != nil && errors.IsNotFound(err) {
-		message := "Pre-requisite resource not found."
+		message := "Resource not found."
 		logger.Error(err, message)
 		// TODO: Add event.
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
@@ -1483,7 +1491,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 		})
 		return false, err
 	} else if err != nil {
-		message := "Failed to get pre-requisite resource information from cluster."
+		message := "Failed to get resource information from cluster."
 		logger.Error(err, message)
 		// TODO: Add event.
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
