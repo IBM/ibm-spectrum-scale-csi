@@ -496,6 +496,7 @@ def test_driver_volume_cloning_Independent_1_to_Version2_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -505,6 +506,7 @@ def test_driver_volume_cloning_LW_1_to_Dependent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Independent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -514,6 +516,7 @@ def test_driver_volume_cloning_LW_1_to_Independent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -523,6 +526,7 @@ def test_driver_volume_cloning_LW_1_to_LW_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Version2_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -532,6 +536,7 @@ def test_driver_volume_cloning_LW_1_to_Version2_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Dependent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -541,6 +546,7 @@ def test_driver_volume_cloning_LW_1_to_Dependent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Independent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -550,6 +556,7 @@ def test_driver_volume_cloning_LW_1_to_Independent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -559,6 +566,7 @@ def test_driver_volume_cloning_LW_1_to_LW_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Version2_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -568,6 +576,7 @@ def test_driver_volume_cloning_LW_1_to_Version2_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Dependent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -577,6 +586,7 @@ def test_driver_volume_cloning_LW_1_to_Dependent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Independent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -586,6 +596,7 @@ def test_driver_volume_cloning_LW_1_to_Independent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -595,6 +606,7 @@ def test_driver_volume_cloning_LW_1_to_LW_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Version2_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -604,6 +616,7 @@ def test_driver_volume_cloning_LW_1_to_Version2_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Dependent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -613,6 +626,7 @@ def test_driver_volume_cloning_LW_1_to_Dependent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Independent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -622,6 +636,7 @@ def test_driver_volume_cloning_LW_1_to_Independent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -631,6 +646,7 @@ def test_driver_volume_cloning_LW_1_to_LW_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Version2_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -640,6 +656,7 @@ def test_driver_volume_cloning_LW_1_to_Version2_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Dependent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -649,6 +666,7 @@ def test_driver_volume_cloning_LW_1_to_Dependent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Independent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -658,6 +676,7 @@ def test_driver_volume_cloning_LW_1_to_Independent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -667,6 +686,7 @@ def test_driver_volume_cloning_LW_1_to_LW_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_1_to_Version2_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -1256,6 +1276,7 @@ def test_driver_volume_cloning_Independent_2_to_Version2_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1266,6 +1287,7 @@ def test_driver_volume_cloning_LW_2_to_Dependent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Independent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1276,6 +1298,7 @@ def test_driver_volume_cloning_LW_2_to_Independent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1286,6 +1309,7 @@ def test_driver_volume_cloning_LW_2_to_LW_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Version2_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1296,6 +1320,7 @@ def test_driver_volume_cloning_LW_2_to_Version2_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Dependent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1306,6 +1331,7 @@ def test_driver_volume_cloning_LW_2_to_Dependent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Independent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1316,6 +1342,7 @@ def test_driver_volume_cloning_LW_2_to_Independent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1326,6 +1353,7 @@ def test_driver_volume_cloning_LW_2_to_LW_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Version2_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1336,6 +1364,7 @@ def test_driver_volume_cloning_LW_2_to_Version2_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Dependent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1346,6 +1375,7 @@ def test_driver_volume_cloning_LW_2_to_Dependent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Independent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1356,6 +1386,7 @@ def test_driver_volume_cloning_LW_2_to_Independent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1366,6 +1397,7 @@ def test_driver_volume_cloning_LW_2_to_LW_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Version2_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1376,6 +1408,7 @@ def test_driver_volume_cloning_LW_2_to_Version2_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Dependent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1386,6 +1419,7 @@ def test_driver_volume_cloning_LW_2_to_Dependent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Independent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1396,6 +1430,7 @@ def test_driver_volume_cloning_LW_2_to_Independent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1406,6 +1441,7 @@ def test_driver_volume_cloning_LW_2_to_LW_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Version2_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1416,6 +1452,7 @@ def test_driver_volume_cloning_LW_2_to_Version2_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Dependent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1426,6 +1463,7 @@ def test_driver_volume_cloning_LW_2_to_Dependent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Independent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1436,6 +1474,7 @@ def test_driver_volume_cloning_LW_2_to_Independent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -1446,6 +1485,7 @@ def test_driver_volume_cloning_LW_2_to_LW_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_2_to_Version2_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
@@ -2016,6 +2056,7 @@ def test_driver_volume_cloning_Independent_3_to_Version2_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2026,6 +2067,7 @@ def test_driver_volume_cloning_LW_3_to_Dependent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Independent_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2036,6 +2078,7 @@ def test_driver_volume_cloning_LW_3_to_Independent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2046,6 +2089,7 @@ def test_driver_volume_cloning_LW_3_to_LW_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Version2_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2056,6 +2100,7 @@ def test_driver_volume_cloning_LW_3_to_Version2_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Dependent_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2066,6 +2111,7 @@ def test_driver_volume_cloning_LW_3_to_Dependent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Independent_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2076,6 +2122,7 @@ def test_driver_volume_cloning_LW_3_to_Independent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2086,6 +2133,7 @@ def test_driver_volume_cloning_LW_3_to_LW_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Version2_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2096,6 +2144,7 @@ def test_driver_volume_cloning_LW_3_to_Version2_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Dependent_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2106,6 +2155,7 @@ def test_driver_volume_cloning_LW_3_to_Dependent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Independent_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2116,6 +2166,7 @@ def test_driver_volume_cloning_LW_3_to_Independent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2126,6 +2177,7 @@ def test_driver_volume_cloning_LW_3_to_LW_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Version2_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2136,6 +2188,7 @@ def test_driver_volume_cloning_LW_3_to_Version2_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Dependent_4():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2146,6 +2199,7 @@ def test_driver_volume_cloning_LW_3_to_Dependent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Independent_4():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2156,6 +2210,7 @@ def test_driver_volume_cloning_LW_3_to_Independent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2166,6 +2221,7 @@ def test_driver_volume_cloning_LW_3_to_LW_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Version2_4():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2176,6 +2232,7 @@ def test_driver_volume_cloning_LW_3_to_Version2_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Dependent_5():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2186,6 +2243,7 @@ def test_driver_volume_cloning_LW_3_to_Dependent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Independent_5():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2196,6 +2254,7 @@ def test_driver_volume_cloning_LW_3_to_Independent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2206,6 +2265,7 @@ def test_driver_volume_cloning_LW_3_to_LW_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_3_to_Version2_5():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
@@ -2796,6 +2856,7 @@ def test_driver_volume_cloning_Independent_4_to_Version2_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2806,6 +2867,7 @@ def test_driver_volume_cloning_LW_4_to_Dependent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Independent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2816,6 +2878,7 @@ def test_driver_volume_cloning_LW_4_to_Independent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2826,6 +2889,7 @@ def test_driver_volume_cloning_LW_4_to_LW_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Version2_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2836,6 +2900,7 @@ def test_driver_volume_cloning_LW_4_to_Version2_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Dependent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2846,6 +2911,7 @@ def test_driver_volume_cloning_LW_4_to_Dependent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Independent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2856,6 +2922,7 @@ def test_driver_volume_cloning_LW_4_to_Independent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2866,6 +2933,7 @@ def test_driver_volume_cloning_LW_4_to_LW_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Version2_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2876,6 +2944,7 @@ def test_driver_volume_cloning_LW_4_to_Version2_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Dependent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2886,6 +2955,7 @@ def test_driver_volume_cloning_LW_4_to_Dependent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Independent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2896,6 +2966,7 @@ def test_driver_volume_cloning_LW_4_to_Independent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2906,6 +2977,7 @@ def test_driver_volume_cloning_LW_4_to_LW_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Version2_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2916,6 +2988,7 @@ def test_driver_volume_cloning_LW_4_to_Version2_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Dependent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2926,6 +2999,7 @@ def test_driver_volume_cloning_LW_4_to_Dependent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Independent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2936,6 +3010,7 @@ def test_driver_volume_cloning_LW_4_to_Independent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2946,6 +3021,7 @@ def test_driver_volume_cloning_LW_4_to_LW_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Version2_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2956,6 +3032,7 @@ def test_driver_volume_cloning_LW_4_to_Version2_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Dependent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2966,6 +3043,7 @@ def test_driver_volume_cloning_LW_4_to_Dependent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Independent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2976,6 +3054,7 @@ def test_driver_volume_cloning_LW_4_to_Independent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -2986,6 +3065,7 @@ def test_driver_volume_cloning_LW_4_to_LW_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_4_to_Version2_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
@@ -3596,6 +3676,7 @@ def test_driver_volume_cloning_Independent_5_to_Version2_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3606,6 +3687,7 @@ def test_driver_volume_cloning_LW_5_to_Dependent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Independent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3616,6 +3698,7 @@ def test_driver_volume_cloning_LW_5_to_Independent_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3626,6 +3709,7 @@ def test_driver_volume_cloning_LW_5_to_LW_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Version2_1():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3636,6 +3720,7 @@ def test_driver_volume_cloning_LW_5_to_Version2_1():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Dependent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3646,6 +3731,7 @@ def test_driver_volume_cloning_LW_5_to_Dependent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Independent_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3656,6 +3742,7 @@ def test_driver_volume_cloning_LW_5_to_Independent_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3666,6 +3753,7 @@ def test_driver_volume_cloning_LW_5_to_LW_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Version2_2():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3676,6 +3764,7 @@ def test_driver_volume_cloning_LW_5_to_Version2_2():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Dependent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3686,6 +3775,7 @@ def test_driver_volume_cloning_LW_5_to_Dependent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Independent_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3696,6 +3786,7 @@ def test_driver_volume_cloning_LW_5_to_Independent_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3706,6 +3797,7 @@ def test_driver_volume_cloning_LW_5_to_LW_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Version2_3():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3716,6 +3808,7 @@ def test_driver_volume_cloning_LW_5_to_Version2_3():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Dependent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3726,6 +3819,7 @@ def test_driver_volume_cloning_LW_5_to_Dependent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Independent_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3736,6 +3830,7 @@ def test_driver_volume_cloning_LW_5_to_Independent_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3746,6 +3841,7 @@ def test_driver_volume_cloning_LW_5_to_LW_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Version2_4():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3756,6 +3852,7 @@ def test_driver_volume_cloning_LW_5_to_Version2_4():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Dependent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3766,6 +3863,7 @@ def test_driver_volume_cloning_LW_5_to_Dependent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Independent_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3776,6 +3874,7 @@ def test_driver_volume_cloning_LW_5_to_Independent_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
@@ -3786,6 +3885,7 @@ def test_driver_volume_cloning_LW_5_to_LW_5():
                                value_clone_passed=value_clone_passed)
 
 
+@pytest.mark.xfail
 def test_driver_volume_cloning_LW_5_to_Version2_5():
     value_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
