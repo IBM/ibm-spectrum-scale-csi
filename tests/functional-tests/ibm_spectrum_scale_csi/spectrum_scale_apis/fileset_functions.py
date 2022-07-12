@@ -718,7 +718,6 @@ def get_and_verify_fileset_permissions(volume_name, mode):
        so for permissions=777, we need to ensure that "rwx" is present for all
        i.e. for owner, group and everyone
     """
-    return True
     # get acl for a path
     get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/acl/{volume_name}%2F{volume_name}-data'
 
