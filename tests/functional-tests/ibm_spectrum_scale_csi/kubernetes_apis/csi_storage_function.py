@@ -1086,15 +1086,28 @@ def get_pv_for_pvc(pvc_name, created_objects):
     return api_response.spec.volume_name
 
 
-def check_permissions_for_pvc(pvc_name, permissions, created_objects):
+def check_permissions_for_pvc(pvc_name, storage_class_parameters, created_objects):
     """
     get pv and verify permissions for pv
     """
+    if "permissions" not in value_sc.keys() or "shared" not in value_sc.keys():
+        return
+
+    if "permissions" in value_sc.keys():
+        permissions = storage_class_parameters["permissions"]
+    elif storage_class_parameters["shared"]=="True":
+        permissions = "777"
+    else:
+        return 
+
     pv_name = get_pv_for_pvc(pvc_name, created_objects)
     fileset_name = get_filesetname_from_pv(pv_name, created_objects)
+    cg_fileset_name = None
+    if "version" in storage_class_parameters and storage_class_parameters["version"] == "2":
+        cg_fileset_name = get_cg_filesetname_from_pv(pv_name, created_objects)
     if permissions == "":  # assign default permissions 771
         permissions = "771"
-    status = filesetfunc.get_and_verify_fileset_permissions(fileset_name, permissions)
+    status = filesetfunc.get_and_verify_fileset_permissions(fileset_name, permissions, cg_fileset_name)
     if status is True:
         LOGGER.info(f'PASS: Testing storageclass parameter permissions={permissions} passed.')
     else:
@@ -1172,9 +1185,8 @@ def clone_and_check_pvc(sc_name, value_sc, pvc_name, pod_name, value_pod, clone_
                              clone_pvc_name, pvc_name, created_objects)
             val = check_pvc(clone_pvc_value, clone_pvc_name, created_objects)
             if val is True:
-                if "permissions" in value_sc.keys():
-                    check_permissions_for_pvc(
-                        clone_pvc_name, value_sc["permissions"], created_objects)
+                check_permissions_for_pvc(
+                        clone_pvc_name, value_sc, created_objects)
 
                 if value_sc.keys() >= {"permissions", "gid", "uid"}:
                     value_pod["runAsGroup"] = value_sc["gid"]

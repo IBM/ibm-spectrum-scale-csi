@@ -688,7 +688,7 @@ def get_scale_version(test_data):
     LOGGER.info(f'scale version is {response_dict["info"]["serverVersion"]}')
 
 
-def get_and_verify_fileset_permissions(volume_name, mode):
+def get_and_verify_fileset_permissions(volume_name, mode, cg_fileset_name):
     """
 
     Get permissions for pv path and ensure they match with parameter mode.
@@ -720,7 +720,10 @@ def get_and_verify_fileset_permissions(volume_name, mode):
     """
 
     # get acl for a path
-    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/acl/{volume_name}%2F{volume_name}-data'
+    if cg_fileset_name is not None:
+        get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/acl/{cg_fileset_name}%2F{volume_name}'
+    else:
+        get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/acl/{volume_name}%2F{volume_name}-data'
 
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
