@@ -290,8 +290,7 @@ class Driver:
             csistoragefunc.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
             val = csistoragefunc.check_pvc(value_pvc_pass, pvc_name, created_objects)
             if val is True:
-                if "permissions" in value_sc.keys():
-                    csistoragefunc.check_permissions_for_pvc(
+                csistoragefunc.check_permissions_for_pvc(
                         pvc_name, value_sc, created_objects)
 
                 for num2, _ in enumerate(value_pod_passed):
@@ -480,7 +479,7 @@ class Snapshot():
             csistoragefunc.create_pvc(pvc_value, sc_name, pvc_name, created_objects)
             val = csistoragefunc.check_pvc(pvc_value, pvc_name, created_objects)
 
-            if val is True and "permissions" in value_sc.keys():
+            if val is True:
                 csistoragefunc.check_permissions_for_pvc(
                     pvc_name, value_sc, created_objects)
 
@@ -531,11 +530,10 @@ class Snapshot():
                     csistoragefunc.create_pvc_from_snapshot(
                         pvc_value, restore_sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
-                    if val is True and "permissions" in value_sc.keys():
-                        csistoragefunc.check_permissions_for_pvc(
-                            pvc_name, value_sc, created_objects)
 
                     if val is True:
+                        csistoragefunc.check_permissions_for_pvc(
+                            pvc_name, value_sc, created_objects)
                         csistoragefunc.create_pod(
                             value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         csistoragefunc.check_pod(value_pod, snap_pod_name, created_objects)
