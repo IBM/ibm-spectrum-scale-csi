@@ -290,9 +290,8 @@ class Driver:
             csistoragefunc.create_pvc(value_pvc_pass, sc_name, pvc_name, created_objects)
             val = csistoragefunc.check_pvc(value_pvc_pass, pvc_name, created_objects)
             if val is True:
-                if "permissions" in value_sc.keys():
-                    csistoragefunc.check_permissions_for_pvc(
-                        pvc_name, value_sc["permissions"], created_objects)
+                csistoragefunc.check_permissions_for_pvc(
+                        pvc_name, value_sc, created_objects)
 
                 for num2, _ in enumerate(value_pod_passed):
                     LOGGER.info(100*"-")
@@ -316,7 +315,7 @@ class Driver:
                             break
                 LOGGER.info(100*"-")
         LOGGER.info(100*"=")
-        csistoragefunc.clean_with_created_objects(created_objects)
+        csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
@@ -373,7 +372,7 @@ class Driver:
                     csistoragefunc.check_pod(self.value_pod[num2], pod_name, created_objects)
                     csistoragefunc.delete_pod(pod_name, created_objects)
                     csistoragefunc.check_pod_deleted(pod_name, created_objects)
-                    if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects is True:
+                    if value_pvc_pass["access_modes"] == "ReadWriteOnce" and self.keep_objects == "True":
                         break
                 LOGGER.info(100*"-")
             csistoragefunc.delete_pvc(pvc_name, created_objects)
@@ -381,7 +380,7 @@ class Driver:
             csistoragefunc.delete_pv(pv_name, created_objects)
             csistoragefunc.check_pv_deleted(pv_name, created_objects)
         LOGGER.info(100*"=")
-        csistoragefunc.clean_with_created_objects(created_objects)
+        csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
     def one_pvc_two_pod(self, value_sc, value_pvc_pass, value_ds_pass):
         created_objects = get_cleanup_dict()
@@ -396,7 +395,7 @@ class Driver:
             ds_name = csistoragefunc.get_random_name("ds")
             csistoragefunc.create_ds(value_ds_pass, ds_name, pvc_name, created_objects)
             csistoragefunc.check_ds(ds_name, value_ds_pass, created_objects)
-        csistoragefunc.clean_with_created_objects(created_objects)
+        csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
     def parallel_pvc(self, value_sc, num_of_pvc, pod_creation=False):
         created_objects = get_cleanup_dict()
@@ -422,7 +421,7 @@ class Driver:
             csistoragefunc.check_pvc(value_pvc_pass, pvc_name, created_objects)
 
         if pod_creation is False:
-            csistoragefunc.clean_with_created_objects(created_objects)
+            csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
             return
 
         pod_names = []
@@ -437,7 +436,7 @@ class Driver:
             csistoragefunc.delete_pod(pod_name, created_objects)
             csistoragefunc.check_pod_deleted(pod_name, created_objects)
 
-        csistoragefunc.clean_with_created_objects(created_objects)
+        csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
 
 class Snapshot():
@@ -480,9 +479,9 @@ class Snapshot():
             csistoragefunc.create_pvc(pvc_value, sc_name, pvc_name, created_objects)
             val = csistoragefunc.check_pvc(pvc_value, pvc_name, created_objects)
 
-            if val is True and "permissions" in value_sc.keys():
+            if val is True:
                 csistoragefunc.check_permissions_for_pvc(
-                    pvc_name, value_sc["permissions"], created_objects)
+                    pvc_name, value_sc, created_objects)
 
             pod_name = csistoragefunc.get_random_name("snap-start-pod")
             if value_pod is None:
@@ -531,11 +530,10 @@ class Snapshot():
                     csistoragefunc.create_pvc_from_snapshot(
                         pvc_value, restore_sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
-                    if val is True and "permissions" in value_sc.keys():
-                        csistoragefunc.check_permissions_for_pvc(
-                            pvc_name, value_sc["permissions"], created_objects)
 
                     if val is True:
+                        csistoragefunc.check_permissions_for_pvc(
+                            pvc_name, value_sc, created_objects)
                         csistoragefunc.create_pod(
                             value_pod, restored_pvc_name, snap_pod_name, created_objects, self.image_name)
                         csistoragefunc.check_pod(value_pod, snap_pod_name, created_objects)
@@ -554,7 +552,7 @@ class Snapshot():
                             csistoragefunc.clone_and_check_pvc(
                                 restore_sc_name, restore_sc, restored_pvc_name, snap_pod_name, value_pod, value_clone_passed, created_objects)
 
-        csistoragefunc.clean_with_created_objects(created_objects)
+        csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
     def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
         if value_vs_class is None:
@@ -598,7 +596,7 @@ class Snapshot():
                     LOGGER.info(f"snapshot {snapshot_name} exists for {fileset_name}")
                 else:
                     LOGGER.error(f"snapshot {snapshot_name} does not exists for {fileset_name}")
-                    csistoragefunc.clean_with_created_objects(created_objects)
+                    csistoragefunc.clean_with_created_objects(created_objects, condition="failed")
                     assert False
 
                 snapshot_handle = cluster_id+';'+FSUID+';' + \
@@ -640,7 +638,7 @@ class Snapshot():
                     csistoragefunc.delete_pvc(restored_pvc_name, created_objects)
                     csistoragefunc.check_pvc_deleted(restored_pvc_name, created_objects)
 
-            csistoragefunc.clean_with_created_objects(created_objects)
+            csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
 
 def get_cleanup_dict():
