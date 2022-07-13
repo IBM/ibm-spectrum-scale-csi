@@ -1505,18 +1505,3 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 		return true, nil
 	}
 }
-
-/*
-logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
-if labeled, err := labelResource(secret, "secret"); !labeled {
-	logger.Error(fmt.Sprintf("Unable to add label to secret %s.", secret), err)
-}
-logger.Info(fmt.Spr
-
-
-	logger.Info(fmt.Sprintf("configMap resource %s found.", configMap))
-	if labeled, err := labelResource(configMap, "configMap"); !labeled {
-		logger.Error(fmt.Sprintf("Unable to add label to secret %s.", configMap), err)
-	}
-	logger.Info(fmt.Sprintf("configMap resource %s labeled.", configMap))
-*/
