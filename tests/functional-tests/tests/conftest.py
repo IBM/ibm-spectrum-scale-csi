@@ -138,7 +138,7 @@ def new_namespace(data_fixture):
     data_fixture["snapshot_object"].test_namespace = data_fixture["cmd_values"]["test_namespace"]
     csistoragefunc.set_test_namespace_value(data_fixture["cmd_values"]["test_namespace"])
     yield
-    if data_fixture["cmd_values"]["createnamespace"] is True and data_fixture["driver_data"]["keepobjects"] is False:
+    if data_fixture["cmd_values"]["createnamespace"] is True and data_fixture["driver_data"]["keepobjects"] == "False":
         kubeobjectfunc.delete_namespace(data_fixture["cmd_values"]["test_namespace"])
         kubeobjectfunc.check_namespace_deleted(data_fixture["cmd_values"]["test_namespace"])
 
