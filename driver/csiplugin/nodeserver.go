@@ -69,15 +69,18 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	glog.V(4).Infof("Target SpectrumScale Path : %v\n", volScalePath)
 
 	volScalePathInContainer := hostDir + volScalePath
-
-	pathInfo, err := os.Stat(volScalePathInContainer)
+	f, err := os.Lstat(volScalePathInContainer)
 	if err != nil {
-		return nil, fmt.Errorf("NodePublishVolume: failed to get stat of [%s]. Error [%v]", volScalePathInContainer, err)
+		return nil, fmt.Errorf("NodePublishVolume: failed to get lstat of [%s]. Error %v", volScalePathInContainer, err)
 	}
-	if !pathInfo.IsDir() {
-		return nil, fmt.Errorf("NodePublishVolume: [%s] is not directory", volScalePathInContainer)
+	if f.Mode()&os.ModeSymlink != 0 {
+		symlinkTarget, readlinkErr := os.Readlink(volScalePathInContainer)
+		if readlinkErr != nil {
+			return nil, fmt.Errorf("NodePublishVolume: failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
+		}
+		volScalePathInContainer = hostDir + symlinkTarget
+		glog.V(4).Infof("NodePublishVolume: symlink tarrget path is [%s]\n", volScalePathInContainer)
 	}
-
 	args := []string{"-f", "-c", "%T", volScalePathInContainer}
 
 	out, err := executeCmd("stat", args)
