@@ -1090,10 +1090,10 @@ def check_permissions_for_pvc(pvc_name, storage_class_parameters, created_object
     """
     get pv and verify permissions for pv
     """
-    if "permissions" not in value_sc.keys() or "shared" not in value_sc.keys():
+    if "permissions" not in storage_class_parameters.keys() or "shared" not in storage_class_parameters.keys():
         return
 
-    if "permissions" in value_sc.keys():
+    if "permissions" in storage_class_parameters.keys():
         permissions = storage_class_parameters["permissions"]
     elif storage_class_parameters["shared"]=="True":
         permissions = "777"
