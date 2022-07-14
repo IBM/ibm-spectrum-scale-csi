@@ -1480,7 +1480,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}, found.(client.Object))
 
 	if err != nil && errors.IsNotFound(err) {
-		message := "Pre-requisite resource not found."
+		message := "Resource not found."
 		logger.Error(err, message)
 		// TODO: Add event.
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
