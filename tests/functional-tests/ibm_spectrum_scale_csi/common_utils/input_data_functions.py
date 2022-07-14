@@ -19,7 +19,8 @@ def get_test_data(test_config):
         LOGGER.error(f"Error in configuration file {filepath} :", exc)
         assert False
 
-    data = data["CSI"]
+    if data.get("CSI") is not None:
+        data = data["CSI"]
     if data['keepobjects'] == "True" or data['keepobjects'] == "true":
         data['keepobjects'] = "True"
     elif data['keepobjects'] == "onfailure":
