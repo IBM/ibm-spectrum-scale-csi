@@ -32,15 +32,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var endPointIndex int = 0
-
 const errConnectionRefused string = "connection refused"
 
 type spectrumRestV2 struct {
-	httpClient *http.Client
-	endpoint   []string
-	user       string
-	password   string
+	httpClient    *http.Client
+	endpoint      []string
+	endPointIndex int
+	user          string
+	password      string
 }
 
 func (s *spectrumRestV2) isStatusOK(statusCode int) bool {
@@ -161,8 +160,9 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 			Transport: tr,
 			Timeout:   time.Second * 60,
 		},
-		user:     guiUser,
-		password: guiPwd,
+		user:          guiUser,
+		password:      guiPwd,
+		endPointIndex: 0, //Use first GUI as primary by default
 	}
 
 	for i := range scaleConfig.RestAPI {
@@ -997,7 +997,7 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 
 func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject interface{}, param interface{}) error {
 	glog.V(4).Infof("rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", urlSuffix, method, param)
-	endpoint := s.endpoint[endPointIndex]
+	endpoint := s.endpoint[s.endPointIndex]
 	glog.V(4).Infof("rest_v2 doHTTP: endpoint: %s", endpoint)
 	response, err := utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.user, s.password, param)
 
@@ -1568,11 +1568,11 @@ func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error)
 // endpoint is not active.
 func (s *spectrumRestV2) getNextEndpoint() string {
 	len := len(s.endpoint)
-	endPointIndex++
-	if endPointIndex >= len {
-		endPointIndex = endPointIndex % len
+	s.endPointIndex++
+	if s.endPointIndex >= len {
+		s.endPointIndex = s.endPointIndex % len
 	}
-	endpoint := s.endpoint[endPointIndex]
+	endpoint := s.endpoint[s.endPointIndex]
 	glog.V(5).Infof("getNextEndpoint: returning next endpoint: %s", endpoint)
 	return endpoint
 }
