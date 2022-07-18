@@ -725,6 +725,18 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			glog.Errorf("volume:[%v] - Error in source volume validation [%v]", volName, err)
 			return nil, err
 		}
+
+		// Restrict cloning LW to Fileset based or vise a versa
+		if (scaleVol.IsFilesetBased && !srcVolumeIDMembers.IsFilesetBased) ||
+			(!scaleVol.IsFilesetBased && srcVolumeIDMembers.IsFilesetBased) {
+			return nil, status.Error(codes.Unimplemented, "cloning of directory based volume to fileset based volume or vise a versa is not supported")
+		}
+
+		// Restrict cross cluster cloning
+		if scaleVol.ClusterId != srcVolumeIDMembers.ClusterId {
+			return nil, status.Error(codes.Unimplemented, "cloning of volume across clusters is not supported")
+
+		}
 	}
 
 	if isSnapSource {
@@ -1277,7 +1289,7 @@ func (cs *ScaleControllerServer) validateSrcVolumeID(vID *scaleVolId, scVol *sca
 		}
 	}
 
-	if scVol.IsFilesetBased {
+	if vID.IsFilesetBased {
 		if vID.FsetName == "" {
 			vID.FsetName, err = conn.GetFileSetNameFromId(vID.FsName, vID.FsetId)
 			if err != nil {
