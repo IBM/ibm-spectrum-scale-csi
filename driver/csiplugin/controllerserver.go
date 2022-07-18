@@ -729,7 +729,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		// Restrict cloning LW to Fileset based or vise a versa
 		if (scaleVol.IsFilesetBased && !srcVolumeIDMembers.IsFilesetBased) ||
 			(!scaleVol.IsFilesetBased && srcVolumeIDMembers.IsFilesetBased) {
-			return nil, status.Error(codes.Unimplemented, "cloning of directory based volume to fileset based volume or vise a versa is not supported")
+			return nil, status.Error(codes.Unimplemented, "cloning of directory based volume to fileset based volume or vice a versa is not supported")
 		}
 
 		// Restrict cross cluster cloning
