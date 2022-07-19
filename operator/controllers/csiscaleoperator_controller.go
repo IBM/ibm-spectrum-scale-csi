@@ -172,7 +172,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
-		logger.Error(err, "Couldn't add Finalizer")
+		message := "Couldn't add Finalizer"
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceUpdateError),
+			Message: message,
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -182,7 +190,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Attempting cleanup of CSI driver")
 		isFinalizerExists, err := r.hasFinalizer(instance)
 		if err != nil {
-			logger.Error(err, "Finalizer check failed")
+			message := "Finalizer check failed"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
@@ -192,17 +208,41 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
-			logger.Error(err, "Failed to delete ClusterRoles and ClusterRolesBindings")
+			message := "Failed to delete ClusterRoles and ClusterRolesBindings"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
 		if err := r.deleteCSIDriver(instance); err != nil {
-			logger.Error(err, "Failed to delete CSIDriver")
+			message := "Failed to delete CSIDriver"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
-			logger.Error(err, "Failed to remove Finalizer")
+			message := "Failed to remove Finalizer"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceUpdateError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 		logger.Info("Removed CSI driver successfully")
