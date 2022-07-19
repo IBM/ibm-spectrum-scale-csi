@@ -145,11 +145,20 @@ type CSIScaleOperatorStatus struct {
 	*/
 
 	// version is the current CSIDriver version installed by the operator.
-	Version string `json:"version,omitempty"`
+	Versions []Version `json:"versions,omitempty"`
 
 	// conditions contains the details for one aspect of the current state of this custom resource.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions",xDescriptors="urn:alm:descriptor:io.kubernetes.conditions"
-	Conditions []metav1.Condition `json:"condition,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+type Version struct {
+
+	//name is the name of the particular operand this version is for.
+	Name string `json:"name,omitempty"`
+
+	// version of a particular operand that is currently being managed.
+	Version string `json:"version,omitempty"`
 }
 
 /*
