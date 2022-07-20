@@ -235,11 +235,11 @@ spec:
     - name: Version
       type: string
       description: CSIDriver version.
-      jsonPath: .status.version
+      jsonPath: .status.versions[0].version
     - name: Success
       type: string
       description: CSI driver resource creation status.
-      jsonPath: .status.condition[?(@ "status")].status
+      jsonPath: .status.conditions[?(@ "status")].status
     schema:
       openAPIV3Schema:
         type: object
@@ -1454,9 +1454,6 @@ spec:
                       type: string
                       description: version of a particular operand that is currently
                         being managed.
-                  required:
-                  - name
-                  - version
     served: true
     storage: true
     subresources:
