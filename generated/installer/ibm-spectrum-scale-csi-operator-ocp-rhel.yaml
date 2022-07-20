@@ -1368,7 +1368,7 @@ spec:
             type: object
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
             properties:
-              condition:
+              conditions:
                 type: array
                 description: conditions contains the details for one aspect of the
                   current state of this custom resource.
@@ -1439,10 +1439,24 @@ spec:
                   - reason
                   - status
                   - type
-              version:
-                type: string
+              versions:
+                type: array
                 description: version is the current CSIDriver version installed by
                   the operator.
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: name is the name of the particular operand this
+                        version is for.
+                    version:
+                      type: string
+                      description: version of a particular operand that is currently
+                        being managed.
+                  required:
+                  - name
+                  - version
     served: true
     storage: true
     subresources:
