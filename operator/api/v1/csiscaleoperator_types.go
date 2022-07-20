@@ -364,9 +364,9 @@ type RestApi struct {
 
 // // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`,description="TODO: Add description."
 
-// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.status.version`,description="CSIDriver version."
+// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.status.versions[0].version`,description="CSIDriver version."
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.condition[?(@ "status")].status`,description="CSI driver resource creation status."
+// +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.conditions[?(@ "status")].status`,description="CSI driver resource creation status."
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
