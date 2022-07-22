@@ -75,21 +75,22 @@ func (s *spectrumRestV2) isRequestAccepted(response GenericResponse, url string)
 	return nil
 }
 
-func (s *spectrumRestV2) waitForJobCompletion(statusCode int, jobID uint64) error {
+func (s *spectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) error {
 	glog.V(4).Infof("rest_v2 waitForJobCompletion. jobID: %d, statusCode: %d", jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
 		jobURL := fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID)
 		_, err := s.AsyncJobCompletion(jobURL)
 		if err != nil {
+			glog.Errorf("error in waiting for job completion %v, %v", jobID, err)
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *spectrumRestV2) waitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error) {
-	glog.V(4).Infof("rest_v2 waitForJobCompletionWithResp. jobID: %d, statusCode: %d", jobID, statusCode)
+func (s *spectrumRestV2) WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error) {
+	glog.V(4).Infof("rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
 		response := GenericResponse{}
@@ -126,7 +127,7 @@ func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) (GenericResponse, err
 		}
 		break
 	}
-	if jobQueryResponse.Jobs[0].Status == "COMPLETED" {
+	if jobQueryResponse.Jobs[0].Status == "COMPLETED" || jobQueryResponse.Jobs[0].Status == "UNKNOWN" {
 		return jobQueryResponse, nil
 	} else {
 		glog.Errorf("Async Job failed: %v", jobQueryResponse)
@@ -352,18 +353,6 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 	return copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) error {
-	glog.V(4).Infof("rest_v2 WaitForJobCompletion. statusCode: %v, jobID: %v", statusCode, jobID)
-
-	err := s.waitForJobCompletion(statusCode, jobID)
-	if err != nil {
-		glog.Errorf("error in waiting for job completion %v, %v", jobID, err)
-		return err
-	}
-
-	return nil
-}
-
 func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyFilesetPath. filesystem: %s, fileset: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, srcPath, targetPath, nodeclass)
 
@@ -443,7 +432,7 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 		return err
 	}
 
-	err = s.waitForJobCompletion(createSnapshotResponse.Status.Code, createSnapshotResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(createSnapshotResponse.Status.Code, createSnapshotResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as snapshot already exists
 			fmt.Println(err)
@@ -474,7 +463,7 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 		return err
 	}
 
-	err = s.waitForJobCompletion(deleteSnapshotResponse.Status.Code, deleteSnapshotResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(deleteSnapshotResponse.Status.Code, deleteSnapshotResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Unable to delete snapshot %s: %v", snapshotName, err)
 		return err
@@ -519,7 +508,7 @@ func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string
 		return err
 	}
 
-	err = s.waitForJobCompletion(updateFilesetResponse.Status.Code, updateFilesetResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(updateFilesetResponse.Status.Code, updateFilesetResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("unable to update fileset %s: %v", filesetName, err)
 		return err
@@ -589,7 +578,7 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 		return err
 	}
 
-	err = s.waitForJobCompletion(createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
 			fmt.Println(err)
@@ -624,7 +613,7 @@ func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string
 		return err
 	}
 
-	err = s.waitForJobCompletion(deleteFilesetResponse.Status.Code, deleteFilesetResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(deleteFilesetResponse.Status.Code, deleteFilesetResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Unable to delete fileset %s: %v", filesetName, err)
 		return err
@@ -653,7 +642,7 @@ func (s *spectrumRestV2) LinkFileset(filesystemName string, filesetName string, 
 		return err
 	}
 
-	err = s.waitForJobCompletion(linkFilesetResponse.Status.Code, linkFilesetResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(linkFilesetResponse.Status.Code, linkFilesetResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Error in linking fileset %s: %v", filesetName, err)
 		return err
@@ -680,7 +669,7 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 		return err
 	}
 
-	err = s.waitForJobCompletion(unlinkFilesetResponse.Status.Code, unlinkFilesetResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(unlinkFilesetResponse.Status.Code, unlinkFilesetResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Error in unlink fileset %s: %v", filesetName, err)
 		return err
@@ -799,7 +788,7 @@ func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath strin
 		return err
 	}
 
-	err = s.waitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
 			glog.Infof("Directory exists. %v", err)
@@ -860,7 +849,7 @@ func (s *spectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath str
 		return err
 	}
 
-	err = s.waitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
 			glog.Infof("Directory exists. %v", err)
@@ -900,7 +889,7 @@ func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName stri
 		return err
 	}
 
-	err = s.waitForJobCompletion(setQuotaResponse.Status.Code, setQuotaResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(setQuotaResponse.Status.Code, setQuotaResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Unable to set quota for fileset %s: %v", filesetName, err)
 		return err
@@ -1072,7 +1061,7 @@ func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string)
 		return err
 	}
 
-	err = s.waitForJobCompletion(mountFilesystemResponse.Status.Code, mountFilesystemResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(mountFilesystemResponse.Status.Code, mountFilesystemResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Unable to Mount filesystem %s on node %s: %v", filesystemName, nodeName, err)
 		return err
@@ -1101,7 +1090,7 @@ func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName strin
 		return err
 	}
 
-	err = s.waitForJobCompletion(unmountFilesystemResponse.Status.Code, unmountFilesystemResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(unmountFilesystemResponse.Status.Code, unmountFilesystemResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("Unable to unmount filesystem %s on node %s: %v", filesystemName, nodeName, err)
 		return err
@@ -1185,7 +1174,7 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 		return err
 	}
 
-	err = s.waitForJobCompletion(deleteLnkResponse.Status.Code, deleteLnkResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(deleteLnkResponse.Status.Code, deleteLnkResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG2006C") {
 			glog.V(4).Infof("Since slink %v was already deleted, so returning success", LnkName)
@@ -1219,7 +1208,7 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, 
 		return err
 	}
 
-	err = s.waitForJobCompletion(deleteDirResponse.Status.Code, deleteDirResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(deleteDirResponse.Status.Code, deleteDirResponse.Jobs[0].JobID)
 	if err != nil {
 		return fmt.Errorf("Unable to delete dir %v:%v", dirName, err)
 	}
@@ -1244,7 +1233,7 @@ func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (s
 		return "", err
 	}
 
-	jobResp, err := s.waitForJobCompletionWithResp(statDirResponse.Status.Code, statDirResponse.Jobs[0].JobID)
+	jobResp, err := s.WaitForJobCompletionWithResp(statDirResponse.Status.Code, statDirResponse.Jobs[0].JobID)
 	if err != nil {
 		return "", fmt.Errorf("Unable to stat dir %v:%v", dirName, err)
 	}
@@ -1441,7 +1430,7 @@ func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs strin
 		return err
 	}
 
-	err = s.waitForJobCompletion(makeSlnkResp.Status.Code, makeSlnkResp.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(makeSlnkResp.Status.Code, makeSlnkResp.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
 			return nil
@@ -1480,7 +1469,7 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 		return err
 	}
 
-	err = s.waitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
+	err = s.WaitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
 	if err != nil {
 		glog.Errorf("setting policy rule %s for filesystem %s failed with error %v", policy.Policy, filesystemName, err)
 		return err
