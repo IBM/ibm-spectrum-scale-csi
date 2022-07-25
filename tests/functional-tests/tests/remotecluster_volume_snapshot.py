@@ -296,55 +296,6 @@ def test_snapshot_dynamic_pass_18():
     snapshot_object.test_dynamic(value_sc, test_restore=False)
 
 
-@pytest.mark.regression
-def test_snapshot_dynamic_different_sc_1():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-
-
-@pytest.mark.regression
-def test_snapshot_dynamic_different_sc_2():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
-    restore_sc = {"volBackendFs": data["remoteFs"],
-                  "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-
-
-def test_snapshot_dynamic_different_sc_3():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
-                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
-                "gid": data["r_gid_number"]}
-    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-
-
-def test_snapshot_dynamic_different_sc_4():
-    value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"],
-                "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
-                "gid": data["r_gid_number"]}
-    restore_sc = {"volBackendFs": data["remoteFs"],
-                  "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-
-
-def test_snapshot_dynamic_different_sc_5():
-    value_sc = {"volBackendFs": data["remoteFs"],
-                "inodeLimit": data["r_inodeLimit"],
-                "clusterId": data["remoteid"], "filesetType": "independent"}
-    restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-
-
-def test_snapshot_dynamic_different_sc_6():
-    value_sc = {"volBackendFs": data["remoteFs"],
-                "inodeLimit": data["r_inodeLimit"],
-                "clusterId": data["remoteid"], "filesetType": "independent"}
-    restore_sc = {"volBackendFs": data["remoteFs"],
-                  "filesetType": "dependent", "clusterId": data["remoteid"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-
-
 def test_snapshot_static_different_sc_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
@@ -488,3 +439,1513 @@ def test_snapshot_dynamic_volume_cloning_1():
         "access_modes": "ReadWriteOnce", "storage": "1Gi"}]}
     snapshot_object.test_dynamic(value_sc, test_restore=True,
                                  value_pvc=value_pvc, value_clone_passed=value_clone_passed)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_1_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_1_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_2_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"],
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_2_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_3_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_3_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_4_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_4_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Independent_5_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
+                "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Dependent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Independent_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {"volBackendFs": data["remoteFs"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_LW_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Version2_1():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Dependent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Independent_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_LW_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Version2_2():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Dependent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Independent_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_LW_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Version2_3():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Dependent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Independent_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_LW_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Version2_4():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Dependent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "filesetType": "dependent", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Independent_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_LW_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+
+
+def test_driver_volume_snapshot_Version2_5_to_Version2_5():
+    value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
+                "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    restore_sc = {
+        "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
