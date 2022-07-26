@@ -38,7 +38,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,14 +70,16 @@ var daemonSetRestartedValue = ""
 
 var csiLog = log.Log.WithName("csiscaleoperator_controller")
 
-// define labels that users need to add to CSI secrets.
-var secretsLabels = map[string]string{
-	config.LabelProduct: string(config.Product),
-}
-
 type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
+
+// watchResources stores resource kind and resource names of the resources
+// that the controller is going to watch.
+// Namespace information is not stored in the variable
+// as the operator is namespace scoped and watches only within the given namespaces.
+// Reference: getWatchNamespace() in main.go
+var watchResources = map[string]map[string]bool{corev1.ResourceConfigMaps.String(): {}, corev1.ResourceSecrets.String(): {}}
 
 // +kubebuilder:rbac:groups=csi.ibm.com,resources=*,verbs=*
 
@@ -171,6 +172,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	for _, cluster := range instance.Spec.Clusters {
+		if cluster.Cacert != "" {
+			watchResources[corev1.ResourceConfigMaps.String()][cluster.Cacert] = true
+		}
+		if cluster.Secrets != "" {
+			watchResources[corev1.ResourceSecrets.String()][cluster.Secrets] = true
+		}
+	}
+
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
 		logger.Error(err, "Couldn't add Finalizer")
@@ -213,6 +223,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if pass, err := r.checkPrerequisite(instance); !pass {
 		logger.Error(err, "Pre-requisite check failed.")
 		return ctrl.Result{}, err
+	} else {
+		logger.Info("Pre-requisite check passed.")
 	}
 
 	logger.Info("Create resources")
@@ -457,16 +469,8 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	logger.Info("Running IBM Spectrum Scale CSI operator", "version", config.OperatorVersion)
 	logger.Info("Setting up the controller with the manager.")
-	p, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
-		MatchLabels: secretsLabels,
-	})
-	if err != nil {
-		logger.Error(err, "Unable to create label selector predicate. Controller instance will not be created.")
-		return err
-	}
-	preds := builder.WithPredicates(p)
 
-	CSIReconcileRequestFunc := func() []reconcile.Request {
+	CSIReconcileRequestFunc := func(obj client.Object) []reconcile.Request {
 		var requests = []reconcile.Request{}
 		var CSIScales = csiv1.CSIScaleOperatorList{}
 		_ = mgr.GetClient().List(context.TODO(), &CSIScales)
@@ -482,60 +486,53 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	}
 
+	isCSIResource := func(resourceName string, resourceKind string) bool {
+		return watchResources[resourceKind][resourceName]
+	}
+
+	predicateFuncs := func(resourceKind string) predicate.Funcs {
+		return predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				if isCSIResource(e.Object.GetName(), resourceKind) {
+					r.restartDriverPods(mgr, "created", corev1.ResourceConfigMaps.String(), e.Object.GetName())
+				} else {
+					return false
+				}
+				return true
+			},
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
+					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+						r.restartDriverPods(mgr, "updated", corev1.ResourceConfigMaps.String(), e.ObjectOld.GetName())
+					}
+				} else {
+					return false
+				}
+				return true
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				if isCSIResource(e.Object.GetName(), resourceKind) {
+					r.restartDriverPods(mgr, "deleted", corev1.ResourceConfigMaps.String(), e.Object.GetName())
+				} else {
+					return false
+				}
+				return true
+			},
+		}
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &corev1.Secret{}},
-			handler.Funcs{
-				CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-					creationTime := e.Object.GetCreationTimestamp().Time
-					if time.Since(creationTime).Minutes() <= float64(2) {
-						r.restartDriverPods(mgr, "created", "Secret", e.Object.GetName())
-						for _, request := range CSIReconcileRequestFunc() {
-							q.Add(request)
-						}
-					}
-				},
-				DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-					r.restartDriverPods(mgr, "deleted", "Secret", e.Object.GetName())
-					for _, request := range CSIReconcileRequestFunc() {
-						q.Add(request)
-					}
-				},
-				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
-						r.restartDriverPods(mgr, "updated", "Secret", e.ObjectOld.GetName())
-						for _, request := range CSIReconcileRequestFunc() {
-							q.Add(request)
-						}
-					}
-				},
-			}, preds).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
-			handler.Funcs{
-				CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-					creationTime := e.Object.GetCreationTimestamp().Time
-					if time.Since(creationTime).Minutes() <= float64(2) {
-						r.restartDriverPods(mgr, "created", "ConfigMap", e.Object.GetName())
-						for _, request := range CSIReconcileRequestFunc() {
-							q.Add(request)
-						}
-					}
-				},
-				DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-					r.restartDriverPods(mgr, "deleted", "ConfigMap", e.Object.GetName())
-					for _, request := range CSIReconcileRequestFunc() {
-						q.Add(request)
-					}
-				},
-				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-					if !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
-						r.restartDriverPods(mgr, "updated", "ConfigMap", e.ObjectOld.GetName())
-						for _, request := range CSIReconcileRequestFunc() {
-							q.Add(request)
-						}
-					}
-				},
-			}, preds).
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
+			builder.WithPredicates(predicateFuncs(corev1.ResourceSecrets.String())),
+		).
+		Watches(
+			&source.Kind{Type: &corev1.ConfigMap{}},
+			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
+			builder.WithPredicates(predicateFuncs(corev1.ResourceConfigMaps.String())),
+		).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
@@ -1273,6 +1270,7 @@ func (r *CSIScaleOperatorReconciler) areAllPodImagesSynced(controllerDeployment 
 }
 */
 
+// TODO: Unused code. Remove if not required.
 // Helper function to check for a string in a slice of strings.
 func containsString(slice []string, s string) bool {
 	for _, item := range slice {
@@ -1442,7 +1440,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 
 	if len(secrets) != 0 {
 		for _, secret := range secrets {
-			if exists, err := r.resourceExists(instance, secret, "secret"); !exists {
+			if exists, err := r.resourceExists(instance, secret, corev1.ResourceSecrets.String()); !exists {
 				return false, err
 			}
 			logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
@@ -1451,7 +1449,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 
 	if len(configMaps) != 0 {
 		for _, configMap := range configMaps {
-			if exists, err := r.resourceExists(instance, configMap, "configMap"); !exists {
+			if exists, err := r.resourceExists(instance, configMap, corev1.ResourceConfigMaps.String()); !exists {
 				return false, err
 			}
 			logger.Info(fmt.Sprintf("ConfigMap resource %s found.", configMap))
@@ -1466,18 +1464,23 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	logger := csiLog.WithName("resourceExists").WithValues("Kind", kind, "Name", name)
 	logger.Info("Checking resource exists")
 
-	var found interface{}
-	if kind == "secret" {
-		found = &corev1.Secret{}
-	}
-	if kind == "configMap" {
-		found = &corev1.ConfigMap{}
+	var err error
+
+	if kind == corev1.ResourceSecrets.String() {
+		found := &corev1.Secret{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      name,
+			Namespace: instance.Namespace,
+		}, found)
 	}
 
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
-		Name:      name,
-		Namespace: instance.Namespace,
-	}, found.(client.Object))
+	if kind == corev1.ResourceConfigMaps.String() {
+		found := &corev1.ConfigMap{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      name,
+			Namespace: instance.Namespace,
+		}, found)
+	}
 
 	if err != nil && errors.IsNotFound(err) {
 		message := "Resource not found."
