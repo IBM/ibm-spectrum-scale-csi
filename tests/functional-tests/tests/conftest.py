@@ -8,6 +8,7 @@ import ibm_spectrum_scale_csi.common_utils.input_data_functions as inputfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.csi_object_function as csiobjectfunc
 import ibm_spectrum_scale_csi.kubernetes_apis.csi_storage_function as csistoragefunc
 import ibm_spectrum_scale_csi.kubernetes_apis.kubernetes_objects_function as kubeobjectfunc
+import ibm_spectrum_scale_csi.spectrum_scale_apis.fileset_functions as filesetfunc
 
 LOGGER = logging.getLogger()
 
@@ -62,6 +63,7 @@ def data_fixture(request):
     data_fixture = {}
     data_fixture["cmd_values"] = inputfunc.get_pytest_cmd_values(request)
     data_fixture["driver_data"] = inputfunc.read_driver_data(data_fixture["cmd_values"])
+    filesetfunc.set_scalevalidation(data_fixture["driver_data"]["scalevalidation"])
     data_fixture["operator_data"] = inputfunc.read_operator_data(data_fixture["cmd_values"]["clusterconfig_value"],
                                                                  data_fixture["cmd_values"]["operator_namespace"], data_fixture["cmd_values"]["test_config"],
                                                                  data_fixture["cmd_values"]["kubeconfig_value"])
