@@ -396,12 +396,13 @@ func init() {
 type CSIReason string
 
 const (
-	CSIConfigured       CSIReason = "successful"
-	CSINotConfigured    CSIReason = "CSIError"
-	ResourceSyncError   CSIReason = "syncError"
-	ResourceCreateError CSIReason = "createError"
-	ResourceReadError   CSIReason = "readError"
-	ResourceUpdateError CSIReason = "updateError"
-	ResourceDeleteError CSIReason = "deleteError"
-	Unknown             CSIReason = "unknown"
+	CSIConfigured         CSIReason = "successful"
+	CSINotConfigured      CSIReason = "CSIError"
+	ResourceSyncError     CSIReason = "syncError"
+	ResourceCreateError   CSIReason = "createError"
+	ResourceReadError     CSIReason = "readError"
+	ResourceUpdateError   CSIReason = "updateError"
+	ResourceDeleteError   CSIReason = "deleteError"
+	Unknown               CSIReason = "unknown"
+	ResourceNotFoundError CSIReason = "resourceNotFound"
 )
