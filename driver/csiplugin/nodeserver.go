@@ -19,6 +19,7 @@ package scale
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -67,55 +68,50 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 
 	glog.V(4).Infof("Target SpectrumScale Path : %v\n", volScalePath)
 
-	// Check if /host directory exists, if exists use bind mount,
-	// otherwise use symlink
-	hostDirMounted := false
-	if _, err = os.Stat(hostDir); err == nil {
-		hostDirMounted = true
-	} else if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to get stat of [%s]. Error [%v]", hostDir, err)
+	volScalePathInContainer := hostDir + volScalePath
+	f, err := os.Lstat(volScalePathInContainer)
+	if err != nil {
+		return nil, fmt.Errorf("NodePublishVolume: failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
+	}
+	if f.Mode()&os.ModeSymlink != 0 {
+		symlinkTarget, readlinkErr := os.Readlink(volScalePathInContainer)
+		if readlinkErr != nil {
+			return nil, fmt.Errorf("NodePublishVolume: failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
+		}
+		volScalePathInContainer = hostDir + symlinkTarget
+		glog.V(4).Infof("NodePublishVolume: symlink tarrget path is [%s]\n", volScalePathInContainer)
+	}
+	args := []string{"-f", "-c", "%T", volScalePathInContainer}
+
+	out, err := executeCmd("stat", args)
+	if err != nil {
+		return nil, fmt.Errorf("NodePublishVolume: failed to get type of file with stat of [%s]. Error [%v]", volScalePathInContainer, err)
+	}
+	outString := fmt.Sprintf("%s", out)
+	outString = strings.TrimRight(outString, "\n")
+	if outString != "gpfs" {
+		return nil, fmt.Errorf("NodePublishVolume: the path [%s] is not a valid gpfs path, the path is of type [%s]", volScalePath, outString)
+	}
+	notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if err = os.Mkdir(targetPath, 0750); err != nil {
+				return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
+		}
+	}
+	if !notMP {
+		return &csi.NodePublishVolumeResponse{}, nil
 	}
 
-	if !hostDirMounted {
-		//Use symlink
-		//Check if mount dir/slink exists, if yes delete it
-		if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
-			glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
-			err := os.Remove(targetPath)
-			if err != nil {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete the target path - [%s]. Error [%v]", targetPath, err.Error()))
-			}
-		}
-
-		// create symlink
-		glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, volScalePath)
-		symlinkerr := os.Symlink(volScalePath, targetPath)
-		if symlinkerr != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, volScalePath, symlinkerr.Error()))
-		}
-	} else {
-		//Use bind mount
-		notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				if err = os.Mkdir(targetPath, 0750); err != nil {
-					return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
-				}
-			} else {
-				return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
-			}
-		}
-		if !notMP {
-			return &csi.NodePublishVolumeResponse{}, nil
-		}
-
-		// create bind mount
-		options := []string{"bind"}
-		mounter := mount.New("")
-		glog.V(4).Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
-		if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
-			return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
-		}
+	// create bind mount
+	options := []string{"bind"}
+	mounter := mount.New("")
+	glog.V(4).Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
+	if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
+		return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
 	}
 
 	glog.V(4).Infof("successfully mounted %s", targetPath)
