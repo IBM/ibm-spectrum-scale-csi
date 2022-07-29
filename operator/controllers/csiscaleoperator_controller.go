@@ -534,7 +534,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "created", corev1.ResourceConfigMaps.String(), e.Object.GetName())
+					r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
 				} else {
 					return false
 				}
@@ -543,7 +543,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
 					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
-						r.restartDriverPods(mgr, "updated", corev1.ResourceConfigMaps.String(), e.ObjectOld.GetName())
+						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
 					}
 				} else {
 					return false
@@ -552,7 +552,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "deleted", corev1.ResourceConfigMaps.String(), e.Object.GetName())
+					r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
 				} else {
 					return false
 				}
