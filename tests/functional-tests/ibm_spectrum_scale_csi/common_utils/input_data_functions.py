@@ -21,6 +21,9 @@ def get_test_data(test_config):
 
     if data.get("CSI") is not None:
         data = data["CSI"]
+    
+    if data.get("scalevalidation") is None:
+        data["scalevalidation"] = "True"
     if data['keepobjects'] == "True" or data['keepobjects'] == "true":
         data['keepobjects'] = "True"
     elif data['keepobjects'] == "onfailure":

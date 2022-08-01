@@ -13,6 +13,11 @@ def set_data(data):
     test = data
 
 
+def set_scalevalidation(temp_scalevalidation):
+    global scalevalidation
+    scalevalidation = temp_scalevalidation
+
+
 def delete_fileset(test_data):
     """
     Deletes the primaryFset provided in configuration file
@@ -112,6 +117,9 @@ def cred_check(test_data):
 
     if API gives any error , It asserts
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'cred check : skipped for guihost {test_data["guiHost"]} as scalevalidation = "False" in config file')
+        return
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/cluster'
     try:
         response = requests.get(get_link, verify=False, auth=(
@@ -324,6 +332,9 @@ def delete_created_fileset(volume_name):
     """
     if volume_name is None:
         return
+    if scalevalidation == "False":
+        LOGGER.warning(f'Delete created fileset : skipped for fileset {volume_name} as scalevalidation = "False" in config file')
+        return
     get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/'
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -359,6 +370,23 @@ def delete_created_fileset(volume_name):
         assert False
 
 
+def check_fileset_deleted(volume_name):
+    """
+    Checks fileset volume_name deleted or not
+    """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check fileset deleted : skipped for fileset {volume_name} as scalevalidation = "False" in config file')
+        return True
+    get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}'
+    time.sleep(10)
+    response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
+    LOGGER.debug(response.text)
+    search_format = f'"{volume_name}",'
+    search_result = re.search(search_format, str(response.text))
+    if search_result is None:
+        return True
+    return False
+
 def created_fileset_exists(volume_name):
     """
     Checks fileset volume_name exists or not
@@ -374,6 +402,9 @@ def created_fileset_exists(volume_name):
        None
 
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check fileset exists : skipped for fileset {volume_name} as scalevalidation = "False" in config file')
+        return True
     get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}'
     time.sleep(10)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
@@ -399,6 +430,10 @@ def create_dir(dir_name):
        None
 
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Create Directory : skipped for directory {dir_name} as scalevalidation = "False" in config file')
+        return
+
     if check_dir(dir_name) is True:
         return
 
@@ -427,6 +462,9 @@ def check_dir(dir_name):
     checks directory dir_name is present or not
     asserts  if not present
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check Directory : skipped for directory {dir_name} as scalevalidation = "False" in config file')
+        return
     val = 0
     while val < 12:
         check_dir_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/owner/{dir_name}'
@@ -459,6 +497,9 @@ def delete_dir(dir_name):
        None
 
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Delete Directory : skipped for directory {dir_name} as scalevalidation = "False" in config file')
+        return
     dir_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/directory/{dir_name}'
     LOGGER.debug(dir_link)
     headers = {
@@ -527,6 +568,11 @@ def get_mount_point():
 
 def get_remoteFs_remotename_and_remoteid(test_data):
     """ return name of remote filesystem's remote name """
+    if scalevalidation == "False":
+        LOGGER.warning('auto remoteFs_remotename_and_remoteid fetch : skipped as scalevalidation = "False" in config file')
+        LOGGER.warning(f'Using remoteclusterid {test_data["remoteclusterid"]} provided in test.config file')
+        return test_data["remoteFs"],test_data["remoteclusterid"]
+
     info_filesystem = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/filesystems/{test_data["remoteFs"]}'
     response = requests.get(info_filesystem, verify=False,
                             auth=(test_data["username"], test_data["password"]))
@@ -577,6 +623,9 @@ def check_snapshot_exists(snapshot_name, volume_name):
     if created returns True
     else return False
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check snapshot exists : skipped for snapshot {snapshot_name} as scalevalidation = "False" in config file')
+        return True
     val = 0
     while val < 12:
         snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
@@ -600,6 +649,11 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
     """
     create snapshot snapshot_name for volume_name
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Create snapshot : skipped for snapshot {snapshot_name} as scalevalidation = "False" in config file'
+)
+        return
+
     headers = {
         'content-type': 'application/json',
         'accept': 'application/json',
@@ -616,6 +670,10 @@ def create_snapshot(snapshot_name, volume_name, created_objects):
 
 
 def delete_snapshot(snapshot_name, volume_name, created_objects):
+    if scalevalidation == "False":
+        LOGGER.warning(f'Delete snapshot : skipped for snapshot {snapshot_name} as scalevalidation = "False" in config file'
+)
+        return
     snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots/{snapshot_name}'
     response = requests.delete(snap_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -625,6 +683,9 @@ def delete_snapshot(snapshot_name, volume_name, created_objects):
 
 
 def check_snapshot_deleted(snapshot_name, volume_name):
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check snapshot deleted : skipped for snapshot {snapshot_name} as scalevalidation = "False" in config file')
+        return True
     val = 0
     while val < 12:
         snap_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}/snapshots'
@@ -653,6 +714,9 @@ def feature_available(feature_name):
     returns True , if passed feature_name available in scale version
     else , returns False
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check feature available : skipped for feature {feature_name} as scalevalidation = "False" in config file')
+        return True
     features = {"snapshot": 5110, "permissions": 5112}
     scale_version = return_scale_version()
     if int(scale_version) >= features[feature_name]:
@@ -664,6 +728,10 @@ def return_scale_version():
     """
     get spectrum scale version and return it
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Get scale version : skipped for gui {test["guiHost"]} as scalevalidation = "False" in config file'
+)
+        return "9999"
     get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/info'
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
     LOGGER.debug(response.text)
@@ -679,6 +747,9 @@ def get_scale_version(test_data):
     """
     get spectrum scale version and display it
     """
+    if scalevalidation == "False":
+        LOGGER.warning(f'Get scale version : skipped for gui {test["guiHost"]} as scalevalidation = "False" in config file')
+        return
     get_link = f'https://{test_data["guiHost"]}:{test_data["port"]}/scalemgmt/v2/info'
     response = requests.get(get_link, verify=False, auth=(
         test_data["username"], test_data["password"]))
@@ -719,6 +790,10 @@ def get_and_verify_fileset_permissions(volume_name, mode, cg_fileset_name):
        i.e. for owner, group and everyone
     """
     # get acl for a path
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check fileset permissions : skipped for fileset {volume_name} as scalevalidation = "False" in config file')
+        return True
+
     if cg_fileset_name is not None:
         get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/acl/{cg_fileset_name}%2F{volume_name}'
     else:
@@ -791,6 +866,9 @@ def get_and_verify_fileset_permissions(volume_name, mode, cg_fileset_name):
 
 
 def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check fileset quota: skipped for fileset {volume_name} as scalevalidation = "False" in config file')
+        return True
     get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/quotas?filter=objectName={volume_name}'
     LOGGER.debug(get_link)
     response = requests.get(get_link, verify=False, auth=(test["username"], test["password"]))
@@ -828,6 +906,9 @@ def check_fileset_quota(volume_name, fileset_size, max_inode_from_sc):
 
 
 def check_fileset_max_inode(volume_name, expected_max_inode):
+    if scalevalidation == "False":
+        LOGGER.warning(f'Check fileset max inode: skipped for fileset {volume_name} as scalevalidation = "False" in config file')
+        return True
     count = 15
     while count > 0:
         get_link = f'https://{test["guiHost"]}:{test["port"]}/scalemgmt/v2/filesystems/{test["primaryFs"]}/filesets/{volume_name}'
@@ -854,3 +935,7 @@ def check_fileset_max_inode(volume_name, expected_max_inode):
         f"PVC Check : Either actual max inode number is smaller than expected max inodes {expected_max_inode} or response does not contain 'maxNumInodes' ( for more info STG Defect 285687)")
     LOGGER.error(response.text)
     return False
+
+
+def get_scalevalidation():
+    return scalevalidation
