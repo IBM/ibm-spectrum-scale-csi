@@ -2125,7 +2125,7 @@ def check_cg_fileset_deleted(cg_fileset_name, created_objects):
 
     for _ in range(0, 24):
         LOGGER.info(f"Checking for deletion of consistency group fileset {cg_fileset_name}")
-        if not(filesetfunc.created_fileset_exists(cg_fileset_name)):
+        if filesetfunc.check_fileset_deleted(cg_fileset_name):
             created_objects["cg"].remove(cg_fileset_name)
             LOGGER.info(f"Consistency group fileset {cg_fileset_name} is deleted")
             break
