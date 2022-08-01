@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -37,7 +38,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -70,14 +70,16 @@ var daemonSetRestartedValue = ""
 
 var csiLog = log.Log.WithName("csiscaleoperator_controller")
 
-// define labels that users need to add to CSI secrets.
-var secretsLabels = map[string]string{
-	config.LabelProduct: string(config.Product),
-}
-
 type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
+
+// watchResources stores resource kind and resource names of the resources
+// that the controller is going to watch.
+// Namespace information is not stored in the variable
+// as the operator is namespace scoped and watches only within the given namespaces.
+// Reference: getWatchNamespace() in main.go
+var watchResources = map[string]map[string]bool{corev1.ResourceConfigMaps.String(): {}, corev1.ResourceSecrets.String(): {}}
 
 // +kubebuilder:rbac:groups=csi.ibm.com,resources=*,verbs=*
 
@@ -170,9 +172,26 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	for _, cluster := range instance.Spec.Clusters {
+		if cluster.Cacert != "" {
+			watchResources[corev1.ResourceConfigMaps.String()][cluster.Cacert] = true
+		}
+		if cluster.Secrets != "" {
+			watchResources[corev1.ResourceSecrets.String()][cluster.Secrets] = true
+		}
+	}
+
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
-		logger.Error(err, "Couldn't add Finalizer")
+		message := "Couldn't add Finalizer"
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceUpdateError),
+			Message: message,
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -182,7 +201,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Attempting cleanup of CSI driver")
 		isFinalizerExists, err := r.hasFinalizer(instance)
 		if err != nil {
-			logger.Error(err, "Finalizer check failed")
+			message := "Finalizer check failed"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
@@ -192,21 +219,52 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
-			logger.Error(err, "Failed to delete ClusterRoles and ClusterRolesBindings")
+			message := "Failed to delete ClusterRoles and ClusterRolesBindings"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
 		if err := r.deleteCSIDriver(instance); err != nil {
-			logger.Error(err, "Failed to delete CSIDriver")
+			message := "Failed to delete CSIDriver"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
-			logger.Error(err, "Failed to remove Finalizer")
+			message := "Failed to remove Finalizer"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceUpdateError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 		logger.Info("Removed CSI driver successfully")
 		return ctrl.Result{}, nil
+	}
+
+	if pass, err := r.checkPrerequisite(instance); !pass {
+		logger.Error(err, "Pre-requisite check failed.")
+		return ctrl.Result{}, err
+	} else {
+		logger.Info("Pre-requisite check passed.")
 	}
 
 	logger.Info("Create resources")
@@ -451,16 +509,8 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	logger.Info("Running IBM Spectrum Scale CSI operator", "version", config.OperatorVersion)
 	logger.Info("Setting up the controller with the manager.")
-	p, err := predicate.LabelSelectorPredicate(metav1.LabelSelector{
-		MatchLabels: secretsLabels,
-	})
-	if err != nil {
-		logger.Error(err, "Unable to create label selector predicate. Controller instance will not be created.")
-		return err
-	}
-	preds := builder.WithPredicates(p)
 
-	CSIReconcileRequestFunc := func() []reconcile.Request {
+	CSIReconcileRequestFunc := func(obj client.Object) []reconcile.Request {
 		var requests = []reconcile.Request{}
 		var CSIScales = csiv1.CSIScaleOperatorList{}
 		_ = mgr.GetClient().List(context.TODO(), &CSIScales)
@@ -476,6 +526,61 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	}
 
+	isCSIResource := func(resourceName string, resourceKind string) bool {
+		return watchResources[resourceKind][resourceName]
+	}
+
+	predicateFuncs := func(resourceKind string) predicate.Funcs {
+		return predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				if isCSIResource(e.Object.GetName(), resourceKind) {
+					r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
+				} else {
+					return false
+				}
+				return true
+			},
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
+					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+					}
+				} else {
+					return false
+				}
+				return true
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				if isCSIResource(e.Object.GetName(), resourceKind) {
+					r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
+				} else {
+					return false
+				}
+				return true
+			},
+		}
+	}
+
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
+			builder.WithPredicates(predicateFuncs(corev1.ResourceSecrets.String())),
+		).
+		Watches(
+			&source.Kind{Type: &corev1.ConfigMap{}},
+			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
+			builder.WithPredicates(predicateFuncs(corev1.ResourceConfigMaps.String())),
+		).
+		Owns(&appsv1.Deployment{}).
+		Complete(r)
+}
+
+func (r *CSIScaleOperatorReconciler) restartDriverPods(mgr ctrl.Manager, event string, resourceKind string, resourceName string) {
+
+	logger := csiLog.WithName("restartDriverPods").WithValues("Kind", resourceKind, "Name", resourceName, "Event", event)
+
 	CSIDaemonListFunc := func() []appsv1.DaemonSet {
 		var CSIDaemonSets = []appsv1.DaemonSet{}
 		var DaemonSets = appsv1.DaemonSetList{}
@@ -489,46 +594,17 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return CSIDaemonSets
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &corev1.Secret{}},
-			handler.Funcs{
-				CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-					for _, request := range CSIReconcileRequestFunc() {
-						q.Add(request)
-					}
-				},
-				UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-					// TODO: Update only those daemon set which are in the same namespace as the secret that triggered the event.
+	daemonSets := CSIDaemonListFunc()
+	for i := range daemonSets {
+		logger.Info("Watched resource is modified. Driver pods will be restarted.")
+		err := r.rolloutRestartNode(&daemonSets[i])
+		if err != nil {
+			logger.Error(err, "Unable to restart driver pods. Please restart node specific pods manually.")
+		} else {
+			daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
+		}
+	}
 
-					olObject := e.ObjectOld.(*corev1.Secret)
-					newObject := e.ObjectNew.(*corev1.Secret)
-					oldData := fmt.Sprintf("%v", olObject.Data)
-					newData := fmt.Sprintf("%v", newObject.Data)
-					if oldData != newData {
-						daemonSets := CSIDaemonListFunc()
-						for i := range daemonSets {
-							logger.Info("Secret " + olObject.Name + " is modified. DaemonSet will be updated. Restarting node specific pods.")
-							err = r.rolloutRestartNode(&daemonSets[i])
-							if err != nil {
-								logger.Error(err, "Unable to update daemon set. Please restart node specific pods manually.")
-							} else {
-								daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
-							}
-						}
-						for _, request := range CSIReconcileRequestFunc() {
-							q.Add(request)
-						}
-					}
-				},
-				DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-					for _, request := range CSIReconcileRequestFunc() {
-						q.Add(request)
-					}
-				},
-			}, preds).
-		Owns(&appsv1.Deployment{}).
-		Complete(r)
 }
 
 func Contains(list []string, s string) bool {
@@ -1234,6 +1310,7 @@ func (r *CSIScaleOperatorReconciler) areAllPodImagesSynced(controllerDeployment 
 }
 */
 
+// TODO: Unused code. Remove if not required.
 // Helper function to check for a string in a slice of strings.
 func containsString(slice []string, s string) bool {
 	for _, item := range slice {
@@ -1378,4 +1455,96 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 		}
 	}
 	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperator.CSIScaleOperator) (bool, error) {
+
+	logger := csiLog.WithName("checkPrerequisite")
+	logger.Info("Checking pre-requisites.")
+
+	// get list of secrets from custom resource
+	secrets := []string{}
+	for _, cluster := range instance.Spec.Clusters {
+		if len(cluster.Secrets) != 0 {
+			secrets = append(secrets, cluster.Secrets)
+		}
+	}
+
+	// get list of configMaps from custom resource
+	configMaps := []string{}
+	for _, cluster := range instance.Spec.Clusters {
+		if len(cluster.Cacert) != 0 {
+			configMaps = append(configMaps, cluster.Cacert)
+		}
+	}
+
+	if len(secrets) != 0 {
+		for _, secret := range secrets {
+			if exists, err := r.resourceExists(instance, secret, corev1.ResourceSecrets.String()); !exists {
+				return false, err
+			}
+			logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
+		}
+	}
+
+	if len(configMaps) != 0 {
+		for _, configMap := range configMaps {
+			if exists, err := r.resourceExists(instance, configMap, corev1.ResourceConfigMaps.String()); !exists {
+				return false, err
+			}
+			logger.Info(fmt.Sprintf("ConfigMap resource %s found.", configMap))
+		}
+	}
+
+	return true, nil
+}
+
+func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.CSIScaleOperator, name string, kind string) (bool, error) {
+
+	logger := csiLog.WithName("resourceExists").WithValues("Kind", kind, "Name", name)
+	logger.Info("Checking resource exists")
+
+	var err error
+
+	if kind == corev1.ResourceSecrets.String() {
+		found := &corev1.Secret{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      name,
+			Namespace: instance.Namespace,
+		}, found)
+	}
+
+	if kind == corev1.ResourceConfigMaps.String() {
+		found := &corev1.ConfigMap{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      name,
+			Namespace: instance.Namespace,
+		}, found)
+	}
+
+	if err != nil && errors.IsNotFound(err) {
+		message := "Resource not found."
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceNotFoundError),
+			Message: message,
+		})
+		return false, err
+	} else if err != nil {
+		message := "Failed to get resource information from cluster."
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+		return false, err
+	} else {
+		return true, nil
+	}
 }
