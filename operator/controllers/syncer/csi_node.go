@@ -265,7 +265,7 @@ func (s *csiNodeSyncer) ensureContainer(name, image string, args []string) corev
 		Args:         args,
 		Env:          s.getEnvFor(name),
 		VolumeMounts: s.getVolumeMountsFor(name),
-		//		Resources:    ensureDefaultResources(),
+		Resources:    ensureDefaultResources(),
 	}
 }
 
