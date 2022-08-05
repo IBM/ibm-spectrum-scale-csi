@@ -1,4 +1,4 @@
-FROM python:3.7.7-alpine3.10
+FROM python:3.9-alpine
 RUN apk --no-cache add curl \
         bash \
         git \
@@ -6,4 +6,4 @@ RUN apk --no-cache add curl \
 
 RUN git clone -b dev https://github.com/IBM/ibm-spectrum-scale-csi.git
 WORKDIR "/ibm-spectrum-scale-csi/tests/functional-tests"
-RUN python3.7 -m pip install -r requirements.txt
+RUN python3.9 -m pip install -r requirements.txt
