@@ -1,5 +1,6 @@
 import copy
 import logging
+import pytest
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -319,6 +320,8 @@ class Driver:
 
     def test_static(self, pv_value, pvc_value, sc_value=False, wrong=None, root_volume=False):
 
+        if filesetfunc.get_scalevalidation() == "False":
+            pytest.skip("As scalevalidation is False in config file , GUI communication not allowed. Static cases not possible")
         config.load_kube_config(config_file=self.kubeconfig)
         created_objects = get_cleanup_dict()
         sc_name = ""
@@ -555,6 +558,9 @@ class Snapshot():
         csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
     def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
+
+        if filesetfunc.get_scalevalidation() == "False":
+            pytest.skip("As scalevalidation is False in config file , GUI communication not allowed. Static cases not possible")
         if value_vs_class is None:
             value_vs_class = self.value_vs_class
         if number_of_snapshots is None:
