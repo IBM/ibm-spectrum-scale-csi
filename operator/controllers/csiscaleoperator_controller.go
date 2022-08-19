@@ -468,7 +468,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
+	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
+	if err != nil {
+		logger.Error(err, "Failed to fetch configMap details from the cluster.", "configMap", config.CSIEnvVarConfigMap)
+		return ctrl.Result{}, err
+	}
+	envVars := parseConfigMap(cm, config.CSINode.String())
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, envVars)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -1547,4 +1554,56 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	} else {
 		return true, nil
 	}
+}
+
+// readCSIConfig reads data from the "ibm-spectrum-scale-csi-config" configmap from the cluster
+// and returns a map of string of the data.
+func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
+
+	logger := csiLog.WithName("getCSIConfig").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
+	logger.Info("Read CSI configmap from the cluster.")
+
+	cm := &corev1.ConfigMap{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, cm)
+
+	if err != nil && errors.IsNotFound(err) {
+		message := "Resource not found."
+		logger.Info(message)
+		return cm, nil
+	} else if err != nil {
+		message := "Failed to get resource information from cluster."
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+		return cm, err
+	} else {
+		return cm, nil
+	}
+}
+
+// parseConfigMap parses the data in configMap in desired format.
+func parseConfigMap(cm *corev1.ConfigMap, resource string) map[string]string {
+
+	logger := csiLog.WithName("parseConfigMap").WithValues("Name", cm.Name)
+	logger.Info("Parsing the data from configmap.")
+
+	data := map[string]string{}
+
+	if resource == config.CSINode.String() {
+		for key, value := range cm.Data {
+			if strings.HasPrefix(key, "VAR_DRIVER") {
+				data[key[11:]] = value
+			}
+		}
+	}
+
+	return data
 }
