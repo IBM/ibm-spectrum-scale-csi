@@ -19,6 +19,7 @@ package syncer
 import (
 	"errors"
 	"os"
+	"reflect"
 	"strconv"
 
 	"github.com/imdario/mergo"
@@ -322,7 +323,14 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
-		EnvVars = append(EnvVars, CMEnvVars...)
+		for _, CMenv := range CMEnvVars {
+			for _, env := range EnvVars {
+				if !reflect.DeepEqual(CMenv, env) {
+					EnvVars = append(EnvVars, CMenv)
+				}
+			}
+		}
+
 		return append(EnvVars, []corev1.EnvVar{
 			{
 				Name:  "CSI_ENDPOINT",
