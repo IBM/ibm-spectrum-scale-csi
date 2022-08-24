@@ -181,6 +181,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
+	watchResources[corev1.ResourceConfigMaps.String()][config.CSIEnvVarConfigMap] = true
+
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
 		message := "Couldn't add Finalizer"
