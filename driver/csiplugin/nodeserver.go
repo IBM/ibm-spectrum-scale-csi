@@ -79,6 +79,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 			return nil, fmt.Errorf("NodePublishVolume: failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
 		}
 		volScalePathInContainer = hostDir + symlinkTarget
+		volScalePath = symlinkTarget
 		glog.V(4).Infof("NodePublishVolume: symlink tarrget path is [%s]\n", volScalePathInContainer)
 	}
 	args := []string{"-f", "-c", "%T", volScalePathInContainer}
