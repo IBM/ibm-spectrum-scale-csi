@@ -304,6 +304,13 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			remoteDeviceName := strings.Split(fsMount.RemoteDeviceName, ":")
 			remoteFilesystemName = remoteDeviceName[len(remoteDeviceName)-1]
 		}
+		//check if multiple GUIs are passed
+		if len(cluster.RestAPI) > 1 {
+			err := driver.cs.checkGuiHASupport(sc)
+			if err != nil {
+				return nil, scaleConfig, cluster.Primary, err
+			}
+		}
 	}
 
 	fs := primaryInfo.GetPrimaryFs()

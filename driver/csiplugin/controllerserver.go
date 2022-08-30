@@ -1121,9 +1121,17 @@ func (cs *ScaleControllerServer) checkMinScaleVersion(conn connectors.SpectrumSc
 	if len(splitScaleVer) < 3 {
 		return false, status.Error(codes.Internal, fmt.Sprintf("invalid Spectrum Scale version - %s", scaleVersion))
 	}
-	splitMinorVer := strings.Split(splitScaleVer[2], "-")
-	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
-
+	var splitMinorVer []string
+	assembledScaleVer := ""
+	if len(splitScaleVer) == 4 {
+		//dev build e.g. "5.1.5.0-developer build"
+		splitMinorVer = strings.Split(splitScaleVer[3], "-")
+		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitScaleVer[2] + splitMinorVer[0]
+	} else {
+		//GA build e.g. "5.1.5-0"
+		splitMinorVer = strings.Split(splitScaleVer[2], "-")
+		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
+	}
 	if assembledScaleVer < version {
 		return false, nil
 	}
@@ -1188,6 +1196,20 @@ func (cs *ScaleControllerServer) checkCGSupport(conn connectors.SpectrumScaleCon
 
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for consistency group support with CSI is 5.1.3-0")
+	}
+	return nil
+}
+
+func (cs *ScaleControllerServer) checkGuiHASupport(conn connectors.SpectrumScaleConnector) error {
+	/* Verify Spectrum Scale Version is not below 5.1.5-0 */
+
+	versionCheck, err := cs.checkMinScaleVersion(conn, "5150")
+	if err != nil {
+		return err
+	}
+
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for GUI HA support with CSI is 5.1.5-0")
 	}
 	return nil
 }

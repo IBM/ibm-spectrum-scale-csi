@@ -33,6 +33,7 @@ import (
 )
 
 const errConnectionRefused string = "connection refused"
+const errNoSuchHost string = "no such host"
 
 type spectrumRestV2 struct {
 	httpClient    *http.Client
@@ -992,7 +993,7 @@ func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject 
 
 	activeEndpointFound := false
 	if err != nil {
-		if strings.Contains(err.Error(), errConnectionRefused) {
+		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) {
 			glog.Errorf("rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
@@ -1004,7 +1005,7 @@ func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject 
 					activeEndpointFound = true
 					break
 				} else {
-					if strings.Contains(err.Error(), errConnectionRefused) {
+					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) {
 						glog.Errorf("rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", endpoint, err)
 					} else {
 						glog.Errorf("rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", endpoint, err)
