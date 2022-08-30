@@ -24,7 +24,7 @@ def test_get_version():
     baseclass.kubeobjectfunc.get_operator_image()
     baseclass.kubeobjectfunc.get_driver_image()
 
-
+'''
 def test_driver_volume_snapshot_Independent_1_to_Dependent_1():
     value_sc = {"volBackendFs": data["localFs"]}
     restore_sc = {
@@ -1533,3 +1533,4 @@ def test_driver_volume_snapshot_Version2_5_to_Version2_5():
     restore_sc = {
         "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+'''

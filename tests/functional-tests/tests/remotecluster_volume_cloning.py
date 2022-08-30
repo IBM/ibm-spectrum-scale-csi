@@ -136,6 +136,7 @@ def test_driver_cg_cloning_2():
                                value_clone_passed=value_clone_passed)
 
 
+'''
 def test_driver_volume_cloning_Dependent_1_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"], "filesetType": "dependent"}
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi"}]
@@ -4094,3 +4095,4 @@ def test_driver_volume_cloning_Version2_5_to_Version2_5():
         "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}}
     driver_object.test_dynamic(value_sc, value_pvc_passed=value_pvc,
                                value_clone_passed=value_clone_passed)
+'''
