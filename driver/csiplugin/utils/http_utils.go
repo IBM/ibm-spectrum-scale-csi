@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path"
-	"strings"
 
 	//"github.com/gorilla/mux"
 	"github.com/golang/glog"
@@ -54,20 +52,6 @@ func UnmarshalResponse(r *http.Response, object interface{}) error {
 	}
 
 	return nil
-}
-
-func FormatURL(url string, entries ...string) string {
-	glog.V(5).Infof("http_utils FormatURL. url: %s", url)
-
-	base := url
-	if !strings.HasSuffix(url, "/") {
-		base = fmt.Sprintf("%s/", url)
-	}
-	suffix := ""
-	for _, entry := range entries {
-		suffix = path.Join(suffix, entry)
-	}
-	return fmt.Sprintf("%s%s", base, suffix)
 }
 
 func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {

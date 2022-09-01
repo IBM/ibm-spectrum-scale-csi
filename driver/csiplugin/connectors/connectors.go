@@ -78,6 +78,7 @@ type SpectrumScaleConnector interface {
 
 	//Snapshot operations
 	WaitForJobCompletion(statusCode int, jobID uint64) error
+	WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error)
 	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
 	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
