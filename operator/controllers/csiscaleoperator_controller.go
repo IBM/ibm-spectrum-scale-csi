@@ -1267,7 +1267,12 @@ func (r *CSIScaleOperatorReconciler) SetStatus(instance *csiscaleoperator.CSISca
 		crStatus.Phase = phase
 	*/
 
-	crStatus.Version = config.DriverVersion
+	crStatus.Versions = []csiv1.Version{
+		{
+			Name:    instance.Name,
+			Version: config.DriverVersion,
+		},
+	}
 
 	logger.V(1).Info("Setting status of CSIScaleOperator is successful")
 	return nil

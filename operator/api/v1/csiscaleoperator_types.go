@@ -145,11 +145,20 @@ type CSIScaleOperatorStatus struct {
 	*/
 
 	// version is the current CSIDriver version installed by the operator.
-	Version string `json:"version,omitempty"`
+	Versions []Version `json:"versions,omitempty"`
 
 	// conditions contains the details for one aspect of the current state of this custom resource.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions",xDescriptors="urn:alm:descriptor:io.kubernetes.conditions"
-	Conditions []metav1.Condition `json:"condition,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+type Version struct {
+
+	//name is the name of the particular operand this version is for.
+	Name string `json:"name,omitempty"`
+
+	// version of a particular operand that is currently being managed.
+	Version string `json:"version,omitempty"`
 }
 
 /*
@@ -355,9 +364,9 @@ type RestApi struct {
 
 // // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`,description="TODO: Add description."
 
-// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.status.version`,description="CSIDriver version."
+// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.status.versions[0].version`,description="CSIDriver version."
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.condition[?(@ "status")].status`,description="CSI driver resource creation status."
+// +kubebuilder:printcolumn:name="Success",type=string,JSONPath=`.status.conditions[?(@ "status")].status`,description="CSI driver resource creation status."
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
