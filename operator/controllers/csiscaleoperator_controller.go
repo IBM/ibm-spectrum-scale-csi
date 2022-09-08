@@ -475,9 +475,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Error(err, "Failed to fetch configMap details from the cluster.", "configMap", config.CSIEnvVarConfigMap)
 		return ctrl.Result{}, err
 	}
-	envVars := parseConfigMap(cm, config.CSINode.String())
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, envVars)
+	cmData := map[string]string{}
+	cmData = parseConfigMap(cm, config.CSINode.String())
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -495,10 +497,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
 
-	// if err := r.SetStatus(instance); err != nil {
-	// 	logger.Error(err, "Assigning values to status sub-resource object failed.")
-	//	return ctrl.Result{}, err
-	// }
 	// TODO: Add event.
 	meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
 		Type:    string(config.StatusConditionSuccess),
@@ -551,7 +549,9 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
-					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+					if resourceKind == corev1.ResourceConfigMaps.String() {
+						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+					} else if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
 					}
 				} else {
@@ -1558,8 +1558,8 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 }
 
-// readCSIConfig reads data from the "ibm-spectrum-scale-csi-config" configmap from the cluster
-// and returns a map of string of the data.
+// getConfigMap fetches data from the "ibm-spectrum-scale-csi-config" configmap from the cluster
+// and returns a configmap reference.
 func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
 
 	logger := csiLog.WithName("getCSIConfig").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
@@ -1574,6 +1574,8 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 	if err != nil && errors.IsNotFound(err) {
 		message := "Resource not found."
 		logger.Info(message)
+		//return nil instead of error to not to keep reconciling, just proceed with other things
+		//when configmap is not found.
 		return cm, nil
 	} else if err != nil {
 		message := "Failed to get resource information from cluster."
@@ -1591,21 +1593,19 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 	}
 }
 
-// parseConfigMap parses the data in configMap in desired format.
+// parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
 func parseConfigMap(cm *corev1.ConfigMap, resource string) map[string]string {
 
 	logger := csiLog.WithName("parseConfigMap").WithValues("Name", cm.Name)
-	logger.Info("Parsing the data from configmap.")
+	logger.Info("Parsing the data from configmap.", "configmap", cm.Name)
 
 	data := map[string]string{}
-
 	if resource == config.CSINode.String() {
 		for key, value := range cm.Data {
-			if strings.HasPrefix(key, "VAR_DRIVER") {
-				data[key[11:]] = value
+			if strings.HasPrefix(strings.ToUpper(key), "VAR_DRIVER") && key[10] == '_' {
+				data[strings.ToUpper(key[11:])] = value
 			}
 		}
 	}
-
 	return data
 }

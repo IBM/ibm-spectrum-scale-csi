@@ -19,7 +19,6 @@ package syncer
 import (
 	"errors"
 	"os"
-	"reflect"
 	"strconv"
 
 	"github.com/imdario/mergo"
@@ -68,12 +67,12 @@ const (
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
 )
 
-var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
-
-// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
-var UUID string
-
-var CMEnvVars []corev1.EnvVar
+var (
+	// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
+	UUID                    string
+	nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
+	cmEnvVars               []corev1.EnvVar
+)
 
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -99,8 +98,9 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 
 	UUID = CGPrefix
 
+	cmEnvVars = []corev1.EnvVar{}
 	for key, value := range envVars {
-		CMEnvVars = append(CMEnvVars, corev1.EnvVar{
+		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
 			Name:  key,
 			Value: value,
 		})
@@ -323,12 +323,8 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
-		for _, CMenv := range CMEnvVars {
-			for _, env := range EnvVars {
-				if !reflect.DeepEqual(CMenv, env) {
-					EnvVars = append(EnvVars, CMenv)
-				}
-			}
+		for _, cmEnv := range cmEnvVars {
+			EnvVars = append(EnvVars, cmEnv)
 		}
 
 		return append(EnvVars, []corev1.EnvVar{
