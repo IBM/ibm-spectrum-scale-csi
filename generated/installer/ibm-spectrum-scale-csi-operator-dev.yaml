@@ -10,7 +10,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.6.0
+    productVersion: 2.6.1
 spec:
   replicas: 1
   selector:
@@ -28,7 +28,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.6.0
+        productVersion: 2.6.1
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:

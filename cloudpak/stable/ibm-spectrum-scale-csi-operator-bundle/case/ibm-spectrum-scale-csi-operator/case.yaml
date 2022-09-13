@@ -1,7 +1,7 @@
 name: ibm-spectrum-scale-csi-operator
 specVersion: 1.0.0
-version: 2.6.0
-appVersion: 2.6.0
+version: 2.6.1
+appVersion: 2.6.1
 description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
 displayName: "IBM CSI Spectrum Scale Driver CASE" 
 displayDescription: "Represents a deployment of the IBM CSI Spectrum Scale driver."
