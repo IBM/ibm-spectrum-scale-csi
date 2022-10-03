@@ -95,8 +95,8 @@ const (
 	CSIAttacherImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b"
 	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0
 	CSIProvisionerImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v6.0.1
-	CSISnapshotterImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter@sha256:ad16874e2140256a809cada2b4ac3d931d5b73b0bee23ed0f8d60bdd778cfec2"
+	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v6.1.0
+	CSISnapshotterImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter@sha256:291334908ddf71a4661fd7f6d9d97274de8a5378a2b6fdfeb2ce73414a34f82f"
 	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.4.0
 	CSIResizerImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer@sha256:9ebbf9f023e7b41ccee3d52afe39a89e3ddacdbb69269d583abfc25847cfd9e4"
 

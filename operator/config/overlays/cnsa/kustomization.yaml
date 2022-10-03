@@ -30,7 +30,7 @@ patches:
                   - name: SHORTNAME_NODE_MAPPING
                     value: "yes"
                   - name: CSI_SNAPSHOTTER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:ad16874e2140256a809cada2b4ac3d931d5b73b0bee23ed0f8d60bdd778cfec2
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:291334908ddf71a4661fd7f6d9d97274de8a5378a2b6fdfeb2ce73414a34f82f
                   - name: CSI_ATTACHER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b
                   - name: CSI_PROVISIONER_IMAGE
