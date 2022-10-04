@@ -32,15 +32,15 @@ patches:
                   - name: CSI_SNAPSHOTTER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:291334908ddf71a4661fd7f6d9d97274de8a5378a2b6fdfeb2ce73414a34f82f
                   - name: CSI_ATTACHER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-attacher@sha256:9a685020911e2725ad019dbce6e4a5ab93d51e3d4557f115e64343345e05781b
                   - name: CSI_PROVISIONER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119
                   - name: CSI_LIVENESSPROBE_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/livenessprobe@sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e
                   - name: CSI_NODE_REGISTRAR_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-node-driver-registrar@sha256:4fd21f36075b44d1a423dfb262ad79202ce54e95f5cbc4622a6c1c38ab287ad6
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-node-driver-registrar@sha256:0103eee7c35e3e0b5cd8cdca9850dc71c793cdeb6669d8be7a89440da2d06ae4
                   - name: CSI_RESIZER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:9ebbf9f023e7b41ccee3d52afe39a89e3ddacdbb69269d583abfc25847cfd9e4
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:425d8f1b769398127767b06ed97ce62578a3179bcb99809ce93a1649e025ffe7
                   - name: CSI_DRIVER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5df8b43f96c1eca66a92de7ac77f7ed02b2d195c3400551ceaa735a982618841
                 image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:1c0fe31ecf036ae1aa2991cf198b239502fcffcbd066f9e6781897823506be70
