@@ -132,7 +132,7 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.5.0-amd64
+        tag: v2.5.1-amd64
       - digest: sha256:432cd621c3af40feb10b19ea77aec0486504ca8f1d344a32105b250893980583
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
