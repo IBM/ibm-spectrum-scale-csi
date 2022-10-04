@@ -88,11 +88,11 @@ const (
 	//  Default images for containers
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.8.0"
 	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.0
-	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:4fd21f36075b44d1a423dfb262ad79202ce54e95f5cbc4622a6c1c38ab287ad6"
+	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:0103eee7c35e3e0b5cd8cdca9850dc71c793cdeb6669d8be7a89440da2d06ae4"
 	//  registry.k8s.io/sig-storage/livenessprobe:v2.7.0
 	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e"
 	//  registry.k8s.io/sig-storage/csi-attacher:v3.4.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b"
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:9a685020911e2725ad019dbce6e4a5ab93d51e3d4557f115e64343345e05781b"
 	//  registry.k8s.io/sig-storage/csi-provisioner:v3.1.0
 	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119"
 	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.1.0
