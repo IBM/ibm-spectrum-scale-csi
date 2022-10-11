@@ -10,7 +10,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.7.0
+    productVersion: 2.8.0
 spec:
   replicas: 1
   selector:
@@ -28,12 +28,12 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.7.0
+        productVersion: 2.8.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:b43cd4fa0b6b3d6998e7c4cd642886a160b6affa0219b0e35c0378e301b732a9
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:1c0fe31ecf036ae1aa2991cf198b239502fcffcbd066f9e6781897823506be70
         args:
         - --leaderElection=true
         env:
@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:ada8d41341298ddc2d1c6faa781d7788926d31ad27f605b2fe7ebac1f16884de
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:5df8b43f96c1eca66a92de7ac77f7ed02b2d195c3400551ceaa735a982618841
         resources:
           limits:
             cpu: 600m
@@ -235,11 +235,11 @@ spec:
     - name: Version
       type: string
       description: CSIDriver version.
-      jsonPath: .status.version
+      jsonPath: .status.versions[0].version
     - name: Success
       type: string
       description: CSI driver resource creation status.
-      jsonPath: .status.condition[?(@ "status")].status
+      jsonPath: .status.conditions[?(@ "status")].status
     schema:
       openAPIV3Schema:
         type: object
@@ -1368,7 +1368,7 @@ spec:
             type: object
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
             properties:
-              condition:
+              conditions:
                 type: array
                 description: conditions contains the details for one aspect of the
                   current state of this custom resource.
@@ -1439,10 +1439,21 @@ spec:
                   - reason
                   - status
                   - type
-              version:
-                type: string
+              versions:
+                type: array
                 description: version is the current CSIDriver version installed by
                   the operator.
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: name is the name of the particular operand this
+                        version is for.
+                    version:
+                      type: string
+                      description: version of a particular operand that is currently
+                        being managed.
     served: true
     storage: true
     subresources:

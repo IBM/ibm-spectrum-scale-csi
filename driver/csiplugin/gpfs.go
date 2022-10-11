@@ -43,6 +43,7 @@ const (
 	VOLCOPY_JOB_RUNNING     = 5
 	VOLCOPY_JOB_COMPLETED   = 6
 	VOLCOPY_JOB_NOT_STARTED = 7
+	JOB_STATUS_UNKNOWN      = 8
 
 	STORAGECLASS_CLASSIC  = "0"
 	STORAGECLASS_ADVANCED = "1"
@@ -303,6 +304,13 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			remoteDeviceName := strings.Split(fsMount.RemoteDeviceName, ":")
 			remoteFilesystemName = remoteDeviceName[len(remoteDeviceName)-1]
 		}
+		// //check if multiple GUIs are passed
+		// if len(cluster.RestAPI) > 1 {
+		// 	err := driver.cs.checkGuiHASupport(sc)
+		// 	if err != nil {
+		// 		return nil, scaleConfig, cluster.Primary, err
+		// 	}
+		// }
 	}
 
 	fs := primaryInfo.GetPrimaryFs()
