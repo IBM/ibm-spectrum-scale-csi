@@ -29,7 +29,12 @@ rules:
   - replicasets
   - statefulsets
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - apps
   resourceNames:
@@ -52,7 +57,12 @@ rules:
   resources:
   - leases
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - csi.ibm.com
   resources:
@@ -72,7 +82,13 @@ rules:
   - clusterrolebindings
   - clusterroles
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - security.openshift.io
   resources:
@@ -86,4 +102,10 @@ rules:
   - storageclasses
   - volumeattachments
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
