@@ -662,9 +662,14 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 }
 */
 
-// Helper function that calls ensureResources method.
-func ensureDefaultResources() corev1.ResourceRequirements {
-	return ensureResources("20m", "200m", "20Mi", "200Mi", "2Gi", "4Gi")
+// Helper function that calls ensureResources method with the resources needed for sidecar containers.
+func ensureSidecarResources() corev1.ResourceRequirements {
+	return ensureResources("20m", "300m", "20Mi", "300Mi", "1Gi", "5Gi")
+}
+
+// Helper function that calls ensureResources method with the resources needed for driver containers.
+func ensureDriverResources() corev1.ResourceRequirements {
+	return ensureResources("20m", "600m", "20Mi", "600Mi", "1Gi", "10Gi")
 }
 
 // ensureResources generates k8s resourceRequirements object.
@@ -729,7 +734,7 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		VolumeMounts:  s.getVolumeMountsFor(name),
 		Ports:         s.driver.GetContainerPort(),
 		LivenessProbe: s.driver.GetLivenessProbe(),
-		Resources:     ensureDefaultResources(),
+		Resources:     ensureSidecarResources(),
 	}
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if isOpenShift {
