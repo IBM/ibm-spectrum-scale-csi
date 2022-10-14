@@ -35,15 +35,16 @@ import (
 )
 
 const (
-	no                          = "no"
-	yes                         = "yes"
-	notFound                    = "NOT_FOUND"
-	filesystemTypeRemote        = "remote"
-	filesystemMounted           = "mounted"
-	filesetUnlinkedPath         = "--"
-	oneGB                uint64 = 1024 * 1024 * 1024
-	smallestVolSize      uint64 = oneGB // 1GB
-	defaultSnapWindow           = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
+	no                           = "no"
+	yes                          = "yes"
+	notFound                     = "NOT_FOUND"
+	filesystemTypeRemote         = "remote"
+	filesystemMounted            = "mounted"
+	filesetUnlinkedPath          = "--"
+	ResponseStatusUnknown        = "UNKNOWN"
+	oneGB                 uint64 = 1024 * 1024 * 1024
+	smallestVolSize       uint64 = oneGB // 1GB
+	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
 
 )
 
@@ -817,20 +818,20 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		glog.Errorf("volume:[%v] - volume creation already in process ", scaleVol.VolName)
 		return nil, status.Error(codes.Aborted, fmt.Sprintf("volume creation already in process : %v", scaleVol.VolName))
 	}
-
 	if isVolSource {
 		jobDetails, found := cs.Driver.volcopyjobstatusmap.Load(scaleVol.VolName)
 		if found {
 			jobStatus := jobDetails.(VolCopyJobDetails).jobStatus
 			volID := jobDetails.(VolCopyJobDetails).volID
 			glog.V(5).Infof("volume: [%v] found in volcopyjobstatusmap with volID: [%v], jobStatus: [%v]", scaleVol.VolName, volID, jobStatus)
-			if jobStatus == VOLCOPY_JOB_RUNNING {
+			switch jobStatus {
+			case VOLCOPY_JOB_RUNNING:
 				glog.Errorf("volume:[%v] -  volume cloning request in progress.", scaleVol.VolName)
 				return nil, status.Error(codes.Aborted, fmt.Sprintf("volume cloning request in progress for volume: %s", scaleVol.VolName))
-			} else if jobStatus == VOLCOPY_JOB_FAILED {
+			case VOLCOPY_JOB_FAILED:
 				glog.Errorf("volume:[%v] -  volume cloning job had failed", scaleVol.VolName)
 				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v]", scaleVol.VolName))
-			} else if jobStatus == VOLCOPY_JOB_COMPLETED {
+			case VOLCOPY_JOB_COMPLETED:
 				glog.V(5).Infof("volume:[%v] -  volume cloning request has already completed successfully.", scaleVol.VolName)
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
@@ -840,6 +841,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 						ContentSource: volSrc,
 					},
 				}, nil
+			case JOB_STATUS_UNKNOWN:
+				//Remove the entry from map, so that it can be retried
+				glog.V(5).Infof("volume:[%v] -  the status of volume cloning job is unknown.", scaleVol.VolName)
+				cs.Driver.volcopyjobstatusmap.Delete(scaleVol.VolName)
 			}
 		} else {
 			glog.V(5).Infof("volume: [%v] not found in volcopyjobstatusmap", scaleVol.VolName)
@@ -852,13 +857,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			jobStatus := jobDetails.(SnapCopyJobDetails).jobStatus
 			volID := jobDetails.(SnapCopyJobDetails).volID
 			glog.V(5).Infof("volume: [%v] found in snapjobstatusmap with volID: [%v], jobStatus: [%v]", scaleVol.VolName, volID, jobStatus)
-			if jobStatus == SNAP_JOB_RUNNING {
+			switch jobStatus {
+			case SNAP_JOB_RUNNING:
 				glog.Errorf("volume:[%v] -  snapshot copy request in progress for snapshot: %s.", scaleVol.VolName, snapIdMembers.SnapName)
 				return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
-			} else if jobStatus == SNAP_JOB_FAILED {
+			case SNAP_JOB_FAILED:
 				glog.Errorf("volume:[%v] -  snapshot copy job had failed for snapshot %s", scaleVol.VolName, snapIdMembers.SnapName)
 				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
-			} else if jobStatus == SNAP_JOB_COMPLETED {
+			case SNAP_JOB_COMPLETED:
 				glog.V(5).Infof("volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", scaleVol.VolName, snapIdMembers.SnapName)
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
@@ -868,6 +874,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 						ContentSource: volSrc,
 					},
 				}, nil
+			case JOB_STATUS_UNKNOWN:
+				//Remove the entry from map, so that it can be retried
+				glog.V(5).Infof("volume:[%v] -  the status of snapshot copy job for snapshot [%s] is unknown", scaleVol.VolName, snapIdMembers.SnapName)
+				cs.Driver.snapjobstatusmap.Delete(scaleVol.VolName)
 			}
 		} else {
 			glog.V(5).Infof("volume: [%v] not found in snapjobstatusmap", scaleVol.VolName)
@@ -981,15 +991,28 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	jobDetails := SnapCopyJobDetails{SNAP_JOB_RUNNING, volID}
 	cs.Driver.snapjobstatusmap.Store(scVol.VolName, jobDetails)
 
-	err = conn.WaitForJobCompletion(jobStatus, jobID)
-	if err != nil {
+	isResponseStatusUnknown := false
+	response, err := conn.WaitForJobCompletionWithResp(jobStatus, jobID)
+	if len(response.Jobs) != 0 {
+		if response.Jobs[0].Status == ResponseStatusUnknown {
+			isResponseStatusUnknown = true
+		}
+	}
+	if err != nil || isResponseStatusUnknown {
 		glog.Errorf("unable to copy snapshot %s: %v.", snapId.SnapName, err)
-		if strings.Contains(err.Error(), "EFSSG0632C") {
+		if err != nil && strings.Contains(err.Error(), "EFSSG0632C") {
+			//TODO: When the GUI issue https://jazz07.rchland.ibm.com:21443/jazz/web/projects/GPFS#action=com.ibm.team.workitem.viewWorkItem&id=300263
+			// is fixed, check whether the err.Error() says mmxcp is already running for the same
+			// source and destination and then set the job status as SNAP_JOB_RUNNING, so that
+			// mmxcp is not run again for the same source and destination.
+
 			// EFSSG0632C = Command execution aborted
 			// Store SNAP_JOB_NOT_STARTED in snapjobstatusmap if error was due to same mmxcp in progress
 			// or max no. of mmxcp already running. In these cases we want to retry again
 			// in the next k8s rety cycle
 			jobDetails.jobStatus = SNAP_JOB_NOT_STARTED
+		} else if isResponseStatusUnknown {
+			jobDetails.jobStatus = JOB_STATUS_UNKNOWN
 		} else {
 			jobDetails.jobStatus = SNAP_JOB_FAILED
 		}
@@ -1030,6 +1053,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
 	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
+	response := connectors.GenericResponse{}
 	if scVol.IsFilesetBased {
 		path := ""
 		if vID.StorageClassType == STORAGECLASS_ADVANCED {
@@ -1046,7 +1070,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
 		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
-		err = conn.WaitForJobCompletion(jobStatus, jobID)
+		response, err = conn.WaitForJobCompletionWithResp(jobStatus, jobID)
 	} else {
 		sLinkRelPath := strings.Replace(vID.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
@@ -1060,17 +1084,29 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
 		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
-		err = conn.WaitForJobCompletion(jobStatus, jobID)
+		response, err = conn.WaitForJobCompletionWithResp(jobStatus, jobID)
 	}
-
-	if err != nil {
+	isResponseStatusUnknown := false
+	if len(response.Jobs) != 0 {
+		if response.Jobs[0].Status == ResponseStatusUnknown {
+			isResponseStatusUnknown = true
+		}
+	}
+	if err != nil || isResponseStatusUnknown {
 		glog.Errorf("unable to copy volume: %v.", err)
-		if strings.Contains(err.Error(), "EFSSG0632C") {
+		if err != nil && strings.Contains(err.Error(), "EFSSG0632C") {
+			//TODO: When the GUI issue https://jazz07.rchland.ibm.com:21443/jazz/web/projects/GPFS#action=com.ibm.team.workitem.viewWorkItem&id=300263
+			// is fixed, check whether the err.Error() says mmxcp is already running for the same
+			// source and destination and then set the job status as VOLCOPY_JOB_RUNNING, so that
+			// mmxcp is not run again for the same source and destination.
+
 			// EFSSG0632C = Command execution aborted
 			// Store VOLCOPY_JOB_NOT_STARTED in volcopyjobstatusmap if error was due to same mmxcp in progress
 			// or max no. of mmxcp already running. In these cases we want to retry again
 			// in the next k8s rety cycle
 			jobDetails.jobStatus = VOLCOPY_JOB_NOT_STARTED
+		} else if isResponseStatusUnknown {
+			jobDetails.jobStatus = JOB_STATUS_UNKNOWN
 		} else {
 			jobDetails.jobStatus = VOLCOPY_JOB_FAILED
 		}
@@ -1097,9 +1133,17 @@ func (cs *ScaleControllerServer) checkMinScaleVersion(conn connectors.SpectrumSc
 	if len(splitScaleVer) < 3 {
 		return false, status.Error(codes.Internal, fmt.Sprintf("invalid Spectrum Scale version - %s", scaleVersion))
 	}
-	splitMinorVer := strings.Split(splitScaleVer[2], "-")
-	assembledScaleVer := splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
-
+	var splitMinorVer []string
+	assembledScaleVer := ""
+	if len(splitScaleVer) == 4 {
+		//dev build e.g. "5.1.5.0-developer build"
+		splitMinorVer = strings.Split(splitScaleVer[3], "-")
+		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitScaleVer[2] + splitMinorVer[0]
+	} else {
+		//GA build e.g. "5.1.5-0"
+		splitMinorVer = strings.Split(splitScaleVer[2], "-")
+		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
+	}
 	if assembledScaleVer < version {
 		return false, nil
 	}
@@ -1164,6 +1208,20 @@ func (cs *ScaleControllerServer) checkCGSupport(conn connectors.SpectrumScaleCon
 
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for consistency group support with CSI is 5.1.3-0")
+	}
+	return nil
+}
+
+func (cs *ScaleControllerServer) checkGuiHASupport(conn connectors.SpectrumScaleConnector) error {
+	/* Verify Spectrum Scale Version is not below 5.1.5-0 */
+
+	versionCheck, err := cs.checkMinScaleVersion(conn, "5150")
+	if err != nil {
+		return err
+	}
+
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for GUI HA support with CSI is 5.1.5-0")
 	}
 	return nil
 }

@@ -1676,7 +1676,7 @@ def clean_with_created_objects(created_objects, condition):
         filesetfunc.delete_created_fileset(scale_fileset)
 
 
-def delete_pod(pod_name, created_objects):
+def delete_pod_with_graceperiod_0(pod_name, created_objects):
     """ deletes pod pod_name """
     if keep_objects == "True":
         return
@@ -1685,6 +1685,30 @@ def delete_pod(pod_name, created_objects):
         LOGGER.info(f'POD Delete : Deleting pod {pod_name}')
         api_response = api_instance.delete_namespaced_pod(
             name=pod_name, namespace=namespace_value, pretty=True, grace_period_seconds=0)
+        LOGGER.debug(str(api_response))
+        if pod_name[0:12] == "snap-end-pod":
+            created_objects["restore_pod"].remove(pod_name)
+        elif pod_name[0:5] == "clone":
+            created_objects["clone_pod"].remove(pod_name)
+        else:
+            created_objects["pod"].remove(pod_name)
+
+    except ApiException as e:
+        LOGGER.error(
+            f"Exception when calling CoreV1Api->delete_namespaced_pod: {e}")
+        clean_with_created_objects(created_objects, condition="failed")
+        assert False
+
+
+def delete_pod(pod_name, created_objects):
+    """ deletes pod pod_name """
+    if keep_objects == "True":
+        return
+    api_instance = client.CoreV1Api()
+    try:
+        LOGGER.info(f'POD Delete : Deleting pod {pod_name}')
+        api_response = api_instance.delete_namespaced_pod(
+            name=pod_name, namespace=namespace_value, pretty=True)
         LOGGER.debug(str(api_response))
         if pod_name[0:12] == "snap-end-pod":
             created_objects["restore_pod"].remove(pod_name)
@@ -2125,7 +2149,7 @@ def check_cg_fileset_deleted(cg_fileset_name, created_objects):
 
     for _ in range(0, 24):
         LOGGER.info(f"Checking for deletion of consistency group fileset {cg_fileset_name}")
-        if not(filesetfunc.created_fileset_exists(cg_fileset_name)):
+        if filesetfunc.check_fileset_deleted(cg_fileset_name):
             created_objects["cg"].remove(cg_fileset_name)
             LOGGER.info(f"Consistency group fileset {cg_fileset_name} is deleted")
             break

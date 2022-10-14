@@ -10,7 +10,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.7.0
+    productVersion: 2.8.0
 spec:
   replicas: 1
   selector:
@@ -28,7 +28,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.7.0
+        productVersion: 2.8.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
@@ -52,7 +52,7 @@ spec:
             memory: 600Mi
           requests:
             cpu: 50m
-            ephemeral-storage: 5Gi
+            ephemeral-storage: 1Gi
             memory: 50Mi
         livenessProbe:
           exec:
@@ -117,7 +117,12 @@ rules:
   apiGroups:
   - apps
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - resources:
   - deployments/finalizers
   apiGroups:
@@ -140,7 +145,12 @@ rules:
   apiGroups:
   - coordination.k8s.io
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - resources:
   - '*'
   apiGroups:
@@ -160,7 +170,13 @@ rules:
   apiGroups:
   - rbac.authorization.k8s.io
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - resources:
   - securitycontextconstraints
   apiGroups:
@@ -174,7 +190,13 @@ rules:
   apiGroups:
   - storage.k8s.io
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -235,11 +257,11 @@ spec:
     - name: Version
       type: string
       description: CSIDriver version.
-      jsonPath: .status.version
+      jsonPath: .status.versions[0].version
     - name: Success
       type: string
       description: CSI driver resource creation status.
-      jsonPath: .status.condition[?(@ "status")].status
+      jsonPath: .status.conditions[?(@ "status")].status
     schema:
       openAPIV3Schema:
         type: object
@@ -1368,7 +1390,7 @@ spec:
             type: object
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
             properties:
-              condition:
+              conditions:
                 type: array
                 description: conditions contains the details for one aspect of the
                   current state of this custom resource.
@@ -1439,10 +1461,21 @@ spec:
                   - reason
                   - status
                   - type
-              version:
-                type: string
+              versions:
+                type: array
                 description: version is the current CSIDriver version installed by
                   the operator.
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: name is the name of the particular operand this
+                        version is for.
+                    version:
+                      type: string
+                      description: version of a particular operand that is currently
+                        being managed.
     served: true
     storage: true
     subresources:

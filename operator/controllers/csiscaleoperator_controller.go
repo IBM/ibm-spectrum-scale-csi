@@ -87,16 +87,16 @@ var watchResources = map[string]map[string]bool{corev1.ResourceConfigMaps.String
 // TODO: Does the operator need to access to all the resources mentioned above?
 // TODO: Does all resources mentioned above required delete/patch/update permissions?
 
-// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources={clusterroles,clusterrolebindings},verbs=*
-// +kubebuilder:rbac:groups="apps",resources={deployments,daemonsets,replicasets,statefulsets},verbs=*
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources={clusterroles,clusterrolebindings},verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups="apps",resources={deployments,daemonsets,replicasets,statefulsets},verbs=create;delete;get;list;update;watch
 // +kubebuilder:rbac:groups="apps",resourceNames=ibm-spectrum-scale-csi-operator,resources=deployments/finalizers,verbs=get;update
-// +kubebuilder:rbac:groups="storage.k8s.io",resources={volumeattachments,storageclasses,csidrivers},verbs=*
+// +kubebuilder:rbac:groups="storage.k8s.io",resources={volumeattachments,storageclasses,csidrivers},verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;create
 // +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=*
 // +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get;list;watch
 
 // TODO: In case of multiple controllers, define role and rolebinding separately for leases.
-// +kubebuilder:rbac:groups="coordination.k8s.io",resources={leases},verbs=*
+// +kubebuilder:rbac:groups="coordination.k8s.io",resources={leases},verbs=create;delete;get;list;update;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -183,7 +183,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
-		logger.Error(err, "Couldn't add Finalizer")
+		message := "Couldn't add Finalizer"
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceUpdateError),
+			Message: message,
+		})
 		return ctrl.Result{}, err
 	}
 
@@ -193,7 +201,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Attempting cleanup of CSI driver")
 		isFinalizerExists, err := r.hasFinalizer(instance)
 		if err != nil {
-			logger.Error(err, "Finalizer check failed")
+			message := "Finalizer check failed"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
@@ -203,17 +219,41 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
-			logger.Error(err, "Failed to delete ClusterRoles and ClusterRolesBindings")
+			message := "Failed to delete ClusterRoles and ClusterRolesBindings"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
 		if err := r.deleteCSIDriver(instance); err != nil {
-			logger.Error(err, "Failed to delete CSIDriver")
+			message := "Failed to delete CSIDriver"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceDeleteError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
-			logger.Error(err, "Failed to remove Finalizer")
+			message := "Failed to remove Finalizer"
+			logger.Error(err, message)
+			// TODO: Add event.
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceUpdateError),
+				Message: message,
+			})
 			return ctrl.Result{}, err
 		}
 		logger.Info("Removed CSI driver successfully")
@@ -494,7 +534,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "created", corev1.ResourceConfigMaps.String(), e.Object.GetName())
+					r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
 				} else {
 					return false
 				}
@@ -503,7 +543,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
 					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
-						r.restartDriverPods(mgr, "updated", corev1.ResourceConfigMaps.String(), e.ObjectOld.GetName())
+						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
 					}
 				} else {
 					return false
@@ -512,7 +552,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "deleted", corev1.ResourceConfigMaps.String(), e.Object.GetName())
+					r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
 				} else {
 					return false
 				}
@@ -1218,7 +1258,12 @@ func (r *CSIScaleOperatorReconciler) SetStatus(instance *csiscaleoperator.CSISca
 		crStatus.Phase = phase
 	*/
 
-	crStatus.Version = config.DriverVersion
+	crStatus.Versions = []csiv1.Version{
+		{
+			Name:    instance.Name,
+			Version: config.DriverVersion,
+		},
+	}
 
 	logger.V(1).Info("Setting status of CSIScaleOperator is successful")
 	return nil
