@@ -1,5 +1,5 @@
 /*
-Copyright 2022.
+copyright 2022.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -369,7 +369,7 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 			{
 				APIGroups: []string{snapshotStorageApiGroup},
 				Resources: []string{volumeSnapshotContentsStatusResource},
-				Verbs:     []string{verbPatch},
+				Verbs:     []string{verbUpdate, verbPatch},
 			},
 			{
 				APIGroups: []string{coordinationApiGroup},
