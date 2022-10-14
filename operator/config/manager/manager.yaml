@@ -75,7 +75,7 @@ spec:
             requests:
               cpu: 50m
               memory: 50Mi
-              ephemeral-storage: 5Gi
+              ephemeral-storage: 1Gi
           #hostNetwork: false
           #hostPID: false
           #hostIPC: false
