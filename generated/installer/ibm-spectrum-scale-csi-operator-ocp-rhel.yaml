@@ -117,7 +117,12 @@ rules:
   apiGroups:
   - apps
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - resources:
   - deployments/finalizers
   apiGroups:
@@ -140,7 +145,12 @@ rules:
   apiGroups:
   - coordination.k8s.io
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - resources:
   - '*'
   apiGroups:
@@ -160,7 +170,13 @@ rules:
   apiGroups:
   - rbac.authorization.k8s.io
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - resources:
   - securitycontextconstraints
   apiGroups:
@@ -174,7 +190,13 @@ rules:
   apiGroups:
   - storage.k8s.io
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
