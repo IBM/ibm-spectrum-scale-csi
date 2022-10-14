@@ -52,7 +52,7 @@ spec:
             memory: 600Mi
           requests:
             cpu: 50m
-            ephemeral-storage: 5Gi
+            ephemeral-storage: 1Gi
             memory: 50Mi
         livenessProbe:
           exec:
