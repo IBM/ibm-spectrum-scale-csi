@@ -33,7 +33,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:1c0fe31ecf036ae1aa2991cf198b239502fcffcbd066f9e6781897823506be70
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:83d0935d009e4df2fca1e47568e043c6c6779d70ac5b4dfc323a80ec7862c5d8
         args:
         - --leaderElection=true
         env:
@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:5df8b43f96c1eca66a92de7ac77f7ed02b2d195c3400551ceaa735a982618841
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:6b25ae7101cd7ee936ccd63cdac2f44a13ec4e8e83e2ff5e3f63d59279222d52
         resources:
           limits:
             cpu: 600m
