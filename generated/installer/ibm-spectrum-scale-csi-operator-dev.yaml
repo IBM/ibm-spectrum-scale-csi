@@ -170,13 +170,7 @@ rules:
   apiGroups:
   - rbac.authorization.k8s.io
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - '*'
 - resources:
   - securitycontextconstraints
   apiGroups:
