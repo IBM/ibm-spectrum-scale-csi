@@ -13,7 +13,7 @@
     mode: '0755'
 
 - name: "Combining the individual deploy/*yaml files into a single one: {{ generated_op_yaml }}"
-  shell: "kustomize build --reorder none {{ operator_dir }}/config/overlays/default > {{ generated_op_yaml }} && kustomize cfg fmt {{ generated_op_yaml }}"
+  shell: "kustomize build --reorder none {{ operator_dir }}/config/overlays/default > {{ generated_op_yaml }}"
   ignore_errors: False
 
 - name: "Copy generated file to dev file"
