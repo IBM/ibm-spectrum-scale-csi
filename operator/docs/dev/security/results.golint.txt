@@ -1,10 +1,4 @@
 level=warning msg="[runner] The linter 'golint' is deprecated (since v1.41.0) due to: The repository of the linter has been archived by the owner.  Replaced by revive."
-main.go:81:10: `if` block ends with a `return` statement, so drop this `else` and outdent its block (golint)
-		} else {
-		       ^
-controllers/csiscaleoperator_controller.go:266:9: if block ends with a return statement, so drop this else and outdent its block (move short variable declaration to its own line if necessary) (golint)
-	} else {
-	       ^
 api/v1/csiscaleoperator_types.go:316:2: struct field `Id` should be `ID` (golint)
 	Id string `json:"id"` // TODO: Rename to ID or id
 	^
@@ -32,3 +26,9 @@ controllers/internal/csiscaleoperator/csiscaleoperator_package.go:37:2: const `c
 controllers/internal/csiscaleoperator/csiscaleoperator_package.go:38:2: const `podSecurityPolicyApiGroup` should be `podSecurityPolicyAPIGroup` (golint)
 	podSecurityPolicyApiGroup            string = "extensions"
 	^
+main.go:81:10: `if` block ends with a `return` statement, so drop this `else` and outdent its block (golint)
+		} else {
+		       ^
+controllers/csiscaleoperator_controller.go:266:9: if block ends with a return statement, so drop this else and outdent its block (move short variable declaration to its own line if necessary) (golint)
+	} else {
+	       ^

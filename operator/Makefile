@@ -74,7 +74,7 @@ help: ## Display this help.
 ##@ Development
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=ibm-spectrum-scale-csi-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) crd rbac:roleName=ibm-spectrum-scale-csi-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hacks/boilerplate.go.txt" paths="./..."
