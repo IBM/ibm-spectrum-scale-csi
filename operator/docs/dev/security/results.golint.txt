@@ -8,6 +8,9 @@ api/v1/csiscaleoperator_types.go:324:2: struct field `RestApi` should be `RestAP
 api/v1/csiscaleoperator_types.go:354:6: type `RestApi` should be `RestAPI` (golint)
 type RestApi struct {
      ^
+controllers/csiscaleoperator_controller.go:266:9: if block ends with a return statement, so drop this else and outdent its block (move short variable declaration to its own line if necessary) (golint)
+	} else {
+	       ^
 controllers/internal/csiscaleoperator/csiscaleoperator_package.go:33:2: const `snapshotStorageApiGroup` should be `snapshotStorageAPIGroup` (golint)
 	snapshotStorageApiGroup              string = "snapshot.storage.k8s.io"
 	^
@@ -29,6 +32,3 @@ controllers/internal/csiscaleoperator/csiscaleoperator_package.go:38:2: const `p
 main.go:81:10: `if` block ends with a `return` statement, so drop this `else` and outdent its block (golint)
 		} else {
 		       ^
-controllers/csiscaleoperator_controller.go:266:9: if block ends with a return statement, so drop this else and outdent its block (move short variable declaration to its own line if necessary) (golint)
-	} else {
-	       ^
