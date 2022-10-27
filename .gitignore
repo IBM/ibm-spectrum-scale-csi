@@ -83,6 +83,4 @@ tags
 # End of https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 vendor
 _output
-operator/bin/controller-gen
-operator/bin/kustomize
-operator/bin/manager
+operator/bin/*
