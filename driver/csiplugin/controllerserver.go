@@ -1212,11 +1212,34 @@ func (cs *ScaleControllerServer) checkGuiHASupport(conn connectors.SpectrumScale
 	return nil
 }
 
-func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
-	glog.V(3).Infof("validateSnapId [%v]", sId)
-	conn, err := cs.getConnFromClusterID(sId.ClusterId)
+func (cs *ScaleControllerServer) validateSnapId(sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string) error {
+	glog.V(3).Infof("validateSnapId [%v]", sourcesnapshot)
+	conn, err := cs.getConnFromClusterID(sourcesnapshot.ClusterId)
 	if err != nil {
 		return err
+	}
+
+	// Restrict cross cluster cloning
+	if newvolume.ClusterId != sourcesnapshot.ClusterId {
+		return status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
+	}
+
+	// Restrict cross storage class version volume from snapshot
+	if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
+		if newvolume.StorageClassType != sourcesnapshot.StorageClassType {
+			return status.Error(codes.Unimplemented, "creating volume from snapshot between different version of storageClass is not supported")
+		}
+	}
+
+	// Restrict creating LW volume from snapshot
+	if !newvolume.IsFilesetBased {
+		return status.Error(codes.Unimplemented, "creating lightweight volume from snapshot is not supported")
+	}
+
+	// Restrict creating dependent fileset based volume from snapshot
+	if newvolume.StorageClassType == STORAGECLASS_CLASSIC && newvolume.FilesetType == dependentFileset {
+		return status.Error(codes.Unimplemented, "creating dependent fileset based volume from snapshot is not supported")
+
 	}
 
 	/* Check if Spectrum Scale supports Snapshot */
@@ -1225,48 +1248,48 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return chkSnapshotErr
 	}
 
-	if scVol.IsFilesetBased {
-		if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
+	if newvolume.IsFilesetBased {
+		if newvolume.ClusterId != "" && sourcesnapshot.ClusterId != newvolume.ClusterId {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", newvolume.ClusterId, sourcesnapshot.ClusterId))
 		}
 
-		if scVol.ClusterId == "" && sId.ClusterId != pCid {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
+		if newvolume.ClusterId == "" && sourcesnapshot.ClusterId != pCid {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sourcesnapshot.ClusterId))
 		}
 	}
 
-	if scVol.NodeClass != "" {
-		isValidNodeclass, err := conn.IsValidNodeclass(scVol.NodeClass)
+	if newvolume.NodeClass != "" {
+		isValidNodeclass, err := conn.IsValidNodeclass(newvolume.NodeClass)
 		if err != nil {
 			return err
 		}
 
 		if !isValidNodeclass {
-			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scVol.NodeClass, scVol.ClusterId))
+			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", newvolume.NodeClass, newvolume.ClusterId))
 		}
 	}
 
-	sId.FsName, err = conn.GetFilesystemName(sId.FsUUID)
+	sourcesnapshot.FsName, err = conn.GetFilesystemName(sourcesnapshot.FsUUID)
 
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sId.FsUUID, sId.ClusterId, err))
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
 	}
 
-	if sId.FsName != scVol.VolBackendFs {
-		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(sId.FsName)
+	if sourcesnapshot.FsName != newvolume.VolBackendFs {
+		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(sourcesnapshot.FsName)
 		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sId.FsName))
+			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sourcesnapshot.FsName))
 		}
 		if !isFsMounted {
-			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sId.FsName))
+			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sourcesnapshot.FsName))
 		}
 	}
 
-	filesetToCheck := sId.FsetName
-	if sId.StorageClassType == STORAGECLASS_ADVANCED {
-		filesetToCheck = sId.ConsistencyGroup
+	filesetToCheck := sourcesnapshot.FsetName
+	if sourcesnapshot.StorageClassType == STORAGECLASS_ADVANCED {
+		filesetToCheck = sourcesnapshot.ConsistencyGroup
 	}
-	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
+	isFsetLinked, err := conn.IsFilesetLinked(sourcesnapshot.FsName, filesetToCheck)
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
 	}
@@ -1274,12 +1297,12 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
 	}
 
-	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
+	isSnapExist, err := conn.CheckIfSnapshotExist(sourcesnapshot.FsName, filesetToCheck, sourcesnapshot.SnapName)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sId.SnapName))
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sourcesnapshot.SnapName))
 	}
 	if !isSnapExist {
-		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sId.SnapName, filesetToCheck))
+		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sourcesnapshot.SnapName, filesetToCheck))
 	}
 
 	return nil
