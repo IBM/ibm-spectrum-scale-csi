@@ -680,7 +680,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	// LocalFs is name of filesystem on K8s cluster
-	// VolBackendFs is changes to name on remote cluster in case of fileset based provisioning
+	// VolBackendFs is changed to name on remote cluster in case of fileset based provisioning
 
 	var remoteClusterID string
 	if scaleVol.ClusterId == "" && volFsInfo.Type == filesystemTypeRemote {
@@ -1248,16 +1248,6 @@ func (cs *ScaleControllerServer) validateSnapId(sourcesnapshot *scaleSnapId, new
 		return chkSnapshotErr
 	}
 
-	if newvolume.IsFilesetBased {
-		if newvolume.ClusterId != "" && sourcesnapshot.ClusterId != newvolume.ClusterId {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", newvolume.ClusterId, sourcesnapshot.ClusterId))
-		}
-
-		if newvolume.ClusterId == "" && sourcesnapshot.ClusterId != pCid {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sourcesnapshot.ClusterId))
-		}
-	}
-
 	if newvolume.NodeClass != "" {
 		isValidNodeclass, err := conn.IsValidNodeclass(newvolume.NodeClass)
 		if err != nil {
@@ -1345,16 +1335,6 @@ func (cs *ScaleControllerServer) validateCloneRequest(sourcevolume *scaleVolId, 
 			return status.Error(codes.Unimplemented, "Volume cloning for directories for remote file system is not supported")
 		}
 	}
-
-	// Todo : remote-lw to local-lw
-
-	// if newvolume.ClusterId != "" && sourcevolume.ClusterId != newvolume.ClusterId {
-	// 	return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source volume from another cluster. Volume is being created in cluster %s, source volume is from cluster %s.", newvolume.ClusterId, sourcevolume.ClusterId))
-	// }
-
-	// if newvolume.ClusterId == "" && sourcevolume.ClusterId != pCid {
-	// 	return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source volume from another cluster. Volume is being created in cluster %s, source volume is from cluster %s.", pCid, sourcevolume.ClusterId))
-	// }
 
 	sourcevolume.FsName, err = conn.GetFilesystemName(sourcevolume.FsUUID)
 	if err != nil {

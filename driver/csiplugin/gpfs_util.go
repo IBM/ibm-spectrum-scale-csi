@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	dependentFileset     = "dependent"
-	independentFileset   = "independent"
+	dependentFileset   = "dependent"
+	independentFileset = "independent"
 	scversion1         = "1"
 	scversion2         = "2"
-	sharedPermissions    = "777"
+	sharedPermissions  = "777"
 )
 
 type scaleVolume struct {
@@ -176,6 +176,9 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 		if storageClassType == scversion2 {
 			isSCAdvanced = true
 			scaleVol.StorageClassType = STORAGECLASS_ADVANCED
+		}
+		if storageClassType == scversion1 {
+			scaleVol.StorageClassType = STORAGECLASS_CLASSIC
 		}
 	} else {
 		scaleVol.StorageClassType = STORAGECLASS_CLASSIC
