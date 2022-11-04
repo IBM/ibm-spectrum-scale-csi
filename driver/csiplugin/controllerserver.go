@@ -1422,6 +1422,7 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 		} else {
 			sIdMem.Path = "/"
 		}
+		sIdMem.StorageClassType = STORAGECLASS_CLASSIC
 	}
 	return sIdMem, nil
 }
