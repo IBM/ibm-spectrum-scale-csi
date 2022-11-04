@@ -36,7 +36,7 @@ patches:
                   - name: CSI_PROVISIONER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-provisioner@sha256:ee3b525d5b89db99da3b8eb521d9cd90cb6e9ef0fbb651e98bb37be78d36b5b8
                   - name: CSI_LIVENESSPROBE_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/livenessprobe@sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e
+                    value: cp.icr.io/cp/spectrum/scale/csi/livenessprobe@sha256:cacee2b5c36dd59d4c7e8469c05c9e4ef53ecb2df9025fa8c10cdaf61bce62f0
                   - name: CSI_NODE_REGISTRAR_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-node-driver-registrar@sha256:0103eee7c35e3e0b5cd8cdca9850dc71c793cdeb6669d8be7a89440da2d06ae4
                   - name: CSI_RESIZER_IMAGE
