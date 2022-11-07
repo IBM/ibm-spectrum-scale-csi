@@ -1225,22 +1225,21 @@ func (cs *ScaleControllerServer) validateSnapId(sourcesnapshot *scaleSnapId, new
 	}
 
 	// Restrict cross storage class version volume from snapshot
-	if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
-		if newvolume.StorageClassType != sourcesnapshot.StorageClassType {
-			return status.Error(codes.Unimplemented, "creating volume from snapshot between different version of storageClass is not supported")
-		}
-	}
+	// if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
+	// 	if newvolume.StorageClassType != sourcesnapshot.StorageClassType {
+	// 		return status.Error(codes.Unimplemented, "creating volume from snapshot between different version of storageClass is not supported")
+	// 	}
+	// }
 
 	// Restrict creating LW volume from snapshot
-	if !newvolume.IsFilesetBased {
-		return status.Error(codes.Unimplemented, "creating lightweight volume from snapshot is not supported")
-	}
+	// if !newvolume.IsFilesetBased {
+	// 	return status.Error(codes.Unimplemented, "creating lightweight volume from snapshot is not supported")
+	// }
 
-	// Restrict creating dependent fileset based volume from snapshot
-	if newvolume.StorageClassType == STORAGECLASS_CLASSIC && newvolume.FilesetType == dependentFileset {
-		return status.Error(codes.Unimplemented, "creating dependent fileset based volume from snapshot is not supported")
-
-	}
+	// // Restrict creating dependent fileset based volume from snapshot
+	// if newvolume.StorageClassType == STORAGECLASS_CLASSIC && newvolume.FilesetType == dependentFileset {
+	// 	return status.Error(codes.Unimplemented, "creating dependent fileset based volume from snapshot is not supported")
+	// }
 
 	/* Check if Spectrum Scale supports Snapshot */
 	chkSnapshotErr := cs.checkSnapshotSupport(conn)
