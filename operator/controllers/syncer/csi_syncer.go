@@ -558,7 +558,7 @@ func (s *csiControllerSyncer) ensureProvisionerContainersSpec() []corev1.Contain
 	provisioner := s.ensureContainer(provisionerContainerName,
 		s.getSidecarImage(config.CSIProvisioner),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--timeout=2m", "--worker-threads=10",
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=3m", "--worker-threads=10",
 			"--extra-create-metadata", "--v=5", "--default-fstype=gpfs",
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
