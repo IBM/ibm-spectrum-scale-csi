@@ -362,6 +362,14 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 				return scaleConnMap, scaleConfig, primaryInfo, err
 			}
 		}
+
+		// retry listing fileset again after some time after refresh
+		time.Sleep(8 * time.Second)
+		_, err = scaleConnMap["primary"].ListFileset(primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
+		if err != nil {
+			glog.Errorf("Primary fileset %v not visible on primary cluster even after running fileset refresh task", primaryInfo.PrimaryFset)
+			return scaleConnMap, scaleConfig, primaryInfo, err
+		}
 	}
 
 	if fsmount != primaryInfo.PrimaryFSMount {
