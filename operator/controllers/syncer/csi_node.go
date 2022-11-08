@@ -187,7 +187,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	//	nodePlugin.Resources = ensureResources("40m", "1000m", "40Mi", "400Mi")
+	nodePlugin.Resources = ensureDriverResources()
 
 	//nodePlugin.Ports = ensurePorts(corev1.ContainerPort{
 	//	Name:          nodeContainerHealthPortName,
@@ -245,6 +245,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	registrar.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True()}
 	// fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
+	registrar.Resources = ensureSidecarResources()
 
 	// liveness probe sidecar
 	livenessProbe := s.ensureContainer(nodeLivenessProbeContainerName,
@@ -258,6 +259,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	// livenessProbe.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.False()}
 	// fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
+	livenessProbe.Resources = ensureSidecarResources()
 
 	return []corev1.Container{
 		nodePlugin,
@@ -275,7 +277,6 @@ func (s *csiNodeSyncer) ensureContainer(name, image string, args []string) corev
 		Args:         args,
 		Env:          s.getEnvFor(name),
 		VolumeMounts: s.getVolumeMountsFor(name),
-		//		Resources:    ensureDefaultResources(),
 	}
 }
 
