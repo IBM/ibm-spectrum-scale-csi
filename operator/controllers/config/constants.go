@@ -93,8 +93,8 @@ const (
 	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:cacee2b5c36dd59d4c7e8469c05c9e4ef53ecb2df9025fa8c10cdaf61bce62f0"
 	//  registry.k8s.io/sig-storage/csi-attacher:v4.0.0
 	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:9a685020911e2725ad019dbce6e4a5ab93d51e3d4557f115e64343345e05781b"
-	//  registry.k8s.io/sig-storage/csi-provisioner:v3.1.0
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119"
+	//  registry.k8s.io/sig-storage/csi-provisioner:v3.3.0
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:ee3b525d5b89db99da3b8eb521d9cd90cb6e9ef0fbb651e98bb37be78d36b5b8"
 	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.1.0
 	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:291334908ddf71a4661fd7f6d9d97274de8a5378a2b6fdfeb2ce73414a34f82f"
 	//  registry.k8s.io/sig-storage/csi-resizer:v1.6.0

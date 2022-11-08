@@ -566,7 +566,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	isNewVolumeType := false
-	if scaleVol.StorageClassType == storageClassAdvanced {
+	if scaleVol.StorageClassType == STORAGECLASS_ADVANCED {
 		isNewVolumeType = true
 	}
 
@@ -679,6 +679,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.LocalFS = scaleVol.VolBackendFs
 	}
 
+	// LocalFs is name of filesystem on K8s cluster
+	// VolBackendFs is changed to name on remote cluster in case of fileset based provisioning
+
 	var remoteClusterID string
 	if scaleVol.ClusterId == "" && volFsInfo.Type == filesystemTypeRemote {
 		glog.V(5).Infof("filesystem %s is remotely mounted, getting cluster ID information of the owning cluster.", volFsInfo.Name)
@@ -715,17 +718,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 	if isVolSource {
-		if !scaleVol.IsFilesetBased {
-			if volFsInfo.Type == filesystemTypeRemote {
-				return nil, status.Error(codes.Unimplemented, "Volume cloning for directories for remote file system is not supported")
-			}
-		}
-
-		err = cs.validateSrcVolumeID(&srcVolumeIDMembers, scaleVol, PCid)
+		err = cs.validateCloneRequest(&srcVolumeIDMembers, scaleVol, PCid, volFsInfo)
 		if err != nil {
 			glog.Errorf("volume:[%v] - Error in source volume validation [%v]", volName, err)
 			return nil, err
 		}
+
 	}
 
 	if isSnapSource {
@@ -1015,9 +1013,9 @@ func (cs *ScaleControllerServer) copySnapContent(scVol *scaleVolume, snapId scal
 	return nil
 }
 
-func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
-	glog.V(3).Infof("copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", vID, scVol, scVol.VolName)
-	conn, err := cs.getConnFromClusterID(vID.ClusterId)
+func (cs *ScaleControllerServer) copyVolumeContent(newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
+	glog.V(3).Infof("copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", sourcevolume, newvolume, newvolume.VolName)
+	conn, err := cs.getConnFromClusterID(sourcevolume.ClusterId)
 	if err != nil {
 		return err
 	}
@@ -1042,28 +1040,28 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 
 	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
 	response := connectors.GenericResponse{}
-	if scVol.IsFilesetBased {
+	if newvolume.IsFilesetBased {
 		path := ""
-		if vID.StorageClassType == STORAGECLASS_ADVANCED {
+		if sourcevolume.StorageClassType == STORAGECLASS_ADVANCED {
 			path = "/"
 		} else {
-			path = fmt.Sprintf("%s%s", vID.FsetName, "-data")
+			path = fmt.Sprintf("%s%s", sourcevolume.FsetName, "-data")
 		}
 
-		jobStatus, jobID, jobErr := conn.CopyFilesetPath(vID.FsName, vID.FsetName, path, targetPath, scVol.NodeClass)
+		jobStatus, jobID, jobErr := conn.CopyFilesetPath(sourcevolume.FsName, sourcevolume.FsetName, path, targetPath, newvolume.NodeClass)
 		if jobErr != nil {
 			glog.Errorf("failed to clone volume from volume. Error: [%v]", jobErr)
 			return status.Error(codes.Internal, fmt.Sprintf("failed to clone volume from volume. Error: [%v]", jobErr))
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
-		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
+		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		response, err = conn.WaitForJobCompletionWithResp(jobStatus, jobID)
 	} else {
-		sLinkRelPath := strings.Replace(vID.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
+		sLinkRelPath := strings.Replace(sourcevolume.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
-		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(vID.FsName, sLinkRelPath, targetPath, scVol.NodeClass)
+		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(sourcevolume.FsName, sLinkRelPath, targetPath, newvolume.NodeClass)
 
 		if jobErr != nil {
 			glog.Errorf("failed to clone volume from volume. Error: [%v]", jobErr)
@@ -1071,7 +1069,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		}
 
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
-		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
+		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		response, err = conn.WaitForJobCompletionWithResp(jobStatus, jobID)
 	}
 	isResponseStatusUnknown := false
@@ -1098,14 +1096,14 @@ func (cs *ScaleControllerServer) copyVolumeContent(scVol *scaleVolume, vID scale
 		} else {
 			jobDetails.jobStatus = VOLCOPY_JOB_FAILED
 		}
-		glog.Errorf("logging volume cloning error for VolName: [%v] Error: [%v] JobDetails: [%v]", scVol.VolName, err, jobDetails)
-		cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
+		glog.Errorf("logging volume cloning error for VolName: [%v] Error: [%v] JobDetails: [%v]", newvolume.VolName, err, jobDetails)
+		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		return err
 	}
 
-	glog.Infof("volume copy completed for volumeID: [%v], scaleVolume: [%v]", vID, scVol)
+	glog.Infof("volume copy completed for volumeID: [%v], scaleVolume: [%v]", sourcevolume, newvolume)
 	jobDetails.jobStatus = VOLCOPY_JOB_COMPLETED
-	cs.Driver.volcopyjobstatusmap.Store(scVol.VolName, jobDetails)
+	cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 	//delete(cs.Driver.volcopyjobstatusmap, scVol.VolName)
 	return nil
 }
@@ -1214,12 +1212,34 @@ func (cs *ScaleControllerServer) checkGuiHASupport(conn connectors.SpectrumScale
 	return nil
 }
 
-func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVolume, pCid string) error {
-	glog.V(3).Infof("validateSnapId [%v]", sId)
-	conn, err := cs.getConnFromClusterID(sId.ClusterId)
+func (cs *ScaleControllerServer) validateSnapId(sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string) error {
+	glog.V(3).Infof("validateSnapId [%v]", sourcesnapshot)
+	conn, err := cs.getConnFromClusterID(sourcesnapshot.ClusterId)
 	if err != nil {
 		return err
 	}
+
+	// Restrict cross cluster cloning
+	if newvolume.ClusterId != sourcesnapshot.ClusterId {
+		return status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
+	}
+
+	// Restrict cross storage class version volume from snapshot
+	// if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
+	// 	if newvolume.StorageClassType != sourcesnapshot.StorageClassType {
+	// 		return status.Error(codes.Unimplemented, "creating volume from snapshot between different version of storageClass is not supported")
+	// 	}
+	// }
+
+	// Restrict creating LW volume from snapshot
+	// if !newvolume.IsFilesetBased {
+	// 	return status.Error(codes.Unimplemented, "creating lightweight volume from snapshot is not supported")
+	// }
+
+	// // Restrict creating dependent fileset based volume from snapshot
+	// if newvolume.StorageClassType == STORAGECLASS_CLASSIC && newvolume.FilesetType == dependentFileset {
+	// 	return status.Error(codes.Unimplemented, "creating dependent fileset based volume from snapshot is not supported")
+	// }
 
 	/* Check if Spectrum Scale supports Snapshot */
 	chkSnapshotErr := cs.checkSnapshotSupport(conn)
@@ -1227,48 +1247,38 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return chkSnapshotErr
 	}
 
-	if scVol.IsFilesetBased {
-		if scVol.ClusterId != "" && sId.ClusterId != scVol.ClusterId {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", scVol.ClusterId, sId.ClusterId))
-		}
-
-		if scVol.ClusterId == "" && sId.ClusterId != pCid {
-			return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source snapshot from another cluster. Volume is being created in cluster %s, source snapshot is from cluster %s.", pCid, sId.ClusterId))
-		}
-	}
-
-	if scVol.NodeClass != "" {
-		isValidNodeclass, err := conn.IsValidNodeclass(scVol.NodeClass)
+	if newvolume.NodeClass != "" {
+		isValidNodeclass, err := conn.IsValidNodeclass(newvolume.NodeClass)
 		if err != nil {
 			return err
 		}
 
 		if !isValidNodeclass {
-			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scVol.NodeClass, scVol.ClusterId))
+			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", newvolume.NodeClass, newvolume.ClusterId))
 		}
 	}
 
-	sId.FsName, err = conn.GetFilesystemName(sId.FsUUID)
+	sourcesnapshot.FsName, err = conn.GetFilesystemName(sourcesnapshot.FsUUID)
 
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sId.FsUUID, sId.ClusterId, err))
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
 	}
 
-	if sId.FsName != scVol.VolBackendFs {
-		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(sId.FsName)
+	if sourcesnapshot.FsName != newvolume.VolBackendFs {
+		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(sourcesnapshot.FsName)
 		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sId.FsName))
+			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sourcesnapshot.FsName))
 		}
 		if !isFsMounted {
-			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sId.FsName))
+			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sourcesnapshot.FsName))
 		}
 	}
 
-	filesetToCheck := sId.FsetName
-	if sId.StorageClassType == STORAGECLASS_ADVANCED {
-		filesetToCheck = sId.ConsistencyGroup
+	filesetToCheck := sourcesnapshot.FsetName
+	if sourcesnapshot.StorageClassType == STORAGECLASS_ADVANCED {
+		filesetToCheck = sourcesnapshot.ConsistencyGroup
 	}
-	isFsetLinked, err := conn.IsFilesetLinked(sId.FsName, filesetToCheck)
+	isFsetLinked, err := conn.IsFilesetLinked(sourcesnapshot.FsName, filesetToCheck)
 	if err != nil {
 		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
 	}
@@ -1276,20 +1286,21 @@ func (cs *ScaleControllerServer) validateSnapId(sId *scaleSnapId, scVol *scaleVo
 		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
 	}
 
-	isSnapExist, err := conn.CheckIfSnapshotExist(sId.FsName, filesetToCheck, sId.SnapName)
+	isSnapExist, err := conn.CheckIfSnapshotExist(sourcesnapshot.FsName, filesetToCheck, sourcesnapshot.SnapName)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sId.SnapName))
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sourcesnapshot.SnapName))
 	}
 	if !isSnapExist {
-		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sId.SnapName, filesetToCheck))
+		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sourcesnapshot.SnapName, filesetToCheck))
 	}
 
 	return nil
 }
 
-func (cs *ScaleControllerServer) validateSrcVolumeID(vID *scaleVolId, scVol *scaleVolume, pCid string) error {
-	glog.V(3).Infof("validateVolId [%v]", vID)
-	conn, err := cs.getConnFromClusterID(vID.ClusterId)
+func (cs *ScaleControllerServer) validateCloneRequest(sourcevolume *scaleVolId, newvolume *scaleVolume, pCid string, volFsInfo connectors.FileSystem_v2) error {
+	glog.V(3).Infof("validateVolId [%v]", sourcevolume)
+
+	conn, err := cs.getConnFromClusterID(sourcevolume.ClusterId)
 	if err != nil {
 		return err
 	}
@@ -1300,55 +1311,76 @@ func (cs *ScaleControllerServer) validateSrcVolumeID(vID *scaleVolId, scVol *sca
 		return chkVolCloneErr
 	}
 
-	if scVol.ClusterId != "" && vID.ClusterId != scVol.ClusterId {
-		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source volume from another cluster. Volume is being created in cluster %s, source volume is from cluster %s.", scVol.ClusterId, vID.ClusterId))
+	// Restrict cross cluster cloning
+	if newvolume.ClusterId != sourcevolume.ClusterId {
+		return status.Error(codes.Unimplemented, "cloning of volume across clusters is not supported")
 	}
 
-	if scVol.ClusterId == "" && vID.ClusterId != pCid {
-		return status.Error(codes.InvalidArgument, fmt.Sprintf("cannot create volume from a source volume from another cluster. Volume is being created in cluster %s, source volume is from cluster %s.", pCid, vID.ClusterId))
+	// Restrict cross storage class version
+	if len(newvolume.StorageClassType) != 0 || len(sourcevolume.StorageClassType) != 0 {
+		if newvolume.StorageClassType != sourcevolume.StorageClassType {
+			return status.Error(codes.Unimplemented, "cloning of volumes between different version of storageClass is not supported")
+		}
 	}
 
-	if scVol.NodeClass != "" {
-		isValidNodeclass, err := conn.IsValidNodeclass(scVol.NodeClass)
+	// Restrict cloning LW to Fileset based or vise a versa
+	if newvolume.IsFilesetBased != sourcevolume.IsFilesetBased {
+		return status.Error(codes.Unimplemented, "cloning of directory based volume to fileset based volume or vice a versa is not supported")
+	}
+
+	// Restrict if new volune is lw and is from remote
+	if !newvolume.IsFilesetBased {
+		if volFsInfo.Type == filesystemTypeRemote {
+			return status.Error(codes.Unimplemented, "Volume cloning for directories for remote file system is not supported")
+		}
+	}
+
+	sourcevolume.FsName, err = conn.GetFilesystemName(sourcevolume.FsUUID)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcevolume.FsUUID, sourcevolume.ClusterId, err))
+	}
+
+	sourceFsDetails, err := conn.GetFilesystemDetails(sourcevolume.FsName)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sourcevolume.FsName))
+	}
+
+	// restrict remote lw to local lw cloning
+	if !sourcevolume.IsFilesetBased && sourceFsDetails.Type == filesystemTypeRemote {
+		return status.Error(codes.Unimplemented, "cloning of directory based volume belonging to remote cluster is not supported")
+	}
+
+	if sourcevolume.FsName != newvolume.VolBackendFs {
+		if sourceFsDetails.Mount.Status != "mounted" {
+			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sourcevolume.FsName))
+		}
+	}
+
+	if sourcevolume.IsFilesetBased {
+		if sourcevolume.FsetName == "" {
+			sourcevolume.FsetName, err = conn.GetFileSetNameFromId(sourcevolume.FsName, sourcevolume.FsetId)
+			if err != nil {
+				return status.Error(codes.Internal, fmt.Sprintf("error in getting fileset details for %s", sourcevolume.FsetId))
+			}
+		}
+
+		isFsetLinked, err := conn.IsFilesetLinked(sourcevolume.FsName, sourcevolume.FsetName)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sourcevolume.FsetName))
+		}
+		if !isFsetLinked {
+			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", sourcevolume.FsetName))
+		}
+	}
+
+	if newvolume.NodeClass != "" {
+		isValidNodeclass, err := conn.IsValidNodeclass(newvolume.NodeClass)
 		if err != nil {
 			return err
 		}
 
 		if !isValidNodeclass {
-			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", scVol.NodeClass, scVol.ClusterId))
-		}
-	}
-
-	vID.FsName, err = conn.GetFilesystemName(vID.FsUUID)
-
-	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", vID.FsUUID, vID.ClusterId, err))
-	}
-
-	if vID.FsName != scVol.VolBackendFs {
-		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(vID.FsName)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", vID.FsName))
-		}
-		if !isFsMounted {
-			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", vID.FsName))
-		}
-	}
-
-	if scVol.IsFilesetBased {
-		if vID.FsetName == "" {
-			vID.FsetName, err = conn.GetFileSetNameFromId(vID.FsName, vID.FsetId)
-			if err != nil {
-				return status.Error(codes.Internal, fmt.Sprintf("error in getting fileset details for %s", vID.FsetId))
-			}
-		}
-
-		isFsetLinked, err := conn.IsFilesetLinked(vID.FsName, vID.FsetName)
-		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", vID.FsetName))
-		}
-		if !isFsetLinked {
-			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", vID.FsetName))
+			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", newvolume.NodeClass, newvolume.ClusterId))
 		}
 	}
 
@@ -1389,6 +1421,7 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 		} else {
 			sIdMem.Path = "/"
 		}
+		sIdMem.StorageClassType = STORAGECLASS_CLASSIC
 	}
 	return sIdMem, nil
 }
