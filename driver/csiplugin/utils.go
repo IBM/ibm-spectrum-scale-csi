@@ -17,11 +17,16 @@
 package scale
 
 import (
+	"context"
+
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
+	"github.com/google/uuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
+
+const loggerId = "logger_id"
 
 func NewVolumeCapabilityAccessMode(mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability_AccessMode {
 	return &csi.VolumeCapability_AccessMode{Mode: mode}
@@ -48,13 +53,24 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 }
 
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	glog.V(3).Infof("GRPC call: %s", info.FullMethod)
-	glog.V(5).Infof("GRPC request: %+v", req)
-	resp, err := handler(ctx, req)
+	newCtx := setLoggerId(ctx)
+	glog.V(3).Infof("[%s] GRPC call: %s", GetLoggerId(newCtx), info.FullMethod)
+	glog.V(5).Infof("[%s] GRPC request: %+v", GetLoggerId(newCtx), req)
+	resp, err := handler(newCtx, req)
 	if err != nil {
-		glog.Errorf("GRPC error: %v", err)
+		glog.Errorf("[%s] GRPC error: %v", GetLoggerId(newCtx), err)
 	} else {
-		glog.V(5).Infof("GRPC response: %+v", resp)
+		glog.V(5).Infof("[%s] GRPC response: %+v", GetLoggerId(newCtx), resp)
 	}
 	return resp, err
+}
+
+func setLoggerId(ctx context.Context) context.Context {
+	id := uuid.New()
+	return context.WithValue(ctx, loggerId, id)
+}
+
+func GetLoggerId(ctx context.Context) (string, bool) {
+	logger, ok := ctx.Value(loggerId).(string)
+	return logger, ok
 }
