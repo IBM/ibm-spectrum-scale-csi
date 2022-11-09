@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	dependentFileset     = "dependent"
-	independentFileset   = "independent"
-	storageClassClassic  = "1"
-	storageClassAdvanced = "2"
-	sharedPermissions    = "777"
+	dependentFileset   = "dependent"
+	independentFileset = "independent"
+	scversion1         = "1"
+	scversion2         = "2"
+	sharedPermissions  = "777"
 )
 
 type scaleVolume struct {
@@ -169,16 +169,19 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 	isSCAdvanced := false
 	if isSCTypeSpecified {
-		if storageClassType != storageClassClassic && storageClassType != storageClassAdvanced {
+		if storageClassType != scversion1 && storageClassType != scversion2 {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
-				"\""+storageClassClassic+"\" or \""+storageClassAdvanced+"\"")
+				"\""+scversion1+"\" or \""+scversion2+"\"")
 		}
-		scaleVol.StorageClassType = storageClassType
-		if storageClassType == storageClassAdvanced {
+		if storageClassType == scversion2 {
 			isSCAdvanced = true
+			scaleVol.StorageClassType = STORAGECLASS_ADVANCED
+		}
+		if storageClassType == scversion1 {
+			scaleVol.StorageClassType = STORAGECLASS_CLASSIC
 		}
 	} else {
-		scaleVol.StorageClassType = storageClassClassic
+		scaleVol.StorageClassType = STORAGECLASS_CLASSIC
 	}
 
 	if fsSpecified && volBckFs == "" {
@@ -280,13 +283,13 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 
 	if isSCAdvanced && fsTypeSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+storageClassAdvanced+" must not be specified together in storageClass")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && isparentFilesetSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+storageClassAdvanced+" must not be specified together in storageClass")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && volDirPathSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+storageClassAdvanced+" must not be specified together in storageClass")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+scversion2+" must not be specified together in storageClass")
 	}
 
 	if fsTypeSpecified || isSCAdvanced {
