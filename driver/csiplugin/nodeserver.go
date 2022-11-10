@@ -147,10 +147,10 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver unmountAndDelete")
 	targetPathInContainer := hostDir + targetPath
-	notMP := false
+	isMP := false
 	var err error
 	if !forceful {
-		notMP, err = mount.IsNotMountPoint(mount.New(""), targetPathInContainer)
+		isMP, err = mount.New("").IsMountPoint(targetPathInContainer)
 		if err != nil {
 			if os.IsNotExist(err) {
 				glog.V(4).Infof("target path %v is already deleted", targetPathInContainer)
@@ -159,7 +159,7 @@ func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublis
 			return true, nil, fmt.Errorf("failed to check if target path [%s] is a mount point. Error %v", targetPathInContainer, err)
 		}
 	}
-	if forceful || !notMP {
+	if forceful || isMP {
 		// Unmount the targetPath
 		err = mount.New("").Unmount(targetPath)
 		if err != nil {
