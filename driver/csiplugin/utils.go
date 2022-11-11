@@ -66,7 +66,8 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 }
 
 func setLoggerId(ctx context.Context) context.Context {
-	id := uuid.New()
+	id := uuid.New().String()
+	glog.V(3).Infof("uuid: %s", id.String())
 	return context.WithValue(ctx, loggerId, id)
 }
 
