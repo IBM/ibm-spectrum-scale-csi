@@ -18,6 +18,7 @@ package scale
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -96,7 +97,7 @@ type scaleSnapId struct {
 	VolType          string
 }
 
-//nolint
+// nolint
 type scaleVolSnapshot struct {
 	SnapName   string `json:"snapName"`
 	SourceVol  string `json:"sourceVol"`
@@ -106,7 +107,7 @@ type scaleVolSnapshot struct {
 	SnapSize   uint64 `json:"snapSize"`
 } //nolint
 
-//nolint
+// nolint
 type scaleVolSnapId struct {
 	ClusterId string
 	FsUUID    string
@@ -133,7 +134,9 @@ func getRemoteFsName(remoteDeviceName string) string {
 	return remDevFs
 }
 
-func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
+func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
+
+	loggerId := GetLoggerId(ctx)
 	//var err error
 	scaleVol := &scaleVolume{}
 
@@ -385,23 +388,23 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
 		if strings.ToLower(compression) == "true" {
-			glog.V(5).Infof("gpfs_util compression was set to true. Defaulting to Z")
+			glog.V(5).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
 
 		if !IsValidCompressionAlgorithm(compression) {
-			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
+			glog.V(5).Infof("[%s] gpfs_util invalid compression algorithm specified: %s", loggerId,
 				compression)
 			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
 				"invalid compression algorithm specified: %s", compression)
 		}
 		scaleVol.Compression = compression
-		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
+		glog.V(5).Infof("[%s] gpfs_util compression was set to %s", loggerId, compression)
 	}
 
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
-		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
+		glog.V(5).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
 	return scaleVol, nil

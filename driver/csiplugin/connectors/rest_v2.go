@@ -244,15 +244,16 @@ func (s *spectrumRestV2) GetScaleVersion() (string, error) {
 	return getVersionResponse.Info.ServerVersion, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
-	glog.V(4).Infof("rest_v2 GetFilesystemMountDetails. filesystemName: %s", filesystemName)
+func (s *spectrumRestV2) GetFilesystemMountDetails(ctx context.Context, filesystemName string) (MountInfo, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFilesystemMountDetails. filesystemName: %s", loggerId, filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(getFilesystemURL, "GET", &getFilesystemResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get filesystem details for %s: %v", filesystemName, err)
+		glog.Errorf("[%s] Unable to get filesystem details for %s: %v", loggerId, filesystemName, err)
 		return MountInfo{}, err
 	}
 
@@ -593,9 +594,9 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error {
-	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 DeleteFileset. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string) error {
+
+	glog.V(4).Infof("rest_v2 DeleteFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	deleteFilesetResponse := GenericResponse{}
@@ -603,23 +604,23 @@ func (s *spectrumRestV2) DeleteFileset(ctx context.Context, filesystemName strin
 	err := s.doHTTP(deleteFilesetURL, "DELETE", &deleteFilesetResponse, nil)
 	if err != nil {
 		if strings.Contains(deleteFilesetResponse.Status.Message, "Invalid value in 'fsetName'") { // job failed as dir already exists
-			glog.Infof("[%s] Fileset would have been deleted. So returning success %v", loggerId, err)
+			glog.Infof("Fileset would have been deleted. So returning success %v", err)
 			return nil
 		}
 
-		glog.Errorf("[%s] Error in delete fileset request: %v", loggerId, err)
+		glog.Errorf("Error in delete fileset request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(deleteFilesetResponse, deleteFilesetURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
+		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteFilesetResponse.Status.Code, deleteFilesetResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] Unable to delete fileset %s: %v", loggerId, filesetName, err)
+		glog.Errorf("Unable to delete fileset %s: %v", filesetName, err)
 		return err
 	}
 
@@ -682,20 +683,21 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) (Fileset_v2, error) {
-	glog.V(4).Infof("rest_v2 ListFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 ListFileset. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		glog.Errorf("Error in list fileset request: %v", err)
+		glog.Errorf("[%s] Error in list fileset request: %v", loggerId, err)
 		return Fileset_v2{}, err
 	}
 
 	if len(getFilesetResponse.Filesets) == 0 {
-		glog.Errorf("No fileset returned for %s", filesetName)
+		glog.Errorf("[%s] No fileset returned for %s", loggerId, filesetName)
 		return Fileset_v2{}, fmt.Errorf("No fileset returned for %s", filesetName)
 	}
 
@@ -717,8 +719,9 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 	return getFilesetsResponse.Filesets, nil
 }
 
-func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
-	glog.V(4).Infof("rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	fileset, err := s.ListFileset(filesystemName, filesetName)
 	if err != nil {
@@ -971,8 +974,9 @@ func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetNa
 	return listQuotaResponse.Quotas[0], nil
 }
 
-func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName string) (string, error) {
-	glog.V(4).Infof("rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	listQuotaResponse, err := s.GetFilesetQuotaDetails(filesystemName, filesetName)
 
@@ -983,7 +987,7 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 	if listQuotaResponse.BlockLimit > 0 {
 		return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
 	} else {
-		glog.Errorf("No quota information found for fileset %s", filesetName)
+		glog.Errorf("[%s] No quota information found for fileset %s", loggerId, filesetName)
 		return "", nil
 	}
 }
@@ -1103,39 +1107,41 @@ func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName strin
 	return nil
 }
 
-func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error) { //nolint:dupl
-	glog.V(4).Infof("rest_v2 GetFilesystemName. UUID: %s", filesystemUUID)
+func (s *spectrumRestV2) GetFilesystemName(ctx context.Context, filesystemUUID string) (string, error) { //nolint:dupl
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFilesystemName. UUID: %s", loggerId, filesystemUUID)
 
 	getFilesystemNameURL := fmt.Sprintf("scalemgmt/v2/filesystems?filter=uuid=%s", filesystemUUID)
 	getFilesystemNameURLResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(getFilesystemNameURL, "GET", &getFilesystemNameURLResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get filesystem name for uuid %s: %v", filesystemUUID, err)
+		glog.Errorf("[%s] Unable to get filesystem name for uuid %s: %v", loggerId, filesystemUUID, err)
 		return "", err
 	}
 
 	if len(getFilesystemNameURLResponse.FileSystems) == 0 {
-		glog.Errorf("Unable to fetch filesystem name details for %s", filesystemUUID)
+		glog.Errorf("[%s] Unable to fetch filesystem name details for %s", loggerId, filesystemUUID)
 		return "", fmt.Errorf("Unable to fetch filesystem name details for %s", filesystemUUID)
 	}
 	return getFilesystemNameURLResponse.FileSystems[0].Name, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem_v2, error) { //nolint:dupl
-	glog.V(4).Infof("rest_v2 GetFilesystemDetails. Name: %s", filesystemName)
+func (s *spectrumRestV2) GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error) { //nolint:dupl
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFilesystemDetails. Name: %s", loggerId, filesystemName)
 
 	getFilesystemDetailsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	getFilesystemDetailsURLResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(getFilesystemDetailsURL, "GET", &getFilesystemDetailsURLResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get filesystem details for filesystem %s: %v", filesystemName, err)
+		glog.Errorf("[%s] Unable to get filesystem details for filesystem %s: %v", loggerId, filesystemName, err)
 		return FileSystem_v2{}, err
 	}
 
 	if len(getFilesystemDetailsURLResponse.FileSystems) == 0 {
-		glog.Errorf("Unable to fetch filesystem details for %s", filesystemName)
+		glog.Errorf("[%s] Unable to fetch filesystem details for %s", loggerId, filesystemName)
 		return FileSystem_v2{}, fmt.Errorf("Unable to fetch filesystem details for %s", filesystemName)
 	}
 
@@ -1260,8 +1266,9 @@ func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string
 	return fmt.Sprintf("%d", filesetResponse.Config.Id), nil
 }
 
-func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error) {
-	glog.V(4).Infof("rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) GetFileSetResponseFromName(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1279,8 +1286,9 @@ func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, files
 }
 
 // CheckIfFilesetExist Checking if fileset exist in filesystem
-func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error) {
-	glog.V(4).Infof("rest_v2 CheckIfFilesetExist. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 CheckIfFilesetExist. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	checkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1296,18 +1304,20 @@ func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName 
 	return true, nil
 }
 
-func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
-	glog.V(4).Infof("rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
+func (s *spectrumRestV2) GetFileSetNameFromId(ctx context.Context, filesystemName string, Id string) (string, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", loggerId, filesystemName, Id)
 
-	filesetResponse, err := s.GetFileSetResponseFromId(filesystemName, Id)
+	filesetResponse, err := s.GetFileSetResponseFromId(ctx, filesystemName, Id)
 	if err != nil {
 		return "", fmt.Errorf("Fileset response not found for fileset Id %v:%v", filesystemName, Id)
 	}
 	return filesetResponse.FilesetName, nil
 }
 
-func (s *spectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error) {
-	glog.V(4).Infof("rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
+func (s *spectrumRestV2) GetFileSetResponseFromId(ctx context.Context, filesystemName string, Id string) (Fileset_v2, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", loggerId, filesystemName, Id)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1363,8 +1373,9 @@ func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName strin
 }
 
 // CheckIfSnapshotExist Checking if snapshot exist in fileset
-func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error) {
-	glog.V(4).Infof("rest_v2 CheckIfSnapshotExist. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapshotName)
+func (s *spectrumRestV2) CheckIfSnapshotExist(ctx context.Context, filesystemName string, filesetName string, snapshotName string) (bool, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 CheckIfSnapshotExist. filesystem: %s, fileset: %s, snapshot: %s ", loggerId, filesystemName, filesetName, snapshotName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
@@ -1464,29 +1475,31 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(ctx context.Context, nodeName st
 	return true, nil
 }
 
-func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName string) error {
-	glog.V(4).Infof("rest_v2 setFilesystemPolicy for filesystem %s", filesystemName)
+func (s *spectrumRestV2) SetFilesystemPolicy(ctx context.Context, policy *Policy, filesystemName string) error {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 setFilesystemPolicy for filesystem %s", loggerId, filesystemName)
 
 	setPolicyURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName)
 	setPolicyResponse := GenericResponse{}
 
 	err := s.doHTTP(setPolicyURL, "PUT", &setPolicyResponse, policy)
 	if err != nil {
-		glog.Errorf("unable to send filesystem policy: %v", setPolicyResponse.Status.Message)
+		glog.Errorf("[%s] unable to send filesystem policy: %v", loggerId, setPolicyResponse.Status.Message)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("setting policy rule %s for filesystem %s failed with error %v", policy.Policy, filesystemName, err)
+		glog.Errorf("[%s] setting policy rule %s for filesystem %s failed with error %v", loggerId, policy.Policy, filesystemName, err)
 		return err
 	}
 
 	return nil
 }
 
-func (s *spectrumRestV2) DoesTierExist(tierName string, filesystemName string) error {
-	glog.V(4).Infof("rest_v2 DoesTierExist. name %s, filesystem %s", tierName, filesystemName)
+func (s *spectrumRestV2) DoesTierExist(ctx context.Context, tierName string, filesystemName string) error {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 DoesTierExist. name %s, filesystem %s", loggerId, tierName, filesystemName)
 
 	_, err := s.GetTierInfoFromName(tierName, filesystemName)
 	if err != nil {
@@ -1518,8 +1531,9 @@ func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName str
 	}
 }
 
-func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
-	glog.V(4).Infof("rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
+func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(ctx context.Context, partitionName string, filesystemName string) bool {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", loggerId, partitionName, filesystemName)
 
 	partitionURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName)
 	getPartitionResponse := GenericResponse{}
@@ -1529,8 +1543,9 @@ func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName strin
 	return err == nil
 }
 
-func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error) {
-	glog.V(4).Infof("rest_v2 GetFirstDataTier. filesystem %s", filesystemName)
+func (s *spectrumRestV2) GetFirstDataTier(ctx context.Context, filesystemName string) (string, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 GetFirstDataTier. filesystem %s", loggerId, filesystemName)
 
 	tiersURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools", filesystemName)
 	getTierResponse := &StorageTiers{}
@@ -1550,12 +1565,12 @@ func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error)
 			return "", err
 		}
 		if tierInfo.TotalDataInKB > 0 {
-			glog.V(2).Infof("GetFirstDataTier: Setting default tier to %s", tierInfo.StorageTierName)
+			glog.V(2).Infof("[%s] GetFirstDataTier: Setting default tier to %s", loggerId, tierInfo.StorageTierName)
 			return tierInfo.StorageTierName, nil
 		}
 	}
 
-	glog.V(2).Infof("GetFirstDataTier: Defaulting to system tier")
+	glog.V(2).Infof("[%s] GetFirstDataTier: Defaulting to system tier", loggerId)
 	return "system", nil
 }
 
