@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -53,7 +54,7 @@ const (
 	FILE_DEPENDENTFILESET_VOLUME   = "1"
 	FILE_INDEPENDENTFILESET_VOLUME = "2"
 
-//	BLOCK_FILESET_VOLUME = 3
+// BLOCK_FILESET_VOLUME = 3
 )
 
 type SnapCopyJobDetails struct {
@@ -178,8 +179,9 @@ func (driver *ScaleDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapabi
 	return nil
 }
 
-func (driver *ScaleDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
-	glog.V(3).Infof("gpfs ValidateControllerServiceRequest")
+func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context, c csi.ControllerServiceCapability_RPC_Type) error {
+	loggerId := GetLoggerId(ctx)
+	glog.V(3).Infof("[%s] gpfs ValidateControllerServiceRequest", loggerId)
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}

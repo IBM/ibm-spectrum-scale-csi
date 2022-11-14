@@ -17,6 +17,7 @@
 package connectors
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -446,27 +447,28 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error {
-	glog.V(4).Infof("rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
+func (s *spectrumRestV2) DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", loggerId, filesystemName, filesetName, snapshotName)
 
 	deleteSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
 	deleteSnapshotResponse := GenericResponse{}
 
 	err := s.doHTTP(deleteSnapshotURL, "DELETE", &deleteSnapshotResponse, nil)
 	if err != nil {
-		glog.Errorf("Error in delete snapshot request: %v", err)
+		glog.Errorf("[%s] Error in delete snapshot request: %v", loggerId, err)
 		return err
 	}
 
 	err = s.isRequestAccepted(deleteSnapshotResponse, deleteSnapshotURL)
 	if err != nil {
-		glog.Errorf("Request not accepted for processing: %v", err)
+		glog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteSnapshotResponse.Status.Code, deleteSnapshotResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("Unable to delete snapshot %s: %v", snapshotName, err)
+		glog.Errorf("[%s] Unable to delete snapshot %s: %v", loggerId, snapshotName, err)
 		return err
 	}
 
@@ -591,8 +593,9 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string) error {
-	glog.V(4).Infof("rest_v2 DeleteFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
+func (s *spectrumRestV2) DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 DeleteFileset. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	deleteFilesetResponse := GenericResponse{}
@@ -600,23 +603,23 @@ func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string
 	err := s.doHTTP(deleteFilesetURL, "DELETE", &deleteFilesetResponse, nil)
 	if err != nil {
 		if strings.Contains(deleteFilesetResponse.Status.Message, "Invalid value in 'fsetName'") { // job failed as dir already exists
-			glog.Infof("Fileset would have been deleted. So returning success %v", err)
+			glog.Infof("[%s] Fileset would have been deleted. So returning success %v", loggerId, err)
 			return nil
 		}
 
-		glog.Errorf("Error in delete fileset request: %v", err)
+		glog.Errorf("[%s] Error in delete fileset request: %v", loggerId, err)
 		return err
 	}
 
 	err = s.isRequestAccepted(deleteFilesetResponse, deleteFilesetURL)
 	if err != nil {
-		glog.Errorf("Request not accepted for processing: %v", err)
+		glog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteFilesetResponse.Status.Code, deleteFilesetResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("Unable to delete fileset %s: %v", filesetName, err)
+		glog.Errorf("[%s] Unable to delete fileset %s: %v", loggerId, filesetName, err)
 		return err
 	}
 
@@ -1158,8 +1161,9 @@ func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
 	}
 }
 
-func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) error {
-	glog.V(4).Infof("rest_v2 DeleteSymLnk. filesystem: %s, link: %s", filesystemName, LnkName)
+func (s *spectrumRestV2) DeleteSymLnk(ctx context.Context, filesystemName string, LnkName string) error {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 DeleteSymLnk. filesystem: %s, link: %s", loggerId, filesystemName, LnkName)
 
 	LnkName = strings.ReplaceAll(LnkName, "/", "%2F")
 	deleteLnkURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/symlink/%s", filesystemName, LnkName)
@@ -1178,7 +1182,7 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 	err = s.WaitForJobCompletion(deleteLnkResponse.Status.Code, deleteLnkResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG2006C") {
-			glog.V(4).Infof("Since slink %v was already deleted, so returning success", LnkName)
+			glog.V(4).Infof("[%s] Since slink %v was already deleted, so returning success", loggerId, LnkName)
 			return nil
 		}
 		return fmt.Errorf("Unable to delete symLnk %v:%v.", LnkName, err)
@@ -1188,7 +1192,8 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 }
 
 func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, safe bool) error {
-	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", filesystemName, dirName, safe)
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", loggerId, filesystemName, dirName, safe)
 
 	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
 	deleteDirURL := ""
@@ -1375,9 +1380,10 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 	return true, nil
 }
 
-//ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
-func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
-	glog.V(4).Infof("rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
+// ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
+func (s *spectrumRestV2) ListFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+	loggerId := GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	listFilesetSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName)
 	listFilesetSnapshotResponse := GetSnapshotResponse_v2{}
@@ -1440,7 +1446,7 @@ func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs strin
 	return err
 }
 
-func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component string) (bool, error) {
+func (s *spectrumRestV2) IsNodeComponentHealthy(ctx context.Context, nodeName string, component string) (bool, error) {
 	glog.V(4).Infof("rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", nodeName, component)
 
 	getNodeHealthStatesURL := fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component)

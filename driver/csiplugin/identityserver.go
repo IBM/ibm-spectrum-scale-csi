@@ -56,7 +56,7 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
 	glog.V(4).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
-	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "GPFS")
+	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
 	if ghealthy == false {
 		glog.Errorf("[%s] Probe: GPFS component on node %v is not healthy. Error: %v", loggerId, scalenodeID, err)
 		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
