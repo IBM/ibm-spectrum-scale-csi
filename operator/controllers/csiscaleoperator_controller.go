@@ -474,10 +474,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil {
 		message := fmt.Sprintf("Failed to get the details of the configmap %s from cluster.", config.CSIEnvVarConfigMap)
-		logger.Info(message)
-	} else {
-		cmData = parseConfigMap(cm)
+		logger.Error(err, message)
+		return ctrl.Result{}, nil
 	}
+	cmData = parseConfigMap(cm)
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
@@ -1575,6 +1575,20 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 		Name:      name,
 		Namespace: instance.Namespace,
 	}, cm)
+	if err != nil && errors.IsNotFound(err) {
+		message := fmt.Sprintf("Optional configmap resource %s not found.", name)
+		logger.Info(message)
+	} else if err != nil {
+		message := fmt.Sprintf("Failed to get configmap %s information from cluster.", name)
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+	}
 	return cm, err
 }
 
