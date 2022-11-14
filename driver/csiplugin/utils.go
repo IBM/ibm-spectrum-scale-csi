@@ -54,6 +54,7 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	newCtx := setLoggerId(ctx)
+	loggerId
 	glog.V(3).Infof("[%s] GRPC call: %s", GetLoggerId(newCtx), info.FullMethod)
 	glog.V(5).Infof("[%s] GRPC request: %+v", GetLoggerId(newCtx), req)
 	resp, err := handler(newCtx, req)
