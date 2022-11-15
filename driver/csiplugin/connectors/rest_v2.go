@@ -28,7 +28,6 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/scale"
 	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,6 +35,8 @@ import (
 
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
+
+var GetLoggerId = utils.GetLoggerId
 
 type spectrumRestV2 struct {
 	httpClient    *http.Client
@@ -246,7 +247,7 @@ func (s *spectrumRestV2) GetScaleVersion() (string, error) {
 }
 
 func (s *spectrumRestV2) GetFilesystemMountDetails(ctx context.Context, filesystemName string) (MountInfo, error) {
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 GetFilesystemMountDetails. filesystemName: %s", loggerId, filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
@@ -450,7 +451,7 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 }
 
 func (s *spectrumRestV2) DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error {
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", loggerId, filesystemName, filesetName, snapshotName)
 
 	deleteSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
@@ -685,7 +686,7 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 }
 
 func (s *spectrumRestV2) ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 ListFileset. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -721,7 +722,7 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 }
 
 func (s *spectrumRestV2) IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error) {
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	fileset, err := s.ListFileset(filesystemName, filesetName)
@@ -976,7 +977,7 @@ func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetNa
 }
 
 func (s *spectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error) {
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	listQuotaResponse, err := s.GetFilesetQuotaDetails(filesystemName, filesetName)
@@ -1109,7 +1110,7 @@ func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName strin
 }
 
 func (s *spectrumRestV2) GetFilesystemName(ctx context.Context, filesystemUUID string) (string, error) { //nolint:dupl
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 GetFilesystemName. UUID: %s", loggerId, filesystemUUID)
 
 	getFilesystemNameURL := fmt.Sprintf("scalemgmt/v2/filesystems?filter=uuid=%s", filesystemUUID)
@@ -1129,7 +1130,7 @@ func (s *spectrumRestV2) GetFilesystemName(ctx context.Context, filesystemUUID s
 }
 
 func (s *spectrumRestV2) GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error) { //nolint:dupl
-	loggerId := scale.GetLoggerId(ctx)
+	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 GetFilesystemDetails. Name: %s", loggerId, filesystemName)
 
 	getFilesystemDetailsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
