@@ -685,8 +685,7 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
-	loggerId := GetLoggerId(ctx)
+func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) (Fileset_v2, error) {
 	glog.V(4).Infof("[%s] rest_v2 ListFileset. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -725,7 +724,7 @@ func (s *spectrumRestV2) IsFilesetLinked(ctx context.Context, filesystemName str
 	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
-	fileset, err := s.ListFileset(filesystemName, filesetName)
+	fileset, err := s.ListFileset(ctx, filesystemName, filesetName)
 	if err != nil {
 		return false, err
 	}
@@ -872,7 +871,7 @@ func (s *spectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath str
 	return nil
 }
 
-func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string) error {
+func (s *spectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error {
 	glog.V(4).Infof("rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", filesystemName, filesetName, quota)
 
 	setQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
@@ -1199,7 +1198,7 @@ func (s *spectrumRestV2) DeleteSymLnk(ctx context.Context, filesystemName string
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, safe bool) error {
+func (s *spectrumRestV2) DeleteDirectory(ctx context.Context, filesystemName string, dirName string, safe bool) error {
 	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", loggerId, filesystemName, dirName, safe)
 
@@ -1268,9 +1267,9 @@ func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string
 	return fmt.Sprintf("%d", filesetResponse.Config.Id), nil
 }
 
-func (s *spectrumRestV2) GetFileSetResponseFromName(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
-	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error) {
+
+	glog.V(4).Infof("rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}

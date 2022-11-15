@@ -190,13 +190,13 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
 }
 
-func setLoggerId(ctx context.Context) context.Context {
+func SetLoggerId(ctx context.Context) context.Context {
 	id := uuid.New().String()
 	glog.V(3).Infof("uuid: %s", id.String())
 	return context.WithValue(ctx, loggerId, id)
 }
 
-func GetLoggerId(ctx context.Context) (string, bool) {
-	logger, ok := ctx.Value(loggerId).(string)
-	return logger, ok
+func GetLoggerId(ctx context.Context) string {
+	logger, _ := ctx.Value(loggerId).(string)
+	return logger
 }
