@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,8 +25,11 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/google/uuid"
 	"golang.org/x/sys/unix"
 )
+
+const loggerId = "logger_id"
 
 func ReadFile(path string) ([]byte, error) {
 	glog.V(6).Infof("utils ReadFile. path: %s", path)
@@ -184,4 +188,15 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	inodesUsed := inodes - inodesFree
 
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
+}
+
+func setLoggerId(ctx context.Context) context.Context {
+	id := uuid.New().String()
+	glog.V(3).Infof("uuid: %s", id.String())
+	return context.WithValue(ctx, loggerId, id)
+}
+
+func GetLoggerId(ctx context.Context) (string, bool) {
+	logger, ok := ctx.Value(loggerId).(string)
+	return logger, ok
 }

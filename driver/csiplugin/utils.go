@@ -21,12 +21,9 @@ import (
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/glog"
-	"github.com/google/uuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
-
-const loggerId = "logger_id"
 
 func NewVolumeCapabilityAccessMode(mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability_AccessMode {
 	return &csi.VolumeCapability_AccessMode{Mode: mode}
@@ -64,15 +61,4 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 		glog.V(5).Infof("[%s] GRPC response: %+v", GetLoggerId(newCtx), resp)
 	}
 	return resp, err
-}
-
-func setLoggerId(ctx context.Context) context.Context {
-	id := uuid.New().String()
-	glog.V(3).Infof("uuid: %s", id.String())
-	return context.WithValue(ctx, loggerId, id)
-}
-
-func GetLoggerId(ctx context.Context) (string, bool) {
-	logger, ok := ctx.Value(loggerId).(string)
-	return logger, ok
 }

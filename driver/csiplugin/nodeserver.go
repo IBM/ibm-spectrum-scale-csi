@@ -40,6 +40,8 @@ type ScaleNodeServer struct {
 
 const hostDir = "/host"
 
+var GetLoggerId = utils.GetLoggerId
+
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
 // corresponding error.
