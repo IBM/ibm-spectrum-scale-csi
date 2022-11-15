@@ -51,7 +51,7 @@ type SpectrumScaleConnector interface {
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error)
 	GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error)
-	SetFilesetQuota(filesystemName string, filesetName string, quota string) error
+	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error
 	CheckIfFSQuotaEnabled(filesystem string) error
 	CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	//Directory operations

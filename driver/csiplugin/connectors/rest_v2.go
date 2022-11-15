@@ -686,19 +686,19 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 }
 
 func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) (Fileset_v2, error) {
-	glog.V(4).Infof("[%s] rest_v2 ListFileset. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+	glog.V(4).Infof("rest_v2 ListFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in list fileset request: %v", loggerId, err)
+		glog.Errorf(" Error in list fileset request: %v", err)
 		return Fileset_v2{}, err
 	}
 
 	if len(getFilesetResponse.Filesets) == 0 {
-		glog.Errorf("[%s] No fileset returned for %s", loggerId, filesetName)
+		glog.Errorf(" No fileset returned for %s", filesetName)
 		return Fileset_v2{}, fmt.Errorf("No fileset returned for %s", filesetName)
 	}
 
@@ -724,7 +724,7 @@ func (s *spectrumRestV2) IsFilesetLinked(ctx context.Context, filesystemName str
 	loggerId := GetLoggerId(ctx)
 	glog.V(4).Infof("[%s] rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
-	fileset, err := s.ListFileset(ctx, filesystemName, filesetName)
+	fileset, err := s.ListFileset(filesystemName, filesetName)
 	if err != nil {
 		return false, err
 	}
