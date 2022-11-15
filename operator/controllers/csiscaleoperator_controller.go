@@ -49,6 +49,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	config "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
@@ -258,6 +260,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 		logger.Info("Removed CSI driver successfully")
 		return ctrl.Result{}, nil
+	}
+
+	err = r.CheckPreInstallationRequirements(instance)
+	if err != nil {
+		logger.Error(err, "Initial Cluster assessment failed")
+		os.Exit(1)
 	}
 
 	if pass, err := r.checkPrerequisite(instance); !pass {
@@ -1459,6 +1467,113 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 			return err
 		}
 	}
+	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) getSpectrumScaleConfig(instance *csiscaleoperator.CSIScaleOperator) (settings.ScaleSettingsConfigMap, error) {
+
+	logger := csiLog.WithName("getSpectrumScaleConfig")
+	logger.Info("Fetching spectrum scale config.")
+	name := "spectrum-scale-config"
+	found := &corev1.ConfigMap{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, found)
+	sscm := settings.ScaleSettingsConfigMap{}
+	if err != nil && errors.IsNotFound(err) {
+		message := "Resource not found."
+		logger.Error(err, message)
+		return sscm, err
+	} else if err != nil {
+		message := "Failed to get resource information from cluster."
+		logger.Error(err, message)
+		return sscm, err
+	}
+
+	err = json.Unmarshal([]byte(found.Data["spectrum-scale-config.json"]), &sscm)
+	if err != nil {
+		logger.Error(err, "Error in unmarshalling Spectrum Scale configuration json")
+		return settings.ScaleSettingsConfigMap{}, err
+	}
+
+	err = r.ExtractCredentialsFromSecret(instance, &sscm)
+	if err != nil {
+		logger.Error(err, "Error in secret.")
+		return settings.ScaleSettingsConfigMap{}, err
+	}
+	return sscm, nil
+}
+
+func (r *CSIScaleOperatorReconciler) ExtractCredentialsFromSecret(instance *csiscaleoperator.CSIScaleOperator, sscm *settings.ScaleSettingsConfigMap) error {
+
+	logger := csiLog.WithName("AttachCredentialsFromSecret")
+
+	for i := 0; i < len(sscm.Clusters); i++ {
+		if sscm.Clusters[i].Secrets != "" {
+			found := &corev1.Secret{}
+			err := r.Client.Get(context.TODO(), types.NamespacedName{
+				Name:      sscm.Clusters[i].Secrets,
+				Namespace: instance.Namespace,
+			}, found)
+			if err != nil && errors.IsNotFound(err) {
+				message := "Resource not found."
+				logger.Error(err, message)
+				return err
+			} else if err != nil {
+				message := "Failed to get resource."
+				logger.Error(err, message)
+				return err
+			}
+
+			sscm.Clusters[i].MgmtUsername = string(found.Data["username"])
+			sscm.Clusters[i].MgmtPassword = string(found.Data["password"])
+		}
+	}
+	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) CheckPreInstallationRequirements(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("checkPreInstallationRequirements")
+	scaleConfig, err := r.getSpectrumScaleConfig(instance)
+	if err != nil {
+		logger.Error(err, "Unable to fetch spectrum scale config.")
+		return err
+	}
+
+	for i := 0; i < len(scaleConfig.Clusters); i++ {
+		cluster := scaleConfig.Clusters[i]
+
+		sc, err := connectors.GetSpectrumScaleConnector(cluster)
+		if err != nil {
+			logger.Error(err, "Unable to initialize Spectrum Scale connector for cluster", "cluster", cluster.ID)
+			return err
+		}
+
+		//clusterId validation
+		clusterId, err := sc.GetClusterId()
+		if err != nil {
+			logger.Error(err, "Unable to get cluster ID from the cluster")
+			return err
+		}
+		if cluster.ID != clusterId {
+			logger.Error(err, "Cluster ID %s from scale config doesn't match the ID %s from cluster", cluster.ID, clusterId)
+			return fmt.Errorf("Cluster ID doesn't match the cluster")
+		}
+		logger.Info("ClusterId from the cluster and from scale config are: ", clusterId, cluster.ID)
+
+		//filesystem mount validation on GUI
+		isMounted, err := sc.IsFilesystemMountedOnGUINode(cluster.Primary.GetPrimaryFs())
+		if err != nil {
+			logger.Error(err, "Unable to get filesystem mount details for %s on Primary cluster", cluster.Primary.GetPrimaryFs())
+			return err
+		}
+		if !isMounted {
+			logger.Error(err, "Primary filesystem %s is not mounted on GUI node of Primary cluster", cluster.Primary.GetPrimaryFs())
+			return fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())
+		}
+	}
+
 	return nil
 }
 

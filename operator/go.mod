@@ -3,7 +3,8 @@ module github.com/IBM/ibm-spectrum-scale-csi/operator
 go 1.16
 
 require (
-	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0
+	//github.com/IBM/ibm-spectrum-scale-csi/driver/v2 v2.7.0
+	github.com/IBM/ibm-spectrum-scale-csi/driver v2.7.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.12
 	github.com/onsi/ginkgo v1.16.5
@@ -17,6 +18,4 @@ require (
 	sigs.k8s.io/controller-runtime v0.11.1
 )
 
-replace (
-	github.com/IBM/ibm-spectrum-scale-csi/driver => ../driver
-)
+replace github.com/IBM/ibm-spectrum-scale-csi/driver => ../driver
