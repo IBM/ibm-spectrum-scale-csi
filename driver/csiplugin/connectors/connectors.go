@@ -17,6 +17,8 @@
 package connectors
 
 import (
+	"context"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/golang/glog"
 )
@@ -74,7 +76,7 @@ type SpectrumScaleConnector interface {
 	GetFirstDataTier(filesystemName string) (string, error)
 	IsValidNodeclass(nodeclass string) (bool, error)
 	IsSnapshotSupported() (bool, error)
-	CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool
+	CheckIfDefaultPolicyPartitionExists(ctx context.Context, partitionName string, filesystemName string) bool
 
 	//Snapshot operations
 	WaitForJobCompletion(statusCode int, jobID uint64) error
