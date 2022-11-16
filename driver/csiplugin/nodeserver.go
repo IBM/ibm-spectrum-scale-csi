@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/mount-utils"
@@ -278,7 +279,7 @@ func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.Node
 		return nil, status.Error(codes.InvalidArgument, "volume stats are not supported for lightweight volumes")
 	}
 
-	/* available, capacity, used, inodes, inodesFree, inodesUsed, err := utils.FsStatInfo(req.GetVolumePath())
+	available, capacity, used, inodes, inodesFree, inodesUsed, err := utils.FsStatInfo(req.GetVolumePath())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volume stat failed with error %v", err))
 	}
@@ -308,6 +309,6 @@ func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.Node
 				Unit:      csi.VolumeUsage_INODES,
 			},
 		},
-	}, nil */
+	}, nil
 	return &csi.NodeGetVolumeStatsResponse{}, nil
 }

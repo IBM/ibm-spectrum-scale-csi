@@ -36,12 +36,19 @@ const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
 
 type spectrumRestV2 struct {
-	//httpClient    *http.Client
 	endpoint []string
 	RestConfig
 	endPointIndex int
-	/* user          string
-	password      string */
+}
+
+type RestConfig struct {
+	User       string
+	Passwd     string
+	httpClient *http.Client
+}
+
+func NewConnector() RestConfig {
+	return RestConfig{}
 }
 
 func (s *spectrumRestV2) isStatusOK(statusCode int) bool {
@@ -145,58 +152,30 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 	var rest *spectrumRestV2
 	var tr *http.Transport
 
-	/* options := Options{
-		//nolint:gosec //InsecureSkipVerify may be requested by user.  (Ignore G402)
-		TLSClientConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
-	} */
-
 	if scaleConfig.SecureSslMode {
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(scaleConfig.CacertValue); !ok {
 			return &spectrumRestV2{}, fmt.Errorf("Parsing CA cert %v failed", scaleConfig.Cacert)
 		}
-		//options.TLSClientConfig.RootCAs = caCertPool
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		glog.V(4).Infof("Created Spectrum Scale connector with SSL mode for guiHost(s)")
 	} else {
 		//#nosec G402 InsecureSkipVerify was requested by user.
-		//options.TLSClientConfig.InsecureSkipVerify = true
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
 		glog.V(4).Infof("Created Spectrum Scale connector without SSL mode for guiHost(s)")
 	}
 
-	/* client := New(options)
-	conn := client.NewConnector(Endpoint{
-		Username: guiUser,
-		Password: guiPwd,
-	}) */
 	restConfig := NewConnector()
 	restConfig = RestConfig{
-		user:   guiUser,
-		passwd: guiPwd,
+		User:   guiUser,
+		Passwd: guiPwd,
 		httpClient: &http.Client{
 			Transport: tr,
 			Timeout:   time.Second * 60,
 		},
 	}
 	rest = &spectrumRestV2{
-		/* restConfig: RestConfig{
-			user:   guiUser,
-			passwd: guiPwd,
-			httpClient: &http.Client{
-				Transport: tr,
-				Timeout:   time.Second * 60,
-			},
-		}, */
-		RestConfig: restConfig,
-		/* httpClient: &http.Client{
-			Transport: tr,
-			Timeout:   time.Second * 60,
-		}, */
-		//user:          guiUser,
-		//password:      guiPwd,
+		RestConfig:    restConfig,
 		endPointIndex: 0, //Use first GUI as primary by default
 	}
 
@@ -1022,7 +1001,7 @@ func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject 
 	glog.V(4).Infof("rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", urlSuffix, method, param)
 	endpoint := s.endpoint[s.endPointIndex]
 	glog.V(4).Infof("rest_v2 doHTTP: endpoint: %s", endpoint)
-	response, err := utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.user, s.passwd, param)
+	response, err := utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.User, s.Passwd, param)
 
 	activeEndpointFound := false
 	if err != nil {
@@ -1034,7 +1013,7 @@ func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject 
 			for i := 0; i < n-1; i++ {
 				endpoint = s.getNextEndpoint()
 
-				response, err = utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.user, s.passwd, param)
+				response, err = utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.User, s.Passwd, param)
 				if err == nil {
 					activeEndpointFound = true
 					break

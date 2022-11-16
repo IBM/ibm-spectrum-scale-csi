@@ -168,7 +168,7 @@ func GetEnv(envName string, defaultValue string) string {
 	return envValue
 }
 
-/* func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
+func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	statfs := &unix.Statfs_t{}
 	err := unix.Statfs(path, statfs)
 
@@ -184,4 +184,3 @@ func GetEnv(envName string, defaultValue string) string {
 
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
 }
-*/

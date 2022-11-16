@@ -38,7 +38,6 @@ import (
 
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers"
-	"github.com/IBM/ibm-spectrum-scale-csi/operator/pkg/connector/rest/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -122,12 +121,6 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	setupLog.Info("Version Info", "commit", gitCommit)
-
-	err := rest.InitiateClusterAssessment()
-	if err != nil {
-		setupLog.Error(err, "Initial Cluster assessment failed")
-		os.Exit(1)
-	}
 
 	watchNamespace, err := getWatchNamespace()
 	if err != nil {
