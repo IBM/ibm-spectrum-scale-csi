@@ -127,7 +127,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 			glog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
 			return "", status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
 		}
-		fsMountPoint, err := primaryConn.GetFilesystemMountDetails(ctx, scVol.LocalFS)
+		fsMountPoint, err := primaryConn.GetFilesystemMountDetails(scVol.LocalFS)
 		if err != nil {
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.LocalFS))
 		}
@@ -1521,7 +1521,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
 	}
 
-	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, FilesystemName)
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(FilesystemName)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
@@ -1696,7 +1696,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 	//Check if primary filesystem is mounted.
 	primaryfsName := cs.Driver.primary.GetPrimaryFs()
-	pfsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(ctx, primaryfsName)
+	pfsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(primaryfsName)
 	if err != nil {
 		glog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, primaryfsName)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", primaryfsName, err))
@@ -1899,7 +1899,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
-	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(filesystemName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
 	}
@@ -2211,9 +2211,9 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 
 	filesetExist := false
 	if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-		filesetExist, err = conn.CheckIfFilesetExist(filesystemName, snapIdMembers.ConsistencyGroup)
+		filesetExist, err = conn.CheckIfFilesetExist(ctx, filesystemName, snapIdMembers.ConsistencyGroup)
 	} else {
-		filesetExist, err = conn.CheckIfFilesetExist(filesystemName, snapIdMembers.FsetName)
+		filesetExist, err = conn.CheckIfFilesetExist(ctx, filesystemName, snapIdMembers.FsetName)
 	}
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the fileset %s details details. Error [%v]", snapIdMembers.FsetName, err))

@@ -31,7 +31,7 @@ type SpectrumScaleConnector interface {
 	GetTimeZoneOffset() (string, error)
 	GetScaleVersion() (string, error)
 	//Filesystem operations
-	GetFilesystemMountDetails(ctx context.Context, filesystemName string) (MountInfo, error)
+	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
 	ListFilesystems() ([]string, error)
 	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
@@ -81,7 +81,7 @@ type SpectrumScaleConnector interface {
 	//Snapshot operations
 	WaitForJobCompletion(statusCode int, jobID uint64) error
 	WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error)
-	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
+	CreateSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
 	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
