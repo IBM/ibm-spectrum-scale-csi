@@ -23,6 +23,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
@@ -192,11 +193,16 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 
 func SetLoggerId(ctx context.Context) context.Context {
 	id := uuid.New().String()
-	glog.V(3).Infof("uuid: %s", id.String())
 	return context.WithValue(ctx, loggerId, id)
 }
 
 func GetLoggerId(ctx context.Context) string {
 	logger, _ := ctx.Value(loggerId).(string)
 	return logger
+}
+
+func GetExecutionTime() int64 {
+	t := time.Now()
+	timeinMilliSec := int64(time.Nanosecond) * t.UnixNano() / int64(time.Millisecond)
+	return timeinMilliSec
 }
