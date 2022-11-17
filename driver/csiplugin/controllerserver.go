@@ -1749,7 +1749,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 	// Node mapping check
 	scalenodeID := getNodeMapping(nodeID)
-	glog.V(4).Infof("[%s] ControllerUnpublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, nodeID)
+	glog.V(4).Infof("[%s] ControllerPublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, nodeID)
 
 	shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
 	if shortnameNodeMapping == yes {
@@ -1771,7 +1771,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	// Skip if primary filesystem and volume filesystem is same
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED || primaryfsName != fsName {
 		//Check if filesystem is mounted
-		fsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(ctx, fsName)
+		fsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(fsName)
 		if err != nil {
 			glog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
