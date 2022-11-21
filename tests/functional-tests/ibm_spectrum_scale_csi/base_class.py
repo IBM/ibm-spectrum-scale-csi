@@ -532,6 +532,8 @@ class Snapshot():
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
                     csistoragefunc.create_pvc_from_snapshot(
                         pvc_value, restore_sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
+                    if reason is not None:
+                        pvc_value["reason"]=reason
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
 
                     if val is True:
@@ -557,7 +559,7 @@ class Snapshot():
 
         csistoragefunc.clean_with_created_objects(created_objects, condition="passed")
 
-    def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None):
+    def test_static(self, value_sc, test_restore, value_vs_class=None, number_of_snapshots=None, restore_sc=None, restore_pvc=None, reason=None):
 
         if filesetfunc.get_scalevalidation() == "False":
             pytest.skip("As scalevalidation is False in config file , GUI communication not allowed. Static cases not possible")
@@ -632,6 +634,8 @@ class Snapshot():
                     snap_pod_name = "snap-end-pod"+vs_name[2:]
                     csistoragefunc.create_pvc_from_snapshot(
                         pvc_value, sc_name, restored_pvc_name, vs_name+"-"+str(num), created_objects)
+                    if reason is not None:
+                        pvc_value["reason"] = reason
                     val = csistoragefunc.check_pvc(pvc_value, restored_pvc_name, created_objects)
                     if val is True:
                         csistoragefunc.create_pod(
