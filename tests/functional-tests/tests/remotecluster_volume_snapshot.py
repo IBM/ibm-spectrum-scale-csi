@@ -299,7 +299,7 @@ def test_snapshot_dynamic_pass_18():
 def test_snapshot_static_different_sc_1():
     value_sc = {"volBackendFs": data["remoteFs"], "clusterId": data["remoteid"]}
     restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc)
+    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_snapshot_static_different_sc_2():
@@ -314,7 +314,7 @@ def test_snapshot_static_different_sc_3():
                 "inodeLimit": data["r_inodeLimit"], "uid": data["r_uid_number"],
                 "gid": data["r_gid_number"]}
     restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc)
+    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_snapshot_static_different_sc_4():
@@ -331,7 +331,7 @@ def test_snapshot_static_different_sc_5():
                 "inodeLimit": data["r_inodeLimit"],
                 "clusterId": data["remoteid"], "filesetType": "independent"}
     restore_sc = {"volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc)
+    snapshot_object.test_static(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_snapshot_static_different_sc_6():
@@ -429,7 +429,7 @@ def test_snapshot_dynamic_volume_expansion_3():
     value_pvc = [{"access_modes": "ReadWriteMany", "storage": "1Gi", "presnap_volume_expansion_storage": ["2Gi"],
                   "post_presnap_volume_expansion_storage": ["5Gi", "15Gi"], "postsnap_volume_expansion_storage": ["10Gi", "15Gi"]}]
     snapshot_object.test_dynamic(value_sc, test_restore=True,
-                                 value_pvc=value_pvc, restore_sc=restore_sc)
+                                 value_pvc=value_pvc, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_snapshot_dynamic_volume_cloning_1():
@@ -440,7 +440,7 @@ def test_snapshot_dynamic_volume_cloning_1():
     snapshot_object.test_dynamic(value_sc, test_restore=True,
                                  value_pvc=value_pvc, value_clone_passed=value_clone_passed)
 
-'''
+
 def test_driver_volume_snapshot_Independent_1_to_Dependent_1():
     value_sc = {"volBackendFs": data["remoteFs"]}
     restore_sc = {
@@ -457,8 +457,8 @@ def test_driver_volume_snapshot_Independent_1_to_Independent_1():
 def test_driver_volume_snapshot_Independent_1_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_1_to_Version2_1():
@@ -485,8 +485,8 @@ def test_driver_volume_snapshot_Independent_1_to_Independent_2():
 def test_driver_volume_snapshot_Independent_1_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_1_to_Version2_2():
@@ -513,8 +513,8 @@ def test_driver_volume_snapshot_Independent_1_to_Independent_3():
 def test_driver_volume_snapshot_Independent_1_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_1_to_Version2_3():
@@ -541,8 +541,8 @@ def test_driver_volume_snapshot_Independent_1_to_Independent_4():
 def test_driver_volume_snapshot_Independent_1_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_1_to_Version2_4():
@@ -569,8 +569,8 @@ def test_driver_volume_snapshot_Independent_1_to_Independent_5():
 def test_driver_volume_snapshot_Independent_1_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_1_to_Version2_5():
@@ -596,8 +596,8 @@ def test_driver_volume_snapshot_Version2_1_to_Independent_1():
 def test_driver_volume_snapshot_Version2_1_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_1_to_Version2_1():
@@ -624,8 +624,8 @@ def test_driver_volume_snapshot_Version2_1_to_Independent_2():
 def test_driver_volume_snapshot_Version2_1_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_1_to_Version2_2():
@@ -652,8 +652,8 @@ def test_driver_volume_snapshot_Version2_1_to_Independent_3():
 def test_driver_volume_snapshot_Version2_1_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_1_to_Version2_3():
@@ -680,8 +680,8 @@ def test_driver_volume_snapshot_Version2_1_to_Independent_4():
 def test_driver_volume_snapshot_Version2_1_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_1_to_Version2_4():
@@ -708,8 +708,8 @@ def test_driver_volume_snapshot_Version2_1_to_Independent_5():
 def test_driver_volume_snapshot_Version2_1_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_1_to_Version2_5():
@@ -738,8 +738,8 @@ def test_driver_volume_snapshot_Independent_2_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_2_to_Version2_1():
@@ -770,8 +770,8 @@ def test_driver_volume_snapshot_Independent_2_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_2_to_Version2_2():
@@ -802,8 +802,8 @@ def test_driver_volume_snapshot_Independent_2_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_2_to_Version2_3():
@@ -834,8 +834,8 @@ def test_driver_volume_snapshot_Independent_2_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_2_to_Version2_4():
@@ -866,8 +866,8 @@ def test_driver_volume_snapshot_Independent_2_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"],
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_2_to_Version2_5():
@@ -897,8 +897,8 @@ def test_driver_volume_snapshot_Version2_2_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_2_to_Version2_1():
@@ -929,8 +929,8 @@ def test_driver_volume_snapshot_Version2_2_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_2_to_Version2_2():
@@ -961,8 +961,8 @@ def test_driver_volume_snapshot_Version2_2_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_2_to_Version2_3():
@@ -993,8 +993,8 @@ def test_driver_volume_snapshot_Version2_2_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_2_to_Version2_4():
@@ -1025,8 +1025,8 @@ def test_driver_volume_snapshot_Version2_2_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_2_to_Version2_5():
@@ -1053,8 +1053,8 @@ def test_driver_volume_snapshot_Independent_3_to_Independent_1():
 def test_driver_volume_snapshot_Independent_3_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_3_to_Version2_1():
@@ -1081,8 +1081,8 @@ def test_driver_volume_snapshot_Independent_3_to_Independent_2():
 def test_driver_volume_snapshot_Independent_3_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_3_to_Version2_2():
@@ -1109,8 +1109,8 @@ def test_driver_volume_snapshot_Independent_3_to_Independent_3():
 def test_driver_volume_snapshot_Independent_3_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_3_to_Version2_3():
@@ -1137,8 +1137,8 @@ def test_driver_volume_snapshot_Independent_3_to_Independent_4():
 def test_driver_volume_snapshot_Independent_3_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_3_to_Version2_4():
@@ -1165,8 +1165,8 @@ def test_driver_volume_snapshot_Independent_3_to_Independent_5():
 def test_driver_volume_snapshot_Independent_3_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_3_to_Version2_5():
@@ -1192,8 +1192,8 @@ def test_driver_volume_snapshot_Version2_3_to_Independent_1():
 def test_driver_volume_snapshot_Version2_3_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_3_to_Version2_1():
@@ -1220,8 +1220,8 @@ def test_driver_volume_snapshot_Version2_3_to_Independent_2():
 def test_driver_volume_snapshot_Version2_3_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_3_to_Version2_2():
@@ -1248,8 +1248,8 @@ def test_driver_volume_snapshot_Version2_3_to_Independent_3():
 def test_driver_volume_snapshot_Version2_3_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_3_to_Version2_3():
@@ -1276,8 +1276,8 @@ def test_driver_volume_snapshot_Version2_3_to_Independent_4():
 def test_driver_volume_snapshot_Version2_3_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_3_to_Version2_4():
@@ -1304,8 +1304,8 @@ def test_driver_volume_snapshot_Version2_3_to_Independent_5():
 def test_driver_volume_snapshot_Version2_3_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2", "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_3_to_Version2_5():
@@ -1334,8 +1334,8 @@ def test_driver_volume_snapshot_Independent_4_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_4_to_Version2_1():
@@ -1366,8 +1366,8 @@ def test_driver_volume_snapshot_Independent_4_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_4_to_Version2_2():
@@ -1398,8 +1398,8 @@ def test_driver_volume_snapshot_Independent_4_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_4_to_Version2_3():
@@ -1430,8 +1430,8 @@ def test_driver_volume_snapshot_Independent_4_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_4_to_Version2_4():
@@ -1462,8 +1462,8 @@ def test_driver_volume_snapshot_Independent_4_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_4_to_Version2_5():
@@ -1493,8 +1493,8 @@ def test_driver_volume_snapshot_Version2_4_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_4_to_Version2_1():
@@ -1525,8 +1525,8 @@ def test_driver_volume_snapshot_Version2_4_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_4_to_Version2_2():
@@ -1557,8 +1557,8 @@ def test_driver_volume_snapshot_Version2_4_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_4_to_Version2_3():
@@ -1589,8 +1589,8 @@ def test_driver_volume_snapshot_Version2_4_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_4_to_Version2_4():
@@ -1621,8 +1621,8 @@ def test_driver_volume_snapshot_Version2_4_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_4_to_Version2_5():
@@ -1652,8 +1652,8 @@ def test_driver_volume_snapshot_Independent_5_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_5_to_Version2_1():
@@ -1684,8 +1684,8 @@ def test_driver_volume_snapshot_Independent_5_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_5_to_Version2_2():
@@ -1716,8 +1716,8 @@ def test_driver_volume_snapshot_Independent_5_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_5_to_Version2_3():
@@ -1748,8 +1748,8 @@ def test_driver_volume_snapshot_Independent_5_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_5_to_Version2_4():
@@ -1780,8 +1780,8 @@ def test_driver_volume_snapshot_Independent_5_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "gid": data["r_gid_number"],
                 "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Independent_5_to_Version2_5():
@@ -1811,8 +1811,8 @@ def test_driver_volume_snapshot_Version2_5_to_LW_1():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_5_to_Version2_1():
@@ -1843,8 +1843,8 @@ def test_driver_volume_snapshot_Version2_5_to_LW_2():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"]}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_5_to_Version2_2():
@@ -1875,8 +1875,8 @@ def test_driver_volume_snapshot_Version2_5_to_LW_3():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_5_to_Version2_3():
@@ -1907,8 +1907,8 @@ def test_driver_volume_snapshot_Version2_5_to_LW_4():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "shared": "True"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_5_to_Version2_4():
@@ -1939,8 +1939,8 @@ def test_driver_volume_snapshot_Version2_5_to_LW_5():
     value_sc = {"volBackendFs": data["remoteFs"], "version": "2",
                 "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     restore_sc = {
-        "volBackendFs": data["remoteFs"], "r_volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
-    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
+        "volBackendFs": data["remoteFs"], "volDirBasePath": data["r_volDirBasePath"], "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
+    snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc, reason="creating volume from snapshot across clusters is not supported")
 
 
 def test_driver_volume_snapshot_Version2_5_to_Version2_5():
@@ -1949,4 +1949,3 @@ def test_driver_volume_snapshot_Version2_5_to_Version2_5():
     restore_sc = {
         "volBackendFs": data["remoteFs"], "version": "2", "gid": data["r_gid_number"], "uid": data["r_uid_number"], "permissions": "755"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-'''
