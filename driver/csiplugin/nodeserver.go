@@ -211,14 +211,13 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
 		}
 	} else {
-else {
 		glog.V(4).Infof("[%s] %v is a bind mount", loggerId, targetPath)
 		needReturn, response, error := unmountAndDelete(targetPath, false)
 		if needReturn {
 			return response, error
 		}
 	}
-	glog.V(4).Infof("[%s] successfully unpublished %s",loggerId, targetPath)
+	glog.V(4).Infof("[%s] successfully unpublished %s", loggerId, targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
