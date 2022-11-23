@@ -22,10 +22,30 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/golang/glog"
 	"golang.org/x/sys/unix"
 )
+
+const (
+        // Stat type
+        RESTAPI_STATS = 0
+        CSIOP_STATS   = 1
+)
+
+type OpStats struct {
+        statName string
+        statTotalCount int64
+        statErrCount   int64
+	statTotalTime  float64
+        avgTime        float64
+        minTime        float64
+        maxTime        float64
+	statMtx        sync.Mutex
+}
+
+var statMap sync.Map
 
 func ReadFile(path string) ([]byte, error) {
 	glog.V(6).Infof("utils ReadFile. path: %s", path)
@@ -184,4 +204,66 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	inodesUsed := inodes - inodesFree
 
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
+}
+
+func SumStats(opType int, opName string, opTotalTime int64, err error) {
+
+	statsType := "RESTAPIStats"
+        if opType != RESTAPI_STATS {
+                statsType = "CSIOPStats"
+        }
+
+	success := true
+	if err != nil {
+		success = false
+	}
+
+//	glog.V(4).Infof("%v START SAVING STATS statMap: %p opType: %v opName: %v opTotalTime: %v success: %v", statsType, &statMap, opType, opName, opTotalTime, success)
+	totalTime := float64(opTotalTime)
+	opDetails, found := statMap.Load(opName)
+	if found {
+//		glog.V(4).Infof("%v found stats already for time: %v, opName: %v", statsType, totalTime, opName)
+		StoreStats(statsType, opName, opDetails.(OpStats), totalTime, success)
+	} else {
+		newStats := OpStats{}
+		newStats.statName = opName
+		opDetails, loaded := statMap.LoadOrStore(opName, newStats)
+//		glog.V(4).Infof("%v didn't find stats for time: %v opName: %v", statsType, totalTime, opName)
+		if loaded {
+//			glog.V(4).Infof("%v didn't find stats earlier but now found stats for time: %v opName: %v", statsType, totalTime, opName)
+                } else {
+//			glog.V(4).Infof("%v Saved stats for first time for statsMap: %v time:%v opName:%v", statsType, statMap, totalTime, opName)
+			opDetails, _ = statMap.Load(opName)
+                }
+		StoreStats(statsType, opName, opDetails.(OpStats), totalTime, success)
+	}
+}
+
+func StoreStats(statsType string, opName string, oopDetails OpStats, totalTime float64, success bool) {
+//	glog.V(4).Infof("%v waiting for lock for opName: %v", statsType, opName)
+	oopDetails.statMtx.Lock()
+//	glog.V(4).Infof("%v got lock for opName: %v", statsType, opName)
+	opDetails, _ := statMap.Load(opName)
+		newStats := OpStats{}
+		newStats.statName = opDetails.(OpStats).statName
+                newStats.statTotalCount = opDetails.(OpStats).statTotalCount + 1
+                newStats.statErrCount = opDetails.(OpStats).statErrCount
+                if !success {
+                        newStats.statErrCount = opDetails.(OpStats).statErrCount + 1
+                }
+                newStats.statTotalTime = opDetails.(OpStats).statTotalTime + totalTime
+                newStats.avgTime = newStats.statTotalTime / float64(newStats.statTotalCount)
+                newStats.minTime = opDetails.(OpStats).minTime
+                newStats.maxTime = opDetails.(OpStats).maxTime
+                if opDetails.(OpStats).minTime > totalTime || opDetails.(OpStats).minTime == 0 {
+                        newStats.minTime = totalTime
+                }
+                if opDetails.(OpStats).maxTime < totalTime {
+                        newStats.maxTime = totalTime
+                }
+                statMap.Store(opName, newStats)
+//		glog.V(4).Infof("%v Saved stats for time:%v opName:%v", statsType, totalTime, opName)
+	oopDetails.statMtx.Unlock()
+//	glog.V(4).Infof("%v released lock for time:%v opName:%v", statsType, totalTime, opName)
+glog.V(4).Infof("STATS: type: %v opName: %v totalCount: %v errorCount: %v avgTime: %v minTime: %v maxTime: %v", statsType, newStats.statName, newStats.statTotalCount, newStats.statErrCount, newStats.avgTime, newStats.minTime, newStats.maxTime)
 }

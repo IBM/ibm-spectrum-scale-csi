@@ -21,6 +21,10 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	"strings"
+	"time"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 )
 
 func NewVolumeCapabilityAccessMode(mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability_AccessMode {
@@ -48,6 +52,15 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 }
 
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+        logtime := false
+	csiOpStartTime := time.Now()
+        if strings.Contains(info.FullMethod, "CreateVolume") ||
+                strings.Contains(info.FullMethod, "DeleteVolume") ||
+                strings.Contains(info.FullMethod, "CreateSnapshot") ||
+                strings.Contains(info.FullMethod, "DeleteSnapshot") {
+                logtime = true
+        }
+
 	glog.V(3).Infof("GRPC call: %s", info.FullMethod)
 	glog.V(5).Infof("GRPC request: %+v", req)
 	resp, err := handler(ctx, req)
@@ -55,6 +68,12 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 		glog.Errorf("GRPC error: %v", err)
 	} else {
 		glog.V(5).Infof("GRPC response: %+v", resp)
+	}
+
+	if logtime == true {
+		elapsedTime := time.Since(csiOpStartTime).Milliseconds()
+		funcName := strings.Split(info.FullMethod, "/")
+		utils.SumStats(utils.CSIOP_STATS, funcName[2], elapsedTime, err)
 	}
 	return resp, err
 }

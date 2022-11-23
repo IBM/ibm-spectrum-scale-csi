@@ -185,7 +185,10 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 	getClusterURL := "scalemgmt/v2/cluster"
 	getClusterResponse := GetClusterResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getClusterURL, "GET", &getClusterResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetClusterId", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get cluster ID: %v", err)
 		return "", err
@@ -201,7 +204,10 @@ func (s *spectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
 	getClusterURL := "scalemgmt/v2/cluster"
 	getClusterResponse := GetClusterResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getClusterURL, "GET", &getClusterResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetClusterSummary", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get cluster summary: %v", err)
 		return ClusterSummary{}, err
@@ -215,7 +221,10 @@ func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
 	getConfigURL := "scalemgmt/v2/config"
 	getConfigResponse := GetConfigResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getConfigURL, "GET", &getConfigResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetTimeZoneOffset", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get cluster configuration: %v", err)
 		return "", err
@@ -230,7 +239,10 @@ func (s *spectrumRestV2) GetScaleVersion() (string, error) {
 	getVersionURL := "scalemgmt/v2/info"
 	getVersionResponse := GetInfoResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getVersionURL, "GET", &getVersionResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetScaleVersion", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("unable to get Spectrum Scale version: [%v]", err)
 		return "", err
@@ -249,7 +261,10 @@ func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (Mount
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesystemURL, "GET", &getFilesystemResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFilesystemMountDetails", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get filesystem details for %s: %v", filesystemName, err)
 		return MountInfo{}, err
@@ -268,7 +283,10 @@ func (s *spectrumRestV2) IsFilesystemMountedOnGUINode(filesystemName string) (bo
 	mountURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	mountResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(mountURL, "GET", &mountResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "IsFilesystemMountedOnGUINode", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in getting filesystem mount details for %s: %v", filesystemName, err)
 		return false, err
@@ -293,7 +311,10 @@ func (s *spectrumRestV2) ListFilesystems() ([]string, error) {
 	listFilesystemsURL := "scalemgmt/v2/filesystems"
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(listFilesystemsURL, "GET", &getFilesystemResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "ListFilesystems", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in listing filesystems: %v", err)
 		return nil, err
@@ -312,7 +333,10 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	getFilesystemURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesystemURL, "GET", &getFilesystemResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFilesystemMountpoint", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in getting filesystem details for %s: %v", filesystemName, err)
 		return "", err
@@ -339,7 +363,10 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 	copySnapURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCopy/%s/path/%s", filesystemName, filesetName, snapshotName, formattedSrcPath)
 	copySnapResp := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(copySnapURL, "PUT", &copySnapResp, copySnapReq)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CopyFsetSnapshotPath", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in copy snapshot request: %v", err)
 		return 0, 0, err
@@ -368,7 +395,10 @@ func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName stri
 	copyVolURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/directoryCopy/%s", filesystemName, filesetName, formattedSrcPath)
 	copyVolResp := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(copyVolURL, "PUT", &copyVolResp, copyVolReq)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CopyFilesetPath", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in copy volume request: %v", err)
 		return 0, 0, err
@@ -397,7 +427,10 @@ func (s *spectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string
 	copyVolURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/directoryCopy/%s", filesystemName, formattedSrcPath)
 	copyVolResp := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(copyVolURL, "PUT", &copyVolResp, copyVolReq)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CopyDirectoryPath", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in copy volume request: %v", err)
 		return 0, 0, err
@@ -421,19 +454,26 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 	createSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName)
 	createSnapshotResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(createSnapshotURL, "POST", &createSnapshotResponse, snapshotreq)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "CreateSnapshot", guiElapsedTime, err)
 		glog.Errorf("error in create snapshot request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(createSnapshotResponse, createSnapshotURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "CreateSnapshot", guiElapsedTime, err)
 		glog.Errorf("request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(createSnapshotResponse.Status.Code, createSnapshotResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CreateSnapshot", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as snapshot already exists
 			fmt.Println(err)
@@ -452,6 +492,7 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 	deleteSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
 	deleteSnapshotResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(deleteSnapshotURL, "DELETE", &deleteSnapshotResponse, nil)
 	if err != nil {
 		glog.Errorf("Error in delete snapshot request: %v", err)
@@ -460,11 +501,15 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 
 	err = s.isRequestAccepted(deleteSnapshotResponse, deleteSnapshotURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteSnapshot", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteSnapshotResponse.Status.Code, deleteSnapshotResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "DeleteSnapshot", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to delete snapshot %s: %v", snapshotName, err)
 		return err
@@ -479,7 +524,10 @@ func (s *spectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filese
 	getLatestFilesetSnapshotsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/latest", filesystemName, filesetName)
 	getLatestFilesetSnapshotsResponse := GetSnapshotResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getLatestFilesetSnapshotsURL, "GET", &getLatestFilesetSnapshotsResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetLatestFilesetSnapshots", guiElapsedTime, err)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get latest list of snapshots for fileset [%v]. Error [%v]", filesetName, err)
 	}
@@ -497,19 +545,26 @@ func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string
 	}
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
+	guiStartTime := time.Now()
 	err := s.doHTTP(updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "UpdateFileset", guiElapsedTime, err)
 		glog.Errorf("error in update fileset request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(updateFilesetResponse, updateFilesetURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "UpdateFileset", guiElapsedTime, err)
 		glog.Errorf("request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(updateFilesetResponse.Status.Code, updateFilesetResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "UpdateFileset", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("unable to update fileset %s: %v", filesetName, err)
 		return err
@@ -567,19 +622,26 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
 	createFilesetResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(createFilesetURL, "POST", &createFilesetResponse, filesetreq)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "CreateFileset", guiElapsedTime, err)
 		glog.Errorf("Error in create fileset request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(createFilesetResponse, createFilesetURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "CreateFileset", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CreateFileset", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
 			fmt.Println(err)
@@ -597,8 +659,11 @@ func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string
 	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	deleteFilesetResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(deleteFilesetURL, "DELETE", &deleteFilesetResponse, nil)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteFileset", guiElapsedTime, err)
 		if strings.Contains(deleteFilesetResponse.Status.Message, "Invalid value in 'fsetName'") { // job failed as dir already exists
 			glog.Infof("Fileset would have been deleted. So returning success %v", err)
 			return nil
@@ -610,11 +675,15 @@ func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string
 
 	err = s.isRequestAccepted(deleteFilesetResponse, deleteFilesetURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteFileset", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteFilesetResponse.Status.Code, deleteFilesetResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "DeleteFileset", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to delete fileset %s: %v", filesetName, err)
 		return err
@@ -631,19 +700,26 @@ func (s *spectrumRestV2) LinkFileset(filesystemName string, filesetName string, 
 	linkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link", filesystemName, filesetName)
 	linkFilesetResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(linkFilesetURL, "POST", &linkFilesetResponse, linkReq)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "LinkFileset", guiElapsedTime, err)
 		glog.Errorf("Error in link fileset request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(linkFilesetResponse, linkFilesetURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "LinkFileset", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(linkFilesetResponse.Status.Code, linkFilesetResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "LinkFileset", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in linking fileset %s: %v", filesetName, err)
 		return err
@@ -657,20 +733,27 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 	unlinkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
 	unlinkFilesetResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(unlinkFilesetURL, "DELETE", &unlinkFilesetResponse, nil)
 
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "UnlinkFileset", guiElapsedTime, err)
 		glog.Errorf("Error in unlink fileset request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(unlinkFilesetResponse, unlinkFilesetURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "UnlinkFileset", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(unlinkFilesetResponse.Status.Code, unlinkFilesetResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "UnlinkFileset", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in unlink fileset %s: %v", filesetName, err)
 		return err
@@ -685,7 +768,10 @@ func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "ListFilesetDetails", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in list fileset request: %v", err)
 		return Fileset_v2{}, err
@@ -705,7 +791,10 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 	getFilesetsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.inodeSpace=%d", filesystemName, inodeSpace)
 	getFilesetsResponse := GetFilesetResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesetsURL, "GET", &getFilesetsResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFilesetsInodeSpace", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in list filesets request: %v", err)
 		return nil, err
@@ -735,7 +824,10 @@ func (s *spectrumRestV2) FilesetRefreshTask() error {
 	filesetRefreshURL := "scalemgmt/v2/refreshTask/enqueue?taskId=FILESETS&maxDelay=0"
 	filesetRefreshResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(filesetRefreshURL, "POST", &filesetRefreshResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "FilesetRefreshTask", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in fileset refresh task: %v", err)
 		return err
@@ -776,20 +868,26 @@ func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath strin
 
 	makeDirResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(makeDirURL, "POST", &makeDirResponse, dirreq)
-
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "MakeDirectory", guiElapsedTime, err)
 		glog.Errorf("Error in make directory request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(makeDirResponse, makeDirURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "MakeDirectory", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "MakeDirectory", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
 			glog.Infof("Directory exists. %v", err)
@@ -837,20 +935,27 @@ func (s *spectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath str
 
 	makeDirResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(makeDirURL, "POST", &makeDirResponse, dirreq)
 
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "MakeDirectoryV2", guiElapsedTime, err)
 		glog.Errorf("Error in make directory request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(makeDirResponse, makeDirURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "MakeDirectoryV2", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "MakeDirectoryV2", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
 			glog.Infof("Directory exists. %v", err)
@@ -878,19 +983,26 @@ func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName stri
 
 	setQuotaResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(setQuotaURL, "POST", &setQuotaResponse, quotaRequest)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "SetFilesetQuota", guiElapsedTime, err)
 		glog.Errorf("Error in set fileset quota request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(setQuotaResponse, setQuotaURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "SetFilesetQuota", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(setQuotaResponse.Status.Code, setQuotaResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "SetFilesetQuota", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to set quota for fileset %s: %v", filesetName, err)
 		return err
@@ -904,7 +1016,10 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	checkQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
 	QuotaResponse := GetQuotaResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(checkQuotaURL, "GET", &QuotaResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CheckIfFSQuotaEnabled", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Error in check quota: %v", err)
 		return err
@@ -918,7 +1033,10 @@ func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
 	checkNodeclassURL := fmt.Sprintf("scalemgmt/v2/nodeclasses/%s", nodeclass)
 	nodeclassResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(checkNodeclassURL, "GET", &nodeclassResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "IsValidNodeclass", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(nodeclassResponse.Status.Message, "Invalid value in nodeclassName") {
 			// nodeclass is not present
@@ -935,7 +1053,10 @@ func (s *spectrumRestV2) IsSnapshotSupported() (bool, error) {
 	getVersionURL := "scalemgmt/v2/info"
 	getVersionResponse := GetInfoResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getVersionURL, "GET", &getVersionResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "IsSnapshotSupported", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get cluster information: [%v]", err)
 		return false, err
@@ -954,7 +1075,10 @@ func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetNa
 	listQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName)
 	listQuotaResponse := GetQuotaResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(listQuotaURL, "GET", &listQuotaResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFilesetQuotaDetails", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to fetch quota information for fileset %s:%s: [%v]", filesystemName, filesetName, err)
 		return Quota_v2{}, err
@@ -1050,19 +1174,26 @@ func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string)
 	mountFilesystemURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/mount", filesystemName)
 	mountFilesystemResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(mountFilesystemURL, "PUT", &mountFilesystemResponse, mountreq)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "MountFilesystem", guiElapsedTime, err)
 		glog.Errorf("Error in mount filesystem request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(mountFilesystemResponse, mountFilesystemURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "MountFilesystem", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(mountFilesystemResponse.Status.Code, mountFilesystemResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "MountFilesystem", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to Mount filesystem %s on node %s: %v", filesystemName, nodeName, err)
 		return err
@@ -1079,19 +1210,26 @@ func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName strin
 	unmountFilesystemURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/unmount", filesystemName)
 	unmountFilesystemResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(unmountFilesystemURL, "PUT", &unmountFilesystemResponse, unmountreq)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "UnmountFilesystem", guiElapsedTime, err)
 		glog.Errorf("Error in unmount filesystem request: %v", err)
 		return err
 	}
 
 	err = s.isRequestAccepted(unmountFilesystemResponse, unmountFilesystemURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "UnmountFilesystem", guiElapsedTime, err)
 		glog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(unmountFilesystemResponse.Status.Code, unmountFilesystemResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "UnmountFilesystem", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to unmount filesystem %s on node %s: %v", filesystemName, nodeName, err)
 		return err
@@ -1106,7 +1244,10 @@ func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error
 	getFilesystemNameURL := fmt.Sprintf("scalemgmt/v2/filesystems?filter=uuid=%s", filesystemUUID)
 	getFilesystemNameURLResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesystemNameURL, "GET", &getFilesystemNameURLResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFilesystemName", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get filesystem name for uuid %s: %v", filesystemUUID, err)
 		return "", err
@@ -1125,7 +1266,11 @@ func (s *spectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem
 	getFilesystemDetailsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	getFilesystemDetailsURLResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesystemDetailsURL, "GET", &getFilesystemDetailsURLResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFilesystemDetails", guiElapsedTime, err)
+	//glog.Errorf("RESTAPIStats GetFilesystemDetails total time taken: %v msecs", guiElapsedTime)
 	if err != nil {
 		glog.Errorf("Unable to get filesystem details for filesystem %s: %v", filesystemName, err)
 		return FileSystem_v2{}, err
@@ -1145,7 +1290,10 @@ func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesystemURL, "GET", &getFilesystemResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFsUid", guiElapsedTime, err)
 	if err != nil {
 		return "", fmt.Errorf("Unable to get filesystem details for %s", filesystemName)
 	}
@@ -1165,17 +1313,24 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 	deleteLnkURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/symlink/%s", filesystemName, LnkName)
 	deleteLnkResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(deleteLnkURL, "DELETE", &deleteLnkResponse, nil)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteSymLnk", guiElapsedTime, err)
 		return fmt.Errorf("Unable to delete Symlink %v.", LnkName)
 	}
 
 	err = s.isRequestAccepted(deleteLnkResponse, deleteLnkURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteSymLnk", guiElapsedTime, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteLnkResponse.Status.Code, deleteLnkResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "DeleteSymLnk", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG2006C") {
 			glog.V(4).Infof("Since slink %v was already deleted, so returning success", LnkName)
@@ -1199,17 +1354,24 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, 
 	}
 	deleteDirResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(deleteDirURL, "DELETE", &deleteDirResponse, nil)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteDirectory", guiElapsedTime, err)
 		return fmt.Errorf("Unable to delete dir %v.", dirName)
 	}
 
 	err = s.isRequestAccepted(deleteDirResponse, deleteDirURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "DeleteDirectory", guiElapsedTime, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(deleteDirResponse.Status.Code, deleteDirResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "DeleteDirectory", guiElapsedTime, err)
 	if err != nil {
 		return fmt.Errorf("Unable to delete dir %v:%v", dirName, err)
 	}
@@ -1224,17 +1386,24 @@ func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (s
 	statDirURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, fmtDirName)
 	statDirResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(statDirURL, "GET", &statDirResponse, nil)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "StatDirectory", guiElapsedTime, err)
 		return "", fmt.Errorf("Unable to stat dir %v.", dirName)
 	}
 
 	err = s.isRequestAccepted(statDirResponse, statDirURL)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "StatDirectory", guiElapsedTime, err)
 		return "", err
 	}
 
 	jobResp, err := s.WaitForJobCompletionWithResp(statDirResponse.Status.Code, statDirResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "StatDirectory", guiElapsedTime, err)
 	if err != nil {
 		return "", fmt.Errorf("Unable to stat dir %v:%v", dirName, err)
 	}
@@ -1261,7 +1430,10 @@ func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, files
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFileSetResponseFromName", guiElapsedTime, err)
 	if err != nil {
 		return Fileset_v2{}, fmt.Errorf("Unable to list fileset %v.", filesetName)
 	}
@@ -1280,7 +1452,10 @@ func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName 
 	checkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(checkFilesetURL, "GET", &getFilesetResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CheckIfFilesetExist", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(getFilesetResponse.Status.Message, "Invalid value in 'filesetName'") {
 			// snapshot is not present
@@ -1307,7 +1482,10 @@ func (s *spectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id stri
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getFilesetURL, "GET", &getFilesetResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFileSetResponseFromId", guiElapsedTime, err)
 	if err != nil {
 		return Fileset_v2{}, fmt.Errorf("unable to get name for fileset Id %v:%v", filesystemName, Id)
 	}
@@ -1326,7 +1504,10 @@ func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, files
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetSnapshotCreateTimestamp", guiElapsedTime, err)
 	if err != nil {
 		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
@@ -1345,7 +1526,10 @@ func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName strin
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetSnapshotUid", guiElapsedTime, err)
 	if err != nil {
 		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
@@ -1364,7 +1548,10 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getSnapshotURL, "GET", &getSnapshotResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CheckIfSnapshotExist", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(getSnapshotResponse.Status.Message, "Invalid value in 'snapshotName'") && len(getSnapshotResponse.Snapshots) == 0 {
 			// snapshot is not present
@@ -1382,7 +1569,10 @@ func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName
 	listFilesetSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName)
 	listFilesetSnapshotResponse := GetSnapshotResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(listFilesetSnapshotURL, "GET", &listFilesetSnapshotResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "ListFilesetSnapshots", guiElapsedTime, err)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list snapshots for fileset %v. Error [%v]", filesetName, err)
 	}
@@ -1397,7 +1587,10 @@ func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath st
 	checkFilDirUrl := fmt.Sprintf("scalemgmt/v2/filesystems/%s/owner/%s", filesystemName, RelPath)
 	ownerResp := OwnerResp_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(checkFilDirUrl, "GET", &ownerResp, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CheckIfFileDirPresent", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(ownerResp.Status.Message, "File not found") {
 			return false, nil
@@ -1420,18 +1613,25 @@ func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs strin
 
 	makeSlnkResp := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(symLnkUrl, "POST", &makeSlnkResp, symLnkReq)
 
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "CreateSymLink", guiElapsedTime, err)
 		return err
 	}
 
 	err = s.isRequestAccepted(makeSlnkResp, symLnkUrl)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "CreateSymLink", guiElapsedTime, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(makeSlnkResp.Status.Code, makeSlnkResp.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CreateSymLink", guiElapsedTime, err)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
 			return nil
@@ -1446,7 +1646,10 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component strin
 	getNodeHealthStatesURL := fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component)
 	getNodeHealthStatesResponse := GetNodeHealthStatesResponse_v2{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(getNodeHealthStatesURL, "GET", &getNodeHealthStatesResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "IsNodeComponentHealthy", guiElapsedTime, err)
 	if err != nil {
 		return false, fmt.Errorf("unable to get health states for nodename %v", nodeName)
 	}
@@ -1464,13 +1667,18 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 	setPolicyURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName)
 	setPolicyResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(setPolicyURL, "PUT", &setPolicyResponse, policy)
 	if err != nil {
+		guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+		utils.SumStats(utils.RESTAPI_STATS, "SetFilesystemPolicy", guiElapsedTime, err)
 		glog.Errorf("unable to send filesystem policy: %v", setPolicyResponse.Status.Message)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "SetFilesystemPolicy", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("setting policy rule %s for filesystem %s failed with error %v", policy.Policy, filesystemName, err)
 		return err
@@ -1499,7 +1707,10 @@ func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName str
 	tierUrl := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName)
 	getTierResponse := &StorageTiers{}
 
+	guiStartTime := time.Now()
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
 	err := s.doHTTP(tierUrl, "GET", getTierResponse, nil)
+	utils.SumStats(utils.RESTAPI_STATS, "GetTierInfoFromName", guiElapsedTime, err)
 	if err != nil {
 		glog.Errorf("Unable to get tier: %s err: %v", tierName, err)
 		return nil, err
@@ -1518,8 +1729,11 @@ func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName strin
 	partitionURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName)
 	getPartitionResponse := GenericResponse{}
 
+	guiStartTime := time.Now()
 	// If it does or doesn't exist and we get an error we will default to just setting it again as an override
 	err := s.doHTTP(partitionURL, "GET", &getPartitionResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "CheckIfDefaultPolicyPartitionExists", guiElapsedTime, err)
 	return err == nil
 }
 
@@ -1529,7 +1743,10 @@ func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error)
 	tiersURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools", filesystemName)
 	getTierResponse := &StorageTiers{}
 
+	guiStartTime := time.Now()
 	err := s.doHTTP(tiersURL, "GET", getTierResponse, nil)
+	guiElapsedTime := time.Since(guiStartTime).Milliseconds()
+	utils.SumStats(utils.RESTAPI_STATS, "GetFirstDataTier", guiElapsedTime, err)
 	if err != nil {
 		return "", err
 	}
@@ -1566,3 +1783,13 @@ func (s *spectrumRestV2) getNextEndpoint() string {
 	glog.V(5).Infof("getNextEndpoint: returning next endpoint: %s", endpoint)
 	return endpoint
 }
+/*
+func (s *spectrumRestV2) SumStats(opType int, opName string, totalTime int64) {
+	if opType == RESTAPI_STATS {
+		statsMap := restApiStatMap
+	} else {
+		statsMap := csiOpStatMap
+	}
+
+
+}*/
