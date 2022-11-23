@@ -222,7 +222,7 @@ func (cs *ScaleControllerServer) createSoftlink(scVol *scaleVolume, target strin
 	return nil
 }
 
-// setQuota: Set quota if not set
+//setQuota: Set quota if not set
 func (cs *ScaleControllerServer) setQuota(scVol *scaleVolume, volName string) error {
 	glog.V(4).Infof("volume: [%v] - ControllerServer:setQuota", volName)
 	quota, err := scVol.Connector.ListFilesetQuota(scVol.VolBackendFs, volName)
