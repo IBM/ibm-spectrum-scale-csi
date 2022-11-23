@@ -59,7 +59,7 @@ import (
 type CSIScaleOperatorReconciler struct {
 	Client        client.Client
 	Scheme        *runtime.Scheme
-	recorder      record.EventRecorder
+	Recorder      record.EventRecorder
 	serverVersion string
 }
 
@@ -134,12 +134,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-		Type:    string(config.StatusConditionSuccess),
-		Status:  metav1.ConditionUnknown,
-		Reason:  string(csiv1.Unknown),
-		Message: "",
-	})
+	SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeNormal, string(csiv1.Unknown), "",
+		metav1.ConditionUnknown, string(config.StatusConditionSuccess))
 
 	// Update status conditions after reconcile completed
 	// crStatus := csiv1.CSIScaleOperatorStatus{}
@@ -185,13 +181,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
 		message := "Couldn't add Finalizer"
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceUpdateError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceUpdateError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 
@@ -203,13 +195,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if err != nil {
 			message := "Finalizer check failed"
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return ctrl.Result{}, err
 		}
 
@@ -221,39 +209,27 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
 			message := "Failed to delete ClusterRoles and ClusterRolesBindings"
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceDeleteError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceDeleteError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return ctrl.Result{}, err
 		}
 
 		if err := r.deleteCSIDriver(instance); err != nil {
 			message := "Failed to delete CSIDriver"
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceDeleteError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceDeleteError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return ctrl.Result{}, err
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
 			message := "Failed to remove Finalizer"
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceUpdateError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceUpdateError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return ctrl.Result{}, err
 		}
 		logger.Info("Removed CSI driver successfully")
@@ -296,13 +272,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if !errors.IsNotFound(cerr) {
 			message := "Failed to get ConfigMap resource " + config.CSIConfigMap
 			logger.Error(cerr, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return ctrl.Result{}, cerr
 		}
 	} else {
@@ -328,13 +300,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				if !errors.IsNotFound(derr) {
 					message := "Failed to get node plugin Daemonset"
 					logger.Error(derr, message)
-					// TODO: Add event.
-					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-						Type:    string(config.StatusConditionSuccess),
-						Status:  metav1.ConditionFalse,
-						Reason:  string(csiv1.ResourceReadError),
-						Message: message,
-					})
+
+					SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+						message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 					return ctrl.Result{}, derr
 				}
 			} else {
@@ -359,16 +327,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Synchronizing cluster configMap
 	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, r.recorder); err != nil {
+	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, r.Recorder); err != nil {
 		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceSyncError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of ConfigMap is successful")
@@ -378,16 +342,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncer, r.recorder); err != nil {
+	if err := syncer.Sync(context.TODO(), csiControllerSyncer, r.Recorder); err != nil {
 		message := "Synchronization of attacher interface failed."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceSyncError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of attacher interface is successful")
@@ -397,16 +357,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, r.recorder); err != nil {
+	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, r.Recorder); err != nil {
 		message := "Synchronization of provisioner interface failed."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceSyncError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of provisioner interface is successful")
@@ -416,16 +372,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, r.recorder); err != nil {
+	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, r.Recorder); err != nil {
 		message := "Synchronization of snapshotter interface failed."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceSyncError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of snapshotter interface is successful")
@@ -435,16 +387,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, r.recorder); err != nil {
+	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, r.Recorder); err != nil {
 		message := "Synchronization of resizer interface failed."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceSyncError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of resizer interface is successful")
@@ -469,16 +417,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
-	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
+	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.Recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceSyncError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceSyncError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return ctrl.Result{}, err
 	}
 	logger.Info("Synchronization of node/driver interface is successful")
@@ -486,18 +430,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
 
-	// if err := r.SetStatus(instance); err != nil {
-	// 	logger.Error(err, "Assigning values to status sub-resource object failed.")
-	//	return ctrl.Result{}, err
-	// }
-	// TODO: Add event.
-	meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-		Type:    string(config.StatusConditionSuccess),
-		Status:  metav1.ConditionTrue,
-		Reason:  string(csiv1.CSIConfigured),
-		Message: message,
-	})
-
+	SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeNormal, string(csiv1.CSIConfigured),
+		message, metav1.ConditionTrue, string(config.StatusConditionSuccess))
 	logger.Info("CSI setup completed successfully.")
 	return ctrl.Result{}, nil
 }
@@ -761,27 +695,19 @@ func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(instance *csiscaleoperat
 	if err != nil && errors.IsNotFound(err) {
 		err = r.Client.Create(context.TODO(), cd)
 		if err != nil {
-			message := "Failed to create a new CSIDriver resource."
+			message := "Failed to create a new CSIDriver resource " + cd.Name
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceCreateError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceCreateError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return err
 		}
 	} else if err != nil {
 		message := "Failed to get the CSIDriver object from the cluster."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceReadError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return err
 	} else {
 		// Resource already exists - don't requeue
@@ -819,13 +745,9 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 		if err := controllerutil.SetControllerReference(instance.Unwrap(), sa, r.Scheme); err != nil {
 			message := "Failed to set controller reference for ServiceAccount " + sa.GetName()
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.CSINotConfigured),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return err
 		}
 		found := &corev1.ServiceAccount{}
@@ -839,13 +761,9 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 			if err != nil {
 				message := "Failed to create ServiceAccount resource " + sa.GetName() + "."
 				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceCreateError),
-					Message: message,
-				})
+
+				SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceCreateError),
+					message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 				return err
 			}
 			logger.Info("Creation of ServiceAccount " + sa.GetName() + " is successful")
@@ -874,13 +792,9 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				} else if err != nil {
 					message := "Failed to check if DaemonSet exists."
 					logger.Error(err, message)
-					// TODO: Add event.
-					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-						Type:    string(config.StatusConditionSuccess),
-						Status:  metav1.ConditionFalse,
-						Reason:  string(csiv1.ResourceReadError),
-						Message: message,
-					})
+
+					SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning,
+						string(csiv1.ResourceReadError), message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 					return err
 				} else {
 					logger.Info("DaemonSet exists, node rollout requires restart",
@@ -891,13 +805,9 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 					if rErr != nil {
 						message := "Failed to rollout restart node DaemonSet"
 						logger.Error(rErr, message)
-						// TODO: Add event.
-						meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-							Type:    string(config.StatusConditionSuccess),
-							Status:  metav1.ConditionFalse,
-							Reason:  string(csiv1.CSINotConfigured),
-							Message: message,
-						})
+
+						SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured),
+							message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 						return rErr
 					}
 
@@ -909,13 +819,9 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 		} else if err != nil {
 			message := "Failed to get ServiceAccount " + sa.GetName()
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return err
 		} else {
 			// Cannot update the service account of an already created pod.
@@ -1036,25 +942,17 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			if err != nil {
 				message := "Failed to create ClusterRole " + cr.GetName()
 				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceCreateError),
-					Message: message,
-				})
+
+				SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceCreateError),
+					message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 				return err
 			}
 		} else if err != nil {
 			message := "Failed to get ClusterRole " + cr.GetName()
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return err
 		} else {
 			logger.Info("Clusterrole " + cr.GetName() + " already exists. Updating clusterrole.")
@@ -1062,13 +960,9 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			if err != nil {
 				message := "Failed to update ClusterRole " + cr.GetName()
 				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceUpdateError),
-					Message: message,
-				})
+
+				SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceUpdateError),
+					message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 				return err
 			}
 		}
@@ -1135,25 +1029,17 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			if err != nil {
 				message := "Failed to create ClusterRoleBinding resource " + crb.GetName()
 				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceCreateError),
-					Message: message,
-				})
+
+				SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceCreateError),
+					message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 				return err
 			}
 		} else if err != nil {
 			message := "Failed to get ClusterRoleBinding " + crb.GetName()
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceReadError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return err
 		} else {
 			// Resource already exists - don't requeue
@@ -1163,13 +1049,9 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			if err != nil {
 				message := "Failed to update ClusterRoleBinding " + crb.GetName()
 				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceUpdateError),
-					Message: message,
-				})
+
+				SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceUpdateError),
+					message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 				return err
 			}
 		}
@@ -1436,26 +1318,18 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 	} else if err != nil {
 		message := "Failed to get statefulset information from the cluster."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceReadError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return err
 	} else {
 		logger.Info("Found statefulset resource. Sidecar controllers as statefulsets are replaced by deployments in CSI >= 2.6.0. Removing statefulset.")
 		if err := r.Client.Delete(context.TODO(), STS); err != nil {
 			message := "Unable to delete " + name + " statefulset."
 			logger.Error(err, message)
-			// TODO: Add event.
-			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-				Type:    string(config.StatusConditionSuccess),
-				Status:  metav1.ConditionFalse,
-				Reason:  string(csiv1.ResourceDeleteError),
-				Message: message,
-			})
+
+			SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceDeleteError),
+				message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 			return err
 		}
 	}
@@ -1528,28 +1402,30 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 
 	if err != nil && errors.IsNotFound(err) {
-		message := "Resource not found."
+		message := fmt.Sprintf("Resource %s not found, kind : %s", name, kind)
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceNotFoundError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceNotFoundError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return false, err
 	} else if err != nil {
 		message := "Failed to get resource information from cluster."
 		logger.Error(err, message)
-		// TODO: Add event.
-		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-			Type:    string(config.StatusConditionSuccess),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(csiv1.ResourceReadError),
-			Message: message,
-		})
+
+		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.ResourceReadError),
+			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
 		return false, err
 	} else {
 		return true, nil
 	}
+}
+
+func SetStatusConditionAndEvent(rec record.EventRecorder, obj runtime.Object, eventType string, reason string, message string, conditionStatus metav1.ConditionStatus, conditionType string) {
+	meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+		Type:    conditionType,
+		Status:  conditionStatus,
+		Reason:  reason,
+		Message: message,
+	})
+	rec.Eventf(obj, eventType, reason, message)
 }
