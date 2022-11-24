@@ -34,7 +34,8 @@ spec:
 #        remoteCluster: "< Remote ClusterID >"            # Optional - This is only required if primaryFs is remote cluster's filesystem and this ID should have separate entry in Clusters map too.
 #      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
       restApi:
-        - guiHost: "< Primary cluster GUI IP/Hostname >"
+        - guiHost: "< IP/Hostname of a GUI node of primary cluster >"
+#       - guiHost: "< IP/Hostname of another GUI node of primary cluster >" #Optional - Multiple GUI IPs/Hostnames can be provided like this, if the storage cluster has GUI installed on multiple nodes.
 #
 # In the case we have multiple clusters, specify their configuration below.
 # ==================================================================================
@@ -42,7 +43,8 @@ spec:
 #      secrets: "< Secret for Cluster >"
 #      secureSslMode: false
 #      restApi:
-#      - guiHost: "< Cluster GUI IP/Hostname >"
+#      - guiHost: "< IP/Hostname of a GUI node of the cluster >"
+#      - guiHost: "< IP/Hostname of another GUI node of the cluster >" #Optinal - Multiple GUI IPs/Hostnames can be provided like this, if the storage cluster has GUI installed on multiple nodes.
 #      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
 
 # attacherNodeSelector specifies on which nodes we want to run attacher sidecar
