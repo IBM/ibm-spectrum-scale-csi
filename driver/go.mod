@@ -1,4 +1,5 @@
-module github.com/IBM/ibm-spectrum-scale-csi/driver
+//TODO: This is temporary, change it back to IBM
+module github.com/amdabhad/ibm-spectrum-scale-csi/driver
 
 go 1.18
 
