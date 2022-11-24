@@ -1,4 +1,6 @@
-//TODO: This is temporary, change it back to IBM
+//TODO: This is temporary change, once the SpectrumRestV2 is exported
+//in driver code and merged in some IBM branch, change this line and
+//adjust the dependencies.
 module github.com/amdabhad/ibm-spectrum-scale-csi/driver
 
 go 1.18
@@ -14,6 +16,7 @@ require (
 )
 
 require (
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20220927072613-aa2802d0f9d8 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/moby/sys/mountinfo v0.6.0 // indirect
 	golang.org/x/text v0.3.0 // indirect
