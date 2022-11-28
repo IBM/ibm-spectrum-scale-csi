@@ -282,7 +282,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	//TODO: validate CR params here
 
-	//TODO: optimise: call this only when clusters cm is modified.
+	//TODO:
+	//1. call this only when clusters cm is modified.
+	//2. call this only in 1st reconciliation
+	//3. getSpectrumScaleConnectors should add/update an entry
+	// in scaleConnMap only when the corresponding GUI is up
+
 	if len(instance.Spec.Clusters) != 0 {
 		err = r.getSpectrumScaleConnectors(instance)
 		if err != nil {
