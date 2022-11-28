@@ -141,4 +141,9 @@ const (
 	StatusConditionReady   = "Ready"
 	StatusConditionSuccess = "Success"
 	StatusConditionEnabled = "Enabled"
+
+	SecretUsername    = "username"
+	SecretPassword    = "password"
+	Primary           = "primary"
+	HTTPClientTimeout = 60
 )

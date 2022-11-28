@@ -49,8 +49,6 @@ const (
 	pluginDir                        = "plugin-dir"
 	registrationDir                  = "registration-dir"
 	registrationDirPath              = "/registration"
-	secretUsername                   = "username"
-	secretPassword                   = "password"
 
 	// FS-Group requirement.
 	// Mount `/` filesystem from host machine to driver container on path `/host`
@@ -527,12 +525,12 @@ func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 			SecretName: name,
 			Items: []corev1.KeyToPath{
 				{
-					Key:  secretUsername,
-					Path: secretUsername,
+					Key:  config.SecretUsername,
+					Path: config.SecretUsername,
 				},
 				{
-					Key:  secretPassword,
-					Path: secretPassword,
+					Key:  config.SecretPassword,
+					Path: config.SecretPassword,
 				},
 			},
 		},

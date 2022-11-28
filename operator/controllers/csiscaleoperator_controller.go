@@ -18,8 +18,11 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"strings"
@@ -49,10 +52,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	config "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
 	clustersyncer "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/syncer"
+
+	//TODO: This is temporary change, once the SpectrumRestV2 is exported
+	//in driver code and merged in some IBM branch, change this line and
+	//adjust the dependencies.
+	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 )
 
 // CSIScaleOperatorReconciler reconciles a CSIScaleOperator object
@@ -73,6 +82,9 @@ var csiLog = log.Log.WithName("csiscaleoperator_controller")
 type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
+
+//a map of connectors to make REST calls to GUI
+var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 
 // watchResources stores resource kind and resource names of the resources
 // that the controller is going to watch.
@@ -120,7 +132,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	instance := csiscaleoperator.New(&csiv1.CSIScaleOperator{})
 
 	instanceUnwrap := instance.Unwrap()
-	err := r.Client.Get(ctx, req.NamespacedName, instanceUnwrap)
+	var err error
+	err = r.Client.Get(ctx, req.NamespacedName, instanceUnwrap)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -265,6 +278,23 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	} else {
 		logger.Info("Pre-requisite check passed.")
+	}
+
+	//TODO: validate CR params here
+
+	//TODO: optimise: call this only when clusters cm is modified.
+	if len(instance.Spec.Clusters) != 0 {
+		err = r.getSpectrumScaleConnectors(instance)
+		if err != nil {
+			message := "error in getting SpectrumScaleConnectors"
+			logger.Error(err, message)
+			return ctrl.Result{}, err
+		}
+
+		//TODO: remove these test calls and also the functions,
+		// as these for testing the framework.
+		testClusterID()
+		testRESTcalls(instance.Spec.Clusters)
 	}
 
 	logger.Info("Create resources")
@@ -1552,4 +1582,177 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	} else {
 		return true, nil
 	}
+}
+
+func testClusterID() error {
+	logger := csiLog.WithName("testClusterID")
+	logger.Info("Getting ClusterID of primary cluster")
+
+	clusterID, err := scaleConnMap[config.Primary].GetClusterId()
+	if err != nil {
+		logger.Error(err, "error in getting clusterID")
+	} else {
+		logger.Info("got clusterID successfully", "clusterID", clusterID)
+	}
+	return nil
+}
+
+func testRESTcalls(clusters []csiv1.CSICluster) error {
+	logger := csiLog.WithName("testRESTcalls")
+	for _, cluster := range clusters {
+		var err error
+		fsList, err := scaleConnMap[cluster.Id].ListFilesystems()
+		if err != nil {
+			logger.Error(err, "error in ListFilesystems")
+		}
+		logger.Info("ListFilesystems", "clusterID", cluster.Id, "fsList", fsList)
+
+		fsetExists, err := scaleConnMap[cluster.Id].CheckIfFilesetExist("fs1", "fset1")
+		if err != nil {
+			logger.Error(err, "error in CheckIfFilesetExist")
+		}
+		logger.Info("ListFilesystems", "clusterID", cluster.Id, "fsetExists", fsetExists)
+
+		fsetExists, err = scaleConnMap[cluster.Id].CheckIfFilesetExist("fs2", "fset1")
+		if err != nil {
+			logger.Error(err, "error in CheckIfFilesetExist")
+		}
+		logger.Info("ListFilesystems", "clusterID", cluster.Id, "fsetExists", fsetExists)
+	}
+
+	filesetList, err := scaleConnMap[config.Primary].ListFileset("fs1", "fset1")
+	if err != nil {
+		logger.Error(err, "error in fileset info")
+	} else {
+		logger.Info("got fileset fset1", "fset1", filesetList)
+	}
+	return nil
+}
+
+//newSpectrumScaleConnector creates a new connector to make
+//REST calls for the passed cluster and returns the connector
+func (r *CSIScaleOperatorReconciler) newSpectrumScaleConnector(instance *csiscaleoperator.CSIScaleOperator,
+	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
+	logger := csiLog.WithName("newSpectrumScaleConnector")
+	logger.Info("creating new SpectrumScaleConnector")
+
+	var rest *connectors.SpectrumRestV2
+	var tr *http.Transport
+	username := ""
+	password := ""
+
+	if cluster.Secrets != "" {
+		secret := &corev1.Secret{}
+		err := r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      cluster.Secrets,
+			Namespace: instance.Namespace,
+		}, secret)
+		if err != nil && errors.IsNotFound(err) {
+			message := fmt.Sprintf("Secret %v not found", cluster.Secrets)
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceNotFoundError),
+				Message: message,
+			})
+			return &connectors.SpectrumRestV2{}, err
+		} else if err != nil {
+			message := fmt.Sprintf("Failed to get secret %v", cluster.Secrets)
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return nil, err
+		}
+		username = string(secret.Data[config.SecretUsername])
+		password = string(secret.Data[config.SecretPassword])
+	}
+
+	if cluster.SecureSslMode == true && cluster.Cacert != "" {
+		configMap := &corev1.ConfigMap{}
+		err := r.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      cluster.Cacert,
+			Namespace: instance.Namespace,
+		}, configMap)
+
+		if err != nil && errors.IsNotFound(err) {
+			message := fmt.Sprintf("ConfigMap %v not found", cluster.Cacert)
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceNotFoundError),
+				Message: message,
+			})
+			return nil, err
+		} else if err != nil {
+			message := fmt.Sprintf("Failed to get ConfigMap %v", cluster.Cacert)
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return nil, err
+		}
+		cacertValue := []byte(configMap.Data[cluster.Cacert])
+		caCertPool := x509.NewCertPool()
+		if ok := caCertPool.AppendCertsFromPEM(cacertValue); !ok {
+			return nil, fmt.Errorf("Parsing CA cert %v failed", cluster.Cacert)
+		}
+		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
+		logger.Info("Created Spectrum Scale connector with SSL mode for guiHost(s)")
+
+	} else {
+		//#nosec G402 InsecureSkipVerify was requested by user.
+		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
+		logger.Info("Created Spectrum Scale connector without SSL mode for guiHost(s)")
+	}
+
+	rest = &connectors.SpectrumRestV2{
+		HTTPclient: &http.Client{
+			Transport: tr,
+			Timeout:   time.Second * config.HTTPClientTimeout,
+		},
+		User:          username,
+		Password:      password,
+		EndPointIndex: 0, //Use first GUI as primary by default
+	}
+
+	for i := range cluster.RestApi {
+		guiHost := cluster.RestApi[i].GuiHost
+		guiPort := cluster.RestApi[i].GuiPort
+		if guiPort == 0 {
+			guiPort = settings.DefaultGuiPort
+		}
+		endpoint := fmt.Sprintf("%s://%s:%d/", settings.GuiProtocol, guiHost, guiPort)
+		rest.Endpoint = append(rest.Endpoint, endpoint)
+	}
+	return rest, nil
+}
+
+//getSpectrumScaleConnectors gets the connectors for all
+//the clusters in driver manifest and sets those in scaleConnMap.
+func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("getSpectrumScaleConnectors")
+	logger.Info("getting all spectrum scale connectors")
+
+	for _, cluster := range instance.Spec.Clusters {
+		connector, err := r.newSpectrumScaleConnector(instance, cluster)
+		if err != nil {
+			logger.Error(err, "error in creating a new connector")
+			return err
+		} else {
+			scaleConnMap[cluster.Id] = connector
+			if cluster.Primary != nil {
+				scaleConnMap[config.Primary] = connector
+			}
+		}
+	}
+	return nil
 }
