@@ -606,7 +606,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			srcVolumeIDMembers, err = getVolIDMembers(srcVolumeID)
 			if err != nil {
 				glog.Errorf("volume:[%v] - Invalid Volume ID %s [%v]", volName, srcVolumeID, err)
-				return nil, status.Error(codes.NotFound, fmt.Sprintf("volume source volume is not found: %v"), err)
+				return nil, status.Error(codes.NotFound, fmt.Sprintf("volume source volume is not found: %v", err))
 			}
 			isVolSource = true
 		} else {
@@ -617,7 +617,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 				snapIdMembers, err = cs.GetSnapIdMembers(snapId)
 				if err != nil {
 					glog.Errorf("volume:[%v] - Invalid snapshot ID %s [%v]", volName, snapId, err)
-					return nil, status.Error(codes.NotFound, fmt.Sprintf("volume source snapshot is not found: %v"), err)
+					return nil, status.Error(codes.NotFound, fmt.Sprintf("volume source snapshot is not found: %v", err))
 				}
 				isSnapSource = true
 			}
