@@ -282,24 +282,19 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	//TODO: validate CR params here
 
-	//TODO:
-	//1. call this only when clusters cm is modified.
-	//2. call this only in 1st reconciliation
-	//3. getSpectrumScaleConnectors should add/update an entry
-	// in scaleConnMap only when the corresponding GUI is up
+	cmExists, _, err := r.isClusterStanzaModified(req.Namespace, instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	if len(instance.Spec.Clusters) != 0 {
-		err = r.getSpectrumScaleConnectors(instance)
+		err = r.getSpectrumScaleConnectors(instance, cmExists)
 		if err != nil {
 			message := "error in getting SpectrumScaleConnectors"
 			logger.Error(err, message)
 			return ctrl.Result{}, err
 		}
 
-		//TODO: remove these test calls and also the functions,
-		// as these for testing the framework.
-		testClusterID()
-		testRESTcalls(instance.Spec.Clusters)
 	}
 
 	logger.Info("Create resources")
@@ -535,6 +530,62 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("CSI setup completed successfully.")
 	return ctrl.Result{}, nil
+}
+
+//isClusterStanzaModified checks if spectrum-scale-config configmap exists
+//and if it exists checks if the clusters stanza is modified by
+//comparing it with the configmap data.
+//It returns 1st value (cmExists) which indicates if clusters configmap exists,
+//2nd value (clustersStanzaModified) which idicates whether clusters stanza is
+//modified in case the configmap exists, and 3rd value as an error if any.
+func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, instance *csiscaleoperator.CSIScaleOperator) (bool, bool, error) {
+	logger := csiLog.WithName("isClusterStanzaModified")
+	cmExists := false
+	clustersStanzaModified := false
+	configMap := &corev1.ConfigMap{}
+	cerr := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      config.CSIConfigMap,
+		Namespace: namespace,
+	}, configMap)
+	if cerr != nil {
+		if !errors.IsNotFound(cerr) {
+			message := "Failed to get ConfigMap resource " + config.CSIConfigMap
+			logger.Error(cerr, message)
+
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return cmExists, clustersStanzaModified, cerr
+		} else {
+			//configmap not found - first pass
+			return cmExists, clustersStanzaModified, nil
+		}
+	} else {
+		cmExists = true
+		clustersBytes, err := json.Marshal(&instance.Spec.Clusters)
+		if err != nil {
+			logger.Error(err, "Failed to marshal clusters data of this instance")
+			return cmExists, clustersStanzaModified, err
+		}
+		clustersString := string(clustersBytes)
+		configMapDataBytes, err := json.Marshal(&configMap.Data)
+		if err != nil {
+			logger.Error(err, "Failed to marshal ConfigMap data"+config.CSIConfigMap)
+			return cmExists, clustersStanzaModified, err
+		}
+		configMapDataString := string(configMapDataBytes)
+		configMapDataString = strings.Replace(configMapDataString, " ", "", -1)
+		configMapDataString = strings.Replace(configMapDataString, "\\\"", "\"", -1)
+
+		if !strings.Contains(configMapDataString, clustersString) {
+			logger.Info("Clusters stanza in driver manifest is changed")
+			clustersStanzaModified = true
+		}
+	}
+	return cmExists, clustersStanzaModified, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -1634,12 +1685,11 @@ func testRESTcalls(clusters []csiv1.CSICluster) error {
 	return nil
 }
 
-//newSpectrumScaleConnector creates a new connector to make
-//REST calls for the passed cluster and returns the connector
-func (r *CSIScaleOperatorReconciler) newSpectrumScaleConnector(instance *csiscaleoperator.CSIScaleOperator,
+//getConnector creates and return a new connector to make REST calls for the passed cluster
+func (r *CSIScaleOperatorReconciler) getConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
 	logger := csiLog.WithName("newSpectrumScaleConnector")
-	logger.Info("creating new SpectrumScaleConnector")
+	logger.Info("creating new SpectrumScaleConnector for cluster with", "ID", cluster.Id)
 
 	var rest *connectors.SpectrumRestV2
 	var tr *http.Transport
@@ -1741,21 +1791,81 @@ func (r *CSIScaleOperatorReconciler) newSpectrumScaleConnector(instance *csiscal
 	return rest, nil
 }
 
-//getSpectrumScaleConnectors gets the connectors for all
-//the clusters in driver manifest and sets those in scaleConnMap.
-func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator) error {
+//getSpectrumScaleConnectors gets the connectors for all the clusters in driver
+//manifest and sets those in scaleConnMap also checks if GUI is reachable.
+func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator,
+	cmExists bool) error {
 	logger := csiLog.WithName("getSpectrumScaleConnectors")
-	logger.Info("getting all spectrum scale connectors")
+	logger.Info("getting spectrum scale connectors")
 
 	for _, cluster := range instance.Spec.Clusters {
-		connector, err := r.newSpectrumScaleConnector(instance, cluster)
-		if err != nil {
-			logger.Error(err, "error in creating a new connector")
-			return err
-		} else {
-			scaleConnMap[cluster.Id] = connector
+		if cmExists {
 			if cluster.Primary != nil {
-				scaleConnMap[config.Primary] = connector
+				if _, connectorExists := scaleConnMap[cluster.Id]; !connectorExists {
+					logger.Info("getting connector for primary cluster")
+					connector, err := r.getConnector(instance, cluster)
+					if err != nil {
+						return err
+					}
+					scaleConnMap[cluster.Id] = connector
+					scaleConnMap[config.Primary] = connector
+				}
+				//check if GUI is reachable
+				_, err := scaleConnMap[cluster.Id].GetClusterId()
+				if err != nil {
+					message := fmt.Sprintf("Error in connecting to GUI, error: %v", err)
+					logger.Error(err, message)
+					// TODO: Add event.
+					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+						Type:    string(config.StatusConditionSuccess),
+						Status:  metav1.ConditionFalse,
+						Reason:  string(csiv1.ResourceReadError),
+						Message: message,
+					})
+					return err
+				}
+			} else {
+				continue
+			}
+		} else {
+			logger.Info("getting connectors for all clusters")
+			_, connectorExists := scaleConnMap[cluster.Id]
+			if !connectorExists {
+				connector, err := r.getConnector(instance, cluster)
+				if err != nil {
+					return err
+				}
+				scaleConnMap[cluster.Id] = connector
+				if cluster.Primary != nil {
+					scaleConnMap[config.Primary] = connector
+				}
+			}
+			//check if GUI is reachable
+			id, err := scaleConnMap[cluster.Id].GetClusterId()
+			if err != nil {
+				message := fmt.Sprintf("Error in connecting to GUI, error: %v", err)
+				logger.Error(err, message)
+				// TODO: Add event.
+				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+					Type:    string(config.StatusConditionSuccess),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(csiv1.ResourceReadError),
+					Message: message,
+				})
+				return err
+			}
+			//check if cluster ID from manifest matches with the one obtained from GUI
+			if id != cluster.Id {
+				message := fmt.Sprintf("The cluster ID %v in driver manifest does not match with the cluster ID %v obtained from cluster", cluster.Id, id)
+				logger.Error(err, message)
+				// TODO: Add event.
+				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+					Type:    string(config.StatusConditionSuccess),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(csiv1.ResourceConfigError),
+					Message: message,
+				})
+				return fmt.Errorf(message)
 			}
 		}
 	}
