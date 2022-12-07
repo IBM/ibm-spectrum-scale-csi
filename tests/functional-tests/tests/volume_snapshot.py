@@ -525,7 +525,7 @@ def test_snapshot_dynamic_volume_cloning_1():
     snapshot_object.test_dynamic(value_sc, test_restore=True,
                                  value_pvc=value_pvc, value_clone_passed=value_clone_passed)
 
-'''
+
 def test_driver_volume_snapshot_Independent_1_to_Dependent_1():
     value_sc = {"volBackendFs": data["localFs"]}
     restore_sc = {
@@ -2034,4 +2034,4 @@ def test_driver_volume_snapshot_Version2_5_to_Version2_5():
     restore_sc = {
         "volBackendFs": data["localFs"], "version": "2", "gid": data["gid_number"], "uid": data["uid_number"], "permissions": "755"}
     snapshot_object.test_dynamic(value_sc, test_restore=True, restore_sc=restore_sc)
-'''
+
