@@ -53,8 +53,35 @@ const (
 	FILE_DEPENDENTFILESET_VOLUME   = "1"
 	FILE_INDEPENDENTFILESET_VOLUME = "2"
 
-//	BLOCK_FILESET_VOLUME = 3
+// BLOCK_FILESET_VOLUME = 3
 )
+
+type ScaleDriverInterface interface {
+	NewIdentityServer() *ScaleIdentityServer
+	NewControllerServer(connMap map[string]connectors.SpectrumScaleConnector, cmap settings.ScaleSettingsConfigMap, primary settings.Primary) *ScaleControllerServer
+	NewNodeServer() *ScaleNodeServer
+	AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) error
+	AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) error
+	AddNodeServiceCapabilities(nl []csi.NodeServiceCapability_RPC_Type) error
+	ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error
+	SetupScaleDriver(name, vendorVersion, nodeID string) error
+	PluginInitialize() (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error)
+	CreatePrimaryFileset(sc connectors.SpectrumScaleConnector, primaryFS string, fsmount string, filesetName string, inodeLimit string) (string, error)
+	CreateSymlinkPath(sc connectors.SpectrumScaleConnector, fs string, fsmount string, fsetlinkpath string) (string, string, error)
+	ValidateScaleConfigParameters(scaleConfig settings.ScaleSettingsConfigMap) (bool, error)
+	Run(endpoint string)
+	GetReqMap(name string) (int64, bool)
+	GetConnMap(conntype string) (connectors.SpectrumScaleConnector, bool)
+	GetPrimary() *settings.Primary
+	GetVolCopyJobStatusMap() sync.Map
+	GetSnapJobStatusMap() sync.Map
+	GetClusterMap() *sync.Map
+	Getcscap() []*csi.ControllerServiceCapability
+	SetReqMap(name string, value int64)
+	DeferDeleteReqMap(name string)
+	GetScaleDriver() *ScaleDriver
+	// SetupNewControllerServer() *ScaleDriver
+}
 
 type SnapCopyJobDetails struct {
 	jobStatus int
@@ -120,31 +147,67 @@ func GetScaleDriver() *ScaleDriver {
 	return &ScaleDriver{}
 }
 
-func NewIdentityServer(d *ScaleDriver) *ScaleIdentityServer {
+func (d *ScaleDriver) NewIdentityServer() *ScaleIdentityServer {
 	glog.V(3).Infof("gpfs NewIdentityServer")
 	return &ScaleIdentityServer{
 		Driver: d,
 	}
 }
 
-func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumScaleConnector, cmap settings.ScaleSettingsConfigMap, primary settings.Primary) *ScaleControllerServer {
+func (d *ScaleDriver) GetReqMap(name string) (int64, bool) {
+	cap, present := d.reqmap[name]
+	return cap, present
+}
+
+func (d *ScaleDriver) SetReqMap(name string, value int64) {
+	d.reqmap[name] = value
+}
+func (d *ScaleDriver) DeferDeleteReqMap(name string) {
+	defer delete(d.reqmap, name)
+}
+
+func (d *ScaleDriver) GetConnMap(conntype string) (connectors.SpectrumScaleConnector, bool) {
+	connection, present := d.connmap[conntype]
+	return connection, present
+}
+
+func (d *ScaleDriver) GetPrimary() *settings.Primary {
+	return &d.primary
+}
+
+func (d *ScaleDriver) GetVolCopyJobStatusMap() *sync.Map {
+	return &d.volcopyjobstatusmap
+}
+
+func (d *ScaleDriver) GetSnapJobStatusMap() *sync.Map {
+	return &d.snapjobstatusmap
+}
+
+func (d *ScaleDriver) GetClusterMap() *sync.Map {
+	return &d.clusterMap
+}
+
+func (d *ScaleDriver) Getcscap() []*csi.ControllerServiceCapability {
+	return d.cscap
+}
+
+func (d *ScaleDriver) NewControllerServer(connMap map[string]connectors.SpectrumScaleConnector, cmap settings.ScaleSettingsConfigMap, primary settings.Primary) *ScaleControllerServer {
 	glog.V(3).Infof("gpfs NewControllerServer")
 	d.connmap = connMap
 	d.cmap = cmap
 	d.primary = primary
 	d.reqmap = make(map[string]int64)
 	return &ScaleControllerServer{
-		Driver: d,
+		Driver: d.cs.Driver,
 	}
 }
 
-func NewNodeServer(d *ScaleDriver) *ScaleNodeServer {
+func (d *ScaleDriver) NewNodeServer() *ScaleNodeServer {
 	glog.V(3).Infof("gpfs NewNodeServer")
 	return &ScaleNodeServer{
 		Driver: d,
 	}
 }
-
 func (driver *ScaleDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) error {
 	glog.V(3).Infof("gpfs AddVolumeCapabilityAccessModes")
 	var vca []*csi.VolumeCapability_AccessMode
@@ -227,9 +290,9 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string) 
 	}
 	_ = driver.AddNodeServiceCapabilities(ns)
 
-	driver.ids = NewIdentityServer(driver)
-	driver.ns = NewNodeServer(driver)
-	driver.cs = NewControllerServer(driver, scmap, cmap, primary)
+	driver.ids = driver.NewIdentityServer()
+	driver.ns = driver.NewNodeServer()
+	driver.cs = driver.NewControllerServer(scmap, cmap, primary)
 	return nil
 }
 
