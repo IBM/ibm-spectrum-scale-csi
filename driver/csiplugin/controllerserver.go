@@ -2343,7 +2343,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 			NodeExpansionRequired: false,
 		}, nil
 	}
-
+	// return nil, nil
 	conn, err := cs.getConnFromClusterID(volumeIDMembers.ClusterId)
 	if err != nil {
 		return nil, err

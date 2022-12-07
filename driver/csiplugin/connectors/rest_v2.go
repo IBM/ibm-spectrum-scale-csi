@@ -35,7 +35,7 @@ import (
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
 
-type spectrumRestV2 struct {
+type SpectrumRestV2 struct {
 	httpClient    *http.Client
 	endpoint      []string
 	endPointIndex int
@@ -43,7 +43,7 @@ type spectrumRestV2 struct {
 	password      string
 }
 
-func (s *spectrumRestV2) isStatusOK(statusCode int) bool {
+func (s *SpectrumRestV2) isStatusOK(statusCode int) bool {
 	glog.V(4).Infof("rest_v2 isStatusOK. statusCode: %d", statusCode)
 
 	if (statusCode == http.StatusOK) ||
@@ -54,7 +54,7 @@ func (s *spectrumRestV2) isStatusOK(statusCode int) bool {
 	return false
 }
 
-func (s *spectrumRestV2) checkAsynchronousJob(statusCode int) bool {
+func (s *SpectrumRestV2) checkAsynchronousJob(statusCode int) bool {
 	glog.V(4).Infof("rest_v2 checkAsynchronousJob. statusCode: %d", statusCode)
 	if (statusCode == http.StatusAccepted) ||
 		(statusCode == http.StatusCreated) {
@@ -63,7 +63,7 @@ func (s *spectrumRestV2) checkAsynchronousJob(statusCode int) bool {
 	return false
 }
 
-func (s *spectrumRestV2) isRequestAccepted(response GenericResponse, url string) error {
+func (s *SpectrumRestV2) isRequestAccepted(response GenericResponse, url string) error {
 	glog.V(4).Infof("rest_v2 isRequestAccepted. url: %s, response: %v", url, response)
 
 	if !s.isStatusOK(response.Status.Code) {
@@ -76,7 +76,7 @@ func (s *spectrumRestV2) isRequestAccepted(response GenericResponse, url string)
 	return nil
 }
 
-func (s *spectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) error {
+func (s *SpectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) error {
 	glog.V(4).Infof("rest_v2 waitForJobCompletion. jobID: %d, statusCode: %d", jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
@@ -90,7 +90,7 @@ func (s *spectrumRestV2) WaitForJobCompletion(statusCode int, jobID uint64) erro
 	return nil
 }
 
-func (s *spectrumRestV2) WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error) {
+func (s *SpectrumRestV2) WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error) {
 	glog.V(4).Infof("rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
@@ -105,7 +105,7 @@ func (s *spectrumRestV2) WaitForJobCompletionWithResp(statusCode int, jobID uint
 	return GenericResponse{}, nil
 }
 
-func (s *spectrumRestV2) AsyncJobCompletion(jobURL string) (GenericResponse, error) {
+func (s *SpectrumRestV2) AsyncJobCompletion(jobURL string) (GenericResponse, error) {
 	glog.V(4).Infof("rest_v2 AsyncJobCompletion. jobURL: %s", jobURL)
 
 	jobQueryResponse := GenericResponse{}
@@ -141,13 +141,13 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 
 	guiUser := scaleConfig.MgmtUsername
 	guiPwd := scaleConfig.MgmtPassword
-	var rest *spectrumRestV2
+	var rest *SpectrumRestV2
 	var tr *http.Transport
 
 	if scaleConfig.SecureSslMode {
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(scaleConfig.CacertValue); !ok {
-			return &spectrumRestV2{}, fmt.Errorf("Parsing CA cert %v failed", scaleConfig.Cacert)
+			return &SpectrumRestV2{}, fmt.Errorf("Parsing CA cert %v failed", scaleConfig.Cacert)
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		glog.V(4).Infof("Created Spectrum Scale connector with SSL mode for guiHost(s)")
@@ -157,7 +157,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		glog.V(4).Infof("Created Spectrum Scale connector without SSL mode for guiHost(s)")
 	}
 
-	rest = &spectrumRestV2{
+	rest = &SpectrumRestV2{
 		httpClient: &http.Client{
 			Transport: tr,
 			Timeout:   time.Second * 60,
@@ -179,7 +179,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 	return rest, nil
 }
 
-func (s *spectrumRestV2) GetClusterId() (string, error) {
+func (s *SpectrumRestV2) GetClusterId() (string, error) {
 	glog.V(4).Infof("rest_v2 GetClusterId")
 
 	getClusterURL := "scalemgmt/v2/cluster"
@@ -195,7 +195,7 @@ func (s *spectrumRestV2) GetClusterId() (string, error) {
 }
 
 // GetClusterSummary function returns the information details of the cluster.
-func (s *spectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
+func (s *SpectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
 	glog.V(4).Infof("rest_v2 GetClusterSummary")
 
 	getClusterURL := "scalemgmt/v2/cluster"
@@ -209,7 +209,7 @@ func (s *spectrumRestV2) GetClusterSummary() (ClusterSummary, error) {
 	return getClusterResponse.Cluster.ClusterSummary, nil
 }
 
-func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
+func (s *SpectrumRestV2) GetTimeZoneOffset() (string, error) {
 	glog.V(4).Infof("rest_v2 GetTimeZoneOffset")
 
 	getConfigURL := "scalemgmt/v2/config"
@@ -224,7 +224,7 @@ func (s *spectrumRestV2) GetTimeZoneOffset() (string, error) {
 	return timezone, nil
 }
 
-func (s *spectrumRestV2) GetScaleVersion() (string, error) {
+func (s *SpectrumRestV2) GetScaleVersion() (string, error) {
 	glog.V(4).Infof("rest_v2 GetScaleVersion")
 
 	getVersionURL := "scalemgmt/v2/info"
@@ -243,7 +243,7 @@ func (s *spectrumRestV2) GetScaleVersion() (string, error) {
 	return getVersionResponse.Info.ServerVersion, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
+func (s *SpectrumRestV2) GetFilesystemMountDetails(filesystemName string) (MountInfo, error) {
 	glog.V(4).Infof("rest_v2 GetFilesystemMountDetails. filesystemName: %s", filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
@@ -262,7 +262,7 @@ func (s *spectrumRestV2) GetFilesystemMountDetails(filesystemName string) (Mount
 	}
 }
 
-func (s *spectrumRestV2) IsFilesystemMountedOnGUINode(filesystemName string) (bool, error) {
+func (s *SpectrumRestV2) IsFilesystemMountedOnGUINode(filesystemName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsFilesystemMountedOnGUINode. filesystemName: %s", filesystemName)
 
 	mountURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
@@ -287,7 +287,7 @@ func (s *spectrumRestV2) IsFilesystemMountedOnGUINode(filesystemName string) (bo
 	}
 }
 
-func (s *spectrumRestV2) ListFilesystems() ([]string, error) {
+func (s *SpectrumRestV2) ListFilesystems() ([]string, error) {
 	glog.V(4).Infof("rest_v2 ListFilesystems")
 
 	listFilesystemsURL := "scalemgmt/v2/filesystems"
@@ -306,7 +306,7 @@ func (s *spectrumRestV2) ListFilesystems() ([]string, error) {
 	return filesystems, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string, error) {
+func (s *SpectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFilesystemMountpoint. filesystemName: %s", filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
@@ -325,7 +325,7 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(filesystemName string) (string,
 	}
 }
 
-func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
+func (s *SpectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, snapshotName, srcPath, targetPath, nodeclass)
 
 	copySnapReq := CopySnapshotRequest{}
@@ -354,7 +354,7 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(filesystemName string, filesetName
 	return copySnapResp.Status.Code, copySnapResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
+func (s *SpectrumRestV2) CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyFilesetPath. filesystem: %s, fileset: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, filesetName, srcPath, targetPath, nodeclass)
 
 	copyVolReq := CopyVolumeRequest{}
@@ -383,7 +383,7 @@ func (s *spectrumRestV2) CopyFilesetPath(filesystemName string, filesetName stri
 	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
+func (s *SpectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
 	glog.V(4).Infof("rest_v2 CopyDirectoryPath. filesystem: %s, srcPath: %s, targetPath: %s, nodeclass: %s", filesystemName, srcPath, targetPath, nodeclass)
 
 	copyVolReq := CopyVolumeRequest{}
@@ -412,7 +412,7 @@ func (s *spectrumRestV2) CopyDirectoryPath(filesystemName string, srcPath string
 	return copyVolResp.Status.Code, copyVolResp.Jobs[0].JobID, nil
 }
 
-func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
+func (s *SpectrumRestV2) CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error {
 	glog.V(4).Infof("rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
 
 	snapshotreq := CreateSnapshotRequest{}
@@ -446,7 +446,7 @@ func (s *spectrumRestV2) CreateSnapshot(filesystemName string, filesetName strin
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error {
+func (s *SpectrumRestV2) DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error {
 	glog.V(4).Infof("rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", filesystemName, filesetName, snapshotName)
 
 	deleteSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
@@ -473,7 +473,7 @@ func (s *spectrumRestV2) DeleteSnapshot(filesystemName string, filesetName strin
 	return nil
 }
 
-func (s *spectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+func (s *SpectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
 	glog.V(4).Infof("rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	getLatestFilesetSnapshotsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/latest", filesystemName, filesetName)
@@ -487,7 +487,7 @@ func (s *spectrumRestV2) GetLatestFilesetSnapshots(filesystemName string, filese
 	return getLatestFilesetSnapshotsResponse.Snapshots, nil
 }
 
-func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
+func (s *SpectrumRestV2) UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
 	glog.V(4).Infof("rest_v2 UpdateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
 	filesetreq := CreateFilesetRequest{}
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
@@ -517,7 +517,7 @@ func (s *spectrumRestV2) UpdateFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
+func (s *SpectrumRestV2) CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error {
 	glog.V(4).Infof("rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", filesystemName, filesetName, opts)
 
 	filesetreq := CreateFilesetRequest{}
@@ -591,7 +591,7 @@ func (s *spectrumRestV2) CreateFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string) error {
+func (s *SpectrumRestV2) DeleteFileset(filesystemName string, filesetName string) error {
 	glog.V(4).Infof("rest_v2 DeleteFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -623,7 +623,7 @@ func (s *spectrumRestV2) DeleteFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) LinkFileset(filesystemName string, filesetName string, linkpath string) error {
+func (s *SpectrumRestV2) LinkFileset(filesystemName string, filesetName string, linkpath string) error {
 	glog.V(4).Infof("rest_v2 LinkFileset. filesystem: %s, fileset: %s, linkpath: %s", filesystemName, filesetName, linkpath)
 
 	linkReq := LinkFilesetRequest{}
@@ -651,7 +651,7 @@ func (s *spectrumRestV2) LinkFileset(filesystemName string, filesetName string, 
 	return nil
 }
 
-func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string) error {
+func (s *SpectrumRestV2) UnlinkFileset(filesystemName string, filesetName string) error {
 	glog.V(4).Infof("rest_v2 UnlinkFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	unlinkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
@@ -679,7 +679,7 @@ func (s *spectrumRestV2) UnlinkFileset(filesystemName string, filesetName string
 	return nil
 }
 
-func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) (Fileset_v2, error) {
+func (s *SpectrumRestV2) ListFileset(filesystemName string, filesetName string) (Fileset_v2, error) {
 	glog.V(4).Infof("rest_v2 ListFileset. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -699,7 +699,7 @@ func (s *spectrumRestV2) ListFileset(filesystemName string, filesetName string) 
 	return getFilesetResponse.Filesets[0], nil
 }
 
-func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
+func (s *SpectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
 	glog.V(4).Infof("rest_v2 ListAllFilesets. filesystem: %s", filesystemName)
 
 	getFilesetsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.inodeSpace=%d", filesystemName, inodeSpace)
@@ -714,7 +714,7 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(filesystemName string, inodeSpace
 	return getFilesetsResponse.Filesets, nil
 }
 
-func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
+func (s *SpectrumRestV2) IsFilesetLinked(filesystemName string, filesetName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	fileset, err := s.ListFileset(filesystemName, filesetName)
@@ -729,7 +729,7 @@ func (s *spectrumRestV2) IsFilesetLinked(filesystemName string, filesetName stri
 	return true, nil
 }
 
-func (s *spectrumRestV2) FilesetRefreshTask() error {
+func (s *SpectrumRestV2) FilesetRefreshTask() error {
 	glog.V(4).Infof("rest_v2 FilesetRefreshTask")
 
 	filesetRefreshURL := "scalemgmt/v2/refreshTask/enqueue?taskId=FILESETS&maxDelay=0"
@@ -744,7 +744,7 @@ func (s *spectrumRestV2) FilesetRefreshTask() error {
 	return nil
 }
 
-func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error {
+func (s *SpectrumRestV2) MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error {
 	glog.V(4).Infof("rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %s, gid: %s", filesystemName, relativePath, uid, gid)
 
 	dirreq := CreateMakeDirRequest{}
@@ -803,7 +803,7 @@ func (s *spectrumRestV2) MakeDirectory(filesystemName string, relativePath strin
 	return nil
 }
 
-func (s *spectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath string, uid string, gid string, permissions string) error {
+func (s *SpectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath string, uid string, gid string, permissions string) error {
 	glog.V(4).Infof("rest_v2 MakeDirectoryV2. filesystem: %s, path: %s, uid: %s, gid: %s, permissions: %s", filesystemName, relativePath, uid, gid, permissions)
 
 	dirreq := CreateMakeDirRequest{}
@@ -864,7 +864,7 @@ func (s *spectrumRestV2) MakeDirectoryV2(filesystemName string, relativePath str
 	return nil
 }
 
-func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string) error {
+func (s *SpectrumRestV2) SetFilesetQuota(filesystemName string, filesetName string, quota string) error {
 	glog.V(4).Infof("rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", filesystemName, filesetName, quota)
 
 	setQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
@@ -898,7 +898,7 @@ func (s *spectrumRestV2) SetFilesetQuota(filesystemName string, filesetName stri
 	return nil
 }
 
-func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
+func (s *SpectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	glog.V(4).Infof("rest_v2 CheckIfFSQuotaEnabled. filesystem: %s", filesystemName)
 
 	checkQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
@@ -912,7 +912,7 @@ func (s *spectrumRestV2) CheckIfFSQuotaEnabled(filesystemName string) error {
 	return nil
 }
 
-func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
+func (s *SpectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
 	glog.V(4).Infof("rest_v2 IsValidNodeclass. nodeclass: %s", nodeclass)
 
 	checkNodeclassURL := fmt.Sprintf("scalemgmt/v2/nodeclasses/%s", nodeclass)
@@ -929,7 +929,7 @@ func (s *spectrumRestV2) IsValidNodeclass(nodeclass string) (bool, error) {
 	return true, nil
 }
 
-func (s *spectrumRestV2) IsSnapshotSupported() (bool, error) {
+func (s *SpectrumRestV2) IsSnapshotSupported() (bool, error) {
 	glog.V(4).Infof("rest_v2 IsSnapshotSupported")
 
 	getVersionURL := "scalemgmt/v2/info"
@@ -948,7 +948,7 @@ func (s *spectrumRestV2) IsSnapshotSupported() (bool, error) {
 	return true, nil
 }
 
-func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
+func (s *SpectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error) {
 	glog.V(4).Infof("rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName)
@@ -968,7 +968,7 @@ func (s *spectrumRestV2) GetFilesetQuotaDetails(filesystemName string, filesetNa
 	return listQuotaResponse.Quotas[0], nil
 }
 
-func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName string) (string, error) {
+func (s *SpectrumRestV2) ListFilesetQuota(filesystemName string, filesetName string) (string, error) {
 	glog.V(4).Infof("rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listQuotaResponse, err := s.GetFilesetQuotaDetails(filesystemName, filesetName)
@@ -985,7 +985,7 @@ func (s *spectrumRestV2) ListFilesetQuota(filesystemName string, filesetName str
 	}
 }
 
-func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject interface{}, param interface{}) error {
+func (s *SpectrumRestV2) doHTTP(urlSuffix string, method string, responseObject interface{}, param interface{}) error {
 	glog.V(4).Infof("rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", urlSuffix, method, param)
 	endpoint := s.endpoint[s.endPointIndex]
 	glog.V(4).Infof("rest_v2 doHTTP: endpoint: %s", endpoint)
@@ -1041,7 +1041,7 @@ func (s *spectrumRestV2) doHTTP(urlSuffix string, method string, responseObject 
 	return nil
 }
 
-func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string) error { //nolint:dupl
+func (s *SpectrumRestV2) MountFilesystem(filesystemName string, nodeName string) error { //nolint:dupl
 	glog.V(4).Infof("rest_v2 MountFilesystem. filesystem: %s, node: %s", filesystemName, nodeName)
 
 	mountreq := MountFilesystemRequest{}
@@ -1070,7 +1070,7 @@ func (s *spectrumRestV2) MountFilesystem(filesystemName string, nodeName string)
 	return nil
 }
 
-func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName string) error { //nolint:dupl
+func (s *SpectrumRestV2) UnmountFilesystem(filesystemName string, nodeName string) error { //nolint:dupl
 	glog.V(4).Infof("rest_v2 UnmountFilesystem. filesystem: %s, node: %s", filesystemName, nodeName)
 
 	unmountreq := UnmountFilesystemRequest{}
@@ -1100,7 +1100,7 @@ func (s *spectrumRestV2) UnmountFilesystem(filesystemName string, nodeName strin
 	return nil
 }
 
-func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error) { //nolint:dupl
+func (s *SpectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error) { //nolint:dupl
 	glog.V(4).Infof("rest_v2 GetFilesystemName. UUID: %s", filesystemUUID)
 
 	getFilesystemNameURL := fmt.Sprintf("scalemgmt/v2/filesystems?filter=uuid=%s", filesystemUUID)
@@ -1119,7 +1119,7 @@ func (s *spectrumRestV2) GetFilesystemName(filesystemUUID string) (string, error
 	return getFilesystemNameURLResponse.FileSystems[0].Name, nil
 }
 
-func (s *spectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem_v2, error) { //nolint:dupl
+func (s *SpectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem_v2, error) { //nolint:dupl
 	glog.V(4).Infof("rest_v2 GetFilesystemDetails. Name: %s", filesystemName)
 
 	getFilesystemDetailsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
@@ -1139,7 +1139,7 @@ func (s *spectrumRestV2) GetFilesystemDetails(filesystemName string) (FileSystem
 	return getFilesystemDetailsURLResponse.FileSystems[0], nil
 }
 
-func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
+func (s *SpectrumRestV2) GetFsUid(filesystemName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFsUid. filesystem: %s", filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
@@ -1158,7 +1158,7 @@ func (s *spectrumRestV2) GetFsUid(filesystemName string) (string, error) {
 	}
 }
 
-func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) error {
+func (s *SpectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) error {
 	glog.V(4).Infof("rest_v2 DeleteSymLnk. filesystem: %s, link: %s", filesystemName, LnkName)
 
 	LnkName = strings.ReplaceAll(LnkName, "/", "%2F")
@@ -1187,7 +1187,7 @@ func (s *spectrumRestV2) DeleteSymLnk(filesystemName string, LnkName string) err
 	return nil
 }
 
-func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, safe bool) error {
+func (s *SpectrumRestV2) DeleteDirectory(filesystemName string, dirName string, safe bool) error {
 	glog.V(4).Infof("rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", filesystemName, dirName, safe)
 
 	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
@@ -1217,7 +1217,7 @@ func (s *spectrumRestV2) DeleteDirectory(filesystemName string, dirName string, 
 	return nil
 }
 
-func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (string, error) {
+func (s *SpectrumRestV2) StatDirectory(filesystemName string, dirName string) (string, error) {
 	glog.V(4).Infof("rest_v2 StatDirectory. filesystem: %s, dir: %s", filesystemName, dirName)
 
 	fmtDirName := strings.ReplaceAll(dirName, "/", "%2F")
@@ -1244,7 +1244,7 @@ func (s *spectrumRestV2) StatDirectory(filesystemName string, dirName string) (s
 	return statInfo, nil
 }
 
-func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {
+func (s *SpectrumRestV2) GetFileSetUid(filesystemName string, filesetName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFileSetUid. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	filesetResponse, err := s.GetFileSetResponseFromName(filesystemName, filesetName)
@@ -1255,7 +1255,7 @@ func (s *spectrumRestV2) GetFileSetUid(filesystemName string, filesetName string
 	return fmt.Sprintf("%d", filesetResponse.Config.Id), nil
 }
 
-func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error) {
+func (s *SpectrumRestV2) GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error) {
 	glog.V(4).Infof("rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -1274,7 +1274,7 @@ func (s *spectrumRestV2) GetFileSetResponseFromName(filesystemName string, files
 }
 
 // CheckIfFilesetExist Checking if fileset exist in filesystem
-func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error) {
+func (s *SpectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 CheckIfFilesetExist. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	checkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -1291,7 +1291,7 @@ func (s *spectrumRestV2) CheckIfFilesetExist(filesystemName string, filesetName 
 	return true, nil
 }
 
-func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
+func (s *SpectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
 
 	filesetResponse, err := s.GetFileSetResponseFromId(filesystemName, Id)
@@ -1301,7 +1301,7 @@ func (s *spectrumRestV2) GetFileSetNameFromId(filesystemName string, Id string) 
 	return filesetResponse.FilesetName, nil
 }
 
-func (s *spectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error) {
+func (s *SpectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error) {
 	glog.V(4).Infof("rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id)
@@ -1320,7 +1320,7 @@ func (s *spectrumRestV2) GetFileSetResponseFromId(filesystemName string, Id stri
 }
 
 //nolint:dupl
-func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error) {
+func (s *SpectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetSnapshotCreateTimestamp. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName)
@@ -1339,7 +1339,7 @@ func (s *spectrumRestV2) GetSnapshotCreateTimestamp(filesystemName string, files
 }
 
 //nolint:dupl
-func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error) {
+func (s *SpectrumRestV2) GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetSnapshotUid. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName)
@@ -1358,7 +1358,7 @@ func (s *spectrumRestV2) GetSnapshotUid(filesystemName string, filesetName strin
 }
 
 // CheckIfSnapshotExist Checking if snapshot exist in fileset
-func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error) {
+func (s *SpectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error) {
 	glog.V(4).Infof("rest_v2 CheckIfSnapshotExist. filesystem: %s, fileset: %s, snapshot: %s ", filesystemName, filesetName, snapshotName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
@@ -1375,8 +1375,8 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 	return true, nil
 }
 
-//ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
-func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
+// ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
+func (s *SpectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
 	glog.V(4).Infof("rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
 
 	listFilesetSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName)
@@ -1390,7 +1390,7 @@ func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName
 	return listFilesetSnapshotResponse.Snapshots, nil
 }
 
-func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
+func (s *SpectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error) {
 	glog.V(4).Infof("rest_v2 CheckIfFileDirPresent. filesystem: %s, path: %s", filesystemName, relPath)
 
 	RelPath := strings.ReplaceAll(relPath, "/", "%2F")
@@ -1407,7 +1407,7 @@ func (s *spectrumRestV2) CheckIfFileDirPresent(filesystemName string, relPath st
 	return true, nil
 }
 
-func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error {
+func (s *SpectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error {
 	glog.V(4).Infof("rest_v2 CreateSymLink. SlnkfilesystemName: %s, TargetFs: %s, relativePath: %s, LnkPath: %s", SlnkfilesystemName, TargetFs, relativePath, LnkPath)
 
 	symLnkReq := SymLnkRequest{}
@@ -1440,7 +1440,7 @@ func (s *spectrumRestV2) CreateSymLink(SlnkfilesystemName string, TargetFs strin
 	return err
 }
 
-func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component string) (bool, error) {
+func (s *SpectrumRestV2) IsNodeComponentHealthy(nodeName string, component string) (bool, error) {
 	glog.V(4).Infof("rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", nodeName, component)
 
 	getNodeHealthStatesURL := fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component)
@@ -1458,7 +1458,7 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(nodeName string, component strin
 	return true, nil
 }
 
-func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName string) error {
+func (s *SpectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName string) error {
 	glog.V(4).Infof("rest_v2 setFilesystemPolicy for filesystem %s", filesystemName)
 
 	setPolicyURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName)
@@ -1479,7 +1479,7 @@ func (s *spectrumRestV2) SetFilesystemPolicy(policy *Policy, filesystemName stri
 	return nil
 }
 
-func (s *spectrumRestV2) DoesTierExist(tierName string, filesystemName string) error {
+func (s *SpectrumRestV2) DoesTierExist(tierName string, filesystemName string) error {
 	glog.V(4).Infof("rest_v2 DoesTierExist. name %s, filesystem %s", tierName, filesystemName)
 
 	_, err := s.GetTierInfoFromName(tierName, filesystemName)
@@ -1493,7 +1493,7 @@ func (s *spectrumRestV2) DoesTierExist(tierName string, filesystemName string) e
 	return nil
 }
 
-func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error) {
+func (s *SpectrumRestV2) GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error) {
 	glog.V(4).Infof("rest_v2 GetTierInfoFromName. name %s, filesystem %s", tierName, filesystemName)
 
 	tierUrl := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName)
@@ -1512,7 +1512,7 @@ func (s *spectrumRestV2) GetTierInfoFromName(tierName string, filesystemName str
 	}
 }
 
-func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
+func (s *SpectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool {
 	glog.V(4).Infof("rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", partitionName, filesystemName)
 
 	partitionURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName)
@@ -1523,7 +1523,7 @@ func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(partitionName strin
 	return err == nil
 }
 
-func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error) {
+func (s *SpectrumRestV2) GetFirstDataTier(filesystemName string) (string, error) {
 	glog.V(4).Infof("rest_v2 GetFirstDataTier. filesystem %s", filesystemName)
 
 	tiersURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools", filesystemName)
@@ -1556,7 +1556,7 @@ func (s *spectrumRestV2) GetFirstDataTier(filesystemName string) (string, error)
 // getNextEndpoint returns the next endpoint to be used for
 // GUI REST calls. This function gets called when current
 // endpoint is not active.
-func (s *spectrumRestV2) getNextEndpoint() string {
+func (s *SpectrumRestV2) getNextEndpoint() string {
 	len := len(s.endpoint)
 	s.endPointIndex++
 	if s.endPointIndex >= len {
