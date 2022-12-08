@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -45,7 +44,7 @@ func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *c
 }
 
 func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	glog.V(4).Infof("Probe called with args: %#v", req)
+	logger.Debugf("Probe called with args: %#v", req)
 
 	// Determine plugin health
 	// If unhealthy return gRPC error code
@@ -53,27 +52,27 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 
 	// Node mapping check
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
-	glog.V(4).Infof("Probe: scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, is.Driver.nodeID)
+	logger.Debugf("Probe: scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
 	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "GPFS")
 	if ghealthy == false {
-		glog.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
+		logger.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
 		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 	}
 
 	// nhealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "NODE")
 	// if nhealthy == false {
-	// 	glog.Errorf("Probe: NODE component on node %v is not healthy. Error: %v", scalenodeID, err)
+	// 	logger.Errorf("Probe: NODE component on node %v is not healthy. Error: %v", scalenodeID, err)
 	// 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
 	// }
 
-	glog.V(4).Infof("Probe: GPFS on node %v is healthy", scalenodeID)
+	logger.Infof("Probe: GPFS on node %v is healthy", scalenodeID)
 
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 
 func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
-	glog.V(5).Infof("Using default GetPluginInfo")
+	logger.Infof("Using default GetPluginInfo")
 
 	if is.Driver.name == "" {
 		return nil, status.Error(codes.Unavailable, "Driver name not configured")

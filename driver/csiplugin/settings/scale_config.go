@@ -19,11 +19,10 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"io/ioutil"
 	"path"
 	"strings"
-
-	"github.com/golang/glog"
 )
 
 type ScaleSettingsConfigMap struct {
@@ -45,8 +44,11 @@ type Primary struct {
 	SymlinkRelativePath string
 }
 
-/* To support backwards compatibility if the PrimaryFs field is not defined then
-   use the previous version of the field. */
+/*
+To support backwards compatibility if the PrimaryFs field is not defined then
+
+	use the previous version of the field.
+*/
 func (primary Primary) GetPrimaryFs() string {
 	if primary.PrimaryFs == "" {
 		return primary.PrimaryFSDep
@@ -54,8 +56,11 @@ func (primary Primary) GetPrimaryFs() string {
 	return primary.PrimaryFs
 }
 
-/* To support backwards compatibility if the InodeLimit field is not defined then
-   use the previous version of the field. */
+/*
+To support backwards compatibility if the InodeLimit field is not defined then
+
+	use the previous version of the field.
+*/
 func (primary Primary) GetInodeLimit() string {
 	if primary.InodeLimits == "" {
 		return primary.InodeLimitDep
@@ -90,31 +95,33 @@ const (
 	CertificatePath string = "/var/lib/ibm/ssl/public"
 )
 
+var logger *utils.CsiLogger
+
 func LoadScaleConfigSettings() ScaleSettingsConfigMap {
-	glog.V(5).Infof("scale_config LoadScaleConfigSettings")
+	logger.DebugPlus("scale_config LoadScaleConfigSettings")
 
 	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		glog.Errorf("Spectrum Scale configuration not found: %v", e)
+		logger.Errorf("Spectrum Scale configuration not found: %v", e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}
 	e = json.Unmarshal(file, cmsj)
 	if e != nil {
-		glog.Errorf("Error in unmarshalling Spectrum Scale configuration json: %v", e)
+		logger.Errorf("Error in unmarshalling Spectrum Scale configuration json: %v", e)
 		return ScaleSettingsConfigMap{}
 	}
 
 	e = HandleSecretsAndCerts(cmsj)
 	if e != nil {
-		glog.Errorf("Error in secrets or certificates: %v", e)
+		logger.Errorf("Error in secrets or certificates: %v", e)
 		return ScaleSettingsConfigMap{}
 	}
 	return *cmsj
 }
 
 func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
-	glog.V(5).Infof("scale_config HandleSecrets")
+	logger.DebugPlus("scale_config HandleSecrets")
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
