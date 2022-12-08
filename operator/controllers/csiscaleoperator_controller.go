@@ -440,9 +440,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-/* 
-MonitorPodsAndTriggerEvent monitors resources specified by resourceSelector.And triggers events based on the status of the resources.
-This function is used by go cron jobs in the main goroutine to monitor resources at specific schedules.
+/*
+MonitorPodsAndTriggerEvent monitors resources specified by resourceSelector.And triggers events based on
+the status of the resources. This function is used by go cron jobs in the main goroutine to monitor
+resources at specific schedules.
 */
 func MonitorPodsAndTriggerEvent(r *CSIScaleOperatorReconciler, resourceSelector string, namespace string) {
 	logger := csiLog.WithName("MonitorPodsAndTriggerEvent")
@@ -1453,11 +1454,11 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 }
 
-/* 
+/*
 getGroupSpecificPods fetches specific group of pods such as driver, attacher, snapshotter, resizer and provisioner pods based on their labels.
 Labels app=ibm-spectrum-scale-csi, app=ibm-spectrum-scale-csi-attacher, app=ibm-spectrum-scale-csi-snapshotter,
 app=ibm-spectrum-scale-csi-resizer & app=ibm-spectrum-scale-csi-provisioner are for driver, attacher, snapshotter, resizer
-& provisioner pods respectively 
+& provisioner pods respectively
 */
 func (r *CSIScaleOperatorReconciler) getGroupSpecificPods(podgroup string, namespace string) ([]corev1.Pod, error) {
 	var (
@@ -1489,7 +1490,7 @@ func listDownPods(pods []corev1.Pod) []string {
 }
 
 func isPodUp(pod corev1.Pod) bool {
-	if pod.Status.ContainerStatuses[0].State.String() != "Running" {
+	if pod.Status.Phase != "Running" {
 		return false
 	}
 	return true
