@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -73,6 +74,8 @@ var csiLog = log.Log.WithName("csiscaleoperator_controller")
 type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
+
+var operatorInstance *csiscaleoperator.CSIScaleOperator
 
 // watchResources stores resource kind and resource names of the resources
 // that the controller is going to watch.
@@ -118,7 +121,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Fetch the CSIScaleOperator instance
 	logger.Info("Fetching CSIScaleOperator instance.")
 	instance := csiscaleoperator.New(&csiv1.CSIScaleOperator{})
-
+	operatorInstance = instance
 	instanceUnwrap := instance.Unwrap()
 	err := r.Client.Get(ctx, req.NamespacedName, instanceUnwrap)
 	if err != nil {
@@ -426,21 +429,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	driverPods, err := r.GetDriverPods(ctx, req.Namespace)
-	if err != nil || driverPods == nil || len(driverPods) <= 0 {
-		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured),
-			"Unable to fetch driver pods", metav1.ConditionFalse, string(config.StatusConditionSuccess))
-		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
-	}
-
-	downpods := listDownPods(driverPods)
-	if len(downpods) > 0 {
-		message := fmt.Sprintf("The driver pods %v are down.", downpods)
-		SetStatusConditionAndEvent(r.Recorder, instance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured),
-			message, metav1.ConditionFalse, string(config.StatusConditionSuccess))
-		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
-	}
-
 	logger.Info("Synchronization of node/driver interface is successful")
 
 	message := "The CSI driver resources have been created/updated successfully."
@@ -450,6 +438,35 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message, metav1.ConditionTrue, string(config.StatusConditionSuccess))
 	logger.Info("CSI setup completed successfully.")
 	return ctrl.Result{}, nil
+}
+
+/* 
+MonitorPodsAndTriggerEvent monitors resources specified by resourceSelector.And triggers events based on the status of the resources.
+This function is used by go cron jobs in the main goroutine to monitor resources at specific schedules.
+*/
+func MonitorPodsAndTriggerEvent(r *CSIScaleOperatorReconciler, resourceSelector string, namespace string) {
+	logger := csiLog.WithName("MonitorPodsAndTriggerEvent")
+	logger.Info(fmt.Sprintf("Monitoring the %v pods in the namespace.", resourceSelector), "namespace: ", namespace)
+
+	specificPds, err := r.getGroupSpecificPods(resourceSelector, namespace)
+	if err != nil {
+		msg := fmt.Sprintf("Unable to fetch %v pods.", resourceSelector)
+		r.Recorder.Event(operatorInstance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured), msg)
+		return
+	}
+	if len(specificPds) <= 0 {
+		msg := fmt.Sprintf("No %v pods found", resourceSelector)
+		r.Recorder.Event(operatorInstance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured), msg)
+		return
+	}
+	downPods := listDownPods(specificPds)
+	if len(downPods) > 0 {
+		msg := fmt.Sprintf("The %v %v pods are down.", resourceSelector, downPods)
+		r.Recorder.Event(operatorInstance, corev1.EventTypeWarning, string(csiv1.CSINotConfigured), msg)
+	} else {
+		msg := fmt.Sprintf("All the %v pods are up and running.", resourceSelector)
+		r.Recorder.Event(operatorInstance, corev1.EventTypeNormal, string(csiv1.CSIConfigured), msg)
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -1436,41 +1453,31 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 }
 
-func (r *CSIScaleOperatorReconciler) ListDownDriverPods(ctx context.Context, namespace string) ([]string, error) {
-	driverPods, err := r.GetDriverPods(ctx, namespace)
-	if err != nil || driverPods == nil || len(driverPods) == 0 {
-		return []string{}, fmt.Errorf("Unable to fetch driver pods.", "%v", err)
-	}
-
-	return listDownPods(driverPods), nil
-}
-
-func (r *CSIScaleOperatorReconciler) GetDriverPods(ctx context.Context, namespace string) ([]corev1.Pod, error) {
-	logger := csiLog.WithName("GetDriverPods")
-	logger.Info("Fetching all the driver pods")
-
-	var driverPods []corev1.Pod
+/* 
+getGroupSpecificPods fetches specific group of pods such as driver, attacher, snapshotter, resizer and provisioner pods based on their labels.
+Labels app=ibm-spectrum-scale-csi, app=ibm-spectrum-scale-csi-attacher, app=ibm-spectrum-scale-csi-snapshotter,
+app=ibm-spectrum-scale-csi-resizer & app=ibm-spectrum-scale-csi-provisioner are for driver, attacher, snapshotter, resizer
+& provisioner pods respectively 
+*/
+func (r *CSIScaleOperatorReconciler) getGroupSpecificPods(podgroup string, namespace string) ([]corev1.Pod, error) {
+	var (
+		pds []corev1.Pod
+		err error
+	)
 	pods := corev1.PodList{}
-	err := r.Client.List(ctx, &pods, &client.ListOptions{Namespace: namespace})
-	if err != nil {
-		logger.Error(err, "Unable to fetch driver pods")
-		return driverPods, err
-	}
 
-	for _, pod := range pods.Items {
-		ownerRefs := pod.GetOwnerReferences()
-		if len(ownerRefs) == 0 {
-			continue
+	if podgroup == config.Product || podgroup == config.AttacherLabel || podgroup == config.ProvisionerLabel ||
+		podgroup == config.SnapshotterLabel || podgroup == config.ResizerLabel {
+		opts := client.ListOptions{Namespace: namespace,
+			LabelSelector: labels.Set{config.LabelApp: podgroup}.AsSelector(),
 		}
-		//check if its a csi driver pod. All the driver pods are owned by daemonset "ibm-spectrum-scale-csi"
-		if ownerRefs[0].Kind == "DaemonSet" && ownerRefs[0].Name == "ibm-spectrum-scale-csi" {
-			driverPods = append(driverPods, pod)
-		}
+		err = r.Client.List(context.TODO(), &pods, &opts)
+		pds = pods.Items
 	}
-	return driverPods, err
+	return pds, err
 }
 
-//ListDownPods lists names of all the down pods
+//listDownPods lists names of all the down pods
 func listDownPods(pods []corev1.Pod) []string {
 	var downPods []string
 	for _, pod := range pods {
@@ -1482,7 +1489,7 @@ func listDownPods(pods []corev1.Pod) []string {
 }
 
 func isPodUp(pod corev1.Pod) bool {
-	if pod.Status.Phase != "Running" {
+	if pod.Status.ContainerStatuses[0].State.String() != "Running" {
 		return false
 	}
 	return true

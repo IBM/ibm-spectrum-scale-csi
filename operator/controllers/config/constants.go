@@ -53,6 +53,14 @@ const (
 	ResourceManagedBy = "ibm-spectrum-scale-csi-operator"
 )
 
+//CSI sidecar labels
+const (
+	AttacherLabel    = "ibm-spectrum-scale-csi-attacher"
+	ResizerLabel     = "ibm-spectrum-scale-csi-resizer"
+	ProvisionerLabel = "ibm-spectrum-scale-csi-provisioner"
+	SnapshotterLabel = "ibm-spectrum-scale-csi-snapshotter"
+)
+
 // Add a field here if it never changes, if it changes over time, put it to settings.go
 const (
 	APIGroup   = "csi.ibm.com"

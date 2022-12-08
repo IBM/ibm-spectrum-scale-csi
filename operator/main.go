@@ -38,6 +38,8 @@ import (
 
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
+	"github.com/robfig/cron/v3"
 
 	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -143,12 +145,13 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	if err = (&controllers.CSIScaleOperatorReconciler{
+	//eventRec := mgr.GetEventRecorderFor("CSIScaleOperator")
+	csiScaleOperatorReconciler := &controllers.CSIScaleOperatorReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("CSIScaleOperatorController"),
-	}).SetupWithManager(mgr); err != nil {
+		Recorder: mgr.GetEventRecorderFor("CSIScaleOperator"),
+	}
+	if err = csiScaleOperatorReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CSIScaleOperator")
 		os.Exit(1)
 	}
@@ -162,6 +165,24 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	cron := cron.New()
+	cron.AddFunc("@every 2m", func() {
+		controllers.MonitorPodsAndTriggerEvent(
+			csiScaleOperatorReconciler,
+			config.Product,
+			watchNamespace,
+		)
+	})
+
+	cron.AddFunc("@every 3m", func() {
+		controllers.MonitorPodsAndTriggerEvent(
+			csiScaleOperatorReconciler,
+			config.ProvisionerLabel,
+			watchNamespace,
+		)
+	})
+	cron.Start()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
