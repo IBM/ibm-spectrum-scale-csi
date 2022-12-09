@@ -44,6 +44,7 @@ func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *c
 }
 
 func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
+	loggerId := GetLoggerId(ctx)
 	logger.Debugf("Probe called with args: %#v", req)
 
 	// Determine plugin health
@@ -52,11 +53,11 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 
 	// Node mapping check
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
-	logger.Debugf("Probe: scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, is.Driver.nodeID)
+	logger.Debugf("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
-	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "GPFS")
+	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
 	if ghealthy == false {
-		logger.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
+		logger.Errorf("[%s] Probe: GPFS component on node %v is not healthy. Error: %v", loggerId, scalenodeID, err)
 		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 	}
 
@@ -66,13 +67,14 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	// 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
 	// }
 
-	logger.Infof("Probe: GPFS on node %v is healthy", scalenodeID)
+	logger.Infof("[%s] Probe: GPFS on node %v is healthy", loggerId, scalenodeID)
 
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 
 func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
-	logger.Infof("Using default GetPluginInfo")
+	loggerId := GetLoggerId(ctx)
+	logger.Infof("[%s] Using default GetPluginInfo", loggerId)
 
 	if is.Driver.name == "" {
 		return nil, status.Error(codes.Unavailable, "Driver name not configured")

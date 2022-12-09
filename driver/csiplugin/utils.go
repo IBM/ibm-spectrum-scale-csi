@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -47,13 +48,19 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 }
 
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	logger.Infof("GRPC call: %s", info.FullMethod)
-	logger.Debugf("GRPC request: %+v", req)
+	newCtx := utils.SetLoggerId(ctx)
+	loggerId := utils.GetLoggerId(newCtx)
+	logger.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+	logger.Debugf("[%s] GRPC request: %+v", loggerId, req)
+	startTime := utils.GetExecutionTime()
 	resp, err := handler(ctx, req)
 	if err != nil {
-		logger.Errorf("GRPC error: %v", err)
+		logger.Errorf("[%s] GRPC error: %v", loggerId, err)
 	} else {
-		logger.Infof("GRPC response: %+v", resp)
+		logger.Infof("[%s] GRPC response: %+v", loggerId, resp)
 	}
+	endTime := utils.GetExecutionTime()
+	diffTime := endTime - startTime
+	logger.Infof("[%s] Time taken to execute GRPC request(in milli): %d", loggerId, diffTime)
 	return resp, err
 }

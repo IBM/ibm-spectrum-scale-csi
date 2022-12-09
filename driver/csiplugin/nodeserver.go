@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/mount-utils"
 
@@ -59,9 +58,10 @@ func checkGpfsType(path string) (bool error) {
 }
 
 func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
-	logger.Infof("nodeserver NodePublishVolume")
+	loggerId := GetLoggerId(ctx)
+	logger.Infof("[%s] nodeserver NodePublishVolume", loggerId)
 
-	logger.Debugf("NodePublishVolume called with req: %#v", req)
+	logger.Debugf("[%s] NodePublishVolume called with req: %#v", loggerId, req)
 
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
@@ -84,7 +84,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 	volScalePath := volumeIDMembers.Path
 
-	logger.Debugf("Target SpectrumScale Path : %v\n", volScalePath)
+	logger.Debugf("[%s] Target SpectrumScale Path : %v\n", loggerId, volScalePath)
 
 	volScalePathInContainer := hostDir + volScalePath
 	f, err := os.Lstat(volScalePathInContainer)
@@ -98,7 +98,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		}
 		volScalePathInContainer = hostDir + symlinkTarget
 		volScalePath = symlinkTarget
-		logger.Infof("NodePublishVolume: symlink tarrget path is [%s]\n", volScalePathInContainer)
+		logger.Infof("[%s] NodePublishVolume: symlink tarrget path is [%s]\n", loggerId, volScalePathInContainer)
 	}
 
 	err = checkGpfsType(volScalePathInContainer)
@@ -122,7 +122,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	// create bind mount
 	options := []string{"bind"}
 	mounter := mount.New("")
-	logger.Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
+	logger.Infof("[%s] NodePublishVolume - creating bind mount [%v] -> [%v]", loggerId, targetPath, volScalePath)
 	if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
 		return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
 	}
@@ -136,7 +136,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		}
 		return nil, err
 	}
-	glog.V(4).Infof("successfully mounted %s", targetPath)
+	logger.Infof("[%s] successfully mounted %s", loggerId, targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -175,8 +175,9 @@ func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublis
 }
 
 func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
-	logger.Infof("nodeserver NodeUnpublishVolume")
-	logger.Debugf("NodeUnpublishVolume called with args: %v", req)
+	loggerId := GetLoggerId(ctx)
+	logger.Infof("[%s] nodeserver NodeUnpublishVolume", loggerId)
+	logger.Debugf("[%s] NodeUnpublishVolume called with args: %v", loggerId, req)
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
 	volID := req.GetVolumeId()
@@ -187,13 +188,13 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 		return nil, status.Error(codes.InvalidArgument, "target path must be provided")
 	}
 
-	logger.Infof("NodeUnpublishVolume - deleting the targetPath - [%v]", targetPath)
+	logger.Infof("[%s] NodeUnpublishVolume - deleting the targetPath - [%v]", loggerId, targetPath)
 
 	//Check if target is a symlink or bind mount and cleanup accordingly
 	f, err := os.Lstat(targetPath)
 	if err != nil {
 		if strings.Contains(err.Error(), errStaleNFSFileHandle) {
-			logger.Errorf("error [%v] is observed, trying forceful unmount of [%s]", err, targetPath)
+			logger.Errorf("[%s] Error [%v] is observed, trying forceful unmount of [%s]", loggerId, err, targetPath)
 			needReturn, response, error := unmountAndDelete(targetPath, true)
 			if needReturn {
 				return response, error
@@ -204,27 +205,28 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 		}
 	}
 	if f.Mode()&os.ModeSymlink != 0 {
-		logger.Infof("%v is a symlink", targetPath)
+		logger.Infof("[%s] %v is a symlink", loggerId, targetPath)
 		if err := os.Remove(targetPath); err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
 		}
 	} else {
-		logger.Infof("%v is a bind mount", targetPath)
+		logger.Infof("[%s] %v is a bind mount", loggerId, targetPath)
 		needReturn, response, error := unmountAndDelete(targetPath, false)
 		if needReturn {
 			return response, error
 		}
 	}
-	logger.Infof("successfully unpublished %s", targetPath)
+	logger.Infof("[%s] successfully unpublished %s", loggerId, targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
 func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (
 	*csi.NodeStageVolumeResponse, error) {
-	logger.Infof("nodeserver NodeStageVolume")
+	loggerId := GetLoggerId(ctx)
+	logger.Infof("[%s] nodeserver NodeStageVolume", loggerId)
 	ns.mux.Lock()
 	defer ns.mux.Unlock()
-	logger.Debugf("NodeStageVolume called with req: %#v", req)
+	logger.Debugf("[%s] NodeStageVolume called with req: %#v", loggerId, req)
 
 	// Validate Arguments
 	volumeID := req.GetVolumeId()
@@ -244,10 +246,11 @@ func (ns *ScaleNodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeSta
 
 func (ns *ScaleNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (
 	*csi.NodeUnstageVolumeResponse, error) {
-	logger.Infof("nodeserver NodeUnstageVolume")
+	loggerId := GetLoggerId(ctx)
+	logger.Infof("[%s] nodeserver NodeUnstageVolume", loggerId)
 	ns.mux.Lock()
 	defer ns.mux.Unlock()
-	logger.Debugf("NodeUnstageVolume called with req: %#v", req)
+	logger.Debugf("[%s] NodeUnstageVolume called with req: %#v", loggerId, req)
 
 	// Validate arguments
 	volumeID := req.GetVolumeId()
@@ -263,14 +266,16 @@ func (ns *ScaleNodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeU
 }
 
 func (ns *ScaleNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
-	logger.Debugf("NodeGetCapabilities called with req: %#v", req)
+	loggerId := GetLoggerId(ctx)
+	logger.Debugf("[%s] NodeGetCapabilities called with req: %#v", loggerId, req)
 	return &csi.NodeGetCapabilitiesResponse{
 		Capabilities: ns.Driver.nscap,
 	}, nil
 }
 
 func (ns *ScaleNodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
-	logger.Debugf("NodeGetInfo called with req: %#v", req)
+	loggerId := GetLoggerId(ctx)
+	logger.Debugf("[%s] NodeGetInfo called with req: %#v", loggerId, req)
 	return &csi.NodeGetInfoResponse{
 		NodeId: ns.Driver.nodeID,
 	}, nil
@@ -281,7 +286,8 @@ func (ns *ScaleNodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeEx
 }
 
 func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
-	logger.Debugf("NodeGetVolumeStats called with req: %#v", req)
+	loggerId := GetLoggerId(ctx)
+	logger.Debugf("[%s] NodeGetVolumeStats called with req: %#v", loggerId, req)
 
 	if len(req.VolumeId) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "NodeGetVolumeStats Volume ID must be provided")
@@ -312,15 +318,15 @@ func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.Node
 	}
 
 	if available > capacity || used > capacity {
-		logger.Infof("incorrect values reported for volume (%v) against Available(%v) or Capacity(%v)",
-			volumeIDMembers.FsetName, available, capacity)
+		logger.Infof("[%s] Incorrect values reported for volume (%v) against Available(%v) or Capacity(%v)",
+			loggerId, volumeIDMembers.FsetName, available, capacity)
 
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("incorrect values reported for volume (%v) against Available(%v) or Capacity(%v)",
 			volumeIDMembers.FsetName, available, capacity))
 	}
 
-	logger.Debugf("stat for volume:%v, Total:%v, Used:%v Available:%v, Total Inodes:%v, Used Inodes:%v, Available Inodes:%v,",
-		volumeIDMembers.FsetName, capacity, used, available, inodes, inodesUsed, inodesFree)
+	logger.Debugf("[%s] Stat for volume:%v, Total:%v, Used:%v Available:%v, Total Inodes:%v, Used Inodes:%v, Available Inodes:%v,",
+		loggerId, volumeIDMembers.FsetName, capacity, used, available, inodes, inodesUsed, inodesFree)
 
 	return &csi.NodeGetVolumeStatsResponse{
 		Usage: []*csi.VolumeUsage{

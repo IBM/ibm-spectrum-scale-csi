@@ -17,14 +17,18 @@
 package utils
 
 import (
+	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
-
-	"golang.org/x/sys/unix"
+	"time"
 )
+
+const loggerId = "logger_id"
 
 func ReadFile(path string) ([]byte, error) {
 	logger.DebugPlus("utils ReadFile. path: %s", path)
@@ -183,4 +187,20 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	inodesUsed := inodes - inodesFree
 
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
+}
+
+func SetLoggerId(ctx context.Context) context.Context {
+	id := uuid.New().String()
+	return context.WithValue(ctx, loggerId, id)
+}
+
+func GetLoggerId(ctx context.Context) string {
+	logger, _ := ctx.Value(loggerId).(string)
+	return logger
+}
+
+func GetExecutionTime() int64 {
+	t := time.Now()
+	timeinMilliSec := int64(time.Nanosecond) * t.UnixNano() / int64(time.Millisecond)
+	return timeinMilliSec
 }

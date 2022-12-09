@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -178,8 +179,9 @@ func (driver *ScaleDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapabi
 	return nil
 }
 
-func (driver *ScaleDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
-	logger.Infof("gpfs ValidateControllerServiceRequest")
+func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context, c csi.ControllerServiceCapability_RPC_Type) error {
+	loggerId := GetLoggerId(ctx)
+	logger.Infof("[%s] gpfs ValidateControllerServiceRequest", loggerId)
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}

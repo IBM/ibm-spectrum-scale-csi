@@ -18,6 +18,7 @@ package scale
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -132,7 +133,8 @@ func getRemoteFsName(remoteDeviceName string) string {
 	return remDevFs
 }
 
-func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
+func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
+	loggerId := GetLoggerId(ctx)
 	//var err error
 	scaleVol := &scaleVolume{}
 
@@ -387,23 +389,23 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
 		if strings.ToLower(compression) == "true" {
-			logger.DebugPlus("gpfs_util compression was set to true. Defaulting to Z")
+			logger.DebugPlus("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
 
 		if !IsValidCompressionAlgorithm(compression) {
-			logger.Debugf("gpfs_util invalid compression algorithm specified: %s",
-				compression)
+			logger.Debugf("[%s] gpfs_util invalid compression algorithm specified: %s",
+				loggerId, compression)
 			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
 				"invalid compression algorithm specified: %s", compression)
 		}
 		scaleVol.Compression = compression
-		logger.Debugf("gpfs_util compression was set to %s", compression)
+		logger.Debugf("[%s] gpfs_util compression was set to %s", loggerId, compression)
 	}
 
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
-		logger.DebugPlus("gpfs_util tier was set: %s", tier)
+		logger.DebugPlus("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
 	return scaleVol, nil

@@ -17,6 +17,7 @@
 package connectors
 
 import (
+	"context"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 )
@@ -34,7 +35,7 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
 	ListFilesystems() ([]string, error)
-	GetFilesystemDetails(filesystemName string) (FileSystem_v2, error)
+	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
@@ -46,52 +47,52 @@ type SpectrumScaleConnector interface {
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(filesystemName string, filesetName string) (Fileset_v2, error)
 	GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error)
-	IsFilesetLinked(filesystemName string, filesetName string) (bool, error)
+	IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	FilesetRefreshTask() error
 	//TODO modify quota from string to Capacity (see kubernetes)
-	ListFilesetQuota(filesystemName string, filesetName string) (string, error)
+	ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error)
 	GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error)
-	SetFilesetQuota(filesystemName string, filesetName string, quota string) error
+	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error
 	CheckIfFSQuotaEnabled(filesystem string) error
-	CheckIfFilesetExist(filesystemName string, filesetName string) (bool, error)
+	CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	//Directory operations
 	MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error
 	MakeDirectoryV2(filesystemName string, relativePath string, uid string, gid string, permissions string) error
 	MountFilesystem(filesystemName string, nodeName string) error
 	UnmountFilesystem(filesystemName string, nodeName string) error
-	GetFilesystemName(filesystemUUID string) (string, error)
+	GetFilesystemName(ctx context.Context, filesystemUUID string) (string, error)
 	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
 	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
 	GetFsUid(filesystemName string) (string, error)
-	DeleteDirectory(filesystemName string, dirName string, safe bool) error
+	DeleteDirectory(ctx context.Context, filesystemName string, dirName string, safe bool) error
 	StatDirectory(filesystemName string, dirName string) (string, error)
 	GetFileSetUid(filesystemName string, filesetName string) (string, error)
-	GetFileSetNameFromId(filesystemName string, Id string) (string, error)
-	DeleteSymLnk(filesystemName string, LnkName string) error
-	GetFileSetResponseFromId(filesystemName string, Id string) (Fileset_v2, error)
+	GetFileSetNameFromId(ctx context.Context, filesystemName string, Id string) (string, error)
+	DeleteSymLnk(ctx context.Context, filesystemName string, LnkName string) error
+	GetFileSetResponseFromId(ctx context.Context, filesystemName string, Id string) (Fileset_v2, error)
 	GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error)
-	SetFilesystemPolicy(policy *Policy, filesystemName string) error
-	DoesTierExist(tierName string, filesystemName string) error
+	SetFilesystemPolicy(ctx context.Context, policy *Policy, filesystemName string) error
+	DoesTierExist(ctx context.Context, tierName string, filesystemName string) error
 	GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error)
-	GetFirstDataTier(filesystemName string) (string, error)
+	GetFirstDataTier(ctx context.Context, filesystemName string) (string, error)
 	IsValidNodeclass(nodeclass string) (bool, error)
 	IsSnapshotSupported() (bool, error)
-	CheckIfDefaultPolicyPartitionExists(partitionName string, filesystemName string) bool
+	CheckIfDefaultPolicyPartitionExists(ctx context.Context, partitionName string, filesystemName string) bool
 
 	//Snapshot operations
 	WaitForJobCompletion(statusCode int, jobID uint64) error
 	WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error)
-	CreateSnapshot(filesystemName string, filesetName string, snapshotName string) error
-	DeleteSnapshot(filesystemName string, filesetName string, snapshotName string) error
+	CreateSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
+	DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
 	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
-	CheckIfSnapshotExist(filesystemName string, filesetName string, snapshotName string) (bool, error)
-	ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
+	CheckIfSnapshotExist(ctx context.Context, filesystemName string, filesetName string, snapshotName string) (bool, error)
+	ListFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
 	CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
 	CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
-	IsNodeComponentHealthy(nodeName string, component string) (bool, error)
+	IsNodeComponentHealthy(ctx context.Context, nodeName string, component string) (bool, error)
 }
 
 const (
