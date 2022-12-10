@@ -17,67 +17,28 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Scale", func() {
+var _ = Describe("CSI Scale Unit Testing", func() {
 	var (
 		mockCtrl       *gomock.Controller
 		mockConnectors *mock_connectors.MockSpectrumScaleConnector
 		mockScale      *mock_scale.MockScaleDriverInterface
-		// driver       *scale.ScaleDriver
-		fileset *connectors.Fileset_v2
+		fileset        *connectors.Fileset_v2
 	)
 
-	Context("CTest", func() {
+	Context("For Controller Expand Volume", func() {
 
 		BeforeEach(func() {
-			// driver := scale.GetScaleDriver()
-			// conn := make(map[string]settings.ScaleSettingsConfigMap)
-			// driver.PluginInitialize() = conn
+
 			mockCtrl = gomock.NewController(GinkgoT())
-			// mockObj = mock_main.NewMockStudentInt(mockCtrl)
 			mockScale = mock_scale.NewMockScaleDriverInterface(mockCtrl)
 			mockConnectors = mock_connectors.NewMockSpectrumScaleConnector(mockCtrl)
+
+			// Driver functionality mock
 			mockScale.EXPECT().GetScaleDriver().Return(&scale.ScaleDriver{}).AnyTimes()
 			mockScale.EXPECT().ValidateControllerServiceRequest(gomock.Any()).Return(nil).AnyTimes()
-			/* newscaleConfig := settings.ScaleSettingsConfigMap{
-				Clusters: []settings.Clusters{
-					{
-						ID: "18359298820404492091",
-						Primary: settings.Primary{
-							PrimaryFs: "fs1",
-						},
-						SecureSslMode: false,
-						Cacert:        "",
-						Secrets:       "guisecret",
-						RestAPI: []settings.RestAPI{
-							{GuiHost: "10.11.105.138"},
-						},
-
-						MgmtUsername: "csiadmin",
-						MgmtPassword: "adminuser",
-					}},
-			} */
-			/* connectionObj, _ := connectors.NewSpectrumRestV2(settings.Clusters{
-
-				ID: "18359298820404492091",
-				Primary: settings.Primary{
-					PrimaryFs: "fs1",
-				},
-				SecureSslMode: false,
-				Cacert:        "",
-				Secrets:       "guisecret",
-				RestAPI: []settings.RestAPI{
-					{GuiHost: "10.11.105.138"},
-				},
-
-				MgmtUsername: "csiadmin",
-				MgmtPassword: "adminuser",
-			}) */
-
 			mockScale.EXPECT().GetConnMap("18359298820404492091").Return(mockConnectors, true).AnyTimes()
-			mockConnectors.EXPECT().GetFilesystemName(gomock.Any()).Return("fs1", nil).AnyTimes()
-			mockConnectors.EXPECT().CheckIfFilesetExist("fs1", gomock.Any()).Return(true, nil).AnyTimes()
-			mockConnectors.EXPECT().ListFilesetQuota("fs1", gomock.Any()).Return("2097152K", nil).AnyTimes()
 
+			// Socket Connection functionality mock
 			fileset = &connectors.Fileset_v2{
 				AFM: connectors.AFM{AFMPrimaryID: "",
 					AFMMode:                      "",
@@ -102,84 +63,23 @@ var _ = Describe("Scale", func() {
 					Path: "/ibm/fs1/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7", InodeSpace: 2, MaxNumInodes: 100352, PermissionChangeMode: "chmodAndSetacl", Comment: "Fileset created by IBM Container Storage Interface driver", IamMode: "off", Oid: 4, Id: 2, Status: "Linked", ParentId: 0, Created: "2022-11-22 11:10:45,000", IsInodeSpaceOwner: true, InodeSpaceMask: 1536, SnapID: 0, RootInode: 1048579},
 				FilesetName: "pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7"}
 
-			mockConnectors.EXPECT().ListFileset("fs1", gomock.Any()).Return(*fileset, nil).AnyTimes()
-
 			opt := make(map[string]interface{})
 			opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
+
+			mockConnectors.EXPECT().GetFilesystemName(gomock.Any()).Return("fs1", nil).AnyTimes()
+			mockConnectors.EXPECT().CheckIfFilesetExist("fs1", gomock.Any()).Return(true, nil).AnyTimes()
+			mockConnectors.EXPECT().ListFilesetQuota("fs1", gomock.Any()).Return("2097152K", nil)
+			mockConnectors.EXPECT().ListFileset("fs1", gomock.Any()).Return(*fileset, nil).AnyTimes()
 			mockConnectors.EXPECT().UpdateFileset("fs1", gomock.Any(), opt).Return(nil).AnyTimes()
-			/* err := mockScale.SetupScaleDriver("name", "vendorVersion", "nodeID")
-			if err != nil {
-				fmt.Errorf("Failed to initialize Scale CSI Driver: %v", err)
-			} */
 
-			/* 	newscaleConfig := settings.ScaleSettingsConfigMap{
-				Clusters: []settings.Clusters{
-					{
-						ID: "18359298820404492091",
-						Primary: settings.Primary{
-							PrimaryFs: "fs1",
-						},
-						SecureSslMode: false,
-						Cacert:        "",
-						Secrets:       "guisecret",
-						RestAPI: []settings.RestAPI{
-							{GuiHost: "10.11.105.138"},
-						},
-
-						MgmtUsername: "csiadmin",
-						MgmtPassword: "adminuser",
-					}},
-			} */
-
-			// fmt.Printf("______newscaleConfig_______ %+v \n\n", newscaleConfig)
-			/*
-			   			______scmap_______ map[18359298820404492091:0xc0000ba640 primary:0xc0000ba640]
-			   ______cmap_______ {Clusters:[{ID:18359298820404492091 Primary:{PrimaryFSDep: PrimaryFs:fs1 PrimaryFset:spectrum-scale-csi-volume-store PrimaryCid:18359298820404492091 InodeLimitDep: InodeLimits: RemoteCluster: PrimaryFSMount:/ibm/fs1 PrimaryFsetLink: SymlinkAbsolutePath: SymlinkRelativePath:} SecureSslMode:false Cacert: Secrets:guisecret RestAPI:[{GuiHost:10.11.105.138 GuiPort:0}] MgmtUsername:csiadmin MgmtPassword:adminuser CacertValue:[]}]}
-			   ______primary_______ {PrimaryFSDep: PrimaryFs:fs1 PrimaryFset:spectrum-scale-csi-volume-store PrimaryCid:18359298820404492091 InodeLimitDep: InodeLimits: RemoteCluster: PrimaryFSMount:/ibm/fs1 PrimaryFsetLink:/ibm/fs1/spectrum-scale-csi-volume-store SymlinkAbsolutePath:/ibm/fs1/spectrum-scale-csi-volume-store/.volumes SymlinkRelativePath:spectrum-scale-csi-volume-store/.volumes} */
-			/* 	mockCtrl = gomock.NewController(GinkgoT())
-			mockSettings = mock_connectors.NewMockSpectrumScaleConnector(mockCtrl)
-			mockScale = mock_scale.NewMockScaleDriverInterface(mockCtrl)
-			// mockScale.EXPECT().GetScaleDriver().AnyTimes()
-			scmap := make(map[string]connectors.SpectrumScaleConnector)
-			for i := 0; i < len(newscaleConfig.Clusters); i++ {
-				cluster := newscaleConfig.Clusters[0]
-				sc, err := connectors.NewSpectrumRestV2(cluster)
-				fmt.Printf("err : %+v", err)
-				fmt.Printf("sc : %+v", sc)
-				scmap["18359298820404492091"] = sc
-				scmap["primary"] = sc
-			}
-
-			cmap := newscaleConfig
-			primarySettings := settings.Primary{
-				PrimaryFSDep:        "",
-				PrimaryFs:           "fs1",
-				PrimaryFset:         "spectrum-scale-csi-volume-store",
-				PrimaryCid:          "18359298820404492091",
-				InodeLimitDep:       "",
-				InodeLimits:         "",
-				RemoteCluster:       "",
-				PrimaryFSMount:      "/ibm/fs1",
-				PrimaryFsetLink:     "/ibm/fs1/spectrum-scale-csi-volume-store",
-				SymlinkAbsolutePath: "/ibm/fs1/spectrum-scale-csi-volume-store/.volumes",
-				SymlinkRelativePath: "spectrum-scale-csi-volume-store/.volumes",
-			}
-			mockScale.EXPECT().PluginInitialize().Return(scmap, cmap, primarySettings, nil).AnyTimes()
-			mockSettings.EXPECT().GetClusterId().Return("18359298820404492091", nil).AnyTimes()
-			// mockScale.EXPECT().PluginInitialize().Return().AnyTimes()
-			mockScale.EXPECT().ValidateControllerServiceRequest(gomock.Any()).AnyTimes()
-			mockScale.EXPECT().GetConnMap(gomock.Any()).Return(cmap, true).AnyTimes()
-			*/
 		})
 		AfterEach(func() {
 			defer mockCtrl.Finish()
 		})
-		It("should give nil", func() {
+		It("should successfully expand volume", func() {
 			out := mockScale.GetScaleDriver()
-			fmt.Printf("mockscale %+v", out)
-			// n1, n2 := mockSettings.GetClusterId()
-			// fmt.Printf("n1111111%+v\n", n1)
-			// fmt.Printf("n2222222222222%+v", n2)
+			fmt.Printf("mockscale driver %+v\n", out)
+
 			req := &csi.ControllerExpandVolumeRequest{
 				VolumeId: "0;2;18359298820404492091;17680B0A:6375380F;;pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7;/ibm/fs1/spectrum-scale-csi-volume-store/.volumes/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7",
 				CapacityRange: &csi.CapacityRange{
@@ -187,20 +87,110 @@ var _ = Describe("Scale", func() {
 					LimitBytes:    100000,
 				},
 			}
-			// local_cscap := csi.ControllerServiceCapability{
-			// 	Type:
-			// }
-			// driver := mockScale
-			// mockScale.SetupScaleDriver("name", "vendorVersion", "nodeID")
-			// mockScale.AddControllerServiceCapabilities([]csi.ControllerServiceCapability_RPC_Type{9})
+
 			scaleControllerServer := scale.ScaleControllerServer{
 				Driver: mockScale,
 			}
 
 			resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
-			fmt.Println("erroroooooo :====", erro)
-			fmt.Println("resp :====", resp)
+			fmt.Printf("erroroooooo :====%+v\n", erro)
+			fmt.Printf("resp :====%+v\n", resp)
 			Expect(erro).NotTo(HaveOccurred())
+			Expect(resp.CapacityBytes).Should(Equal(int64(80000)))
+		})
+		/* 	It("should fail expand volume request", func() {
+			out := mockScale.GetScaleDriver()
+			fmt.Printf("mockscale driver %+v\n", out)
+
+			req := &csi.ControllerExpandVolumeRequest{
+				VolumeId: "0;2;18359298820404492091;17680B0A:6375380F;;pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7;/ibm/fs1/spectrum-scale-csi-volume-store/.volumes/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7",
+				CapacityRange: &csi.CapacityRange{
+					RequiredBytes: 0,
+					LimitBytes:    1000,
+				},
+			}
+
+			scaleControllerServer := scale.ScaleControllerServer{
+				Driver: mockScale,
+			}
+
+			resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
+			fmt.Printf("erroroooooo :====%+v\n", erro)
+			fmt.Printf("resp :====%+v\n", resp)
+			Expect(erro).NotTo(HaveOccurred())
+			Expect(resp.CapacityBytes).Should(Equal(int64(0)))
+		}) */
+	})
+	Context("For Controller Expand Volume", func() {
+
+		BeforeEach(func() {
+
+			mockCtrl = gomock.NewController(GinkgoT())
+			mockScale = mock_scale.NewMockScaleDriverInterface(mockCtrl)
+			mockConnectors = mock_connectors.NewMockSpectrumScaleConnector(mockCtrl)
+
+			// Driver functionality mock
+			mockScale.EXPECT().GetScaleDriver().Return(&scale.ScaleDriver{}).AnyTimes()
+			mockScale.EXPECT().ValidateControllerServiceRequest(gomock.Any()).Return(nil).AnyTimes()
+			mockScale.EXPECT().GetConnMap("18359298820404492091").Return(mockConnectors, true).AnyTimes()
+
+			// Socket Connection functionality mock
+			fileset = &connectors.Fileset_v2{
+				AFM: connectors.AFM{},
+
+				Config: connectors.FilesetConfig_v2{
+					Path:                 "/ibm/fs1/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7",
+					InodeSpace:           2,
+					MaxNumInodes:         100352,
+					PermissionChangeMode: "chmodAndSetacl",
+					Comment:              "Fileset created by IBM Container Storage Interface driver",
+					IamMode:              "off",
+					Oid:                  4,
+					Id:                   2,
+					Status:               "Linked",
+					ParentId:             0,
+					Created:              "2022-11-22 11:10:45,000",
+					IsInodeSpaceOwner:    true,
+					InodeSpaceMask:       1536,
+					SnapID:               0,
+					RootInode:            1048579},
+				FilesetName: "pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7"}
+
+			opt := make(map[string]interface{})
+			opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
+
+			mockConnectors.EXPECT().GetFilesystemName(gomock.Any()).Return("fs1", nil).AnyTimes()
+			mockConnectors.EXPECT().CheckIfFilesetExist("fs1", gomock.Any()).Return(true, nil).AnyTimes()
+			mockConnectors.EXPECT().ListFilesetQuota("fs1", gomock.Any()).Return("2097152K", nil)
+			mockConnectors.EXPECT().ListFileset("fs1", gomock.Any()).Return(*fileset, nil).AnyTimes()
+			mockConnectors.EXPECT().UpdateFileset("fs1", gomock.Any(), opt).Return(nil).AnyTimes()
+
+		})
+		AfterEach(func() {
+			defer mockCtrl.Finish()
+		})
+
+		It("should fail expand volume request", func() {
+			out := mockScale.GetScaleDriver()
+			fmt.Printf("mockscale driver %+v\n", out)
+
+			req := &csi.ControllerExpandVolumeRequest{
+				VolumeId: "0;2;18359298820404492091;17680B0A:6375380F;;pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7;/ibm/fs1/spectrum-scale-csi-volume-store/.volumes/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7",
+				CapacityRange: &csi.CapacityRange{
+					RequiredBytes: 0,
+					LimitBytes:    1000,
+				},
+			}
+
+			scaleControllerServer := scale.ScaleControllerServer{
+				Driver: mockScale,
+			}
+
+			resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
+			fmt.Printf("erroroooooo :====%+v\n", erro)
+			fmt.Printf("resp :====%+v\n", resp)
+			Expect(erro).NotTo(HaveOccurred())
+			Expect(resp.CapacityBytes).Should(Equal(int64(0)))
 		})
 	})
 })
