@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"github.com/golang/glog"
 )
 
@@ -9,24 +11,54 @@ type CsiLogger struct{}
 
 var logger *CsiLogger
 
-func (log *CsiLogger) Infof(format string, args ...interface{}) {
-	glog.Infof(format, args)
+func (log *CsiLogger) Infof(ctx context.Context, format string, args ...interface{}) {
+	if ctx == nil {
+		glog.Infof(format, args)
+	} else {
+		loggerId := GetLoggerId(ctx)
+		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
+		glog.Infof(logFormat, args)
+	}
 }
 
-func (log *CsiLogger) Debugf(format string, args ...interface{}) {
-	glog.V(4).Infof(format, args)
+func (log *CsiLogger) Debugf(ctx context.Context, format string, args ...interface{}) {
+	if ctx == nil {
+		glog.Infof(format, args)
+	} else {
+		loggerId := GetLoggerId(ctx)
+		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
+		glog.V(4).Infof(logFormat, args)
+	}
 }
 
-func (log *CsiLogger) DebugPlus(format string, args ...interface{}) {
-	glog.V(6).Infof(format, args)
+func (log *CsiLogger) DebugPlus(ctx context.Context, format string, args ...interface{}) {
+	if ctx == nil {
+		glog.Infof(format, args)
+	} else {
+		loggerId := GetLoggerId(ctx)
+		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
+		glog.V(6).Infof(logFormat, args)
+	}
 }
 
-func (log *CsiLogger) Errorf(format string, args ...interface{}) {
-	glog.Errorf(format, args)
+func (log *CsiLogger) Errorf(ctx context.Context, format string, args ...interface{}) {
+	if ctx == nil {
+		glog.Infof(format, args)
+	} else {
+		loggerId := GetLoggerId(ctx)
+		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
+		glog.Errorf(logFormat, args)
+	}
 }
 
-func (log *CsiLogger) Fatalf(format string, args ...interface{}) {
-	glog.Fatalf(format, args)
+func (log *CsiLogger) Fatalf(ctx context.Context, format string, args ...interface{}) {
+	if ctx == nil {
+		glog.Infof(format, args)
+	} else {
+		loggerId := GetLoggerId(ctx)
+		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
+		glog.Fatalf(logFormat, args)
+	}
 }
 
 func (log *CsiLogger) Flush() {

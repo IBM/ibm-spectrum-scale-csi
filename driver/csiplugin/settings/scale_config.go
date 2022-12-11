@@ -17,6 +17,7 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -96,32 +97,33 @@ const (
 )
 
 var logger *utils.CsiLogger
+var eCtx context.Context = nil
 
 func LoadScaleConfigSettings() ScaleSettingsConfigMap {
-	logger.DebugPlus("scale_config LoadScaleConfigSettings")
+	logger.DebugPlus(eCtx, "scale_config LoadScaleConfigSettings")
 
 	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		logger.Errorf("Spectrum Scale configuration not found: %v", e)
+		logger.Errorf(eCtx, "Spectrum Scale configuration not found: %v", e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}
 	e = json.Unmarshal(file, cmsj)
 	if e != nil {
-		logger.Errorf("Error in unmarshalling Spectrum Scale configuration json: %v", e)
+		logger.Errorf(eCtx, "Error in unmarshalling Spectrum Scale configuration json: %v", e)
 		return ScaleSettingsConfigMap{}
 	}
 
 	e = HandleSecretsAndCerts(cmsj)
 	if e != nil {
-		logger.Errorf("Error in secrets or certificates: %v", e)
+		logger.Errorf(eCtx, "Error in secrets or certificates: %v", e)
 		return ScaleSettingsConfigMap{}
 	}
 	return *cmsj
 }
 
 func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
-	logger.DebugPlus("scale_config HandleSecrets")
+	logger.DebugPlus(eCtx, "scale_config HandleSecrets")
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")

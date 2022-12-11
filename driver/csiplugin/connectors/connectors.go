@@ -23,6 +23,7 @@ import (
 )
 
 var logger *utils.CsiLogger
+var eCtx context.Context = nil
 
 //go:generate counterfeiter -o ../../../fakes/fake_spectrum.go . SpectrumScaleConnector
 type SpectrumScaleConnector interface {
@@ -119,6 +120,6 @@ const (
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
-	logger.Infof("connector GetSpectrumScaleConnector")
+	logger.Infof(eCtx, "connector GetSpectrumScaleConnector")
 	return NewSpectrumRestV2(config)
 }

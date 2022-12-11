@@ -48,19 +48,19 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 }
 
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	ctx = context.Background()
 	newCtx := utils.SetLoggerId(ctx)
-	loggerId := utils.GetLoggerId(newCtx)
-	logger.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
-	logger.Debugf("[%s] GRPC request: %+v", loggerId, req)
+	logger.Infof(newCtx, "GRPC call: %s", info.FullMethod)
+	logger.Debugf(newCtx, "GRPC request: %+v", req)
 	startTime := utils.GetExecutionTime()
 	resp, err := handler(ctx, req)
 	if err != nil {
-		logger.Errorf("[%s] GRPC error: %v", loggerId, err)
+		logger.Errorf(newCtx, "GRPC error: %v", err)
 	} else {
-		logger.Infof("[%s] GRPC response: %+v", loggerId, resp)
+		logger.Infof(newCtx, "GRPC response: %+v", resp)
 	}
 	endTime := utils.GetExecutionTime()
 	diffTime := endTime - startTime
-	logger.Infof("[%s] Time taken to execute GRPC request(in milli): %d", loggerId, diffTime)
+	logger.Infof(newCtx, "Time taken to execute GRPC request(in milli): %d", diffTime)
 	return resp, err
 }

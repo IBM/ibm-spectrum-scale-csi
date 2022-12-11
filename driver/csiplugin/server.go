@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"context"
 	"net"
 	"net/url"
 	"os"
@@ -38,6 +39,8 @@ type NonBlockingGRPCServer interface {
 	// Stops the service forcefully
 	ForceStop()
 }
+
+var eCtx context.Context = nil
 
 func NewNonBlockingGRPCServer() NonBlockingGRPCServer {
 	return &nonBlockingGRPCServer{}
@@ -68,6 +71,7 @@ func (s *nonBlockingGRPCServer) ForceStop() {
 }
 
 func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer) {
+
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(logGRPC),
 	}
@@ -75,25 +79,25 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	u, err := url.Parse(endpoint)
 
 	if err != nil {
-		logger.Fatalf(err.Error())
+		logger.Fatalf(eCtx, err.Error())
 	}
 
 	var addr string
 	if u.Scheme == "unix" {
 		addr = u.Path
 		if err := os.Remove(addr); err != nil && !os.IsNotExist(err) {
-			logger.Fatalf("Failed to remove %s, error: %s", addr, err.Error())
+			logger.Fatalf(eCtx, "Failed to remove %s, error: %s", addr, err.Error())
 		}
 	} else if u.Scheme == "tcp" {
 		addr = u.Host
 	} else {
-		logger.Fatalf("%v endpoint scheme not supported", u.Scheme)
+		logger.Fatalf(eCtx, "%v endpoint scheme not supported", u.Scheme)
 	}
 
-	logger.Infof("Start listening with scheme %v, addr %v", u.Scheme, addr)
+	logger.Infof(eCtx, "Start listening with scheme %v, addr %v", u.Scheme, addr)
 	listener, err := net.Listen(u.Scheme, addr)
 	if err != nil {
-		logger.Fatalf("Failed to listen: %v", err)
+		logger.Fatalf(eCtx, "Failed to listen: %v", err)
 	}
 
 	server := grpc.NewServer(opts...)
@@ -109,9 +113,9 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 		csi.RegisterNodeServer(server, ns)
 	}
 
-	logger.Infof("Listening for connections on address: %#v", listener.Addr())
+	logger.Infof(eCtx, "Listening for connections on address: %#v", listener.Addr())
 
 	if err := server.Serve(listener); err != nil {
-		logger.Fatalf("Failed to serve: %v", err)
+		logger.Fatalf(eCtx, "Failed to serve: %v", err)
 	}
 }
