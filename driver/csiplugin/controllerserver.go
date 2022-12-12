@@ -1506,7 +1506,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		logger.Errorf(ctx, "Invalid delete volume req: %v", req)
 		return nil, status.Error(codes.InvalidArgument,
-			fmt.Sprintf("[%s] Invalid delete volume req (%v): %v", req, err))
+			fmt.Sprintf("Invalid delete volume req (%v): %v", req, err))
 	}
 	// For now the image get unconditionally deleted, but here retention policy can be checked
 	volumeID := req.GetVolumeId()

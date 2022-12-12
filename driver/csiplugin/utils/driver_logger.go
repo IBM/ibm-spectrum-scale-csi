@@ -13,7 +13,7 @@ var logger *CsiLogger
 
 func (log *CsiLogger) Infof(ctx context.Context, format string, args ...interface{}) {
 	if ctx == nil {
-		glog.Infof(format, args)
+		glog.Infof(format, args...)
 	} else {
 		loggerId := GetLoggerId(ctx)
 		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
@@ -23,7 +23,7 @@ func (log *CsiLogger) Infof(ctx context.Context, format string, args ...interfac
 
 func (log *CsiLogger) Debugf(ctx context.Context, format string, args ...interface{}) {
 	if ctx == nil {
-		glog.Infof(format, args)
+		glog.Infof(format, args...)
 	} else {
 		loggerId := GetLoggerId(ctx)
 		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
@@ -33,7 +33,7 @@ func (log *CsiLogger) Debugf(ctx context.Context, format string, args ...interfa
 
 func (log *CsiLogger) DebugPlus(ctx context.Context, format string, args ...interface{}) {
 	if ctx == nil {
-		glog.Infof(format, args)
+		glog.Infof(format, args...)
 	} else {
 		loggerId := GetLoggerId(ctx)
 		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
@@ -43,7 +43,7 @@ func (log *CsiLogger) DebugPlus(ctx context.Context, format string, args ...inte
 
 func (log *CsiLogger) Errorf(ctx context.Context, format string, args ...interface{}) {
 	if ctx == nil {
-		glog.Infof(format, args)
+		glog.Infof(format, args...)
 	} else {
 		loggerId := GetLoggerId(ctx)
 		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
@@ -53,7 +53,7 @@ func (log *CsiLogger) Errorf(ctx context.Context, format string, args ...interfa
 
 func (log *CsiLogger) Fatalf(ctx context.Context, format string, args ...interface{}) {
 	if ctx == nil {
-		glog.Infof(format, args)
+		glog.Infof(format, args...)
 	} else {
 		loggerId := GetLoggerId(ctx)
 		logFormat := fmt.Sprintf("[%s] %s", loggerId, format)
