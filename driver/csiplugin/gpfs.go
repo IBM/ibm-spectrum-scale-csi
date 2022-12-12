@@ -180,7 +180,7 @@ func (driver *ScaleDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapabi
 }
 
 func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context, c csi.ControllerServiceCapability_RPC_Type) error {
-	logger.Infof(ctx, "[%s] gpfs ValidateControllerServiceRequest")
+	logger.Infof(ctx, "gpfs ValidateControllerServiceRequest")
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}

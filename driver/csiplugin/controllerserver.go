@@ -361,10 +361,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		createDataDir = true
 		filesetPath, err = cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
 		if err != nil {
-			logger.Errorf(ctx, "[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
+			logger.Errorf(ctx, "volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
 		}
-		logger.Infof(ctx, "[%s] finished creation of dependent fileset for new storageClass with fileset name: [%v]", scVol.VolName)
+		logger.Infof(ctx, "finished creation of dependent fileset for new storageClass with fileset name: [%v]", scVol.VolName)
 		return filesetPath, nil
 	} else {
 		// Create volume for classic storageClass
@@ -1081,7 +1081,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		}
 	}
 	if err != nil || isResponseStatusUnknown {
-		logger.Errorf(ctx, "[%s] unable to copy volume: %v.", err)
+		logger.Errorf(ctx, "unable to copy volume: %v.", err)
 		if err != nil && strings.Contains(err.Error(), "EFSSG0632C") {
 			//TODO: When the GUI issue https://jazz07.rchland.ibm.com:21443/jazz/web/projects/GPFS#action=com.ibm.team.workitem.viewWorkItem&id=300263
 			// is fixed, check whether the err.Error() says mmxcp is already running for the same
