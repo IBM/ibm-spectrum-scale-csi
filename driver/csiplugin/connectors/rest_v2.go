@@ -1305,7 +1305,7 @@ func (s *spectrumRestV2) GetFileSetNameFromId(ctx context.Context, filesystemNam
 }
 
 func (s *spectrumRestV2) GetFileSetResponseFromId(ctx context.Context, filesystemName string, Id string) (Fileset_v2, error) {
-	logger.Debugf(ctx, "[%s] rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
+	logger.Debugf(ctx, "rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", filesystemName, Id)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1547,7 +1547,7 @@ func (s *spectrumRestV2) GetFirstDataTier(ctx context.Context, filesystemName st
 			return "", err
 		}
 		if tierInfo.TotalDataInKB > 0 {
-			logger.Infof(ctx, "[%s] GetFirstDataTier: Setting default tier to %s", tierInfo.StorageTierName)
+			logger.Infof(ctx, "GetFirstDataTier: Setting default tier to %s", tierInfo.StorageTierName)
 			return tierInfo.StorageTierName, nil
 		}
 	}
