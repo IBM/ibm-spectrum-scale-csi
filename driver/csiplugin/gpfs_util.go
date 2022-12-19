@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/golang/glog"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -136,6 +137,7 @@ func getRemoteFsName(remoteDeviceName string) string {
 func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
 	scaleVol := &scaleVolume{}
+	loggerId := utils.GetLoggerId(ctx)
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
@@ -388,30 +390,30 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
 		if strings.ToLower(compression) == "true" {
-			logger.DebugPlus(ctx, "gpfs_util compression was set to true. Defaulting to Z")
+			glog.V(6).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
 
 		if !IsValidCompressionAlgorithm(compression) {
-			logger.Debugf(ctx, "gpfs_util invalid compression algorithm specified: %s",
-				compression)
+			glog.V(4).Infof("[%s] gpfs_util invalid compression algorithm specified: %s",
+				loggerId, compression)
 			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
 				"invalid compression algorithm specified: %s", compression)
 		}
 		scaleVol.Compression = compression
-		logger.Debugf(ctx, "gpfs_util compression was set to %s", compression)
+		glog.V(4).Infof("[%s] gpfs_util compression was set to %s", loggerId, compression)
 	}
 
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
-		logger.DebugPlus(ctx, "gpfs_util tier was set: %s", tier)
+		glog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
 	return scaleVol, nil
 }
 
 func executeCmd(command string, args []string) ([]byte, error) {
-	logger.DebugPlus(eCtx, "gpfs_util executeCmd")
+	glog.V(6).Infof("gpfs_util executeCmd")
 
 	cmd := exec.Command(command, args...)
 	var stdout bytes.Buffer
@@ -493,7 +495,7 @@ func getNodeMapping(kubernetesNodeID string) (gpfsAdminName string) {
 		prefix := utils.GetEnv(SCALE_NODE_MAPPING_PREFIX, DefaultScaleNodeMapPrefix)
 		gpfsAdminName = utils.GetEnv(prefix+kubernetesNodeID, notFound)
 		if gpfsAdminName == notFound {
-			logger.Debugf(eCtx, "getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
+			glog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
 			gpfsAdminName = kubernetesNodeID
 		}
 	}
@@ -506,7 +508,7 @@ const (
 )
 
 func shortnameInSlice(shortname string, nodeNames []string) bool {
-	logger.DebugPlus(eCtx, "gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
+	glog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
 	for _, name := range nodeNames {
 		short := strings.SplitN(name, ".", 2)[0]
 		if strings.EqualFold(short, shortname) {

@@ -18,6 +18,8 @@ package scale
 
 import (
 	"context"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/golang/glog"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -44,7 +46,8 @@ func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *c
 }
 
 func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	logger.Debugf(ctx, "Probe called with args: %#v", req)
+	loggerId := utils.GetLoggerId(ctx)
+	glog.V(4).Infof("[%s] Probe called with args: %#v", loggerId, req)
 
 	// Determine plugin health
 	// If unhealthy return gRPC error code
@@ -52,11 +55,11 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 
 	// Node mapping check
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
-	logger.Debugf(ctx, "Probe: scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, is.Driver.nodeID)
+	glog.V(4).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
 	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
 	if ghealthy == false {
-		logger.Errorf(ctx, "Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
+		glog.Errorf("[%s] Probe: GPFS component on node %v is not healthy. Error: %v", loggerId, scalenodeID, err)
 		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 	}
 
@@ -66,13 +69,14 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	// 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
 	// }
 
-	logger.Infof(ctx, "Probe: GPFS on node %v is healthy", scalenodeID)
+	glog.Infof("[%s] Probe: GPFS on node %v is healthy", loggerId, scalenodeID)
 
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 
 func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
-	logger.Infof(ctx, "Using default GetPluginInfo")
+	loggerId := utils.GetLoggerId(ctx)
+	glog.Infof("[%s] Using default GetPluginInfo", loggerId)
 
 	if is.Driver.name == "" {
 		return nil, status.Error(codes.Unavailable, "Driver name not configured")

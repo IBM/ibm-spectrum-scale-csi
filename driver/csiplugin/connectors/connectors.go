@@ -19,10 +19,9 @@ package connectors
 import (
 	"context"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/golang/glog"
 )
 
-var logger *utils.CsiLogger
 var eCtx context.Context = nil
 
 //go:generate counterfeiter -o ../../../fakes/fake_spectrum.go . SpectrumScaleConnector
@@ -120,6 +119,6 @@ const (
 )
 
 func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
-	logger.Infof(eCtx, "connector GetSpectrumScaleConnector")
+	glog.Infof("connector GetSpectrumScaleConnector")
 	return NewSpectrumRestV2(config)
 }
