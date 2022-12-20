@@ -55,7 +55,7 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 	glog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
 	glog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
 	startTime := utils.GetExecutionTime()
-	resp, err := handler(ctx, req)
+	resp, err := handler(newCtx, req)
 	if err != nil {
 		glog.Errorf("[%s] GRPC error: %v", loggerId, err)
 	} else {
