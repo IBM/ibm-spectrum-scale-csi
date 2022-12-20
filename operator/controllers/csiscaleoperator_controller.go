@@ -472,11 +472,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	cmData := map[string]string{}
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
-	if err != nil {
-		message := fmt.Sprintf("Failed to get the details of the configmap %s from cluster.", config.CSIEnvVarConfigMap)
-		logger.Error(err, message)
+	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, nil
 	}
+
 	cmData = parseConfigMap(cm)
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
@@ -1595,8 +1594,8 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
 func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 
-	logger := csiLog.WithName("parseConfigMap").WithValues("Name", cm.Name)
-	logger.Info("Parsing the data from the optional configmap.", "configmap", cm.Name)
+	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
+	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
 
 	data := map[string]string{}
 	for key, value := range cm.Data {
