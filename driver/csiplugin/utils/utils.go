@@ -19,6 +19,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/google/uuid"
 	"golang.org/x/sys/unix"
 	"io/ioutil"
@@ -31,23 +32,23 @@ import (
 const loggerId = "logger_id"
 
 func ReadFile(path string) ([]byte, error) {
-	logger.DebugPlus(eCtx, "utils ReadFile. path: %s", path)
+	glog.V(6).Infof("utils ReadFile. path: %s", path)
 
 	file, err := os.Open(path) // #nosec G304 This is valid path gererated internally. it is False positive
 	if err != nil {
-		logger.Errorf(eCtx, "Error in opening file %s: %v", path, err)
+		glog.Errorf("Error in opening file %s: %v", path, err)
 		return nil, err
 	}
 
 	defer func() {
 		if err := file.Close(); err != nil {
-			logger.Errorf(eCtx, "Error in closing file %s: %v", path, err)
+			glog.Errorf("Error in closing file %s: %v", path, err)
 		}
 	}()
 
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		logger.Errorf(eCtx, "Error in read file %s: %v", path, err)
+		glog.Errorf("Error in read file %s: %v", path, err)
 		return nil, err
 	}
 
@@ -55,7 +56,7 @@ func ReadFile(path string) ([]byte, error) {
 }
 
 func GetPath(paths []string) string {
-	logger.DebugPlus(eCtx, "utils GetPath. paths: %v", paths)
+	glog.V(6).Infof("utils GetPath. paths: %v", paths)
 
 	workDirectory, _ := os.Getwd()
 
@@ -74,7 +75,7 @@ func GetPath(paths []string) string {
 }
 
 func Exists(path string) bool {
-	logger.DebugPlus(eCtx, "utils Exists. path: %s", path)
+	glog.V(6).Infof("utils Exists. path: %s", path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
@@ -82,12 +83,12 @@ func Exists(path string) bool {
 }
 
 func MkDir(path string) error {
-	logger.DebugPlus(eCtx, "utils MkDir. path: %s", path)
+	glog.V(6).Infof("utils MkDir. path: %s", path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
 		if err != nil {
-			logger.Errorf(eCtx, "Error in creating dir %s: %v", path, err)
+			glog.Errorf("Error in creating dir %s: %v", path, err)
 			return err
 		}
 	}
@@ -96,7 +97,7 @@ func MkDir(path string) error {
 }
 
 func StringInSlice(a string, list []string) bool {
-	logger.DebugPlus(eCtx, "utils StringInSlice. string: %s, slice: %v", a, list)
+	glog.V(6).Infof("utils StringInSlice. string: %s, slice: %v", a, list)
 	for _, b := range list {
 		if strings.EqualFold(b, a) {
 			return true
@@ -106,7 +107,7 @@ func StringInSlice(a string, list []string) bool {
 }
 
 func ConvertToBytes(inputStr string) (uint64, error) {
-	logger.DebugPlus(eCtx, "utils ConvertToBytes. string: %s", inputStr)
+	glog.V(6).Infof("utils ConvertToBytes. string: %s", inputStr)
 	var Iter int
 	var byteSlice []byte
 	var retValue uint64
@@ -164,7 +165,7 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 }
 
 func GetEnv(envName string, defaultValue string) string {
-	logger.DebugPlus(eCtx, "utils GetEnv. envName: %s", envName)
+	glog.V(6).Infof("utils GetEnv. envName: %s", envName)
 	envValue := os.Getenv(envName)
 	if envValue == "" {
 		envValue = defaultValue

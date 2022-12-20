@@ -19,6 +19,7 @@ package scale
 import (
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -50,17 +51,18 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	ctx = context.Background()
 	newCtx := utils.SetLoggerId(ctx)
-	logger.Infof(newCtx, "GRPC call: %s", info.FullMethod)
-	logger.Debugf(newCtx, "GRPC request: %+v", req)
+	loggerId := utils.GetLoggerId(newCtx)
+	glog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+	glog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
 	startTime := utils.GetExecutionTime()
 	resp, err := handler(ctx, req)
 	if err != nil {
-		logger.Errorf(newCtx, "GRPC error: %v", err)
+		glog.Errorf("[%s] GRPC error: %v", loggerId, err)
 	} else {
-		logger.Infof(newCtx, "GRPC response: %+v", resp)
+		glog.Infof("[%s] GRPC response: %+v", loggerId, resp)
 	}
 	endTime := utils.GetExecutionTime()
 	diffTime := endTime - startTime
-	logger.Infof(newCtx, "Time taken to execute GRPC request(in milli): %d", diffTime)
+	glog.Infof("[%s] Time taken to execute GRPC request(in milli): %d", loggerId, diffTime)
 	return resp, err
 }

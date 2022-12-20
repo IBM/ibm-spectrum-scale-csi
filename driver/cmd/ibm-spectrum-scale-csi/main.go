@@ -17,9 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"flag"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/golang/glog"
 	"math/rand"
 	"os"
 	"path"
@@ -41,13 +41,10 @@ var (
 	vendorVersion  = "2.8.0"
 )
 
-var logger *utils.CsiLogger
-var eCtx context.Context = nil
-
 func main() {
 	utils.InitLogger()
 
-	logger.Infof(eCtx, "Version Info: commit (%s)", gitCommit)
+	glog.Infof("Version Info: commit (%s)", gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -56,20 +53,20 @@ func main() {
 	OldPluginFolder := path.Join(*kubeletRootDir, "plugins/ibm-spectrum-scale-csi")
 
 	if err := createPersistentStorage(path.Join(PluginFolder, "controller")); err != nil {
-		logger.Errorf(eCtx, "failed to create persistent storage for controller %v", err)
+		glog.Errorf("failed to create persistent storage for controller %v", err)
 		os.Exit(1)
 	}
 	if err := createPersistentStorage(path.Join(PluginFolder, "node")); err != nil {
-		logger.Errorf(eCtx, "failed to create persistent storage for node %v", err)
+		glog.Errorf("failed to create persistent storage for node %v", err)
 		os.Exit(1)
 	}
 
 	if err := deleteStalePluginDir(OldPluginFolder); err != nil {
-		logger.Errorf(eCtx, "failed to delete stale plugin folder %v, please delete manually. %v", OldPluginFolder, err)
+		glog.Errorf("failed to delete stale plugin folder %v, please delete manually. %v", OldPluginFolder, err)
 	}
 
 	handle()
-	logger.Flush()
+	glog.Flush()
 	os.Exit(0)
 }
 
@@ -77,7 +74,7 @@ func handle() {
 	driver := driver.GetScaleDriver()
 	err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID)
 	if err != nil {
-		logger.Fatalf(eCtx, "Failed to initialize Scale CSI Driver: %v", err)
+		glog.Fatalf("Failed to initialize Scale CSI Driver: %v", err)
 	}
 	driver.Run(*endpoint)
 }

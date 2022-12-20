@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
 )
@@ -38,7 +39,7 @@ import (
 var eCtx context.Context = nil
 
 func UnmarshalResponse(r *http.Response, object interface{}) error {
-	logger.Debugf(eCtx, "http_utils UnmarshalResponse. response: %v", r.Body)
+	glog.V(4).Infof("http_utils UnmarshalResponse. response: %v", r.Body)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -54,8 +55,8 @@ func UnmarshalResponse(r *http.Response, object interface{}) error {
 }
 
 func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {
-	logger.Debugf(eCtx, "http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", requestType, requestURL, user)
-	logger.DebugPlus(eCtx, "http_utils HttpExecuteUserAuth. request payload: %v", rawPayload)
+	glog.V(4).Infof("http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", requestType, requestURL, user)
+	glog.V(6).Infof("http_utils HttpExecuteUserAuth. request payload: %v", rawPayload)
 
 	payload, err := json.MarshalIndent(rawPayload, "", " ")
 	if err != nil {
@@ -77,13 +78,13 @@ func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL
 	request.Header.Add("Accept", "application/json")
 
 	request.SetBasicAuth(user, password)
-	logger.DebugPlus(eCtx, "http_utils HttpExecuteUserAuth request: %+v", request)
+	glog.V(6).Infof("http_utils HttpExecuteUserAuth request: %+v", request)
 
 	return httpClient.Do(request)
 }
 
 func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
-	logger.Debugf(eCtx, "http_utils WriteResponse. code: %d, object: %v", code, object)
+	glog.V(4).Infof("http_utils WriteResponse. code: %d, object: %v", code, object)
 
 	data, err := json.Marshal(object)
 	if err != nil {
@@ -96,7 +97,7 @@ func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
 }
 
 func Unmarshal(r *http.Request, object interface{}) error {
-	logger.Debugf(eCtx, "http_utils Unmarshal. request: %v, object: %v", r, object)
+	glog.V(4).Infof("http_utils Unmarshal. request: %v, object: %v", r, object)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -112,7 +113,7 @@ func Unmarshal(r *http.Request, object interface{}) error {
 }
 
 func UnmarshalDataFromRequest(r *http.Request, object interface{}) error {
-	logger.Debugf(eCtx, "http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
+	glog.V(4).Infof("http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
