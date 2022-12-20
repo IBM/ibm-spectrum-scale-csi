@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -54,6 +55,7 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
+	v1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	config "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
 	clustersyncer "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/syncer"
@@ -302,6 +304,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	testClusterID()
 	testRESTcalls(instance.Spec.Clusters)
 
+	//If first pass or cluster stanza modified handle primary FS and fileset
+	if !cmExists || clustersStanzaModified {
+		err = r.handlePrimaryFSandFileset(instance)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	logger.Info("Create resources")
 	// create the resources which never change if not exist
 	for _, rec := range []reconciler{
@@ -322,27 +332,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if cmExists && clustersStanzaModified {
 		logger.Info("Some of the cluster fields of CSIScaleOperator instance are changed, so restarting node plugin pods")
-		daemonSet, derr := r.getNodeDaemonSet(instance)
-		if derr != nil {
-			if !errors.IsNotFound(derr) {
-				message := "Failed to get node plugin Daemonset"
-				logger.Error(derr, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceReadError),
-					Message: message,
-				})
-				return ctrl.Result{}, derr
-			}
-		} else {
-			err = r.rolloutRestartNode(daemonSet)
-			if err != nil {
-				logger.Error(err, "Failed to rollout restart of node plugin pods")
-			} else {
-				daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
-			}
+		err = r.handleDriverRestart(instance)
+		if err != nil {
+			return ctrl.Result{}, err
 		}
 	}
 
@@ -498,6 +490,51 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("CSI setup completed successfully.")
 	return ctrl.Result{}, nil
+}
+
+//handleDriverRestart gets a driver daemoset from the cluster and
+//restarts driver pods, returns error if there is any.
+func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("handleDriverRestart")
+	var err error
+	var daemonSet *appsv1.DaemonSet
+	daemonSet, err = r.getNodeDaemonSet(instance)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			message := "Failed to get the driver Daemonset"
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+		} else {
+			message := "The driver Daemonset is not found on cluster"
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+		}
+	} else {
+		err = r.rolloutRestartNode(daemonSet)
+		if err != nil {
+			message := "Failed to rollout restart of driver pods"
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceUpdateError),
+				Message: message,
+			})
+		} else {
+			daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
+		}
+	}
+	return err
 }
 
 //isClusterStanzaModified checks if spectrum-scale-config configmap exists
@@ -1653,8 +1690,8 @@ func testRESTcalls(clusters []csiv1.CSICluster) error {
 	return nil
 }
 
-//getConnector creates and return a new connector to make REST calls for the passed cluster
-func (r *CSIScaleOperatorReconciler) getConnector(instance *csiscaleoperator.CSIScaleOperator,
+//newConnector creates and return a new connector to make REST calls for the passed cluster
+func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
 	logger := csiLog.WithName("newSpectrumScaleConnector")
 	logger.Info("creating new SpectrumScaleConnector for cluster with", "ID", cluster.Id)
@@ -1760,7 +1797,8 @@ func (r *CSIScaleOperatorReconciler) getConnector(instance *csiscaleoperator.CSI
 }
 
 //getSpectrumScaleConnectors gets the connectors for all the clusters in driver
-//manifest and sets those in scaleConnMap also checks if GUI is reachable.
+//manifest and sets those in scaleConnMap also checks if GUI is reachable and
+//cluster ID is valid.
 func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) error {
 	logger := csiLog.WithName("getSpectrumScaleConnectors")
 	logger.Info("getting spectrum scale connectors")
@@ -1783,7 +1821,7 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 			logger.Info("getting connector for the cluster", "ID", cluster.Id)
 			_, connectorExists := scaleConnMap[cluster.Id]
 			if !connectorExists || clustersStanzaModified {
-				connector, err := r.getConnector(instance, cluster)
+				connector, err := r.newConnector(instance, cluster)
 				if err != nil {
 					return err
 				}
@@ -1795,7 +1833,7 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 			//check if GUI is reachable
 			id, err := scaleConnMap[cluster.Id].GetClusterId()
 			if err != nil {
-				message := fmt.Sprintf("Error in connecting to GUI, error: %v", err)
+				message := fmt.Sprintf("Error in connecting to GUI. Error: %v", err.Error())
 				logger.Error(err, message)
 				// TODO: Add event.
 				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
@@ -1838,7 +1876,7 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 			if isPrimaryCluster {
 				if _, connectorExists := scaleConnMap[cluster.Id]; !connectorExists {
 					logger.Info("getting connector for the primary cluster", "ID", cluster.Id)
-					connector, err := r.getConnector(instance, cluster)
+					connector, err := r.newConnector(instance, cluster)
 					if err != nil {
 						return err
 					}
@@ -1848,7 +1886,7 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 				//check if GUI is reachable
 				_, err := scaleConnMap[cluster.Id].GetClusterId()
 				if err != nil {
-					message := fmt.Sprintf("Error in connecting to GUI, error: %v", err)
+					message := fmt.Sprintf("Error in connecting to GUI. Error: %v", err.Error())
 					logger.Error(err, message)
 					// TODO: Add event.
 					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
@@ -1870,4 +1908,274 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 		}
 	}
 	return nil
+}
+
+//handlePrimaryFSandFileset checks if primary FS exists, also checkes if primary fileset exists.
+//If primary fileset does not exist, it is created and also if a driectory
+//to store symlinks is created if it does not exist.
+func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("handlePrimaryFSandFileset")
+	primary := r.getPrimaryCluster(instance)
+	if primary == nil {
+		message := "No primary is defined in driver manifest"
+		err := fmt.Errorf(message)
+		logger.Error(err, "")
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceConfigError),
+			Message: message,
+		})
+		return err
+	}
+
+	sc := scaleConnMap[config.Primary]
+
+	// check if primary filesystem exists
+	fsMountInfo, err := sc.GetFilesystemMountDetails(primary.PrimaryFs)
+	if err != nil {
+		message := fmt.Sprintf("Error in getting filesystem mount details for %s. Error %v", primary.PrimaryFs, err.Error())
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceConfigError),
+			Message: message,
+		})
+		return err
+
+	}
+
+	// In case primary fset value is not specified in configuation then use default
+	if primary.PrimaryFset == "" {
+		primary.PrimaryFset = config.DefaultPrimaryFileset
+		logger.Info("Primary fileset is not specified", "using default primary fileset %s", config.DefaultPrimaryFileset)
+	}
+
+	primaryFSMount := fsMountInfo.MountPoint
+
+	// Get FS name on owning cluster
+	// Examples of remoteDeviceName:
+	// 1. Local FS fs2 -
+	//		"remoteDeviceName" : "<scale local cluster name>:fs2"
+	// 2. Remote FS fs1 which can be mounted locally with a different name
+	//		"remoteDeviceName" : "<scale remote cluster name>:fs1"
+	remoteDeviceName := strings.Split(fsMountInfo.RemoteDeviceName, ":")
+	fsNameOnOwningCluster := remoteDeviceName[len(remoteDeviceName)-1]
+
+	// //check if multiple GUIs are passed
+	// if len(cluster.RestAPI) > 1 {
+	// 	err := driver.cs.checkGuiHASupport(sc)
+	// 	if err != nil {
+	// 		return nil, scaleConfig, cluster.Primary, err
+	// 	}
+	// }
+
+	if primary.RemoteCluster != "" {
+		//if remote cluster is present, use connector of remote cluster
+		sc = scaleConnMap[primary.RemoteCluster]
+		if fsNameOnOwningCluster == "" {
+			message := "Failed to get the name of remote filesystem"
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceReadError),
+				Message: message,
+			})
+			return fmt.Errorf(message)
+		}
+	}
+
+	//check if primary filesystem exists on remote cluster and mounted on atleast one node
+	fsMountInfo, err = sc.GetFilesystemMountDetails(fsNameOnOwningCluster)
+	if err != nil {
+		message := fmt.Sprintf("Error in getting filesystem details for %s. Error: %v", fsNameOnOwningCluster, err.Error())
+		logger.Error(err, message)
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+		return err
+	}
+
+	fsMountPoint := fsMountInfo.MountPoint
+
+	fsetLinkPath, err := createPrimaryFileset(sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit)
+	if err != nil {
+		message := fmt.Sprintf("Error in creating primary fileset %s. Error: %v", primary.PrimaryFset, err.Error())
+		logger.Error(err, message)
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceCreateError),
+			Message: message,
+		})
+		return err
+	}
+
+	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
+	if primary.RemoteCluster != "" {
+		_, err := scaleConnMap[config.Primary].ListFileset(primary.PrimaryFs, primary.PrimaryFset)
+		if err != nil {
+			logger.Info("Primary fileset is not visible on primary cluster. Running fileset refresh task", "fileset name", primary.PrimaryFset)
+			err = scaleConnMap[config.Primary].FilesetRefreshTask()
+			if err != nil {
+				message := fmt.Sprintf("Error in fileset refresh task. Error: %v", err.Error())
+				logger.Error(err, message)
+				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+					Type:    string(config.StatusConditionSuccess),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(csiv1.ResourceSyncError),
+					Message: message,
+				})
+				return err
+			}
+		}
+
+		// retry listing fileset again after some time after refresh
+		time.Sleep(8 * time.Second)
+		_, err = scaleConnMap[config.Primary].ListFileset(primary.PrimaryFs, primary.PrimaryFset)
+		if err != nil {
+			message := fmt.Sprintf("Primary fileset %s not visible on primary cluster even after running fileset refresh task. Error: %v", primary.PrimaryFset, err.Error())
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceSyncError),
+				Message: message,
+			})
+			return err
+		}
+	}
+
+	//A directory can be created from accessing cluster, so get the path on accessing cluster
+	if fsMountPoint != primaryFSMount {
+		fsetLinkPath = strings.Replace(fsetLinkPath, fsMountPoint, primaryFSMount, 1)
+	}
+
+	// Create directory where volume symlinks will reside
+	symlinkDirPath, symlinkDirRelativePath, err := createSymlinksDir(scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
+	if err != nil {
+		message := fmt.Sprintf("Error in creating volumes directory %s. Error: %v", config.SymlinkDir, err.Error())
+		logger.Error(err, message)
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceCreateError),
+			Message: message,
+		})
+		return err
+	}
+
+	logger.Info("symlink directory paths:", "symlinkDirPath", symlinkDirPath, "symlinkDirRelativePath", symlinkDirRelativePath)
+	//TODO: add symlinkDirPath and symlinkDirRelativePath in  driver pod env vars as required
+	logger.Info("Primary FS and fileset are processed successfully")
+	return nil
+}
+
+//getPrimaryCluster returns primary cluster of the passed instance.
+func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperator.CSIScaleOperator) *v1.CSIFilesystem {
+	var primary *v1.CSIFilesystem
+	for _, cluster := range instance.Spec.Clusters {
+		if cluster.Primary != nil {
+			primary = cluster.Primary
+		}
+	}
+	return primary
+}
+
+//createPrimaryFileset creates a primary fileset and returns it's the
+//path where it is linked. If primary fileset exists and is already linked,
+//the link path is returned. If primary fileset already exists and not linked,
+//it is linked and link path is returned.
+func createPrimaryFileset(sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
+	fsMountPoint string, filesetName string, inodeLimit string) (string, error) {
+
+	logger := csiLog.WithName("createPrimaryFileset")
+	logger.Info("Creating primary fileset", " primaryFS", fsNameOnOwningCluster,
+		"mount point", fsMountPoint, "filesetName", filesetName)
+
+	newLinkPath := path.Join(fsMountPoint, filesetName) //Link path to set if the fileset is not linked
+
+	// create primary fileset if not already created
+	fsetResponse, err := sc.ListFileset(fsNameOnOwningCluster, filesetName)
+	if err != nil {
+		logger.Info("Primary fileset not found, so creating it", "fileseName", filesetName)
+		opts := make(map[string]interface{})
+		if inodeLimit != "" {
+			opts[connectors.UserSpecifiedInodeLimit] = inodeLimit
+		}
+
+		err = sc.CreateFileset(fsNameOnOwningCluster, filesetName, opts)
+		if err != nil {
+			message := fmt.Sprintf("Unable to create primary fileset %s. Error: %v", filesetName, err.Error())
+			logger.Error(err, message)
+			meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+				Type:    string(config.StatusConditionSuccess),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(csiv1.ResourceCreateError),
+				Message: message,
+			})
+			return "", err
+		}
+	} else {
+		linkPath := fsetResponse.Config.Path
+		if linkPath == "" || linkPath == "--" {
+			logger.Info("Primary fileset not linked. Linking it", "filesetName", filesetName)
+			err = sc.LinkFileset(fsNameOnOwningCluster, filesetName, newLinkPath)
+			if err != nil {
+				message := fmt.Sprintf("Unable to link primary fileset %s. Error: %v", filesetName, err.Error())
+				logger.Error(err, message)
+				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+					Type:    string(config.StatusConditionSuccess),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(csiv1.ResourceUpdateError),
+					Message: message,
+				})
+				return "", err
+			} else {
+				logger.Info("Linked primary fileset", "filesetName", filesetName, "linkpath", newLinkPath)
+			}
+		} else {
+			logger.Info("Primary fileset exists and linked", "filesetName", filesetName, "linkpath", linkPath)
+		}
+	}
+	return newLinkPath, nil
+}
+
+//createSymlinksDir creates a .volumes directory on the fileset path fsetLinkPath,
+//and returns absolute, relative paths and error if there is any.
+func createSymlinksDir(sc connectors.SpectrumScaleConnector, fs string, fsMountPath string,
+	fsetLinkPath string) (string, string, error) {
+
+	logger := csiLog.WithName("createSymlinkPath")
+	logger.Info("Creating a directory for symlinks", "directory", config.SymlinkDir,
+		"filesystem", fs, "fsMountPath", fsMountPath, "filesetlinkpath", fsetLinkPath)
+
+	fsetRelativePath := strings.Replace(fsetLinkPath, fsMountPath, "", 1)
+	fsetRelativePath = strings.Trim(fsetRelativePath, "!/")
+	fsetLinkPath = strings.TrimSuffix(fsetLinkPath, "/")
+
+	symlinkDirPath := fmt.Sprintf("%s/%s", fsetLinkPath, config.SymlinkDir)
+	symlinkDirRelativePath := fmt.Sprintf("%s/%s", fsetRelativePath, config.SymlinkDir)
+
+	err := sc.MakeDirectory(fs, symlinkDirRelativePath, config.DefaultUID, config.DefaultGID)
+	if err != nil {
+		message := fmt.Sprintf("Directory creation failed. Filesystem: %s, relative path: %s. Error: %v", fs, symlinkDirRelativePath, err.Error())
+		logger.Error(err, message)
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceCreateError),
+			Message: message,
+		})
+		return symlinkDirPath, symlinkDirRelativePath, err
+	}
+
+	return symlinkDirPath, symlinkDirRelativePath, nil
 }
