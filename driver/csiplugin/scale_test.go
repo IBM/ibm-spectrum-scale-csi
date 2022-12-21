@@ -51,26 +51,7 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 			mockGetConnectors = mock_connectors.NewMockGetSpectrumScaleConnectorInt(mockCtrl)
 			// Socket Connection functionality mock
 			fileset = &connectors.Fileset_v2{
-				AFM: connectors.AFM{AFMPrimaryID: "",
-					AFMMode:                      "",
-					AFMTarget:                    "",
-					AFMAsyncDelay:                0,
-					AFMDirLookupRefreshInterval:  0,
-					AFMDirOpenRefreshInterval:    0,
-					AFMExpirationTimeout:         0,
-					AFMFileLookupRefreshInterval: 0,
-					AFMNumFlushThreads:           0,
-					AFMParallelReadChunkSize:     0,
-					AFMParallelReadThreshold:     0,
-					AFMParallelWriteChunkSize:    0,
-					AFMParallelWriteThreshold:    0,
-					AFMPrefetchThreshold:         0,
-					AFMRPO:                       0,
-					AFMEnableAutoEviction:        false,
-					AFMShowHomeSnapshots:         false,
-				},
-
-				Config: connectors.FilesetConfig_v2{FilesetName: "", FilesystemName: "",
+				AFM: connectors.AFM{AFMPrimaryID: "", AFMMode: "", AFMTarget: "", AFMAsyncDelay: 0, AFMDirLookupRefreshInterval: 0, AFMDirOpenRefreshInterval: 0, AFMExpirationTimeout: 0, AFMFileLookupRefreshInterval: 0, AFMNumFlushThreads: 0, AFMParallelReadChunkSize: 0, AFMParallelReadThreshold: 0, AFMParallelWriteChunkSize: 0, AFMParallelWriteThreshold: 0, AFMPrefetchThreshold: 0, AFMRPO: 0, AFMEnableAutoEviction: false, AFMShowHomeSnapshots: false}, Config: connectors.FilesetConfig_v2{FilesetName: "", FilesystemName: "",
 					Path: "/ibm/fs1/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7", InodeSpace: 2, MaxNumInodes: 100352, PermissionChangeMode: "chmodAndSetacl", Comment: "Fileset created by IBM Container Storage Interface driver", IamMode: "off", Oid: 4, Id: 2, Status: "Linked", ParentId: 0, Created: "2022-11-22 11:10:45,000", IsInodeSpaceOwner: true, InodeSpaceMask: 1536, SnapID: 0, RootInode: 1048579},
 				FilesetName: "pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7"}
 
@@ -118,11 +99,9 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 					LimitBytes:    100000,
 				},
 			}
-
 			scaleControllerServer := scale.ScaleControllerServer{
 				Driver: driver,
 			}
-
 			resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
 			fmt.Printf("erroroooooo :====%+v\n", erro)
 			fmt.Printf("resp :====%+v\n", resp)
@@ -139,26 +118,7 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 			mockGetConnectors = mock_connectors.NewMockGetSpectrumScaleConnectorInt(mockCtrl)
 			// Socket Connection functionality mock
 			fileset = &connectors.Fileset_v2{
-				AFM: connectors.AFM{AFMPrimaryID: "",
-					AFMMode:                      "",
-					AFMTarget:                    "",
-					AFMAsyncDelay:                0,
-					AFMDirLookupRefreshInterval:  0,
-					AFMDirOpenRefreshInterval:    0,
-					AFMExpirationTimeout:         0,
-					AFMFileLookupRefreshInterval: 0,
-					AFMNumFlushThreads:           0,
-					AFMParallelReadChunkSize:     0,
-					AFMParallelReadThreshold:     0,
-					AFMParallelWriteChunkSize:    0,
-					AFMParallelWriteThreshold:    0,
-					AFMPrefetchThreshold:         0,
-					AFMRPO:                       0,
-					AFMEnableAutoEviction:        false,
-					AFMShowHomeSnapshots:         false,
-				},
-
-				Config: connectors.FilesetConfig_v2{FilesetName: "", FilesystemName: "",
+				AFM: connectors.AFM{AFMPrimaryID: "", AFMMode: "", AFMTarget: "", AFMAsyncDelay: 0, AFMDirLookupRefreshInterval: 0, AFMDirOpenRefreshInterval: 0, AFMExpirationTimeout: 0, AFMFileLookupRefreshInterval: 0, AFMNumFlushThreads: 0, AFMParallelReadChunkSize: 0, AFMParallelReadThreshold: 0, AFMParallelWriteChunkSize: 0, AFMParallelWriteThreshold: 0, AFMPrefetchThreshold: 0, AFMRPO: 0, AFMEnableAutoEviction: false, AFMShowHomeSnapshots: false}, Config: connectors.FilesetConfig_v2{FilesetName: "", FilesystemName: "",
 					Path: "/ibm/fs1/pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7", InodeSpace: 2, MaxNumInodes: 100352, PermissionChangeMode: "chmodAndSetacl", Comment: "Fileset created by IBM Container Storage Interface driver", IamMode: "off", Oid: 4, Id: 2, Status: "Linked", ParentId: 0, Created: "2022-11-22 11:10:45,000", IsInodeSpaceOwner: true, InodeSpaceMask: 1536, SnapID: 0, RootInode: 1048579},
 				FilesetName: "pvc-80a0976b-e5a8-4a10-9f27-81aaec7436b7"}
 
@@ -206,11 +166,9 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 					LimitBytes:    100000,
 				},
 			}
-
 			scaleControllerServer := scale.ScaleControllerServer{
 				Driver: driver,
 			}
-
 			resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
 			fmt.Printf("erroroooooo :====%+v\n", erro)
 			fmt.Printf("resp :====%+v\n", resp)
