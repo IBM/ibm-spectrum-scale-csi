@@ -473,10 +473,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	cmData := map[string]string{}
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
-
-	cmData = parseConfigMap(cm)
+	if err == nil && len(cm.Data) != 0 {
+		cmData = parseConfigMap(cm)
+	}
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
