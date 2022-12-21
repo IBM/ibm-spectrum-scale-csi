@@ -176,6 +176,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		endpoint := fmt.Sprintf("%s://%s:%d/", settings.GuiProtocol, guiHost, guiPort)
 		rest.endpoint = append(rest.endpoint, endpoint)
 	}
+	fmt.Printf("@@@@@@@@@ NewSpectrumRestV2 @@@@@@@@@@ %+v \n", rest)
 	return rest, nil
 }
 
@@ -1375,7 +1376,7 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(filesystemName string, filesetName
 	return true, nil
 }
 
-//ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
+// ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
 func (s *spectrumRestV2) ListFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error) {
 	glog.V(4).Infof("rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", filesystemName, filesetName)
 

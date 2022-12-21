@@ -115,7 +115,12 @@ const (
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
 
-func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
+type GetSpectrumScaleConnectorInt interface {
+	GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error)
+}
+type GetSpec struct{}
+
+func (g *GetSpec) GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
 	glog.V(4).Infof("connector GetSpectrumScaleConnector")
 	return NewSpectrumRestV2(config)
 }

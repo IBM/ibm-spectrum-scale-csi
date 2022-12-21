@@ -26,6 +26,8 @@ import (
 	"github.com/golang/glog"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -72,7 +74,9 @@ func main() {
 
 func handle() {
 	driver := driver.GetScaleDriver()
-	err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID)
+	scaleConfig := settings.LoadScaleConfigSettings()
+	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
+	err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID, scaleConfig, scaleConnMap, &connectors.GetSpec{})
 	if err != nil {
 		glog.Fatalf("Failed to initialize Scale CSI Driver: %v", err)
 	}
