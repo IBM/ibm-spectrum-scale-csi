@@ -282,11 +282,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Pre-requisite check passed.")
 	}
 
-	//TODO: validate CR params here
-
 	cmExists, clustersStanzaModified, err := r.isClusterStanzaModified(req.Namespace, instance)
 	if err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if !cmExists || clustersStanzaModified {
+		err = ValidateCRParams(instance)
+		if err != nil {
+			logger.Error(fmt.Errorf("CR validation for driver configuration params failed"), "")
+			return ctrl.Result{}, err
+		}
+		logger.Info("Driver configuration params are validated successfully")
 	}
 
 	if len(instance.Spec.Clusters) != 0 {
@@ -2178,4 +2185,93 @@ func createSymlinksDir(sc connectors.SpectrumScaleConnector, fs string, fsMountP
 	}
 
 	return symlinkDirPath, symlinkDirRelativePath, nil
+}
+
+func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("ValidateCRParams")
+	logger.Info("Validating CR for driver config params")
+
+	if len(instance.Spec.Clusters) == 0 {
+		return fmt.Errorf("Missing cluster information in Spectrum Scale configuration")
+	}
+
+	primaryClusterFound, issueFound := false, false
+	rClusterForPrimaryFS := ""
+	var nonPrimaryClusters = make([]string, len(instance.Spec.Clusters))
+
+	for i := 0; i < len(instance.Spec.Clusters); i++ {
+		cluster := instance.Spec.Clusters[i]
+
+		if cluster.Id == "" {
+			issueFound = true
+			logger.Error(fmt.Errorf("Mandatory parameter 'id' is not specified"), "")
+		}
+		if len(cluster.RestApi) == 0 {
+			issueFound = true
+			logger.Error(fmt.Errorf("Mandatory section 'restApi' is not specified for cluster %v", cluster.Id), "")
+		}
+		if len(cluster.RestApi) != 0 && cluster.RestApi[0].GuiHost == "" {
+			issueFound = true
+			logger.Error(fmt.Errorf("Mandatory parameter 'guiHost' is not specified for cluster %v", cluster.Id), "")
+		}
+
+		if cluster.Primary != nil && *cluster.Primary != (v1.CSIFilesystem{}) {
+			if primaryClusterFound {
+				issueFound = true
+				logger.Error(fmt.Errorf("More than one primary clusters specified"), "")
+			}
+
+			primaryClusterFound = true
+			if cluster.Primary.PrimaryFs == "" {
+				issueFound = true
+				logger.Error(fmt.Errorf("Mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.Id), "")
+			}
+
+			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
+		} else {
+			//when its a not primary cluster
+			nonPrimaryClusters[i] = cluster.Id
+		}
+
+		if cluster.Secrets == "" {
+			issueFound = true
+			logger.Error(fmt.Errorf("Mandatory parameter 'secrets' is not specified for cluster %v", cluster.Id), "")
+		}
+
+		if cluster.SecureSslMode && cluster.Cacert == "" {
+			issueFound = true
+			logger.Error(fmt.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.Id), "")
+		}
+	}
+
+	if !primaryClusterFound {
+		issueFound = true
+		logger.Error(fmt.Errorf("No primary clusters specified"), "")
+	}
+
+	if rClusterForPrimaryFS != "" && StringInSlice(rClusterForPrimaryFS, nonPrimaryClusters) {
+		issueFound = true
+		logger.Error(fmt.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS), "")
+	}
+
+	if issueFound {
+		message := "one or more issues found in Spectrum scale csi driver configuration, check Spectrum Scale csi operator logs"
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceConfigError),
+			Message: message,
+		})
+		return fmt.Errorf(message)
+	}
+	return nil
+}
+
+func StringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if strings.EqualFold(b, a) {
+			return true
+		}
+	}
+	return false
 }
