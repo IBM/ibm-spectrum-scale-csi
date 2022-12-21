@@ -29,8 +29,19 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 		driverName        = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 		nodeID            = flag.String("nodeid", "", "node id")
 		vendorVersion     = "2.8.0"
+		scaleConfig       settings.ScaleSettingsConfigMap
 	)
-
+	scaleConfig = settings.ScaleSettingsConfigMap{
+		Clusters: []settings.Clusters{
+			{ID: "18359298820404492091",
+				Primary: settings.Primary{
+					PrimaryFSDep: "",
+					PrimaryFs:    "fs1", PrimaryFset: "", PrimaryCid: "", InodeLimitDep: "", InodeLimits: "", RemoteCluster: "", PrimaryFSMount: "", PrimaryFsetLink: "", SymlinkAbsolutePath: "", SymlinkRelativePath: "",
+				},
+				SecureSslMode: false, Cacert: "", Secrets: "guisecret",
+				RestAPI:      []settings.RestAPI{{GuiHost: "10.11.105.138", GuiPort: 0}},
+				MgmtUsername: "csiadmin", MgmtPassword: "adminuser"},
+		}}
 	Context("For Controller Expand Volume", func() {
 
 		BeforeEach(func() {
@@ -92,9 +103,9 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 		})
 		It("should successfully expand volume", func() {
 			driver = scale.GetScaleDriver()
-			scaleConfig := settings.LoadScaleConfigSettings()
+
 			scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
-			fmt.Printf("driver %+v\n", driver)
+			// fmt.Printf("driver %+v\n", driver)
 			// *driverName, vendorVersion, *nodeID, scaleConfig, scaleConnMap, &connectors.GetSpec{}
 			err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID, scaleConfig, scaleConnMap, mockGetConnectors)
 			if err != nil {
@@ -180,9 +191,9 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 		})
 		It("should fail in the expand volume request", func() {
 			driver = scale.GetScaleDriver()
-			scaleConfig := settings.LoadScaleConfigSettings()
+			// scaleConfig := settings.LoadScaleConfigSettings()
 			scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
-			fmt.Printf("driver %+v\n", driver)
+			// fmt.Printf("driver %+v\n", driver)
 			// *driverName, vendorVersion, *nodeID, scaleConfig, scaleConnMap, &connectors.GetSpec{}
 			err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID, scaleConfig, scaleConnMap, mockGetConnectors)
 			if err != nil {
