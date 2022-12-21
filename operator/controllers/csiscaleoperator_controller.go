@@ -2187,6 +2187,7 @@ func createSymlinksDir(sc connectors.SpectrumScaleConnector, fs string, fsMountP
 	return symlinkDirPath, symlinkDirRelativePath, nil
 }
 
+//ValidateCRParams validates driver configuration parameters in the operator instance, returns error if any validation fails
 func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("ValidateCRParams")
 	logger.Info("Validating CR for driver config params")
@@ -2249,7 +2250,7 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 		logger.Error(fmt.Errorf("No primary clusters specified"), "")
 	}
 
-	if rClusterForPrimaryFS != "" && StringInSlice(rClusterForPrimaryFS, nonPrimaryClusters) {
+	if rClusterForPrimaryFS != "" && stringInSlice(rClusterForPrimaryFS, nonPrimaryClusters) {
 		issueFound = true
 		logger.Error(fmt.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS), "")
 	}
@@ -2267,7 +2268,7 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	return nil
 }
 
-func StringInSlice(a string, list []string) bool {
+func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if strings.EqualFold(b, a) {
 			return true
