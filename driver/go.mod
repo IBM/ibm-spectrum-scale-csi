@@ -6,7 +6,7 @@ module github.com/amdabhad/ibm-spectrum-scale-csi/driver
 go 1.18
 
 require (
-	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20220927072613-aa2802d0f9d8
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20221213043514-4410051d974a
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.2
