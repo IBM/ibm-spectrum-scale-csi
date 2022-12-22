@@ -255,13 +255,14 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		if cluster.Primary != (settings.Primary{}) {
 
 			// Check if GUI is reachable - only for primary cluster
-			_, err := sc.GetClusterId()
+			clusterId, err := sc.GetClusterId()
 			if err != nil {
 				glog.Errorf("Error getting cluster ID: %v", err)
 				return nil, scaleConfig, primaryInfo, err
 			}
 
 			scaleConnMap["primary"] = sc
+			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
 			primaryInfo = scaleConfig.Clusters[i].Primary
 		}
 	}
@@ -281,7 +282,9 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 	symlinkDirRelPath := pathTokens[len-2] + "/" + pathTokens[len-1]
 	primaryInfo.SymlinkRelativePath = symlinkDirRelPath
 
-	glog.V(3).Infof("Symlink directory path", "absolute:", symlinkDirPath, "relative", symlinkDirRelPath)
+	glog.Infof("Symlink directory paths, absolute:%s, relative:%s",
+		symlinkDirPath, symlinkDirRelPath)
+
 	glog.Infof("IBM Spectrum Scale: Plugin initialized")
 	return scaleConnMap, scaleConfig, primaryInfo, nil
 }

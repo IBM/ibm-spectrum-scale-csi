@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20220927072613-aa2802d0f9d8
-	github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20221124065620-4cbd4c004c47
+	github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20221220131948-8fcbf09d69d0
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.12
 	github.com/onsi/ginkgo v1.16.5

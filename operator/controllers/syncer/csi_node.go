@@ -70,6 +70,8 @@ var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
 // UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
 var UUID string
 
+var symlinkDirPath string
+
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
 	obj    runtime.Object
@@ -77,7 +79,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, symlinkDir string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -93,6 +95,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
+	symlinkDirPath = symlinkDir
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -328,6 +331,10 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 			{
 				Name:  "SKIP_MOUNT_UNMOUNT",
 				Value: "yes",
+			},
+			{
+				Name:  config.ENVSymDirPath,
+				Value: symlinkDirPath,
 			},
 			envVarFromField("NODE_ID", "spec.nodeName"),
 			// envVarFromField("KUBE_NODE_NAME", "spec.nodeName"),

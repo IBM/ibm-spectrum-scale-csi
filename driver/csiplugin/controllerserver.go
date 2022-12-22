@@ -465,10 +465,12 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 	if !isCGIndependentFset {
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(scVol, volName)
-			if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
-				return "", status.Error(codes.AlreadyExists, err.Error())
-			} else {
-				return "", status.Error(codes.Internal, err.Error())
+			if err != nil {
+				if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
+					return "", status.Error(codes.AlreadyExists, err.Error())
+				} else {
+					return "", status.Error(codes.Internal, err.Error())
+				}
 			}
 		}
 
@@ -689,6 +691,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		glog.V(5).Infof("filesystem %s is remotely mounted, getting cluster ID information of the owning cluster.", volFsInfo.Name)
 		clusterName := strings.Split(volFsInfo.Mount.RemoteDeviceName, ":")[0]
 		if remoteClusterID, err = cs.getRemoteClusterID(clusterName); err != nil {
+			glog.Errorf("error in getting remote cluster ID for cluster [%s], error [%v]", clusterName, err)
 			return nil, err
 		}
 		glog.V(5).Infof("cluster ID for remote cluster %s is %s", clusterName, remoteClusterID)
@@ -2439,7 +2442,9 @@ func (cs *ScaleControllerServer) getRemoteClusterID(clusterName string) (string,
 			}
 		}
 	}
-
+	var err error
+	cName := ""
+	updated := false
 	if !found {
 		glog.V(5).Infof("cluster details are either expired or not found in cache map for cluster %s. Updating the cache map.", clusterName)
 		scaleconfig := settings.LoadScaleConfigSettings()
@@ -2460,7 +2465,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(clusterName string) (string,
 				} else {
 					glog.V(5).Infof("cluster details found from cache map for cluster %s are expired.", scaleconfig.Clusters[i].ID)
 					glog.V(5).Infof("updating cluster details in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
-					cName, updated := cs.updateClusterMap(cID)
+					cName, updated, err = cs.updateClusterMap(cID)
 					if !updated {
 						continue
 					}
@@ -2471,7 +2476,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(clusterName string) (string,
 			} else { // if !found
 				glog.V(5).Infof("cluster details not found in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
 				glog.V(5).Infof("adding cluster details in cache map for cluster %s.", scaleconfig.Clusters[i].ID)
-				cName, updated := cs.updateClusterMap(cID)
+				cName, updated, err = cs.updateClusterMap(cID)
 				if !updated {
 					continue
 				}
@@ -2482,7 +2487,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(clusterName string) (string,
 		}
 	}
 
-	return "", status.Error(codes.Internal, fmt.Sprintf("unable to get cluster ID for cluster %s", clusterName))
+	return "", status.Error(codes.Internal, fmt.Sprintf("unable to get cluster ID for cluster %s. Error %v", clusterName, err))
 }
 
 // checkExpiry returns false if cluster detials are valid.
@@ -2499,19 +2504,19 @@ func checkExpiry(clusterDetails interface{}) bool {
 
 // updateClusterMap updates the clusterMap with cluster details.
 // It returns true if cache map is updated else it returns false.
-func (cs *ScaleControllerServer) updateClusterMap(cID string) (string, bool) {
+func (cs *ScaleControllerServer) updateClusterMap(cID string) (string, bool, error) {
 	glog.V(5).Infof("creating new connector for the cluster %s", cID)
 	clusterConnector, err := cs.getConnFromClusterID(cID)
 	// clusterConnector, err := connectors.NewSpectrumRestV2(cluster)
 	if err != nil {
 		glog.V(5).Infof("unable to create new connector for the cluster %s", cID)
-		return "", false
+		return "", false, err
 	}
 
 	clusterSummary, err := clusterConnector.GetClusterSummary()
 	if err != nil {
 		glog.V(5).Infof("unable to get cluster summary for cluster %s", cID)
-		return "", false
+		return "", false, err
 	}
 
 	cName := clusterSummary.ClusterName
@@ -2519,5 +2524,5 @@ func (cs *ScaleControllerServer) updateClusterMap(cID string) (string, bool) {
 	cs.Driver.clusterMap.Store(ClusterName{cName}, ClusterDetails{cID, cName, time.Now(), 24})
 	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
 	glog.V(5).Infof("ClusterMap updated: [%s : %s]", cID, cName)
-	return cName, true
+	return cName, true, nil
 }

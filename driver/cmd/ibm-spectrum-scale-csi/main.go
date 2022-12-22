@@ -25,7 +25,8 @@ import (
 
 	"github.com/golang/glog"
 
-	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
+	//TODO: this is a temporary change, revert it back when the required code is merged in an IBM branch.
+	driver "github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"

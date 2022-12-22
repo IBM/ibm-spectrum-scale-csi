@@ -68,6 +68,7 @@ const (
 	ENVKubeVersion = "KUBE_VERSION"
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
+	ENVSymDirPath  = "SYMLINK_DIR_PATH"
 
 	DriverVersion   = "2.8.0"
 	OperatorVersion = "2.8.0"
