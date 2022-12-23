@@ -306,12 +306,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	//Test connectors and REST calls
-	//TODO: Remove the test calls and definitions once evrything
-	//is working fine.
-	testClusterID()
-	testRESTcalls(instance.Spec.Clusters)
-
 	//If first pass or cluster stanza modified handle primary FS and fileset
 	if !cmExists || clustersStanzaModified || symlinkDirPath == "" {
 		//If operator is restarted the global var symlinkDirPath becomes empty again,
@@ -1656,51 +1650,6 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	} else {
 		return true, nil
 	}
-}
-
-func testClusterID() error {
-	logger := csiLog.WithName("testClusterID")
-	logger.Info("TEST: Getting ClusterID of primary cluster")
-
-	clusterID, err := scaleConnMap[config.Primary].GetClusterId()
-	if err != nil {
-		logger.Error(err, "TEST: error in getting clusterID")
-	} else {
-		logger.Info("TEST: got clusterID successfully", "clusterID", clusterID)
-	}
-	return nil
-}
-
-func testRESTcalls(clusters []csiv1.CSICluster) error {
-	logger := csiLog.WithName("testRESTcalls")
-	for _, cluster := range clusters {
-		var err error
-		fsList, err := scaleConnMap[cluster.Id].ListFilesystems()
-		if err != nil {
-			logger.Error(err, "TEST: error in ListFilesystems")
-		}
-		logger.Info("TEST: ListFilesystems", "clusterID", cluster.Id, "fsList", fsList)
-
-		fsetExists, err := scaleConnMap[cluster.Id].CheckIfFilesetExist("fs1", "fset1")
-		if err != nil {
-			logger.Error(err, "TEST: error in CheckIfFilesetExist")
-		}
-		logger.Info("TEST: CheckIfFilesetExist", "clusterID", cluster.Id, "fsetExists", fsetExists)
-
-		fsetExists, err = scaleConnMap[cluster.Id].CheckIfFilesetExist("fs2", "fset1")
-		if err != nil {
-			logger.Error(err, "TEST: error in CheckIfFilesetExist")
-		}
-		logger.Info("TEST: CheckIfFilesetExist", "clusterID", cluster.Id, "fsetExists", fsetExists)
-	}
-
-	filesetList, err := scaleConnMap[config.Primary].ListFileset("fs1", "fset1")
-	if err != nil {
-		logger.Error(err, "TEST: error in fileset info")
-	} else {
-		logger.Info("TEST: got fileset fset1", "fset1", filesetList)
-	}
-	return nil
 }
 
 //newConnector creates and return a new connector to make REST calls for the passed cluster
