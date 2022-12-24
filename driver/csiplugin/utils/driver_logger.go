@@ -40,8 +40,14 @@ func (level LoggerLevel) String() string {
 
 func InitLogger() {
 	level := os.Getenv(logLevel)
+	var logValue string
+	if level == "" || level == DEBUG.String() || level == DEBUGPLUS.String(){
+		logValue = INFO.String()
+	}else{
+		logValue = level
+	}
 	_ = flag.Set("alsologtostderr", "false")
-	_ = flag.Set("stderrthreshold", level)
+	_ = flag.Set("stderrthreshold", logValue)
 	if level == DEBUG.String() {
 		_ = flag.Set("v", "4")
 	} else if level == DEBUGPLUS.String() {
