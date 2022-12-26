@@ -465,10 +465,12 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 	if !isCGIndependentFset {
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(scVol, volName)
-			if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
-				return "", status.Error(codes.AlreadyExists, err.Error())
-			} else {
-				return "", status.Error(codes.Internal, err.Error())
+			if err != nil {
+				if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
+					return "", status.Error(codes.AlreadyExists, err.Error())
+				} else {
+					return "", status.Error(codes.Internal, err.Error())
+				}
 			}
 		}
 
