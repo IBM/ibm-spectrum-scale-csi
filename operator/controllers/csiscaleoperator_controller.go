@@ -477,6 +477,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if err == nil && len(cm.Data) != 0 {
 		cmData = parseConfigMap(cm)
+	} else {
+		logger.Info("Optional configmap is either not found or is empty, skipped parsing it", "configmap", config.CSIEnvVarConfigMap)
 	}
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
@@ -549,10 +551,14 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
-					if resourceKind == corev1.ResourceConfigMaps.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
-					} else if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
-						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+					}
+
+					if resourceKind == corev1.ResourceConfigMaps.String() {
+						if e.ObjectNew.GetName() == config.CSIEnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+							r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+						}
 					}
 				} else {
 					return false
@@ -1567,7 +1573,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 // and returns a configmap reference.
 func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
 
-	logger := csiLog.WithName("getCSIConfig").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
+	logger := csiLog.WithName("getConfigMap").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
 	logger.Info("Reading optional CSI configmap resource from the cluster.")
 
 	cm := &corev1.ConfigMap{}
@@ -1604,5 +1610,6 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 			data[strings.ToUpper(key[11:])] = value
 		}
 	}
+	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data
 }
