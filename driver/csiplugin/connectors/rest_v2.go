@@ -997,7 +997,7 @@ func (s *spectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	glog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, param)
 	endpoint := s.endpoint[s.endPointIndex]
 	glog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
-	response, err := utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.user, s.password, param)
+	response, err := utils.HttpExecuteUserAuth(ctx, s.httpClient, method, endpoint+urlSuffix, s.user, s.password, param)
 
 	activeEndpointFound := false
 	if err != nil {
@@ -1008,7 +1008,7 @@ func (s *spectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			n := len(s.endpoint)
 			for i := 0; i < n-1; i++ {
 				endpoint = s.getNextEndpoint(ctx)
-				response, err = utils.HttpExecuteUserAuth(s.httpClient, method, endpoint+urlSuffix, s.user, s.password, param)
+				response, err = utils.HttpExecuteUserAuth(ctx, s.httpClient, method, endpoint+urlSuffix, s.user, s.password, param)
 				if err == nil {
 					activeEndpointFound = true
 					break
@@ -1037,7 +1037,7 @@ func (s *spectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 		return status.Error(codes.Unauthenticated, fmt.Sprintf("Unauthorized %s request to %v: %v", method, endpoint, response.Status))
 	}
 
-	err = utils.UnmarshalResponse(response, responseObject)
+	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
 		return err
 	}
