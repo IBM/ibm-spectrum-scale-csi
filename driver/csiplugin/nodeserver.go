@@ -145,8 +145,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 // foreceful=true is passed) and returns a bool which tells if a
 // calling function should return, along with the response and error
 // to be returned if there are any.
-func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
-	glog.Infof("nodeserver unmountAndDelete")
+func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
+	glog.Infof("[%s] nodeserver unmountAndDelete", utils.GetLoggerId(ctx))
 	targetPathInContainer := hostDir + targetPath
 	isMP := false
 	var err error
@@ -154,7 +154,7 @@ func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublis
 		isMP, err = mount.New("").IsMountPoint(targetPathInContainer)
 		if err != nil {
 			if os.IsNotExist(err) {
-				glog.V(4).Infof("target path %v is already deleted", targetPathInContainer)
+				glog.V(4).Infof("[%s] target path %v is already deleted", utils.GetLoggerId(ctx), targetPathInContainer)
 				return true, &csi.NodeUnpublishVolumeResponse{}, nil
 			}
 			return true, nil, fmt.Errorf("failed to check if target path [%s] is a mount point. Error %v", targetPathInContainer, err)
@@ -166,7 +166,7 @@ func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublis
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to unmount the mount point [%s]. Error %v", targetPath, err)
 		}
-		glog.Infof("%v is unmounted successfully", targetPath)
+		glog.Infof("[%s] %v is unmounted successfully", utils.GetLoggerId(ctx), targetPath)
 	}
 	// Delete the mount point
 	if err = os.Remove(targetPathInContainer); err != nil {
@@ -196,7 +196,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	if err != nil {
 		if strings.Contains(err.Error(), errStaleNFSFileHandle) {
 			glog.Errorf("[%s] Error [%v] is observed, trying forceful unmount of [%s]", loggerId, err, targetPath)
-			needReturn, response, error := unmountAndDelete(targetPath, true)
+			needReturn, response, error := unmountAndDelete(ctx, targetPath, true)
 			if needReturn {
 				return response, error
 			}
@@ -212,7 +212,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 		}
 	} else {
 		glog.Infof("[%s] %v is a bind mount", loggerId, targetPath)
-		needReturn, response, error := unmountAndDelete(targetPath, false)
+		needReturn, response, error := unmountAndDelete(ctx, targetPath, false)
 		if needReturn {
 			return response, error
 		}

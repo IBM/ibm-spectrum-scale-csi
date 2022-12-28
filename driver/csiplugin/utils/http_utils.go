@@ -18,7 +18,6 @@ package utils
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
@@ -36,10 +35,9 @@ import (
 		return fmt.Errorf(errorResponse.Err)
 	}
 */
-var eCtx context.Context = nil
 
 func UnmarshalResponse(r *http.Response, object interface{}) error {
-	glog.V(4).Infof("http_utils UnmarshalResponse. response: %v", r.Body)
+	glog.V(6).Infof("http_utils UnmarshalResponse. response: %v", r.Body)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -97,7 +95,7 @@ func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
 }
 
 func Unmarshal(r *http.Request, object interface{}) error {
-	glog.V(4).Infof("http_utils Unmarshal. request: %v, object: %v", r, object)
+	glog.V(6).Infof("http_utils Unmarshal. request: %v, object: %v", r, object)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -113,7 +111,7 @@ func Unmarshal(r *http.Request, object interface{}) error {
 }
 
 func UnmarshalDataFromRequest(r *http.Request, object interface{}) error {
-	glog.V(4).Infof("http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
+	glog.V(6).Infof("http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

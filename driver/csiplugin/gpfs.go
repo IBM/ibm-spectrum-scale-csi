@@ -116,20 +116,20 @@ type ScaleDriver struct {
 	nscap []*csi.NodeServiceCapability
 }
 
-func GetScaleDriver() *ScaleDriver {
-	glog.Infof("gpfs GetScaleDriver")
+func GetScaleDriver(ctx context.Context) *ScaleDriver {
+	glog.Infof("[%s] gpfs GetScaleDriver", utils.GetLoggerId(ctx))
 	return &ScaleDriver{}
 }
 
-func NewIdentityServer(d *ScaleDriver) *ScaleIdentityServer {
-	glog.Infof("gpfs NewIdentityServer")
+func NewIdentityServer(ctx context.Context, d *ScaleDriver) *ScaleIdentityServer {
+	glog.Infof("[%s] gpfs NewIdentityServer", utils.GetLoggerId(ctx))
 	return &ScaleIdentityServer{
 		Driver: d,
 	}
 }
 
-func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumScaleConnector, cmap settings.ScaleSettingsConfigMap, primary settings.Primary) *ScaleControllerServer {
-	glog.Infof("gpfs NewControllerServer")
+func NewControllerServer(ctx context.Context, d *ScaleDriver, connMap map[string]connectors.SpectrumScaleConnector, cmap settings.ScaleSettingsConfigMap, primary settings.Primary) *ScaleControllerServer {
+	glog.Infof("[%s] gpfs NewControllerServer", utils.GetLoggerId(ctx))
 	d.connmap = connMap
 	d.cmap = cmap
 	d.primary = primary
@@ -139,40 +139,40 @@ func NewControllerServer(d *ScaleDriver, connMap map[string]connectors.SpectrumS
 	}
 }
 
-func NewNodeServer(d *ScaleDriver) *ScaleNodeServer {
-	glog.Infof("gpfs NewNodeServer")
+func NewNodeServer(ctx context.Context, d *ScaleDriver) *ScaleNodeServer {
+	glog.Infof("[%s] gpfs NewNodeServer", utils.GetLoggerId(ctx))
 	return &ScaleNodeServer{
 		Driver: d,
 	}
 }
 
-func (driver *ScaleDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) error {
-	glog.Infof("gpfs AddVolumeCapabilityAccessModes")
+func (driver *ScaleDriver) AddVolumeCapabilityAccessModes(ctx context.Context, vc []csi.VolumeCapability_AccessMode_Mode) error {
+	glog.Infof("[%s] gpfs AddVolumeCapabilityAccessModes", utils.GetLoggerId(ctx))
 	var vca []*csi.VolumeCapability_AccessMode
 	for _, c := range vc {
-		glog.V(4).Infof("Enabling volume access mode: %v", c.String())
+		glog.V(4).Infof("[%s] Enabling volume access mode: %v", utils.GetLoggerId(ctx), c.String())
 		vca = append(vca, NewVolumeCapabilityAccessMode(c))
 	}
 	driver.vcap = vca
 	return nil
 }
 
-func (driver *ScaleDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) error {
-	glog.Infof("gpfs AddControllerServiceCapabilities")
+func (driver *ScaleDriver) AddControllerServiceCapabilities(ctx context.Context, cl []csi.ControllerServiceCapability_RPC_Type) error {
+	glog.Infof("[%s] gpfs AddControllerServiceCapabilities", utils.GetLoggerId(ctx))
 	var csc []*csi.ControllerServiceCapability
 	for _, c := range cl {
-		glog.V(4).Infof("Enabling controller service capability: %v", c.String())
+		glog.V(4).Infof("[%s] Enabling controller service capability: %v", utils.GetLoggerId(ctx), c.String())
 		csc = append(csc, NewControllerServiceCapability(c))
 	}
 	driver.cscap = csc
 	return nil
 }
 
-func (driver *ScaleDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapability_RPC_Type) error {
-	glog.Infof("gpfs AddNodeServiceCapabilities")
+func (driver *ScaleDriver) AddNodeServiceCapabilities(ctx context.Context, nl []csi.NodeServiceCapability_RPC_Type) error {
+	glog.Infof("[%s] gpfs AddNodeServiceCapabilities", utils.GetLoggerId(ctx))
 	var nsc []*csi.NodeServiceCapability
 	for _, n := range nl {
-		glog.V(4).Infof("Enabling node service capability: %v", n.String())
+		glog.V(4).Infof("[%s] Enabling node service capability: %v", utils.GetLoggerId(ctx), n.String())
 		nsc = append(nsc, NewNodeServiceCapability(n))
 	}
 	driver.nscap = nsc
@@ -180,7 +180,7 @@ func (driver *ScaleDriver) AddNodeServiceCapabilities(nl []csi.NodeServiceCapabi
 }
 
 func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context, c csi.ControllerServiceCapability_RPC_Type) error {
-	glog.Infof("gpfs ValidateControllerServiceRequest")
+	glog.Infof("[%s] gpfs ValidateControllerServiceRequest", utils.GetLoggerId(ctx))
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}
@@ -192,15 +192,15 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context,
 	return status.Error(codes.InvalidArgument, "Invalid controller service request")
 }
 
-func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string) error {
-	glog.Infof("gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", name, vendorVersion, nodeID)
+func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVersion, nodeID string) error {
+	glog.Infof("[%s] gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
 	if name == "" {
 		return fmt.Errorf("Driver name missing")
 	}
 
-	scmap, cmap, primary, err := driver.PluginInitialize()
+	scmap, cmap, primary, err := driver.PluginInitialize(ctx)
 	if err != nil {
-		glog.Errorf("Error in plugin initialization: %s", err)
+		glog.Errorf("[%s] Error in plugin initialization: %s", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
@@ -212,7 +212,7 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string) 
 	vcam := []csi.VolumeCapability_AccessMode_Mode{
 		csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 	}
-	_ = driver.AddVolumeCapabilityAccessModes(vcam)
+	_ = driver.AddVolumeCapabilityAccessModes(ctx, vcam)
 
 	csc := []csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
@@ -221,26 +221,26 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string) 
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 	}
-	_ = driver.AddControllerServiceCapabilities(csc)
+	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
 	ns := []csi.NodeServiceCapability_RPC_Type{
 		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
 	}
-	_ = driver.AddNodeServiceCapabilities(ns)
+	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
-	driver.ids = NewIdentityServer(driver)
-	driver.ns = NewNodeServer(driver)
-	driver.cs = NewControllerServer(driver, scmap, cmap, primary)
+	driver.ids = NewIdentityServer(ctx, driver)
+	driver.ns = NewNodeServer(ctx, driver)
+	driver.cs = NewControllerServer(ctx, driver, scmap, cmap, primary)
 	return nil
 }
 
-func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error) { //nolint:funlen
-	glog.Infof("gpfs PluginInitialize")
-	scaleConfig := settings.LoadScaleConfigSettings()
+func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error) { //nolint:funlen
+	glog.Infof("[%s] gpfs PluginInitialize", utils.GetLoggerId(ctx))
+	scaleConfig := settings.LoadScaleConfigSettings(ctx)
 
-	isValid, err := driver.ValidateScaleConfigParameters(scaleConfig)
+	isValid, err := driver.ValidateScaleConfigParameters(ctx, scaleConfig)
 	if !isValid {
-		glog.Errorf("Parameter validation failure")
+		glog.Errorf("[%s] Parameter validation failure", utils.GetLoggerId(ctx))
 		return nil, settings.ScaleSettingsConfigMap{}, settings.Primary{}, err
 	}
 
@@ -251,20 +251,20 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 	for i := 0; i < len(scaleConfig.Clusters); i++ {
 		cluster := scaleConfig.Clusters[i]
 
-		sc, err := connectors.GetSpectrumScaleConnector(cluster)
+		sc, err := connectors.GetSpectrumScaleConnector(ctx, cluster)
 		if err != nil {
-			glog.Errorf("Unable to initialize Spectrum Scale connector for cluster %s", cluster.ID)
+			glog.Errorf("[%s] Unable to initialize Spectrum Scale connector for cluster %s", utils.GetLoggerId(ctx), cluster.ID)
 			return nil, scaleConfig, primaryInfo, err
 		}
 
 		// validate cluster ID
-		clusterId, err := sc.GetClusterId()
+		clusterId, err := sc.GetClusterId(ctx)
 		if err != nil {
-			glog.Errorf("Error getting cluster ID: %v", err)
+			glog.Errorf("[%s] Error getting cluster ID: %v", utils.GetLoggerId(ctx), err)
 			return nil, scaleConfig, primaryInfo, err
 		}
 		if cluster.ID != clusterId {
-			glog.Errorf("Cluster ID %s from scale config doesnt match the ID from cluster %s.", cluster.ID, clusterId)
+			glog.Errorf("[%s] Cluster ID %s from scale config doesnt match the ID from cluster %s.", utils.GetLoggerId(ctx), cluster.ID, clusterId)
 			return nil, scaleConfig, primaryInfo, fmt.Errorf("Cluster ID doesnt match the cluster")
 		}
 
@@ -274,27 +274,27 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 			scaleConnMap["primary"] = sc
 
 			// check if primary filesystem exists
-			fsMount, err := sc.GetFilesystemMountDetails(cluster.Primary.GetPrimaryFs())
+			fsMount, err := sc.GetFilesystemMountDetails(ctx, cluster.Primary.GetPrimaryFs())
 			if err != nil {
-				glog.Errorf("Error in getting filesystem details for %s", cluster.Primary.GetPrimaryFs())
+				glog.Errorf("[%s] Error in getting filesystem details for %s", utils.GetLoggerId(ctx), cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
 
 			// check if filesystem is mounted on GUI node
-			isFsMounted, err := sc.IsFilesystemMountedOnGUINode(cluster.Primary.GetPrimaryFs())
+			isFsMounted, err := sc.IsFilesystemMountedOnGUINode(ctx, cluster.Primary.GetPrimaryFs())
 			if err != nil {
-				glog.Errorf("Error in getting filesystem mount details for %s on Primary cluster", cluster.Primary.GetPrimaryFs())
+				glog.Errorf("[%s] Error in getting filesystem mount details for %s on Primary cluster", utils.GetLoggerId(ctx), cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
 			if !isFsMounted {
-				glog.Errorf("Primary filesystem %s is not mounted on GUI node of Primary cluster", cluster.Primary.GetPrimaryFs())
+				glog.Errorf("[%s] Primary filesystem %s is not mounted on GUI node of Primary cluster", utils.GetLoggerId(ctx), cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())
 			}
 
 			// In case primary fset value is not specified in configuation then use default
 			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
 				scaleConfig.Clusters[i].Primary.PrimaryFset = DefaultPrimaryFileset
-				glog.V(4).Infof("primaryFset is not specified in configuration using default %s", DefaultPrimaryFileset)
+				glog.V(4).Infof("[%s] primaryFset is not specified in configuration using default %s", utils.GetLoggerId(ctx), DefaultPrimaryFileset)
 			}
 			scaleConfig.Clusters[i].Primary.PrimaryFSMount = fsMount.MountPoint
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
@@ -324,51 +324,51 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 		}
 		fs = remoteFilesystemName
 		// check if primary filesystem exists on remote cluster and mounted on atleast one node
-		fsMount, err := sconn.GetFilesystemMountDetails(fs)
+		fsMount, err := sconn.GetFilesystemMountDetails(ctx, fs)
 		if err != nil {
-			glog.Errorf("Error in getting filesystem details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
+			glog.Errorf("[%s] Error in getting filesystem details for %s from cluster %s", utils.GetLoggerId(ctx), fs, primaryInfo.RemoteCluster)
 			return scaleConnMap, scaleConfig, primaryInfo, err
 		}
 
-		glog.Infof("remote fsMount = %v", fsMount)
+		glog.Infof("[%s] remote fsMount = %v", utils.GetLoggerId(ctx), fsMount)
 		fsmount = fsMount.MountPoint
 
 		// check if filesystem is mounted on GUI node
-		isPfsMounted, err := sconn.IsFilesystemMountedOnGUINode(fs)
+		isPfsMounted, err := sconn.IsFilesystemMountedOnGUINode(ctx, fs)
 		if err != nil {
-			glog.Errorf("Error in getting filesystem mount details for %s from cluster %s", fs, primaryInfo.RemoteCluster)
+			glog.Errorf("[%s] Error in getting filesystem mount details for %s from cluster %s", utils.GetLoggerId(ctx), fs, primaryInfo.RemoteCluster)
 			return scaleConnMap, scaleConfig, primaryInfo, err
 		}
 
 		if !isPfsMounted {
-			glog.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
+			glog.Errorf("[%s] Filesystem %s is not mounted on GUI node of cluster %s", utils.GetLoggerId(ctx), fs, primaryInfo.RemoteCluster)
 			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
 		}
 	}
 
-	fsetlinkpath, err := driver.CreatePrimaryFileset(sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())
+	fsetlinkpath, err := driver.CreatePrimaryFileset(ctx, sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())
 	if err != nil {
-		glog.Errorf("Error in creating primary fileset")
+		glog.Errorf("[%s] Error in creating primary fileset", utils.GetLoggerId(ctx))
 		return scaleConnMap, scaleConfig, primaryInfo, err
 	}
 
 	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
 	if primaryInfo.RemoteCluster != "" {
-		_, err := scaleConnMap["primary"].ListFileset(primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
+		_, err := scaleConnMap["primary"].ListFileset(ctx, primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
 		if err != nil {
-			glog.Infof("Primary fileset %v not visible on primary cluster. Running fileset refresh task", primaryInfo.PrimaryFset)
-			err = scaleConnMap["primary"].FilesetRefreshTask()
+			glog.Infof("[%s] Primary fileset %v not visible on primary cluster. Running fileset refresh task", utils.GetLoggerId(ctx), primaryInfo.PrimaryFset)
+			err = scaleConnMap["primary"].FilesetRefreshTask(ctx)
 			if err != nil {
-				glog.Errorf("Error in fileset refresh task")
+				glog.Errorf("[%s] Error in fileset refresh task", utils.GetLoggerId(ctx))
 				return scaleConnMap, scaleConfig, primaryInfo, err
 			}
 		}
 
 		// retry listing fileset again after some time after refresh
 		time.Sleep(8 * time.Second)
-		_, err = scaleConnMap["primary"].ListFileset(primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
+		_, err = scaleConnMap["primary"].ListFileset(ctx, primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
 		if err != nil {
-			glog.Errorf("Primary fileset %v not visible on primary cluster even after running fileset refresh task", primaryInfo.PrimaryFset)
+			glog.Errorf("[%s] Primary fileset %v not visible on primary cluster even after running fileset refresh task", utils.GetLoggerId(ctx), primaryInfo.PrimaryFset)
 			return scaleConnMap, scaleConfig, primaryInfo, err
 		}
 	}
@@ -378,59 +378,59 @@ func (driver *ScaleDriver) PluginInitialize() (map[string]connectors.SpectrumSca
 	}
 
 	// Create directory where volume symlinks will reside
-	symlinkPath, relativePath, err := driver.CreateSymlinkPath(scaleConnMap["primary"], primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFSMount, fsetlinkpath)
+	symlinkPath, relativePath, err := driver.CreateSymlinkPath(ctx, scaleConnMap["primary"], primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFSMount, fsetlinkpath)
 	if err != nil {
-		glog.Errorf("Error in creating volumes directory")
+		glog.Errorf("[%s] Error in creating volumes directory", utils.GetLoggerId(ctx))
 		return scaleConnMap, scaleConfig, primaryInfo, err
 	}
 	primaryInfo.SymlinkAbsolutePath = symlinkPath
 	primaryInfo.SymlinkRelativePath = relativePath
 	primaryInfo.PrimaryFsetLink = fsetlinkpath
 
-	glog.Infof("IBM Spectrum Scale: Plugin initialized")
+	glog.Infof("[%s] IBM Spectrum Scale: Plugin initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
 }
 
-func (driver *ScaleDriver) CreatePrimaryFileset(sc connectors.SpectrumScaleConnector, primaryFS string, fsmount string, filesetName string, inodeLimit string) (string, error) {
-	glog.Infof("gpfs CreatePrimaryFileset. primaryFS: %s, mountpoint: %s, filesetName: %s", primaryFS, fsmount, filesetName)
+func (driver *ScaleDriver) CreatePrimaryFileset(ctx context.Context, sc connectors.SpectrumScaleConnector, primaryFS string, fsmount string, filesetName string, inodeLimit string) (string, error) {
+	glog.Infof("[%s] gpfs CreatePrimaryFileset. primaryFS: %s, mountpoint: %s, filesetName: %s", utils.GetLoggerId(ctx), primaryFS, fsmount, filesetName)
 
 	// create primary fileset if not already created
-	fsetResponse, err := sc.ListFileset(primaryFS, filesetName)
+	fsetResponse, err := sc.ListFileset(ctx, primaryFS, filesetName)
 	linkpath := fsetResponse.Config.Path
 	newlinkpath := path.Join(fsmount, filesetName)
 
 	if err != nil {
-		glog.Errorf("Primary fileset %s not found. Creating it.", filesetName)
+		glog.Errorf("[%s] Primary fileset %s not found. Creating it.", utils.GetLoggerId(ctx), filesetName)
 		opts := make(map[string]interface{})
 		if inodeLimit != "" {
 			opts[connectors.UserSpecifiedInodeLimit] = inodeLimit
 		}
 
-		err = sc.CreateFileset(primaryFS, filesetName, opts)
+		err = sc.CreateFileset(ctx, primaryFS, filesetName, opts)
 		if err != nil {
-			glog.Errorf("Unable to create primary fileset %s", filesetName)
+			glog.Errorf("[%s] Unable to create primary fileset %s", utils.GetLoggerId(ctx), filesetName)
 			return "", err
 		}
 		linkpath = newlinkpath
 	} else if linkpath == "" || linkpath == "--" {
-		glog.Infof("Primary fileset %s not linked. Linking it.", filesetName)
-		err = sc.LinkFileset(primaryFS, filesetName, newlinkpath)
+		glog.Infof("[%s] Primary fileset %s not linked. Linking it.", utils.GetLoggerId(ctx), filesetName)
+		err = sc.LinkFileset(ctx, primaryFS, filesetName, newlinkpath)
 		if err != nil {
-			glog.Errorf("Unable to link primary fileset %s", filesetName)
+			glog.Errorf("[%s] Unable to link primary fileset %s", utils.GetLoggerId(ctx), filesetName)
 			return "", err
 		} else {
-			glog.Infof("Linked primary fileset %s. Linkpath: %s", newlinkpath, filesetName)
+			glog.Infof("[%s] Linked primary fileset %s. Linkpath: %s", utils.GetLoggerId(ctx), newlinkpath, filesetName)
 		}
 		linkpath = newlinkpath
 	} else {
-		glog.Infof("Primary fileset %s exists and linked at %s", filesetName, linkpath)
+		glog.Infof("[%s] Primary fileset %s exists and linked at %s", utils.GetLoggerId(ctx), filesetName, linkpath)
 	}
 
 	return linkpath, nil
 }
 
-func (driver *ScaleDriver) CreateSymlinkPath(sc connectors.SpectrumScaleConnector, fs string, fsmount string, fsetlinkpath string) (string, string, error) {
-	glog.V(4).Infof("gpfs CreateSymlinkPath. filesystem: %s, mountpoint: %s, filesetlinkpath: %s", fs, fsmount, fsetlinkpath)
+func (driver *ScaleDriver) CreateSymlinkPath(ctx context.Context, sc connectors.SpectrumScaleConnector, fs string, fsmount string, fsetlinkpath string) (string, string, error) {
+	glog.V(4).Infof("[%s] gpfs CreateSymlinkPath. filesystem: %s, mountpoint: %s, filesetlinkpath: %s", utils.GetLoggerId(ctx), fs, fsmount, fsetlinkpath)
 
 	dirpath := strings.Replace(fsetlinkpath, fsmount, "", 1)
 	dirpath = strings.Trim(dirpath, "!/")
@@ -439,9 +439,9 @@ func (driver *ScaleDriver) CreateSymlinkPath(sc connectors.SpectrumScaleConnecto
 	dirpath = fmt.Sprintf("%s/.volumes", dirpath)
 	symlinkpath := fmt.Sprintf("%s/.volumes", fsetlinkpath)
 
-	err := sc.MakeDirectory(fs, dirpath, "0", "0")
+	err := sc.MakeDirectory(ctx, fs, dirpath, "0", "0")
 	if err != nil {
-		glog.Errorf("Make directory failed on filesystem %s, path = %s", fs, dirpath)
+		glog.Errorf("[%s] Make directory failed on filesystem %s, path = %s", utils.GetLoggerId(ctx), fs, dirpath)
 		return symlinkpath, dirpath, err
 	}
 
@@ -449,8 +449,8 @@ func (driver *ScaleDriver) CreateSymlinkPath(sc connectors.SpectrumScaleConnecto
 }
 
 // ValidateScaleConfigParameters : Validating the Configuration provided for Spectrum Scale CSI Driver
-func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.ScaleSettingsConfigMap) (bool, error) {
-	glog.V(4).Infof("gpfs ValidateScaleConfigParameters.")
+func (driver *ScaleDriver) ValidateScaleConfigParameters(ctx context.Context, scaleConfig settings.ScaleSettingsConfigMap) (bool, error) {
+	glog.V(4).Infof("[%s] gpfs ValidateScaleConfigParameters.", utils.GetLoggerId(ctx))
 	if len(scaleConfig.Clusters) == 0 {
 		return false, fmt.Errorf("Missing cluster information in Spectrum Scale configuration")
 	}
@@ -465,28 +465,28 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 
 		if cluster.ID == "" {
 			issueFound = true
-			glog.Errorf("Mandatory parameter 'id' is not specified")
+			glog.Errorf("[%s] Mandatory parameter 'id' is not specified", utils.GetLoggerId(ctx))
 		}
 		if len(cluster.RestAPI) == 0 {
 			issueFound = true
-			glog.Errorf("Mandatory section 'restApi' is not specified for cluster %v", cluster.ID)
+			glog.Errorf("[%s] Mandatory section 'restApi' is not specified for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
 		}
 		if len(cluster.RestAPI) != 0 && cluster.RestAPI[0].GuiHost == "" {
 			issueFound = true
-			glog.Errorf("Mandatory parameter 'guiHost' is not specified for cluster %v", cluster.ID)
+			glog.Errorf("[%s] Mandatory parameter 'guiHost' is not specified for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
 		}
 
 		if cluster.Primary != (settings.Primary{}) {
 			if primaryClusterFound {
 				issueFound = true
-				glog.Errorf("More than one primary clusters specified")
+				glog.Errorf("[%s] More than one primary clusters specified", utils.GetLoggerId(ctx))
 			}
 
 			primaryClusterFound = true
 
 			if cluster.Primary.GetPrimaryFs() == "" {
 				issueFound = true
-				glog.Errorf("Mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.ID)
+				glog.Errorf("[%s] Mandatory parameter 'primaryFs' is not specified for primary cluster %v", utils.GetLoggerId(ctx), cluster.ID)
 			}
 
 			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
@@ -496,23 +496,23 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 
 		if cluster.Secrets == "" {
 			issueFound = true
-			glog.Errorf("Mandatory parameter 'secrets' is not specified for cluster %v", cluster.ID)
+			glog.Errorf("[%s] Mandatory parameter 'secrets' is not specified for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
 		}
 
 		if cluster.SecureSslMode && cluster.CacertValue == nil {
 			issueFound = true
-			glog.Errorf("CA certificate not specified in secure SSL mode for cluster %v", cluster.ID)
+			glog.Errorf("[%s] CA certificate not specified in secure SSL mode for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
 		}
 	}
 
 	if !primaryClusterFound {
 		issueFound = true
-		glog.Errorf("No primary clusters specified")
+		glog.Errorf("[%s] No primary clusters specified", utils.GetLoggerId(ctx))
 	}
 
 	if rClusterForPrimaryFS != "" && !utils.StringInSlice(rClusterForPrimaryFS, cl) {
 		issueFound = true
-		glog.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS)
+		glog.Errorf("[%s] Remote cluster specified for primary filesystem: %s, but no definition found for it in config", utils.GetLoggerId(ctx), rClusterForPrimaryFS)
 	}
 
 	if issueFound {
@@ -522,8 +522,8 @@ func (driver *ScaleDriver) ValidateScaleConfigParameters(scaleConfig settings.Sc
 	return true, nil
 }
 
-func (driver *ScaleDriver) Run(endpoint string) {
-	glog.Infof("Driver: %v version: %v", driver.name, driver.vendorVersion)
+func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {
+	glog.Infof("[%s] Driver: %v version: %v", utils.GetLoggerId(ctx), driver.name, driver.vendorVersion)
 	s := NewNonBlockingGRPCServer()
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()

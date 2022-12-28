@@ -19,79 +19,78 @@ package connectors
 import (
 	"context"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/golang/glog"
 )
-
-var eCtx context.Context = nil
 
 //go:generate counterfeiter -o ../../../fakes/fake_spectrum.go . SpectrumScaleConnector
 type SpectrumScaleConnector interface {
 	//Cluster operations
-	GetClusterId() (string, error)
-	GetClusterSummary() (ClusterSummary, error)
-	GetTimeZoneOffset() (string, error)
-	GetScaleVersion() (string, error)
+	GetClusterId(ctx context.Context) (string, error)
+	GetClusterSummary(ctx context.Context) (ClusterSummary, error)
+	GetTimeZoneOffset(ctx context.Context) (string, error)
+	GetScaleVersion(ctx context.Context) (string, error)
 	//Filesystem operations
-	GetFilesystemMountDetails(filesystemName string) (MountInfo, error)
-	IsFilesystemMountedOnGUINode(filesystemName string) (bool, error)
-	ListFilesystems() ([]string, error)
+	GetFilesystemMountDetails(ctx context.Context, filesystemName string) (MountInfo, error)
+	IsFilesystemMountedOnGUINode(ctx context.Context, filesystemName string) (bool, error)
+	ListFilesystems(ctx context.Context) ([]string, error)
 	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
-	GetFilesystemMountpoint(filesystemName string) (string, error)
+	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Fileset operations
-	CreateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
-	UpdateFileset(filesystemName string, filesetName string, opts map[string]interface{}) error
-	DeleteFileset(filesystemName string, filesetName string) error
+	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
-	LinkFileset(filesystemName string, filesetName string, linkpath string) error
-	UnlinkFileset(filesystemName string, filesetName string) error
+	LinkFileset(ctx context.Context, filesystemName string, filesetName string, linkpath string) error
+	UnlinkFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
-	ListFileset(filesystemName string, filesetName string) (Fileset_v2, error)
-	GetFilesetsInodeSpace(filesystemName string, inodeSpace int) ([]Fileset_v2, error)
+	ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error)
+	GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error)
 	IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error)
-	FilesetRefreshTask() error
+	FilesetRefreshTask(ctx context.Context) error
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error)
-	GetFilesetQuotaDetails(filesystemName string, filesetName string) (Quota_v2, error)
+	GetFilesetQuotaDetails(ctx context.Context, filesystemName string, filesetName string) (Quota_v2, error)
 	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error
-	CheckIfFSQuotaEnabled(filesystem string) error
+	CheckIfFSQuotaEnabled(ctx context.Context, filesystem string) error
 	CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	//Directory operations
-	MakeDirectory(filesystemName string, relativePath string, uid string, gid string) error
-	MakeDirectoryV2(filesystemName string, relativePath string, uid string, gid string, permissions string) error
-	MountFilesystem(filesystemName string, nodeName string) error
-	UnmountFilesystem(filesystemName string, nodeName string) error
+	MakeDirectory(ctx context.Context, filesystemName string, relativePath string, uid string, gid string) error
+	MakeDirectoryV2(ctx context.Context, filesystemName string, relativePath string, uid string, gid string, permissions string) error
+	MountFilesystem(ctx context.Context, filesystemName string, nodeName string) error
+	UnmountFilesystem(ctx context.Context, filesystemName string, nodeName string) error
 	GetFilesystemName(ctx context.Context, filesystemUUID string) (string, error)
-	CheckIfFileDirPresent(filesystemName string, relPath string) (bool, error)
-	CreateSymLink(SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
-	GetFsUid(filesystemName string) (string, error)
+	CheckIfFileDirPresent(ctx context.Context, filesystemName string, relPath string) (bool, error)
+	CreateSymLink(ctx context.Context, SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error
+	GetFsUid(ctx context.Context, filesystemName string) (string, error)
 	DeleteDirectory(ctx context.Context, filesystemName string, dirName string, safe bool) error
-	StatDirectory(filesystemName string, dirName string) (string, error)
-	GetFileSetUid(filesystemName string, filesetName string) (string, error)
+	StatDirectory(ctx context.Context, filesystemName string, dirName string) (string, error)
+	GetFileSetUid(ctx context.Context, filesystemName string, filesetName string) (string, error)
 	GetFileSetNameFromId(ctx context.Context, filesystemName string, Id string) (string, error)
 	DeleteSymLnk(ctx context.Context, filesystemName string, LnkName string) error
 	GetFileSetResponseFromId(ctx context.Context, filesystemName string, Id string) (Fileset_v2, error)
-	GetFileSetResponseFromName(filesystemName string, filesetName string) (Fileset_v2, error)
+	GetFileSetResponseFromName(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error)
 	SetFilesystemPolicy(ctx context.Context, policy *Policy, filesystemName string) error
 	DoesTierExist(ctx context.Context, tierName string, filesystemName string) error
-	GetTierInfoFromName(tierName string, filesystemName string) (*StorageTier, error)
+	GetTierInfoFromName(ctx context.Context, tierName string, filesystemName string) (*StorageTier, error)
 	GetFirstDataTier(ctx context.Context, filesystemName string) (string, error)
-	IsValidNodeclass(nodeclass string) (bool, error)
-	IsSnapshotSupported() (bool, error)
+	IsValidNodeclass(ctx context.Context, nodeclass string) (bool, error)
+	IsSnapshotSupported(ctx context.Context) (bool, error)
 	CheckIfDefaultPolicyPartitionExists(ctx context.Context, partitionName string, filesystemName string) bool
 
 	//Snapshot operations
-	WaitForJobCompletion(statusCode int, jobID uint64) error
-	WaitForJobCompletionWithResp(statusCode int, jobID uint64) (GenericResponse, error)
+	WaitForJobCompletion(ctx context.Context, statusCode int, jobID uint64) error
+	WaitForJobCompletionWithResp(ctx context.Context, statusCode int, jobID uint64) (GenericResponse, error)
 	CreateSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
-	GetLatestFilesetSnapshots(filesystemName string, filesetName string) ([]Snapshot_v2, error)
-	GetSnapshotUid(filesystemName string, filesetName string, snapName string) (string, error)
-	GetSnapshotCreateTimestamp(filesystemName string, filesetName string, snapName string) (string, error)
+	GetLatestFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error)
+	GetSnapshotUid(ctx context.Context, filesystemName string, filesetName string, snapName string) (string, error)
+	GetSnapshotCreateTimestamp(ctx context.Context, filesystemName string, filesetName string, snapName string) (string, error)
 	CheckIfSnapshotExist(ctx context.Context, filesystemName string, filesetName string, snapshotName string) (bool, error)
 	ListFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error)
-	CopyFsetSnapshotPath(filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
-	CopyFilesetPath(filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
-	CopyDirectoryPath(filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
+	CopyFsetSnapshotPath(ctx context.Context, filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
+	CopyFilesetPath(ctx context.Context, filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
+	CopyDirectoryPath(ctx context.Context, filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error)
 	IsNodeComponentHealthy(ctx context.Context, nodeName string, component string) (bool, error)
 }
 
@@ -118,7 +117,7 @@ const (
 	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
 )
 
-func GetSpectrumScaleConnector(config settings.Clusters) (SpectrumScaleConnector, error) {
-	glog.Infof("connector GetSpectrumScaleConnector")
-	return NewSpectrumRestV2(config)
+func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
+	glog.Infof("[%s] connector GetSpectrumScaleConnector", utils.GetLoggerId(ctx))
+	return NewSpectrumRestV2(ctx, config)
 }
