@@ -3,6 +3,7 @@ package utils
 import (
 	"flag"
 	"os"
+	"github.com/golang/glog"
 )
 
 
@@ -48,12 +49,13 @@ func InitLogger() {
 	}
 	_ = flag.Set("alsologtostderr", "false")
 	_ = flag.Set("stderrthreshold", logValue)
+	glog.Infof("logValue: %s",logValue)
 	if level == DEBUG.String() {
 		_ = flag.Set("v", "4")
 	} else if level == DEBUGPLUS.String() {
 		_ = flag.Set("v", "6")
 	} else {
-		_ = flag.Set("v", "2")
+		_ = flag.Set("v", "0")
 	}
 	_ = flag.Set("log_dir", "/host/var/log/")
 	flag.Parse()

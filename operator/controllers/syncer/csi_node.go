@@ -172,7 +172,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		[]string{
 			"--nodeid=$(NODE_ID)",
 			"--endpoint=$(CSI_ENDPOINT)",
-			"--v=5",
 			"--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)",
 		},
 	)
@@ -221,7 +220,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		[]string{
 			"--csi-address=$(ADDRESS)",
 			"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)",
-			"--v=5",
 		},
 	)
 	registrar.Lifecycle = &corev1.Lifecycle{
@@ -243,7 +241,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		[]string{
 			"--health-port=" + healthPort.String(),
 			"--csi-address=$(ADDRESS)",
-			"--v=5",
 		},
 	)
 	// livenessProbe.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.False()}
