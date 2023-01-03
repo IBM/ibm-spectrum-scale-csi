@@ -75,7 +75,6 @@ func main() {
 func handle() {
 	driver := driver.GetScaleDriver()
 	scaleConfig := settings.LoadScaleConfigSettings()
-	// fmt.Printf("@@@@____scaleConfig_____@@@%+v\n", scaleConfig)
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
 	err := driver.SetupScaleDriver(*driverName, vendorVersion, *nodeID, scaleConfig, scaleConnMap, &connectors.GetSpec{})
 	if err != nil {
