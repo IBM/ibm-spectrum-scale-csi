@@ -193,7 +193,7 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(c csi.ControllerServ
 }
 
 func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string, scaleConfig settings.ScaleSettingsConfigMap, scaleConnMap map[string]connectors.SpectrumScaleConnector, myconnectors connectors.GetSpectrumScaleConnectorInt) error {
-	fmt.Printf("@@@@@@@@@@@@SetupScaleDriver @@@@@@@@@@")
+	// fmt.Printf("@@@@@@@@@@@@SetupScaleDriver @@@@@@@@@@")
 	glog.V(3).Infof("gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", name, vendorVersion, nodeID)
 	if name == "" {
 		return fmt.Errorf("Driver name missing")
@@ -206,9 +206,9 @@ func (driver *ScaleDriver) SetupScaleDriver(name, vendorVersion, nodeID string, 
 		glog.Errorf("Error in plugin initialization: %s", err)
 		return err
 	}
-	fmt.Printf("\n______scmap_______ %+v\n", scmap)
-	fmt.Printf("______cmap_______ %+v\n", cmap)
-	fmt.Printf("______primary_______ %+v\n", primary)
+	// fmt.Printf("\n______scmap_______ %+v\n", scmap)
+	// fmt.Printf("______cmap_______ %+v\n", cmap)
+	// fmt.Printf("______primary_______ %+v\n", primary)
 	driver.name = name
 	driver.vendorVersion = vendorVersion
 	driver.nodeID = nodeID
@@ -262,14 +262,14 @@ func (driver *ScaleDriver) PluginInitialize(myconnectors connectors.GetSpectrumS
 			glog.Errorf("Unable to initialize Spectrum Scale connector for cluster %s", cluster.ID)
 			return nil, scaleConfig, primaryInfo, err
 		}
-		fmt.Printf("______sc_______ %+v\n", sc)
+		// fmt.Printf("______sc_______ %+v\n", sc)
 		// validate cluster ID
 		clusterId, err := sc.GetClusterId()
 		if err != nil {
 			glog.Errorf("Error getting cluster ID: %v", err)
 			return nil, scaleConfig, primaryInfo, err
 		}
-		fmt.Printf("______clusterId_______ %+v\n", clusterId)
+		// fmt.Printf("______clusterId_______ %+v\n", clusterId)
 		if cluster.ID != clusterId {
 			glog.Errorf("Cluster ID %s from scale config doesnt match the ID from cluster %s.", cluster.ID, clusterId)
 			return nil, scaleConfig, primaryInfo, fmt.Errorf("Cluster ID doesnt match the cluster")
@@ -286,14 +286,14 @@ func (driver *ScaleDriver) PluginInitialize(myconnectors connectors.GetSpectrumS
 				glog.Errorf("Error in getting filesystem details for %s", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
-			fmt.Printf("______fsMount_______ %+v\n", fsMount)
+			// fmt.Printf("______fsMount_______ %+v\n", fsMount)
 			// check if filesystem is mounted on GUI node
 			isFsMounted, err := sc.IsFilesystemMountedOnGUINode(cluster.Primary.GetPrimaryFs())
 			if err != nil {
 				glog.Errorf("Error in getting filesystem mount details for %s on Primary cluster", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, err
 			}
-			fmt.Printf("______isFsMounted_______ %+v\n", isFsMounted)
+			// fmt.Printf("______isFsMounted_______ %+v\n", isFsMounted)
 			if !isFsMounted {
 				glog.Errorf("Primary filesystem %s is not mounted on GUI node of Primary cluster", cluster.Primary.GetPrimaryFs())
 				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())

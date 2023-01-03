@@ -104,8 +104,8 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 					Driver: driver,
 				}
 				resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
-				fmt.Printf("erroroooooo :====%+v\n", erro)
-				fmt.Printf("resp :====%+v\n", resp)
+				// fmt.Printf("erroroooooo :====%+v\n", erro)
+				// fmt.Printf("resp :====%+v\n", resp)
 				Expect(erro).NotTo(HaveOccurred())
 				Expect(resp.CapacityBytes).Should(Equal(int64(80000)))
 			})
@@ -172,10 +172,10 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 					Driver: driver,
 				}
 				resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
-				fmt.Printf("erroroooooo :====%+v\n", erro)
-				fmt.Printf("resp :====%+v\n", resp)
+				// fmt.Printf("erroroooooo :====%+v\n", erro)
+				// fmt.Printf("resp :====%+v\n", resp)
 				Expect(erro).To(HaveOccurred())
-				// Expect(resp.CapacityBytes).Should(Equal(int64(80000)))
+				Expect(resp).Should(BeNil())
 			})
 		})
 		Context("when quota is less than required size", func() {
@@ -240,8 +240,8 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 					Driver: driver,
 				}
 				resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
-				fmt.Printf("erroroooooo :====%+v\n", erro)
-				fmt.Printf("resp :====%+v\n", resp)
+				// fmt.Printf("erroroooooo :====%+v\n", erro)
+				// fmt.Printf("resp :====%+v\n", resp)
 				Expect(erro).NotTo(HaveOccurred())
 				Expect(resp.CapacityBytes).Should(Equal(int64(80000)))
 			})
@@ -309,8 +309,8 @@ var _ = Describe("CSI Scale Unit Testing", func() {
 					Driver: driver,
 				}
 				resp, erro := scaleControllerServer.ControllerExpandVolume(context.Background(), req)
-				fmt.Printf("erroroooooo :====%+v\n", erro)
-				fmt.Printf("resp :====%+v\n", resp)
+				// fmt.Printf("erroroooooo :====%+v\n", erro)
+				// fmt.Printf("resp :====%+v\n", resp)
 				Expect(erro).To(HaveOccurred())
 				Expect(resp).Should(BeNil())
 			})

@@ -176,7 +176,7 @@ func NewSpectrumRestV2(scaleConfig settings.Clusters) (SpectrumScaleConnector, e
 		endpoint := fmt.Sprintf("%s://%s:%d/", settings.GuiProtocol, guiHost, guiPort)
 		rest.endpoint = append(rest.endpoint, endpoint)
 	}
-	fmt.Printf("@@@@@@@@@ NewSpectrumRestV2 @@@@@@@@@@ %+v \n", rest)
+	// fmt.Printf("@@@@@@@@@ NewSpectrumRestV2 @@@@@@@@@@ %+v \n", rest)
 	return rest, nil
 }
 
