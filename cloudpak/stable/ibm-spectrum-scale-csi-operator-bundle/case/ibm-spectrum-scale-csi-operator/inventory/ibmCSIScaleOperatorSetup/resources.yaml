@@ -9,7 +9,7 @@ resources:
     - metadata:
         name: ibm_spectrum_scale_csi_operator
       image: cpopen/ibm-spectrum-scale-csi-operator
-      tag: v2.8.0
+      tag: v2.9.0
       digest: sha256:355a4bfc89a96b81664ec915b63ed02d5a35d49a9c8386d9c09567f33765004e
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
@@ -20,19 +20,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.8.0-amd64
+        tag: v2.9.0-amd64
       - digest: sha256:8ecf57d81ebd39c6b6941bfca54e008a771695e3c6400ebc5adfd05327ec4c67
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.8.0-ppc64le
+        tag: v2.9.0-ppc64le
       - digest: sha256:4be20e1de9eed90bccf28bef1de0afc7a2b0c1ef0526cf956190a04951db6f5c
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.8.0-s390x
+        tag: v2.9.0-s390x
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
       ref: cluster/deploy/crds/csi_v1_csiscaleoperator.yaml

@@ -466,7 +466,11 @@ func (cs *ScaleControllerServer) createFilesetVol(scVol *scaleVolume, volName st
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(scVol, volName)
 			if err != nil {
-				return "", status.Error(codes.Internal, err.Error())
+				if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
+					return "", status.Error(codes.AlreadyExists, err.Error())
+				} else {
+					return "", status.Error(codes.Internal, err.Error())
+				}
 			}
 		}
 
@@ -604,7 +608,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 			srcVolumeIDMembers, err = getVolIDMembers(srcVolumeID)
 			if err != nil {
 				glog.Errorf("volume:[%v] - Invalid Volume ID %s [%v]", volName, srcVolumeID, err)
-				return nil, err
+				return nil, status.Error(codes.NotFound, fmt.Sprintf("volume source volume is not found: %v", err))
 			}
 			isVolSource = true
 		} else {
@@ -615,7 +619,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 				snapIdMembers, err = cs.GetSnapIdMembers(snapId)
 				if err != nil {
 					glog.Errorf("volume:[%v] - Invalid snapshot ID %s [%v]", volName, snapId, err)
-					return nil, err
+					return nil, status.Error(codes.NotFound, fmt.Sprintf("volume source snapshot is not found: %v", err))
 				}
 				isSnapSource = true
 			}
@@ -1515,7 +1519,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 	volumeIdMembers, err := getVolIDMembers(volumeID)
 	if err != nil {
-		return &csi.DeleteVolumeResponse{}, err
+		return &csi.DeleteVolumeResponse{}, nil
 	}
 
 	glog.Infof("Volume Id Members [%v]", volumeIdMembers)
@@ -1688,6 +1692,10 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	var isFsMounted bool
 
 	//Assumption : filesystem_uuid is always from local/primary cluster.
+
+	if req.VolumeCapability == nil {
+		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume :volume capabilities are empty")
+	}
 
 	volumeIDMembers, err := getVolIDMembers(volumeID)
 	if err != nil {
