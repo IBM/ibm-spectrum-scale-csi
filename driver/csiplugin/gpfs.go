@@ -113,7 +113,6 @@ type ScaleDriver struct {
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
 	nscap []*csi.NodeServiceCapability
-	// scaleConfig settings.ScaleSettingsConfigMap
 }
 
 func GetScaleDriver() *ScaleDriver {
