@@ -19,14 +19,15 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/google/uuid"
-	"golang.org/x/sys/unix"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/golang/glog"
+	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
 )
 
 const loggerId = "logger_id"

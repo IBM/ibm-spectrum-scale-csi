@@ -3,16 +3,17 @@ package utils
 import (
 	"flag"
 	"os"
+
 	"github.com/golang/glog"
 )
 
-
 const logLevel = "LOGLEVEL"
+const path = "scalecsilogs"
 
 type LoggerLevel int
 
 const (
-	DEBUGPLUS LoggerLevel = iota
+	TRACE LoggerLevel = iota
 	DEBUG
 	INFO
 	WARNING
@@ -22,8 +23,8 @@ const (
 
 func (level LoggerLevel) String() string {
 	switch level {
-	case DEBUGPLUS:
-		return "DEBUGPLUS"
+	case TRACE:
+		return "TRACE"
 	case DEBUG:
 		return "DEBUG"
 	case WARNING:
@@ -42,22 +43,30 @@ func (level LoggerLevel) String() string {
 func InitLogger() {
 	level := os.Getenv(logLevel)
 	var logValue string
-	if level == "" || level == DEBUG.String() || level == DEBUGPLUS.String(){
+	if level == "" || level == DEBUG.String() || level == TRACE.String() {
 		logValue = INFO.String()
-	}else{
+	} else {
 		logValue = level
 	}
 	_ = flag.Set("alsologtostderr", "false")
 	_ = flag.Set("stderrthreshold", logValue)
-	glog.Infof("logValue: %s",logValue)
+	glog.Infof("logValue: %s", logValue)
 	if level == DEBUG.String() {
 		_ = flag.Set("v", "4")
-	} else if level == DEBUGPLUS.String() {
+	} else if level == TRACE.String() {
 		_ = flag.Set("v", "6")
 	} else {
 		_ = flag.Set("v", "0")
 	}
-	_ = flag.Set("log_dir", "/host/var/log/")
+
+	dirPath := "/host/var/log/" + path + "/"
+	if !Exists(dirPath) {
+		err := MkDir(dirPath)
+		if err != nil {
+			glog.Errorf("Failed to create log directory")
+		}
+	}
+
+	_ = flag.Set("log_dir", dirPath)
 	flag.Parse()
 }
-

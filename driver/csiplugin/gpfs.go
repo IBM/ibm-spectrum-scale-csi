@@ -117,7 +117,7 @@ type ScaleDriver struct {
 }
 
 func GetScaleDriver(ctx context.Context) *ScaleDriver {
-	glog.Infof("[%s] gpfs GetScaleDriver", utils.GetLoggerId(ctx))
+	glog.V(0).Infof("[%s] gpfs GetScaleDriver", utils.GetLoggerId(ctx))
 	return &ScaleDriver{}
 }
 
@@ -193,7 +193,7 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context,
 }
 
 func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVersion, nodeID string) error {
-	glog.Infof("[%s] gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
+	glog.V(0).Infof("[%s] gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
 	if name == "" {
 		return fmt.Errorf("Driver name missing")
 	}
