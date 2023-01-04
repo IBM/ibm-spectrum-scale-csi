@@ -19,12 +19,13 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 	"math/rand"
 	"os"
 	"path"
 	"time"
+
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/golang/glog"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 )
@@ -44,9 +45,9 @@ var (
 
 func main() {
 	ctx := setContext()
-	utils.InitLogger()
+	utils.InitLogger(ctx)
 	loggerId := utils.GetLoggerId(ctx)
-	glog.Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
+	glog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -76,7 +77,7 @@ func handle(ctx context.Context) {
 	driver := driver.GetScaleDriver(ctx)
 	err := driver.SetupScaleDriver(ctx, *driverName, vendorVersion, *nodeID)
 	if err != nil {
-		glog.Fatalf("[%s] Failed to initialize Scale CSI Driver: %v", utils.GetLoggerId(ctx), err)
+		glog.V(0).Infof("[%s] Failed to initialize Scale CSI Driver: %v", utils.GetLoggerId(ctx), err)
 	}
 	driver.Run(ctx, *endpoint)
 }

@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"context"
 	"flag"
-	"os"
-
+	"fmt"
 	"github.com/golang/glog"
+	"k8s.io/klog/v2"
+	"os"
 )
 
 const logLevel = "LOGLEVEL"
@@ -40,7 +42,7 @@ func (level LoggerLevel) String() string {
 	}
 }
 
-func InitLogger() {
+func InitLogger(ctx context.Context) {
 	level := os.Getenv(logLevel)
 	var logValue string
 	if level == "" || level == DEBUG.String() || level == TRACE.String() {
@@ -56,12 +58,12 @@ func InitLogger() {
 	} else if level == TRACE.String() {
 		_ = flag.Set("v", "6")
 	} else {
-		_ = flag.Set("v", "0")
+		_ = flag.Set("v", "1")
 	}
 
 	dirPath := "/host/var/log/" + path + "/"
-	if !Exists(dirPath) {
-		err := MkDir(dirPath)
+	if !Exists(ctx, dirPath) {
+		err := MkDir(ctx, dirPath)
 		if err != nil {
 			glog.Errorf("Failed to create log directory")
 		}
@@ -69,4 +71,30 @@ func InitLogger() {
 
 	_ = flag.Set("log_dir", dirPath)
 	flag.Parse()
+}
+
+func init() {
+	klog.NewKlogr()
+}
+
+type Logger interface {
+	Trace(ctx context.Context, format string, args ...interface{})
+}
+
+type CsiLogger struct{}
+
+func (l *CsiLogger) Trace(ctx context.Context, format string, args ...interface{}) {
+	arg := setFormat(ctx, format)
+	klog.V(6).InfofDepth(1, format, arg)
+}
+
+func setFormat(ctx context.Context, format string) string {
+	var logFormat string
+	if ctx != nil {
+		loggerId := GetLoggerId(ctx)
+		logFormat = fmt.Sprintf("[%s] %s", loggerId, format)
+		return logFormat
+	} else {
+		return format
+	}
 }

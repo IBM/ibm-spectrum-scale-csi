@@ -75,16 +75,16 @@ func GetPath(paths []string) string {
 	return resultPath
 }
 
-func Exists(path string) bool {
-	glog.V(6).Infof("utils Exists. path: %s", path)
+func Exists(ctx context.Context, path string) bool {
+	logger.Trace(ctx, "utils Exists. path: %s", path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
-func MkDir(path string) error {
-	glog.V(6).Infof("utils MkDir. path: %s", path)
+func MkDir(ctx context.Context, path string) error {
+	logger.Trace(ctx, "utils MkDir. path: %s", path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
