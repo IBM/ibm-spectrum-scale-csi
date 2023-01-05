@@ -46,7 +46,38 @@ Example:
    driver/examples/dynamic/fileset/pvcfileset.yaml
    driver/examples/dynamic/fileset/podfileset.yaml
    ```
+## For unit testing
 
+unit test cases need to be executed either from the test-suite base location(i.e. where go.mod exists) or can be executed from the packages location.
+
+To execute from the test-suite base path(where go.mod is present)
+```
+go test ./...
+To view in debug mode/detailed
+ginkgo --v -race --trace ./...
+```
+
+To execute on individual package
+```
+go test
+ginkgo --v -race --trace
+```
+
+### For code coverage/coverage-report
+
+To view consolidated report and save the report in a file(coverage.out) along with total coverage percentage shown on the terminal.
+```
+go test -r -v -race --trace -cover --coverprofile=coverage.out ./...
+```
+To view coverage bassed on each functions.
+```
+go tool cover -func=coverage.out
+```
+To view coverage and not-coverage in the webpage for more clarity.
+```
+go tool cover -html=coverage.out -o coverage.html
+Open coverage.html files in the broweser which is show the covered, skipped and non-covered codes for all the packages.
+```
 
 ## Links
 
