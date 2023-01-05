@@ -75,7 +75,7 @@ func GetPath(paths []string) string {
 }
 
 func Exists(ctx context.Context, path string) bool {
-	logger.Trace(ctx, "utils Exists. path: %s", path)
+	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
@@ -83,7 +83,7 @@ func Exists(ctx context.Context, path string) bool {
 }
 
 func MkDir(ctx context.Context, path string) error {
-	logger.Trace(ctx, "utils MkDir. path: %s", path)
+	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)

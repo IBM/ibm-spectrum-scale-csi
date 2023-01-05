@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"flag"
-	"fmt"
 	"k8s.io/klog/v2"
 	"os"
 )
@@ -71,26 +70,4 @@ func InitLogger(ctx context.Context) {
 
 	_ = flag.Set("log_dir", dirPath)
 	flag.Parse()
-}
-
-type Logger interface {
-	Trace(ctx context.Context, format string, args ...interface{})
-}
-
-type CsiLogger struct{}
-
-func (l *CsiLogger) Trace(ctx context.Context, format string, args ...interface{}) {
-	arg := setFormat(ctx, format)
-	klog.V(6).InfofDepth(1, format, arg)
-}
-
-func setFormat(ctx context.Context, format string) string {
-	var logFormat string
-	if ctx != nil {
-		loggerId := GetLoggerId(ctx)
-		logFormat = fmt.Sprintf("[%s] %s", loggerId, format)
-		return logFormat
-	} else {
-		return format
-	}
 }

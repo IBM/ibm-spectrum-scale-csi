@@ -40,7 +40,7 @@ var logger *CsiLogger
 */
 
 func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}) error {
-	logger.Trace(ctx, "http_utils UnmarshalResponse. response: %v", r.Body)
+	klog.V(6).Infof(ctx, "http_utils UnmarshalResponse. response: %v", r.Body)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -57,7 +57,7 @@ func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}
 
 func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {
 	klog.V(4).Infof("[%s] http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", GetLoggerId(ctx), requestType, requestURL, user)
-	logger.Trace(ctx, "http_utils HttpExecuteUserAuth. request payload: %v", rawPayload)
+	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth. request payload: %v", GetLoggerId(ctx), rawPayload)
 
 	payload, err := json.MarshalIndent(rawPayload, "", " ")
 	if err != nil {
@@ -79,7 +79,7 @@ func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestTy
 	request.Header.Add("Accept", "application/json")
 
 	request.SetBasicAuth(user, password)
-	logger.Trace(ctx, "http_utils HttpExecuteUserAuth request: %+v", request)
+	klog.V(6).Infof(ctx, "http_utils HttpExecuteUserAuth request: %+v", request)
 
 	return httpClient.Do(request)
 }
