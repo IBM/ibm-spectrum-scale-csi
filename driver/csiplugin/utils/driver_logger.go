@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/golang/glog"
 	"k8s.io/klog/v2"
 	"os"
 )
@@ -50,9 +49,10 @@ func InitLogger(ctx context.Context) {
 	} else {
 		logValue = level
 	}
+	klog.InitFlags(nil)
 	_ = flag.Set("alsologtostderr", "false")
 	_ = flag.Set("stderrthreshold", logValue)
-	glog.Infof("logValue: %s", logValue)
+	klog.Infof("logValue: %s", logValue)
 	if level == DEBUG.String() {
 		_ = flag.Set("v", "4")
 	} else if level == TRACE.String() {
@@ -65,16 +65,12 @@ func InitLogger(ctx context.Context) {
 	if !Exists(ctx, dirPath) {
 		err := MkDir(ctx, dirPath)
 		if err != nil {
-			glog.Errorf("Failed to create log directory")
+			klog.Errorf("Failed to create log directory")
 		}
 	}
 
 	_ = flag.Set("log_dir", dirPath)
 	flag.Parse()
-}
-
-func init() {
-	klog.NewKlogr()
 }
 
 type Logger interface {

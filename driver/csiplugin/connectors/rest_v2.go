@@ -28,9 +28,9 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/klog/v2"
 )
 
 const errConnectionRefused string = "connection refused"
@@ -47,7 +47,7 @@ type spectrumRestV2 struct {
 }
 
 func (s *spectrumRestV2) isStatusOK(statusCode int) bool {
-	glog.V(4).Infof("rest_v2 isStatusOK. statusCode: %d", statusCode)
+	klog.V(4).Infof("rest_v2 isStatusOK. statusCode: %d", statusCode)
 
 	if (statusCode == http.StatusOK) ||
 		(statusCode == http.StatusCreated) ||
@@ -58,7 +58,7 @@ func (s *spectrumRestV2) isStatusOK(statusCode int) bool {
 }
 
 func (s *spectrumRestV2) checkAsynchronousJob(statusCode int) bool {
-	glog.V(4).Infof("rest_v2 checkAsynchronousJob. statusCode: %d", statusCode)
+	klog.V(4).Infof("rest_v2 checkAsynchronousJob. statusCode: %d", statusCode)
 	if (statusCode == http.StatusAccepted) ||
 		(statusCode == http.StatusCreated) {
 		return true
@@ -67,7 +67,7 @@ func (s *spectrumRestV2) checkAsynchronousJob(statusCode int) bool {
 }
 
 func (s *spectrumRestV2) isRequestAccepted(ctx context.Context, response GenericResponse, url string) error {
-	glog.V(4).Infof("[%s] rest_v2 isRequestAccepted. url: %s, response: %v", utils.GetLoggerId(ctx), url, response)
+	klog.V(4).Infof("[%s] rest_v2 isRequestAccepted. url: %s, response: %v", utils.GetLoggerId(ctx), url, response)
 
 	if !s.isStatusOK(response.Status.Code) {
 		return fmt.Errorf("error %v for url %v", response, url)
@@ -80,13 +80,13 @@ func (s *spectrumRestV2) isRequestAccepted(ctx context.Context, response Generic
 }
 
 func (s *spectrumRestV2) WaitForJobCompletion(ctx context.Context, statusCode int, jobID uint64) error {
-	glog.V(4).Infof("[%s] rest_v2 waitForJobCompletion. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
+	klog.V(4).Infof("[%s] rest_v2 waitForJobCompletion. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
 		jobURL := fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID)
 		_, err := s.AsyncJobCompletion(ctx, jobURL)
 		if err != nil {
-			glog.Errorf("[%s] error in waiting for job completion %v, %v", utils.GetLoggerId(ctx), jobID, err)
+			klog.Errorf("[%s] error in waiting for job completion %v, %v", utils.GetLoggerId(ctx), jobID, err)
 			return err
 		}
 	}
@@ -94,7 +94,7 @@ func (s *spectrumRestV2) WaitForJobCompletion(ctx context.Context, statusCode in
 }
 
 func (s *spectrumRestV2) WaitForJobCompletionWithResp(ctx context.Context, statusCode int, jobID uint64) (GenericResponse, error) {
-	glog.V(4).Infof("[%s] rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
+	klog.V(4).Infof("[%s] rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
 		response := GenericResponse{}
@@ -109,7 +109,7 @@ func (s *spectrumRestV2) WaitForJobCompletionWithResp(ctx context.Context, statu
 }
 
 func (s *spectrumRestV2) AsyncJobCompletion(ctx context.Context, jobURL string) (GenericResponse, error) {
-	glog.V(4).Infof("[%s] rest_v2 AsyncJobCompletion. jobURL: %s", utils.GetLoggerId(ctx), jobURL)
+	klog.V(4).Infof("[%s] rest_v2 AsyncJobCompletion. jobURL: %s", utils.GetLoggerId(ctx), jobURL)
 
 	jobQueryResponse := GenericResponse{}
 	var waitTime time.Duration = 2
@@ -134,13 +134,13 @@ func (s *spectrumRestV2) AsyncJobCompletion(ctx context.Context, jobURL string) 
 	if jobQueryResponse.Jobs[0].Status == "COMPLETED" || jobQueryResponse.Jobs[0].Status == "UNKNOWN" {
 		return jobQueryResponse, nil
 	} else {
-		glog.Errorf("[%s] Async Job failed: %v", utils.GetLoggerId(ctx), jobQueryResponse)
+		klog.Errorf("[%s] Async Job failed: %v", utils.GetLoggerId(ctx), jobQueryResponse)
 		return GenericResponse{}, fmt.Errorf("%v", jobQueryResponse.Jobs[0].Result.Stderr)
 	}
 }
 
 func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (SpectrumScaleConnector, error) {
-	glog.V(4).Infof("[%s] rest_v2 NewSpectrumRestV2.", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 NewSpectrumRestV2.", utils.GetLoggerId(ctx))
 
 	guiUser := scaleConfig.MgmtUsername
 	guiPwd := scaleConfig.MgmtPassword
@@ -153,11 +153,11 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 			return &spectrumRestV2{}, fmt.Errorf("parsing CA cert %v failed", scaleConfig.Cacert)
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
-		glog.V(4).Infof("[%s] created Spectrum Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
+		klog.V(4).Infof("[%s] created Spectrum Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	} else {
 		//#nosec G402 InsecureSkipVerify was requested by user.
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
-		glog.V(4).Infof("[%s] created Spectrum Scale connector without SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
+		klog.V(4).Infof("[%s] created Spectrum Scale connector without SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	}
 
 	rest = &spectrumRestV2{
@@ -183,14 +183,14 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 }
 
 func (s *spectrumRestV2) GetClusterId(ctx context.Context) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetClusterId", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 GetClusterId", utils.GetLoggerId(ctx))
 
 	getClusterURL := "scalemgmt/v2/cluster"
 	getClusterResponse := GetClusterResponse{}
 
 	err := s.doHTTP(ctx, getClusterURL, "GET", &getClusterResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get cluster ID: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Unable to get cluster ID: %v", utils.GetLoggerId(ctx), err)
 		return "", err
 	}
 	cidStr := fmt.Sprintf("%v", getClusterResponse.Cluster.ClusterSummary.ClusterID)
@@ -199,28 +199,28 @@ func (s *spectrumRestV2) GetClusterId(ctx context.Context) (string, error) {
 
 // GetClusterSummary function returns the information details of the cluster.
 func (s *spectrumRestV2) GetClusterSummary(ctx context.Context) (ClusterSummary, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetClusterSummary", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 GetClusterSummary", utils.GetLoggerId(ctx))
 
 	getClusterURL := "scalemgmt/v2/cluster"
 	getClusterResponse := GetClusterResponse{}
 
 	err := s.doHTTP(ctx, getClusterURL, "GET", &getClusterResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get cluster summary: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Unable to get cluster summary: %v", utils.GetLoggerId(ctx), err)
 		return ClusterSummary{}, err
 	}
 	return getClusterResponse.Cluster.ClusterSummary, nil
 }
 
 func (s *spectrumRestV2) GetTimeZoneOffset(ctx context.Context) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetTimeZoneOffset", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 GetTimeZoneOffset", utils.GetLoggerId(ctx))
 
 	getConfigURL := "scalemgmt/v2/config"
 	getConfigResponse := GetConfigResponse{}
 
 	err := s.doHTTP(ctx, getConfigURL, "GET", &getConfigResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get cluster configuration: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Unable to get cluster configuration: %v", utils.GetLoggerId(ctx), err)
 		return "", err
 	}
 	timezone := fmt.Sprintf("%v", getConfigResponse.Config.ClusterConfig.TimeZoneOffset)
@@ -228,14 +228,14 @@ func (s *spectrumRestV2) GetTimeZoneOffset(ctx context.Context) (string, error) 
 }
 
 func (s *spectrumRestV2) GetScaleVersion(ctx context.Context) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetScaleVersion", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 GetScaleVersion", utils.GetLoggerId(ctx))
 
 	getVersionURL := "scalemgmt/v2/info"
 	getVersionResponse := GetInfoResponse_v2{}
 
 	err := s.doHTTP(ctx, getVersionURL, "GET", &getVersionResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] unable to get Spectrum Scale version: [%v]", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] unable to get Spectrum Scale version: [%v]", utils.GetLoggerId(ctx), err)
 		return "", err
 	}
 
@@ -247,14 +247,14 @@ func (s *spectrumRestV2) GetScaleVersion(ctx context.Context) (string, error) {
 }
 
 func (s *spectrumRestV2) GetFilesystemMountDetails(ctx context.Context, filesystemName string) (MountInfo, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetFilesystemMountDetails. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 GetFilesystemMountDetails. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesystemURL, "GET", &getFilesystemResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get filesystem details for %s: %v", utils.GetLoggerId(ctx), filesystemName, err)
+		klog.Errorf("[%s] Unable to get filesystem details for %s: %v", utils.GetLoggerId(ctx), filesystemName, err)
 		return MountInfo{}, err
 	}
 
@@ -266,19 +266,19 @@ func (s *spectrumRestV2) GetFilesystemMountDetails(ctx context.Context, filesyst
 }
 
 func (s *spectrumRestV2) IsFilesystemMountedOnGUINode(ctx context.Context, filesystemName string) (bool, error) {
-	glog.V(4).Infof("[%s] rest_v2 IsFilesystemMountedOnGUINode. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 IsFilesystemMountedOnGUINode. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	mountURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	mountResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(ctx, mountURL, "GET", &mountResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in getting filesystem mount details for %s: %v", utils.GetLoggerId(ctx), filesystemName, err)
+		klog.Errorf("[%s] Error in getting filesystem mount details for %s: %v", utils.GetLoggerId(ctx), filesystemName, err)
 		return false, err
 	}
 
 	if len(mountResponse.FileSystems) > 0 {
-		glog.V(4).Infof("[%s] filesystem [%s] is [%v] on GUI node", utils.GetLoggerId(ctx), filesystemName, mountResponse.FileSystems[0].Mount.Status)
+		klog.V(4).Infof("[%s] filesystem [%s] is [%v] on GUI node", utils.GetLoggerId(ctx), filesystemName, mountResponse.FileSystems[0].Mount.Status)
 		if mountResponse.FileSystems[0].Mount.Status == "mounted" {
 			return true, nil
 		} else if mountResponse.FileSystems[0].Mount.Status == "not mounted" {
@@ -291,14 +291,14 @@ func (s *spectrumRestV2) IsFilesystemMountedOnGUINode(ctx context.Context, files
 }
 
 func (s *spectrumRestV2) ListFilesystems(ctx context.Context) ([]string, error) {
-	glog.V(4).Infof("[%s] rest_v2 ListFilesystems", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 ListFilesystems", utils.GetLoggerId(ctx))
 
 	listFilesystemsURL := "scalemgmt/v2/filesystems"
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(ctx, listFilesystemsURL, "GET", &getFilesystemResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in listing filesystems: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in listing filesystems: %v", utils.GetLoggerId(ctx), err)
 		return nil, err
 	}
 	fsNumber := len(getFilesystemResponse.FileSystems)
@@ -310,14 +310,14 @@ func (s *spectrumRestV2) ListFilesystems(ctx context.Context) ([]string, error) 
 }
 
 func (s *spectrumRestV2) GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetFilesystemMountpoint. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 GetFilesystemMountpoint. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesystemURL, "GET", &getFilesystemResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in getting filesystem details for %s: %v", utils.GetLoggerId(ctx), filesystemName, err)
+		klog.Errorf("[%s] Error in getting filesystem details for %s: %v", utils.GetLoggerId(ctx), filesystemName, err)
 		return "", err
 	}
 
@@ -329,7 +329,7 @@ func (s *spectrumRestV2) GetFilesystemMountpoint(ctx context.Context, filesystem
 }
 
 func (s *spectrumRestV2) CopyFsetSnapshotPath(ctx context.Context, filesystemName string, filesetName string, snapshotName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
-	glog.V(4).Infof("[%s] rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s, nodeclass: %s", utils.GetLoggerId(ctx), filesystemName, filesetName, snapshotName, srcPath, targetPath, nodeclass)
+	klog.V(4).Infof("[%s] rest_v2 CopyFsetSnapshotPath. filesystem: %s, fileset: %s, snapshot: %s, srcPath: %s, targetPath: %s, nodeclass: %s", utils.GetLoggerId(ctx), filesystemName, filesetName, snapshotName, srcPath, targetPath, nodeclass)
 
 	copySnapReq := CopySnapshotRequest{}
 	copySnapReq.TargetPath = targetPath
@@ -344,13 +344,13 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(ctx context.Context, filesystemNam
 
 	err := s.doHTTP(ctx, copySnapURL, "PUT", &copySnapResp, copySnapReq)
 	if err != nil {
-		glog.Errorf("[%s] Error in copy snapshot request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in copy snapshot request: %v", utils.GetLoggerId(ctx), err)
 		return 0, 0, err
 	}
 
 	err = s.isRequestAccepted(ctx, copySnapResp, copySnapURL)
 	if err != nil {
-		glog.Errorf("[%s] request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return 0, 0, err
 	}
 
@@ -358,7 +358,7 @@ func (s *spectrumRestV2) CopyFsetSnapshotPath(ctx context.Context, filesystemNam
 }
 
 func (s *spectrumRestV2) CopyFilesetPath(ctx context.Context, filesystemName string, filesetName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
-	glog.V(4).Infof("[%s] rest_v2 CopyFilesetPath. filesystem: %s, fileset: %s, srcPath: %s, targetPath: %s, nodeclass: %s", utils.GetLoggerId(ctx), filesystemName, filesetName, srcPath, targetPath, nodeclass)
+	klog.V(4).Infof("[%s] rest_v2 CopyFilesetPath. filesystem: %s, fileset: %s, srcPath: %s, targetPath: %s, nodeclass: %s", utils.GetLoggerId(ctx), filesystemName, filesetName, srcPath, targetPath, nodeclass)
 
 	copyVolReq := CopyVolumeRequest{}
 	copyVolReq.TargetPath = targetPath
@@ -373,13 +373,13 @@ func (s *spectrumRestV2) CopyFilesetPath(ctx context.Context, filesystemName str
 
 	err := s.doHTTP(ctx, copyVolURL, "PUT", &copyVolResp, copyVolReq)
 	if err != nil {
-		glog.Errorf("[%s] Error in copy volume request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in copy volume request: %v", utils.GetLoggerId(ctx), err)
 		return 0, 0, err
 	}
 
 	err = s.isRequestAccepted(ctx, copyVolResp, copyVolURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return 0, 0, err
 	}
 
@@ -387,7 +387,7 @@ func (s *spectrumRestV2) CopyFilesetPath(ctx context.Context, filesystemName str
 }
 
 func (s *spectrumRestV2) CopyDirectoryPath(ctx context.Context, filesystemName string, srcPath string, targetPath string, nodeclass string) (int, uint64, error) {
-	glog.V(4).Infof("[%s] rest_v2 CopyDirectoryPath. filesystem: %s, srcPath: %s, targetPath: %s, nodeclass: %s", utils.GetLoggerId(ctx), filesystemName, srcPath, targetPath, nodeclass)
+	klog.V(4).Infof("[%s] rest_v2 CopyDirectoryPath. filesystem: %s, srcPath: %s, targetPath: %s, nodeclass: %s", utils.GetLoggerId(ctx), filesystemName, srcPath, targetPath, nodeclass)
 
 	copyVolReq := CopyVolumeRequest{}
 	copyVolReq.TargetPath = targetPath
@@ -402,13 +402,13 @@ func (s *spectrumRestV2) CopyDirectoryPath(ctx context.Context, filesystemName s
 
 	err := s.doHTTP(ctx, copyVolURL, "PUT", &copyVolResp, copyVolReq)
 	if err != nil {
-		glog.Errorf("[%s] Error in copy volume request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in copy volume request: %v", utils.GetLoggerId(ctx), err)
 		return 0, 0, err
 	}
 
 	err = s.isRequestAccepted(ctx, copyVolResp, copyVolURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return 0, 0, err
 	}
 
@@ -417,7 +417,7 @@ func (s *spectrumRestV2) CopyDirectoryPath(ctx context.Context, filesystemName s
 
 func (s *spectrumRestV2) CreateSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", loggerId, filesystemName, filesetName, snapshotName)
+	klog.V(4).Infof("[%s] rest_v2 CreateSnapshot. filesystem: %s, fileset: %s, snapshot: %v", loggerId, filesystemName, filesetName, snapshotName)
 
 	snapshotreq := CreateSnapshotRequest{}
 	snapshotreq.SnapshotName = snapshotName
@@ -427,13 +427,13 @@ func (s *spectrumRestV2) CreateSnapshot(ctx context.Context, filesystemName stri
 
 	err := s.doHTTP(ctx, createSnapshotURL, "POST", &createSnapshotResponse, snapshotreq)
 	if err != nil {
-		glog.Errorf("[%s] error in create snapshot request: %v", loggerId, err)
+		klog.Errorf("[%s] error in create snapshot request: %v", loggerId, err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, createSnapshotResponse, createSnapshotURL)
 	if err != nil {
-		glog.Errorf("[%s] request not accepted for processing: %v", loggerId, err)
+		klog.Errorf("[%s] request not accepted for processing: %v", loggerId, err)
 		return err
 	}
 
@@ -443,7 +443,7 @@ func (s *spectrumRestV2) CreateSnapshot(ctx context.Context, filesystemName stri
 			fmt.Println(err)
 			return nil
 		}
-		glog.Errorf("[%s] unable to create snapshot %s: %v", loggerId, snapshotName, err)
+		klog.Errorf("[%s] unable to create snapshot %s: %v", loggerId, snapshotName, err)
 		return err
 	}
 
@@ -452,26 +452,26 @@ func (s *spectrumRestV2) CreateSnapshot(ctx context.Context, filesystemName stri
 
 func (s *spectrumRestV2) DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", loggerId, filesystemName, filesetName, snapshotName)
+	klog.V(4).Infof("[%s] rest_v2 DeleteSnapshot. filesystem: %s, fileset: %s, snapshot: %v", loggerId, filesystemName, filesetName, snapshotName)
 
 	deleteSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
 	deleteSnapshotResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, deleteSnapshotURL, "DELETE", &deleteSnapshotResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in delete snapshot request: %v", loggerId, err)
+		klog.Errorf("[%s] Error in delete snapshot request: %v", loggerId, err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, deleteSnapshotResponse, deleteSnapshotURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, deleteSnapshotResponse.Status.Code, deleteSnapshotResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] Unable to delete snapshot %s: %v", loggerId, snapshotName, err)
+		klog.Errorf("[%s] Unable to delete snapshot %s: %v", loggerId, snapshotName, err)
 		return err
 	}
 
@@ -479,7 +479,7 @@ func (s *spectrumRestV2) DeleteSnapshot(ctx context.Context, filesystemName stri
 }
 
 func (s *spectrumRestV2) GetLatestFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	getLatestFilesetSnapshotsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/latest", filesystemName, filesetName)
 	getLatestFilesetSnapshotsResponse := GetSnapshotResponse_v2{}
@@ -493,7 +493,7 @@ func (s *spectrumRestV2) GetLatestFilesetSnapshots(ctx context.Context, filesyst
 }
 
 func (s *spectrumRestV2) UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
-	glog.V(4).Infof("[%s] rest_v2 UpdateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
+	klog.V(4).Infof("[%s] rest_v2 UpdateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 	filesetreq := CreateFilesetRequest{}
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
 	if inodeLimitSpecified {
@@ -504,26 +504,26 @@ func (s *spectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 	updateFilesetResponse := GenericResponse{}
 	err := s.doHTTP(ctx, updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
 	if err != nil {
-		glog.Errorf("[%s] error in update fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] error in update fileset request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, updateFilesetResponse, updateFilesetURL)
 	if err != nil {
-		glog.Errorf("[%s] request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, updateFilesetResponse.Status.Code, updateFilesetResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] unable to update fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		klog.Errorf("[%s] unable to update fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
 		return err
 	}
 	return nil
 }
 
 func (s *spectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
-	glog.V(4).Infof("[%s] rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
+	klog.V(4).Infof("[%s] rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 
 	filesetreq := CreateFilesetRequest{}
 	filesetreq.FilesetName = filesetName
@@ -574,13 +574,13 @@ func (s *spectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 
 	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)
 	if err != nil {
-		glog.Errorf("[%s] Error in create fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in create fileset request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, createFilesetResponse, createFilesetURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
@@ -590,14 +590,14 @@ func (s *spectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 			fmt.Println(err)
 			return nil
 		}
-		glog.Errorf("[%s] Unable to create fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		klog.Errorf("[%s] Unable to create fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
 		return err
 	}
 	return nil
 }
 
 func (s *spectrumRestV2) DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error {
-	glog.V(4).Infof("[%s] rest_v2 DeleteFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 DeleteFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	deleteFilesetResponse := GenericResponse{}
@@ -605,23 +605,23 @@ func (s *spectrumRestV2) DeleteFileset(ctx context.Context, filesystemName strin
 	err := s.doHTTP(ctx, deleteFilesetURL, "DELETE", &deleteFilesetResponse, nil)
 	if err != nil {
 		if strings.Contains(deleteFilesetResponse.Status.Message, "Invalid value in 'fsetName'") { // job failed as dir already exists
-			glog.V(6).Infof("[%s] Fileset would have been deleted. So returning success %v", utils.GetLoggerId(ctx), err)
+			klog.V(6).Infof("[%s] Fileset would have been deleted. So returning success %v", utils.GetLoggerId(ctx), err)
 			return nil
 		}
 
-		glog.Errorf("[%s] Error in delete fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in delete fileset request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, deleteFilesetResponse, deleteFilesetURL)
 	if err != nil {
-		glog.Errorf("Request not accepted for processing: %v", err)
+		klog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, deleteFilesetResponse.Status.Code, deleteFilesetResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("Unable to delete fileset %s: %v", filesetName, err)
+		klog.Errorf("Unable to delete fileset %s: %v", filesetName, err)
 		return err
 	}
 
@@ -629,7 +629,7 @@ func (s *spectrumRestV2) DeleteFileset(ctx context.Context, filesystemName strin
 }
 
 func (s *spectrumRestV2) LinkFileset(ctx context.Context, filesystemName string, filesetName string, linkpath string) error {
-	glog.V(4).Infof("[%s] rest_v2 LinkFileset. filesystem: %s, fileset: %s, linkpath: %s", utils.GetLoggerId(ctx), filesystemName, filesetName, linkpath)
+	klog.V(4).Infof("[%s] rest_v2 LinkFileset. filesystem: %s, fileset: %s, linkpath: %s", utils.GetLoggerId(ctx), filesystemName, filesetName, linkpath)
 
 	linkReq := LinkFilesetRequest{}
 	linkReq.Path = linkpath
@@ -638,26 +638,26 @@ func (s *spectrumRestV2) LinkFileset(ctx context.Context, filesystemName string,
 
 	err := s.doHTTP(ctx, linkFilesetURL, "POST", &linkFilesetResponse, linkReq)
 	if err != nil {
-		glog.Errorf("[%s] Error in link fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in link fileset request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, linkFilesetResponse, linkFilesetURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, linkFilesetResponse.Status.Code, linkFilesetResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] Error in linking fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		klog.Errorf("[%s] Error in linking fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
 		return err
 	}
 	return nil
 }
 
 func (s *spectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName string, filesetName string) error {
-	glog.V(4).Infof("[%s] rest_v2 UnlinkFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 UnlinkFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	unlinkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
 	unlinkFilesetResponse := GenericResponse{}
@@ -665,19 +665,19 @@ func (s *spectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName strin
 	err := s.doHTTP(ctx, unlinkFilesetURL, "DELETE", &unlinkFilesetResponse, nil)
 
 	if err != nil {
-		glog.Errorf("[%s] Error in unlink fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in unlink fileset request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, unlinkFilesetResponse, unlinkFilesetURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, unlinkFilesetResponse.Status.Code, unlinkFilesetResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] Error in unlink fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		klog.Errorf("[%s] Error in unlink fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
 		return err
 	}
 
@@ -685,19 +685,19 @@ func (s *spectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName strin
 }
 
 func (s *spectrumRestV2) ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
-	glog.V(4).Infof("[%s] rest_v2 ListFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 ListFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in list fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in list fileset request: %v", utils.GetLoggerId(ctx), err)
 		return Fileset_v2{}, err
 	}
 
 	if len(getFilesetResponse.Filesets) == 0 {
-		glog.Errorf("[%s] No fileset returned for %s", utils.GetLoggerId(ctx), filesetName)
+		klog.Errorf("[%s] No fileset returned for %s", utils.GetLoggerId(ctx), filesetName)
 		return Fileset_v2{}, fmt.Errorf("no fileset returned for %s", filesetName)
 	}
 
@@ -705,14 +705,14 @@ func (s *spectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 }
 
 func (s *spectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
-	glog.V(4).Infof("[%s] rest_v2 ListAllFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 ListAllFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	getFilesetsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.inodeSpace=%d", filesystemName, inodeSpace)
 	getFilesetsResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetsURL, "GET", &getFilesetsResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in list filesets request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in list filesets request: %v", utils.GetLoggerId(ctx), err)
 		return nil, err
 	}
 
@@ -721,7 +721,7 @@ func (s *spectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemNa
 
 func (s *spectrumRestV2) IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 IsFilesetLinked. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	fileset, err := s.ListFileset(ctx, filesystemName, filesetName)
 	if err != nil {
@@ -736,14 +736,14 @@ func (s *spectrumRestV2) IsFilesetLinked(ctx context.Context, filesystemName str
 }
 
 func (s *spectrumRestV2) FilesetRefreshTask(ctx context.Context) error {
-	glog.V(4).Infof("[%s] rest_v2 FilesetRefreshTask", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 FilesetRefreshTask", utils.GetLoggerId(ctx))
 
 	filesetRefreshURL := "scalemgmt/v2/refreshTask/enqueue?taskId=FILESETS&maxDelay=0"
 	filesetRefreshResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, filesetRefreshURL, "POST", &filesetRefreshResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in fileset refresh task: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in fileset refresh task: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
@@ -751,7 +751,7 @@ func (s *spectrumRestV2) FilesetRefreshTask(ctx context.Context) error {
 }
 
 func (s *spectrumRestV2) MakeDirectory(ctx context.Context, filesystemName string, relativePath string, uid string, gid string) error {
-	glog.V(4).Infof("[%s] rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %s, gid: %s", utils.GetLoggerId(ctx), filesystemName, relativePath, uid, gid)
+	klog.V(4).Infof("[%s] rest_v2 MakeDirectory. filesystem: %s, path: %s, uid: %s, gid: %s", utils.GetLoggerId(ctx), filesystemName, relativePath, uid, gid)
 
 	dirreq := CreateMakeDirRequest{}
 
@@ -785,24 +785,24 @@ func (s *spectrumRestV2) MakeDirectory(ctx context.Context, filesystemName strin
 	err := s.doHTTP(ctx, makeDirURL, "POST", &makeDirResponse, dirreq)
 
 	if err != nil {
-		glog.Errorf("[%s] Error in make directory request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in make directory request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, makeDirResponse, makeDirURL)
 	if err != nil {
-		glog.Errorf("Request not accepted for processing: %v", err)
+		klog.Errorf("Request not accepted for processing: %v", err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
-			glog.V(6).Infof("[%s] Directory exists. %v", utils.GetLoggerId(ctx), err)
+			klog.V(6).Infof("[%s] Directory exists. %v", utils.GetLoggerId(ctx), err)
 			return nil
 		}
 
-		glog.Errorf("[%s] Unable to make directory %s: %v.", utils.GetLoggerId(ctx), relativePath, err)
+		klog.Errorf("[%s] Unable to make directory %s: %v.", utils.GetLoggerId(ctx), relativePath, err)
 		return err
 	}
 
@@ -810,7 +810,7 @@ func (s *spectrumRestV2) MakeDirectory(ctx context.Context, filesystemName strin
 }
 
 func (s *spectrumRestV2) MakeDirectoryV2(ctx context.Context, filesystemName string, relativePath string, uid string, gid string, permissions string) error {
-	glog.V(4).Infof("[%s] rest_v2 MakeDirectoryV2. filesystem: %s, path: %s, uid: %s, gid: %s, permissions: %s", utils.GetLoggerId(ctx), filesystemName, relativePath, uid, gid, permissions)
+	klog.V(4).Infof("[%s] rest_v2 MakeDirectoryV2. filesystem: %s, path: %s, uid: %s, gid: %s, permissions: %s", utils.GetLoggerId(ctx), filesystemName, relativePath, uid, gid, permissions)
 
 	dirreq := CreateMakeDirRequest{}
 
@@ -846,24 +846,24 @@ func (s *spectrumRestV2) MakeDirectoryV2(ctx context.Context, filesystemName str
 	err := s.doHTTP(ctx, makeDirURL, "POST", &makeDirResponse, dirreq)
 
 	if err != nil {
-		glog.Errorf("[%s] Error in make directory request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in make directory request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, makeDirResponse, makeDirURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, makeDirResponse.Status.Code, makeDirResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0762C") { // job failed as dir already exists
-			glog.V(6).Infof("[%s] Directory exists. %v", utils.GetLoggerId(ctx), err)
+			klog.V(6).Infof("[%s] Directory exists. %v", utils.GetLoggerId(ctx), err)
 			return nil
 		}
 
-		glog.Errorf("[%s] Unable to make directory %s: %v.", utils.GetLoggerId(ctx), relativePath, err)
+		klog.Errorf("[%s] Unable to make directory %s: %v.", utils.GetLoggerId(ctx), relativePath, err)
 		return err
 	}
 
@@ -872,7 +872,7 @@ func (s *spectrumRestV2) MakeDirectoryV2(ctx context.Context, filesystemName str
 
 func (s *spectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", loggerId, filesystemName, filesetName, quota)
+	klog.V(4).Infof("[%s] rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", loggerId, filesystemName, filesetName, quota)
 
 	setQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
 	quotaRequest := SetQuotaRequest_v2{}
@@ -887,40 +887,40 @@ func (s *spectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName str
 
 	err := s.doHTTP(ctx, setQuotaURL, "POST", &setQuotaResponse, quotaRequest)
 	if err != nil {
-		glog.Errorf("[%s] Error in set fileset quota request: %v", loggerId, err)
+		klog.Errorf("[%s] Error in set fileset quota request: %v", loggerId, err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, setQuotaResponse, setQuotaURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", loggerId, err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, setQuotaResponse.Status.Code, setQuotaResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] Unable to set quota for fileset %s: %v", loggerId, filesetName, err)
+		klog.Errorf("[%s] Unable to set quota for fileset %s: %v", loggerId, filesetName, err)
 		return err
 	}
 	return nil
 }
 
 func (s *spectrumRestV2) CheckIfFSQuotaEnabled(ctx context.Context, filesystemName string) error {
-	glog.V(4).Infof("[%s] rest_v2 CheckIfFSQuotaEnabled. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfFSQuotaEnabled. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	checkQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
 	QuotaResponse := GetQuotaResponse_v2{}
 
 	err := s.doHTTP(ctx, checkQuotaURL, "GET", &QuotaResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Error in check quota: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in check quota: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 	return nil
 }
 
 func (s *spectrumRestV2) IsValidNodeclass(ctx context.Context, nodeclass string) (bool, error) {
-	glog.V(4).Infof("[%s] rest_v2 IsValidNodeclass. nodeclass: %s", utils.GetLoggerId(ctx), nodeclass)
+	klog.V(4).Infof("[%s] rest_v2 IsValidNodeclass. nodeclass: %s", utils.GetLoggerId(ctx), nodeclass)
 
 	checkNodeclassURL := fmt.Sprintf("scalemgmt/v2/nodeclasses/%s", nodeclass)
 	nodeclassResponse := GenericResponse{}
@@ -937,14 +937,14 @@ func (s *spectrumRestV2) IsValidNodeclass(ctx context.Context, nodeclass string)
 }
 
 func (s *spectrumRestV2) IsSnapshotSupported(ctx context.Context) (bool, error) {
-	glog.V(4).Infof("[%s] rest_v2 IsSnapshotSupported", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] rest_v2 IsSnapshotSupported", utils.GetLoggerId(ctx))
 
 	getVersionURL := "scalemgmt/v2/info"
 	getVersionResponse := GetInfoResponse_v2{}
 
 	err := s.doHTTP(ctx, getVersionURL, "GET", &getVersionResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get cluster information: [%v]", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Unable to get cluster information: [%v]", utils.GetLoggerId(ctx), err)
 		return false, err
 	}
 
@@ -956,19 +956,19 @@ func (s *spectrumRestV2) IsSnapshotSupported(ctx context.Context) (bool, error) 
 }
 
 func (s *spectrumRestV2) GetFilesetQuotaDetails(ctx context.Context, filesystemName string, filesetName string) (Quota_v2, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 GetFilesetQuotaDetails. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	listQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas?filter=objectName=%s", filesystemName, filesetName)
 	listQuotaResponse := GetQuotaResponse_v2{}
 
 	err := s.doHTTP(ctx, listQuotaURL, "GET", &listQuotaResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to fetch quota information for fileset %s:%s: [%v]", utils.GetLoggerId(ctx), filesystemName, filesetName, err)
+		klog.Errorf("[%s] Unable to fetch quota information for fileset %s:%s: [%v]", utils.GetLoggerId(ctx), filesystemName, filesetName, err)
 		return Quota_v2{}, err
 	}
 
 	if len(listQuotaResponse.Quotas) == 0 {
-		glog.Errorf("[%s] No quota information found for fileset %s:%s ", utils.GetLoggerId(ctx), filesystemName, filesetName)
+		klog.Errorf("[%s] No quota information found for fileset %s:%s ", utils.GetLoggerId(ctx), filesystemName, filesetName)
 		return Quota_v2{}, nil
 	}
 
@@ -977,7 +977,7 @@ func (s *spectrumRestV2) GetFilesetQuotaDetails(ctx context.Context, filesystemN
 
 func (s *spectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 ListFilesetQuota. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	listQuotaResponse, err := s.GetFilesetQuotaDetails(ctx, filesystemName, filesetName)
 
@@ -988,21 +988,21 @@ func (s *spectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName st
 	if listQuotaResponse.BlockLimit > 0 {
 		return fmt.Sprintf("%dK", listQuotaResponse.BlockLimit), nil
 	} else {
-		glog.Errorf("[%s] No quota information found for fileset %s", loggerId, filesetName)
+		klog.Errorf("[%s] No quota information found for fileset %s", loggerId, filesetName)
 		return "", nil
 	}
 }
 
 func (s *spectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method string, responseObject interface{}, param interface{}) error {
-	glog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, param)
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, param)
 	endpoint := s.endpoint[s.endPointIndex]
-	glog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	response, err := utils.HttpExecuteUserAuth(ctx, s.httpClient, method, endpoint+urlSuffix, s.user, s.password, param)
 
 	activeEndpointFound := false
 	if err != nil {
 		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) {
-			glog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
+			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
 			n := len(s.endpoint)
@@ -1014,21 +1014,21 @@ func (s *spectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 					break
 				} else {
 					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) {
-						glog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
+						klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 					} else {
-						glog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
+						klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
 					}
 				}
 			}
 		} else {
-			glog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
+			klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
 			return err
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
-		glog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 	defer response.Body.Close()
@@ -1050,7 +1050,7 @@ func (s *spectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 }
 
 func (s *spectrumRestV2) MountFilesystem(ctx context.Context, filesystemName string, nodeName string) error { //nolint:dupl
-	glog.V(4).Infof("[%s] rest_v2 MountFilesystem. filesystem: %s, node: %s", utils.GetLoggerId(ctx), filesystemName, nodeName)
+	klog.V(4).Infof("[%s] rest_v2 MountFilesystem. filesystem: %s, node: %s", utils.GetLoggerId(ctx), filesystemName, nodeName)
 
 	mountreq := MountFilesystemRequest{}
 	mountreq.Nodes = append(mountreq.Nodes, nodeName)
@@ -1060,26 +1060,26 @@ func (s *spectrumRestV2) MountFilesystem(ctx context.Context, filesystemName str
 
 	err := s.doHTTP(ctx, mountFilesystemURL, "PUT", &mountFilesystemResponse, mountreq)
 	if err != nil {
-		glog.Errorf("[%s] Error in mount filesystem request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in mount filesystem request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, mountFilesystemResponse, mountFilesystemURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, mountFilesystemResponse.Status.Code, mountFilesystemResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] Unable to Mount filesystem %s on node %s: %v", utils.GetLoggerId(ctx), filesystemName, nodeName, err)
+		klog.Errorf("[%s] Unable to Mount filesystem %s on node %s: %v", utils.GetLoggerId(ctx), filesystemName, nodeName, err)
 		return err
 	}
 	return nil
 }
 
 func (s *spectrumRestV2) UnmountFilesystem(ctx context.Context, filesystemName string, nodeName string) error { //nolint:dupl
-	glog.V(4).Infof("[%s] rest_v2 UnmountFilesystem. filesystem: %s, node: %s", utils.GetLoggerId(ctx), filesystemName, nodeName)
+	klog.V(4).Infof("[%s] rest_v2 UnmountFilesystem. filesystem: %s, node: %s", utils.GetLoggerId(ctx), filesystemName, nodeName)
 
 	unmountreq := UnmountFilesystemRequest{}
 	unmountreq.Nodes = append(unmountreq.Nodes, nodeName)
@@ -1089,19 +1089,19 @@ func (s *spectrumRestV2) UnmountFilesystem(ctx context.Context, filesystemName s
 
 	err := s.doHTTP(ctx, unmountFilesystemURL, "PUT", &unmountFilesystemResponse, unmountreq)
 	if err != nil {
-		glog.Errorf("[%s] Error in unmount filesystem request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in unmount filesystem request: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.isRequestAccepted(ctx, unmountFilesystemResponse, unmountFilesystemURL)
 	if err != nil {
-		glog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, unmountFilesystemResponse.Status.Code, unmountFilesystemResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("Unable to unmount filesystem %s on node %s: %v", filesystemName, nodeName, err)
+		klog.Errorf("Unable to unmount filesystem %s on node %s: %v", filesystemName, nodeName, err)
 		return err
 	}
 
@@ -1110,19 +1110,19 @@ func (s *spectrumRestV2) UnmountFilesystem(ctx context.Context, filesystemName s
 
 func (s *spectrumRestV2) GetFilesystemName(ctx context.Context, filesystemUUID string) (string, error) { //nolint:dupl
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetFilesystemName. UUID: %s", loggerId, filesystemUUID)
+	klog.V(4).Infof("[%s] rest_v2 GetFilesystemName. UUID: %s", loggerId, filesystemUUID)
 
 	getFilesystemNameURL := fmt.Sprintf("scalemgmt/v2/filesystems?filter=uuid=%s", filesystemUUID)
 	getFilesystemNameURLResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesystemNameURL, "GET", &getFilesystemNameURLResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get filesystem name for uuid %s: %v", loggerId, filesystemUUID, err)
+		klog.Errorf("[%s] Unable to get filesystem name for uuid %s: %v", loggerId, filesystemUUID, err)
 		return "", err
 	}
 
 	if len(getFilesystemNameURLResponse.FileSystems) == 0 {
-		glog.Errorf("[%s] Unable to fetch filesystem name details for %s", loggerId, filesystemUUID)
+		klog.Errorf("[%s] Unable to fetch filesystem name details for %s", loggerId, filesystemUUID)
 		return "", fmt.Errorf("unable to fetch filesystem name details for %s", filesystemUUID)
 	}
 	return getFilesystemNameURLResponse.FileSystems[0].Name, nil
@@ -1130,19 +1130,19 @@ func (s *spectrumRestV2) GetFilesystemName(ctx context.Context, filesystemUUID s
 
 func (s *spectrumRestV2) GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error) { //nolint:dupl
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetFilesystemDetails. Name: %s", loggerId, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 GetFilesystemDetails. Name: %s", loggerId, filesystemName)
 
 	getFilesystemDetailsURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s", filesystemName)
 	getFilesystemDetailsURLResponse := GetFilesystemResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesystemDetailsURL, "GET", &getFilesystemDetailsURLResponse, nil)
 	if err != nil {
-		glog.Errorf("[%s] Unable to get filesystem details for filesystem %s: %v", loggerId, filesystemName, err)
+		klog.Errorf("[%s] Unable to get filesystem details for filesystem %s: %v", loggerId, filesystemName, err)
 		return FileSystem_v2{}, err
 	}
 
 	if len(getFilesystemDetailsURLResponse.FileSystems) == 0 {
-		glog.Errorf("[%s] Unable to fetch filesystem details for %s", loggerId, filesystemName)
+		klog.Errorf("[%s] Unable to fetch filesystem details for %s", loggerId, filesystemName)
 		return FileSystem_v2{}, fmt.Errorf("unable to fetch filesystem details for %s", filesystemName)
 	}
 
@@ -1150,7 +1150,7 @@ func (s *spectrumRestV2) GetFilesystemDetails(ctx context.Context, filesystemNam
 }
 
 func (s *spectrumRestV2) GetFsUid(ctx context.Context, filesystemName string) (string, error) {
-	glog.V(4).Infof("rest_v2 GetFsUid. filesystem: %s", filesystemName)
+	klog.V(4).Infof("rest_v2 GetFsUid. filesystem: %s", filesystemName)
 
 	getFilesystemURL := fmt.Sprintf("%s%s", "scalemgmt/v2/filesystems/", filesystemName)
 	getFilesystemResponse := GetFilesystemResponse_v2{}
@@ -1170,7 +1170,7 @@ func (s *spectrumRestV2) GetFsUid(ctx context.Context, filesystemName string) (s
 
 func (s *spectrumRestV2) DeleteSymLnk(ctx context.Context, filesystemName string, lnkName string) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 DeleteSymLnk. filesystem: %s, link: %s", loggerId, filesystemName, lnkName)
+	klog.V(4).Infof("[%s] rest_v2 DeleteSymLnk. filesystem: %s, link: %s", loggerId, filesystemName, lnkName)
 
 	lnkName = strings.ReplaceAll(lnkName, "/", "%2F")
 	deleteLnkURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/symlink/%s", filesystemName, lnkName)
@@ -1189,7 +1189,7 @@ func (s *spectrumRestV2) DeleteSymLnk(ctx context.Context, filesystemName string
 	err = s.WaitForJobCompletion(ctx, deleteLnkResponse.Status.Code, deleteLnkResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG2006C") {
-			glog.V(4).Infof("[%s] Since slink %v was already deleted, so returning success", loggerId, lnkName)
+			klog.V(4).Infof("[%s] Since slink %v was already deleted, so returning success", loggerId, lnkName)
 			return nil
 		}
 		return fmt.Errorf("unable to delete symLnk %v:%v", lnkName, err)
@@ -1200,7 +1200,7 @@ func (s *spectrumRestV2) DeleteSymLnk(ctx context.Context, filesystemName string
 
 func (s *spectrumRestV2) DeleteDirectory(ctx context.Context, filesystemName string, dirName string, safe bool) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", loggerId, filesystemName, dirName, safe)
+	klog.V(4).Infof("[%s] rest_v2 DeleteDirectory. filesystem: %s, dir: %s, safe: %v", loggerId, filesystemName, dirName, safe)
 
 	NdirName := strings.ReplaceAll(dirName, "/", "%2F")
 	deleteDirURL := ""
@@ -1230,7 +1230,7 @@ func (s *spectrumRestV2) DeleteDirectory(ctx context.Context, filesystemName str
 }
 
 func (s *spectrumRestV2) StatDirectory(ctx context.Context, filesystemName string, dirName string) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 StatDirectory. filesystem: %s, dir: %s", utils.GetLoggerId(ctx), filesystemName, dirName)
+	klog.V(4).Infof("[%s] rest_v2 StatDirectory. filesystem: %s, dir: %s", utils.GetLoggerId(ctx), filesystemName, dirName)
 
 	fmtDirName := strings.ReplaceAll(dirName, "/", "%2F")
 	statDirURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/directory/%s", filesystemName, fmtDirName)
@@ -1257,7 +1257,7 @@ func (s *spectrumRestV2) StatDirectory(ctx context.Context, filesystemName strin
 }
 
 func (s *spectrumRestV2) GetFileSetUid(ctx context.Context, filesystemName string, filesetName string) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetFileSetUid. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 GetFileSetUid. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	filesetResponse, err := s.GetFileSetResponseFromName(ctx, filesystemName, filesetName)
 	if err != nil {
@@ -1268,7 +1268,7 @@ func (s *spectrumRestV2) GetFileSetUid(ctx context.Context, filesystemName strin
 }
 
 func (s *spectrumRestV2) GetFileSetResponseFromName(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromName. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1288,7 +1288,7 @@ func (s *spectrumRestV2) GetFileSetResponseFromName(ctx context.Context, filesys
 // CheckIfFilesetExist Checking if fileset exist in filesystem
 func (s *spectrumRestV2) CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 CheckIfFilesetExist. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfFilesetExist. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	checkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1306,7 +1306,7 @@ func (s *spectrumRestV2) CheckIfFilesetExist(ctx context.Context, filesystemName
 
 func (s *spectrumRestV2) GetFileSetNameFromId(ctx context.Context, filesystemName string, Id string) (string, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", loggerId, filesystemName, Id)
+	klog.V(4).Infof("[%s] rest_v2 GetFileSetNameFromId. filesystem: %s, fileset id: %s", loggerId, filesystemName, Id)
 
 	filesetResponse, err := s.GetFileSetResponseFromId(ctx, filesystemName, Id)
 	if err != nil {
@@ -1317,7 +1317,7 @@ func (s *spectrumRestV2) GetFileSetNameFromId(ctx context.Context, filesystemNam
 
 func (s *spectrumRestV2) GetFileSetResponseFromId(ctx context.Context, filesystemName string, Id string) (Fileset_v2, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", loggerId, filesystemName, Id)
+	klog.V(4).Infof("[%s] rest_v2 GetFileSetResponseFromId. filesystem: %s, fileset id: %s", loggerId, filesystemName, Id)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.id=%s", filesystemName, Id)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1336,7 +1336,7 @@ func (s *spectrumRestV2) GetFileSetResponseFromId(ctx context.Context, filesyste
 
 //nolint:dupl
 func (s *spectrumRestV2) GetSnapshotCreateTimestamp(ctx context.Context, filesystemName string, filesetName string, snapName string) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetSnapshotCreateTimestamp. filesystem: %s, fileset: %s, snapshot: %s ", utils.GetLoggerId(ctx), filesystemName, filesetName, snapName)
+	klog.V(4).Infof("[%s] rest_v2 GetSnapshotCreateTimestamp. filesystem: %s, fileset: %s, snapshot: %s ", utils.GetLoggerId(ctx), filesystemName, filesetName, snapName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
@@ -1355,7 +1355,7 @@ func (s *spectrumRestV2) GetSnapshotCreateTimestamp(ctx context.Context, filesys
 
 //nolint:dupl
 func (s *spectrumRestV2) GetSnapshotUid(ctx context.Context, filesystemName string, filesetName string, snapName string) (string, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetSnapshotUid. filesystem: %s, fileset: %s, snapshot: %s ", utils.GetLoggerId(ctx), filesystemName, filesetName, snapName)
+	klog.V(4).Infof("[%s] rest_v2 GetSnapshotUid. filesystem: %s, fileset: %s, snapshot: %s ", utils.GetLoggerId(ctx), filesystemName, filesetName, snapName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
@@ -1375,7 +1375,7 @@ func (s *spectrumRestV2) GetSnapshotUid(ctx context.Context, filesystemName stri
 // CheckIfSnapshotExist Checking if snapshot exist in fileset
 func (s *spectrumRestV2) CheckIfSnapshotExist(ctx context.Context, filesystemName string, filesetName string, snapshotName string) (bool, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 CheckIfSnapshotExist. filesystem: %s, fileset: %s, snapshot: %s ", loggerId, filesystemName, filesetName, snapshotName)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfSnapshotExist. filesystem: %s, fileset: %s, snapshot: %s ", loggerId, filesystemName, filesetName, snapshotName)
 
 	getSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots/%s", filesystemName, filesetName, snapshotName)
 	getSnapshotResponse := GetSnapshotResponse_v2{}
@@ -1394,7 +1394,7 @@ func (s *spectrumRestV2) CheckIfSnapshotExist(ctx context.Context, filesystemNam
 // ListFilesetSnapshots Return list of snapshot under fileset, true if snapshots present
 func (s *spectrumRestV2) ListFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
+	klog.V(4).Infof("[%s] rest_v2 ListFilesetSnapshots. filesystem: %s, fileset: %s", loggerId, filesystemName, filesetName)
 
 	listFilesetSnapshotURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshots", filesystemName, filesetName)
 	listFilesetSnapshotResponse := GetSnapshotResponse_v2{}
@@ -1408,7 +1408,7 @@ func (s *spectrumRestV2) ListFilesetSnapshots(ctx context.Context, filesystemNam
 }
 
 func (s *spectrumRestV2) CheckIfFileDirPresent(ctx context.Context, filesystemName string, relPath string) (bool, error) {
-	glog.V(4).Infof("[%s] rest_v2 CheckIfFileDirPresent. filesystem: %s, path: %s", utils.GetLoggerId(ctx), filesystemName, relPath)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfFileDirPresent. filesystem: %s, path: %s", utils.GetLoggerId(ctx), filesystemName, relPath)
 
 	RelPath := strings.ReplaceAll(relPath, "/", "%2F")
 	checkFilDirUrl := fmt.Sprintf("scalemgmt/v2/filesystems/%s/owner/%s", filesystemName, RelPath)
@@ -1425,7 +1425,7 @@ func (s *spectrumRestV2) CheckIfFileDirPresent(ctx context.Context, filesystemNa
 }
 
 func (s *spectrumRestV2) CreateSymLink(ctx context.Context, SlnkfilesystemName string, TargetFs string, relativePath string, LnkPath string) error {
-	glog.V(4).Infof("[%s] rest_v2 CreateSymLink. SlnkfilesystemName: %s, TargetFs: %s, relativePath: %s, LnkPath: %s", utils.GetLoggerId(ctx), SlnkfilesystemName, TargetFs, relativePath, LnkPath)
+	klog.V(4).Infof("[%s] rest_v2 CreateSymLink. SlnkfilesystemName: %s, TargetFs: %s, relativePath: %s, LnkPath: %s", utils.GetLoggerId(ctx), SlnkfilesystemName, TargetFs, relativePath, LnkPath)
 
 	symLnkReq := SymLnkRequest{}
 	symLnkReq.FilesystemName = TargetFs
@@ -1459,7 +1459,7 @@ func (s *spectrumRestV2) CreateSymLink(ctx context.Context, SlnkfilesystemName s
 
 func (s *spectrumRestV2) IsNodeComponentHealthy(ctx context.Context, nodeName string, component string) (bool, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", loggerId, nodeName, component)
+	klog.V(4).Infof("[%s] rest_v2 GetNodeHealthStates, nodeName: %s, component: %s", loggerId, nodeName, component)
 
 	getNodeHealthStatesURL := fmt.Sprintf("scalemgmt/v2/nodes/%s/health/states?filter=state=HEALTHY,entityType=NODE,component=%s", nodeName, component)
 	getNodeHealthStatesResponse := GetNodeHealthStatesResponse_v2{}
@@ -1478,20 +1478,20 @@ func (s *spectrumRestV2) IsNodeComponentHealthy(ctx context.Context, nodeName st
 
 func (s *spectrumRestV2) SetFilesystemPolicy(ctx context.Context, policy *Policy, filesystemName string) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 setFilesystemPolicy for filesystem %s", loggerId, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 setFilesystemPolicy for filesystem %s", loggerId, filesystemName)
 
 	setPolicyURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/policies", filesystemName)
 	setPolicyResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, setPolicyURL, "PUT", &setPolicyResponse, policy)
 	if err != nil {
-		glog.Errorf("[%s] unable to send filesystem policy: %v", loggerId, setPolicyResponse.Status.Message)
+		klog.Errorf("[%s] unable to send filesystem policy: %v", loggerId, setPolicyResponse.Status.Message)
 		return err
 	}
 
 	err = s.WaitForJobCompletion(ctx, setPolicyResponse.Status.Code, setPolicyResponse.Jobs[0].JobID)
 	if err != nil {
-		glog.Errorf("[%s] setting policy rule %s for filesystem %s failed with error %v", loggerId, policy.Policy, filesystemName, err)
+		klog.Errorf("[%s] setting policy rule %s for filesystem %s failed with error %v", loggerId, policy.Policy, filesystemName, err)
 		return err
 	}
 
@@ -1500,7 +1500,7 @@ func (s *spectrumRestV2) SetFilesystemPolicy(ctx context.Context, policy *Policy
 
 func (s *spectrumRestV2) DoesTierExist(ctx context.Context, tierName string, filesystemName string) error {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 DoesTierExist. name %s, filesystem %s", loggerId, tierName, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 DoesTierExist. name %s, filesystem %s", loggerId, tierName, filesystemName)
 
 	_, err := s.GetTierInfoFromName(ctx, tierName, filesystemName)
 	if err != nil {
@@ -1514,14 +1514,14 @@ func (s *spectrumRestV2) DoesTierExist(ctx context.Context, tierName string, fil
 }
 
 func (s *spectrumRestV2) GetTierInfoFromName(ctx context.Context, tierName string, filesystemName string) (*StorageTier, error) {
-	glog.V(4).Infof("[%s] rest_v2 GetTierInfoFromName. name %s, filesystem %s", utils.GetLoggerId(ctx), tierName, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 GetTierInfoFromName. name %s, filesystem %s", utils.GetLoggerId(ctx), tierName, filesystemName)
 
 	tierUrl := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools/%s", filesystemName, tierName)
 	getTierResponse := &StorageTiers{}
 
 	err := s.doHTTP(ctx, tierUrl, "GET", getTierResponse, nil)
 	if err != nil {
-		glog.Errorf("Unable to get tier: %s err: %v", tierName, err)
+		klog.Errorf("Unable to get tier: %s err: %v", tierName, err)
 		return nil, err
 	}
 
@@ -1534,7 +1534,7 @@ func (s *spectrumRestV2) GetTierInfoFromName(ctx context.Context, tierName strin
 
 func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(ctx context.Context, partitionName string, filesystemName string) bool {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", loggerId, partitionName, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfDefaultPolicyPartitionExists. name %s, filesystem %s", loggerId, partitionName, filesystemName)
 
 	partitionURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/partition/%s", filesystemName, partitionName)
 	getPartitionResponse := GenericResponse{}
@@ -1546,7 +1546,7 @@ func (s *spectrumRestV2) CheckIfDefaultPolicyPartitionExists(ctx context.Context
 
 func (s *spectrumRestV2) GetFirstDataTier(ctx context.Context, filesystemName string) (string, error) {
 	loggerId := GetLoggerId(ctx)
-	glog.V(4).Infof("[%s] rest_v2 GetFirstDataTier. filesystem %s", loggerId, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 GetFirstDataTier. filesystem %s", loggerId, filesystemName)
 
 	tiersURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/pools", filesystemName)
 	getTierResponse := &StorageTiers{}
@@ -1566,12 +1566,12 @@ func (s *spectrumRestV2) GetFirstDataTier(ctx context.Context, filesystemName st
 			return "", err
 		}
 		if tierInfo.TotalDataInKB > 0 {
-			glog.Infof("[%s] GetFirstDataTier: Setting default tier to %s", loggerId, tierInfo.StorageTierName)
+			klog.Infof("[%s] GetFirstDataTier: Setting default tier to %s", loggerId, tierInfo.StorageTierName)
 			return tierInfo.StorageTierName, nil
 		}
 	}
 
-	glog.V(6).Infof("[%s] GetFirstDataTier: Defaulting to system tier", loggerId)
+	klog.V(6).Infof("[%s] GetFirstDataTier: Defaulting to system tier", loggerId)
 	return "system", nil
 }
 
@@ -1585,6 +1585,6 @@ func (s *spectrumRestV2) getNextEndpoint(ctx context.Context) string {
 		s.endPointIndex = s.endPointIndex % len
 	}
 	endpoint := s.endpoint[s.endPointIndex]
-	glog.V(6).Infof("[%s] getNextEndpoint: returning next endpoint: %s", utils.GetLoggerId(ctx), endpoint)
+	klog.V(6).Infof("[%s] getNextEndpoint: returning next endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	return endpoint
 }

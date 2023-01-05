@@ -19,13 +19,12 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"k8s.io/klog/v2"
 	"math/rand"
 	"os"
 	"path"
 	"time"
-
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 )
@@ -47,7 +46,7 @@ func main() {
 	ctx := setContext()
 	utils.InitLogger(ctx)
 	loggerId := utils.GetLoggerId(ctx)
-	glog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
+	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -56,20 +55,20 @@ func main() {
 	OldPluginFolder := path.Join(*kubeletRootDir, "plugins/ibm-spectrum-scale-csi")
 
 	if err := createPersistentStorage(path.Join(PluginFolder, "controller")); err != nil {
-		glog.Errorf("[%s] failed to create persistent storage for controller %v", loggerId, err)
+		klog.Errorf("[%s] failed to create persistent storage for controller %v", loggerId, err)
 		os.Exit(1)
 	}
 	if err := createPersistentStorage(path.Join(PluginFolder, "node")); err != nil {
-		glog.Errorf("[%s] failed to create persistent storage for node %v", loggerId, err)
+		klog.Errorf("[%s] failed to create persistent storage for node %v", loggerId, err)
 		os.Exit(1)
 	}
 
 	if err := deleteStalePluginDir(OldPluginFolder); err != nil {
-		glog.Errorf("[%s] failed to delete stale plugin folder %v, please delete manually. %v", loggerId, OldPluginFolder, err)
+		klog.Errorf("[%s] failed to delete stale plugin folder %v, please delete manually. %v", loggerId, OldPluginFolder, err)
 	}
 
 	handle(ctx)
-	glog.Flush()
+	klog.Flush()
 	os.Exit(0)
 }
 
@@ -77,7 +76,7 @@ func handle(ctx context.Context) {
 	driver := driver.GetScaleDriver(ctx)
 	err := driver.SetupScaleDriver(ctx, *driverName, vendorVersion, *nodeID)
 	if err != nil {
-		glog.V(0).Infof("[%s] Failed to initialize Scale CSI Driver: %v", utils.GetLoggerId(ctx), err)
+		klog.V(0).Infof("[%s] Failed to initialize Scale CSI Driver: %v", utils.GetLoggerId(ctx), err)
 	}
 	driver.Run(ctx, *endpoint)
 }

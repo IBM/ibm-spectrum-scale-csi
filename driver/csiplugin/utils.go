@@ -19,9 +19,9 @@ package scale
 import (
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"k8s.io/klog/v2"
 )
 
 func NewVolumeCapabilityAccessMode(mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability_AccessMode {
@@ -52,17 +52,17 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 	ctx = context.Background()
 	newCtx := utils.SetLoggerId(ctx)
 	loggerId := utils.GetLoggerId(newCtx)
-	glog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
-	glog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
+	klog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+	klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
 	startTime := utils.GetExecutionTime()
 	resp, err := handler(newCtx, req)
 	if err != nil {
-		glog.Errorf("[%s] GRPC error: %v", loggerId, err)
+		klog.Errorf("[%s] GRPC error: %v", loggerId, err)
 	} else {
-		glog.Infof("[%s] GRPC response: %+v", loggerId, resp)
+		klog.Infof("[%s] GRPC response: %+v", loggerId, resp)
 	}
 	endTime := utils.GetExecutionTime()
 	diffTime := endTime - startTime
-	glog.Infof("[%s] Time taken to execute GRPC request(in milli): %d", loggerId, diffTime)
+	klog.Infof("[%s] Time taken to execute GRPC request(in milli): %d", loggerId, diffTime)
 	return resp, err
 }

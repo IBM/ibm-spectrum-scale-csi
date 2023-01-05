@@ -21,8 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 	"io/ioutil"
+	"k8s.io/klog/v2"
 	"path"
 	"strings"
 )
@@ -100,30 +100,30 @@ const (
 var eCtx context.Context = nil
 
 func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
-	glog.V(6).Infof("[%s] scale_config LoadScaleConfigSettings", utils.GetLoggerId(ctx))
+	klog.V(6).Infof("[%s] scale_config LoadScaleConfigSettings", utils.GetLoggerId(ctx))
 
 	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		glog.Errorf("[%s] spectrum scale configuration not found: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] spectrum scale configuration not found: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}
 	e = json.Unmarshal(file, cmsj)
 	if e != nil {
-		glog.Errorf("[%s] error in unmarshalling Spectrum Scale configuration json: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] error in unmarshalling Spectrum Scale configuration json: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 
 	e = HandleSecretsAndCerts(ctx, cmsj)
 	if e != nil {
-		glog.Errorf("[%s] error in secrets or certificates: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] error in secrets or certificates: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	return *cmsj
 }
 
 func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) error {
-	glog.V(6).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
+	klog.V(6).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")

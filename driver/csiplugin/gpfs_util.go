@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -390,30 +390,30 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
 		if strings.ToLower(compression) == "true" {
-			glog.V(6).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
+			klog.V(6).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
 
 		if !IsValidCompressionAlgorithm(compression) {
-			glog.V(4).Infof("[%s] gpfs_util invalid compression algorithm specified: %s",
+			klog.V(4).Infof("[%s] gpfs_util invalid compression algorithm specified: %s",
 				loggerId, compression)
 			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
 				"invalid compression algorithm specified: %s", compression)
 		}
 		scaleVol.Compression = compression
-		glog.V(4).Infof("[%s] gpfs_util compression was set to %s", loggerId, compression)
+		klog.V(4).Infof("[%s] gpfs_util compression was set to %s", loggerId, compression)
 	}
 
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
-		glog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
+		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
 	return scaleVol, nil
 }
 
 func executeCmd(command string, args []string) ([]byte, error) {
-	glog.V(6).Infof("gpfs_util executeCmd")
+	klog.V(6).Infof("gpfs_util executeCmd")
 
 	cmd := exec.Command(command, args...)
 	var stdout bytes.Buffer
@@ -495,7 +495,7 @@ func getNodeMapping(kubernetesNodeID string) (gpfsAdminName string) {
 		prefix := utils.GetEnv(SCALE_NODE_MAPPING_PREFIX, DefaultScaleNodeMapPrefix)
 		gpfsAdminName = utils.GetEnv(prefix+kubernetesNodeID, notFound)
 		if gpfsAdminName == notFound {
-			glog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
+			klog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
 			gpfsAdminName = kubernetesNodeID
 		}
 	}
@@ -508,7 +508,7 @@ const (
 )
 
 func shortnameInSlice(shortname string, nodeNames []string) bool {
-	glog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
+	klog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
 	for _, name := range nodeNames {
 		short := strings.SplitN(name, ".", 2)[0]
 		if strings.EqualFold(short, shortname) {
