@@ -51,7 +51,6 @@ type ScaleControllerServer struct {
 	Driver *ScaleDriver
 }
 
-var logger *utils.CsiLogger
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]

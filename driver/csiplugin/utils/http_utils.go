@@ -26,7 +26,6 @@ import (
 	"net/http"
 )
 
-var logger *CsiLogger
 
 /*
 	func ExtractErrorResponse(response *http.Response) error {
@@ -40,7 +39,7 @@ var logger *CsiLogger
 */
 
 func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}) error {
-	klog.V(6).Infof(ctx, "http_utils UnmarshalResponse. response: %v", r.Body)
+	klog.V(6).Infof("[%s] http_utils UnmarshalResponse. response: %v", GetLoggerId(ctx), r.Body)
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -79,7 +78,7 @@ func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestTy
 	request.Header.Add("Accept", "application/json")
 
 	request.SetBasicAuth(user, password)
-	klog.V(6).Infof(ctx, "http_utils HttpExecuteUserAuth request: %+v", request)
+	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), request)
 
 	return httpClient.Do(request)
 }
