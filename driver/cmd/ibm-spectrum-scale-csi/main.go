@@ -66,9 +66,8 @@ func main() {
 	if err := deleteStalePluginDir(OldPluginFolder); err != nil {
 		klog.Errorf("[%s] failed to delete stale plugin folder %v, please delete manually. %v", loggerId, OldPluginFolder, err)
 	}
-
+	defer klog.Flush()
 	handle(ctx)
-	klog.Flush()
 	os.Exit(0)
 }
 

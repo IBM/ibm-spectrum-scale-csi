@@ -5,6 +5,7 @@ import (
 	"flag"
 	"k8s.io/klog/v2"
 	"os"
+    	"path/filepath"
 )
 
 const logLevel = "LOGLEVEL"
@@ -48,17 +49,7 @@ func InitLogger(ctx context.Context) {
 	} else {
 		logValue = level
 	}
-	klog.InitFlags(nil)
-	_ = flag.Set("alsologtostderr", "false")
-	_ = flag.Set("stderrthreshold", logValue)
 	klog.Infof("logValue: %s", logValue)
-	if level == DEBUG.String() {
-		_ = flag.Set("v", "4")
-	} else if level == TRACE.String() {
-		_ = flag.Set("v", "6")
-	} else {
-		_ = flag.Set("v", "1")
-	}
 
 	dirPath := "/host/var/log/" + path + "/"
 	if !Exists(ctx, dirPath) {
@@ -67,7 +58,19 @@ func InitLogger(ctx context.Context) {
 			klog.Errorf("Failed to create log directory")
 		}
 	}
+	path := filepath.Join(dirPath,"ibm-spectrum-scale-csi.log")
 
-	_ = flag.Set("log_dir", dirPath)
-	flag.Parse()
+	var fs flag.FlagSet
+    	klog.InitFlags(&fs)
+    	fs.Set("logtostderr", "false")
+	fs.Set("stderrthreshold", logValue)
+    	fs.Set("log_file", path)
+	if level == DEBUG.String() {
+        	fs.Set("v", "4")
+        } else if level == TRACE.String() {
+                fs.Set("v", "6")
+        } else {
+                fs.Set("v", "1")
+        }
+
 }
