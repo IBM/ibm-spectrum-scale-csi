@@ -2108,7 +2108,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	// Create directory where volume symlinks will reside
 	symlinkDirPath, _, err := createSymlinksDir(scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
 	if err != nil {
-		message := fmt.Sprintf("Error in creating a directory %s on primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
+		message := fmt.Sprintf("Error in creating/checking a directory %s on primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
 		logger.Error(err, message)
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
 			Type:    string(config.StatusConditionSuccess),
