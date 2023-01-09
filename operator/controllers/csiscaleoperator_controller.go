@@ -85,6 +85,10 @@ type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
 
+//A map of changed clusters, used to process only changed
+//clusters in case of clusters stanza is modified
+var changedClusters = make(map[string]bool)
+
 //a map of connectors to make REST calls to GUI
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 var symlinkDirPath = ""
@@ -291,14 +295,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if !cmExists || clustersStanzaModified {
 		err = ValidateCRParams(instance)
 		if err != nil {
-			logger.Error(fmt.Errorf("CR validation for driver configuration params failed"), "")
+			logger.Error(fmt.Errorf("Failed to validate driver manifest parameters"), "")
 			return ctrl.Result{}, err
 		}
-		logger.Info("Driver configuration params are validated successfully")
+		logger.Info("The driver manifest parameters are validated successfully")
 	}
 
 	if len(instance.Spec.Clusters) != 0 {
-		err = r.getSpectrumScaleConnectors(instance, cmExists, clustersStanzaModified)
+		err = r.handleSpectrumScaleConnectors(instance, cmExists, clustersStanzaModified)
 		if err != nil {
 			message := "Error in getting connectors"
 			logger.Error(err, message)
@@ -306,14 +310,17 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	//If first pass or cluster stanza modified handle primary FS and fileset
-	if !cmExists || clustersStanzaModified || symlinkDirPath == "" {
-		//If operator is restarted the global var symlinkDirPath becomes empty again,
-		//if operator is restarted and later driver is also restarted, we need
-		//symlinkDirPath to be able create symlinks for version 1 volumes from driver.
-		//so call handlePrimaryFSandFileset - which checks for the existing primary fileset
-		//and returns the absolute path of symlink directory in the primary fileset.
-		symlinkDirPath, err = r.handlePrimaryFSandFileset(instance)
+	//For first pass handle primary FS and fileset
+	if !cmExists {
+		symlinkDirPath, err = r.handlePrimaryFSandFileset(instance, false)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else if symlinkDirPath == "" {
+		//If it is not the first pass (cmExists) but operator is restarted, operator
+		//loses the var symlinkDirPath, which needs to be passed to the driver pods
+		//again if driver pods are also restarted later, so get the symlinkDirPath again.
+		symlinkDirPath, err = r.handlePrimaryFSandFileset(instance, true)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -554,6 +561,7 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 	logger := csiLog.WithName("isClusterStanzaModified")
 	cmExists := false
 	clustersStanzaModified := false
+	currentCMDataString := ""
 	configMap := &corev1.ConfigMap{}
 	cerr := r.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      config.CSIConfigMap,
@@ -588,16 +596,118 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 			logger.Error(err, "Failed to marshal ConfigMap data"+config.CSIConfigMap)
 			return cmExists, clustersStanzaModified, err
 		}
-		configMapDataString := string(configMapDataBytes)
-		configMapDataString = strings.Replace(configMapDataString, " ", "", -1)
-		configMapDataString = strings.Replace(configMapDataString, "\\\"", "\"", -1)
+		currentCMDataString = string(configMapDataBytes)
+		currentCMDataString = strings.Replace(currentCMDataString, " ", "", -1)
+		currentCMDataString = strings.Replace(currentCMDataString, "\\\"", "\"", -1)
 
-		if !strings.Contains(configMapDataString, clustersString) {
+		if !strings.Contains(currentCMDataString, clustersString) {
 			logger.Info("Clusters stanza in driver manifest is changed")
 			clustersStanzaModified = true
 		}
+
+		//if isClusterStanzaModified, check and update modified clusters in changedClusters
+		if clustersStanzaModified {
+			logger.Info("The clusters stanza is modified ")
+			changedClusters = make(map[string]bool)
+			err := r.updateChangedClusters(currentCMDataString, instance.Spec.Clusters)
+			if err != nil {
+				return cmExists, clustersStanzaModified, err
+			}
+		}
 	}
 	return cmExists, clustersStanzaModified, nil
+}
+
+//updateChangedClusters updates var changedClusters and also returns
+//error if primary stanza of the primary cluster is also modified.
+//It also deletes unnecessary cluster entries from connector map, for
+//which clusterID is present in current configmap data but not in new CR data.
+func (r *CSIScaleOperatorReconciler) updateChangedClusters(currentCMcmString string, newCRClusters []v1.CSICluster) error {
+	logger := csiLog.WithName("updateChangedClusters")
+
+	currentCMclusters := []v1.CSICluster{}
+	prefix := "{\"" + config.CSIConfigMap + ".json\":\"{\"clusters\":"
+	postfix := "}\"}"
+	currentCMcmString = strings.Replace(currentCMcmString, prefix, "", 1)
+	currentCMcmString = strings.Replace(currentCMcmString, postfix, "", 1)
+
+	configMapDataBytes := []byte(currentCMcmString)
+	json.Unmarshal(configMapDataBytes, &currentCMclusters)
+
+	//This is a map to track which clusters from current configmap are also
+	//present in new CR, so that the connectors for the ones which are not
+	//present in new CR but are present in current configmap can be deleted.
+	currentCMProcessedClusters := make(map[string]bool)
+
+	for _, crCluster := range newCRClusters {
+		//For the cluster ID of each clusters of updated CR, get the clusters
+		//data of the current configmap and comapre that with new CR data
+		oldCMCluster := r.getClusterByID(crCluster.Id, currentCMclusters)
+		if reflect.DeepEqual(oldCMCluster, v1.CSICluster{}) {
+			//case 1: new cluster is added in CR
+			//no matching cluster is found, that means it is a new
+			//cluster added in CR --> add entry in changedClusters,
+			//so that the new clusters data can be validated later.
+			changedClusters[crCluster.Id] = true
+		} else {
+			//exisiting cluster in current configmap
+			if !reflect.DeepEqual(crCluster, oldCMCluster) {
+				//case 2: clusters data of current configmap is different than
+				//the new CR --> add entry in changedClusters, so that the new
+				//clusters data can be validated later.
+				changedClusters[crCluster.Id] = true
+				currentCMProcessedClusters[crCluster.Id] = true
+
+				//Check if the primary stanza from current configmap is changed
+				//and return err if it is changed, as we don't want to change
+				//the primary after first successful iteration.
+				if oldCMCluster.Primary != nil && !reflect.DeepEqual(oldCMCluster.Primary, crCluster.Primary) {
+					primaryString := fmt.Sprintf("{filesystem:%v, fileset:%v",
+						oldCMCluster.Primary.PrimaryFs, oldCMCluster.Primary.PrimaryFset)
+					if oldCMCluster.Primary.RemoteCluster != "" {
+						primaryString += fmt.Sprintf(", remote cluster: %v}", oldCMCluster.Primary.RemoteCluster)
+					} else {
+						primaryString += "}"
+					}
+					message := fmt.Sprintf("Primary stanza is modified for cluster with ID %s. Use the orignal primary %s and try again",
+						crCluster.Id, primaryString)
+					err := fmt.Errorf(message)
+					logger.Error(err, "")
+					//TODO: Use new method to set status/event when event framework
+					//is in, also need to pass instance here.
+					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+						Type:    string(config.StatusConditionSuccess),
+						Status:  metav1.ConditionFalse,
+						Reason:  string(csiv1.ResourceConfigError),
+						Message: message,
+					})
+					return err
+				}
+			}
+		}
+	}
+
+	//case 3: clusters data in current configmap and new CR mataches, nothing to be done here.
+	//case 4: delete - current configmap has an entry, which is not there in new CR --> delete
+	//the connector for that cluster as we no longer need it.
+	for _, cluster := range currentCMclusters {
+		if processed, _ := currentCMProcessedClusters[cluster.Id]; !processed {
+			delete(scaleConnMap, cluster.Id)
+		}
+	}
+	logger.Info("The changed clusters to process", "changedClusters", changedClusters)
+	return nil
+}
+
+//getClusterByID returns a cluster matching the passed clusterID
+//from the passed list of clusters.
+func (r *CSIScaleOperatorReconciler) getClusterByID(id string, clusters []v1.CSICluster) v1.CSICluster {
+	for _, cluster := range clusters {
+		if id == cluster.Id {
+			return cluster
+		}
+	}
+	return v1.CSICluster{}
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -1656,7 +1766,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
 	logger := csiLog.WithName("newSpectrumScaleConnector")
-	logger.Info("creating new SpectrumScaleConnector for cluster with", "ID", cluster.Id)
+	logger.Info("Creating new SpectrumScaleConnector for cluster with", "ID", cluster.Id)
 
 	var rest *connectors.SpectrumRestV2
 	var tr *http.Transport
@@ -1758,32 +1868,31 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 	return rest, nil
 }
 
-//getSpectrumScaleConnectors gets the connectors for all the clusters in driver
+//handleSpectrumScaleConnectors gets the connectors for all the clusters in driver
 //manifest and sets those in scaleConnMap also checks if GUI is reachable and
 //cluster ID is valid.
-func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) error {
-	logger := csiLog.WithName("getSpectrumScaleConnectors")
-	logger.Info("getting spectrum scale connectors")
+func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) error {
+	logger := csiLog.WithName("handleSpectrumScaleConnectors")
+	logger.Info("Checking spectrum scale connectors")
 
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
 	for _, cluster := range instance.Spec.Clusters {
 		isPrimaryCluster := cluster.Primary != nil
 		if !cmExists || clustersStanzaModified || operatorRestarted {
 			//These are the prerequisite checks and preprocessing done at
-			//multiple passes of operator:
-			//1. 1st pass/modified driver manifest is applied: GUI for all
-			// clusters must be reachable and cluster IDs must be valid.
-			//2. 1st pass after the operator is restarted: GUI must be
-			//reachable and clusterID must match for primary cluster but
-			//these validations are not mandatory for non-primary clusters.
-			//For non-primary clusters if any issue in connecting to GUI or
-			//clusterID validation, error is logged and reconciliation is
-			//continued.
-			//3. For any other passes: only check whether GUI of primary
-			//cluster is reachable.
-			logger.Info("getting connector for the cluster", "ID", cluster.Id)
+			//multiple passes of operator/driver:
+			//1st pass: check all clusters - check if GUI is reachable and clusterID is valid for all clusters.
+			//Pass no. 2+ (without clusters stanza modification in manifest): check no cluster.
+			//Pass no. 2+ (with applying modified clusters stanza in manifest): check GUI of changed cluster is reachable + clusterID is valid.
+			//Operator restarted: check if only primary GUI is reachable.
+			//Driver started/restarted: check if only primary GUI is reachable.
 			_, connectorExists := scaleConnMap[cluster.Id]
-			if !connectorExists || clustersStanzaModified {
+			_, isClusterChanged := changedClusters[cluster.Id]
+
+			//Create a new connector if it does not exists already or
+			//if it exists but cluster stanza is modified and this cluster
+			//data is changed
+			if !connectorExists || (clustersStanzaModified && isClusterChanged) {
 				connector, err := r.newConnector(instance, cluster)
 				if err != nil {
 					return err
@@ -1793,61 +1902,17 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 					scaleConnMap[config.Primary] = connector
 				}
 			}
-			//check if GUI is reachable
-			id, err := scaleConnMap[cluster.Id].GetClusterId()
-			if err != nil {
-				message := fmt.Sprintf("Failed to connect to GUI of the cluster with ID %s", cluster.Id)
-				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceReadError),
-					Message: message,
-				})
+
+			//Validate GUI connection and cluster ID in CR.
+			//1. Check if GUI is reachable for the 1st pass.
+			// For pass no. 2+ if clusterstanza modified, check for only changed cluster
+			if !cmExists || (clustersStanzaModified && isClusterChanged) {
 				if operatorRestarted && !isPrimaryCluster {
-					//if operator is restarted and there is an error while
-					//connecting to GUI of non-primary cluster -> do not return
-					// error and continue with other clusters.
+					//if operator is restarted and this is not a primary cluster,
+					//no need to check if GUI is reachable or clusterID is valid.
 					continue
 				}
-				return err
-			}
-			//check if cluster ID from manifest matches with the one obtained from GUI
-			if id != cluster.Id {
-				message := fmt.Sprintf("The cluster ID %v in driver manifest does not match with the cluster ID %v obtained from cluster", cluster.Id, id)
-				logger.Error(err, message)
-				// TODO: Add event.
-				meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
-					Type:    string(config.StatusConditionSuccess),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(csiv1.ResourceConfigError),
-					Message: message,
-				})
-				if operatorRestarted && !isPrimaryCluster {
-					//if operator is restarted and cluster ID validation
-					//fails for non-primary cluster -> do not return
-					//error and continue with other clusters.
-					continue
-				}
-				return fmt.Errorf(message)
-			}
-		} else {
-			//pass 2 or later (configmap exists) and cluster stanza is not modified and
-			//connector map is not empty (operator is not restarted)  -> process only
-			//primary cluster.
-			if isPrimaryCluster {
-				if _, connectorExists := scaleConnMap[cluster.Id]; !connectorExists {
-					logger.Info("getting connector for the primary cluster", "ID", cluster.Id)
-					connector, err := r.newConnector(instance, cluster)
-					if err != nil {
-						return err
-					}
-					scaleConnMap[cluster.Id] = connector
-					scaleConnMap[config.Primary] = connector
-				}
-				//check if GUI is reachable
-				_, err := scaleConnMap[cluster.Id].GetClusterId()
+				id, err := scaleConnMap[cluster.Id].GetClusterId()
 				if err != nil {
 					message := fmt.Sprintf("Failed to connect to GUI of the cluster with ID %s", cluster.Id)
 					logger.Error(err, message)
@@ -1859,14 +1924,29 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 						Message: message,
 					})
 					return err
+				} else {
+					logger.Info("The GUI connection for the cluster is successful", "Cluster ID", cluster.Id)
 				}
-				//Cluster ID validation is not required again as it is already done
-				//in 1st pass.
-				//Return from here as primary cluster is already processed
-				return nil
-			} else {
-				//if not primary - don't process this cluster for 2nd or later pass
-				continue
+				//2. Check if cluster ID from manifest matches with the one obtained from GUI
+				if operatorRestarted {
+					//If this is the operator restart case, no need to validate cluster ID again for any cluster,
+					//as it gets validated in 1st pass already.
+					continue
+				}
+				if id != cluster.Id {
+					message := fmt.Sprintf("The cluster ID %v in driver manifest does not match with the cluster ID %v obtained from cluster", cluster.Id, id)
+					logger.Error(err, message)
+					// TODO: Add event.
+					meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+						Type:    string(config.StatusConditionSuccess),
+						Status:  metav1.ConditionFalse,
+						Reason:  string(csiv1.ResourceConfigError),
+						Message: message,
+					})
+					return fmt.Errorf(message)
+				} else {
+					logger.Info(fmt.Sprintf("The cluster ID %s is validated successfully", cluster.Id))
+				}
 			}
 		}
 	}
@@ -1874,10 +1954,10 @@ func (r *CSIScaleOperatorReconciler) getSpectrumScaleConnectors(instance *csisca
 }
 
 //handlePrimaryFSandFileset checks if primary FS exists, also checkes if primary fileset exists.
-//If primary fileset does not exist, it is created and also if a driectory
+//If primary fileset does not exist, it is created and also if a directory
 //to store symlinks is created if it does not exist. It returns the absolute path of symlink
 //directory and error if there is any.
-func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (string, error) {
+func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator, operatorRestarted bool) (string, error) {
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
 	primary := r.getPrimaryCluster(instance)
 	if primary == nil {
@@ -1909,7 +1989,6 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 			Message: message,
 		})
 		return "", err
-
 	}
 
 	// In case primary fset value is not specified in configuation then use default
@@ -1969,7 +2048,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 	fsMountPoint := fsMountInfo.MountPoint
 
-	fsetLinkPath, err := createPrimaryFileset(sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit)
+	fsetLinkPath, err := createPrimaryFileset(sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit, operatorRestarted)
 	if err != nil {
 		message := fmt.Sprintf("Failed to create primary fileset %s on primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2022,8 +2101,12 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		fsetLinkPath = strings.Replace(fsetLinkPath, fsMountPoint, primaryFSMount, 1)
 	}
 
+	if operatorRestarted {
+		_, symlinkDirPath := getSymlinkDirPath(fsetLinkPath, primaryFSMount)
+		return symlinkDirPath, nil
+	}
 	// Create directory where volume symlinks will reside
-	symlinkDirPath, symlinkDirRelativePath, err := createSymlinksDir(scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
+	symlinkDirPath, _, err := createSymlinksDir(scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
 	if err != nil {
 		message := fmt.Sprintf("Error in creating a directory %s on primaty filesystem %s", config.SymlinkDir, primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2035,8 +2118,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		})
 		return "", err
 	}
-
-	logger.Info("symlink directory paths:", "symlinkDirPath", symlinkDirPath, "symlinkDirRelativePath", symlinkDirRelativePath)
+	logger.Info("The symlinks directory path is:", "symlinkDirPath", symlinkDirPath)
 	return symlinkDirPath, nil
 }
 
@@ -2051,18 +2133,23 @@ func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperato
 	return primary
 }
 
-//createPrimaryFileset creates a primary fileset and returns it's the
-//path where it is linked. If primary fileset exists and is already linked,
+//createPrimaryFileset creates a primary fileset and returns it's path
+//where it is linked. If primary fileset exists and is already linked,
 //the link path is returned. If primary fileset already exists and not linked,
-//it is linked and link path is returned.
+//it is linked and link path is returned. For operator restart case, just
+//the primary fileset path with a nil error is returned.
 func createPrimaryFileset(sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
-	fsMountPoint string, filesetName string, inodeLimit string) (string, error) {
+	fsMountPoint string, filesetName string, inodeLimit string, operatorRestarted bool) (string, error) {
 
 	logger := csiLog.WithName("createPrimaryFileset")
 	logger.Info("Creating primary fileset", " primaryFS", fsNameOnOwningCluster,
 		"mount point", fsMountPoint, "filesetName", filesetName)
 
 	newLinkPath := path.Join(fsMountPoint, filesetName) //Link path to set if the fileset is not linked
+	if operatorRestarted {
+		//In operator restart case, just return the path
+		return newLinkPath, nil
+	}
 
 	// create primary fileset if not already created
 	fsetResponse, err := sc.ListFileset(fsNameOnOwningCluster, filesetName)
@@ -2119,11 +2206,7 @@ func createSymlinksDir(sc connectors.SpectrumScaleConnector, fs string, fsMountP
 	logger.Info("Creating a directory for symlinks", "directory", config.SymlinkDir,
 		"filesystem", fs, "fsMountPath", fsMountPath, "filesetlinkpath", fsetLinkPath)
 
-	fsetRelativePath := strings.Replace(fsetLinkPath, fsMountPath, "", 1)
-	fsetRelativePath = strings.Trim(fsetRelativePath, "!/")
-	fsetLinkPath = strings.TrimSuffix(fsetLinkPath, "/")
-
-	symlinkDirPath := fmt.Sprintf("%s/%s", fsetLinkPath, config.SymlinkDir)
+	fsetRelativePath, symlinkDirPath := getSymlinkDirPath(fsetLinkPath, fsMountPath)
 	symlinkDirRelativePath := fmt.Sprintf("%s/%s", fsetRelativePath, config.SymlinkDir)
 
 	err := sc.MakeDirectory(fs, symlinkDirRelativePath, config.DefaultUID, config.DefaultGID) //MakeDirectory doesn't return error if the directory already exists
@@ -2142,6 +2225,17 @@ func createSymlinksDir(sc connectors.SpectrumScaleConnector, fs string, fsMountP
 	return symlinkDirPath, symlinkDirRelativePath, nil
 }
 
+//getSymlinkDirPath formats and returns the paths of the directory,
+//where symlinks are stored for version 1 volumes.
+func getSymlinkDirPath(fsetLinkPath string, fsMountPath string) (string, string) {
+	fsetRelativePath := strings.Replace(fsetLinkPath, fsMountPath, "", 1)
+	fsetRelativePath = strings.Trim(fsetRelativePath, "!/")
+	fsetLinkPath = strings.TrimSuffix(fsetLinkPath, "/")
+
+	symlinkDirPath := fmt.Sprintf("%s/%s", fsetLinkPath, config.SymlinkDir)
+	return fsetRelativePath, symlinkDirPath
+}
+
 //ValidateCRParams validates driver configuration parameters and returns error if any validation fails
 func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("ValidateCRParams")
@@ -2152,8 +2246,8 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	}
 
 	primaryClusterFound, issueFound := false, false
-	rClusterForPrimaryFS := ""
-	var nonPrimaryClusters = make([]string, len(instance.Spec.Clusters))
+	remoteClusterID := ""
+	var nonPrimaryClusters = make(map[string]bool)
 
 	for i := 0; i < len(instance.Spec.Clusters); i++ {
 		cluster := instance.Spec.Clusters[i]
@@ -2183,10 +2277,10 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 				logger.Error(fmt.Errorf("Mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.Id), "")
 			}
 
-			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
+			remoteClusterID = cluster.Primary.RemoteCluster
 		} else {
 			//when its a not primary cluster
-			nonPrimaryClusters[i] = cluster.Id
+			nonPrimaryClusters[cluster.Id] = true
 		}
 
 		if cluster.Secrets == "" {
@@ -2204,14 +2298,14 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 		issueFound = true
 		logger.Error(fmt.Errorf("No primary clusters specified"), "")
 	}
-
-	if rClusterForPrimaryFS != "" && stringInSlice(rClusterForPrimaryFS, nonPrimaryClusters) {
+	_, nonPrimaryClusterExists := nonPrimaryClusters[remoteClusterID]
+	if remoteClusterID != "" && !nonPrimaryClusterExists {
 		issueFound = true
-		logger.Error(fmt.Errorf("Remote cluster specified for primary filesystem: %s, but no definition found for it in config", rClusterForPrimaryFS), "")
+		logger.Error(fmt.Errorf("Remote cluster specified for primary filesystem: %s, but no entry found for it in driver manifest", remoteClusterID), "")
 	}
 
 	if issueFound {
-		message := "One or more issues found in Spectrum Scale CSI driver configuration"
+		message := "One or more issues found while validating driver manifest, check operator logs for details"
 		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
 			Type:    string(config.StatusConditionSuccess),
 			Status:  metav1.ConditionFalse,
@@ -2221,13 +2315,4 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 		return fmt.Errorf(message)
 	}
 	return nil
-}
-
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if strings.EqualFold(b, a) {
-			return true
-		}
-	}
-	return false
 }
