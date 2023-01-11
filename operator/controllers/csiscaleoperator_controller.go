@@ -181,6 +181,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
+	watchResources[corev1.ResourceConfigMaps.String()][config.CSIEnvVarConfigMap] = true
+
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
 		message := "Couldn't add Finalizer"
@@ -468,7 +470,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix)
+	cmData := map[string]string{}
+	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
+	if err != nil && !errors.IsNotFound(err) {
+		return ctrl.Result{}, err
+	}
+	if err == nil && len(cm.Data) != 0 {
+		cmData = parseConfigMap(cm)
+	} else {
+		logger.Info("Optional configmap is either not found or is empty, skipped parsing it", "configmap", config.CSIEnvVarConfigMap)
+	}
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -486,10 +499,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
 
-	// if err := r.SetStatus(instance); err != nil {
-	// 	logger.Error(err, "Assigning values to status sub-resource object failed.")
-	//	return ctrl.Result{}, err
-	// }
 	// TODO: Add event.
 	meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
 		Type:    string(config.StatusConditionSuccess),
@@ -530,33 +539,81 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return watchResources[resourceKind][resourceName]
 	}
 
+	//update daemonset and restart its pods(driver pods) when optional configmap ibm-spectrum-scale-csi having valid env vars
+	//ie. in the format VAR_DRIVER_ENV: VAL, is created/deleted
+	//Do not restart driver pods when the configmap contains invalid Envs.
+	implicitRestartOnCreateDelete := func(cfgmapData map[string]string) bool {
+		for key := range cfgmapData {
+			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				return true
+			}
+		}
+		logger.Info(fmt.Sprintf("No env vars found with prefix %s in the configmap %s, skipping proccessing them", config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+		return false
+	}
+
+	//Allow implicit restart of driver pods when returns true
+	//implicit restart occurs automatically based on daemonset updateStretegy when a daemonset gets updated
+	implicitRestartOnUpdate := func(oldCfgMapData, newCfgMapData map[string]string) bool {
+		for key, newVal := range newCfgMapData {
+			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
+			if oldVal, ok := oldCfgMapData[key]; !ok {
+				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+					return true
+				}
+			} else if oldVal != newVal && strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				return true
+			}
+		}
+
+		for key := range oldCfgMapData {
+			//look for deleted valid env vars of the old configmap in the new configmap
+			//if deleted restart driver pods
+			if _, ok := newCfgMapData[key]; !ok {
+				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
 	predicateFuncs := func(resourceKind string) predicate.Funcs {
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
-				} else {
-					return false
+					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
+						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
+					} else {
+						r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
+					}
+					return true
 				}
-				return true
+				return false
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
-					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+					} else if resourceKind == corev1.ResourceConfigMaps.String() {
+						if e.ObjectNew.GetName() == config.CSIEnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+							return implicitRestartOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data)
+						}
 					}
-				} else {
-					return false
+					return true
 				}
-				return true
+				return false
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
-				} else {
-					return false
+					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
+						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
+					} else {
+						r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
+					}
+					return true
 				}
-				return true
+				return false
 			},
 		}
 	}
@@ -1552,4 +1609,55 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	} else {
 		return true, nil
 	}
+}
+
+// getConfigMap fetches data from the "ibm-spectrum-scale-csi-config" configmap from the cluster
+// and returns a configmap reference.
+func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
+
+	logger := csiLog.WithName("getConfigMap").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
+	logger.Info("Reading optional CSI configmap resource from the cluster.")
+
+	cm := &corev1.ConfigMap{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, cm)
+	if err != nil && errors.IsNotFound(err) {
+		message := fmt.Sprintf("Optional configmap resource %s not found.", name)
+		logger.Info(message)
+	} else if err != nil {
+		message := fmt.Sprintf("Failed to get configmap %s information from cluster.", name)
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+	}
+	return cm, err
+}
+
+// parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
+func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
+
+	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
+	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
+
+	data := map[string]string{}
+	invalidEnv := []string{}
+	for key, value := range cm.Data {
+		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+			data[strings.ToUpper(key[11:])] = value
+		} else {
+			invalidEnv = append(invalidEnv, key)
+		}
+	}
+	if len(invalidEnv) > 0 {
+		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+	}
+	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
+	return data
 }
