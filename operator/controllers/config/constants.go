@@ -130,6 +130,8 @@ const (
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 	DefaultLogLevel           = "DEBUG"
+	CSIEnvVarConfigMap        = "ibm-spectrum-scale-csi-config"
+	CSIEnvVarPrefix           = "VAR_DRIVER_"
 
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
