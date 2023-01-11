@@ -539,75 +539,80 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return watchResources[resourceKind][resourceName]
 	}
 
-	restartCSIPodsOnCreateDelete := func(cfgmapData map[string]string) bool {
-		restart := false
+	//update daemonset and restart its pods(driver pods) when optional configmap ibm-spectrum-scale-csi having valid env vars
+	//ie. in the format VAR_DRIVER_ENV: VAL, is created/deleted
+	//Do not restart driver pods when the configmap contains invalid Envs.
+	implicitRestartOnCreateDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if !strings.HasPrefix(strings.ToUpper(key), "VAR_DRIVER_") {
-				continue
+			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				return true
 			}
-			restart = true
 		}
-		return restart
+		return false
 	}
+
+	//Allow implicit restart of driver pods when returns true
+	//implicit restart occurs automatically based on daemonset updateStretegy when a daemonset gets updated
+	implicitRestartOnUpdate := func(oldCfgMapData, newCfgMapData map[string]string) bool {
+		for key, newVal := range newCfgMapData {
+			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
+			if oldVal, ok := oldCfgMapData[key]; !ok {
+				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+					return true
+				}
+			} else if oldVal != newVal && strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				return true
+			}
+		}
+
+		for key := range oldCfgMapData {
+			//look for deleted valid env vars of the old configmap in the new configmap
+			//if deleted restart driver pods
+			if _, ok := newCfgMapData[key]; !ok {
+				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
 	predicateFuncs := func(resourceKind string) predicate.Funcs {
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
 					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
-						if restartCSIPodsOnCreateDelete(e.Object.(*corev1.ConfigMap).Data) {
-							r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
-						}
+						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
 					} else {
 						r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
 					}
-				} else {
-					return false
+					return true
 				}
-				return true
+				return false
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
 					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
-					}
-
-					if resourceKind == corev1.ResourceConfigMaps.String() {
+					} else if resourceKind == corev1.ResourceConfigMaps.String() {
 						if e.ObjectNew.GetName() == config.CSIEnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
-							shouldRestartDriverPods := func() bool {
-								restart := false
-								for key := range e.ObjectNew.(*corev1.ConfigMap).Data {
-									if _, ok := e.ObjectOld.(*corev1.ConfigMap).Data[key]; !ok {
-										if strings.HasPrefix(strings.ToUpper(key), "VAR_DRIVER_") {
-											restart = true
-											continue
-										}
-									}
-								}
-								return restart
-							}
-							if shouldRestartDriverPods() {
-								r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
-							}
+							return implicitRestartOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data)
 						}
 					}
-				} else {
-					return false
+					return true
 				}
-				return true
+				return false
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
 					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
-						if restartCSIPodsOnCreateDelete(e.Object.(*corev1.ConfigMap).Data) {
-							r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
-						}
+						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
 					} else {
 						r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
 					}
-				} else {
-					return false
+					return true
 				}
-				return true
+				return false
 			},
 		}
 	}
@@ -1641,9 +1646,12 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
 
 	data := map[string]string{}
+	invalidEnv := []string{}
 	for key, value := range cm.Data {
-		if strings.HasPrefix(strings.ToUpper(key), "VAR_DRIVER_") {
+		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
 			data[strings.ToUpper(key[11:])] = value
+		} else {
+			invalidEnv = append(invalidEnv, key)
 		}
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
