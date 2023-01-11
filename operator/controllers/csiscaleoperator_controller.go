@@ -1654,6 +1654,7 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
+	logger.Info("Invalid environment variables in the configmap, only the valid ones will be set on driver pods", "Invalid Env Vars", invalidEnv)
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data
 }
