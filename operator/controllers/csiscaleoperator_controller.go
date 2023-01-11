@@ -548,6 +548,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return true
 			}
 		}
+		logger.Info(fmt.Sprintf("No env vars found with prefix %s in the configmap %s, skipping proccessing them", config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
 		return false
 	}
 
@@ -1654,7 +1655,9 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
-	logger.Info("Invalid environment variables in the configmap, only the valid ones will be set on driver pods", "Invalid Env Vars", invalidEnv)
+	if len(invalidEnv) > 0 {
+		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data
 }
