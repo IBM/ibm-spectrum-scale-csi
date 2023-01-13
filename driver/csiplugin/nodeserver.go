@@ -63,7 +63,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	glog.V(3).Infof("nodeserver NodePublishVolume")
 	glog.V(4).Infof("NodePublishVolume called with req: %#v", req)
 	start := time.Now()
-	defer glog.V(4).Infof("NodeUnpublishVolume : req %#v time spent : %v", req, time.Since(start))
+	defer glog.V(4).Infof("NodePublishVolume : req %#v time spent : %v", req, time.Since(start))
 
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
@@ -100,7 +100,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		}
 		volScalePathInContainer = hostDir + symlinkTarget
 		volScalePath = symlinkTarget
-		glog.V(4).Infof("NodePublishVolume: symlink tarrget path is [%s]\n", volScalePathInContainer)
+		glog.V(4).Infof("NodePublishVolume: symlink target path is [%s]\n", volScalePathInContainer)
 	}
 
 	err = checkGpfsType(volScalePathInContainer)
