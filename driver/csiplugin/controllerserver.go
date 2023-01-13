@@ -1614,6 +1614,8 @@ func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context,
 func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	glog.V(3).Infof("controllerserver ControllerUnpublishVolume")
 	glog.V(4).Infof("ControllerUnpublishVolume : req %#v", req)
+	start := time.Now()
+	defer glog.V(4).Infof("ControllerUnpublishVolume : req %#v time spent : %v", req, time.Since(start))
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
 		glog.V(3).Infof("invalid Unpublish volume request: %v", req)
@@ -1632,6 +1634,8 @@ func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, 
 func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) { //nolint:gocyclo,funlen
 	glog.V(3).Infof("controllerserver ControllerPublishVolume")
 	glog.V(4).Infof("ControllerPublishVolume : req %#v", req)
+	start := time.Now()
+	defer glog.V(4).Infof("ControllerPublishVolume : req %#v time spent : %v", req, time.Since(start))
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
 		glog.V(3).Infof("invalid Publish volume request: %v", req)

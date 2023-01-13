@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/golang/glog"
@@ -60,8 +61,9 @@ func checkGpfsType(path string) (bool error) {
 
 func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodePublishVolume")
-
 	glog.V(4).Infof("NodePublishVolume called with req: %#v", req)
+	start := time.Now()
+	defer glog.V(4).Infof("NodeUnpublishVolume : req %#v time spent : %v", req, time.Since(start))
 
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
@@ -177,6 +179,8 @@ func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublis
 func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	glog.V(3).Infof("nodeserver NodeUnpublishVolume")
 	glog.V(4).Infof("NodeUnpublishVolume called with args: %v", req)
+	start := time.Now()
+	defer glog.V(4).Infof("NodeUnpublishVolume : req %#v time spent : %v", req, time.Since(start))
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
 	volID := req.GetVolumeId()
