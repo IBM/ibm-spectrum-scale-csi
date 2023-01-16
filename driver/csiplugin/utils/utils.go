@@ -74,16 +74,16 @@ func GetPath(paths []string) string {
 	return resultPath
 }
 
-func Exists(ctx context.Context, path string) bool {
-	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
+func Exists(path string) bool {
+//	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
-func MkDir(ctx context.Context, path string) error {
-	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
+func MkDir(path string) error {
+//	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
