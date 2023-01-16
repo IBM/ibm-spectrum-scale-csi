@@ -107,36 +107,81 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	if err != nil {
 		return nil, err
 	}
-	notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err = os.Mkdir(targetPath, 0750); err != nil {
-				return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
+	//Use symlink by default for 2.7.0 fixpack2
+
+	//There can be 2 symlinks here:
+	//1. symlink1 (volScalePath): User provides a symlink as path for volume
+	//and this symlink must point to a GPFS path. To mount volumes, instead
+	//of symlink we are using target of the symlink already. volScalePath may
+	//or may not be a symlink.
+	//2. symlink2 (targetPath): this is the one we create for version 1 volumes.
+	//This symlink will always be there for 2.7.0 fixpack2.
+	const useSymlink = true
+	if useSymlink {
+		//Check if mount dir/slink exists, if yes delete it
+		_, err := os.Lstat(targetPath)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				glog.V(4).Infof("NodePublishVolume - failed to get lstat of targetPath [%s]. Error [%v]", targetPath, err)
 			}
 		} else {
-			return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
+			glog.V(4).Infof("NodePublishVolume - deleting the targetPath - [%v]", targetPath)
+			err := os.Remove(targetPath)
+			if err != nil && !os.IsNotExist(err) {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete the target path - [%s]. Error [%v]", targetPath, err))
+			}
 		}
-	}
-	if !notMP {
-		return &csi.NodePublishVolumeResponse{}, nil
-	}
 
-	// create bind mount
-	options := []string{"bind"}
-	mounter := mount.New("")
-	glog.V(4).Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
-	if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
-		return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
-	}
-
-	//check for the gpfs type again, if not gpfs type, unmount and return error.
-	err = checkGpfsType(volScalePathInContainer)
-	if err != nil {
-		uerr := mount.New("").Unmount(targetPath)
-		if uerr != nil {
-			return nil, fmt.Errorf("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
+		//Ceate a new symlink (symlink2) pointing to volScalePath
+		glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, volScalePath)
+		symlinkerr := os.Symlink(volScalePath, targetPath)
+		if symlinkerr != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink [%s] -> [%s]. Error [%v]", targetPath, volScalePath, symlinkerr))
 		}
-		return nil, err
+
+		//check for the gpfs type again, if not gpfs type, delete the symlink and return error
+		err = checkGpfsType(volScalePathInContainer)
+		if err != nil {
+			rerr := os.Remove(targetPath)
+			if rerr != nil && !os.IsNotExist(rerr) {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("NodePublishVolume - failed to delete the targetPath - [%s]. Error [%v]", targetPath, rerr))
+			}
+
+			//gpfs type check has failed, return error
+			return nil, err
+		}
+	} else {
+		notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if err = os.Mkdir(targetPath, 0750); err != nil {
+					return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
+				}
+			} else {
+				return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
+			}
+		}
+		if !notMP {
+			return &csi.NodePublishVolumeResponse{}, nil
+		}
+
+		// create bind mount
+		options := []string{"bind"}
+		mounter := mount.New("")
+		glog.V(4).Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
+		if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
+			return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		}
+
+		//check for the gpfs type again, if not gpfs type, unmount and return error.
+		err = checkGpfsType(volScalePathInContainer)
+		if err != nil {
+			uerr := mount.New("").Unmount(targetPath)
+			if uerr != nil {
+				return nil, fmt.Errorf("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
+			}
+			return nil, err
+		}
 	}
 	glog.V(4).Infof("successfully mounted %s", targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
