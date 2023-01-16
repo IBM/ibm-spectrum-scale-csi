@@ -182,7 +182,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		[]string{
 			"--nodeid=$(NODE_ID)",
 			"--endpoint=$(CSI_ENDPOINT)",
-			"--v=5",
 			"--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)",
 		},
 	)
@@ -451,7 +450,7 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 	return nil
 }
 
-//ensureVolumes returns volumes for CSI driver pods.
+// ensureVolumes returns volumes for CSI driver pods.
 func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	logger := csiLog.WithName("ensureVolumes")
 	volumes := []corev1.Volume{
@@ -533,7 +532,7 @@ func (s *csiNodeSyncer) getImage(name string) string {
 	return image
 }
 
-//ensureSecretVolumeSource returns SecretVolumeSource with given name
+// ensureSecretVolumeSource returns SecretVolumeSource with given name
 // with items username and password.
 func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 	return corev1.VolumeSource{
@@ -553,7 +552,7 @@ func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 	}
 }
 
-//fillSecurityContextCapabilities adds POSIX capabilities to given SCC.
+// fillSecurityContextCapabilities adds POSIX capabilities to given SCC.
 func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) {
 	sc.Capabilities = &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},
