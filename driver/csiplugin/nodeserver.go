@@ -171,6 +171,10 @@ func unmountAndDelete(targetPath string, forceful bool) (bool, *csi.NodeUnpublis
 	}
 	// Delete the mount point
 	if err = os.Remove(targetPathInContainer); err != nil {
+		if os.IsNotExist(err) {
+			glog.V(4).Infof("target path %v is already deleted", targetPath)
+			return false, nil, nil
+		}
 		return true, nil, fmt.Errorf("failed to remove the mount point [%s]. Error %v", targetPathInContainer, err)
 	}
 	return false, nil, nil
@@ -210,6 +214,10 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	if f.Mode()&os.ModeSymlink != 0 {
 		glog.V(4).Infof("%v is a symlink", targetPath)
 		if err := os.Remove(targetPath); err != nil {
+			if os.IsNotExist(err) {
+				glog.V(4).Infof("symlink %v is already deleted", targetPath)
+				return &csi.NodeUnpublishVolumeResponse{}, nil
+			}
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
 		}
 	} else {
