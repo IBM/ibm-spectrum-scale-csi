@@ -91,33 +91,39 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	volScalePathInContainer := hostDir + volScalePath
 	f, err := os.Lstat(volScalePathInContainer)
 	if err != nil {
-		return nil, fmt.Errorf("NodePublishVolume: failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
+		glog.V(4).Infof("NodePublishVolume - failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
+		return nil, fmt.Errorf("NodePublishVolume - failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
 	}
 	if f.Mode()&os.ModeSymlink != 0 {
 		symlinkTarget, readlinkErr := os.Readlink(volScalePathInContainer)
 		if readlinkErr != nil {
-			return nil, fmt.Errorf("NodePublishVolume: failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
+			glog.V(4).Infof("NodePublishVolume - failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
+			return nil, fmt.Errorf("NodePublishVolume - failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
 		}
 		volScalePathInContainer = hostDir + symlinkTarget
 		volScalePath = symlinkTarget
-		glog.V(4).Infof("NodePublishVolume: symlink target path is [%s]\n", volScalePathInContainer)
+		glog.V(4).Infof("NodePublishVolume - symlink target path is [%s]\n", volScalePathInContainer)
 	}
 
 	err = checkGpfsType(volScalePathInContainer)
 	if err != nil {
+		glog.V(4).Infof("NodePublishVolume - the path [%v] is not a valid gpfs path", volScalePathInContainer)
 		return nil, err
 	}
 	notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			if err = os.Mkdir(targetPath, 0750); err != nil {
-				return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
+				glog.V(4).Infof("NodePublishVolume - failed to create target path [%s]. Error [%v]", targetPath, err)
+				return nil, fmt.Errorf("NodePublishVolume -failed to create target path [%s]. Error [%v]", targetPath, err)
 			}
 		} else {
-			return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
+			glog.V(4).Infof("NodePublishVolume - failed to check target path [%s]. Error [%v]", targetPath, err)
+			return nil, fmt.Errorf("NodePublishVolume -failed to check target path [%s]. Error [%v]", targetPath, err)
 		}
 	}
 	if !notMP {
+		glog.V(4).Infof("NodePublishVolume - returning success as the path [%s] is already a mount point", targetPath)
 		return &csi.NodePublishVolumeResponse{}, nil
 	}
 
@@ -126,7 +132,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	mounter := mount.New("")
 	glog.V(4).Infof("NodePublishVolume - creating bind mount [%v] -> [%v]", targetPath, volScalePath)
 	if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
-		return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		glog.V(4).Infof("NodePublishVolume - failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		return nil, fmt.Errorf("NodePublishVolume -failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
 	}
 
 	//check for the gpfs type again, if not gpfs type, unmount and return error.
@@ -134,11 +141,12 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	if err != nil {
 		uerr := mount.New("").Unmount(targetPath)
 		if uerr != nil {
+			glog.V(4).Infof("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
 			return nil, fmt.Errorf("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
 		}
 		return nil, err
 	}
-	glog.V(4).Infof("successfully mounted %s", targetPath)
+	glog.V(4).Infof("NodePublishVolume - successfully mounted %s", targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -238,7 +246,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 			return response, error
 		}
 	}
-	glog.V(4).Infof("successfully unpublished %s", targetPath)
+	glog.V(4).Infof("NodeUnpublishVolume - successfully unpublished %s", targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
