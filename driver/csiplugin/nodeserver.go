@@ -200,15 +200,21 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	//Check if target is a symlink or bind mount and cleanup accordingly
 	f, err := os.Lstat(targetPath)
 	if err != nil {
+		//Handling for target path (softlink or bindmount) is already deleted/not present
+		if os.IsNotExist(err) {
+			glog.V(4).Infof("NodeUnpublishVolume - returning success as targetpath %v is not found ", targetPath)
+			return &csi.NodeUnpublishVolumeResponse{}, nil
+		}
+		//Handling for bindmount is gpfs is unmounted/unlinked
 		if strings.Contains(err.Error(), errStaleNFSFileHandle) {
-			glog.V(4).Infof("error [%v] is observed, trying forceful unmount of [%s]", err, targetPath)
+			glog.V(4).Infof("NodeUnpublishVolume - error [%v] is observed, trying forceful unmount of [%s]", err, targetPath)
 			needReturn, response, error := unmountAndDelete(targetPath, true)
 			if needReturn {
 				return response, error
 			}
 			return &csi.NodeUnpublishVolumeResponse{}, nil
 		} else {
-			return nil, fmt.Errorf("failed to get lstat of target path [%s]. Error %v", targetPath, err)
+			return nil, fmt.Errorf("NodeUnpublishVolume - failed to get lstat of target path [%s]. Error %v", targetPath, err)
 		}
 	}
 	if f.Mode()&os.ModeSymlink != 0 {
@@ -218,7 +224,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 				glog.V(4).Infof("symlink %v is already deleted", targetPath)
 				return &csi.NodeUnpublishVolumeResponse{}, nil
 			}
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
+			return nil, status.Error(codes.Internal, fmt.Sprintf("NodeUnpublishVolume - failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
 		}
 	} else {
 		glog.V(4).Infof("%v is a bind mount", targetPath)
