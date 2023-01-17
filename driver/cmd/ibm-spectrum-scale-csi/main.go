@@ -25,7 +25,6 @@ import (
 	"os"
 	"path"
 	"time"
-
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
@@ -42,9 +41,33 @@ var (
 	vendorVersion  = "2.9.0"
 )
 
+const dirPath = "scalecsilogs"
+const logFile = "ibm-spectrum-scale-csi.logs"
+const logLevel = "LOGLEVEL"
+
+type LoggerLevel int
+
+const (
+	TRACE LoggerLevel = iota
+	DEBUG
+	INFO
+	WARNING
+	ERROR
+	FATAL
+)
+
 func main() {
+	klog.InitFlags(nil)
+	level := getLevel()
+	logFile := createLogFile()
+	value := getVerboseLevel(level)
+	flag.Set("logtostderr", "false")
+	flag.Set("stderrthreshold", level)
+	flag.Set("log_file", logFile)
+	flag.Set("v", value)
+	flag.Parse()
+
 	ctx := setContext()
-	utils.InitLogger(ctx)
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
@@ -98,3 +121,59 @@ func setContext() context.Context {
 	ctx := utils.SetLoggerId(newCtx)
 	return ctx
 }
+
+func getLevel() string{
+	level := os.Getenv(logLevel)
+	var logValue string
+	klog.Infof("logValue: %s", level)
+	if level == "" || level == DEBUG.String() || level == TRACE.String() {
+		logValue = INFO.String()
+	} else {
+		logValue = level
+	}
+	return logValue
+}
+
+func createLogFile() string{
+	logDir := "/host/var/log/" + dirPath + "/"
+	if !utils.Exists(logDir) {
+		err := utils.MkDir(logDir)
+		if err != nil {
+			klog.Errorf("Failed to create log directory")
+		}
+	}
+
+	fpPath := logDir + logFile
+	return fpPath
+}
+
+
+func (level LoggerLevel) String() string {
+	switch level {
+	case TRACE:
+		return "TRACE"
+	case DEBUG:
+		return "DEBUG"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	case FATAL:
+		return "FATAL"
+	case INFO:
+		return "INFO"
+	default:
+		return "INFO"
+	}
+}
+
+func getVerboseLevel(level string) string{
+	if level == DEBUG.String() {
+		return "4"
+	} else if level == TRACE.String() {
+		return "6"
+	} else {
+		return "1"
+	}
+}
+
