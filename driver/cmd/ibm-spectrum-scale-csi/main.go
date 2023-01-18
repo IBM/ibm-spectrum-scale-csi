@@ -26,6 +26,8 @@ import (
 	"path"
 	"time"
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
+	"fmt"
+	"github.com/natefinch/lumberjack"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -42,7 +44,7 @@ var (
 )
 
 const dirPath = "scalecsilogs"
-const logFile = "ibm-spectrum-scale-csi.logs"
+const logFile = "ibm-spectrum-scale-csi.log1"
 const logLevel = "LOGLEVEL"
 
 type LoggerLevel int
@@ -59,14 +61,17 @@ const (
 func main() {
 	klog.InitFlags(nil)
 	level := getLevel()
-	logFile := createLogFile()
+	//logFile := createLogFile()
+	logFile := "/host/var/log/" + dirPath + "/" + logFile 
 	value := getVerboseLevel(level)
 	flag.Set("logtostderr", "false")
 	flag.Set("stderrthreshold", level)
-	flag.Set("log_file", logFile)
+//	flag.Set("log_file", logFile)
 	flag.Set("v", value)
 	flag.Parse()
 
+	fpClose := InitFileLogger(level, logFile, 1024)
+	defer fpClose
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
@@ -177,3 +182,45 @@ func getVerboseLevel(level string) string{
 	}
 }
 
+func InitFileLogger(level, filePath string, rotateSize int) func() {
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		klog.Infof("File path doesn't exist")
+		fileDir, _ := path.Split(filePath)
+		err := os.MkdirAll(fileDir, 0766)
+		if err != nil {
+			klog.Infof("Failed to create log folder")
+			panic(fmt.Sprintf("failed to create log folder %v", err))
+		}
+	}
+
+	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
+	if err != nil {
+		klog.Infof("Failed to create log file")
+		panic(fmt.Sprintf("failed to init logger %v", err))
+	}
+
+	fileStat, err := logFile.Stat()
+	if err != nil {
+		klog.Infof("failed to stat logger file")
+		panic(fmt.Sprintf("failed to stat logger file %v", err))
+	}
+
+	fileStatSize := int(fileStat.Size()) / 1024 / 1024
+
+	// If log file size bigger than rotateSize, will use lunberjack to run the logrotate
+	if fileStatSize < rotateSize {
+		klog.Infof("Filesize is lesser than rotate size")
+		klog.SetOutput(logFile)
+	} else {
+		klog.SetOutput(&lumberjack.Logger{
+			Filename:   filePath,
+			MaxSize:    rotateSize,
+			MaxBackups: 5,
+			MaxAge:     50,
+			Compress:   true,
+		})
+	}
+
+	return func() { logFile.Close()}
+}
