@@ -53,7 +53,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	v1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	config "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
@@ -63,7 +62,9 @@ import (
 	//TODO: This is temporary change, once the SpectrumRestV2 is exported
 	//in driver code and merged in some IBM branch, change this line and
 	//adjust the dependencies.
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 )
 
 // CSIScaleOperatorReconciler reconciles a CSIScaleOperator object
@@ -92,6 +93,10 @@ var changedClusters = make(map[string]bool)
 //a map of connectors to make REST calls to GUI
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 var symlinkDirPath = ""
+
+//A context used only for the purpose of calling REST calls from driver code
+//as driver code logs statements now need a logger ID.
+var ctx = getContext()
 
 // watchResources stores resource kind and resource names of the resources
 // that the controller is going to watch.
@@ -200,6 +205,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			watchResources[corev1.ResourceSecrets.String()][cluster.Secrets] = true
 		}
 	}
+
+	watchResources[corev1.ResourceConfigMaps.String()][config.CSIEnvVarConfigMap] = true
 
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
@@ -472,7 +479,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, symlinkDirPath)
+	cmData := map[string]string{}
+	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
+	if err != nil && !errors.IsNotFound(err) {
+		return ctrl.Result{}, err
+	}
+	if err == nil && len(cm.Data) != 0 {
+		cmData = parseConfigMap(cm)
+	} else {
+		logger.Info("Optional configmap is either not found or is empty, skipped parsing it", "configmap", config.CSIEnvVarConfigMap)
+	}
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, symlinkDirPath, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -490,10 +508,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	message := "The CSI driver resources have been created/updated successfully."
 	logger.Info(message)
 
-	// if err := r.SetStatus(instance); err != nil {
-	// 	logger.Error(err, "Assigning values to status sub-resource object failed.")
-	//	return ctrl.Result{}, err
-	// }
 	// TODO: Add event.
 	meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
 		Type:    string(config.StatusConditionSuccess),
@@ -738,33 +752,81 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return watchResources[resourceKind][resourceName]
 	}
 
+	//update daemonset and restart its pods(driver pods) when optional configmap ibm-spectrum-scale-csi having valid env vars
+	//ie. in the format VAR_DRIVER_ENV: VAL, is created/deleted
+	//Do not restart driver pods when the configmap contains invalid Envs.
+	implicitRestartOnCreateDelete := func(cfgmapData map[string]string) bool {
+		for key := range cfgmapData {
+			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				return true
+			}
+		}
+		logger.Info(fmt.Sprintf("No env vars found with prefix %s in the configmap %s, skipping proccessing them", config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+		return false
+	}
+
+	//Allow implicit restart of driver pods when returns true
+	//implicit restart occurs automatically based on daemonset updateStretegy when a daemonset gets updated
+	implicitRestartOnUpdate := func(oldCfgMapData, newCfgMapData map[string]string) bool {
+		for key, newVal := range newCfgMapData {
+			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
+			if oldVal, ok := oldCfgMapData[key]; !ok {
+				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+					return true
+				}
+			} else if oldVal != newVal && strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				return true
+			}
+		}
+
+		for key := range oldCfgMapData {
+			//look for deleted valid env vars of the old configmap in the new configmap
+			//if deleted restart driver pods
+			if _, ok := newCfgMapData[key]; !ok {
+				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
 	predicateFuncs := func(resourceKind string) predicate.Funcs {
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
-				} else {
-					return false
+					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
+						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
+					} else {
+						r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
+					}
+					return true
 				}
-				return true
+				return false
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
-					if !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+					} else if resourceKind == corev1.ResourceConfigMaps.String() {
+						if e.ObjectNew.GetName() == config.CSIEnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+							return implicitRestartOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data)
+						}
 					}
-				} else {
-					return false
+					return true
 				}
-				return true
+				return false
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
-				} else {
-					return false
+					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
+						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
+					} else {
+						r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
+					}
+					return true
 				}
-				return true
+				return false
 			},
 		}
 	}
@@ -1912,7 +1974,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					//no need to check if GUI is reachable or clusterID is valid.
 					continue
 				}
-				id, err := scaleConnMap[cluster.Id].GetClusterId()
+				id, err := scaleConnMap[cluster.Id].GetClusterId(ctx)
 				if err != nil {
 					message := fmt.Sprintf("Failed to connect to GUI of the cluster with ID %s", cluster.Id)
 					logger.Error(err, message)
@@ -1977,7 +2039,8 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	sc := scaleConnMap[config.Primary]
 
 	// check if primary filesystem exists
-	fsMountInfo, err := sc.GetFilesystemMountDetails(primary.PrimaryFs)
+	logger.Info("AMOL: check logs after this: CTX")
+	fsMountInfo, err := sc.GetFilesystemMountDetails(ctx, primary.PrimaryFs)
 	if err != nil {
 		message := fmt.Sprintf("Failed to get details of filesystem %s", primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2033,7 +2096,8 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	}
 
 	//check if primary filesystem exists on remote cluster and mounted on atleast one node
-	fsMountInfo, err = sc.GetFilesystemMountDetails(fsNameOnOwningCluster)
+	logger.Info("AMOL: check logs after this: CONTEXT.TODO()")
+	fsMountInfo, err = sc.GetFilesystemMountDetails(context.TODO(), fsNameOnOwningCluster)
 	if err != nil {
 		message := fmt.Sprintf("Failed to get details of filesystem %s", fsNameOnOwningCluster)
 		logger.Error(err, message)
@@ -2063,10 +2127,10 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
 	if primary.RemoteCluster != "" {
-		_, err := scaleConnMap[config.Primary].ListFileset(primary.PrimaryFs, primary.PrimaryFset)
+		_, err := scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
 		if err != nil {
 			logger.Info("Primary fileset is not visible on primary cluster. Running fileset refresh task", "fileset name", primary.PrimaryFset)
-			err = scaleConnMap[config.Primary].FilesetRefreshTask()
+			err = scaleConnMap[config.Primary].FilesetRefreshTask(context.TODO())
 			if err != nil {
 				message := fmt.Sprintf("Error in fileset refresh task")
 				logger.Error(err, message)
@@ -2079,7 +2143,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 				// retry listing fileset again after some time after refresh
 				time.Sleep(8 * time.Second)
-				_, err = scaleConnMap[config.Primary].ListFileset(primary.PrimaryFs, primary.PrimaryFset)
+				_, err = scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
 				if err != nil {
 					message := fmt.Sprintf("Primary fileset %s is not visible on primary cluster even after running fileset refresh task", primary.PrimaryFset)
 					logger.Error(err, message)
@@ -2152,7 +2216,7 @@ func createPrimaryFileset(sc connectors.SpectrumScaleConnector, fsNameOnOwningCl
 	}
 
 	// create primary fileset if not already created
-	fsetResponse, err := sc.ListFileset(fsNameOnOwningCluster, filesetName)
+	fsetResponse, err := sc.ListFileset(context.TODO(), fsNameOnOwningCluster, filesetName)
 	if err != nil {
 		logger.Info("Primary fileset not found, so creating it", "fileseName", filesetName)
 		opts := make(map[string]interface{})
@@ -2160,7 +2224,7 @@ func createPrimaryFileset(sc connectors.SpectrumScaleConnector, fsNameOnOwningCl
 			opts[connectors.UserSpecifiedInodeLimit] = inodeLimit
 		}
 
-		err = sc.CreateFileset(fsNameOnOwningCluster, filesetName, opts)
+		err = sc.CreateFileset(context.TODO(), fsNameOnOwningCluster, filesetName, opts)
 		if err != nil {
 			message := fmt.Sprintf("Unable to create primary fileset %s. Error: %v", filesetName, err.Error())
 			logger.Error(err, message)
@@ -2176,7 +2240,7 @@ func createPrimaryFileset(sc connectors.SpectrumScaleConnector, fsNameOnOwningCl
 		linkPath := fsetResponse.Config.Path
 		if linkPath == "" || linkPath == "--" {
 			logger.Info("Primary fileset not linked. Linking it", "filesetName", filesetName)
-			err = sc.LinkFileset(fsNameOnOwningCluster, filesetName, newLinkPath)
+			err = sc.LinkFileset(context.TODO(), fsNameOnOwningCluster, filesetName, newLinkPath)
 			if err != nil {
 				message := fmt.Sprintf("Failed to link primary fileset %s", filesetName)
 				logger.Error(err, message)
@@ -2209,7 +2273,7 @@ func createSymlinksDir(sc connectors.SpectrumScaleConnector, fs string, fsMountP
 	fsetRelativePath, symlinkDirPath := getSymlinkDirPath(fsetLinkPath, fsMountPath)
 	symlinkDirRelativePath := fmt.Sprintf("%s/%s", fsetRelativePath, config.SymlinkDir)
 
-	err := sc.MakeDirectory(fs, symlinkDirRelativePath, config.DefaultUID, config.DefaultGID) //MakeDirectory doesn't return error if the directory already exists
+	err := sc.MakeDirectory(context.TODO(), fs, symlinkDirRelativePath, config.DefaultUID, config.DefaultGID) //MakeDirectory doesn't return error if the directory already exists
 	if err != nil {
 		message := fmt.Sprintf("Failed to create a symlink directory with relative path %s on filesystem: %s", symlinkDirRelativePath, fs)
 		logger.Error(err, message)
@@ -2315,4 +2379,62 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 		return fmt.Errorf(message)
 	}
 	return nil
+}
+
+// getConfigMap fetches data from the "ibm-spectrum-scale-csi-config" configmap from the cluster
+// and returns a configmap reference.
+func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
+
+	logger := csiLog.WithName("getConfigMap").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
+	logger.Info("Reading optional CSI configmap resource from the cluster.")
+
+	cm := &corev1.ConfigMap{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      name,
+		Namespace: instance.Namespace,
+	}, cm)
+	if err != nil && errors.IsNotFound(err) {
+		message := fmt.Sprintf("Optional configmap resource %s not found.", name)
+		logger.Info(message)
+	} else if err != nil {
+		message := fmt.Sprintf("Failed to get configmap %s information from cluster.", name)
+		logger.Error(err, message)
+		// TODO: Add event.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceReadError),
+			Message: message,
+		})
+	}
+	return cm, err
+}
+
+// parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
+func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
+
+	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
+	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
+
+	data := map[string]string{}
+	invalidEnv := []string{}
+	for key, value := range cm.Data {
+		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+			data[strings.ToUpper(key[11:])] = value
+		} else {
+			invalidEnv = append(invalidEnv, key)
+		}
+	}
+	if len(invalidEnv) > 0 {
+		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+	}
+	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
+	return data
+}
+
+// get context with a logger ID for REST calls made from operator to driver
+func getContext() context.Context {
+	var ctx context.Context = context.Background()
+	ctx = utils.SetLoggerId(ctx)
+	return ctx
 }

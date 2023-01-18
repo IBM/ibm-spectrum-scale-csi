@@ -63,6 +63,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20220927072613-aa2802d0f9d8 h1:f6yHcntyP9QVileVyKwRoczSk4P4hz/tT0ykqtzaQcI=
 github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20220927072613-aa2802d0f9d8/go.mod h1:tTelqbEOeCiEoc4V+8F8sBYO6rEErZ2XKV4Tb2v6r3M=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f h1:y4gZZpWyDKmTZu5+Hioa+Purw7g0NW7ys1sLt/JuieY=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f/go.mod h1:xZv0YQCbJmHgYQa5AUv8dUsoPPyB+Yjpu84FTIIGokY=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
