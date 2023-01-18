@@ -19,15 +19,15 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/natefinch/lumberjack"
 	"k8s.io/klog/v2"
 	"math/rand"
 	"os"
 	"path"
 	"time"
-	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
-	"fmt"
-	"github.com/natefinch/lumberjack"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -61,17 +61,17 @@ const (
 func main() {
 	klog.InitFlags(nil)
 	level := getLevel()
-	//logFile := createLogFile()
-	logFile := "/host/var/log/" + dirPath + "/" + logFile 
+	filePath := createLogFile()
 	value := getVerboseLevel(level)
 	flag.Set("logtostderr", "false")
 	flag.Set("stderrthreshold", level)
-//	flag.Set("log_file", logFile)
+	//	flag.Set("log_file", logFile)
 	flag.Set("v", value)
 	flag.Parse()
 
-	fpClose := InitFileLogger(level, logFile, 1024)
-	defer fpClose
+	fpClose := InitFileLogger(level, filePath, 1024)
+	defer fpClose()
+
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
@@ -127,7 +127,7 @@ func setContext() context.Context {
 	return ctx
 }
 
-func getLevel() string{
+func getLevel() string {
 	level := os.Getenv(logLevel)
 	var logValue string
 	klog.Infof("logValue: %s", level)
@@ -139,9 +139,9 @@ func getLevel() string{
 	return logValue
 }
 
-func createLogFile() string{
-	logDir := "/host/var/log/" + dirPath + "/"
-	if !utils.Exists(logDir) {
+func createLogFile() string {
+	filePath := "/host/var/log/" + dirPath + "/" + logFile
+	/*if !utils.Exists(logDir) {
 		err := utils.MkDir(logDir)
 		if err != nil {
 			klog.Errorf("Failed to create log directory")
@@ -149,9 +149,19 @@ func createLogFile() string{
 	}
 
 	fpPath := logDir + logFile
-	return fpPath
+	return fpPath*/
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		klog.Infof("File path doesn't exist")
+		fileDir, _ := path.Split(filePath)
+		err := os.MkdirAll(fileDir, 0766)
+		if err != nil {
+			klog.Infof("Failed to create log folder")
+			panic(fmt.Sprintf("failed to create log folder %v", err))
+		}
+	}
+	return filePath
 }
-
 
 func (level LoggerLevel) String() string {
 	switch level {
@@ -172,7 +182,7 @@ func (level LoggerLevel) String() string {
 	}
 }
 
-func getVerboseLevel(level string) string{
+func getVerboseLevel(level string) string {
 	if level == DEBUG.String() {
 		return "4"
 	} else if level == TRACE.String() {
@@ -183,17 +193,6 @@ func getVerboseLevel(level string) string{
 }
 
 func InitFileLogger(level, filePath string, rotateSize int) func() {
-	_, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		klog.Infof("File path doesn't exist")
-		fileDir, _ := path.Split(filePath)
-		err := os.MkdirAll(fileDir, 0766)
-		if err != nil {
-			klog.Infof("Failed to create log folder")
-			panic(fmt.Sprintf("failed to create log folder %v", err))
-		}
-	}
-
 	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
 		klog.Infof("Failed to create log file")
@@ -222,5 +221,5 @@ func InitFileLogger(level, filePath string, rotateSize int) func() {
 		})
 	}
 
-	return func() { logFile.Close()}
+	return func() { logFile.Close() }
 }
