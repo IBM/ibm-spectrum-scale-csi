@@ -44,8 +44,10 @@ var (
 )
 
 const dirPath = "scalecsilogs"
-const logFile = "ibm-spectrum-scale-csi.log1"
+const logFile = "ibm-spectrum-scale-csi.log"
 const logLevel = "LOGLEVEL"
+const hostPath = "/host/var/log/"
+const rotateSize = 1024
 
 type LoggerLevel int
 
@@ -61,15 +63,18 @@ const (
 func main() {
 	klog.InitFlags(nil)
 	level := getLevel()
-	filePath := createLogFile()
 	value := getVerboseLevel(level)
 	flag.Set("logtostderr", "false")
 	flag.Set("stderrthreshold", level)
-	//	flag.Set("log_file", logFile)
 	flag.Set("v", value)
 	flag.Parse()
 
-	fpClose := InitFileLogger(level, filePath, 1024)
+	defer func() {
+		if r := recover(); r != nil {
+			klog.Infof("Recovered from panic: [%v]", r)
+		}
+	}()
+	fpClose := InitFileLogger()
 	defer fpClose()
 
 	ctx := setContext()
@@ -140,23 +145,12 @@ func getLevel() string {
 }
 
 func createLogFile() string {
-	filePath := "/host/var/log/" + dirPath + "/" + logFile
-	/*if !utils.Exists(logDir) {
-		err := utils.MkDir(logDir)
-		if err != nil {
-			klog.Errorf("Failed to create log directory")
-		}
-	}
-
-	fpPath := logDir + logFile
-	return fpPath*/
+	filePath := hostPath + dirPath + "/" + logFile
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		klog.Infof("File path doesn't exist")
 		fileDir, _ := path.Split(filePath)
 		err := os.MkdirAll(fileDir, 0766)
 		if err != nil {
-			klog.Infof("Failed to create log folder")
 			panic(fmt.Sprintf("failed to create log folder %v", err))
 		}
 	}
@@ -192,16 +186,24 @@ func getVerboseLevel(level string) string {
 	}
 }
 
-func InitFileLogger(level, filePath string, rotateSize int) func() {
+func InitFileLogger() func() {
+	filePath := hostPath + dirPath + "/" + logFile
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		fileDir, _ := path.Split(filePath)
+		err := os.MkdirAll(fileDir, 0766)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create log folder %v", err))
+		}
+	}
+
 	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
-		klog.Infof("Failed to create log file")
 		panic(fmt.Sprintf("failed to init logger %v", err))
 	}
 
 	fileStat, err := logFile.Stat()
 	if err != nil {
-		klog.Infof("failed to stat logger file")
 		panic(fmt.Sprintf("failed to stat logger file %v", err))
 	}
 
@@ -209,14 +211,13 @@ func InitFileLogger(level, filePath string, rotateSize int) func() {
 
 	// If log file size bigger than rotateSize, will use lunberjack to run the logrotate
 	if fileStatSize < rotateSize {
-		klog.Infof("Filesize is lesser than rotate size")
 		klog.SetOutput(logFile)
 	} else {
 		klog.SetOutput(&lumberjack.Logger{
 			Filename:   filePath,
 			MaxSize:    rotateSize,
 			MaxBackups: 5,
-			MaxAge:     50,
+			MaxAge:     0,
 			Compress:   true,
 		})
 	}
