@@ -138,7 +138,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 			}
 		}
 
-		//Ceate a new symlink (symlink2) pointing to volScalePath
+		//Create a new symlink (symlink2) pointing to volScalePath
 		glog.V(4).Infof("NodePublishVolume - creating symlink [%v] -> [%v]", targetPath, volScalePath)
 		symlinkerr := os.Symlink(volScalePath, targetPath)
 		if symlinkerr != nil {
