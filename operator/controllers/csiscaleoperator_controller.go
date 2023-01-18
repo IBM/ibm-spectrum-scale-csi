@@ -62,7 +62,7 @@ import (
 	//TODO: This is temporary change, once the SpectrumRestV2 is exported
 	//in driver code and merged in some IBM branch, change this line and
 	//adjust the dependencies.
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+
 	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 )
@@ -93,10 +93,6 @@ var changedClusters = make(map[string]bool)
 //a map of connectors to make REST calls to GUI
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 var symlinkDirPath = ""
-
-//A context used only for the purpose of calling REST calls from driver code
-//as driver code logs statements now need a logger ID.
-var ctx = getContext()
 
 // watchResources stores resource kind and resource names of the resources
 // that the controller is going to watch.
@@ -1974,7 +1970,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					//no need to check if GUI is reachable or clusterID is valid.
 					continue
 				}
-				id, err := scaleConnMap[cluster.Id].GetClusterId(ctx)
+				id, err := scaleConnMap[cluster.Id].GetClusterId(context.TODO())
 				if err != nil {
 					message := fmt.Sprintf("Failed to connect to GUI of the cluster with ID %s", cluster.Id)
 					logger.Error(err, message)
@@ -2039,8 +2035,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	sc := scaleConnMap[config.Primary]
 
 	// check if primary filesystem exists
-	logger.Info("AMOL: check logs after this: CTX")
-	fsMountInfo, err := sc.GetFilesystemMountDetails(ctx, primary.PrimaryFs)
+	fsMountInfo, err := sc.GetFilesystemMountDetails(context.TODO(), primary.PrimaryFs)
 	if err != nil {
 		message := fmt.Sprintf("Failed to get details of filesystem %s", primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2096,7 +2091,6 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	}
 
 	//check if primary filesystem exists on remote cluster and mounted on atleast one node
-	logger.Info("AMOL: check logs after this: CONTEXT.TODO()")
 	fsMountInfo, err = sc.GetFilesystemMountDetails(context.TODO(), fsNameOnOwningCluster)
 	if err != nil {
 		message := fmt.Sprintf("Failed to get details of filesystem %s", fsNameOnOwningCluster)
@@ -2430,11 +2424,4 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data
-}
-
-// get context with a logger ID for REST calls made from operator to driver
-func getContext() context.Context {
-	var ctx context.Context = context.Background()
-	ctx = utils.SetLoggerId(ctx)
-	return ctx
 }

@@ -150,7 +150,7 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 	if scaleConfig.SecureSslMode {
 		caCertPool := x509.NewCertPool()
 		if ok := caCertPool.AppendCertsFromPEM(scaleConfig.CacertValue); !ok {
-			return &SpectrumRestV2{}, fmt.Errorf("Parsing CA cert %v failed", scaleConfig.Cacert)
+			return &SpectrumRestV2{}, fmt.Errorf("parsing CA cert %v failed", scaleConfig.Cacert)
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		klog.V(4).Infof("[%s] created Spectrum Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))

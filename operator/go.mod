@@ -3,7 +3,6 @@ module github.com/IBM/ibm-spectrum-scale-csi/operator
 go 1.18
 
 require (
-	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f
 	github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20230118123107-af004abe27a8
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.12
@@ -26,6 +25,7 @@ require (
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -36,7 +36,6 @@ require (
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.5 // indirect
