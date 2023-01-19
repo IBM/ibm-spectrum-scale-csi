@@ -17,11 +17,12 @@
 package scale
 
 import (
-	"k8s.io/klog/v2"
 	"net"
 	"net/url"
 	"os"
 	"sync"
+
+	"k8s.io/klog/v2"
 
 	"google.golang.org/grpc"
 
@@ -99,7 +100,7 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	}
 	// Change csi.sock file permsion to read and write only
 	if err := os.Chmod(addr, 0600); err != nil {
-		glog.Fatalf("Failed to modify csi.sock permission: %v", err)
+		klog.Fatalf("Failed to modify csi.sock permission: %v", err)
 	}
 
 	server := grpc.NewServer(opts...)
