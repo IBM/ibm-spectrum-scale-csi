@@ -625,7 +625,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	provisioner := s.ensureContainer(provisionerContainerName,
 		s.getSidecarImage(config.CSIProvisioner),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=30s", "--default-fstype=ext4"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=30s", "--default-fstype=ext4"},
 	)
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
 
@@ -633,7 +633,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	attacher := s.ensureContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=180s"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=180s"},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
@@ -641,7 +641,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=30s"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=30s"},
 	)
 	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 
@@ -649,7 +649,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	resizer := s.ensureContainer(resizerContainerName,
 		s.getSidecarImage(config.CSIResizer),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=30s"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=30s"},
 	)
 	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
 
