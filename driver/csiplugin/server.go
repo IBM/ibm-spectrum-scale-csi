@@ -96,6 +96,10 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	if err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}
+	// Change csi.sock file permsion to read and write only
+	if err := os.Chmod(addr, 0600); err != nil {
+		glog.Fatalf("Failed to modify csi.sock permission: %v", err)
+	}
 
 	server := grpc.NewServer(opts...)
 	s.server = server
