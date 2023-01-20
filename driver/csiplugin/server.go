@@ -100,7 +100,7 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	}
 	// Updated csi.sock file permission to read and write only
 	if err := os.Chmod(addr, 0600); err != nil {
-		klog.Fatalf("Failed to modify csi.sock permission: %v", err)
+		klog.Fatalf("Failed to modify csi.sock permission : %v", err)
 	}
 
 	server := grpc.NewServer(opts...)
