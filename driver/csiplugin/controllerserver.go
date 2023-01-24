@@ -18,6 +18,11 @@ package scale
 
 import (
 	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -27,10 +32,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -50,7 +51,6 @@ const (
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
 }
-
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
@@ -1654,7 +1654,10 @@ func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context,
 	}
 
 	for _, cap := range req.VolumeCapabilities {
-		if cap.GetAccessMode().GetMode() != csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER {
+		switch cap.GetAccessMode().GetMode() {
+		case csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER:
+		case csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER:
+		default:
 			return &csi.ValidateVolumeCapabilitiesResponse{Message: ""}, nil
 		}
 	}
