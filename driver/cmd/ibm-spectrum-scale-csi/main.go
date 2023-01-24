@@ -182,7 +182,7 @@ func InitFileLogger() func() {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		fileDir, _ := path.Split(filePath)
-		err := os.MkdirAll(fileDir, 0766)
+		err := os.MkdirAll(fileDir, 0755)
 		if err != nil {
 			panic(fmt.Sprintf("failed to create log folder %v", err))
 		}
