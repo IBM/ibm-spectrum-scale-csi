@@ -47,7 +47,7 @@ const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
 const hostPath = "/host/var/log/"
-const rotateSize = 2
+const rotateSize = 1024
 
 type LoggerLevel int
 
@@ -135,7 +135,11 @@ func setContext() context.Context {
 func getLevel() string {
 	level := os.Getenv(logLevel)
 	var logValue string
-	klog.Infof("logValue: %s", level)
+	if level == ""{
+	   klog.Infof("logger level is not set. Defaulting to INFO")
+	}else{
+		klog.Infof("logValue: %s", level)
+	}
 	if level == "" || level == DEBUG.String() || level == TRACE.String() {
 		logValue = INFO.String()
 	} else {
@@ -204,7 +208,7 @@ func InitFileLogger() func() {
 			Filename:   filePath,
 			MaxSize:    rotateSize,
 			MaxBackups: 5,
-			MaxAge:     1,
+			MaxAge:     0,
 			Compress:   true,
 		})
 	}
