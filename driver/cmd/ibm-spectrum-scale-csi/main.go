@@ -47,7 +47,7 @@ const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
 const hostPath = "/host/var/log/"
-const rotateSize = 1024
+const rotateSize = 2
 
 type LoggerLevel int
 
@@ -196,7 +196,7 @@ func InitFileLogger() func() {
 
 	fileStatSize := int(fileStat.Size()) / 1024 / 1024
 
-	// If log file size bigger than rotateSize, will use lunberjack to run the logrotate
+	// If log file size bigger than rotateSize, will use lumberjack to run the logrotate
 	if fileStatSize < rotateSize {
 		klog.SetOutput(logFile)
 	} else {
@@ -204,7 +204,7 @@ func InitFileLogger() func() {
 			Filename:   filePath,
 			MaxSize:    rotateSize,
 			MaxBackups: 5,
-			MaxAge:     0,
+			MaxAge:     1,
 			Compress:   true,
 		})
 	}
