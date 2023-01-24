@@ -209,7 +209,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message := "Failed to add finalizer"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -220,10 +220,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Attempting cleanup of CSI driver")
 		isFinalizerExists, err := r.hasFinalizer(instance)
 		if err != nil {
-			message := "Finalizer check failed"
+			message := "Failed to get finalizer"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return ctrl.Result{}, err
 		}
@@ -237,7 +237,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			message := "Failed to delete the clusterRoles and clusterRoleBindings"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceDeleteError), message,
+				metav1.ConditionFalse, string(csiv1.DeleteError), message,
 			)
 			return ctrl.Result{}, err
 		}
@@ -246,16 +246,16 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			message := "Failed to delete the CSIDriver: " + config.DriverName
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceDeleteError), message,
+				metav1.ConditionFalse, string(csiv1.DeleteError), message,
 			)
 			return ctrl.Result{}, err
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
-			message := "Failed to remove Finalizer"
+			message := "Failed to remove finalizer"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+				metav1.ConditionFalse, string(csiv1.UpdateError), message,
 			)
 			return ctrl.Result{}, err
 		}
@@ -351,10 +351,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing cluster configMap
 	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
-		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed"
+		message := "Synchronization of " + config.CSIConfigMap + " configmap failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -369,7 +369,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message := "Synchronization of attacher interface failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -384,7 +384,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message := "Synchronization of provisioner interface failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -399,7 +399,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message := "Synchronization of snapshotter interface failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -414,7 +414,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message := "Synchronization of resizer interface failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -455,7 +455,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		message := "Synchronization of node/driver interface failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+			metav1.ConditionFalse, string(csiv1.UpdateError), message,
 		)
 		return ctrl.Result{}, err
 	}
@@ -484,13 +484,13 @@ func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleopera
 			message := "Failed to get the driver daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 		} else {
 			message := "The driver daemonset " + config.GetNameForResource(config.CSINode, instance.Name) + "is not found"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 		}
 	} else {
@@ -499,7 +499,7 @@ func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleopera
 			message := "Failed to rollout restart of driver pods"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+				metav1.ConditionFalse, string(csiv1.UpdateError), message,
 			)
 		} else {
 			daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
@@ -530,7 +530,7 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 			logger.Error(cerr, message)
 
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return cmExists, clustersStanzaModified, cerr
 		} else {
@@ -969,7 +969,7 @@ func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(instance *csiscaleoperat
 			message := "Failed to create the CSIDriver: " + config.DriverName
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+				metav1.ConditionFalse, string(csiv1.CreateError), message,
 			)
 			return err
 		}
@@ -977,7 +977,7 @@ func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(instance *csiscaleoperat
 		message := "Failed to get the CSIDriver: " + config.DriverName
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+			metav1.ConditionFalse, string(csiv1.ReadError), message,
 		)
 		return err
 	} else {
@@ -1017,7 +1017,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 			message := "Failed to set the controller reference for serviceAccount: " + sa.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+				metav1.ConditionFalse, string(csiv1.UpdateError), message,
 			)
 			return err
 		}
@@ -1033,7 +1033,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				message := "Failed to create the serviceAccount: " + sa.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+					metav1.ConditionFalse, string(csiv1.CreateError), message,
 				)
 				return err
 			}
@@ -1061,10 +1061,10 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				if err != nil && errors.IsNotFound(err) {
 					logger.Info("Daemonset doesn't exist. Restart not required.")
 				} else if err != nil {
-					message := "Failed to get the daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
+					message := "Failed to get the driver daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
 					logger.Error(err, message)
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+						metav1.ConditionFalse, string(csiv1.ReadError), message,
 					)
 					return err
 				} else {
@@ -1077,7 +1077,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 						message := "Failed to rollout restart of node daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
 						logger.Error(rErr, message)
 						SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-							metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+							metav1.ConditionFalse, string(csiv1.UpdateError), message,
 						)
 						return rErr
 					}
@@ -1091,7 +1091,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 			message := "Failed to get the serviceAccount: " + sa.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return err
 		} else {
@@ -1214,7 +1214,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 				message := "Failed to create the clusterRoles: " + cr.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+					metav1.ConditionFalse, string(csiv1.CreateError), message,
 				)
 				return err
 			}
@@ -1222,7 +1222,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			message := "Failed to get the clusterRoles: " + cr.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return err
 		} else {
@@ -1232,7 +1232,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 				message := "Failed to update the clusterRoles: " + cr.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+					metav1.ConditionFalse, string(csiv1.UpdateError), message,
 				)
 				return err
 			}
@@ -1301,7 +1301,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 				message := "Failed to create the clusterRoleBindings: " + crb.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+					metav1.ConditionFalse, string(csiv1.CreateError), message,
 				)
 				return err
 			}
@@ -1309,7 +1309,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			message := "Failed to get the clusterRoleBindings: " + crb.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return err
 		} else {
@@ -1321,7 +1321,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 				message := "Failed to update the clusterRoleBindings: " + crb.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.ResourceUpdateError), message,
+					metav1.ConditionFalse, string(csiv1.UpdateError), message,
 				)
 				return err
 			}
@@ -1590,7 +1590,7 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 		message := "Failed to get the statefulset: " + name
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+			metav1.ConditionFalse, string(csiv1.ReadError), message,
 		)
 		return err
 	} else {
@@ -1599,7 +1599,7 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 			message := "Failed to delete the statefulset: " + name
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceDeleteError), message,
+				metav1.ConditionFalse, string(csiv1.DeleteError), message,
 			)
 			return err
 		}
@@ -1676,14 +1676,14 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 		message := "The " + kind + " " + name + " is not found"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+			metav1.ConditionFalse, string(csiv1.ReadError), message,
 		)
 		return false, err
 	} else if err != nil {
 		message := "Failed to get the " + kind + ": " + name
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+			metav1.ConditionFalse, string(csiv1.ReadError), message,
 		)
 		return false, err
 	} else {
@@ -1712,14 +1712,14 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 			message := fmt.Sprintf("The secret %v is not found", cluster.Secrets)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return &connectors.SpectrumRestV2{}, err
 		} else if err != nil {
 			message := fmt.Sprintf("Failed to get the secret: %v", cluster.Secrets)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return nil, err
 		}
@@ -1738,14 +1738,14 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 			message := fmt.Sprintf("The configmap %v is not found", cluster.Cacert)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return nil, err
 		} else if err != nil {
 			message := fmt.Sprintf("Failed to get the configmap: %v", cluster.Cacert)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 			return nil, err
 		}
@@ -1948,7 +1948,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		message := fmt.Sprintf("Failed to create the primary fileset %s on the primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+			metav1.ConditionFalse, string(csiv1.CreateError), message,
 		)
 		return "", err
 	}
@@ -1997,7 +1997,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		message := fmt.Sprintf("Failed to create the directory %s on the primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+			metav1.ConditionFalse, string(csiv1.CreateError), message,
 		)
 		return "", err
 	}
@@ -2048,7 +2048,7 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 			message := fmt.Sprintf("Failed to create the primary fileset: %s", filesetName)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+				metav1.ConditionFalse, string(csiv1.CreateError), message,
 			)
 			return "", err
 		}
@@ -2091,7 +2091,7 @@ func (r *CSIScaleOperatorReconciler) createSymlinksDir(instance *csiscaleoperato
 		message := fmt.Sprintf("Failed to create a symlink directory with relative path %s on filesystem %s", symlinkDirRelativePath, fs)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceCreateError), message,
+			metav1.ConditionFalse, string(csiv1.CreateError), message,
 		)
 		return symlinkDirPath, symlinkDirRelativePath, err
 	}
@@ -2204,7 +2204,7 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 		message := fmt.Sprintf("Failed to get the optional configmap: %s", name)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ResourceReadError), message,
+			metav1.ConditionFalse, string(csiv1.ReadError), message,
 		)
 	}
 	return cm, err
