@@ -1630,7 +1630,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 
 	if len(secrets) != 0 {
 		for _, secret := range secrets {
-			if exists, err := r.resourceExists(instance, secret, corev1.ResourceSecrets.String()); !exists {
+			if exists, err := r.resourceExists(instance, secret, string(config.Secret)); !exists {
 				return false, err
 			}
 			logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
@@ -1639,7 +1639,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 
 	if len(configMaps) != 0 {
 		for _, configMap := range configMaps {
-			if exists, err := r.resourceExists(instance, configMap, corev1.ResourceConfigMaps.String()); !exists {
+			if exists, err := r.resourceExists(instance, configMap, string(config.ConfigMap)); !exists {
 				return false, err
 			}
 			logger.Info(fmt.Sprintf("ConfigMap resource %s found.", configMap))
@@ -1655,19 +1655,16 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	logger.Info("Checking resource exists")
 
 	var err error
-	var singularKind string
-	if kind == corev1.ResourceSecrets.String() {
+	if kind == string(config.Secret) {
 		found := &corev1.Secret{}
-		singularKind = found.Kind
 		err = r.Client.Get(context.TODO(), types.NamespacedName{
 			Name:      name,
 			Namespace: instance.Namespace,
 		}, found)
 	}
 
-	if kind == corev1.ResourceConfigMaps.String() {
+	if kind == string(config.ConfigMap) {
 		found := &corev1.ConfigMap{}
-		singularKind = found.Kind
 		err = r.Client.Get(context.TODO(), types.NamespacedName{
 			Name:      name,
 			Namespace: instance.Namespace,
@@ -1675,7 +1672,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 
 	if err != nil && errors.IsNotFound(err) {
-		message := "The " + singularKind + " " + name + " is not found"
+		message := "The " + kind + " " + name + " is not found"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.ReadError), message,

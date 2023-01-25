@@ -79,3 +79,10 @@ func GetNameForResource(name ResourceName, driverName string) string {
 		return fmt.Sprintf("%s-%s", driverName, name)
 	}
 }
+
+type ResourceKind string
+
+const (
+	Secret    ResourceKind = "Secret"
+	ConfigMap ResourceKind = "ConfigMap"
+)
