@@ -83,6 +83,6 @@ func GetNameForResource(name ResourceName, driverName string) string {
 type ResourceKind string
 
 const (
-	Secret    ResourceKind = "Secret"
+	Secret    ResourceKind = "Secret" // #nosec G101 false positive
 	ConfigMap ResourceKind = "ConfigMap"
 )
