@@ -19,13 +19,15 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/natefinch/lumberjack"
 	"k8s.io/klog/v2"
 	"math/rand"
 	"os"
 	"path"
 	"time"
-	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -44,6 +46,8 @@ var (
 const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
+const hostPath = "/host/var/log/"
+const rotateSize = 1024
 
 type LoggerLevel int
 
@@ -59,13 +63,19 @@ const (
 func main() {
 	klog.InitFlags(nil)
 	level := getLevel()
-	logFile := createLogFile()
 	value := getVerboseLevel(level)
 	flag.Set("logtostderr", "false")
 	flag.Set("stderrthreshold", level)
-	flag.Set("log_file", logFile)
 	flag.Set("v", value)
 	flag.Parse()
+
+	defer func() {
+		if r := recover(); r != nil {
+			klog.Infof("Recovered from panic: [%v]", r)
+		}
+	}()
+	fpClose := InitFileLogger()
+	defer fpClose()
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
@@ -122,10 +132,14 @@ func setContext() context.Context {
 	return ctx
 }
 
-func getLevel() string{
+func getLevel() string {
 	level := os.Getenv(logLevel)
 	var logValue string
-	klog.Infof("logValue: %s", level)
+	if level == ""{
+	   klog.Infof("logger level is not set. Defaulting to INFO")
+	}else{
+		klog.Infof("logValue: %s", level)
+	}
 	if level == "" || level == DEBUG.String() || level == TRACE.String() {
 		logValue = INFO.String()
 	} else {
@@ -133,20 +147,6 @@ func getLevel() string{
 	}
 	return logValue
 }
-
-func createLogFile() string{
-	logDir := "/host/var/log/" + dirPath + "/"
-	if !utils.Exists(logDir) {
-		err := utils.MkDir(logDir)
-		if err != nil {
-			klog.Errorf("Failed to create log directory")
-		}
-	}
-
-	fpPath := logDir + logFile
-	return fpPath
-}
-
 
 func (level LoggerLevel) String() string {
 	switch level {
@@ -167,7 +167,7 @@ func (level LoggerLevel) String() string {
 	}
 }
 
-func getVerboseLevel(level string) string{
+func getVerboseLevel(level string) string {
 	if level == DEBUG.String() {
 		return "4"
 	} else if level == TRACE.String() {
@@ -177,3 +177,41 @@ func getVerboseLevel(level string) string{
 	}
 }
 
+func InitFileLogger() func() {
+	filePath := hostPath + dirPath + "/" + logFile
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		fileDir, _ := path.Split(filePath)
+		err := os.MkdirAll(fileDir, 0755)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create log folder %v", err))
+		}
+	}
+
+	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
+	if err != nil {
+		panic(fmt.Sprintf("failed to init logger %v", err))
+	}
+
+	fileStat, err := logFile.Stat()
+	if err != nil {
+		panic(fmt.Sprintf("failed to stat logger file %v", err))
+	}
+
+	fileStatSize := int(fileStat.Size()) / 1024 / 1024
+
+	// If log file size bigger than rotateSize, will use lumberjack to run the logrotate
+	if fileStatSize < rotateSize {
+		klog.SetOutput(logFile)
+	} else {
+		klog.SetOutput(&lumberjack.Logger{
+			Filename:   filePath,
+			MaxSize:    rotateSize,
+			MaxBackups: 5,
+			MaxAge:     0,
+			Compress:   true,
+		})
+	}
+
+	return func() { logFile.Close() }
+}
