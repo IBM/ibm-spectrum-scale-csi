@@ -234,7 +234,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
-			message := "Failed to delete the clusterRoles and clusterRoleBindings"
+			message := "Failed to delete the ClusterRoles and ClusterRoleBindings"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.DeleteError), message,
@@ -351,7 +351,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing cluster configMap
 	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
-		message := "Synchronization of " + config.CSIConfigMap + " configmap failed"
+		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.UpdateError), message,
@@ -481,13 +481,13 @@ func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleopera
 	daemonSet, err = r.getNodeDaemonSet(instance)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			message := "Failed to get the driver daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
+			message := "Failed to get the driver Daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ReadError), message,
 			)
 		} else {
-			message := "The driver daemonset " + config.GetNameForResource(config.CSINode, instance.Name) + "is not found"
+			message := "The driver Daemonset " + config.GetNameForResource(config.CSINode, instance.Name) + "is not found"
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ReadError), message,
@@ -526,7 +526,7 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 	}, configMap)
 	if cerr != nil {
 		if !errors.IsNotFound(cerr) {
-			message := "Failed to get the configmap: " + config.CSIConfigMap
+			message := "Failed to get the ConfigMap: " + config.CSIConfigMap
 			logger.Error(cerr, message)
 
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -1014,7 +1014,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 		resizer,
 	} {
 		if err := controllerutil.SetControllerReference(instance.Unwrap(), sa, r.Scheme); err != nil {
-			message := "Failed to set the controller reference for serviceAccount: " + sa.GetName()
+			message := "Failed to set the controller reference for ServiceAccount: " + sa.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.UpdateError), message,
@@ -1030,7 +1030,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 			logger.Info("Creating a new ServiceAccount.", "Namespace", sa.GetNamespace(), "Name", sa.GetName())
 			err = r.Client.Create(context.TODO(), sa)
 			if err != nil {
-				message := "Failed to create the serviceAccount: " + sa.GetName()
+				message := "Failed to create the ServiceAccount: " + sa.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.CreateError), message,
@@ -1061,7 +1061,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				if err != nil && errors.IsNotFound(err) {
 					logger.Info("Daemonset doesn't exist. Restart not required.")
 				} else if err != nil {
-					message := "Failed to get the driver daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
+					message := "Failed to get the driver Daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
 					logger.Error(err, message)
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.ReadError), message,
@@ -1074,7 +1074,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 
 					rErr := r.rolloutRestartNode(nodeDaemonSet)
 					if rErr != nil {
-						message := "Failed to rollout restart of node daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
+						message := "Failed to rollout restart of node Daemonset: " + config.GetNameForResource(config.CSINode, instance.Name)
 						logger.Error(rErr, message)
 						SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 							metav1.ConditionFalse, string(csiv1.UpdateError), message,
@@ -1088,7 +1088,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 				// TODO: Should restart sidecar pods if respective ServiceAccount is created afterwards?
 			}
 		} else if err != nil {
-			message := "Failed to get the serviceAccount: " + sa.GetName()
+			message := "Failed to get the ServiceAccount: " + sa.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ReadError), message,
@@ -1211,7 +1211,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			logger.Info("Creating a new ClusterRole", "Name", cr.GetName())
 			err = r.Client.Create(context.TODO(), cr)
 			if err != nil {
-				message := "Failed to create the clusterRoles: " + cr.GetName()
+				message := "Failed to create the ClusterRole: " + cr.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.CreateError), message,
@@ -1219,7 +1219,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 				return err
 			}
 		} else if err != nil {
-			message := "Failed to get the clusterRoles: " + cr.GetName()
+			message := "Failed to get the ClusterRole: " + cr.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ReadError), message,
@@ -1229,7 +1229,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoper
 			logger.Info("Clusterrole " + cr.GetName() + " already exists. Updating clusterrole.")
 			err = r.Client.Update(context.TODO(), cr)
 			if err != nil {
-				message := "Failed to update the clusterRoles: " + cr.GetName()
+				message := "Failed to update the ClusterRole: " + cr.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.UpdateError), message,
@@ -1298,7 +1298,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			logger.Info("Creating a new ClusterRoleBinding.", "Name", crb.GetName())
 			err = r.Client.Create(context.TODO(), crb)
 			if err != nil {
-				message := "Failed to create the clusterRoleBindings: " + crb.GetName()
+				message := "Failed to create the ClusterRoleBinding: " + crb.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.CreateError), message,
@@ -1306,7 +1306,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 				return err
 			}
 		} else if err != nil {
-			message := "Failed to get the clusterRoleBindings: " + crb.GetName()
+			message := "Failed to get the ClusterRoleBinding: " + crb.GetName()
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ReadError), message,
@@ -1318,7 +1318,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 			logger.Info("Clusterrolebinding " + crb.GetName() + " already exists. Updating clusterolebinding.")
 			err = r.Client.Update(context.TODO(), crb)
 			if err != nil {
-				message := "Failed to update the clusterRoleBindings: " + crb.GetName()
+				message := "Failed to update the ClusterRoleBinding: " + crb.GetName()
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.UpdateError), message,
@@ -1587,7 +1587,7 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Statefulset resource not found in the cluster.")
 	} else if err != nil {
-		message := "Failed to get the statefulset: " + name
+		message := "Failed to get the Statefulset: " + name
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.ReadError), message,
@@ -1596,7 +1596,7 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 	} else {
 		logger.Info("Found statefulset resource. Sidecar controllers as statefulsets are replaced by deployments in CSI >= 2.6.0. Removing statefulset.")
 		if err := r.Client.Delete(context.TODO(), STS); err != nil {
-			message := "Failed to delete the statefulset: " + name
+			message := "Failed to delete the Statefulset: " + name
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.DeleteError), message,
@@ -1655,9 +1655,10 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	logger.Info("Checking resource exists")
 
 	var err error
-
+	var singularKind string
 	if kind == corev1.ResourceSecrets.String() {
 		found := &corev1.Secret{}
+		singularKind = found.Kind
 		err = r.Client.Get(context.TODO(), types.NamespacedName{
 			Name:      name,
 			Namespace: instance.Namespace,
@@ -1666,6 +1667,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 
 	if kind == corev1.ResourceConfigMaps.String() {
 		found := &corev1.ConfigMap{}
+		singularKind = found.Kind
 		err = r.Client.Get(context.TODO(), types.NamespacedName{
 			Name:      name,
 			Namespace: instance.Namespace,
@@ -1673,7 +1675,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 
 	if err != nil && errors.IsNotFound(err) {
-		message := "The " + kind + " " + name + " is not found"
+		message := "The " + singularKind + " " + name + " is not found"
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.ReadError), message,
