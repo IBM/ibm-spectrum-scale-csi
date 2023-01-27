@@ -20,14 +20,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/natefinch/lumberjack"
-	"k8s.io/klog/v2"
 	"math/rand"
 	"os"
 	"path"
 	"time"
+
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/natefinch/lumberjack"
+	"k8s.io/klog/v2"
+
+	//TODO: this is a temporary change, revert it back when the required code is merged in an IBM branch.
+	driver "github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -135,9 +138,9 @@ func setContext() context.Context {
 func getLevel() string {
 	level := os.Getenv(logLevel)
 	var logValue string
-	if level == ""{
-	   klog.Infof("logger level is not set. Defaulting to INFO")
-	}else{
+	if level == "" {
+		klog.Infof("logger level is not set. Defaulting to INFO")
+	} else {
 		klog.Infof("logValue: %s", level)
 	}
 	if level == "" || level == DEBUG.String() || level == TRACE.String() {

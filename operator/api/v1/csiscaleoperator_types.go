@@ -405,4 +405,5 @@ const (
 	ResourceDeleteError   CSIReason = "deleteError"
 	Unknown               CSIReason = "unknown"
 	ResourceNotFoundError CSIReason = "resourceNotFound"
+	ResourceConfigError   CSIReason = "configError"
 )

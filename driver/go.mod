@@ -1,8 +1,12 @@
-module github.com/IBM/ibm-spectrum-scale-csi/driver
+//TODO: This is temporary change, once the SpectrumRestV2 is exported
+//in driver code and merged in some IBM branch, change this line and
+//adjust the dependencies.
+module github.com/amdabhad/ibm-spectrum-scale-csi/driver
 
 go 1.18
 
 require (
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.3.0

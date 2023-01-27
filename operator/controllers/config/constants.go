@@ -68,6 +68,7 @@ const (
 	ENVKubeVersion = "KUBE_VERSION"
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
+	ENVSymDirPath  = "SYMLINK_DIR_PATH"
 
 	DriverVersion   = "2.9.0"
 	OperatorVersion = "2.9.0"
@@ -143,4 +144,14 @@ const (
 	StatusConditionReady   = "Ready"
 	StatusConditionSuccess = "Success"
 	StatusConditionEnabled = "Enabled"
+
+	SecretUsername    = "username" // #nosec G101 false positive
+	SecretPassword    = "password" // #nosec G101 false positive
+	Primary           = "primary"
+	HTTPClientTimeout = 60
+
+	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+	SymlinkDir            = ".volumes"
+	DefaultUID            = "0"
+	DefaultGID            = "0"
 )
