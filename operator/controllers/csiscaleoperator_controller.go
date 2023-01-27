@@ -142,8 +142,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	instanceUnwrap := instance.Unwrap()
 	var err error
 	err = r.Client.Get(ctx, req.NamespacedName, instanceUnwrap)
-	var err error
-	err = r.Client.Get(ctx, req.NamespacedName, instanceUnwrap)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
