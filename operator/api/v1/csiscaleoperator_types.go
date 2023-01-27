@@ -396,11 +396,13 @@ func init() {
 type CSIReason string
 
 const (
-	CSIConfigured CSIReason = "Successful"
-	CreateError   CSIReason = "CreateError"
-	ReadError     CSIReason = "ReadError"
-	UpdateError   CSIReason = "UpdateError"
-	DeleteError   CSIReason = "DeleteError"
-	Unknown       CSIReason = "Unknown"
-	ConfigError   CSIReason = "ConfigError"
+	//Expected when all CSI resources have been create/updated successfully
+	Configured CSIReason = "Configured"
+	//Expected when any of the Get/Create/Update/Delete operation fails for any k8s resource required for CSI
+	ConfigError CSIReason = "ConfigError"
+	//Initial state
+	Unknown CSIReason = "Unknown"
+	//Expected when any scale operation such as create fileset, get mount details, GUI password etc fails
+	//and when validation of driver manifest parameters fail
+	ScaleCSIError CSIReason = "ScaleCSIError"
 )
