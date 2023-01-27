@@ -3,7 +3,7 @@
 # Multi-arch build for IBM Spectrum Scale CSI Driver
 # usage: docker buildx build -f build/multi-arch.Dockerfile --platform=linux/amd64 -t my_image_tag .
 
-FROM --platform=$BUILDPLATFORM golang:1.17 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.18 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
 COPY ./go.mod .
 COPY ./go.sum .
@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'ma
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi8-minimal:latest
-ARG version=2.7.0
+ARG version=2.9.0
 ARG commit
 ARG build_date
 

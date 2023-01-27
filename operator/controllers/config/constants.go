@@ -68,9 +68,10 @@ const (
 	ENVKubeVersion = "KUBE_VERSION"
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
+	ENVSymDirPath  = "SYMLINK_DIR_PATH"
 
-	DriverVersion   = "2.7.0"
-	OperatorVersion = "2.7.0"
+	DriverVersion   = "2.9.0"
+	OperatorVersion = "2.9.0"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
@@ -86,19 +87,19 @@ const (
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.7.0"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar:v2.5.0
-	CSINodeDriverRegistrarImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-node-driver-registrar@sha256:4fd21f36075b44d1a423dfb262ad79202ce54e95f5cbc4622a6c1c38ab287ad6"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe:v2.7.0
-	LivenessProbeImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/livenessprobe@sha256:933940f13b3ea0abc62e656c1aa5c5b47c04b15d71250413a6b821bd0c58b94e"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher:v3.4.0
-	CSIAttacherImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-attacher@sha256:8b9c313c05f54fb04f8d430896f5f5904b6cb157df261501b29adc04d2b2dc7b"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner:v3.1.0
-	CSIProvisionerImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-provisioner@sha256:122bfb8c1edabb3c0edd63f06523e6940d958d19b3957dc7b1d6f81e9f1f6119"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter:v6.0.1
-	CSISnapshotterImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-snapshotter@sha256:ad16874e2140256a809cada2b4ac3d931d5b73b0bee23ed0f8d60bdd778cfec2"
-	//  us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.4.0
-	CSIResizerImage = "us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer@sha256:9ebbf9f023e7b41ccee3d52afe39a89e3ddacdbb69269d583abfc25847cfd9e4"
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.9.0"
+	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.7.0
+	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:4a4cae5118c4404e35d66059346b7fa0835d7e6319ff45ed73f4bba335cf5183"
+	//  registry.k8s.io/sig-storage/livenessprobe:v2.9.0
+	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:2b10b24dafdc3ba94a03fc94d9df9941ca9d6a9207b927f5dfd21d59fbe05ba0"
+	//  registry.k8s.io/sig-storage/csi-attacher:v4.1.0
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:08721106b949e4f5c7ba34b059e17300d73c8e9495201954edc90eeb3e6d8461"
+	//  registry.k8s.io/sig-storage/csi-provisioner:v3.4.0
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:e468dddcd275163a042ab297b2d8c2aca50d5e148d2d22f3b6ba119e2f31fa79"
+	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.0
+	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:0d8d81948af4897bd07b86046424f022f79634ee0315e9f1d4cdb5c1c8d51c90"
+	//  registry.k8s.io/sig-storage/csi-resizer:v1.7.0
+	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:3a7bdf5d105783d05d0962fa06ca53032b01694556e633f27366201c2881e01d"
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
@@ -130,6 +131,8 @@ const (
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 	DefaultLogLevel           = "DEBUG"
+	CSIEnvVarConfigMap        = "ibm-spectrum-scale-csi-config"
+	CSIEnvVarPrefix           = "VAR_DRIVER_"
 
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
@@ -141,4 +144,14 @@ const (
 	StatusConditionReady   = "Ready"
 	StatusConditionSuccess = "Success"
 	StatusConditionEnabled = "Enabled"
+
+	SecretUsername    = "username" // #nosec G101 false positive
+	SecretPassword    = "password" // #nosec G101 false positive
+	Primary           = "primary"
+	HTTPClientTimeout = 60
+
+	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+	SymlinkDir            = ".volumes"
+	DefaultUID            = "0"
+	DefaultGID            = "0"
 )

@@ -18,24 +18,25 @@ package scale
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"k8s.io/klog/v2"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 const (
-	dependentFileset     = "dependent"
-	independentFileset   = "independent"
-	storageClassClassic  = "1"
-	storageClassAdvanced = "2"
-	sharedPermissions    = "777"
+	dependentFileset   = "dependent"
+	independentFileset = "independent"
+	scversion1         = "1"
+	scversion2         = "2"
+	sharedPermissions  = "777"
 )
 
 type scaleVolume struct {
@@ -96,7 +97,7 @@ type scaleSnapId struct {
 	VolType          string
 }
 
-//nolint
+// nolint
 type scaleVolSnapshot struct {
 	SnapName   string `json:"snapName"`
 	SourceVol  string `json:"sourceVol"`
@@ -106,7 +107,7 @@ type scaleVolSnapshot struct {
 	SnapSize   uint64 `json:"snapSize"`
 } //nolint
 
-//nolint
+// nolint
 type scaleVolSnapId struct {
 	ClusterId string
 	FsUUID    string
@@ -133,9 +134,10 @@ func getRemoteFsName(remoteDeviceName string) string {
 	return remDevFs
 }
 
-func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
+func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
 	scaleVol := &scaleVolume{}
+	loggerId := utils.GetLoggerId(ctx)
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
@@ -169,16 +171,19 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 	isSCAdvanced := false
 	if isSCTypeSpecified {
-		if storageClassType != storageClassClassic && storageClassType != storageClassAdvanced {
+		if storageClassType != scversion1 && storageClassType != scversion2 {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
-				"\""+storageClassClassic+"\" or \""+storageClassAdvanced+"\"")
+				"\""+scversion1+"\" or \""+scversion2+"\"")
 		}
-		scaleVol.StorageClassType = storageClassType
-		if storageClassType == storageClassAdvanced {
+		if storageClassType == scversion2 {
 			isSCAdvanced = true
+			scaleVol.StorageClassType = STORAGECLASS_ADVANCED
+		}
+		if storageClassType == scversion1 {
+			scaleVol.StorageClassType = STORAGECLASS_CLASSIC
 		}
 	} else {
-		scaleVol.StorageClassType = storageClassClassic
+		scaleVol.StorageClassType = STORAGECLASS_CLASSIC
 	}
 
 	if fsSpecified && volBckFs == "" {
@@ -280,13 +285,13 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	}
 
 	if isSCAdvanced && fsTypeSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+storageClassAdvanced+" must not be specified together in storageClass")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && isparentFilesetSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+storageClassAdvanced+" must not be specified together in storageClass")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && volDirPathSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+storageClassAdvanced+" must not be specified together in storageClass")
+		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+scversion2+" must not be specified together in storageClass")
 	}
 
 	if fsTypeSpecified || isSCAdvanced {
@@ -385,30 +390,30 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
 		if strings.ToLower(compression) == "true" {
-			glog.V(5).Infof("gpfs_util compression was set to true. Defaulting to Z")
+			klog.V(6).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
 
 		if !IsValidCompressionAlgorithm(compression) {
-			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
-				compression)
+			klog.V(4).Infof("[%s] gpfs_util invalid compression algorithm specified: %s",
+				loggerId, compression)
 			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
 				"invalid compression algorithm specified: %s", compression)
 		}
 		scaleVol.Compression = compression
-		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
+		klog.V(4).Infof("[%s] gpfs_util compression was set to %s", loggerId, compression)
 	}
 
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
-		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
+		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
 	return scaleVol, nil
 }
 
 func executeCmd(command string, args []string) ([]byte, error) {
-	glog.V(5).Infof("gpfs_util executeCmd")
+	klog.V(6).Infof("gpfs_util executeCmd")
 
 	cmd := exec.Command(command, args...)
 	var stdout bytes.Buffer
@@ -490,7 +495,7 @@ func getNodeMapping(kubernetesNodeID string) (gpfsAdminName string) {
 		prefix := utils.GetEnv(SCALE_NODE_MAPPING_PREFIX, DefaultScaleNodeMapPrefix)
 		gpfsAdminName = utils.GetEnv(prefix+kubernetesNodeID, notFound)
 		if gpfsAdminName == notFound {
-			glog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
+			klog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
 			gpfsAdminName = kubernetesNodeID
 		}
 	}
@@ -503,7 +508,7 @@ const (
 )
 
 func shortnameInSlice(shortname string, nodeNames []string) bool {
-	glog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
+	klog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
 	for _, name := range nodeNames {
 		short := strings.SplitN(name, ".", 2)[0]
 		if strings.EqualFold(short, shortname) {
