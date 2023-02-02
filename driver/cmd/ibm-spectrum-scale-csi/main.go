@@ -65,10 +65,11 @@ const (
 
 func main() {
 	klog.InitFlags(nil)
-	level := getLevel()
+	level := getLogEnv()
+	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
 	flag.Set("logtostderr", "false")
-	flag.Set("stderrthreshold", level)
+	flag.Set("stderrthreshold", logValue)
 	flag.Set("v", value)
 	flag.Parse()
 
@@ -82,6 +83,11 @@ func main() {
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
+	if level == "" {
+                klog.Infof("[%s] logger level is not set. Defaulting to INFO",loggerId)
+        } else {
+                klog.Infof("[%s] logValue: %s", loggerId, level)
+        }
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
@@ -135,21 +141,21 @@ func setContext() context.Context {
 	return ctx
 }
 
-func getLevel() string {
+func getLogEnv() string {
 	level := os.Getenv(logLevel)
-	var logValue string
-	if level == "" {
-		klog.Infof("logger level is not set. Defaulting to INFO")
-	} else {
-		klog.Infof("logValue: %s", level)
-	}
-	if level == "" || level == DEBUG.String() || level == TRACE.String() {
-		logValue = INFO.String()
-	} else {
-		logValue = level
-	}
-	return logValue
+	return level
 }
+
+func getLogLevel(level string) string{
+	var logValue string
+	if level == "" || level == DEBUG.String() || level == TRACE.String() {
+                logValue = INFO.String()
+        } else {
+                logValue = level
+        }
+        return logValue
+}
+
 
 func (level LoggerLevel) String() string {
 	switch level {
