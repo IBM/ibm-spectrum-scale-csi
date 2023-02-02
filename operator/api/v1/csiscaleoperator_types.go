@@ -396,13 +396,25 @@ func init() {
 type CSIReason string
 
 const (
-	//Expected when all CSI resources have been created/updated successfully
-	Configured CSIReason = "Configured"
-	//Expected when any of the Get/Create/Update/Delete operation fails for any k8s resource required for CSI
-	ConfigError CSIReason = "ConfigError"
-	//Initial state
-	Unknown CSIReason = "Unknown"
-	//Expected when any scale operation such as create fileset, get mount details, GUI password etc fails
-	//and when validation of driver manifest parameters fails
-	ScaleCSIError CSIReason = "ScaleCSIError"
+	CSIConfigured CSIReason = "CSIConfigured"
+	Unknown       CSIReason = "Unknown"
+
+	GetFileSystemFailed            CSIReason = "GetFileSystemFailed"
+	FilesetRefreshFailed           CSIReason = "FilesetRefreshFailed"
+	GetFilesetFailed               CSIReason = "GetFilesetFailed"
+	CreateDirFailed                CSIReason = "CreateDirFailed"
+	CreateFilesetFailed            CSIReason = "CreateFilesetFailed"
+	LinkFilesetFailed              CSIReason = "LinkFilesetFailed"
+	ValidationFailed               CSIReason = "ValidationFailed"
+	GUIConnFailed                  CSIReason = "GUIConnFailed"
+	ClusterIDMismatch              CSIReason = "ClusterIDMismatch"
+	PrimaryClusterUndefined        CSIReason = "PrimaryClusterUndefined"
+	GetRemoteFileSystemFailed      CSIReason = "GetRemoteFileSystemFailed"
+	ScaleClusterPropertiesModified CSIReason = "ScaleClusterPropertiesModified"
+
+	//for create/update/delete/get operations on k8s resources
+	GetFailed    CSIReason = "GetFailed"
+	CreateFailed CSIReason = "CreateFailed"
+	UpdateFailed CSIReason = "UpdateFailed"
+	DeleteFailed CSIReason = "DeleteFailed"
 )
