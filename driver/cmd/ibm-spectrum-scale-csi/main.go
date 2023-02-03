@@ -195,14 +195,14 @@ func InitFileLogger() func() {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		fileDir, _ := path.Split(filePath)
-		/* #nosec G301*/
+		/* #nosec G301 -- false positive */
 		err := os.MkdirAll(fileDir, 0755)
 		if err != nil {
 			panic(fmt.Sprintf("failed to create log folder %v", err))
 		}
 	}
 
-	/* #nosec G302*/
+	/* #nosec G302 -- false positive */
 	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init logger %v", err))
