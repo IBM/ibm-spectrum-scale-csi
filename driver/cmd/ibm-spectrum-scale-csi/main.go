@@ -202,25 +202,14 @@ func InitFileLogger() func() {
 		panic(fmt.Sprintf("failed to init logger %v", err))
 	}
 
-	fileStat, err := logFile.Stat()
-	if err != nil {
-		panic(fmt.Sprintf("failed to stat logger file %v", err))
+	l := &lumberjack.Logger{
+		Filename:   filePath,
+		MaxSize:    rotateSize,
+		MaxBackups: 5,
+		MaxAge:     0,
+		Compress:   true,
 	}
-
-	fileStatSize := int(fileStat.Size()) / 1024 / 1024
-
-	// If log file size bigger than rotateSize, will use lumberjack to run the logrotate
-	if fileStatSize < rotateSize {
-		klog.SetOutput(logFile)
-	} else {
-		klog.SetOutput(&lumberjack.Logger{
-			Filename:   filePath,
-			MaxSize:    rotateSize,
-			MaxBackups: 5,
-			MaxAge:     0,
-			Compress:   true,
-		})
-	}
+	klog.SetOutput(l)
 
 	return func() { logFile.Close() }
 }
