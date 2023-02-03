@@ -69,8 +69,8 @@ func main() {
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
 	err := flag.Set("logtostderr", "false")
-	err = flag.Set("stderrthreshold", logValue)
-	err = flag.Set("v", value)
+	err1 := flag.Set("stderrthreshold", logValue)
+	err2 := flag.Set("v", value)
 	flag.Parse()
 
 	defer func() {
@@ -83,7 +83,7 @@ func main() {
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
-	if err != nil{
+	if err != nil || err1 != nil || err2 != nil{
                 klog.Errorf("[%s] Failed to set flag value",loggerId)
         }
 
@@ -195,14 +195,14 @@ func InitFileLogger() func() {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		fileDir, _ := path.Split(filePath)
-		/* #nosec */
+		/* #nosec G301*/
 		err := os.MkdirAll(fileDir, 0755)
 		if err != nil {
 			panic(fmt.Sprintf("failed to create log folder %v", err))
 		}
 	}
 
-	/* #nosec */
+	/* #nosec G302*/
 	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init logger %v", err))
