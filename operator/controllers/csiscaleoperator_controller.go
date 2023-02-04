@@ -315,15 +315,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	//For first pass handle primary FS and fileset
 	if !cmExists {
-		symlinkDirPath, err = r.handlePrimaryFSandFileset(instance, false)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	} else if symlinkDirPath == "" {
-		//If it is not the first pass (cmExists) but operator is restarted, operator
-		//loses the var symlinkDirPath, which needs to be passed to the driver pods
-		//again if driver pods are also restarted later, so get the symlinkDirPath again.
-		symlinkDirPath, err = r.handlePrimaryFSandFileset(instance, true)
+		symlinkDirPath, err = r.handlePrimaryFSandFileset(instance)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -486,7 +478,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Optional configmap is either not found or is empty, skipped parsing it", "configmap", config.CSIEnvVarConfigMap)
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, symlinkDirPath, cmData)
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, r.recorder); err != nil {
 		message := "Synchronization of node/driver interface failed."
 		logger.Error(err, message)
@@ -642,7 +634,21 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(currentCMcmString str
 	currentCMcmString = strings.Replace(currentCMcmString, postfix, "", 1)
 
 	configMapDataBytes := []byte(currentCMcmString)
-	json.Unmarshal(configMapDataBytes, &currentCMclusters)
+	err := json.Unmarshal(configMapDataBytes, &currentCMclusters)
+	if err != nil {
+		message := fmt.Sprintf("Failed to unmarshal data of ConfigMap: %v", config.CSIConfigMap)
+		err := fmt.Errorf(message)
+		logger.Error(err, "")
+		//TODO: Use new method to set status/event when event framework
+		//is in.
+		meta.SetStatusCondition(&crStatus.Conditions, metav1.Condition{
+			Type:    string(config.StatusConditionSuccess),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(csiv1.ResourceConfigError),
+			Message: message,
+		})
+		return err
+	}
 
 	//This is a map to track which clusters from current configmap are also
 	//present in new CR, so that the connectors for the ones which are not
@@ -2015,7 +2021,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 //If primary fileset does not exist, it is created and also if a directory
 //to store symlinks is created if it does not exist. It returns the absolute path of symlink
 //directory and error if there is any.
-func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator, operatorRestarted bool) (string, error) {
+func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (string, error) {
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
 	primary := r.getPrimaryCluster(instance)
 	if primary == nil {
@@ -2106,7 +2112,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 	fsMountPoint := fsMountInfo.MountPoint
 
-	fsetLinkPath, err := createPrimaryFileset(sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit, operatorRestarted)
+	fsetLinkPath, err := createPrimaryFileset(sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit)
 	if err != nil {
 		message := fmt.Sprintf("Failed to create primary fileset %s on primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2159,10 +2165,6 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		fsetLinkPath = strings.Replace(fsetLinkPath, fsMountPoint, primaryFSMount, 1)
 	}
 
-	if operatorRestarted {
-		_, symlinkDirPath := getSymlinkDirPath(fsetLinkPath, primaryFSMount)
-		return symlinkDirPath, nil
-	}
 	// Create directory where volume symlinks will reside
 	symlinkDirPath, _, err := createSymlinksDir(scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
 	if err != nil {
@@ -2194,20 +2196,15 @@ func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperato
 //createPrimaryFileset creates a primary fileset and returns it's path
 //where it is linked. If primary fileset exists and is already linked,
 //the link path is returned. If primary fileset already exists and not linked,
-//it is linked and link path is returned. For operator restart case, just
-//the primary fileset path with a nil error is returned.
+//it is linked and link path is returned.
 func createPrimaryFileset(sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
-	fsMountPoint string, filesetName string, inodeLimit string, operatorRestarted bool) (string, error) {
+	fsMountPoint string, filesetName string, inodeLimit string) (string, error) {
 
 	logger := csiLog.WithName("createPrimaryFileset")
 	logger.Info("Creating primary fileset", " primaryFS", fsNameOnOwningCluster,
 		"mount point", fsMountPoint, "filesetName", filesetName)
 
 	newLinkPath := path.Join(fsMountPoint, filesetName) //Link path to set if the fileset is not linked
-	if operatorRestarted {
-		//In operator restart case, just return the path
-		return newLinkPath, nil
-	}
 
 	// create primary fileset if not already created
 	fsetResponse, err := sc.ListFileset(context.TODO(), fsNameOnOwningCluster, filesetName)
