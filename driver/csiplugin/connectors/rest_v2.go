@@ -1034,7 +1034,9 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("Unauthorized %s request to %v: %v", method, endpoint, response.Status))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request to %v: %v", http.StatusUnauthorized, method, endpoint, response.Status))
+	} else if response.StatusCode == http.StatusForbidden {
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request to %v: %v", http.StatusForbidden, method, endpoint, response.Status))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
