@@ -253,10 +253,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		if err := r.removeFinalizer(instance); err != nil {
-			message := fmt.Sprintf("Failed to delete the finalizer %s for the CSISCaleOperator instance %s", config.CSIFinalizer, instance.Name)
+			message := fmt.Sprintf("Failed to remove the finalizer %s for the CSISCaleOperator instance %s", config.CSIFinalizer, instance.Name)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.DeleteFailed), message,
+				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
 			)
 			return ctrl.Result{}, err
 		}
@@ -279,7 +279,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if !cmExists || clustersStanzaModified {
 		err = ValidateCRParams(instance)
 		if err != nil {
-			message := "Failed to validate the Spectrum Scale cluster properties for the CSI driver to mount.\n" +
+			message := "Failed to validate Spectrum Scale CSI configurations\n" +
 				"Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
 			logger.Error(fmt.Errorf(message), "")
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -287,7 +287,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			)
 			return ctrl.Result{}, err
 		}
-		logger.Info("The Spectrum Scale cluster properties are validated successfully")
+		logger.Info("The Spectrum Scale CSI configurations are validated successfully")
 	}
 
 	if len(instance.Spec.Clusters) != 0 {
@@ -359,7 +359,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		)
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of ConfigMap is successful")
+	logger.Info(fmt.Sprintf("Synchronization of ConfigMap %s is successful", config.CSIConfigMap))
 
 	// Synchronizing attacher deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
@@ -374,7 +374,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		)
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of attacher interface is successful")
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerAttacher, instance.Name)))
 
 	// Synchronizing provisioner deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
@@ -389,7 +389,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		)
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of provisioner interface is successful")
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)))
 
 	// Synchronizing snapshotter deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
@@ -404,7 +404,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		)
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of snapshotter interface is successful")
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)))
 
 	// Synchronizing resizer deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
@@ -419,7 +419,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		)
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of resizer interface is successful")
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
 
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
@@ -460,7 +460,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		)
 		return ctrl.Result{}, err
 	}
-	logger.Info("Synchronization of node/driver interface is successful")
+	logger.Info(fmt.Sprintf("Synchronization of node/driver %s DaemonSet is successful", config.GetNameForResource(config.CSINode, instance.Name)))
 
 	message := "The CSI driver resources have been created/updated successfully"
 	logger.Info(message)
@@ -629,7 +629,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleope
 					err := fmt.Errorf(message)
 					logger.Error(err, "")
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.ScaleClusterPropertiesModified), message,
+						metav1.ConditionFalse, string(csiv1.PrimaryClusterStanzaModified), message,
 					)
 					return err
 				}
@@ -1847,7 +1847,8 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					continue
 				}
 				if id != cluster.Id {
-					message := fmt.Sprintf("The cluster ID %v in Spectrum Scale cluster properties does not match with the cluster ID %v obtained from cluster. Please check the Spec.Clusters in the resource %s/%s", cluster.Id, id, instance.Kind, instance.Name)
+					message := fmt.Sprintf("The cluster ID %v in Spectrum Scale CSI configurations does not match with the cluster ID %v obtained from cluster\n", instance.Kind, instance.Name) +
+						fmt.Sprintf("Please check the Spec.Clusters section in the resource %s/%s", cluster.Id, id)
 					logger.Error(err, message)
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.ClusterIDMismatch), message,
@@ -1870,7 +1871,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
 	primary := r.getPrimaryCluster(instance)
 	if primary == nil {
-		message := fmt.Sprintf("No primary cluster is defined in the Spectrum Scale cluster properties under Spec.Clusters in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
+		message := fmt.Sprintf("No primary cluster is defined in the Spectrum Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
 		err := fmt.Errorf(message)
 		logger.Error(err, "")
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -2113,7 +2114,7 @@ func getSymlinkDirPath(fsetLinkPath string, fsMountPath string) (string, string)
 //ValidateCRParams validates driver configuration parameters and returns error if any validation fails
 func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("ValidateCRParams")
-	logger.Info(fmt.Sprintf("Validating the Spectrum Scale cluster properties of the resource %s/%s", instance.Kind, instance.Name))
+	logger.Info(fmt.Sprintf("Validating the Spectrum Scale CSI configurations of the resource %s/%s", instance.Kind, instance.Name))
 
 	if len(instance.Spec.Clusters) == 0 {
 		return fmt.Errorf("Missing cluster information in Spectrum Scale configuration")
@@ -2198,7 +2199,7 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 		Namespace: instance.Namespace,
 	}, cm)
 	if err != nil && errors.IsNotFound(err) {
-		message := fmt.Sprintf("Optional ConfigMap resource %s not found.", name)
+		message := fmt.Sprintf("Optional ConfigMap resource %s not found", name)
 		logger.Info(message)
 	} else if err != nil {
 		message := fmt.Sprintf("Failed to get the optional ConfigMap: %s", name)
