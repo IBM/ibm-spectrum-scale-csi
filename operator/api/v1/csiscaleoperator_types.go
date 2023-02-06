@@ -411,6 +411,7 @@ const (
 	PrimaryClusterUndefined      CSIReason = "PrimaryClusterUndefined"
 	GetRemoteFileSystemFailed    CSIReason = "GetRemoteFileSystemFailed"
 	PrimaryClusterStanzaModified CSIReason = "PrimaryClusterStanzaModified"
+	UnmarshalFailed              CSIReason = "UnmarshalFailed"
 
 	//for create/update/delete/get operations on k8s resources
 	GetFailed    CSIReason = "GetFailed"

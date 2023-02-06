@@ -532,6 +532,36 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 	return strings.Join(invalidParams[:], ", "), false
 }
 
+func (cs *ScaleControllerServer) getSymlinkDirPaths(ctx context.Context) (error, string, string) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] getSymlinkDirPaths", loggerId)
+
+	symlinkDirAbsolutePath := ""
+	symlinkDirRelativePath := ""
+
+	primaryConn := cs.Driver.connmap["primary"]
+	primaryFS := cs.Driver.primary.GetPrimaryFs()
+	primaryFset := cs.Driver.primary.PrimaryFset
+
+	// check if primary filesystem exists
+	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(context.TODO(), primaryFS)
+	if err != nil {
+		klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
+		return err, symlinkDirAbsolutePath, symlinkDirRelativePath
+	}
+
+	// If primary fset is not specified, then use default
+	if primaryFset == "" {
+		primaryFset = defaultPrimaryFileset
+	}
+
+	symlinkDirRelativePath = primaryFset + "/" + symlinkDir
+	symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
+	klog.Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
+
+	return nil, symlinkDirAbsolutePath, symlinkDirRelativePath
+}
+
 // CreateVolume - Create Volume
 func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
@@ -590,8 +620,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	/* Get details for Primary Cluster */
-	pConn, PSLnkRelPath, PFS, PFSMount, PSLnkPath, PCid, err := cs.GetPriConnAndSLnkPath()
+	pConn, _, PFS, PFSMount, _, PCid, err := cs.GetPriConnAndSLnkPath()
 
+	if err != nil {
+		return nil, err
+	}
+	err, PSLnkPath, PSLnkRelPath := cs.getSymlinkDirPaths(ctx)
 	if err != nil {
 		return nil, err
 	}

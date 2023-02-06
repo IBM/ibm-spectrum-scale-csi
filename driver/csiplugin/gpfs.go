@@ -19,7 +19,6 @@ package scale
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -33,8 +32,6 @@ import (
 )
 
 const (
-	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
-
 	SNAP_JOB_NOT_STARTED    = 0
 	SNAP_JOB_RUNNING        = 1
 	SNAP_JOB_COMPLETED      = 2
@@ -55,7 +52,8 @@ const (
 
 	//	BLOCK_FILESET_VOLUME = 3
 
-	ENVSymDirPath = "SYMLINK_DIR_PATH"
+	defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+	symlinkDir            = ".volumes"
 )
 
 type SnapCopyJobDetails struct {
@@ -267,24 +265,6 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 			primaryInfo = scaleConfig.Clusters[i].Primary
 		}
 	}
-
-	symlinkDirPath := utils.GetEnv(ENVSymDirPath, notFound)
-	if symlinkDirPath == notFound {
-		message := fmt.Sprintf("[%s] Unable to get environmental variable %s", utils.GetLoggerId(ctx), ENVSymDirPath)
-		klog.Errorf(message)
-		return nil, scaleConfig, primaryInfo, fmt.Errorf(message)
-	}
-
-	primaryInfo.SymlinkAbsolutePath = symlinkDirPath
-
-	//get relative path
-	pathTokens := strings.Split(symlinkDirPath, "/")
-	len := len(pathTokens)
-	symlinkDirRelPath := pathTokens[len-2] + "/" + pathTokens[len-1]
-	primaryInfo.SymlinkRelativePath = symlinkDirRelPath
-
-	klog.Infof("[%s] Symlink directory paths, absolute:%s, relative:%s",
-		utils.GetLoggerId(ctx), symlinkDirPath, symlinkDirRelPath)
 
 	klog.Infof("[%s] IBM Spectrum Scale: Plugin initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
