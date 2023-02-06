@@ -396,14 +396,25 @@ func init() {
 type CSIReason string
 
 const (
-	CSIConfigured         CSIReason = "successful"
-	CSINotConfigured      CSIReason = "CSIError"
-	ResourceSyncError     CSIReason = "syncError"
-	ResourceCreateError   CSIReason = "createError"
-	ResourceReadError     CSIReason = "readError"
-	ResourceUpdateError   CSIReason = "updateError"
-	ResourceDeleteError   CSIReason = "deleteError"
-	Unknown               CSIReason = "unknown"
-	ResourceNotFoundError CSIReason = "resourceNotFound"
-	ResourceConfigError   CSIReason = "configError"
+	CSIConfigured CSIReason = "CSIConfigured"
+	Unknown       CSIReason = "Unknown"
+
+	GetFileSystemFailed          CSIReason = "GetFileSystemFailed"
+	FilesetRefreshFailed         CSIReason = "FilesetRefreshFailed"
+	GetFilesetFailed             CSIReason = "GetFilesetFailed"
+	CreateDirFailed              CSIReason = "CreateDirFailed"
+	CreateFilesetFailed          CSIReason = "CreateFilesetFailed"
+	LinkFilesetFailed            CSIReason = "LinkFilesetFailed"
+	ValidationFailed             CSIReason = "ValidationFailed"
+	GUIConnFailed                CSIReason = "GUIConnFailed"
+	ClusterIDMismatch            CSIReason = "ClusterIDMismatch"
+	PrimaryClusterUndefined      CSIReason = "PrimaryClusterUndefined"
+	GetRemoteFileSystemFailed    CSIReason = "GetRemoteFileSystemFailed"
+	PrimaryClusterStanzaModified CSIReason = "PrimaryClusterStanzaModified"
+
+	//for create/update/delete/get operations on k8s resources
+	GetFailed    CSIReason = "GetFailed"
+	CreateFailed CSIReason = "CreateFailed"
+	UpdateFailed CSIReason = "UpdateFailed"
+	DeleteFailed CSIReason = "DeleteFailed"
 )
