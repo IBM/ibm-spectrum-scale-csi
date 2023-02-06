@@ -1832,11 +1832,13 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 				}
 				id, err := scaleConnMap[cluster.Id].GetClusterId(context.TODO())
 				if err != nil {
-					message := fmt.Sprintf("Failed to connect to the GUI of the cluster with ID: %s. Please check that you specified the right GUI host", cluster.Id)
+					message := fmt.Sprintf("Failed to connect to the GUI of the cluster with ID: %s", cluster.Id)
 					logger.Error(err, message)
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.GUIConnFailed), message,
 					)
+					//remove the connector if GUI connection fails
+					delete(scaleConnMap, cluster.Id)
 					return err
 				} else {
 					logger.Info("The GUI connection for the cluster is successful", "Cluster ID", cluster.Id)
