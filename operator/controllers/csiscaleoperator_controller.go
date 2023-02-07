@@ -234,8 +234,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
-			message := "Failed to delete the ClusterRoles and ClusterRoleBindings for the CSISCaleOperator instance " + instance.Name + ".\n" +
-				fmt.Sprintf("To get the list of the ClusterRoles and ClusterRoleBindings, use the selector as --selector='product=%s'", config.Product)
+			message := fmt.Sprintf("Failed to delete the ClusterRoles and ClusterRoleBindings for the CSISCaleOperator instance %s."+
+				" To get the list of the ClusterRoles and ClusterRoleBindings, use the selector as --selector='product=%s'", instance.Name, config.Product,
+			)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.DeleteFailed), message,
@@ -279,8 +280,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if !cmExists || clustersStanzaModified {
 		err = ValidateCRParams(instance)
 		if err != nil {
-			message := "Failed to validate Spectrum Scale CSI configurations\n" +
-				"Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
+			message := "Failed to validate Spectrum Scale CSI configurations." +
+				" Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
 			logger.Error(fmt.Errorf(message), "")
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
@@ -1850,8 +1851,9 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					continue
 				}
 				if id != cluster.Id {
-					message := fmt.Sprintf("The cluster ID %v in Spectrum Scale CSI configurations does not match with the cluster ID %v obtained from cluster\n", instance.Kind, instance.Name) +
-						fmt.Sprintf("Please check the Spec.Clusters section in the resource %s/%s", cluster.Id, id)
+					message := fmt.Sprintf("The cluster ID %v in Spectrum Scale CSI configurations does not match with the cluster ID %v obtained from cluster."+
+						" Please check the Spec.Clusters section in the resource %s/%s", cluster.Id, id, instance.Kind, instance.Name,
+					)
 					logger.Error(err, message)
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.ClusterIDMismatch), message,
@@ -1951,9 +1953,6 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	if err != nil {
 		message := fmt.Sprintf("Failed to create the primary fileset %s on the primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
 		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.CreateFilesetFailed), message,
-		)
 		return "", err
 	}
 
@@ -1996,9 +1995,6 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	if err != nil {
 		message := fmt.Sprintf("Failed to create the directory %s on the primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
 		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.CreateDirFailed), message,
-		)
 		return "", err
 	}
 	logger.Info("The symlinks directory path is:", "symlinkDirPath", symlinkDirPath)
