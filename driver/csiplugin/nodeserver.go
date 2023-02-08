@@ -133,7 +133,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	klog.Infof("[%s] NodePublishVolume - creating bind mount [%v] -> [%v]", loggerId, targetPath, volScalePath)
 	if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
 		klog.Errorf("[%s] NodePublishVolume - failed to mount: [%s] at [%s]. Error [%v]", loggerId, volScalePath, targetPath, err)
-		return nil, fmt.Errorf("NodePublishVolume -failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		return nil, fmt.Errorf("NodePublishVolume - failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
 	}
 
 	//check for the gpfs type again, if not gpfs type, unmount and return error.
