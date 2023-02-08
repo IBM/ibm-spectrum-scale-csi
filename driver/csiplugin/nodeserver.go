@@ -18,12 +18,14 @@ package scale
 
 import (
 	"fmt"
-	"k8s.io/klog/v2"
 	"os"
 	"strings"
 	"sync"
 
+	"k8s.io/klog/v2"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/mount-utils"
 
@@ -90,33 +92,39 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	volScalePathInContainer := hostDir + volScalePath
 	f, err := os.Lstat(volScalePathInContainer)
 	if err != nil {
-		return nil, fmt.Errorf("NodePublishVolume: failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
+		glog.V(4).Infof("NodePublishVolume - failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
+		return nil, fmt.Errorf("NodePublishVolume - failed to get lstat of [%s]. Error [%v]", volScalePathInContainer, err)
 	}
 	if f.Mode()&os.ModeSymlink != 0 {
 		symlinkTarget, readlinkErr := os.Readlink(volScalePathInContainer)
 		if readlinkErr != nil {
-			return nil, fmt.Errorf("NodePublishVolume: failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
+			glog.V(4).Infof("NodePublishVolume - failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
+			return nil, fmt.Errorf("NodePublishVolume - failed to get symlink target for [%s]. Error [%v]", volScalePathInContainer, readlinkErr)
 		}
 		volScalePathInContainer = hostDir + symlinkTarget
 		volScalePath = symlinkTarget
-		klog.Infof("[%s] NodePublishVolume: symlink tarrget path is [%s]\n", loggerId, volScalePathInContainer)
+		klog.Infof("[%s] NodePublishVolume - symlink tarrget path is [%s]\n", loggerId, volScalePathInContainer)
 	}
 
 	err = checkGpfsType(volScalePathInContainer)
 	if err != nil {
+		glog.V(4).Infof("NodePublishVolume - the path [%v] is not a valid gpfs path", volScalePathInContainer)
 		return nil, err
 	}
 	notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			if err = os.Mkdir(targetPath, 0750); err != nil {
-				return nil, fmt.Errorf("failed to create target path [%s]. Error [%v]", targetPath, err)
+				glog.V(4).Infof("NodePublishVolume - failed to create target path [%s]. Error [%v]", targetPath, err)
+				return nil, fmt.Errorf("NodePublishVolume -failed to create target path [%s]. Error [%v]", targetPath, err)
 			}
 		} else {
-			return nil, fmt.Errorf("failed to check target path [%s]. Error [%v]", targetPath, err)
+			glog.V(4).Infof("NodePublishVolume - failed to check target path [%s]. Error [%v]", targetPath, err)
+			return nil, fmt.Errorf("NodePublishVolume -failed to check target path [%s]. Error [%v]", targetPath, err)
 		}
 	}
 	if !notMP {
+		glog.V(4).Infof("NodePublishVolume - returning success as the path [%s] is already a mount point", targetPath)
 		return &csi.NodePublishVolumeResponse{}, nil
 	}
 
@@ -125,7 +133,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	mounter := mount.New("")
 	klog.Infof("[%s] NodePublishVolume - creating bind mount [%v] -> [%v]", loggerId, targetPath, volScalePath)
 	if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
-		return nil, fmt.Errorf("failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		glog.V(4).Infof("NodePublishVolume - failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
+		return nil, fmt.Errorf("NodePublishVolume -failed to mount: [%s] at [%s]. Error [%v]", volScalePath, targetPath, err)
 	}
 
 	//check for the gpfs type again, if not gpfs type, unmount and return error.
@@ -133,11 +142,12 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	if err != nil {
 		uerr := mount.New("").Unmount(targetPath)
 		if uerr != nil {
+			glog.V(4).Infof("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
 			return nil, fmt.Errorf("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
 		}
 		return nil, err
 	}
-	klog.Infof("[%s] successfully mounted %s", loggerId, targetPath)
+	klog.Infof("[%s] NodePublishVolume - successfully mounted %s", loggerId, targetPath)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
@@ -194,30 +204,44 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	//Check if target is a symlink or bind mount and cleanup accordingly
 	f, err := os.Lstat(targetPath)
 	if err != nil {
+		//Handling for target path (softlink or bindmount) is already deleted/not present
+		if os.IsNotExist(err) {
+			glog.V(4).Infof("NodeUnpublishVolume - returning success as targetpath %v is not found ", targetPath)
+			return &csi.NodeUnpublishVolumeResponse{}, nil
+		}
+		//Handling for bindmount is gpfs is unmounted/unlinked
 		if strings.Contains(err.Error(), errStaleNFSFileHandle) {
-			klog.Errorf("[%s] Error [%v] is observed, trying forceful unmount of [%s]", loggerId, err, targetPath)
+			klog.Errorf("[%s] NodeUnpublishVolume - Error [%v] is observed, trying forceful unmount of [%s]", loggerId, err, targetPath)
 			needReturn, response, error := unmountAndDelete(ctx, targetPath, true)
 			if needReturn {
+				glog.V(4).Infof("NodeUnpublishVolume - returning response and error from unmountAndDelete. reponse [%v], error [%v]", response, error)
 				return response, error
 			}
+			glog.V(4).Infof("NodeUnpublishVolume - Forceful unmount is successful")
 			return &csi.NodeUnpublishVolumeResponse{}, nil
 		} else {
-			return nil, fmt.Errorf("failed to get lstat of target path [%s]. Error %v", targetPath, err)
+			glog.V(4).Infof("NodeUnpublishVolume - failed to get lstat of target path [%s]. Error %v", targetPath, err)
+			return nil, fmt.Errorf("NodeUnpublishVolume - failed to get lstat of target path [%s]. Error %v", targetPath, err)
 		}
 	}
 	if f.Mode()&os.ModeSymlink != 0 {
 		klog.Infof("[%s] %v is a symlink", loggerId, targetPath)
 		if err := os.Remove(targetPath); err != nil {
+			if os.IsNotExist(err) {
+				klog.Infof("[%s] NodeUnpublishVolume - symlink %v is already deleted", loggerId, targetPath)
+				return &csi.NodeUnpublishVolumeResponse{}, nil
+			}
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove symlink targetPath [%v]. Error [%v]", targetPath, err.Error()))
 		}
 	} else {
 		klog.Infof("[%s] %v is a bind mount", loggerId, targetPath)
 		needReturn, response, error := unmountAndDelete(ctx, targetPath, false)
 		if needReturn {
+			glog.V(4).Infof("NodeUnpublishVolume - returning response and error from unmountAndDelete. reponse [%v], error [%v]", response, error)
 			return response, error
 		}
 	}
-	klog.Infof("[%s] successfully unpublished %s", loggerId, targetPath)
+	klog.Infof("[%s] NodeUnpublishVolume - successfully unpublished %s", loggerId, targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
