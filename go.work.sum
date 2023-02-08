@@ -4,5 +4,4 @@ github.com/amdabhad/ibm-spectrum-scale-csi v0.0.0-20221220131948-8fcbf09d69d0 h1
 github.com/amdabhad/ibm-spectrum-scale-csi v0.0.0-20221220131948-8fcbf09d69d0/go.mod h1:pQj9IfgZ9GsJmZVLRJIKfjoDePO+ORBbRBpFG9hHrYA=
 github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20221220131948-8fcbf09d69d0/go.mod h1:Elw4vXQgjyTOQgDdehc3WWRBtL1uMbiTU6jkwKJ431c=
 github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
-github.com/golang/glog v1.0.0 h1:nfP3RFugxnNRyKgeWd4oI1nYvXpxrx8ck8ZrcizshdQ=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
