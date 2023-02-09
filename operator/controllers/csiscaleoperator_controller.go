@@ -190,6 +190,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	err = r.Client.Update(context.TODO(), instanceUnwrap)
 	if err != nil {
 		logger.Error(err, "Reconciler Client.Update() failed")
+		message := fmt.Sprintf("Failed to set defaults on the instance %s. Please check Operator logs", instanceUnwrap.Name)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
 		return ctrl.Result{}, err
 	}
 
@@ -423,14 +427,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		err := r.Client.Update(ctx, instance.Unwrap())
 		if err != nil {
 			logger.Error(err, "Reconciler Client.Update() failed.")
+			message := "Failed to update the consistency group prefix in CSIScaleOperator resource " + instance.Name
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+			)
 			return ctrl.Result{}, err
 		}
 		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
 
-	}
-
-	if err != nil {
-		return ctrl.Result{}, err
 	}
 
 	cmData := map[string]string{}
