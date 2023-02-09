@@ -217,12 +217,12 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 			klog.V(4).Infof("[%s] NodeUnpublishVolume - returning success as targetpath %v is not found ", loggerId, targetPath)
 			return &csi.NodeUnpublishVolumeResponse{}, nil
 		}
-		//Handling for bindmount is gpfs is unmounted/unlinked
+		//Handling for bindmount if filesystem is unmounted or fileset is unlinked
 		if strings.Contains(err.Error(), errStaleNFSFileHandle) {
 			klog.Errorf("[%s] NodeUnpublishVolume - Error [%v] is observed, trying forceful unmount of [%s]", loggerId, err, targetPath)
 			needReturn, response, error := unmountAndDelete(ctx, targetPath, true)
 			if needReturn {
-				klog.Info("[%s] NodeUnpublishVolume - returning response and error from unmountAndDelete. reponse [%v], error [%v]", loggerId, response, error)
+				klog.Infof("[%s] NodeUnpublishVolume - returning response and error from unmountAndDelete. reponse [%v], error [%v]", loggerId, response, error)
 				return response, error
 			}
 			klog.Infof("[%s] NodeUnpublishVolume - Forceful unmount is successful", loggerId)
