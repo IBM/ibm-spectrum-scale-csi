@@ -25,12 +25,10 @@ import (
 	"path"
 	"time"
 
+	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/natefinch/lumberjack"
 	"k8s.io/klog/v2"
-
-	//TODO: this is a temporary change, revert it back when the required code is merged in an IBM branch.
-	driver "github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -83,15 +81,15 @@ func main() {
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
-	if err != nil || err1 != nil || err2 != nil{
-                klog.Errorf("[%s] Failed to set flag value",loggerId)
-        }
+	if err != nil || err1 != nil || err2 != nil {
+		klog.Errorf("[%s] Failed to set flag value", loggerId)
+	}
 
 	if level == "" {
-                klog.Infof("[%s] logger level is not set. Defaulting to INFO",loggerId)
-        } else {
-                klog.Infof("[%s] logValue: %s", loggerId, level)
-        }
+		klog.Infof("[%s] logger level is not set. Defaulting to INFO", loggerId)
+	} else {
+		klog.Infof("[%s] logValue: %s", loggerId, level)
+	}
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
@@ -150,16 +148,15 @@ func getLogEnv() string {
 	return level
 }
 
-func getLogLevel(level string) string{
+func getLogLevel(level string) string {
 	var logValue string
 	if level == "" || level == DEBUG.String() || level == TRACE.String() {
-                logValue = INFO.String()
-        } else {
-                logValue = level
-        }
-        return logValue
+		logValue = INFO.String()
+	} else {
+		logValue = level
+	}
+	return logValue
 }
-
 
 func (level LoggerLevel) String() string {
 	switch level {
@@ -209,17 +206,17 @@ func InitFileLogger() func() {
 	}
 
 	l := &lumberjack.Logger{
-                Filename:   filePath,
-                MaxSize:    rotateSize,
-                MaxBackups: 5,
-                MaxAge:     0,
-                Compress:   true,
-        }
-        klog.SetOutput(l)
-	
-	closeFn := func(){
+		Filename:   filePath,
+		MaxSize:    rotateSize,
+		MaxBackups: 5,
+		MaxAge:     0,
+		Compress:   true,
+	}
+	klog.SetOutput(l)
+
+	closeFn := func() {
 		err := logFile.Close()
-		if err != nil{
+		if err != nil {
 			panic(fmt.Sprintf("failed to close log file %v", err))
 		}
 	}
