@@ -48,7 +48,7 @@ const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
 const persistentLog = "PERSISTENT_LOG"
-const hostPath = "/host/var/log/"
+const hostPath = "/var/adm/ras/"
 const rotateSize = 1024
 
 type LoggerLevel int
@@ -78,7 +78,7 @@ func main() {
 		}
 	}()
 
-	if persistentLogEnabled == "TRUE" {
+	if persistentLogEnabled == "ENABLED" {
 		fpClose := InitFileLogger()
 		defer fpClose()
 	}
