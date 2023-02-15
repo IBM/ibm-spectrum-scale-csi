@@ -331,10 +331,6 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 				Value: s.driver.GetCSIEndpoint(),
 			},
 			{
-				Name:  "CSI_LOGLEVEL",
-				Value: "trace",
-			},
-			{
 				Name:  "KUBELET_ROOT_DIR_PATH",
 				Value: config.CSIKubeletRootDirPath,
 			},

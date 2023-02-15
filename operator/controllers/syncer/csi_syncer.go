@@ -766,18 +766,6 @@ func (s *csiControllerSyncer) envVarFromSecret(sctName, name, key string, opt bo
 func (s *csiControllerSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 	switch name {
-	case controllerContainerName:
-		return []corev1.EnvVar{
-			{
-				Name:  "CSI_ENDPOINT",
-				Value: s.driver.GetCSIEndpoint(),
-			},
-			{
-				Name:  "CSI_LOGLEVEL",
-				Value: config.DefaultLogLevel,
-			},
-		}
-
 	case provisionerContainerName, attacherContainerName, snapshotterContainerName, resizerContainerName:
 		return []corev1.EnvVar{
 			{
