@@ -61,8 +61,8 @@ github.com/Azure/go-autorest/tracing v0.6.0 h1:TYi4+3m5t6K48TGI9AUdb+IzbnSxvnvUM
 github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBpUA79WCAKPPZVC2DeU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f h1:y4gZZpWyDKmTZu5+Hioa+Purw7g0NW7ys1sLt/JuieY=
-github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230117070311-7f5cd110e97f/go.mod h1:xZv0YQCbJmHgYQa5AUv8dUsoPPyB+Yjpu84FTIIGokY=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230214073341-84a5caba8948 h1:f9xStQeMBx5fCj2VHDhqbfN5Xj1CGy+WQn2vwPDECg4=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230214073341-84a5caba8948/go.mod h1:mihwxLnh6dKoJQXCZ36Wspmgqp7V2E93ofSDDhV5//8=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
@@ -73,8 +73,6 @@ github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuy
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
-github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20230118123107-af004abe27a8 h1:UvudVAayJOMnKAgWkcrEE23xp4hTOONhIU6xNq4xe3Y=
-github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20230118123107-af004abe27a8/go.mod h1:pA+noiShj6M7A0OSB5UUq7wC6WNQs6Cm1iWo42j92d0=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
