@@ -1,7 +1,0 @@
-github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20221213043514-4410051d974a h1:87JLz2NTQ5uHwKwCQWnAMT+mhZaT43gCeo4KtFo4duM=
-github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20221213043514-4410051d974a/go.mod h1:ubkiRdkKQBNonTUjpfqtk1NIMSD8PtEOHj24xMxXxZI=
-github.com/amdabhad/ibm-spectrum-scale-csi v0.0.0-20221220131948-8fcbf09d69d0 h1:v6hy50JDRrJ9U6r9NwB27AJvtoaA2kQJ+mOKLGY2pYk=
-github.com/amdabhad/ibm-spectrum-scale-csi v0.0.0-20221220131948-8fcbf09d69d0/go.mod h1:pQj9IfgZ9GsJmZVLRJIKfjoDePO+ORBbRBpFG9hHrYA=
-github.com/amdabhad/ibm-spectrum-scale-csi/driver v0.0.0-20221220131948-8fcbf09d69d0/go.mod h1:Elw4vXQgjyTOQgDdehc3WWRBtL1uMbiTU6jkwKJ431c=
-github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
-gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
