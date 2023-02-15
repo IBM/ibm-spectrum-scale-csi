@@ -63,6 +63,7 @@ const (
 	EnvVarForCSILivenessProbeImage = "CSI_LIVENESSPROBE_IMAGE"
 	EnvVarForLivenessHealthPort    = "LIVENESS_HEALTH_PORT"
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
+	EnvVarForPersistentLog         = "PERSISTENT_LOG"
 )
 
 var (
@@ -320,6 +321,15 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Name = config.ENVCGPrefix
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
+
+		persistentLogObj := corev1.EnvVar{}
+		persistentLogObj.Name = "PERSISTENT_LOG"
+		persistentLogObj.Value = "DISABLED"
+		persistentLog, found := os.LookupEnv(EnvVarForPersistentLog)
+		if found {
+			persistentLogObj.Value = persistentLog
+		}
+		EnvVars = append(EnvVars, persistentLogObj)
 
 		for _, cmEnv := range cmEnvVars {
 			EnvVars = append(EnvVars, cmEnv)
