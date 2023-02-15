@@ -59,12 +59,8 @@ import (
 	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
 	clustersyncer "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/syncer"
 
-	//TODO: This is temporary change, once the SpectrumRestV2 is exported
-	//in driver code and merged in some IBM branch, change this line and
-	//adjust the dependencies.
-
-	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
-	"github.com/amdabhad/ibm-spectrum-scale-csi/driver/csiplugin/settings"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 )
 
 // CSIScaleOperatorReconciler reconciles a CSIScaleOperator object
