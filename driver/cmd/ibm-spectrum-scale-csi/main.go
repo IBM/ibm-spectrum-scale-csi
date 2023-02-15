@@ -48,7 +48,7 @@ const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
 const persistentLog = "PERSISTENT_LOG"
-const hostPath = "/var/adm/ras/"
+const hostPath = "/host/var/adm/ras/"
 const rotateSize = 1024
 
 type LoggerLevel int
