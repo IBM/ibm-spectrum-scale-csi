@@ -322,15 +322,6 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
-		persistentLogObj := corev1.EnvVar{}
-		persistentLogObj.Name = "PERSISTENT_LOG"
-		persistentLogObj.Value = "DISABLED"
-		persistentLog, found := os.LookupEnv(EnvVarForPersistentLog)
-		if found {
-			persistentLogObj.Value = persistentLog
-		}
-		EnvVars = append(EnvVars, persistentLogObj)
-
 		for _, cmEnv := range cmEnvVars {
 			EnvVars = append(EnvVars, cmEnv)
 		}

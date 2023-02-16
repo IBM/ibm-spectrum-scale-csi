@@ -150,6 +150,9 @@ func setContext() context.Context {
 func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
 	persistentLogEnabled := os.Getenv(persistentLog)
+	if persistentLogEnabled == "" {
+		persistentLogEnabled = "DISABLED"
+	}
 	return level, persistentLogEnabled
 }
 
