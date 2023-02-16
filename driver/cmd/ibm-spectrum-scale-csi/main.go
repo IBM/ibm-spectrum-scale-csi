@@ -149,16 +149,20 @@ func setContext() context.Context {
 
 func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
+	logLevel := strings.ToUpper(level)
+	if logLevel != TRACE.String() || logLevel != DEBUG.String() || logLevel != INFO.String() || logLevel != WARNING.String() || logLevel != ERROR.String() || logLevel != FATAL.String() {
+		logLevel = INFO.String()
+	}
 	persistentLogEnabled := os.Getenv(persistentLog)
 	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
 		persistentLogEnabled = "DISABLED"
 	}
-	return strings.ToUpper(level), persistentLogEnabled
+	return logLevel, persistentLogEnabled
 }
 
 func getLogLevel(level string) string {
 	var logValue string
-	if level == "" || level == DEBUG.String() || level == TRACE.String() {
+	if level == DEBUG.String() || level == TRACE.String() {
 		logValue = INFO.String()
 	} else {
 		logValue = level
