@@ -47,7 +47,8 @@ var (
 const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
-const hostPath = "/host/var/log/"
+const persistentLog = "PERSISTENT_LOG"
+const hostPath = "/host/var/adm/ras/"
 const rotateSize = 1024
 
 type LoggerLevel int
@@ -63,7 +64,7 @@ const (
 
 func main() {
 	klog.InitFlags(nil)
-	level := getLogEnv()
+	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
 	err := flag.Set("logtostderr", "false")
@@ -76,8 +77,10 @@ func main() {
 			klog.Infof("Recovered from panic: [%v]", r)
 		}
 	}()
-	fpClose := InitFileLogger()
-	defer fpClose()
+	if persistentLogEnabled == "ENABLED" {
+		fpClose := InitFileLogger()
+		defer fpClose()
+	}
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
@@ -143,9 +146,13 @@ func setContext() context.Context {
 	return ctx
 }
 
-func getLogEnv() string {
+func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
-	return level
+	persistentLogEnabled := os.Getenv(persistentLog)
+	if persistentLogEnabled == "" {
+		persistentLogEnabled = "DISABLED"
+	}
+	return level, persistentLogEnabled
 }
 
 func getLogLevel(level string) string {
