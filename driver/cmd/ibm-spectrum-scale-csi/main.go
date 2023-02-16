@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
@@ -149,10 +150,10 @@ func setContext() context.Context {
 func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
 	persistentLogEnabled := os.Getenv(persistentLog)
-	if persistentLogEnabled == "" {
+	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
 		persistentLogEnabled = "DISABLED"
 	}
-	return level, persistentLogEnabled
+	return strings.ToUpper(level), persistentLogEnabled
 }
 
 func getLogLevel(level string) string {
