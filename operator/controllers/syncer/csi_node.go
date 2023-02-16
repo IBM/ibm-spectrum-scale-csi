@@ -63,7 +63,6 @@ const (
 	EnvVarForCSILivenessProbeImage = "CSI_LIVENESSPROBE_IMAGE"
 	EnvVarForLivenessHealthPort    = "LIVENESS_HEALTH_PORT"
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
-	EnvVarForPersistentLog         = "PERSISTENT_LOG"
 )
 
 var (
