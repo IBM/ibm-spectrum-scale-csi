@@ -206,7 +206,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			logger.Info("Invalid liveness probe port number", "received port: ", healthPortStr)
 		}
 	}
-	nodePlugin.LivenessProbe = ensureProbe(10, 3, 10, corev1.ProbeHandler{
+	nodePlugin.LivenessProbe = ensureProbe(10, 30, 120, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
 			Port:   healthPort,
