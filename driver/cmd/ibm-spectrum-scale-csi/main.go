@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
@@ -47,7 +48,8 @@ var (
 const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
-const hostPath = "/host/var/log/"
+const persistentLog = "PERSISTENT_LOG"
+const hostPath = "/host/var/adm/ras/"
 const rotateSize = 1024
 
 type LoggerLevel int
@@ -63,8 +65,8 @@ const (
 
 func main() {
 	klog.InitFlags(nil)
-	level := getLogEnv()
-	logValue := getLogLevel(level)
+	level, persistentLogEnabled := getLogEnv()
+	logValue, isIncorrectLogLevel := getLogLevel(level)
 	value := getVerboseLevel(level)
 	err := flag.Set("logtostderr", "false")
 	err1 := flag.Set("stderrthreshold", logValue)
@@ -76,8 +78,10 @@ func main() {
 			klog.Infof("Recovered from panic: [%v]", r)
 		}
 	}()
-	fpClose := InitFileLogger()
-	defer fpClose()
+	if persistentLogEnabled == "ENABLED" {
+		fpClose := InitFileLogger()
+		defer fpClose()
+	}
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
@@ -85,8 +89,8 @@ func main() {
 		klog.Errorf("[%s] Failed to set flag value", loggerId)
 	}
 
-	if level == "" {
-		klog.Infof("[%s] logger level is not set. Defaulting to INFO", loggerId)
+	if isIncorrectLogLevel {
+		klog.Infof("[%s] logger level is empty or incorrect. Defaulting logValue to INFO", loggerId)
 	} else {
 		klog.Infof("[%s] logValue: %s", loggerId, level)
 	}
@@ -143,19 +147,28 @@ func setContext() context.Context {
 	return ctx
 }
 
-func getLogEnv() string {
+func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
-	return level
+	persistentLogEnabled := os.Getenv(persistentLog)
+	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
+		persistentLogEnabled = "DISABLED"
+	}
+	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
 }
 
-func getLogLevel(level string) string {
+func getLogLevel(level string) (string, bool) {
 	var logValue string
-	if level == "" || level == DEBUG.String() || level == TRACE.String() {
+	isIncorrectLogLevel := false
+
+	if !(level == TRACE.String() || level == DEBUG.String() || level == INFO.String() || level == WARNING.String() || level == ERROR.String() || level == FATAL.String()) {
+		isIncorrectLogLevel = true
+	}
+	if level == DEBUG.String() || level == TRACE.String() || isIncorrectLogLevel {
 		logValue = INFO.String()
 	} else {
 		logValue = level
 	}
-	return logValue
+	return logValue, isIncorrectLogLevel
 }
 
 func (level LoggerLevel) String() string {
