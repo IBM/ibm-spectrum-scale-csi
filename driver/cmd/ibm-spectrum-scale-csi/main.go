@@ -150,7 +150,7 @@ func setContext() context.Context {
 func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
 	logLevel := strings.ToUpper(level)
-	if logLevel != TRACE.String() || logLevel != DEBUG.String() || logLevel != INFO.String() || logLevel != WARNING.String() || logLevel != ERROR.String() || logLevel != FATAL.String() {
+	if !(logLevel == TRACE.String() || logLevel == DEBUG.String() || logLevel == INFO.String() || logLevel == WARNING.String() || logLevel == ERROR.String() || logLevel != FATAL.String()) {
 		logLevel = INFO.String()
 	}
 	persistentLogEnabled := os.Getenv(persistentLog)
