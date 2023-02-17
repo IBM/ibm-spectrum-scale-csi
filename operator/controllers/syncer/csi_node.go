@@ -70,6 +70,7 @@ var (
 	UUID                    string
 	nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
 	cmEnvVars               []corev1.EnvVar
+	maxUnavailable          string
 )
 
 type csiNodeSyncer struct {
@@ -97,11 +98,16 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	UUID = CGPrefix
 
 	cmEnvVars = []corev1.EnvVar{}
+	// logger := csiLog.WithName("GetCSIDaemonsetSyncer")
 	for key, value := range envVars {
 		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
 			Name:  key,
 			Value: value,
 		})
+
+		if key == "DRIVER_UPGRADE_MAXUNAVAILABLE" {
+			maxUnavailable = value
+		}
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
@@ -142,6 +148,10 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
+	if len(maxUnavailable) > 0 {
+		logger.Info("UpdateStrategy for RollingUpdate set for ", "MaxUnavailable", maxUnavailable)
+		out.Spec.UpdateStrategy.RollingUpdate.MaxUnavailable.StrVal = maxUnavailable
+	}
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err
