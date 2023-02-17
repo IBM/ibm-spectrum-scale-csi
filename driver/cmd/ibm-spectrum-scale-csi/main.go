@@ -78,7 +78,7 @@ func main() {
 			klog.Infof("Recovered from panic: [%v]", r)
 		}
 	}()
-	if strings.ToUpper(persistentLogEnabled) == "ENABLED" {
+	if persistentLogEnabled == "ENABLED" {
 		fpClose := InitFileLogger()
 		defer fpClose()
 	}
@@ -153,7 +153,7 @@ func getLogEnv() (string, string) {
 	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
 		persistentLogEnabled = "DISABLED"
 	}
-	return strings.ToUpper(level), persistentLogEnabled
+	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
 }
 
 func getLogLevel(level string) (string, bool) {
