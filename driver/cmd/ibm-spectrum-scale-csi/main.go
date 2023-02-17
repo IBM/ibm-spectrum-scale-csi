@@ -66,7 +66,7 @@ const (
 func main() {
 	klog.InitFlags(nil)
 	level, persistentLogEnabled := getLogEnv()
-	logValue := getLogLevel(level)
+	logValue, isIncorrectLogLevel := getLogLevel(level)
 	value := getVerboseLevel(level)
 	err := flag.Set("logtostderr", "false")
 	err1 := flag.Set("stderrthreshold", logValue)
@@ -89,8 +89,8 @@ func main() {
 		klog.Errorf("[%s] Failed to set flag value", loggerId)
 	}
 
-	if level == "" {
-		klog.Infof("[%s] logger level is not set. Defaulting to INFO", loggerId)
+	if isIncorrectLogLevel {
+		klog.Infof("[%s] logger level is empty or incorrect. Defaulting logValue to INFO", loggerId)
 	} else {
 		klog.Infof("[%s] logValue: %s", loggerId, level)
 	}
@@ -149,25 +149,26 @@ func setContext() context.Context {
 
 func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
-	logLevel := strings.ToUpper(level)
-	if !(logLevel == TRACE.String() || logLevel == DEBUG.String() || logLevel == INFO.String() || logLevel == WARNING.String() || logLevel == ERROR.String() || logLevel != FATAL.String()) {
-		logLevel = INFO.String()
-	}
 	persistentLogEnabled := os.Getenv(persistentLog)
 	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
 		persistentLogEnabled = "DISABLED"
 	}
-	return logLevel, persistentLogEnabled
+	return strings.ToUpper(level), persistentLogEnabled
 }
 
-func getLogLevel(level string) string {
+func getLogLevel(level string) (string, bool) {
 	var logValue string
-	if level == DEBUG.String() || level == TRACE.String() {
+	isIncorrectLogLevel := false
+
+	if !(level == TRACE.String() || level == DEBUG.String() || level == INFO.String() || level == WARNING.String() || level == ERROR.String() || level == FATAL.String()) {
+		isIncorrectLogLevel = true
+	}
+	if level == DEBUG.String() || level == TRACE.String() || isIncorrectLogLevel {
 		logValue = INFO.String()
 	} else {
 		logValue = level
 	}
-	return logValue
+	return logValue, isIncorrectLogLevel
 }
 
 func (level LoggerLevel) String() string {
