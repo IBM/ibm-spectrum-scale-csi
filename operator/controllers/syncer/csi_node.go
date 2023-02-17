@@ -49,8 +49,6 @@ const (
 	pluginDir                        = "plugin-dir"
 	registrationDir                  = "registration-dir"
 	registrationDirPath              = "/registration"
-	secretUsername                   = "username"
-	secretPassword                   = "password"
 
 	// FS-Group requirement.
 	// Mount `/` filesystem from host machine to driver container on path `/host`
@@ -67,10 +65,12 @@ const (
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
 )
 
-var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
-
-// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
-var UUID string
+var (
+	// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
+	UUID                    string
+	nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
+	cmEnvVars               []corev1.EnvVar
+)
 
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -79,7 +79,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -95,6 +95,14 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
+
+	cmEnvVars = []corev1.EnvVar{}
+	for key, value := range envVars {
+		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
+			Name:  key,
+			Value: value,
+		})
+	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -172,7 +180,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		[]string{
 			"--nodeid=$(NODE_ID)",
 			"--endpoint=$(CSI_ENDPOINT)",
-			"--v=5",
 			"--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)",
 		},
 	)
@@ -199,7 +206,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			logger.Info("Invalid liveness probe port number", "received port: ", healthPortStr)
 		}
 	}
-	nodePlugin.LivenessProbe = ensureProbe(10, 3, 10, corev1.ProbeHandler{
+	nodePlugin.LivenessProbe = ensureProbe(10, 30, 120, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
 			Port:   healthPort,
@@ -314,14 +321,14 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
+		for _, cmEnv := range cmEnvVars {
+			EnvVars = append(EnvVars, cmEnv)
+		}
+
 		return append(EnvVars, []corev1.EnvVar{
 			{
 				Name:  "CSI_ENDPOINT",
 				Value: s.driver.GetCSIEndpoint(),
-			},
-			{
-				Name:  "CSI_LOGLEVEL",
-				Value: "trace",
 			},
 			{
 				Name:  "KUBELET_ROOT_DIR_PATH",
@@ -437,7 +444,7 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 	return nil
 }
 
-//ensureVolumes returns volumes for CSI driver pods.
+// ensureVolumes returns volumes for CSI driver pods.
 func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	logger := csiLog.WithName("ensureVolumes")
 	volumes := []corev1.Volume{
@@ -519,7 +526,7 @@ func (s *csiNodeSyncer) getImage(name string) string {
 	return image
 }
 
-//ensureSecretVolumeSource returns SecretVolumeSource with given name
+// ensureSecretVolumeSource returns SecretVolumeSource with given name
 // with items username and password.
 func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 	return corev1.VolumeSource{
@@ -527,19 +534,19 @@ func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 			SecretName: name,
 			Items: []corev1.KeyToPath{
 				{
-					Key:  secretUsername,
-					Path: secretUsername,
+					Key:  config.SecretUsername,
+					Path: config.SecretUsername,
 				},
 				{
-					Key:  secretPassword,
-					Path: secretPassword,
+					Key:  config.SecretPassword,
+					Path: config.SecretPassword,
 				},
 			},
 		},
 	}
 }
 
-//fillSecurityContextCapabilities adds POSIX capabilities to given SCC.
+// fillSecurityContextCapabilities adds POSIX capabilities to given SCC.
 func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) {
 	sc.Capabilities = &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},

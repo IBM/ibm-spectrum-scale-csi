@@ -10,7 +10,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.8.0
+    productVersion: 2.9.0
 spec:
   replicas: 1
   selector:
@@ -28,12 +28,12 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.8.0
+        productVersion: 2.9.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:355a4bfc89a96b81664ec915b63ed02d5a35d49a9c8386d9c09567f33765004e
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:6b79b5a8c6927ee0493483ce1a24cd4c75c11123563812e2813bd0d1d47ae558
         args:
         - --leaderElection=true
         env:
@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:86e0138bec8189eefb1eb6cc90885e930a333444c1077ca75df33266efc83f86
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:b4bf7cdd437fb70375f7b75c56174c24edfff47fb50feefaa7326b6fc06b6571
         resources:
           limits:
             cpu: 600m
