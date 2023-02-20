@@ -32,13 +32,6 @@ import (
 
 const loggerId = "logger_id"
 
-type ControlValue int
-
-const (
-	ENABLED ControlValue = iota
-	DISABLED
-)
-
 func ReadFile(path string) ([]byte, error) {
 	klog.V(6).Infof("utils ReadFile. path: %s", path)
 
