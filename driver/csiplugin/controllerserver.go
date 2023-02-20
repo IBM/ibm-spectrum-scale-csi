@@ -532,6 +532,36 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 	return strings.Join(invalidParams[:], ", "), false
 }
 
+func (cs *ScaleControllerServer) getSymlinkDirPaths(ctx context.Context) (error, string, string) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] getSymlinkDirPaths", loggerId)
+
+	symlinkDirAbsolutePath := ""
+	symlinkDirRelativePath := ""
+
+	primaryConn := cs.Driver.connmap["primary"]
+	primaryFS := cs.Driver.primary.GetPrimaryFs()
+	primaryFset := cs.Driver.primary.PrimaryFset
+
+	// check if primary filesystem exists
+	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(context.TODO(), primaryFS)
+	if err != nil {
+		klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
+		return err, symlinkDirAbsolutePath, symlinkDirRelativePath
+	}
+
+	// If primary fset is not specified, then use default
+	if primaryFset == "" {
+		primaryFset = defaultPrimaryFileset
+	}
+
+	symlinkDirRelativePath = primaryFset + "/" + symlinkDir
+	symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
+	klog.Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
+
+	return nil, symlinkDirAbsolutePath, symlinkDirRelativePath
+}
+
 // CreateVolume - Create Volume
 func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
@@ -590,8 +620,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	/* Get details for Primary Cluster */
-	pConn, PSLnkRelPath, PFS, PFSMount, PSLnkPath, PCid, err := cs.GetPriConnAndSLnkPath()
+	pConn, _, PFS, PFSMount, _, PCid, err := cs.GetPriConnAndSLnkPath()
 
+	if err != nil {
+		return nil, err
+	}
+	err, PSLnkPath, PSLnkRelPath := cs.getSymlinkDirPaths(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -699,6 +733,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		klog.Infof("[%s] filesystem %s is remotely mounted, getting cluster ID information of the owning cluster.", loggerId, volFsInfo.Name)
 		clusterName := strings.Split(volFsInfo.Mount.RemoteDeviceName, ":")[0]
 		if remoteClusterID, err = cs.getRemoteClusterID(ctx, clusterName); err != nil {
+			klog.Errorf("[%s] error in getting remote cluster ID for cluster [%s], error [%v]", loggerId, clusterName, err)
 			return nil, err
 		}
 		klog.V(6).Infof("[%s] cluster ID for remote cluster %s is %s", loggerId, clusterName, remoteClusterID)
@@ -2469,7 +2504,9 @@ func (cs *ScaleControllerServer) getRemoteClusterID(ctx context.Context, cluster
 			}
 		}
 	}
-
+	var err error
+	cName := ""
+	updated := false
 	if !found {
 		klog.V(4).Infof("[%s] Cluster details are either expired or not found in cache map for cluster %s. Updating the cache map.", loggerId, clusterName)
 		scaleconfig := settings.LoadScaleConfigSettings(ctx)
@@ -2490,7 +2527,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(ctx context.Context, cluster
 				} else {
 					klog.V(4).Infof("[%s] Cluster details found from cache map for cluster %s are expired.", loggerId, scaleconfig.Clusters[i].ID)
 					klog.V(4).Infof("[%s] Updating cluster details in cache map for cluster %s.", loggerId, scaleconfig.Clusters[i].ID)
-					cName, updated := cs.updateClusterMap(ctx, cID)
+					cName, updated, err = cs.updateClusterMap(ctx, cID)
 					if !updated {
 						continue
 					}
@@ -2501,7 +2538,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(ctx context.Context, cluster
 			} else { // if !found
 				klog.V(4).Infof("[%s] Cluster details not found in cache map for cluster %s.", loggerId, scaleconfig.Clusters[i].ID)
 				klog.V(4).Infof("[%s] adding cluster details in cache map for cluster %s.", loggerId, scaleconfig.Clusters[i].ID)
-				cName, updated := cs.updateClusterMap(ctx, cID)
+				cName, updated, err = cs.updateClusterMap(ctx, cID)
 				if !updated {
 					continue
 				}
@@ -2512,7 +2549,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(ctx context.Context, cluster
 		}
 	}
 
-	return "", status.Error(codes.Internal, fmt.Sprintf("unable to get cluster ID for cluster %s", clusterName))
+	return "", status.Error(codes.Internal, fmt.Sprintf("unable to get cluster ID for cluster %s. Error %v", clusterName, err))
 }
 
 // checkExpiry returns false if cluster detials are valid.
@@ -2529,20 +2566,20 @@ func checkExpiry(clusterDetails interface{}) bool {
 
 // updateClusterMap updates the clusterMap with cluster details.
 // It returns true if cache map is updated else it returns false.
-func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID string) (string, bool) {
+func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID string) (string, bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Creating new connector for the cluster %s", loggerId, cID)
 	clusterConnector, err := cs.getConnFromClusterID(ctx, cID)
 	// clusterConnector, err := connectors.NewSpectrumRestV2(cluster)
 	if err != nil {
 		klog.V(4).Infof("[%s] unable to create new connector for the cluster %s", loggerId, cID)
-		return "", false
+		return "", false, err
 	}
 
 	clusterSummary, err := clusterConnector.GetClusterSummary(ctx)
 	if err != nil {
 		klog.V(4).Infof("[%s] unable to get cluster summary for cluster %s", loggerId, cID)
-		return "", false
+		return "", false, err
 	}
 
 	cName := clusterSummary.ClusterName
@@ -2550,5 +2587,5 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 	cs.Driver.clusterMap.Store(ClusterName{cName}, ClusterDetails{cID, cName, time.Now(), 24})
 	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
 	klog.V(4).Infof("[%s] ClusterMap updated: [%s : %s]", loggerId, cID, cName)
-	return cName, true
+	return cName, true, nil
 }

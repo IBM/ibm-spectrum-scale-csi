@@ -49,8 +49,6 @@ const (
 	pluginDir                        = "plugin-dir"
 	registrationDir                  = "registration-dir"
 	registrationDirPath              = "/registration"
-	secretUsername                   = "username"
-	secretPassword                   = "password"
 
 	// FS-Group requirement.
 	// Mount `/` filesystem from host machine to driver container on path `/host`
@@ -208,7 +206,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			logger.Info("Invalid liveness probe port number", "received port: ", healthPortStr)
 		}
 	}
-	nodePlugin.LivenessProbe = ensureProbe(10, 3, 10, corev1.ProbeHandler{
+	nodePlugin.LivenessProbe = ensureProbe(10, 30, 120, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
 			Port:   healthPort,
@@ -331,10 +329,6 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 			{
 				Name:  "CSI_ENDPOINT",
 				Value: s.driver.GetCSIEndpoint(),
-			},
-			{
-				Name:  "CSI_LOGLEVEL",
-				Value: "trace",
 			},
 			{
 				Name:  "KUBELET_ROOT_DIR_PATH",
@@ -540,12 +534,12 @@ func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 			SecretName: name,
 			Items: []corev1.KeyToPath{
 				{
-					Key:  secretUsername,
-					Path: secretUsername,
+					Key:  config.SecretUsername,
+					Path: config.SecretUsername,
 				},
 				{
-					Key:  secretPassword,
-					Path: secretPassword,
+					Key:  config.SecretPassword,
+					Path: config.SecretPassword,
 				},
 			},
 		},

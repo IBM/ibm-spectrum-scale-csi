@@ -19,8 +19,6 @@ package scale
 import (
 	"context"
 	"fmt"
-	"path"
-	"strings"
 	"sync"
 	"time"
 
@@ -34,8 +32,6 @@ import (
 )
 
 const (
-	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
-
 	SNAP_JOB_NOT_STARTED    = 0
 	SNAP_JOB_RUNNING        = 1
 	SNAP_JOB_COMPLETED      = 2
@@ -55,6 +51,9 @@ const (
 	FILE_INDEPENDENTFILESET_VOLUME = "2"
 
 	//	BLOCK_FILESET_VOLUME = 3
+
+	defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+	symlinkDir            = ".volumes"
 )
 
 type SnapCopyJobDetails struct {
@@ -241,15 +240,8 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 	klog.Infof("[%s] gpfs PluginInitialize", utils.GetLoggerId(ctx))
 	scaleConfig := settings.LoadScaleConfigSettings(ctx)
 
-	isValid, err := driver.ValidateScaleConfigParameters(ctx, scaleConfig)
-	if !isValid {
-		klog.Errorf("[%s] Parameter validation failure", utils.GetLoggerId(ctx))
-		return nil, settings.ScaleSettingsConfigMap{}, settings.Primary{}, err
-	}
-
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
 	primaryInfo := settings.Primary{}
-	remoteFilesystemName := ""
 
 	for i := 0; i < len(scaleConfig.Clusters); i++ {
 		cluster := scaleConfig.Clusters[i]
@@ -260,269 +252,25 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 			return nil, scaleConfig, primaryInfo, err
 		}
 
-		// validate cluster ID
-		clusterId, err := sc.GetClusterId(ctx)
-		if err != nil {
-			klog.Errorf("[%s] Error getting cluster ID: %v", utils.GetLoggerId(ctx), err)
-			return nil, scaleConfig, primaryInfo, err
-		}
-		if cluster.ID != clusterId {
-			klog.Errorf("[%s] Cluster ID %s from scale config doesnt match the ID from cluster %s.", utils.GetLoggerId(ctx), cluster.ID, clusterId)
-			return nil, scaleConfig, primaryInfo, fmt.Errorf("Cluster ID doesnt match the cluster")
-		}
-
-		scaleConnMap[clusterId] = sc
+		scaleConnMap[cluster.ID] = sc
 
 		if cluster.Primary != (settings.Primary{}) {
+
+			// Check if GUI is reachable - only for primary cluster
+			clusterId, err := sc.GetClusterId(ctx)
+			if err != nil {
+				klog.Errorf("[%s] Error getting cluster ID: %v", utils.GetLoggerId(ctx), err)
+				return nil, scaleConfig, primaryInfo, err
+			}
+
 			scaleConnMap["primary"] = sc
-
-			// check if primary filesystem exists
-			fsMount, err := sc.GetFilesystemMountDetails(ctx, cluster.Primary.GetPrimaryFs())
-			if err != nil {
-				klog.Errorf("[%s] Error in getting filesystem details for %s", utils.GetLoggerId(ctx), cluster.Primary.GetPrimaryFs())
-				return nil, scaleConfig, cluster.Primary, err
-			}
-
-			// check if filesystem is mounted on GUI node
-			isFsMounted, err := sc.IsFilesystemMountedOnGUINode(ctx, cluster.Primary.GetPrimaryFs())
-			if err != nil {
-				klog.Errorf("[%s] Error in getting filesystem mount details for %s on Primary cluster", utils.GetLoggerId(ctx), cluster.Primary.GetPrimaryFs())
-				return nil, scaleConfig, cluster.Primary, err
-			}
-			if !isFsMounted {
-				klog.Errorf("[%s] Primary filesystem %s is not mounted on GUI node of Primary cluster", utils.GetLoggerId(ctx), cluster.Primary.GetPrimaryFs())
-				return nil, scaleConfig, cluster.Primary, fmt.Errorf("Primary filesystem %s not mounted on GUI node Primary cluster", cluster.Primary.GetPrimaryFs())
-			}
-
-			// In case primary fset value is not specified in configuation then use default
-			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
-				scaleConfig.Clusters[i].Primary.PrimaryFset = DefaultPrimaryFileset
-				klog.V(4).Infof("[%s] primaryFset is not specified in configuration using default %s", utils.GetLoggerId(ctx), DefaultPrimaryFileset)
-			}
-			scaleConfig.Clusters[i].Primary.PrimaryFSMount = fsMount.MountPoint
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
-
 			primaryInfo = scaleConfig.Clusters[i].Primary
-
-			// RemoteFS name from Local Filesystem details
-			remoteDeviceName := strings.Split(fsMount.RemoteDeviceName, ":")
-			remoteFilesystemName = remoteDeviceName[len(remoteDeviceName)-1]
-		}
-		// //check if multiple GUIs are passed
-		// if len(cluster.RestAPI) > 1 {
-		// 	err := driver.cs.checkGuiHASupport(sc)
-		// 	if err != nil {
-		// 		return nil, scaleConfig, cluster.Primary, err
-		// 	}
-		// }
-	}
-
-	fs := primaryInfo.GetPrimaryFs()
-	sconn := scaleConnMap["primary"]
-	fsmount := primaryInfo.PrimaryFSMount
-	if primaryInfo.RemoteCluster != "" {
-		sconn = scaleConnMap[primaryInfo.RemoteCluster]
-		if remoteFilesystemName == "" {
-			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Failed to get the name of remote Filesystem")
-		}
-		fs = remoteFilesystemName
-		// check if primary filesystem exists on remote cluster and mounted on atleast one node
-		fsMount, err := sconn.GetFilesystemMountDetails(ctx, fs)
-		if err != nil {
-			klog.Errorf("[%s] Error in getting filesystem details for %s from cluster %s", utils.GetLoggerId(ctx), fs, primaryInfo.RemoteCluster)
-			return scaleConnMap, scaleConfig, primaryInfo, err
-		}
-
-		klog.Infof("[%s] remote fsMount = %v", utils.GetLoggerId(ctx), fsMount)
-		fsmount = fsMount.MountPoint
-
-		// check if filesystem is mounted on GUI node
-		isPfsMounted, err := sconn.IsFilesystemMountedOnGUINode(ctx, fs)
-		if err != nil {
-			klog.Errorf("[%s] Error in getting filesystem mount details for %s from cluster %s", utils.GetLoggerId(ctx), fs, primaryInfo.RemoteCluster)
-			return scaleConnMap, scaleConfig, primaryInfo, err
-		}
-
-		if !isPfsMounted {
-			klog.Errorf("[%s] Filesystem %s is not mounted on GUI node of cluster %s", utils.GetLoggerId(ctx), fs, primaryInfo.RemoteCluster)
-			return scaleConnMap, scaleConfig, primaryInfo, fmt.Errorf("Filesystem %s is not mounted on GUI node of cluster %s", fs, primaryInfo.RemoteCluster)
 		}
 	}
-
-	fsetlinkpath, err := driver.CreatePrimaryFileset(ctx, sconn, fs, fsmount, primaryInfo.PrimaryFset, primaryInfo.GetInodeLimit())
-	if err != nil {
-		klog.Errorf("[%s] Error in creating primary fileset", utils.GetLoggerId(ctx))
-		return scaleConnMap, scaleConfig, primaryInfo, err
-	}
-
-	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
-	if primaryInfo.RemoteCluster != "" {
-		_, err := scaleConnMap["primary"].ListFileset(ctx, primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
-		if err != nil {
-			klog.Infof("[%s] Primary fileset %v not visible on primary cluster. Running fileset refresh task", utils.GetLoggerId(ctx), primaryInfo.PrimaryFset)
-			err = scaleConnMap["primary"].FilesetRefreshTask(ctx)
-			if err != nil {
-				klog.Errorf("[%s] Error in fileset refresh task", utils.GetLoggerId(ctx))
-				return scaleConnMap, scaleConfig, primaryInfo, err
-			}
-		}
-
-		// retry listing fileset again after some time after refresh
-		time.Sleep(8 * time.Second)
-		_, err = scaleConnMap["primary"].ListFileset(ctx, primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFset)
-		if err != nil {
-			klog.Errorf("[%s] Primary fileset %v not visible on primary cluster even after running fileset refresh task", utils.GetLoggerId(ctx), primaryInfo.PrimaryFset)
-			return scaleConnMap, scaleConfig, primaryInfo, err
-		}
-	}
-
-	if fsmount != primaryInfo.PrimaryFSMount {
-		fsetlinkpath = strings.Replace(fsetlinkpath, fsmount, primaryInfo.PrimaryFSMount, 1)
-	}
-
-	// Create directory where volume symlinks will reside
-	symlinkPath, relativePath, err := driver.CreateSymlinkPath(ctx, scaleConnMap["primary"], primaryInfo.GetPrimaryFs(), primaryInfo.PrimaryFSMount, fsetlinkpath)
-	if err != nil {
-		klog.Errorf("[%s] Error in creating volumes directory", utils.GetLoggerId(ctx))
-		return scaleConnMap, scaleConfig, primaryInfo, err
-	}
-	primaryInfo.SymlinkAbsolutePath = symlinkPath
-	primaryInfo.SymlinkRelativePath = relativePath
-	primaryInfo.PrimaryFsetLink = fsetlinkpath
 
 	klog.Infof("[%s] IBM Spectrum Scale: Plugin initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
-}
-
-func (driver *ScaleDriver) CreatePrimaryFileset(ctx context.Context, sc connectors.SpectrumScaleConnector, primaryFS string, fsmount string, filesetName string, inodeLimit string) (string, error) {
-	klog.Infof("[%s] gpfs CreatePrimaryFileset. primaryFS: %s, mountpoint: %s, filesetName: %s", utils.GetLoggerId(ctx), primaryFS, fsmount, filesetName)
-
-	// create primary fileset if not already created
-	fsetResponse, err := sc.ListFileset(ctx, primaryFS, filesetName)
-	linkpath := fsetResponse.Config.Path
-	newlinkpath := path.Join(fsmount, filesetName)
-
-	if err != nil {
-		klog.Errorf("[%s] Primary fileset %s not found. Creating it.", utils.GetLoggerId(ctx), filesetName)
-		opts := make(map[string]interface{})
-		if inodeLimit != "" {
-			opts[connectors.UserSpecifiedInodeLimit] = inodeLimit
-		}
-
-		err = sc.CreateFileset(ctx, primaryFS, filesetName, opts)
-		if err != nil {
-			klog.Errorf("[%s] Unable to create primary fileset %s", utils.GetLoggerId(ctx), filesetName)
-			return "", err
-		}
-		linkpath = newlinkpath
-	} else if linkpath == "" || linkpath == "--" {
-		klog.Infof("[%s] Primary fileset %s not linked. Linking it.", utils.GetLoggerId(ctx), filesetName)
-		err = sc.LinkFileset(ctx, primaryFS, filesetName, newlinkpath)
-		if err != nil {
-			klog.Errorf("[%s] Unable to link primary fileset %s", utils.GetLoggerId(ctx), filesetName)
-			return "", err
-		} else {
-			klog.Infof("[%s] Linked primary fileset %s. Linkpath: %s", utils.GetLoggerId(ctx), newlinkpath, filesetName)
-		}
-		linkpath = newlinkpath
-	} else {
-		klog.Infof("[%s] Primary fileset %s exists and linked at %s", utils.GetLoggerId(ctx), filesetName, linkpath)
-	}
-
-	return linkpath, nil
-}
-
-func (driver *ScaleDriver) CreateSymlinkPath(ctx context.Context, sc connectors.SpectrumScaleConnector, fs string, fsmount string, fsetlinkpath string) (string, string, error) {
-	klog.V(4).Infof("[%s] gpfs CreateSymlinkPath. filesystem: %s, mountpoint: %s, filesetlinkpath: %s", utils.GetLoggerId(ctx), fs, fsmount, fsetlinkpath)
-
-	dirpath := strings.Replace(fsetlinkpath, fsmount, "", 1)
-	dirpath = strings.Trim(dirpath, "!/")
-	fsetlinkpath = strings.TrimSuffix(fsetlinkpath, "/")
-
-	dirpath = fmt.Sprintf("%s/.volumes", dirpath)
-	symlinkpath := fmt.Sprintf("%s/.volumes", fsetlinkpath)
-
-	err := sc.MakeDirectory(ctx, fs, dirpath, "0", "0")
-	if err != nil {
-		klog.Errorf("[%s] Make directory failed on filesystem %s, path = %s", utils.GetLoggerId(ctx), fs, dirpath)
-		return symlinkpath, dirpath, err
-	}
-
-	return symlinkpath, dirpath, nil
-}
-
-// ValidateScaleConfigParameters : Validating the Configuration provided for Spectrum Scale CSI Driver
-func (driver *ScaleDriver) ValidateScaleConfigParameters(ctx context.Context, scaleConfig settings.ScaleSettingsConfigMap) (bool, error) {
-	klog.V(4).Infof("[%s] gpfs ValidateScaleConfigParameters.", utils.GetLoggerId(ctx))
-	if len(scaleConfig.Clusters) == 0 {
-		return false, fmt.Errorf("Missing cluster information in Spectrum Scale configuration")
-	}
-
-	primaryClusterFound := false
-	rClusterForPrimaryFS := ""
-	var cl = make([]string, len(scaleConfig.Clusters))
-	issueFound := false
-
-	for i := 0; i < len(scaleConfig.Clusters); i++ {
-		cluster := scaleConfig.Clusters[i]
-
-		if cluster.ID == "" {
-			issueFound = true
-			klog.Errorf("[%s] Mandatory parameter 'id' is not specified", utils.GetLoggerId(ctx))
-		}
-		if len(cluster.RestAPI) == 0 {
-			issueFound = true
-			klog.Errorf("[%s] Mandatory section 'restApi' is not specified for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
-		}
-		if len(cluster.RestAPI) != 0 && cluster.RestAPI[0].GuiHost == "" {
-			issueFound = true
-			klog.Errorf("[%s] Mandatory parameter 'guiHost' is not specified for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
-		}
-
-		if cluster.Primary != (settings.Primary{}) {
-			if primaryClusterFound {
-				issueFound = true
-				klog.Errorf("[%s] More than one primary clusters specified", utils.GetLoggerId(ctx))
-			}
-
-			primaryClusterFound = true
-
-			if cluster.Primary.GetPrimaryFs() == "" {
-				issueFound = true
-				klog.Errorf("[%s] Mandatory parameter 'primaryFs' is not specified for primary cluster %v", utils.GetLoggerId(ctx), cluster.ID)
-			}
-
-			rClusterForPrimaryFS = cluster.Primary.RemoteCluster
-		} else {
-			cl[i] = cluster.ID
-		}
-
-		if cluster.Secrets == "" {
-			issueFound = true
-			klog.Errorf("[%s] Mandatory parameter 'secrets' is not specified for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
-		}
-
-		if cluster.SecureSslMode && cluster.CacertValue == nil {
-			issueFound = true
-			klog.Errorf("[%s] CA certificate not specified in secure SSL mode for cluster %v", utils.GetLoggerId(ctx), cluster.ID)
-		}
-	}
-
-	if !primaryClusterFound {
-		issueFound = true
-		klog.Errorf("[%s] No primary clusters specified", utils.GetLoggerId(ctx))
-	}
-
-	if rClusterForPrimaryFS != "" && !utils.StringInSlice(rClusterForPrimaryFS, cl) {
-		issueFound = true
-		klog.Errorf("[%s] Remote cluster specified for primary filesystem: %s, but no definition found for it in config", utils.GetLoggerId(ctx), rClusterForPrimaryFS)
-	}
-
-	if issueFound {
-		return false, fmt.Errorf("one or more issue found in Spectrum scale csi driver configuration, check Spectrum Scale csi driver logs")
-	}
-
-	return true, nil
 }
 
 func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {

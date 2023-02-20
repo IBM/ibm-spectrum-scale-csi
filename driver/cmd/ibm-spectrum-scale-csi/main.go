@@ -20,14 +20,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math/rand"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/natefinch/lumberjack"
 	"k8s.io/klog/v2"
-	"math/rand"
-	"os"
-	"path"
-	"time"
 )
 
 // gitCommit that is injected via go build -ldflags "-X main.gitCommit=$(git rev-parse HEAD)"
@@ -46,7 +48,8 @@ var (
 const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
-const hostPath = "/host/var/log/"
+const persistentLog = "PERSISTENT_LOG"
+const hostPath = "/host/var/adm/ras/"
 const rotateSize = 1024
 
 type LoggerLevel int
@@ -62,11 +65,12 @@ const (
 
 func main() {
 	klog.InitFlags(nil)
-	level := getLevel()
+	level, persistentLogEnabled := getLogEnv()
+	logValue, isIncorrectLogLevel := getLogLevel(level)
 	value := getVerboseLevel(level)
-	flag.Set("logtostderr", "false")
-	flag.Set("stderrthreshold", level)
-	flag.Set("v", value)
+	err := flag.Set("logtostderr", "false")
+	err1 := flag.Set("stderrthreshold", logValue)
+	err2 := flag.Set("v", value)
 	flag.Parse()
 
 	defer func() {
@@ -74,11 +78,22 @@ func main() {
 			klog.Infof("Recovered from panic: [%v]", r)
 		}
 	}()
-	fpClose := InitFileLogger()
-	defer fpClose()
+	if persistentLogEnabled == "ENABLED" {
+		fpClose := InitFileLogger()
+		defer fpClose()
+	}
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
+	if err != nil || err1 != nil || err2 != nil {
+		klog.Errorf("[%s] Failed to set flag value", loggerId)
+	}
+
+	if isIncorrectLogLevel {
+		klog.Infof("[%s] logger level is empty or incorrect. Defaulting logValue to INFO", loggerId)
+	} else {
+		klog.Infof("[%s] logValue: %s", loggerId, level)
+	}
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
@@ -132,20 +147,28 @@ func setContext() context.Context {
 	return ctx
 }
 
-func getLevel() string {
+func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
-	var logValue string
-	if level == ""{
-	   klog.Infof("logger level is not set. Defaulting to INFO")
-	}else{
-		klog.Infof("logValue: %s", level)
+	persistentLogEnabled := os.Getenv(persistentLog)
+	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
+		persistentLogEnabled = "DISABLED"
 	}
-	if level == "" || level == DEBUG.String() || level == TRACE.String() {
+	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
+}
+
+func getLogLevel(level string) (string, bool) {
+	var logValue string
+	isIncorrectLogLevel := false
+
+	if !(level == TRACE.String() || level == DEBUG.String() || level == INFO.String() || level == WARNING.String() || level == ERROR.String() || level == FATAL.String()) {
+		isIncorrectLogLevel = true
+	}
+	if level == DEBUG.String() || level == TRACE.String() || isIncorrectLogLevel {
 		logValue = INFO.String()
 	} else {
 		logValue = level
 	}
-	return logValue
+	return logValue, isIncorrectLogLevel
 }
 
 func (level LoggerLevel) String() string {
@@ -182,36 +205,33 @@ func InitFileLogger() func() {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		fileDir, _ := path.Split(filePath)
+		/* #nosec G301 -- false positive */
 		err := os.MkdirAll(fileDir, 0755)
 		if err != nil {
 			panic(fmt.Sprintf("failed to create log folder %v", err))
 		}
 	}
 
+	/* #nosec G302 -- false positive */
 	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init logger %v", err))
 	}
 
-	fileStat, err := logFile.Stat()
-	if err != nil {
-		panic(fmt.Sprintf("failed to stat logger file %v", err))
+	l := &lumberjack.Logger{
+		Filename:   filePath,
+		MaxSize:    rotateSize,
+		MaxBackups: 5,
+		MaxAge:     0,
+		Compress:   true,
 	}
+	klog.SetOutput(l)
 
-	fileStatSize := int(fileStat.Size()) / 1024 / 1024
-
-	// If log file size bigger than rotateSize, will use lumberjack to run the logrotate
-	if fileStatSize < rotateSize {
-		klog.SetOutput(logFile)
-	} else {
-		klog.SetOutput(&lumberjack.Logger{
-			Filename:   filePath,
-			MaxSize:    rotateSize,
-			MaxBackups: 5,
-			MaxAge:     0,
-			Compress:   true,
-		})
+	closeFn := func() {
+		err := logFile.Close()
+		if err != nil {
+			panic(fmt.Sprintf("failed to close log file %v", err))
+		}
 	}
-
-	return func() { logFile.Close() }
+	return closeFn
 }
