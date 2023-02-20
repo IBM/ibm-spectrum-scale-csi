@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -225,8 +226,8 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
 	statsCapability := os.Getenv(volumeStatsCapability)
-	if statsCapability == "ENABLED" {
-		klog.Infof("[%s] volume stats capabililty in node is enabled", utils.GetLoggerId(ctx))
+	if strings.ToUpper(statsCapability) != "DISABLED" {
+		klog.Infof("[%s] volume stats capabililty is enabled", utils.GetLoggerId(ctx))
 		ns := []csi.NodeServiceCapability_RPC_Type{
 			csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
 		}
