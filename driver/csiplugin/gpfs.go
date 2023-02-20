@@ -55,6 +55,7 @@ const (
 
 	defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 	symlinkDir            = ".volumes"
+	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
 )
 
 type SnapCopyJobDetails struct {
@@ -223,8 +224,9 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
-	statsCapability := os.Getenv("VOLUME_STATS_CAPABILITY")
-	if statsCapability == "ENABLED" {
+	statsCapability := os.Getenv(volumeStatsCapability)
+	if statsCapability == utils.EnableCapability {
+		klog.Infof("[%s] volume stats capabililty in node is enabled", utils.GetLoggerId(ctx))
 		ns := []csi.NodeServiceCapability_RPC_Type{
 			csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
 		}

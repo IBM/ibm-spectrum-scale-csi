@@ -19,17 +19,25 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"golang.org/x/sys/unix"
 	"io/ioutil"
-	"k8s.io/klog/v2"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
+	"k8s.io/klog/v2"
 )
 
 const loggerId = "logger_id"
+
+type ControlValue int
+
+const (
+	ENABLED ControlValue = iota
+	DISABLED
+)
 
 func ReadFile(path string) ([]byte, error) {
 	klog.V(6).Infof("utils ReadFile. path: %s", path)
@@ -75,7 +83,7 @@ func GetPath(paths []string) string {
 }
 
 func Exists(path string) bool {
-//	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
+	//	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
@@ -83,7 +91,7 @@ func Exists(path string) bool {
 }
 
 func MkDir(path string) error {
-//	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
+	//	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
