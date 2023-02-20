@@ -19,6 +19,7 @@ package scale
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -222,10 +223,13 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
-	ns := []csi.NodeServiceCapability_RPC_Type{
-		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+	statsCapability := os.Getenv("VOLUME_STATS_CAPABILITY")
+	if statsCapability == "ENABLED" {
+		ns := []csi.NodeServiceCapability_RPC_Type{
+			csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+		}
+		_ = driver.AddNodeServiceCapabilities(ctx, ns)
 	}
-	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
 	driver.ids = NewIdentityServer(ctx, driver)
 	driver.ns = NewNodeServer(ctx, driver)
