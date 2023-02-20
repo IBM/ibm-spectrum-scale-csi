@@ -225,7 +225,7 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
 	statsCapability := os.Getenv(volumeStatsCapability)
-	if statsCapability == utils.EnableCapability {
+	if statsCapability == "ENABLED" {
 		klog.Infof("[%s] volume stats capabililty in node is enabled", utils.GetLoggerId(ctx))
 		ns := []csi.NodeServiceCapability_RPC_Type{
 			csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
