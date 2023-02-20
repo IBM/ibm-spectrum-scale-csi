@@ -19,6 +19,7 @@ package scale
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -54,6 +55,7 @@ const (
 
 	defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 	symlinkDir            = ".volumes"
+	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
 )
 
 type SnapCopyJobDetails struct {
@@ -222,10 +224,14 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
-	ns := []csi.NodeServiceCapability_RPC_Type{
-		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+	statsCapability := os.Getenv(volumeStatsCapability)
+	if statsCapability == "ENABLED" {
+		klog.Infof("[%s] volume stats capabililty in node is enabled", utils.GetLoggerId(ctx))
+		ns := []csi.NodeServiceCapability_RPC_Type{
+			csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+		}
+		_ = driver.AddNodeServiceCapabilities(ctx, ns)
 	}
-	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
 	driver.ids = NewIdentityServer(ctx, driver)
 	driver.ns = NewNodeServer(ctx, driver)
