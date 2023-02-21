@@ -96,8 +96,8 @@ const (
 	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:08721106b949e4f5c7ba34b059e17300d73c8e9495201954edc90eeb3e6d8461"
 	//  registry.k8s.io/sig-storage/csi-provisioner:v3.4.0
 	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:e468dddcd275163a042ab297b2d8c2aca50d5e148d2d22f3b6ba119e2f31fa79"
-	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.0
-	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:0d8d81948af4897bd07b86046424f022f79634ee0315e9f1d4cdb5c1c8d51c90"
+	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.1
+	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:714aa06ccdd3781f1a76487e2dc7592ece9a12ae9e0b726e4f93d1639129b771"
 	//  registry.k8s.io/sig-storage/csi-resizer:v1.7.0
 	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:3a7bdf5d105783d05d0962fa06ca53032b01694556e633f27366201c2881e01d"
 
