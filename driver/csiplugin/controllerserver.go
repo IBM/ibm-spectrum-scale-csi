@@ -1691,6 +1691,8 @@ func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context,
 	for _, cap := range req.VolumeCapabilities {
 		switch cap.GetAccessMode().GetMode() {
 		case csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER:
+		case csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER:
+		case csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER:
 		case csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER:
 		default:
 			return &csi.ValidateVolumeCapabilitiesResponse{Message: ""}, nil
