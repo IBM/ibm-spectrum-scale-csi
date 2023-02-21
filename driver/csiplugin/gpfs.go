@@ -212,6 +212,7 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 		csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 		csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER,
 		csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER,
+		csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
 	}
 	_ = driver.AddVolumeCapabilityAccessModes(ctx, vcam)
 
