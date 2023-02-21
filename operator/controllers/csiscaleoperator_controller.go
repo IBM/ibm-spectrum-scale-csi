@@ -1875,8 +1875,8 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 //directory and error if there is any.
 func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (string, error) {
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
-	primary := r.getPrimaryCluster(instance)
-	if primary == nil {
+	primaryReference := r.getPrimaryCluster(instance)
+	if primaryReference == nil {
 		message := fmt.Sprintf("No primary cluster is defined in the Spectrum Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
 		err := fmt.Errorf(message)
 		logger.Error(err, "")
@@ -1886,6 +1886,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		return "", err
 	}
 
+	primary := *primaryReference
 	sc := scaleConnMap[config.Primary]
 
 	// check if primary filesystem exists
