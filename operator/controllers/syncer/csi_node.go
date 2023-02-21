@@ -80,7 +80,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string, daemonSetSyncData map[string]string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -104,10 +104,11 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 			Name:  key,
 			Value: value,
 		})
-
-		if key == "DRIVER_UPGRADE_MAXUNAVAILABLE" {
-			maxUnavailable = value
-		}
+	}
+	// check if CSIDaemonSetUpgradeMaxUnavailable variable if available or not
+	// This will be for daemonSet spec varibale only, not env of the container.
+	if val, ok := daemonSetSyncData[config.CSIDaemonSetUpgradeMaxUnavailable]; ok {
+		maxUnavailable = val
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
@@ -148,10 +149,27 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
+	var maxUnavailableLocal intstr.IntOrString
 	if len(maxUnavailable) > 0 {
-		logger.Info("UpdateStrategy for RollingUpdate set for ", "MaxUnavailable", maxUnavailable)
-		out.Spec.UpdateStrategy.RollingUpdate.MaxUnavailable.StrVal = maxUnavailable
+		maxUnavailableLocal = intstr.FromString(maxUnavailable)
+	} else {
+		maxUnavailableLocal = intstr.FromInt(1)
 	}
+	logger.Info("UpdateStrategy for RollingUpdate set for ", "MaxUnavailable", maxUnavailableLocal)
+
+	deploy := appsv1.RollingUpdateDaemonSet{
+		MaxUnavailable: &maxUnavailableLocal,
+	}
+
+	var StrategyType appsv1.DaemonSetUpdateStrategyType = "RollingUpdate"
+	strategy := appsv1.DaemonSetUpdateStrategy{
+		RollingUpdate: &deploy,
+		Type:          StrategyType,
+	}
+
+	out.Spec.UpdateStrategy = strategy
+	//reset variable after setting daemonSet spec.
+	maxUnavailable = ""
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err

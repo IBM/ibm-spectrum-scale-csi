@@ -434,17 +434,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	cmData := map[string]string{}
+	daemonSetSyncData := map[string]string{}
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
 	if err == nil && len(cm.Data) != 0 {
-		cmData = parseConfigMap(cm)
+		cmData, daemonSetSyncData = parseConfigMap(cm)
 	} else {
 		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData, daemonSetSyncData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -695,7 +696,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//Do not restart driver pods when the configmap contains invalid Envs.
 	implicitRestartOnCreateDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
 				return true
 			}
 		}
@@ -709,10 +710,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		for key, newVal := range newCfgMapData {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
-				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
 					return true
 				}
-			} else if oldVal != newVal && strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+			} else if (oldVal != newVal && strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || (oldVal != newVal && strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable) {
 				return true
 			}
 		}
@@ -721,7 +722,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || (strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable) {
 					return true
 				}
 			}
@@ -2202,16 +2203,19 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 }
 
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
-func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
+func parseConfigMap(cm *corev1.ConfigMap) (map[string]string, map[string]string) {
 
 	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
 
 	data := map[string]string{}
+	daemonSetSyncData := map[string]string{}
 	invalidEnv := []string{}
 	for key, value := range cm.Data {
 		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
 			data[strings.ToUpper(key[11:])] = value
+		} else if strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
+			daemonSetSyncData[strings.ToUpper(key)] = value
 		} else {
 			invalidEnv = append(invalidEnv, key)
 		}
@@ -2220,7 +2224,7 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
-	return data
+	return data, daemonSetSyncData
 }
 
 func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
