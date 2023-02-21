@@ -67,10 +67,10 @@ const (
 
 var (
 	// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
-	UUID                    string
-	nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
-	cmEnvVars               []corev1.EnvVar
-	maxUnavailable          string
+	UUID                       string
+	nodeContainerHealthPort    = intstr.FromInt(nodeContainerHealthPortNumber)
+	cmEnvVars                  []corev1.EnvVar
+	DaemonMaxUnavailableGlobal string
 )
 
 type csiNodeSyncer struct {
@@ -80,7 +80,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string, daemonSetSyncData map[string]string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string, daemonSetMaxUnavailable string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -98,18 +98,14 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	UUID = CGPrefix
 
 	cmEnvVars = []corev1.EnvVar{}
-	// logger := csiLog.WithName("GetCSIDaemonsetSyncer")
 	for key, value := range envVars {
 		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
 			Name:  key,
 			Value: value,
 		})
 	}
-	// check if CSIDaemonSetUpgradeMaxUnavailable variable if available or not
-	// This will be for daemonSet spec varibale only, not env of the container.
-	if val, ok := daemonSetSyncData[config.CSIDaemonSetUpgradeMaxUnavailable]; ok {
-		maxUnavailable = val
-	}
+
+	DaemonMaxUnavailableGlobal = daemonSetMaxUnavailable
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -150,8 +146,8 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
 	var maxUnavailableLocal intstr.IntOrString
-	if len(maxUnavailable) > 0 {
-		maxUnavailableLocal = intstr.FromString(maxUnavailable)
+	if len(DaemonMaxUnavailableGlobal) > 0 {
+		maxUnavailableLocal = intstr.FromString(DaemonMaxUnavailableGlobal)
 	} else {
 		maxUnavailableLocal = intstr.FromInt(1)
 	}
@@ -169,7 +165,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 
 	out.Spec.UpdateStrategy = strategy
 	//reset variable after setting daemonSet spec.
-	maxUnavailable = ""
+	DaemonMaxUnavailableGlobal = ""
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err
