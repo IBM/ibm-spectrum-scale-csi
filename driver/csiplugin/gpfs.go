@@ -225,14 +225,13 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
+	ns := []csi.NodeServiceCapability_RPC_Type{}
 	statsCapability := os.Getenv(volumeStatsCapability)
 	if strings.ToUpper(statsCapability) != "DISABLED" {
 		klog.Infof("[%s] volume stats capabililty is enabled", utils.GetLoggerId(ctx))
-		ns := []csi.NodeServiceCapability_RPC_Type{
-			csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
-		}
-		_ = driver.AddNodeServiceCapabilities(ctx, ns)
+		ns = append(ns, csi.NodeServiceCapability_RPC_GET_VOLUME_STATS)
 	}
+	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
 	driver.ids = NewIdentityServer(ctx, driver)
 	driver.ns = NewNodeServer(ctx, driver)
