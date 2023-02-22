@@ -70,7 +70,7 @@ var (
 	UUID                       string
 	nodeContainerHealthPort    = intstr.FromInt(nodeContainerHealthPortNumber)
 	cmEnvVars                  []corev1.EnvVar
-	DaemonMaxUnavailableGlobal string
+	daemonMaxUnavailableGlobal string
 )
 
 type csiNodeSyncer struct {
@@ -105,7 +105,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 		})
 	}
 
-	DaemonMaxUnavailableGlobal = daemonSetMaxUnavailable
+	daemonMaxUnavailableGlobal = daemonSetMaxUnavailable
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -145,27 +145,26 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
+	// set daemonSetUpgradeStrategy
 	var maxUnavailableLocal intstr.IntOrString
-	if len(DaemonMaxUnavailableGlobal) > 0 {
-		maxUnavailableLocal = intstr.FromString(DaemonMaxUnavailableGlobal)
+	if len(daemonMaxUnavailableGlobal) > 0 {
+		maxUnavailableLocal = intstr.FromString(daemonMaxUnavailableGlobal)
 	} else {
 		maxUnavailableLocal = intstr.FromInt(1)
 	}
 	logger.Info("UpdateStrategy for RollingUpdate set for ", "MaxUnavailable", maxUnavailableLocal)
-
 	deploy := appsv1.RollingUpdateDaemonSet{
 		MaxUnavailable: &maxUnavailableLocal,
 	}
-
-	var StrategyType appsv1.DaemonSetUpdateStrategyType = "RollingUpdate"
+	var strategyType appsv1.DaemonSetUpdateStrategyType = "RollingUpdate"
 	strategy := appsv1.DaemonSetUpdateStrategy{
 		RollingUpdate: &deploy,
-		Type:          StrategyType,
+		Type:          strategyType,
 	}
-
 	out.Spec.UpdateStrategy = strategy
 	//reset variable after setting daemonSet spec.
-	DaemonMaxUnavailableGlobal = ""
+	daemonMaxUnavailableGlobal = ""
+
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err

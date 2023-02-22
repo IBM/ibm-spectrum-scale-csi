@@ -21,11 +21,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	errpkg "errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -445,6 +447,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 	}
 
+	if len(daemonSetMaxUnavailable) > 0 && !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
+		logger.Error(errpkg.New("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
+		message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value " + daemonSetMaxUnavailable
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData, daemonSetMaxUnavailable)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
@@ -2237,4 +2247,17 @@ func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
 		Message: msg,
 	})
 	rec.Event(instance, eventType, reason, msg)
+}
+
+func validateMaxUnavailableValue(inputMaxunavailable string) bool {
+	logger := csiLog.WithName("validateMaxUnavailableValue")
+	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", inputMaxunavailable)
+	input := strings.TrimSuffix(inputMaxunavailable, "%")
+	if s, err := strconv.Atoi(input); err == nil {
+		logger.Info("daemonset maxunavailable parsed integer ", "inputMaxunavailableInt", s)
+		return true
+	} else {
+		logger.Error(err, " Failed to parse the input maxunvaialble value")
+		return false
+	}
 }
