@@ -230,6 +230,8 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	if strings.ToUpper(statsCapability) != "DISABLED" {
 		klog.Infof("[%s] volume stats capabililty is enabled", utils.GetLoggerId(ctx))
 		ns = append(ns, csi.NodeServiceCapability_RPC_GET_VOLUME_STATS)
+	} else {
+		klog.Infof("[%s] volume stats capabililty is disabled", utils.GetLoggerId(ctx))
 	}
 	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
