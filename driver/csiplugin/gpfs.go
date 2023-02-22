@@ -270,6 +270,11 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 			scaleConnMap["primary"] = sc
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
+
+			//If primary fileset value is not specified then use the default one
+			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
+				scaleConfig.Clusters[i].Primary.PrimaryFset = defaultPrimaryFileset
+			}
 			primaryInfo = scaleConfig.Clusters[i].Primary
 		}
 	}
