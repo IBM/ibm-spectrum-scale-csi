@@ -306,7 +306,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning,
 				string(config.StatusConditionSuccess), metav1.ConditionFalse, string(csiv1.AuthError), message,
 			)
-			return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
+			return ctrl.Result{RequeueAfter: 24 * time.Hour}, nil
 		}
 	}
 
