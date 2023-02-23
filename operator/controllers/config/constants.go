@@ -133,9 +133,10 @@ const (
 	DefaultLogLevel           = "DEBUG"
 
 	// Constants for Optional ConfigMap
-	CSIEnvVarConfigMap                = "ibm-spectrum-scale-csi-config"
-	CSIEnvVarPrefix                   = "VAR_DRIVER_"
-	CSIDaemonSetUpgradeMaxUnavailable = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	CSIEnvVarConfigMap                   = "ibm-spectrum-scale-csi-config"
+	CSIEnvVarPrefix                      = "VAR_DRIVER_"
+	CSIDaemonSetUpgradeMaxUnavailable    = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	CSIDaemonSetUpgradeUpdateStrateyType = "RollingUpdate"
 
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive

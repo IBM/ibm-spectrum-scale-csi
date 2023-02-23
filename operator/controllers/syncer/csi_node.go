@@ -156,7 +156,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	deploy := appsv1.RollingUpdateDaemonSet{
 		MaxUnavailable: &maxUnavailableLocal,
 	}
-	var strategyType appsv1.DaemonSetUpdateStrategyType = "RollingUpdate"
+	var strategyType appsv1.DaemonSetUpdateStrategyType = config.CSIDaemonSetUpgradeUpdateStrateyType
 	strategy := appsv1.DaemonSetUpdateStrategy{
 		RollingUpdate: &deploy,
 		Type:          strategyType,

@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	errpkg "errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -448,8 +447,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	if len(daemonSetMaxUnavailable) > 0 && !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-		logger.Error(errpkg.New("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
-		message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value " + daemonSetMaxUnavailable
+		logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
+		message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value."
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
 		)
