@@ -15,7 +15,7 @@ require (
 require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/moby/sys/mountinfo v0.6.0 // indirect
-	golang.org/x/text v0.3.0 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55 // indirect
 	k8s.io/klog/v2 v2.70.1 // indirect
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect
