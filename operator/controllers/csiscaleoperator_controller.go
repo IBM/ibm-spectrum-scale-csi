@@ -301,7 +301,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		clusters := listGUIPasswdExpiredClusters(instance.Spec.Clusters)
 		if len(clusters) > 0 {
-			message := fmt.Sprintf("Either the username/password is incorrect or the password is expired for the clusterId: %v", clusters)
+			message := fmt.Sprintf("Either the username/password is incorrect or the password is expired for the clusterIds: %v", clusters)
 			logger.Info(message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning,
 				string(config.StatusConditionSuccess), metav1.ConditionFalse, string(csiv1.AuthError), message,
