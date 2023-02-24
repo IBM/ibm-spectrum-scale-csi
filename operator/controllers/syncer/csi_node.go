@@ -19,6 +19,7 @@ package syncer
 import (
 	"errors"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/imdario/mergo"
@@ -98,10 +99,16 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	UUID = CGPrefix
 
 	cmEnvVars = []corev1.EnvVar{}
-	for key, value := range envVars {
+	var keys []string
+	for k := range envVars {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
 		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
-			Name:  key,
-			Value: value,
+			Name:  k,
+			Value: envVars[k],
 		})
 	}
 
