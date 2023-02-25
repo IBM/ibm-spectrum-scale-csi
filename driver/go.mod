@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
-  golang.org/x/net v0.7.0
+        golang.org/x/net v0.7.0
 	golang.org/x/sys v0.5.0
 	google.golang.org/grpc v1.26.0
 	k8s.io/klog/v2 v2.70.1
