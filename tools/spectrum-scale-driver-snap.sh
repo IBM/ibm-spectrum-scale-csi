@@ -187,7 +187,7 @@ if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
       exit 1
 fi
 
-time=$(date +"%m-%d-%Y-%T")
+time=$(date +"%m-%d-%Y-%T"| sed 's/://g')
 logdir=${outdir%/}/ibm-spectrum-scale-csi-logs_$time
 
 klog="$cmd logs --namespace $ns"
@@ -206,6 +206,7 @@ get_csinodes=${logdir}/ibm-spectrum-scale-csi-csinodes
 get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
 describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
 get_version_images=${logdir}/ibm-spectrum-scale-csi-versions
+get_events=${logdir}/ibm-spectrum-scale-csi-events
 
 # kubectl describe operator pod
 operatorName=$($cmd get deployment ibm-spectrum-scale-csi-operator  --namespace "$ns"  | grep -v NAME | awk '{print $1}')
@@ -235,11 +236,11 @@ describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccou
 echo "$describe_label_cmd"
 $describe_label_cmd > "$describe_all_per_label" 2>&1 || :
 
-get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings,csidriver --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
+get_label_cmd="$cmd get cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings,csidriver --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
 echo "$get_label_cmd"
 $get_label_cmd > "$get_all_per_label" 2>&1 || :
 
-get_label_cmd="$cmd get pod --namespace $ns -o wide  -l product=${CSI_SPECTRUM_SCALE_LABEL}"
+get_label_cmd="$cmd get all --namespace $ns -o wide  -l product=${CSI_SPECTRUM_SCALE_LABEL}"
 echo "$get_label_cmd"
 $get_label_cmd >> "$get_all_per_label" 2>&1 || :
 
@@ -247,7 +248,7 @@ get_configmap_cmd="$cmd get configmap spectrum-scale-config --namespace $ns -o y
 echo "$get_configmap_cmd"
 $get_configmap_cmd > "$get_configmap" 2>&1 || :
 
-get_k8snodes_cmd="$cmd get nodes"
+get_k8snodes_cmd="$cmd get nodes --show-labels"
 echo "$get_k8snodes_cmd"
 $get_k8snodes_cmd > "$get_k8snodes" 2>&1 || :
 
@@ -266,6 +267,10 @@ $get_csinodes_cmd >> "$get_csinodes" 2>&1 || :
 get_spectrum_cmd="$cmd describe ds -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator -n $ns"
 echo "$get_spectrum_cmd"
 $get_spectrum_cmd >> "$get_daemonset" 2>&1 || :
+
+get_events_cmd="$cmd get events --namespace $ns"
+echo "$get_events_cmd"
+$get_events_cmd >> "$get_events" 2>&1 || :
 
 if [[ "$cmd" == "oc" ]]
 then
