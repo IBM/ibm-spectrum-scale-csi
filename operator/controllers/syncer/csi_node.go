@@ -19,6 +19,7 @@ package syncer
 import (
 	"errors"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/imdario/mergo"
@@ -67,9 +68,10 @@ const (
 
 var (
 	// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
-	UUID                    string
-	nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
-	cmEnvVars               []corev1.EnvVar
+	UUID                       string
+	nodeContainerHealthPort    = intstr.FromInt(nodeContainerHealthPortNumber)
+	cmEnvVars                  []corev1.EnvVar
+	daemonMaxUnavailableGlobal string
 )
 
 type csiNodeSyncer struct {
@@ -79,7 +81,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string, daemonSetMaxUnavailable string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -97,12 +99,20 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	UUID = CGPrefix
 
 	cmEnvVars = []corev1.EnvVar{}
-	for key, value := range envVars {
+	var keys []string
+	for k := range envVars {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
 		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
-			Name:  key,
-			Value: value,
+			Name:  k,
+			Value: envVars[k],
 		})
 	}
+
+	daemonMaxUnavailableGlobal = daemonSetMaxUnavailable
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
@@ -141,6 +151,26 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	}
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
+
+	// set daemonSetUpgradeStrategy
+	var maxUnavailableLocal intstr.IntOrString
+	if len(daemonMaxUnavailableGlobal) > 0 {
+		maxUnavailableLocal = intstr.FromString(daemonMaxUnavailableGlobal)
+	} else {
+		maxUnavailableLocal = intstr.FromInt(1)
+	}
+	logger.Info("UpdateStrategy for RollingUpdate set for ", "MaxUnavailable", maxUnavailableLocal)
+	deploy := appsv1.RollingUpdateDaemonSet{
+		MaxUnavailable: &maxUnavailableLocal,
+	}
+	var strategyType appsv1.DaemonSetUpdateStrategyType = config.CSIDaemonSetUpgradeUpdateStrateyType
+	strategy := appsv1.DaemonSetUpdateStrategy{
+		RollingUpdate: &deploy,
+		Type:          strategyType,
+	}
+	out.Spec.UpdateStrategy = strategy
+	//reset variable after setting daemonSet spec.
+	daemonMaxUnavailableGlobal = ""
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
