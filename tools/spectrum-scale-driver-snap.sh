@@ -165,6 +165,7 @@ then
   if (oc status &>/dev/null)
   then
     cmd="oc"
+    ns="ibm-spectrum-scale-csi"
   fi
 fi
 
