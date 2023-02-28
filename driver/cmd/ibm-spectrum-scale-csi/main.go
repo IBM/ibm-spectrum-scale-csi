@@ -123,7 +123,7 @@ func handle(ctx context.Context) {
 	driver := driver.GetScaleDriver(ctx)
 	err := driver.SetupScaleDriver(ctx, *driverName, vendorVersion, *nodeID)
 	if err != nil {
-		klog.V(0).Infof("[%s] Failed to initialize Scale CSI Driver: %v", utils.GetLoggerId(ctx), err)
+		klog.Fatalf("[%s] Failed to initialize Scale CSI Driver: %v", utils.GetLoggerId(ctx), err)
 	}
 	driver.Run(ctx, *endpoint)
 }
