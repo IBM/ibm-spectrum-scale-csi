@@ -255,7 +255,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	nodePlugin.Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/sh", "-c", "rm -rf", s.driver.GetSocketPath()},
+				Command: []string{"/bin/sh", "-c", "rm -rf " + s.driver.GetSocketPath()},
 			},
 		},
 	}
