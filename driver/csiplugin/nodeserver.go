@@ -45,16 +45,17 @@ const errStaleNFSFileHandle = "stale NFS file handle"
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
 // corresponding error.
-func checkGpfsType(path string) (bool error) {
-	args := []string{"-f", "-c", "%T", path}
-	out, err := executeCmd("stat", args)
-	if err != nil {
-		return fmt.Errorf("checkGpfsType: failed to get type of file with stat of [%s]. Error [%v]", path, err)
+func checkGpfsType(path string, gpfsPaths []string) error {
+	klog.Infof("vol path:[%s]", path)
+	isGpfsPath := false
+	for _, gpfsPath := range gpfsPaths {
+		if string.Contains(path, gpfsPath) {
+			isGpfsPath = true
+			break
+		}
 	}
-	outString := fmt.Sprintf("%s", out)
-	outString = strings.TrimRight(outString, "\n")
-	if outString != "gpfs" {
-		return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path, the path is of type [%s]", strings.TrimPrefix(path, hostDir), outString)
+	if !isGpfsPath {
+		return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path", strings.TrimPrefix(path, hostDir))
 	}
 	return nil
 }
@@ -105,7 +106,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		klog.Infof("[%s] NodePublishVolume - symlink tarrget path is [%s]\n", loggerId, volScalePathInContainer)
 	}
 
-	err = checkGpfsType(volScalePathInContainer)
+	err = checkGpfsType(volScalePathInContainer, ns.Driver.gpfsPath)
 	if err != nil {
 		klog.Errorf("[%s] NodePublishVolume - the path [%v] is not a valid gpfs path", loggerId, volScalePathInContainer)
 		return nil, err
@@ -137,7 +138,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	//check for the gpfs type again, if not gpfs type, unmount and return error.
-	err = checkGpfsType(volScalePathInContainer)
+	err = checkGpfsType(volScalePathInContainer, ns.Driver.gpfsPath)
 	if err != nil {
 		uerr := mount.New("").Unmount(targetPath)
 		if uerr != nil {

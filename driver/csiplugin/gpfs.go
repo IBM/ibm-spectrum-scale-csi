@@ -19,6 +19,8 @@ package scale
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,9 +112,10 @@ type ScaleDriver struct {
 	// clusterMap map stores the cluster name as key and cluster details as value.
 	clusterMap sync.Map
 
-	vcap  []*csi.VolumeCapability_AccessMode
-	cscap []*csi.ControllerServiceCapability
-	nscap []*csi.NodeServiceCapability
+	vcap     []*csi.VolumeCapability_AccessMode
+	cscap    []*csi.ControllerServiceCapability
+	nscap    []*csi.NodeServiceCapability
+	gpfsPath []string
 }
 
 func GetScaleDriver(ctx context.Context) *ScaleDriver {
@@ -138,8 +141,9 @@ func NewControllerServer(ctx context.Context, d *ScaleDriver, connMap map[string
 	}
 }
 
-func NewNodeServer(ctx context.Context, d *ScaleDriver) *ScaleNodeServer {
+func NewNodeServer(ctx context.Context, d *ScaleDriver, gpfsPaths []string) *ScaleNodeServer {
 	klog.Infof("[%s] gpfs NewNodeServer", utils.GetLoggerId(ctx))
+	d.gpfsPath = gpfsPaths
 	return &ScaleNodeServer{
 		Driver: d,
 	}
@@ -227,8 +231,10 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
+	gpfsPath := driver.GetGpfsPaths()
+
 	driver.ids = NewIdentityServer(ctx, driver)
-	driver.ns = NewNodeServer(ctx, driver)
+	driver.ns = NewNodeServer(ctx, driver, gpfsPath)
 	driver.cs = NewControllerServer(ctx, driver, scmap, cmap, primary)
 	return nil
 }
@@ -275,4 +281,25 @@ func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {
 	s := NewNonBlockingGRPCServer()
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()
+}
+
+func (driver *ScaleDriver) GetGpfsPaths(ctx context.Context) []string {
+	var gpfsPaths []string
+	gpfsPathCmd := `cat /proc/mounts | grep -i "gpfs"`
+	cmd := exec.Command("bash", "-c", gpfsPathCmd)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
+	}
+	outputPaths := string(output)
+	strOutput := strings.Split(outputPaths, "\n")
+	for _, out := range strOutput {
+		finalOutput := strings.Split(out, " ")
+		if len(finalOutput) == 6 {
+			if finalOutput[1] != "" {
+				gpfsPaths = append(gpfsPaths, finalOutput[1])
+			}
+		}
+	}
+	return gpfsPaths
 }
