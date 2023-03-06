@@ -252,6 +252,14 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 
 	nodePlugin.SecurityContext = sc
 
+	nodePlugin.Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{"/bin/sh", "-c", "rm -f " + s.driver.GetSocketPath()},
+			},
+		},
+	}
+
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
 		s.getImage(config.CSINodeDriverRegistrar),
@@ -261,13 +269,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	registrar.Lifecycle = &corev1.Lifecycle{
-		PreStop: &corev1.LifecycleHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/sh", "-c", "rm -rf", s.driver.GetSocketPath()},
-			},
-		},
-	}
+
 	// registrar.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.True()}
 	registrar.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True()}
 	// fillSecurityContextCapabilities(registrar.SecurityContext)
