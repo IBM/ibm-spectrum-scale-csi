@@ -17,15 +17,16 @@
 package scale
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 
 	"k8s.io/klog/v2"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"golang.org/x/net/context"
 	"k8s.io/mount-utils"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -45,11 +46,11 @@ const errStaleNFSFileHandle = "stale NFS file handle"
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
 // corresponding error.
-func checkGpfsType(path string, gpfsPaths []string) error {
-	klog.Infof("vol path:[%s]", path)
+func checkGpfsType(ctx context.Context, path string) error {
+	gpfsPaths := getGpfsPaths(ctx)
 	isGpfsPath := false
 	for _, gpfsPath := range gpfsPaths {
-		if string.Contains(path, gpfsPath) {
+		if strings.Contains(path, gpfsPath) {
 			isGpfsPath = true
 			break
 		}
@@ -58,6 +59,27 @@ func checkGpfsType(path string, gpfsPaths []string) error {
 		return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path", strings.TrimPrefix(path, hostDir))
 	}
 	return nil
+}
+
+func getGpfsPaths(ctx context.Context) []string {
+	var gpfsPaths []string
+	gpfsPathCmd := `cat /proc/mounts | grep -i "gpfs"`
+	cmd := exec.Command("bash", "-c", gpfsPathCmd)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
+	}
+	outputPaths := string(output)
+	strOutput := strings.Split(outputPaths, "\n")
+	for _, out := range strOutput {
+		finalOutput := strings.Split(out, " ")
+		if len(finalOutput) == 6 {
+			if finalOutput[1] != "" {
+				gpfsPaths = append(gpfsPaths, finalOutput[1])
+			}
+		}
+	}
+	return gpfsPaths
 }
 
 func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
@@ -106,7 +128,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		klog.Infof("[%s] NodePublishVolume - symlink tarrget path is [%s]\n", loggerId, volScalePathInContainer)
 	}
 
-	err = checkGpfsType(volScalePathInContainer, ns.Driver.gpfsPath)
+	err = checkGpfsType(ctx, volScalePathInContainer)
 	if err != nil {
 		klog.Errorf("[%s] NodePublishVolume - the path [%v] is not a valid gpfs path", loggerId, volScalePathInContainer)
 		return nil, err
@@ -138,7 +160,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	//check for the gpfs type again, if not gpfs type, unmount and return error.
-	err = checkGpfsType(volScalePathInContainer, ns.Driver.gpfsPath)
+	err = checkGpfsType(ctx, volScalePathInContainer)
 	if err != nil {
 		uerr := mount.New("").Unmount(targetPath)
 		if uerr != nil {
