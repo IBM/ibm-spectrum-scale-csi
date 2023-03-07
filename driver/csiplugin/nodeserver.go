@@ -54,7 +54,7 @@ func checkGpfsType(ctx context.Context, path string) (bool error) {
 	gpfsPaths := getGpfsPaths(ctx)
 	isGpfsPath := false
 	for _, gpfsPath := range gpfsPaths {
-		if strings.Contains(path, gpfsPath) {
+		if strings.HasPrefix(path, gpfsPath) {
 			isGpfsPath = true
 			break
 		}
