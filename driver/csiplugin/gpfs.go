@@ -19,6 +19,8 @@ package scale
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -54,6 +56,7 @@ const (
 
 	defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 	symlinkDir            = ".volumes"
+	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
 )
 
 type SnapCopyJobDetails struct {
@@ -223,8 +226,13 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 
-	ns := []csi.NodeServiceCapability_RPC_Type{
-		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+	ns := []csi.NodeServiceCapability_RPC_Type{}
+	statsCapability := os.Getenv(volumeStatsCapability)
+	if strings.ToUpper(statsCapability) != "DISABLED" {
+		klog.Infof("[%s] volume stats capabililty is enabled", utils.GetLoggerId(ctx))
+		ns = append(ns, csi.NodeServiceCapability_RPC_GET_VOLUME_STATS)
+	} else {
+		klog.Infof("[%s] volume stats capabililty is disabled", utils.GetLoggerId(ctx))
 	}
 	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
@@ -263,6 +271,11 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 			scaleConnMap["primary"] = sc
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
+
+			//If primary fileset value is not specified then use the default one
+			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
+				scaleConfig.Clusters[i].Primary.PrimaryFset = defaultPrimaryFileset
+			}
 			primaryInfo = scaleConfig.Clusters[i].Primary
 		}
 	}
