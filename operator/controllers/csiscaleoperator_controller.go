@@ -2214,16 +2214,34 @@ func parseConfigMap(cm *corev1.ConfigMap) (map[string]string, string) {
 	data := map[string]string{}
 	var daemonSetMaxUnavailable string
 	invalidEnv := []string{}
+	invalidEnvValue := map[string]string{}
 	for key, value := range cm.Data {
-		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
-			data[strings.ToUpper(key[11:])] = value
-		} else if strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
-			daemonSetMaxUnavailable = strings.ToUpper(value)
+		logger.Info("Each input key ", "parseConfigMap", key)
+		keyUpper := strings.ToUpper(key)
+		valueUpper := strings.ToUpper(value)
+		if containsStringInSlice(config.CSIOptionalConfigMapKeys[:], keyUpper) {
+			logger.Info("Validated right key ", "containsStringInSlice", key, "valueUpper", valueUpper)
+			if strings.HasPrefix(keyUpper, config.CSIEnvVarPrefix) {
+				switch keyUpper {
+				case config.CSIEnvVarLogLevel:
+					checkStringExistsOrInvalidValue(config.CSILogLevels[:], keyUpper, valueUpper, data, invalidEnvValue)
+				case config.CSIEnvVarPersistentLog:
+					checkStringExistsOrInvalidValue(config.CSIPersistentLogValues[:], keyUpper, valueUpper, data, invalidEnvValue)
+				case config.CSIEnvVarNodePublishMethod:
+					checkStringExistsOrInvalidValue(config.CSINodePublishMethods[:], keyUpper, valueUpper, data, invalidEnvValue)
+				}
+			} else if keyUpper == config.CSIDaemonSetUpgradeMaxUnavailable {
+				daemonSetMaxUnavailable = valueUpper
+			}
 		} else {
+			logger.Info("Validated wrong key ", "Not in containsStringInSlice", key)
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
-	if len(invalidEnv) > 0 {
+	logger.Info("Final parsed data ", "parseConfigMap", data)
+	logger.Info("Final invalidEnv ", "parseConfigMap", invalidEnv)
+	logger.Info("Final invalidEnvValue ", "parseConfigMap", invalidEnvValue)
+	if len(invalidEnv) > 0 || len(invalidEnvValue) > 0 {
 		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
@@ -2251,5 +2269,26 @@ func validateMaxUnavailableValue(inputMaxunavailable string) bool {
 	} else {
 		logger.Error(err, " Failed to parse the input maxunvaialble value")
 		return false
+	}
+}
+
+// containsStringInSlice checks if a string is present in a slice
+func containsStringInSlice(inputSlice []string, stringToFind string) bool {
+	for _, v := range inputSlice {
+		if v == stringToFind {
+			return true
+		}
+	}
+	return false
+}
+
+// checkStringExistsOrInvalidValue checks if a variable present in the allowed variable value
+//If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
+//or if value is not correct as set in the allowed lists , then add wrong data into invalid map
+func checkStringExistsOrInvalidValue(inputSlice []string, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	if containsStringInSlice(inputSlice, value) {
+		data[key[11:]] = value
+	} else {
+		invalidEnvValue[key] = value
 	}
 }

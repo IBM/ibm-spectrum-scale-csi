@@ -132,17 +132,24 @@ const (
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 	DefaultLogLevel           = "DEBUG"
 
+	//Default imagePullSecrets
+	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
+	ImagePullSecretEntitlementKey = "ibm-entitlement-key"
+
 	// Constants for Optional ConfigMap
 	CSIEnvVarConfigMap                   = "ibm-spectrum-scale-csi-config"
 	CSIEnvVarPrefix                      = "VAR_DRIVER_"
+	CSIEnvVarLogLevel                    = "VAR_DRIVER_LOGLEVEL"
+	CSIEnvVarPersistentLog               = "VAR_DRIVER_PERSISTENT_LOG"
+	CSIEnvVarNodePublishMethod           = "VAR_DRIVER_NODEPUBLISH_METHOD"
 	CSIDaemonSetUpgradeMaxUnavailable    = "DRIVER_UPGRADE_MAXUNAVAILABLE"
 	CSIDaemonSetUpgradeUpdateStrateyType = "RollingUpdate"
-
-	//Default imagePullSecrets
-	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
-	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
-
 )
+
+var CSIOptionalConfigMapKeys = [4]string{CSIEnvVarLogLevel, CSIEnvVarPersistentLog, CSIEnvVarNodePublishMethod, CSIDaemonSetUpgradeMaxUnavailable}
+var CSILogLevels = [6]string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
+var CSINodePublishMethods = [2]string{"SYMLINK", "BINDMOUNT"}
+var CSIPersistentLogValues = [2]string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"
