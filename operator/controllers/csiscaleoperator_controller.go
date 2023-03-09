@@ -441,7 +441,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	if err == nil && len(cm.Data) != 0 {
-		cmData, daemonSetMaxUnavailable = parseConfigMap(cm)
+		cmData, daemonSetMaxUnavailable = r.parseConfigMap(instance, cm)
 	} else {
 		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 	}
@@ -2206,7 +2206,7 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 }
 
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
-func parseConfigMap(cm *corev1.ConfigMap) (map[string]string, string) {
+func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) (map[string]string, string) {
 
 	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
@@ -2216,33 +2216,31 @@ func parseConfigMap(cm *corev1.ConfigMap) (map[string]string, string) {
 	invalidEnv := []string{}
 	invalidEnvValue := map[string]string{}
 	for key, value := range cm.Data {
-		logger.Info("Each input key ", "parseConfigMap", key)
 		keyUpper := strings.ToUpper(key)
-		valueUpper := strings.ToUpper(value)
 		if containsStringInSlice(config.CSIOptionalConfigMapKeys[:], keyUpper) {
-			logger.Info("Validated right key ", "containsStringInSlice", key, "valueUpper", valueUpper)
 			if strings.HasPrefix(keyUpper, config.CSIEnvVarPrefix) {
 				switch keyUpper {
 				case config.CSIEnvVarLogLevel:
-					checkStringExistsOrInvalidValue(config.CSILogLevels[:], keyUpper, valueUpper, data, invalidEnvValue)
+					checkStringExistsOrInvalidValue(config.CSILogLevels[:], keyUpper, value, data, invalidEnvValue)
 				case config.CSIEnvVarPersistentLog:
-					checkStringExistsOrInvalidValue(config.CSIPersistentLogValues[:], keyUpper, valueUpper, data, invalidEnvValue)
+					checkStringExistsOrInvalidValue(config.CSIPersistentLogValues[:], keyUpper, value, data, invalidEnvValue)
 				case config.CSIEnvVarNodePublishMethod:
-					checkStringExistsOrInvalidValue(config.CSINodePublishMethods[:], keyUpper, valueUpper, data, invalidEnvValue)
+					checkStringExistsOrInvalidValue(config.CSINodePublishMethods[:], keyUpper, value, data, invalidEnvValue)
 				}
 			} else if keyUpper == config.CSIDaemonSetUpgradeMaxUnavailable {
-				daemonSetMaxUnavailable = valueUpper
+				daemonSetMaxUnavailable = value
 			}
 		} else {
-			logger.Info("Validated wrong key ", "Not in containsStringInSlice", key)
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
-	logger.Info("Final parsed data ", "parseConfigMap", data)
-	logger.Info("Final invalidEnv ", "parseConfigMap", invalidEnv)
-	logger.Info("Final invalidEnvValue ", "parseConfigMap", invalidEnvValue)
+	logger.Info("Final accepted value ", "from the optional configmap", data)
 	if len(invalidEnv) > 0 || len(invalidEnvValue) > 0 {
-		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+		message := fmt.Sprintf("There are few entries %v with wrong key and few having wrong values %v in the configmap %s which will not be processed", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
+		logger.Info(message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+		)
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data, daemonSetMaxUnavailable
