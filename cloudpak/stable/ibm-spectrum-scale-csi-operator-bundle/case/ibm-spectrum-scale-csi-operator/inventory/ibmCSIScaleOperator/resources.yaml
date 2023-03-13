@@ -10,24 +10,24 @@ resources:
         name: ibm_spectrum_scale_csi_driver
       image: cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver
       tag: v2.9.0
-      digest: sha256:86e0138bec8189eefb1eb6cc90885e930a333444c1077ca75df33266efc83f86
+      digest: sha256:573b3b2d349359d7871d53060a0fc7df6e03de2e2900d1be46b4146ab1972fb7
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:0a46877fd081e2998b5dc5ed58379daeeb0d8594e5b33246e7facd119e60a24a
+      - digest: sha256:b096fbf1e3ab0f1900f64a38fa5536166a90e537ded6152e40336c1b3cdcf28d
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
         tag: v2.9.0-amd64
-      - digest: sha256:5b25be93c7a6e68bbbf74721998139a252fb40e554fd393b7d9553746b18d33c
+      - digest: sha256:38469ec0a56af0f0e0b26fd45b310caa0a026a36fcdc1dbe6f0effb16eb9f40b
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
         tag: v2.9.0-ppc64le
-      - digest: sha256:70a716ba29f159859f87905e63d25a8f269f8d6bb1d4fc86e2afda44cca0d457
+      - digest: sha256:d9c91d71d22586796d2e309a68ddc92d15024e3ad088c6508ed3572ce7f2efdd
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
