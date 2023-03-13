@@ -2289,7 +2289,7 @@ func containsStringInSlice(inputSlice []string, stringToFind string) bool {
 //If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
 //or if value is not correct as set in the allowed lists , then add wrong data into invalid map
 func checkStringExistsOrInvalidValue(inputSlice []string, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	if containsStringInSlice(inputSlice, value) {
+	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
 		data[key[11:]] = value
 	} else {
 		invalidEnvValue[key] = value
