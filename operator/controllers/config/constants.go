@@ -143,6 +143,8 @@ const (
 	CSIEnvVarPersistentLog               = "VAR_DRIVER_PERSISTENT_LOG"
 	CSIEnvVarNodePublishMethod           = "VAR_DRIVER_NODEPUBLISH_METHOD"
 	CSIDaemonSetUpgradeMaxUnavailable    = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	CSIEnvLogLevelKey                    = "LOGLEVEL"
+	CSIEnvLogLevelDefaultValue           = "INFO"
 	CSIDaemonSetUpgradeUpdateStrateyType = "RollingUpdate"
 )
 

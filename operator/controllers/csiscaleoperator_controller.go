@@ -2234,6 +2234,11 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
+	// Set default LogLevel when log level not provided in the configMap
+	if _, ok := data[config.CSIEnvLogLevelKey]; !ok {
+		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to INFO", config.CSIEnvLogLevelDefaultValue)
+		data[config.CSIEnvLogLevelKey] = config.CSIEnvLogLevelDefaultValue
+	}
 	logger.Info("Final accepted value ", "from the optional configmap", data)
 	if len(invalidEnv) > 0 || len(invalidEnvValue) > 0 {
 		message := fmt.Sprintf("There are few entries %v with wrong key and few having wrong values %v in the configmap %s which will not be processed", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
@@ -2284,7 +2289,7 @@ func containsStringInSlice(inputSlice []string, stringToFind string) bool {
 //If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
 //or if value is not correct as set in the allowed lists , then add wrong data into invalid map
 func checkStringExistsOrInvalidValue(inputSlice []string, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
+	if containsStringInSlice(inputSlice, value) {
 		data[key[11:]] = value
 	} else {
 		invalidEnvValue[key] = value
