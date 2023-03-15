@@ -64,16 +64,6 @@ func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool
 	return false, nil
 }
 
-func (cs *ScaleControllerServer) GetPriConnAndSLnkPath() (connectors.SpectrumScaleConnector, string, string, string, string, string, error) {
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-
-	if isprimaryConnPresent {
-		return primaryConn, cs.Driver.primary.SymlinkRelativePath, cs.Driver.primary.GetPrimaryFs(), cs.Driver.primary.PrimaryFSMount, cs.Driver.primary.SymlinkAbsolutePath, cs.Driver.primary.PrimaryCid, nil
-	}
-
-	return nil, "", "", "", "", "", status.Error(codes.Internal, "Primary connector not present in configMap")
-}
-
 // createLWVol: Create lightweight volume - return relative path of directory created
 func (cs *ScaleControllerServer) createLWVol(ctx context.Context, scVol *scaleVolume) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
@@ -532,9 +522,9 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 	return strings.Join(invalidParams[:], ", "), false
 }
 
-func (cs *ScaleControllerServer) getSymlinkDirPaths(ctx context.Context) (error, string, string) {
+func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (error, connectors.SpectrumScaleConnector, string, string, string, string, string) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] getSymlinkDirPaths", loggerId)
+	klog.Infof("[%s] getPrimaryClusterDetails", loggerId)
 
 	symlinkDirAbsolutePath := ""
 	symlinkDirRelativePath := ""
@@ -544,12 +534,13 @@ func (cs *ScaleControllerServer) getSymlinkDirPaths(ctx context.Context) (error,
 	primaryFset := cs.Driver.primary.PrimaryFset
 
 	// check if primary filesystem exists
-	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(context.TODO(), primaryFS)
+	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
 	if err != nil {
 		klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
-		return err, symlinkDirAbsolutePath, symlinkDirRelativePath
+		return err, nil, "", "", "", "", ""
 	}
 
+	primaryFSMount := fsMountInfo.MountPoint
 	// If primary fset is not specified, then use default
 	if primaryFset == "" {
 		primaryFset = defaultPrimaryFileset
@@ -559,7 +550,22 @@ func (cs *ScaleControllerServer) getSymlinkDirPaths(ctx context.Context) (error,
 	symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
 	klog.Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
 
-	return nil, symlinkDirAbsolutePath, symlinkDirRelativePath
+	return err, primaryConn, symlinkDirRelativePath, cs.Driver.primary.GetPrimaryFs(), primaryFSMount, symlinkDirAbsolutePath, cs.Driver.primary.PrimaryCid
+}
+
+func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (error, string) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] getPrimaryFSMountPoint", loggerId)
+
+	primaryConn := cs.Driver.connmap["primary"]
+	primaryFS := cs.Driver.primary.GetPrimaryFs()
+	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
+	if err != nil {
+		klog.Errorf("[%s] Failed to get details of primary filesystem %s:Error: %v", loggerId, primaryFS, err)
+		return status.Error(codes.NotFound, fmt.Sprintf("Failed to get details of primary filesystem %s. Error: %v", primaryFS, err)), ""
+
+	}
+	return nil, fsMountInfo.MountPoint
 }
 
 // CreateVolume - Create Volume
@@ -620,21 +626,16 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	/* Get details for Primary Cluster */
-	pConn, _, PFS, PFSMount, _, PCid, err := cs.GetPriConnAndSLnkPath()
-
-	if err != nil {
-		return nil, err
-	}
-	err, PSLnkPath, PSLnkRelPath := cs.getSymlinkDirPaths(ctx)
+	err, primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID := cs.getPrimaryClusterDetails(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	scaleVol.PrimaryConnector = pConn
-	scaleVol.PrimarySLnkRelPath = PSLnkRelPath
-	scaleVol.PrimaryFS = PFS
-	scaleVol.PrimaryFSMount = PFSMount
-	scaleVol.PrimarySLnkPath = PSLnkPath
+	scaleVol.PrimaryConnector = primaryConn
+	scaleVol.PrimarySLnkRelPath = symlinkDirRelativePath
+	scaleVol.PrimaryFS = primaryFS
+	scaleVol.PrimaryFSMount = primaryFSMount
+	scaleVol.PrimarySLnkPath = symlinkDirAbsolutePath
 
 	volSrc := req.GetVolumeContentSource()
 	isSnapSource := false
@@ -745,8 +746,8 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 				klog.Infof("[%s] volume filesystem %s is remotely mounted on Primary cluster, using owning cluster ID %s.", loggerId, scaleVol.LocalFS, remoteClusterID)
 				scaleVol.ClusterId = remoteClusterID
 			} else {
-				klog.Infof("[%s] volume filesystem %s is locally mounted on Primary cluster, using primary cluster ID %s.", loggerId, scaleVol.LocalFS, PCid)
-				scaleVol.ClusterId = PCid
+				klog.Infof("[%s] volume filesystem %s is locally mounted on Primary cluster, using primary cluster ID %s.", loggerId, scaleVol.LocalFS, primaryClusterID)
+				scaleVol.ClusterId = primaryClusterID
 			}
 		}
 		conn, err := cs.getConnFromClusterID(ctx, scaleVol.ClusterId)
@@ -756,7 +757,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		scaleVol.Connector = conn
 	} else {
 		scaleVol.Connector = scaleVol.PrimaryConnector
-		scaleVol.ClusterId = PCid
+		scaleVol.ClusterId = primaryClusterID
 	}
 
 	if isNewVolumeType {
@@ -765,7 +766,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 	if isVolSource {
-		err = cs.validateCloneRequest(ctx, &srcVolumeIDMembers, scaleVol, PCid, volFsInfo)
+		err = cs.validateCloneRequest(ctx, &srcVolumeIDMembers, scaleVol, primaryClusterID, volFsInfo)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source volume validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -774,7 +775,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		err = cs.validateSnapId(ctx, &snapIdMembers, scaleVol, PCid)
+		err = cs.validateSnapId(ctx, &snapIdMembers, scaleVol, primaryClusterID)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -1107,7 +1108,11 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		response, err = conn.WaitForJobCompletionWithResp(ctx, jobStatus, jobID)
 	} else {
-		sLinkRelPath := strings.Replace(sourcevolume.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
+		err, primaryFSMountPoint := cs.getPrimaryFSMountPoint(ctx)
+		if err != nil {
+			return err
+		}
+		sLinkRelPath := strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(ctx, sourcevolume.FsName, sLinkRelPath, targetPath, newvolume.NodeClass)
@@ -1603,7 +1608,11 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
-		relPath = strings.Replace(volumeIdMembers.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
+		err, primaryFSMountPoint := cs.getPrimaryFSMountPoint(ctx)
+		if err != nil {
+			return nil, err
+		}
+		relPath = strings.Replace(volumeIdMembers.Path, primaryFSMountPoint, "", 1)
 	}
 	relPath = strings.Trim(relPath, "!/")
 
@@ -2007,7 +2016,11 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		klog.V(4).Infof("[%s] CreateSnapshot - creating snapshot for classic storageClass", loggerId)
-		relPath = strings.Replace(volumeIDMembers.Path, cs.Driver.primary.PrimaryFSMount, "", 1)
+		err, primaryFSMountPoint := cs.getPrimaryFSMountPoint(ctx)
+		if err != nil {
+			return nil, err
+		}
+		relPath = strings.Replace(volumeIDMembers.Path, primaryFSMountPoint, "", 1)
 	}
 	relPath = strings.Trim(relPath, "!/")
 

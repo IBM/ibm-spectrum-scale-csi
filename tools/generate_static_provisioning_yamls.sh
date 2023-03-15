@@ -211,7 +211,7 @@ if [ ! -z "$MPARAM" ]; then
   usage
 fi
 
-if [[ ! -z "${VOLPATH}" && ! -z "${FSETNAME}" ]]; then
+if [[ -z "${VOLPATH}" && -z "${FSETNAME}" ]]; then
   echo "ERROR: Missing parameter. Either 'path' or 'fileset' is mandatory."
   usage
 fi
@@ -261,6 +261,8 @@ if ! [[ -z "${CLASS}" ]]; then
     exit 2
   fi
   STORAGECLASS="storageClassName: ${CLASS}"
+else
+  STORAGECLASS="storageClassName: \"\""
 fi
 
 # Check if this is spectrum scale node

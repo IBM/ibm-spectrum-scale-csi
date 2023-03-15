@@ -7,8 +7,8 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
-	golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
+	golang.org/x/net v0.7.0
+	golang.org/x/sys v0.5.0
 	google.golang.org/grpc v1.26.0
 	k8s.io/klog/v2 v2.70.1
 	k8s.io/mount-utils v0.25.3
@@ -17,7 +17,7 @@ require (
 require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/moby/sys/mountinfo v0.6.0 // indirect
-	golang.org/x/text v0.3.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -26,6 +26,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -73,8 +74,8 @@ type CSIScaleOperatorReconciler struct {
 
 const MinControllerReplicas = 1
 
-var daemonSetRestartedKey = ""
-var daemonSetRestartedValue = ""
+var restartedAtKey = ""
+var restartedAtValue = ""
 
 var csiLog = log.Log.WithName("csiscaleoperator_controller")
 
@@ -358,7 +359,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance)
+	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerAttacher, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -373,7 +374,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance)
+	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -388,7 +389,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance)
+	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -403,7 +404,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance)
+	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerResizer, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -434,17 +435,26 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	cmData := map[string]string{}
+	var daemonSetMaxUnavailable string
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
 	if err == nil && len(cm.Data) != 0 {
-		cmData = parseConfigMap(cm)
+		cmData, daemonSetMaxUnavailable = parseConfigMap(cm)
 	} else {
 		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, daemonSetRestartedKey, daemonSetRestartedValue, CGPrefix, cmData)
+	if len(daemonSetMaxUnavailable) > 0 && !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
+		logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
+		message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value"
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData, daemonSetMaxUnavailable)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -496,7 +506,7 @@ func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleopera
 				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
 			)
 		} else {
-			daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
+			restartedAtKey, restartedAtValue = r.getRestartedAtAnnotation(daemonSet.Spec.Template.ObjectMeta.Annotations)
 		}
 	}
 	return err
@@ -693,9 +703,9 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//update daemonset and restart its pods(driver pods) when optional configmap ibm-spectrum-scale-csi having valid env vars
 	//ie. in the format VAR_DRIVER_ENV: VAL, is created/deleted
 	//Do not restart driver pods when the configmap contains invalid Envs.
-	implicitRestartOnCreateDelete := func(cfgmapData map[string]string) bool {
+	shouldRequeueOnCreateOrDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
 				return true
 			}
 		}
@@ -705,14 +715,14 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	//Allow implicit restart of driver pods when returns true
 	//implicit restart occurs automatically based on daemonset updateStretegy when a daemonset gets updated
-	implicitRestartOnUpdate := func(oldCfgMapData, newCfgMapData map[string]string) bool {
+	shouldRequeueOnUpdate := func(oldCfgMapData, newCfgMapData map[string]string) bool {
 		for key, newVal := range newCfgMapData {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
-				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
 					return true
 				}
-			} else if oldVal != newVal && strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable) {
 				return true
 			}
 		}
@@ -721,7 +731,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || (strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable) {
 					return true
 				}
 			}
@@ -730,39 +740,55 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	predicateFuncs := func(resourceKind string) predicate.Funcs {
+		logger := csiLog.WithName("predicateFuncs")
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
 					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
-						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
+						if shouldRequeueOnCreateOrDelete(e.Object.(*corev1.ConfigMap).Data) {
+							r.setRestartedAtValues()
+							logger.Info("Restarting driver and sidecar pods due to creation of", "Resource", resourceKind, "Name", e.Object.GetName())
+							return true
+						}
 					} else {
-						r.restartDriverPods(mgr, "created", resourceKind, e.Object.GetName())
+						logger.Info("Restarting driver and sidecar pods due to creation of", "Resource", resourceKind, "Name", e.Object.GetName())
+						r.setRestartedAtValues()
+						return true
 					}
-					return true
 				}
 				return false
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
 					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
-						r.restartDriverPods(mgr, "updated", resourceKind, e.ObjectOld.GetName())
+						r.setRestartedAtValues()
+						logger.Info("Restarting driver and sidecar pods due to update of", "Resource", resourceKind, "Name", e.ObjectOld.GetName())
+						return true
 					} else if resourceKind == corev1.ResourceConfigMaps.String() {
 						if e.ObjectNew.GetName() == config.CSIEnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
-							return implicitRestartOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data)
+							if shouldRequeueOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+								r.setRestartedAtValues()
+								logger.Info("Restarting driver and sidecar pods due to update of", "Resource", resourceKind, "Name", e.ObjectOld.GetName())
+								return true
+							}
 						}
 					}
-					return true
 				}
 				return false
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
 					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
-						return implicitRestartOnCreateDelete(e.Object.(*corev1.ConfigMap).Data)
+						if shouldRequeueOnCreateOrDelete(e.Object.(*corev1.ConfigMap).Data) {
+							r.setRestartedAtValues()
+							logger.Info("Restarting driver and sidecar pods due to deletion of", "Resource", resourceKind, "Name", e.Object.GetName())
+							return true
+						}
 					} else {
-						r.restartDriverPods(mgr, "deleted", resourceKind, e.Object.GetName())
+						r.setRestartedAtValues()
+						logger.Info("Restarting driver and sidecar pods due to deletion of", "Resource", resourceKind, "Name", e.Object.GetName())
+						return true
 					}
-					return true
 				}
 				return false
 			},
@@ -785,33 +811,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *CSIScaleOperatorReconciler) restartDriverPods(mgr ctrl.Manager, event string, resourceKind string, resourceName string) {
+func (r *CSIScaleOperatorReconciler) setRestartedAtValues() {
 
-	logger := csiLog.WithName("restartDriverPods").WithValues("Kind", resourceKind, "Name", resourceName, "Event", event)
-
-	CSIDaemonListFunc := func() []appsv1.DaemonSet {
-		var CSIDaemonSets = []appsv1.DaemonSet{}
-		var DaemonSets = appsv1.DaemonSetList{}
-		_ = mgr.GetClient().List(context.TODO(), &DaemonSets)
-
-		for _, DaemonSet := range DaemonSets.Items {
-			if DaemonSet.Labels[config.LabelProduct] == config.Product {
-				CSIDaemonSets = append(CSIDaemonSets, DaemonSet)
-			}
-		}
-		return CSIDaemonSets
-	}
-
-	daemonSets := CSIDaemonListFunc()
-	for i := range daemonSets {
-		logger.Info("Watched resource is modified. Driver pods will be restarted.")
-		err := r.rolloutRestartNode(&daemonSets[i])
-		if err != nil {
-			logger.Error(err, "Unable to restart driver pods. Please restart node specific pods manually.")
-		} else {
-			daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(daemonSets[i].Spec.Template.ObjectMeta.Annotations)
-		}
-	}
+	restartedAtKey = fmt.Sprintf("%s/restartedAt", config.APIGroup)
+	restartedAtValue = time.Now().String()
 
 }
 
@@ -1085,7 +1088,7 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 						return rErr
 					}
 
-					daemonSetRestartedKey, daemonSetRestartedValue = r.getRestartedAtAnnotation(nodeDaemonSet.Spec.Template.ObjectMeta.Annotations)
+					restartedAtKey, restartedAtValue = r.getRestartedAtAnnotation(nodeDaemonSet.Spec.Template.ObjectMeta.Annotations)
 					logger.Info("Rollout restart of node DaemonSet is successful")
 				}
 				// TODO: Should restart sidecar pods if respective ServiceAccount is created afterwards?
@@ -2203,16 +2206,19 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 }
 
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
-func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
+func parseConfigMap(cm *corev1.ConfigMap) (map[string]string, string) {
 
 	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
 
 	data := map[string]string{}
+	var daemonSetMaxUnavailable string
 	invalidEnv := []string{}
 	for key, value := range cm.Data {
 		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
 			data[strings.ToUpper(key[11:])] = value
+		} else if strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
+			daemonSetMaxUnavailable = strings.ToUpper(value)
 		} else {
 			invalidEnv = append(invalidEnv, key)
 		}
@@ -2221,7 +2227,7 @@ func parseConfigMap(cm *corev1.ConfigMap) map[string]string {
 		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
-	return data
+	return data, daemonSetMaxUnavailable
 }
 
 func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
@@ -2233,4 +2239,17 @@ func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
 		Message: msg,
 	})
 	rec.Event(instance, eventType, reason, msg)
+}
+
+func validateMaxUnavailableValue(inputMaxunavailable string) bool {
+	logger := csiLog.WithName("validateMaxUnavailableValue")
+	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", inputMaxunavailable)
+	input := strings.TrimSuffix(inputMaxunavailable, "%")
+	if s, err := strconv.Atoi(input); err == nil {
+		logger.Info("daemonset maxunavailable parsed integer ", "inputMaxunavailableInt", s)
+		return true
+	} else {
+		logger.Error(err, " Failed to parse the input maxunvaialble value")
+		return false
+	}
 }
