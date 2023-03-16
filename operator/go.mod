@@ -1,6 +1,6 @@
 module github.com/IBM/ibm-spectrum-scale-csi/operator
 
-go 1.18
+go 1.20
 
 require (
 	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230214073341-84a5caba8948
