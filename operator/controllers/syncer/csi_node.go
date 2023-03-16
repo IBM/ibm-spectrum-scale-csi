@@ -183,6 +183,15 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
 func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
+	// security context
+	var runAsUser int64 = 10002
+	securityContext := corev1.PodSecurityContext{
+		RunAsNonRoot: boolptr.True(),
+		RunAsUser:    &runAsUser,
+	}
+
+	// securityContext.RunAsGroup = &runAsUser
+	// out.Spec.Template.Spec.SecurityContext = &securityContext
 	pod := corev1.PodSpec{
 		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
@@ -193,6 +202,7 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		Tolerations:        s.driver.Spec.Tolerations,
 		ImagePullSecrets:   secrets,
 		Affinity:           s.driver.GetAffinity(config.NodePlugin.String()),
+		SecurityContext:    &securityContext,
 	}
 	return pod
 }
@@ -244,13 +254,11 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	sc := &corev1.SecurityContext{
+	nodePlugin.SecurityContext = &corev1.SecurityContext{
 		Privileged:               boolptr.True(),
-		AllowPrivilegeEscalation: boolptr.True(),
+		AllowPrivilegeEscalation: boolptr.False(),
 	}
-	fillSecurityContextCapabilities(sc)
-
-	nodePlugin.SecurityContext = sc
+	fillSecurityContextCapabilities(nodePlugin.SecurityContext)
 
 	nodePlugin.Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
@@ -271,8 +279,8 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 	)
 
 	// registrar.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.True()}
-	registrar.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True()}
-	// fillSecurityContextCapabilities(registrar.SecurityContext)
+	registrar.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True(), AllowPrivilegeEscalation: boolptr.False(), ReadOnlyRootFilesystem: boolptr.True()}
+	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()
 
@@ -285,8 +293,8 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	// livenessProbe.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.False()}
-	// fillSecurityContextCapabilities(livenessProbe.SecurityContext)
+	livenessProbe.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.False(), Privileged: boolptr.False(), ReadOnlyRootFilesystem: boolptr.True()}
+	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
 	livenessProbe.Resources = ensureSidecarResources()
 
