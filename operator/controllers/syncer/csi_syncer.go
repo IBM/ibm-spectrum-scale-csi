@@ -421,6 +421,7 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		Affinity:           s.driver.GetAffinity(config.Attacher.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		PriorityClassName:  "system-node-critical",
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
