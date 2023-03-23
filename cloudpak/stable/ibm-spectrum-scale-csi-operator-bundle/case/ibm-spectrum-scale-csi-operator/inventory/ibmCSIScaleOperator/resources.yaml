@@ -9,7 +9,7 @@ resources:
     - metadata:
         name: ibm_spectrum_scale_csi_driver
       image: cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver
-      tag: v2.9.0
+      tag: v2.10.0
       digest: sha256:573b3b2d349359d7871d53060a0fc7df6e03de2e2900d1be46b4146ab1972fb7
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
@@ -20,19 +20,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.9.0-amd64
+        tag: v2.10.0-amd64
       - digest: sha256:38469ec0a56af0f0e0b26fd45b310caa0a026a36fcdc1dbe6f0effb16eb9f40b
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.9.0-ppc64le
+        tag: v2.10.0-ppc64le
       - digest: sha256:d9c91d71d22586796d2e309a68ddc92d15024e3ad088c6508ed3572ce7f2efdd
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.9.0-s390x
+        tag: v2.10.0-s390x
 
     - metadata:
         name: csi_snapshotter
