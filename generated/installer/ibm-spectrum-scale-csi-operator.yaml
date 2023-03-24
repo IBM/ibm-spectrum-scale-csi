@@ -31,6 +31,10 @@ spec:
         productVersion: 2.10.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
       containers:
       - name: operator
         image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:da7ada19c06b20edc9b3c8067a8380f6879899022dda8a5c1cbed7c15b2a381d
@@ -73,9 +77,9 @@ spec:
             drop:
             - ALL
           privileged: false
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
           runAsNonRoot: true
-          runAsUser: 1001
+          runAsUser: 10001
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
