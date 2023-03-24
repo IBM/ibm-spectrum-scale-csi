@@ -83,11 +83,11 @@ type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
 
-//A map of changed clusters, used to process only changed
-//clusters in case of clusters stanza is modified
+// A map of changed clusters, used to process only changed
+// clusters in case of clusters stanza is modified
 var changedClusters = make(map[string]bool)
 
-//a map of connectors to make REST calls to GUI
+// a map of connectors to make REST calls to GUI
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 var symlinkDirPath = ""
 
@@ -446,13 +446,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 	}
 
-	if len(daemonSetMaxUnavailable) > 0 && !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-		logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
-		message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value"
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
-		)
-		return ctrl.Result{}, err
+	if len(daemonSetMaxUnavailable) > 0 {
+		if !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
+			logger.Error(fmt.Errorf("%s  : daemonset maxunavailable is not valid", daemonSetMaxUnavailable), "input value of daemonset maxunavailable is : ")
+			message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value. Using default value to 1"
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+			)
+			daemonSetMaxUnavailable = ""
+		}
 	}
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData, daemonSetMaxUnavailable)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
@@ -476,8 +478,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-//handleDriverRestart gets a driver daemonset from the cluster and
-//restarts driver pods, returns error if there is any.
+// handleDriverRestart gets a driver daemonset from the cluster and
+// restarts driver pods, returns error if there is any.
 func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("handleDriverRestart")
 	var err error
@@ -512,12 +514,12 @@ func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleopera
 	return err
 }
 
-//isClusterStanzaModified checks if spectrum-scale-config configmap exists
-//and if it exists checks if the clusters stanza is modified by
-//comparing it with the configmap data.
-//It returns 1st value (cmExists) which indicates if clusters configmap exists,
-//2nd value (clustersStanzaModified) which idicates whether clusters stanza is
-//modified in case the configmap exists, and 3rd value as an error if any.
+// isClusterStanzaModified checks if spectrum-scale-config configmap exists
+// and if it exists checks if the clusters stanza is modified by
+// comparing it with the configmap data.
+// It returns 1st value (cmExists) which indicates if clusters configmap exists,
+// 2nd value (clustersStanzaModified) which idicates whether clusters stanza is
+// modified in case the configmap exists, and 3rd value as an error if any.
 func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, instance *csiscaleoperator.CSIScaleOperator) (bool, bool, error) {
 	logger := csiLog.WithName("isClusterStanzaModified")
 	cmExists := false
@@ -576,10 +578,10 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 	return cmExists, clustersStanzaModified, nil
 }
 
-//updateChangedClusters updates var changedClusters and also returns
-//error if primary stanza of the primary cluster is also modified.
-//It also deletes unnecessary cluster entries from connector map, for
-//which clusterID is present in current configmap data but not in new CR data.
+// updateChangedClusters updates var changedClusters and also returns
+// error if primary stanza of the primary cluster is also modified.
+// It also deletes unnecessary cluster entries from connector map, for
+// which clusterID is present in current configmap data but not in new CR data.
 func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleoperator.CSIScaleOperator, currentCMcmString string, newCRClusters []v1.CSICluster) error {
 	logger := csiLog.WithName("updateChangedClusters")
 
@@ -661,8 +663,8 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleope
 	return nil
 }
 
-//getClusterByID returns a cluster matching the passed clusterID
-//from the passed list of clusters.
+// getClusterByID returns a cluster matching the passed clusterID
+// from the passed list of clusters.
 func (r *CSIScaleOperatorReconciler) getClusterByID(id string, clusters []v1.CSICluster) v1.CSICluster {
 	for _, cluster := range clusters {
 		if id == cluster.Id {
@@ -1696,7 +1698,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 	}
 }
 
-//newConnector creates and return a new connector to make REST calls for the passed cluster
+// newConnector creates and return a new connector to make REST calls for the passed cluster
 func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
 	logger := csiLog.WithName("newSpectrumScaleConnector")
@@ -1790,9 +1792,9 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 	return rest, nil
 }
 
-//handleSpectrumScaleConnectors gets the connectors for all the clusters in driver
-//manifest and sets those in scaleConnMap also checks if GUI is reachable and
-//cluster ID is valid.
+// handleSpectrumScaleConnectors gets the connectors for all the clusters in driver
+// manifest and sets those in scaleConnMap also checks if GUI is reachable and
+// cluster ID is valid.
 func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) error {
 	logger := csiLog.WithName("handleSpectrumScaleConnectors")
 	logger.Info("Checking spectrum scale connectors")
@@ -1871,10 +1873,10 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 	return nil
 }
 
-//handlePrimaryFSandFileset checks if primary FS exists, also checkes if primary fileset exists.
-//If primary fileset does not exist, it is created and also if a directory
-//to store symlinks is created if it does not exist. It returns the absolute path of symlink
-//directory and error if there is any.
+// handlePrimaryFSandFileset checks if primary FS exists, also checkes if primary fileset exists.
+// If primary fileset does not exist, it is created and also if a directory
+// to store symlinks is created if it does not exist. It returns the absolute path of symlink
+// directory and error if there is any.
 func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (string, error) {
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
 	primaryReference := r.getPrimaryCluster(instance)
@@ -2005,7 +2007,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	return symlinkDirPath, nil
 }
 
-//getPrimaryCluster returns primary cluster of the passed instance.
+// getPrimaryCluster returns primary cluster of the passed instance.
 func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperator.CSIScaleOperator) *v1.CSIFilesystem {
 	var primary *v1.CSIFilesystem
 	for _, cluster := range instance.Spec.Clusters {
@@ -2016,10 +2018,10 @@ func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperato
 	return primary
 }
 
-//createPrimaryFileset creates a primary fileset and returns it's path
-//where it is linked. If primary fileset exists and is already linked,
-//the link path is returned. If primary fileset already exists and not linked,
-//it is linked and link path is returned.
+// createPrimaryFileset creates a primary fileset and returns it's path
+// where it is linked. If primary fileset exists and is already linked,
+// the link path is returned. If primary fileset already exists and not linked,
+// it is linked and link path is returned.
 func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
 	fsMountPoint string, filesetName string, inodeLimit string) (string, error) {
 
@@ -2069,8 +2071,8 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 	return newLinkPath, nil
 }
 
-//createSymlinksDir creates a .volumes directory on the fileset path fsetLinkPath,
-//and returns absolute, relative paths and error if there is any.
+// createSymlinksDir creates a .volumes directory on the fileset path fsetLinkPath,
+// and returns absolute, relative paths and error if there is any.
 func (r *CSIScaleOperatorReconciler) createSymlinksDir(instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fs string, fsMountPath string,
 	fsetLinkPath string) (string, string, error) {
 
@@ -2094,8 +2096,8 @@ func (r *CSIScaleOperatorReconciler) createSymlinksDir(instance *csiscaleoperato
 	return symlinkDirPath, symlinkDirRelativePath, nil
 }
 
-//getSymlinkDirPath formats and returns the paths of the directory,
-//where symlinks are stored for version 1 volumes.
+// getSymlinkDirPath formats and returns the paths of the directory,
+// where symlinks are stored for version 1 volumes.
 func getSymlinkDirPath(fsetLinkPath string, fsMountPath string) (string, string) {
 	fsetRelativePath := strings.Replace(fsetLinkPath, fsMountPath, "", 1)
 	fsetRelativePath = strings.Trim(fsetRelativePath, "!/")
@@ -2105,7 +2107,7 @@ func getSymlinkDirPath(fsetLinkPath string, fsMountPath string) (string, string)
 	return fsetRelativePath, symlinkDirPath
 }
 
-//ValidateCRParams validates driver configuration parameters and returns error if any validation fails
+// ValidateCRParams validates driver configuration parameters and returns error if any validation fails
 func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("ValidateCRParams")
 	logger.Info(fmt.Sprintf("Validating the Spectrum Scale CSI configurations of the resource %s/%s", instance.Kind, instance.Name))
@@ -2286,8 +2288,8 @@ func containsStringInSlice(inputSlice []string, stringToFind string) bool {
 }
 
 // checkStringExistsOrInvalidValue checks if a variable present in the allowed variable value
-//If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
-//or if value is not correct as set in the allowed lists , then add wrong data into invalid map
+// If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
+// or if value is not correct as set in the allowed lists , then add wrong data into invalid map
 func checkStringExistsOrInvalidValue(inputSlice []string, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
 		data[key[11:]] = value
