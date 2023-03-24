@@ -7,10 +7,6 @@ The IBM Spectrum Scale Container Storage Interface (CSI) project enables contain
 
 This project contains an [go-based operator](https://sdk.operatorframework.io) to run and manage the deployment of the IBM Spectrum Scale CSI Driver.
 
-If you are looking to deploy released versions of the IBM Spectrum Scale CSI Operator, consider starting at: 
-
-  * OpenShift - Under Operator -> OperatorHub in the OpenShift Console, search 'IBM Spectrum Scale CSI" and install
-  * Kubernetes -  See the project on [OperatorHub.io - ibm-spectrum-scale-csi-operator](https://operatorhub.io/operator/ibm-spectrum-scale-csi-operator)
 
 ## Support
 
