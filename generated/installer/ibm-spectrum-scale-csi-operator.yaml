@@ -31,10 +31,6 @@ spec:
         productVersion: 2.10.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
-      securityContext:
-        runAsGroup: 10001
-        runAsNonRoot: true
-        runAsUser: 10001
       containers:
       - name: operator
         image: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator@sha256:da7ada19c06b20edc9b3c8067a8380f6879899022dda8a5c1cbed7c15b2a381d
@@ -48,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:573b3b2d349359d7871d53060a0fc7df6e03de2e2900d1be46b4146ab1972fb7
+          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:573b3b2d349359d7871d532.10.0fc7df6e03de2e2900d1be46b4146ab1972fb7
         resources:
           limits:
             cpu: 600m
@@ -91,6 +87,10 @@ spec:
                 - amd64
                 - ppc64le
                 - s390x
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
