@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:573b3b2d349359d7871d532.10.0fc7df6e03de2e2900d1be46b4146ab1972fb7
+          value: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver@sha256:573b3b2d349359d7871d53060a0fc7df6e03de2e2900d1be46b4146ab1972fb7
         resources:
           limits:
             cpu: 600m
