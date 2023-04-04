@@ -66,7 +66,7 @@ const (
 func main() {
 	klog.InitFlags(nil)
 	level, persistentLogEnabled := getLogEnv()
-	logValue := getLogLevel(level)
+	logValue, isIncorrectLogLevel := getLogLevel(level)
 	value := getVerboseLevel(level)
 	err := flag.Set("logtostderr", "false")
 	err1 := flag.Set("stderrthreshold", logValue)
@@ -89,8 +89,11 @@ func main() {
 		klog.Errorf("[%s] Failed to set flag value", loggerId)
 	}
 
-	klog.Infof("[%s] logValue: %s", loggerId, level)
-
+	if isIncorrectLogLevel {
+		klog.Infof("[%s] logger level is empty or incorrect. Defaulting logValue to INFO", loggerId)
+	} else {
+		klog.Infof("[%s] logValue: %s", loggerId, level)
+	}
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	rand.Seed(time.Now().UnixNano())
@@ -153,15 +156,19 @@ func getLogEnv() (string, string) {
 	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
 }
 
-func getLogLevel(level string) string {
+func getLogLevel(level string) (string, bool) {
 	var logValue string
+	isIncorrectLogLevel := false
 
-	if level == DEBUG.String() || level == TRACE.String() {
+	if !(level == TRACE.String() || level == DEBUG.String() || level == INFO.String() || level == WARNING.String() || level == ERROR.String() || level == FATAL.String()) {
+		isIncorrectLogLevel = true
+	}
+	if level == DEBUG.String() || level == TRACE.String() || isIncorrectLogLevel {
 		logValue = INFO.String()
 	} else {
 		logValue = level
 	}
-	return logValue
+	return logValue, isIncorrectLogLevel
 }
 
 func (level LoggerLevel) String() string {
