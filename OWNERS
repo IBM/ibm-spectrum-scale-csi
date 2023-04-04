@@ -1,18 +1,18 @@
 filters:
   ".*":
     reviewers:
-      - edunn-us
+      - deeghuge
     approvers:
-      - edunn-us
+      - deeghuge
 
   "driver/.*":
     reviewers:
-      - edunn-us
+      - deeghuge
     approvers:
-      - edunn-us
+      - deeghuge
 
   "operator/.*":
     reviewers:
-      - edunn-us
+      - deeghuge
     approvers:
-      - edunn-us
+      - deeghuge

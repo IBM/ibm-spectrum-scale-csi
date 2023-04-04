@@ -170,7 +170,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 			return nil, err
 		}
 	} else {
-		notMP, err := mount.IsNotMountPoint(mount.New(""), targetPath)
+		mounter := &mount.Mounter{}
+		notMP, err := mount.IsNotMountPoint(mounter, targetPath)
 		if err != nil {
 			if os.IsNotExist(err) {
 				if err = os.Mkdir(targetPath, 0750); err != nil {
@@ -189,7 +190,6 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 
 		// create bind mount
 		options := []string{"bind"}
-		mounter := mount.New("")
 		klog.Infof("[%s] NodePublishVolume - creating bind mount [%v] -> [%v]", loggerId, targetPath, volScalePath)
 		if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
 			klog.Errorf("[%s] NodePublishVolume - failed to mount: [%s] at [%s]. Error [%v]", loggerId, volScalePath, targetPath, err)
@@ -199,7 +199,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		//check for the gpfs type again, if not gpfs type, unmount and return error.
 		err = checkGpfsType(volScalePathInContainer)
 		if err != nil {
-			uerr := mount.New("").Unmount(targetPath)
+			uerr := mounter.Unmount(targetPath)
 			if uerr != nil {
 				klog.Errorf("[%s] NodePublishVolume - failed to unmount the path [%s]. Error %v", loggerId, targetPath, uerr)
 				return nil, fmt.Errorf("NodePublishVolume - failed to unmount the path [%s]. Error %v", targetPath, uerr)
@@ -221,8 +221,9 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 	targetPathInContainer := hostDir + targetPath
 	isMP := false
 	var err error
+	mounter := &mount.Mounter{}
 	if !forceful {
-		isMP, err = mount.New("").IsMountPoint(targetPathInContainer)
+		isMP, err = mounter.IsMountPoint(targetPathInContainer)
 		if err != nil {
 			if os.IsNotExist(err) {
 				klog.V(4).Infof("[%s] target path %v is already deleted", loggerId, targetPathInContainer)
@@ -234,7 +235,7 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 	}
 	if forceful || isMP {
 		// Unmount the targetPath
-		err = mount.New("").Unmount(targetPath)
+		err = mounter.Unmount(targetPath)
 		if err != nil {
 			klog.Errorf("[%s] failed to unmount the mount point [%s]. Error %v", loggerId, targetPath, err)
 			return true, nil, fmt.Errorf("failed to unmount the mount point [%s]. Error %v", targetPath, err)
