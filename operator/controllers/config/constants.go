@@ -158,4 +158,7 @@ const (
 	SymlinkDir            = ".volumes"
 	DefaultUID            = "0"
 	DefaultGID            = "0"
+
+	ErrorForbidden    = "403: Forbidden"
+	ErrorUnauthorized = "401: Unauthorized"
 )
