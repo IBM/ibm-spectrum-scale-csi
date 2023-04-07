@@ -74,8 +74,6 @@ spec:
             - ALL
           privileged: false
           readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

@@ -84,8 +84,6 @@ spec:
           #hostPID: false
           #hostIPC: false
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 10001
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             privileged: false
