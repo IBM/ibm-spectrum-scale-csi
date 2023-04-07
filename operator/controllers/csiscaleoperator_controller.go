@@ -32,7 +32,7 @@ import (
 
 	uuid "github.com/google/uuid"
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/presslabs/controller-util/syncer"
+	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -293,11 +293,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	if len(instance.Spec.Clusters) != 0 {
-		err = r.handleSpectrumScaleConnectors(instance, cmExists, clustersStanzaModified)
+		err, requeAfterDelay := r.handleSpectrumScaleConnectors(instance, cmExists, clustersStanzaModified)
 		if err != nil {
 			message := "Error in getting connectors"
 			logger.Error(err, message)
-			return ctrl.Result{}, err
+			if requeAfterDelay == 0 {
+				return ctrl.Result{}, err
+			} else {
+				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
+			}
 		}
 	}
 
@@ -1793,10 +1797,11 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 // handleSpectrumScaleConnectors gets the connectors for all the clusters in driver
 // manifest and sets those in scaleConnMap also checks if GUI is reachable and
 // cluster ID is valid.
-func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) error {
+func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) (error, time.Duration) {
 	logger := csiLog.WithName("handleSpectrumScaleConnectors")
 	logger.Info("Checking spectrum scale connectors")
 
+	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
 	for _, cluster := range instance.Spec.Clusters {
 		isPrimaryCluster := cluster.Primary != nil
@@ -1817,7 +1822,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 			if !connectorExists || (clustersStanzaModified && isClusterChanged) {
 				connector, err := r.newConnector(instance, cluster)
 				if err != nil {
-					return err
+					return err, requeAfterDelay
 				}
 				scaleConnMap[cluster.Id] = connector
 				if isPrimaryCluster {
@@ -1837,13 +1842,25 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 				id, err := scaleConnMap[cluster.Id].GetClusterId(context.TODO())
 				if err != nil {
 					message := fmt.Sprintf("Failed to connect to the GUI of the cluster with ID: %s", cluster.Id)
+					if strings.Contains(err.Error(), config.ErrorUnauthorized) {
+						message += ". " + config.ErrorUnauthorized + ", the Secret " + cluster.Secrets +
+							" has incorrect credentials, please correct the credentials"
+						requeAfterDelay = 1 * time.Minute
+					} else if strings.Contains(err.Error(), config.ErrorForbidden) {
+						message += ". " + config.ErrorForbidden +
+							", GUI user specified in the Secret " + cluster.Secrets +
+							" is locked due to multiple connection attempts with incorrect credentials," +
+							" please contact Spectrum Scale Administrator"
+						requeAfterDelay = 1 * time.Minute
+					}
+
 					logger.Error(err, message)
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.GUIConnFailed), message,
 					)
 					//remove the connector if GUI connection fails
 					delete(scaleConnMap, cluster.Id)
-					return err
+					return err, requeAfterDelay
 				} else {
 					logger.Info("The GUI connection for the cluster is successful", "Cluster ID", cluster.Id)
 				}
@@ -1861,14 +1878,14 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.ClusterIDMismatch), message,
 					)
-					return fmt.Errorf(message)
+					return fmt.Errorf(message), requeAfterDelay
 				} else {
 					logger.Info(fmt.Sprintf("The cluster ID %s is validated successfully", cluster.Id))
 				}
 			}
 		}
 	}
-	return nil
+	return nil, requeAfterDelay
 }
 
 // handlePrimaryFSandFileset checks if primary FS exists, also checkes if primary fileset exists.
