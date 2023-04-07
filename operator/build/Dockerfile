@@ -1,5 +1,5 @@
 # docker build for IBM Spectrum Scale CSI Operator
-FROM --platform=$BUILDPLATFORM golang:1.18 as builder
+FROM --platform=$BUILDPLATFORM golang:1.20 as builder
 
 ARG TARGETOS
 ARG TARGETARCH

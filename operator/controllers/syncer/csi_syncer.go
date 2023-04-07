@@ -23,8 +23,8 @@ import (
 	"reflect"
 
 	"github.com/imdario/mergo"
-	"github.com/presslabs/controller-util/mergo/transformers"
-	"github.com/presslabs/controller-util/syncer"
+	"github.com/presslabs/controller-util/pkg/mergo/transformers"
+	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
