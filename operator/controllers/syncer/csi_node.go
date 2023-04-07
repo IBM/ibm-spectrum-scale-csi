@@ -579,7 +579,6 @@ func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) 
 	sc.Capabilities = &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},
 	}
-
 	if len(add) > 0 {
 		adds := []corev1.Capability{}
 		for _, a := range add {
