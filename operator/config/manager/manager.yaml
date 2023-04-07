@@ -40,6 +40,10 @@ spec:
                     - amd64
                     - ppc64le
                     - s390x
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
       containers:
         - args:
           - --leaderElection=true
@@ -80,9 +84,7 @@ spec:
           #hostPID: false
           #hostIPC: false
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1001
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             privileged: false
             capabilities:

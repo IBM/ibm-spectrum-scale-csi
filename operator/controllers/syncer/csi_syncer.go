@@ -409,19 +409,15 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 	logger.Info("Generating pod description for the attacher pod.")
 
 	tolerations := s.driver.Spec.Tolerations
-	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureAttacherContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureAttacherContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Attacher.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
 		PriorityClassName:  "system-node-critical",
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -438,16 +434,13 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureProvisionerContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureProvisionerContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Provisioner.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -464,16 +457,13 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureSnapshotterContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureSnapshotterContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Snapshotter.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -490,16 +480,13 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureResizerContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureResizerContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Resizer.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -723,13 +710,6 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 	logger := csiLog.WithName("ensureContainer")
 	logger.Info("Container information: ", "Name", name, "Image", image)
 
-	sc := &corev1.SecurityContext{
-		//		AllowPrivilegeEscalation: boolptr.False(),
-		Privileged: boolptr.True(),
-	}
-
-	fillSecurityContextCapabilities(sc)
-
 	container := corev1.Container{
 		Name:  name,
 		Image: image,
@@ -741,10 +721,8 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		LivenessProbe: s.driver.GetLivenessProbe(),
 		Resources:     ensureSidecarResources(),
 	}
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if isOpenShift {
-		container.SecurityContext = sc
-	}
+	container.SecurityContext = ensureContainerSecurityContext(true, true, true)
+	fillSecurityContextCapabilities(container.SecurityContext)
 	return container
 }
 
@@ -916,4 +894,41 @@ func ensureProbe(delay, timeout, period int32, handler corev1.ProbeHandler) *cor
 		SuccessThreshold:    1,
 		FailureThreshold:    30,
 	}
+}
+
+// ensurePodSecurityContext set pod security with runAsUser, runAsGroup and runAsNonRoot.
+func ensurePodSecurityContext(runAsUser int64, runAsGroup int64, runAsNonRoot bool) *corev1.PodSecurityContext {
+	var localRunAsNonRoot bool
+	if runAsNonRoot {
+		localRunAsNonRoot = *boolptr.True()
+	} else {
+		localRunAsNonRoot = *boolptr.False()
+	}
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: &localRunAsNonRoot,
+		RunAsUser:    &runAsUser,
+		RunAsGroup:   &runAsGroup,
+	}
+}
+
+// ensureContainerSecurityContext configure AllowPrivilegeEscalation, Privileged, ReadOnlyRootFilesystem for the container.
+func ensureContainerSecurityContext(allowPrivilegeEscalation bool, privileged bool, readOnlyRootFilesystem bool) *corev1.SecurityContext {
+	var (
+		localAllowPrivilegeEscalation *bool = boolptr.False()
+		localPrivileged               *bool = boolptr.False()
+		localReadOnlyRootFilesystem   *bool = boolptr.True()
+	)
+	if allowPrivilegeEscalation {
+		localAllowPrivilegeEscalation = boolptr.True()
+	}
+	if privileged {
+		localPrivileged = boolptr.True()
+	}
+	if !readOnlyRootFilesystem {
+		localReadOnlyRootFilesystem = boolptr.False()
+	}
+	return &corev1.SecurityContext{
+		AllowPrivilegeEscalation: localAllowPrivilegeEscalation,
+		Privileged:               localPrivileged,
+		ReadOnlyRootFilesystem:   localReadOnlyRootFilesystem}
 }
