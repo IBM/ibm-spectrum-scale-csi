@@ -23,8 +23,8 @@ import (
 	"strconv"
 
 	"github.com/imdario/mergo"
-	"github.com/presslabs/controller-util/mergo/transformers"
-	"github.com/presslabs/controller-util/syncer"
+	"github.com/presslabs/controller-util/pkg/mergo/transformers"
+	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,6 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
-	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/k8sutil"
 )
 
@@ -183,6 +182,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
 func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
+
 	pod := corev1.PodSpec{
 		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
@@ -193,6 +193,7 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		Tolerations:        s.driver.Spec.Tolerations,
 		ImagePullSecrets:   secrets,
 		Affinity:           s.driver.GetAffinity(config.NodePlugin.String()),
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 		PriorityClassName:  "system-node-critical",
 	}
 	return pod
@@ -245,13 +246,8 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	sc := &corev1.SecurityContext{
-		Privileged:               boolptr.True(),
-		AllowPrivilegeEscalation: boolptr.True(),
-	}
-	fillSecurityContextCapabilities(sc)
-
-	nodePlugin.SecurityContext = sc
+	nodePlugin.SecurityContext = ensureContainerSecurityContext(true, true, true)
+	fillSecurityContextCapabilities(nodePlugin.SecurityContext)
 
 	nodePlugin.Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
@@ -271,9 +267,8 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	// registrar.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.True()}
-	registrar.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True()}
-	// fillSecurityContextCapabilities(registrar.SecurityContext)
+	registrar.SecurityContext = ensureContainerSecurityContext(true, true, true)
+	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()
 
@@ -286,8 +281,8 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	// livenessProbe.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.False()}
-	// fillSecurityContextCapabilities(livenessProbe.SecurityContext)
+	livenessProbe.SecurityContext = ensureContainerSecurityContext(false, false, true)
+	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
 	livenessProbe.Resources = ensureSidecarResources()
 
@@ -584,7 +579,6 @@ func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) 
 	sc.Capabilities = &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},
 	}
-
 	if len(add) > 0 {
 		adds := []corev1.Capability{}
 		for _, a := range add {

@@ -73,9 +73,7 @@ spec:
             drop:
             - ALL
           privileged: false
-          readOnlyRootFilesystem: false
-          runAsNonRoot: true
-          runAsUser: 1001
+          readOnlyRootFilesystem: true
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -87,6 +85,10 @@ spec:
                 - amd64
                 - ppc64le
                 - s390x
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

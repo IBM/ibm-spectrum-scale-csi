@@ -45,7 +45,7 @@ func (c *CSIScaleOperator) Unwrap() *csiv1.CSIScaleOperator {
 }
 
 // GetLabels returns all the labels to be set on all resources
-//func (c *CSIScaleOperator) GetLabels() labels.Set {
+// func (c *CSIScaleOperator) GetLabels() labels.Set {
 func (c *CSIScaleOperator) GetLabels() map[string]string {
 	labels := labels.Set{
 		config.LabelAppName:      config.ResourceAppName,
@@ -67,7 +67,7 @@ func (c *CSIScaleOperator) GetLabels() map[string]string {
 }
 
 // GetAnnotations returns all the annotations to be set on all resources
-//func (c *CSIScaleOperator) GetAnnotations(daemonSetRestartedKey string, daemonSetRestartedValue string) labels.Set {
+// func (c *CSIScaleOperator) GetAnnotations(daemonSetRestartedKey string, daemonSetRestartedValue string) labels.Set {
 func (c *CSIScaleOperator) GetAnnotations(daemonSetRestartedKey string, daemonSetRestartedValue string) map[string]string {
 	//func (c *CSIScaleOperator) GetAnnotations() map[string]string {
 	labels := labels.Set{
