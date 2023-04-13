@@ -281,7 +281,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, true)
+	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
 	livenessProbe.Resources = ensureSidecarResources()
