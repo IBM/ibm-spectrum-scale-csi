@@ -153,11 +153,11 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 			return &SpectrumRestV2{}, fmt.Errorf("parsing CA cert %v failed", scaleConfig.Cacert)
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
-		klog.V(4).Infof("[%s] created Spectrum Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
+		klog.V(4).Infof("[%s] created Storage Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	} else {
 		//#nosec G402 InsecureSkipVerify was requested by user.
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
-		klog.V(4).Infof("[%s] created Spectrum Scale connector without SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
+		klog.V(4).Infof("[%s] created Storage Scale connector without SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	}
 
 	rest = &SpectrumRestV2{
@@ -235,12 +235,12 @@ func (s *SpectrumRestV2) GetScaleVersion(ctx context.Context) (string, error) {
 
 	err := s.doHTTP(ctx, getVersionURL, "GET", &getVersionResponse, nil)
 	if err != nil {
-		klog.Errorf("[%s] unable to get Spectrum Scale version: [%v]", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] unable to get Storage Scale version: [%v]", utils.GetLoggerId(ctx), err)
 		return "", err
 	}
 
 	if len(getVersionResponse.Info.ServerVersion) == 0 {
-		return "", fmt.Errorf("unable to get spectrum scale version")
+		return "", fmt.Errorf("unable to get storage scale version")
 	}
 
 	return getVersionResponse.Info.ServerVersion, nil

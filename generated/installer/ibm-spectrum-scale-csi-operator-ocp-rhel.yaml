@@ -27,7 +27,7 @@ spec:
         release: ibm-spectrum-scale-csi-operator
       annotations:
         productID: ibm-spectrum-scale-csi-operator
-        productName: IBM Spectrum Scale CSI Operator
+        productName: IBM Storage Scale CSI Operator
         productVersion: 2.10.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
@@ -788,21 +788,21 @@ spec:
                   - value
               clusters:
                 type: array
-                description: clusters is a collection of Spectrum Scale cluster properties for the CSI driver to mount.
+                description: clusters is a collection of Storage Scale cluster properties for the CSI driver to mount.
                 items:
                   type: object
-                  description: Defines the fields of a Spectrum Scale cluster specification
+                  description: Defines the fields of a Storage Scale cluster specification
                   properties:
                     cacert:
                       type: string
                       description: cacert is the name of the configMap storing GUI certificates. Mandatory if secureSslMode is true.
                     id:
                       type: string
-                      description: id is the cluster ID of the Spectrum Scale cluster.
+                      description: id is the cluster ID of the Storage Scale cluster.
                       maxLength: 20
                     primary:
                       type: object
-                      description: primary is the primary file system for the Spectrum Scale cluster.
+                      description: primary is the primary file system for the Storage Scale cluster.
                       properties:
                         inodeLimit:
                           type: string
@@ -815,7 +815,7 @@ spec:
                           description: The name of the primary fileset, created in primaryFs
                         remoteCluster:
                           type: string
-                          description: Remote Spectrum Scale cluster ID
+                          description: Remote Storage Scale cluster ID
                     restApi:
                       type: array
                       description: restApi is a collection of targets for REST calls
@@ -825,19 +825,19 @@ spec:
                         properties:
                           guiHost:
                             type: string
-                            description: guiHost is the hostname/IP of the Spectrum Scale GUI node.
+                            description: guiHost is the hostname/IP of the Storage Scale GUI node.
                           guiPort:
                             type: integer
-                            description: guiPort is the port number of the Spectrum Scale GUI node.
+                            description: guiPort is the port number of the Storage Scale GUI node.
                         required:
                         - guiHost
                     secrets:
                       type: string
-                      description: secret is the name of the basic-auth secret containing credentials to connect to IBM Spectrum Scale REST API server.
+                      description: secret is the name of the basic-auth secret containing credentials to connect to IBM Storage Scale REST API server.
                     secureSslMode:
                       type: boolean
                       default: false
-                      description: secureSslMode specifies if a secure SSL connection to connect to Spectrum Scale cluster is required.
+                      description: secureSslMode specifies if a secure SSL connection to connect to Storage Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -854,7 +854,7 @@ spec:
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
               driverRegistrar:
                 type: string
-                description: driverRegistrar is the Sidecar container image for the CSI Spectrum Scale plugin pods.
+                description: driverRegistrar is the Sidecar container image for the CSI Storage Scale plugin pods.
               kubeletRootDirPath:
                 type: string
                 description: kubeletRootDirPath is the path for kubelet root directory.
@@ -863,7 +863,7 @@ spec:
                 description: livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
               nodeMapping:
                 type: array
-                description: nodeMapping specifies mapping of K8s node with Spectrum Scale node.
+                description: nodeMapping specifies mapping of K8s node with Storage Scale node.
                 items:
                   type: object
                   description: Defines mapping between kubernetes node and spectrumscale nodes
@@ -882,7 +882,7 @@ spec:
                 default:
                 - value: "true"
                   key: scale
-                description: pluginNodeSelector is the node selector for Spectrum Scale CSI plugin.
+                description: pluginNodeSelector is the node selector for Storage Scale CSI plugin.
                 items:
                   type: object
                   description: CSINodeSelector defines the fields of Node Selector
@@ -964,7 +964,7 @@ spec:
                   - value
               spectrumScale:
                 type: string
-                description: spectrumScale is the image name for the CSI Spectrum Scale node driver plugin container.
+                description: spectrumScale is the image name for the CSI Storage Scale node driver plugin container.
             required:
             - clusters
           status:

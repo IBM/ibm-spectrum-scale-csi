@@ -61,7 +61,7 @@ const (
 	DriverName = "spectrumscale.csi.ibm.com"
 	Kind       = "CSIScaleOperator"
 
-	ProductName = "IBM Spectrum Scale CSI Operator"
+	ProductName = "IBM Storage Scale CSI Operator"
 
 	ENVEndpoint    = "ENDPOINT"
 	ENVNodeName    = "NODE_NAME"
@@ -79,11 +79,11 @@ const (
 	TolerationsSeconds = int64(300)
 	// ContainerPort for /healthz/leader-election endpoint
 	LeaderLivenessPort = int32(8080)
-	// 64-Bit machine architecture supported by Spectrum Scale CSI.
+	// 64-Bit machine architecture supported by Storage Scale CSI.
 	AMD64 = "amd64"
-	// Power PC machine architecture supported by Spectrum Scale CSI.
+	// Power PC machine architecture supported by Storage Scale CSI.
 	PPC = "ppc64le"
-	// IBM zSystems machine architecture supported by Spectrum Scale CSI.
+	// IBM zSystems machine architecture supported by Storage Scale CSI.
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers

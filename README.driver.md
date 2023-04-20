@@ -26,7 +26,7 @@ For static provisioning of existing directories perform the following steps:
 Dynamic provisioning is used to dynamically provision the storage backend volume based on the storageClass.
 
 ### Storageclass
-Storageclass defines what type of backend volume should be created by dynamic provisioning. IBM Spectrum Scale CSI driver supports creation of directory based (also known as lightweight volumes) and fileset based (independent as well as dependent) volumes. Following parameters are supported by IBM Spectrum Scale CSI driver storageClass:
+Storageclass defines what type of backend volume should be created by dynamic provisioning. IBM Storage Scale CSI driver supports creation of directory based (also known as lightweight volumes) and fileset based (independent as well as dependent) volumes. Following parameters are supported by IBM Storage Scale CSI driver storageClass:
 
  - **volBackendFs**: Filesystem on which the volume should be created. This is a mandatory parameter.
  - **clusterId**: Cluster ID on which the volume should be created. 
@@ -50,11 +50,11 @@ Example:
 
 ## Links
 
-[IBM Spectrum Scale Documentation Welcome Page](https://www.ibm.com/docs/en/spectrum-scale)
-The IBM Documentation contains all official IBM Spectrum Scale information and guidance.
+[IBM Storage Scale Documentation Welcome Page](https://www.ibm.com/docs/en/spectrum-scale)
+The IBM Documentation contains all official IBM Storage Scale information and guidance.
 
-[IBM Spectrum Scale FAQ](https://www.ibm.com/docs/en/spectrum-scale?topic=STXKQY/gpfsclustersfaq.html)
-Main starting page for all IBM Spectrum Scale compatibility information.
+[IBM Storage Scale FAQ](https://www.ibm.com/docs/en/spectrum-scale?topic=STXKQY/gpfsclustersfaq.html)
+Main starting page for all IBM Storage Scale compatibility information.
 
 [IBM Block CSI driver](https://github.com/IBM/ibm-block-csi-driver)
 IBM Block CSI driver supporting multiple IBM storage systems.
@@ -66,10 +66,10 @@ Main Kubernetes site detailing how to install kubeadm and create a cluster.
 Red Hat's test matrix for OpenShift 4.x.
 
 [IBM Storage Enabler for Containers Welcome Page](https://www.ibm.com/support/knowledgecenter/en/SSCKLT/landing/IBM_Storage_Enabler_for_Containers_welcome_page.html)
-Flex Volume driver released in late 2018 with a HELM update in early 2019, providing compatibility with IBM Spectrum Scale for file storage and multiple IBM storage systems for block storage. Future development efforts have shifted to CSI.
+Flex Volume driver released in late 2018 with a HELM update in early 2019, providing compatibility with IBM Storage Scale for file storage and multiple IBM storage systems for block storage. Future development efforts have shifted to CSI.
 
-[IBM Spectrum Scale Users Group](http://www.gpfsug.org/)
-A group of both IBM and non-IBM users, interested in IBM Spectrum Scale
+[IBM Storage Scale Users Group](http://www.gpfsug.org/)
+A group of both IBM and non-IBM users, interested in IBM Storage Scale
 
-[IBM Spectrum Scale Users Group Mailing List and Slack Channel](https://www.spectrumscaleug.org/join/)
+[IBM Storage Scale Users Group Mailing List and Slack Channel](https://www.spectrumscaleug.org/join/)
 Join everyone and let the team know about your experience with the CSI driver

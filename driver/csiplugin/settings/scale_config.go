@@ -20,11 +20,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"io/ioutil"
-	"k8s.io/klog/v2"
 	"path"
 	"strings"
+
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"k8s.io/klog/v2"
 )
 
 type ScaleSettingsConfigMap struct {
@@ -104,13 +105,13 @@ func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
 
 	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		klog.Errorf("[%s] spectrum scale configuration not found: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] storage scale configuration not found: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}
 	e = json.Unmarshal(file, cmsj)
 	if e != nil {
-		klog.Errorf("[%s] error in unmarshalling Spectrum Scale configuration json: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] error in unmarshalling Storage Scale configuration json: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 
@@ -129,7 +130,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
 			file, e := ioutil.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("Spectrum Scale secret not found: %v\n", e)
+				return fmt.Errorf("Storage Scale secret not found: %v\n", e)
 			}
 			file_s := string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -139,7 +140,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
 			file, e = ioutil.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("Spectrum Scale secret not found: %v\n", e)
+				return fmt.Errorf("Storage Scale secret not found: %v\n", e)
 			}
 			file_s = string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -152,7 +153,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
 			file, e := ioutil.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("Spectrum Scale CA certificate not found: %v\n", e)
+				return fmt.Errorf("Storage Scale CA certificate not found: %v\n", e)
 			}
 			cmap.Clusters[i].CacertValue = file
 		}

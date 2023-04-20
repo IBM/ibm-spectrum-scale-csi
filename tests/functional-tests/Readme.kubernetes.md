@@ -1,13 +1,13 @@
 # Functional Test Automation Suite
 
-This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale CSI functionality.
+This Functional Test Automation Suite exercises and tests the IBM Storage Scale CSI functionality.
 
 ### Tested Testbed environment
 
-- IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
+- IBM Storage Scale Cluster - 5.1.0.1+ Version  (**IBM Storage Scale supported kernel version**)
 - Kubernetes Cluster Version 1.20 - 1.22
 - Openshift Version 4.8.x, 4.9.x
-- IBM Spectrum Scale Cluster CSI Version - 2.4.0+
+- IBM Storage Scale Cluster CSI Version - 2.4.0+
 
 ### Pre-requesite for automation framework
 
@@ -17,7 +17,7 @@ Install Python (3.7.4 or higher) and use below command to install required pytho
 python3.7 -m pip install -r requirements.txt
 ```
 
-### How to run IBM Spectrum Scale CSI test automation
+### How to run IBM Storage Scale CSI test automation
 
 - Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 

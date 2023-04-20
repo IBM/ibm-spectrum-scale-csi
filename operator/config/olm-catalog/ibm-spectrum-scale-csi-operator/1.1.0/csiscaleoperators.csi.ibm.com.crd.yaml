@@ -108,7 +108,7 @@ spec:
               - id
               type: array
             driverRegistrar:
-              description: Sidecar container image for the csi spectrum scale plugin
+              description: Sidecar container image for the csi storage scale plugin
                 pods.
               type: string
             nodeMapping:
@@ -158,7 +158,7 @@ spec:
                 on secret change.
               type: integer
             spectrumScale:
-              description: Image name for the csi spectrum scale plugin container.
+              description: Image name for the csi storage scale plugin container.
               type: string
             trigger:
               description: A generic trigger to be used in kickin off the ansible

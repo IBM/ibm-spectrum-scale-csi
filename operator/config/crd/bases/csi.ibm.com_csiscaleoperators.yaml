@@ -899,17 +899,17 @@ spec:
                   type: object
                 type: array
               clusters:
-                description: clusters is a collection of Spectrum Scale cluster properties
+                description: clusters is a collection of Storage Scale cluster properties
                   for the CSI driver to mount.
                 items:
-                  description: Defines the fields of a Spectrum Scale cluster specification
+                  description: Defines the fields of a Storage Scale cluster specification
                   properties:
                     cacert:
                       description: cacert is the name of the configMap storing GUI
                         certificates. Mandatory if secureSslMode is true.
                       type: string
                     id:
-                      description: id is the cluster ID of the Spectrum Scale cluster.
+                      description: id is the cluster ID of the Storage Scale cluster.
                       maxLength: 20
                       type: string
                     primary:
@@ -927,7 +927,7 @@ spec:
                             primaryFs
                           type: string
                         remoteCluster:
-                          description: Remote Spectrum Scale cluster ID
+                          description: Remote Storage Scale cluster ID
                           type: string
                       type: object
                     restApi:
@@ -949,12 +949,12 @@ spec:
                       type: array
                     secrets:
                       description: secret is the name of the basic-auth secret containing
-                        credentials to connect to IBM Spectrum Scale REST API server.
+                        credentials to connect to IBM Storage Scale REST API server.
                       type: string
                     secureSslMode:
                       default: false
                       description: secureSslMode specifies if a secure SSL connection
-                        to connect to Spectrum Scale cluster is required.
+                        to connect to Storage Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -976,7 +976,7 @@ spec:
                 type: string
               driverRegistrar:
                 description: driverRegistrar is the Sidecar container image for the
-                  CSI Spectrum Scale plugin pods.
+                  CSI Storage Scale plugin pods.
                 type: string
               imagePullSecrets:
                 description: A passthrough option that distributes an imagePullSecrets

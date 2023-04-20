@@ -359,7 +359,7 @@ def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objec
 def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created_objects):
     """
     calculates bound time for pvc and checks fileset created by
-    pvc on spectrum scale
+    pvc on storage scale
     """
     now1 = api_response.metadata.creation_timestamp
     now = datetime.now(timezone.utc)
@@ -1397,7 +1397,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
     """
     checks volume snapshot vs_name exits , 
     checks volume snapshot content for vs_name is created
-    check snapshot is created on spectrum scale
+    check snapshot is created on storage scale
     """
     api_instance = client.CustomObjectsApi()
     try:
@@ -1562,7 +1562,7 @@ def check_vs_content(vs_content_name):
 def get_snapshot_and_related_fileset(vs_content_name, pvc_name, created_objects):
     """
     checks volume snapshot content vs_content_name 
-    return snapshot and its related fileset name on spectrum scale
+    return snapshot and its related fileset name on storage scale
     by parsing snapshotHandle
     """
     api_instance = client.CustomObjectsApi()
