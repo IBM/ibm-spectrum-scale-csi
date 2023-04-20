@@ -27,7 +27,7 @@ spec:
         release: ibm-spectrum-scale-csi-operator
       annotations:
         productID: ibm-spectrum-scale-csi-operator
-        productName: IBM Storage Scale CSI Operator
+        productName: IBM Storage ScaleCSI Operator
         productVersion: 2.10.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
@@ -802,7 +802,7 @@ spec:
                       maxLength: 20
                     primary:
                       type: object
-                      description: primary is the primary file system for the Storage Scale cluster.
+                      description: primary is the primary file system for the Spectrum Scale cluster.
                       properties:
                         inodeLimit:
                           type: string
@@ -825,10 +825,10 @@ spec:
                         properties:
                           guiHost:
                             type: string
-                            description: guiHost is the hostname/IP of the Storage Scale GUI node.
+                            description: guiHost is the hostname/IP of the Spectrum Scale GUI node.
                           guiPort:
                             type: integer
-                            description: guiPort is the port number of the Storage Scale GUI node.
+                            description: guiPort is the port number of the Spectrum Scale GUI node.
                         required:
                         - guiHost
                     secrets:
@@ -863,7 +863,7 @@ spec:
                 description: livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
               nodeMapping:
                 type: array
-                description: nodeMapping specifies mapping of K8s node with Storage Scale node.
+                description: nodeMapping specifies mapping of K8s node with Spectrum Scale node.
                 items:
                   type: object
                   description: Defines mapping between kubernetes node and spectrumscale nodes
@@ -882,7 +882,7 @@ spec:
                 default:
                 - value: "true"
                   key: scale
-                description: pluginNodeSelector is the node selector for Storage Scale CSI plugin.
+                description: pluginNodeSelector is the node selector for Spectrum Scale CSI plugin.
                 items:
                   type: object
                   description: CSINodeSelector defines the fields of Node Selector
@@ -964,7 +964,7 @@ spec:
                   - value
               spectrumScale:
                 type: string
-                description: spectrumScale is the image name for the CSI Storage Scale node driver plugin container.
+                description: spectrumScale is the image name for the CSI Spectrum Scale node driver plugin container.
             required:
             - clusters
           status:
