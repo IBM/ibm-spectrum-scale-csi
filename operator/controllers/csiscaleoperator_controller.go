@@ -1989,20 +1989,20 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.FilesetRefreshFailed), message,
 				)
-
-				// retry listing fileset again after some time after refresh
-				time.Sleep(8 * time.Second)
-				_, err = scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
-				if err != nil {
-					message := fmt.Sprintf("Primary fileset %s is not visible on primary cluster even after running fileset refresh task", primary.PrimaryFset)
-					logger.Error(err, message)
-					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
-					)
-					return "", err
-				}
+				return "", err
 			}
 
+			// retry listing fileset again after some time after refresh
+			time.Sleep(8 * time.Second)
+			_, err = scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
+			if err != nil {
+				message := fmt.Sprintf("Primary fileset %s is not visible on primary cluster even after running fileset refresh task", primary.PrimaryFset)
+				logger.Error(err, message)
+				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+					metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
+				)
+				return "", err
+			}
 		}
 	}
 
