@@ -199,7 +199,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: StorageScale node name.
-        displayName: spectrumscaleNode
+        displayName: storageScaleNode
         path: nodeMapping.spectrumscaleNode
       - description: Key for node selector.
         displayName: Key
@@ -351,7 +351,7 @@ spec:
             metadata:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
-                productName: IBM Storage Scale CSI Operator
+                productName: IBM Spectrum Scale CSI Operator
                 productVersion: 2.3.1
               labels:
                 app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator

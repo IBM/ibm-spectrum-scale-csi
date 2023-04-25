@@ -349,7 +349,7 @@ spec:
             metadata:
               annotations:
                 productID: ibm-spectrum-scale-csi-operator
-                productName: IBM Storage Scale CSI Operator
+                productName: IBM Spectrum Scale CSI Operator
                 productVersion: 1.1.0
               labels:
                 app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
