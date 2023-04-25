@@ -61,7 +61,7 @@ const (
 	DriverName = "spectrumscale.csi.ibm.com"
 	Kind       = "CSIScaleOperator"
 
-	ProductName = "IBM Storage Scale CSI Operator"
+	ProductName = "IBM Spectrum Scale CSI Operator"
 
 	ENVEndpoint    = "ENDPOINT"
 	ENVNodeName    = "NODE_NAME"
