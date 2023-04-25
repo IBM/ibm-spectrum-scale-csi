@@ -1,6 +1,6 @@
 # Contributing
 
-Work on the `ibm-spectrum-scale-csi` project should always be performed in a forked copy of the repo, incorporated into the main project using a pull request against the Development (dev) branch. 
+Work on the `ibm-storage-scale-csi` project should always be performed in a forked copy of the repo, incorporated into the main project using a pull request against the Development (dev) branch. 
 
 When adding features the following process should be followed:
 

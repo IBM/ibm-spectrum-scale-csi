@@ -212,7 +212,7 @@ spec:
         path: nodeMapping.k8sNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: SpectrumScale node name.
+      - description: StorageScale node name.
         displayName: spectrumscaleNode
         path: nodeMapping.spectrumscaleNode
       - description: The kubelet root directory path.

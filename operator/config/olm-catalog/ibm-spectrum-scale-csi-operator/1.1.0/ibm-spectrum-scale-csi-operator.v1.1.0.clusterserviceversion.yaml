@@ -78,7 +78,7 @@ spec:
             path: provisionerNodeSelector
             x-descriptors:
               - urn:alm:descriptor:com.tectonic.ui:advanced
-          - description: Node selector for SpectrumScale CSI Plugin.
+          - description: Node selector for StorageScale CSI Plugin.
             displayName: Plugin Node Selector
             path: pluginNodeSelector
             x-descriptors:
@@ -105,7 +105,7 @@ spec:
           - description: A generic trigger to be used in kickin off the ansible operator.
             displayName: trigger
             path: trigger
-          - description: Mapping of K8s node with SpectrumScale node.
+          - description: Mapping of K8s node with StorageScale node.
             displayName: nodeMapping
             path: nodeMapping
             x-descriptors:
@@ -190,8 +190,8 @@ spec:
             path: nodeMapping.k8sNode
             x-descriptors:
               - urn:alm:descriptor:com.tectonic.ui:label
-          - description: SpectrumScale node name.
-            displayName: spectrumscaleNode
+          - description: StorageScale node name.
+            displayName: StorageScaleNode
             path: nodeMapping.spectrumscaleNode
           - description: Key for node selector.
             displayName: Key

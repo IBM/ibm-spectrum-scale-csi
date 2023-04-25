@@ -69,7 +69,7 @@ spec:
         path: provisionerNodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Node selector for SpectrumScale CSI Plugin.
+      - description: Node selector for StorageScale CSI Plugin.
         displayName: Plugin Node Selector
         path: pluginNodeSelector
         x-descriptors:
@@ -91,7 +91,7 @@ spec:
         path: secretCounter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - description: Mapping of K8s node with SpectrumScale node.
+      - description: Mapping of K8s node with StorageScale node.
         displayName: nodeMapping
         path: nodeMapping
         x-descriptors:
@@ -176,7 +176,7 @@ spec:
         path: nodeMapping.k8sNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: SpectrumScale node name.
+      - description: StorageScale node name.
         displayName: Storage Scale Node
         path: nodeMapping.spectrumscaleNode
         x-descriptors:

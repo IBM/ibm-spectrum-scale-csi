@@ -128,7 +128,7 @@ spec:
         path: csipspname
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: driverRegistrar is the Sidecar container image for the CSI Spectrum
+      - description: driverRegistrar is the Sidecar container image for the CSI Storage
           Scale plugin pods.
         displayName: Driver Registrar
         path: driverRegistrar
@@ -164,7 +164,7 @@ spec:
         path: nodeMapping[0].k8sNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: spectrumscaleNode is the name of the SpectrumScale node
+      - description: spectrumscaleNode is the name of the StorageScale node
         displayName: Storage Scale Node
         path: nodeMapping[0].spectrumscaleNode
         x-descriptors:

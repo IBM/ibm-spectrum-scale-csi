@@ -191,7 +191,7 @@ def create_crd(body):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(
-            "Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
+            "Creating IBM StorageScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
     except ValueError as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")

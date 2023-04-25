@@ -113,19 +113,19 @@ spec:
                 pods.
               type: string
             nodeMapping:
-              description: Mapping of K8s node with SpectrumScale node.
+              description: Mapping of K8s node with StorageScale node.
               items:
                 properties:
                   k8sNode:
                     description: K8s node name.
                     type: string
                   spectrumscaleNode:
-                    description: SpectrumScale node name.
+                    description: StorageScale node name.
                     type: string
                 type: object
               type: array
             pluginNodeSelector:
-              description: Node selector for SpectrumScale CSI Plugin.
+              description: Node selector for StorageScale CSI Plugin.
               items:
                 properties:
                   key:

@@ -1703,8 +1703,8 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 // newConnector creates and return a new connector to make REST calls for the passed cluster
 func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
-	logger := csiLog.WithName("newSpectrumScaleConnector")
-	logger.Info("Creating new SpectrumScaleConnector for cluster with", "ID", cluster.Id)
+	logger := csiLog.WithName("newStorageScaleConnector")
+	logger.Info("Creating new StorageScaleConnector for cluster with", "ID", cluster.Id)
 
 	var rest *connectors.SpectrumRestV2
 	var tr *http.Transport
@@ -1798,7 +1798,7 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 // manifest and sets those in scaleConnMap also checks if GUI is reachable and
 // cluster ID is valid.
 func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) (error, time.Duration) {
-	logger := csiLog.WithName("handleSpectrumScaleConnectors")
+	logger := csiLog.WithName("handleStorageScaleConnectors")
 	logger.Info("Checking storage scale connectors")
 
 	requeAfterDelay := time.Duration(0)

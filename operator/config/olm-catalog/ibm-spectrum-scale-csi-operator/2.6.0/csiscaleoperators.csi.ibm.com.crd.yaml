@@ -911,7 +911,7 @@ spec:
                       maxLength: 20
                       type: string
                     primary:
-                      description: primary is the primary file system for the Spectrum
+                      description: primary is the primary file system for the Storage
                         Scale cluster.
                       properties:
                         inodeLimit:
@@ -934,11 +934,11 @@ spec:
                         description: Defines the fields for REST API server information.
                         properties:
                           guiHost:
-                            description: guiHost is the hostname/IP of the Spectrum
+                            description: guiHost is the hostname/IP of the Storage
                               Scale GUI node.
                             type: string
                           guiPort:
-                            description: guiPort is the port number of the Spectrum
+                            description: guiPort is the port number of the Storage
                               Scale GUI node.
                             type: integer
                         required:
@@ -992,17 +992,17 @@ spec:
                   (liveness probe is used to know when to restart a container).
                 type: string
               nodeMapping:
-                description: nodeMapping specifies mapping of K8s node with Spectrum
+                description: nodeMapping specifies mapping of K8s node with Storage
                   Scale node.
                 items:
-                  description: Defines mapping between kubernetes node and spectrumscale
+                  description: Defines mapping between kubernetes node and Storagescale
                     nodes
                   properties:
                     k8sNode:
                       description: k8sNode is the name of the kubernetes node
                       type: string
                     spectrumscaleNode:
-                      description: spectrumscaleNode is the name of the SpectrumScale
+                      description: spectrumscaleNode is the name of the StorageScale
                         node
                       type: string
                   required:
@@ -1014,7 +1014,7 @@ spec:
                 default:
                 - key: scale
                   value: "true"
-                description: pluginNodeSelector is the node selector for Spectrum
+                description: pluginNodeSelector is the node selector for Storage
                   Scale CSI plugin.
                 items:
                   description: CSINodeSelector defines the fields of Node Selector
@@ -1103,7 +1103,7 @@ spec:
                   type: object
                 type: array
               spectrumScale:
-                description: spectrumScale is the image name for the CSI Spectrum
+                description: spectrumScale is the image name for the CSI Storage
                   Scale node driver plugin container.
                 type: string
               tolerations:
