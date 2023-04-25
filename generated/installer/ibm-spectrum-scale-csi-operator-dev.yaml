@@ -27,7 +27,7 @@ spec:
         release: ibm-spectrum-scale-csi-operator
       annotations:
         productID: ibm-spectrum-scale-csi-operator
-        productName: IBM Storage ScaleCSI Operator
+        productName: IBM Spectrum Scale CSI Operator
         productVersion: 2.10.0
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
@@ -866,7 +866,7 @@ spec:
                 description: nodeMapping specifies mapping of K8s node with Storage Scale node.
                 items:
                   type: object
-                  description: Defines mapping between kubernetes node and storagescale nodes
+                  description: Defines mapping between kubernetes node and StorageScale nodes
                   properties:
                     k8sNode:
                       type: string
