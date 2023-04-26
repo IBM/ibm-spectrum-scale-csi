@@ -34,6 +34,7 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/k8sutil"
 )
 
@@ -246,7 +247,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	nodePlugin.SecurityContext = ensureContainerSecurityContext(true, true, true)
+	nodePlugin.SecurityContext = ensureDriverContainersSecurityContext(true, true, true, false)
 	fillSecurityContextCapabilities(nodePlugin.SecurityContext)
 
 	nodePlugin.Lifecycle = &corev1.Lifecycle{
@@ -267,7 +268,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	registrar.SecurityContext = ensureContainerSecurityContext(true, true, true)
+	registrar.SecurityContext = ensureDriverContainersSecurityContext(true, true, true, true)
 	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()
@@ -281,7 +282,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	livenessProbe.SecurityContext = ensureContainerSecurityContext(false, false, true)
+	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
 	livenessProbe.Resources = ensureSidecarResources()
@@ -586,4 +587,40 @@ func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) 
 		}
 		sc.Capabilities.Add = adds
 	}
+}
+
+// ensureDriverContainersSecurityContext sets AllowPrivilegeEscalation, Privileged, ReadOnlyRootFilesystem
+// and runAsNonRoot for the containers of driver pod, if runAsNonRoot is true, default values are set for
+// runAsUser and runAsGroup.
+func ensureDriverContainersSecurityContext(allowPrivilegeEscalation bool, privileged bool, readOnlyRootFilesystem bool, runAsNonRoot bool) *corev1.SecurityContext {
+	var (
+		localAllowPrivilegeEscalation *bool = boolptr.False()
+		localPrivileged               *bool = boolptr.False()
+		localReadOnlyRootFilesystem   *bool = boolptr.True()
+	)
+	if allowPrivilegeEscalation {
+		localAllowPrivilegeEscalation = boolptr.True()
+	}
+	if privileged {
+		localPrivileged = boolptr.True()
+	}
+	if !readOnlyRootFilesystem {
+		localReadOnlyRootFilesystem = boolptr.False()
+	}
+	securityContext := &corev1.SecurityContext{
+		AllowPrivilegeEscalation: localAllowPrivilegeEscalation,
+		Privileged:               localPrivileged,
+		ReadOnlyRootFilesystem:   localReadOnlyRootFilesystem}
+
+	if runAsNonRoot {
+		runAsUser := int64(config.RunAsUser)
+		runAsGroup := int64(config.RunAsGroup)
+
+		securityContext.RunAsNonRoot = boolptr.True()
+		securityContext.RunAsUser = &runAsUser
+		securityContext.RunAsGroup = &runAsGroup
+	} else {
+		securityContext.RunAsNonRoot = boolptr.False()
+	}
+	return securityContext
 }
