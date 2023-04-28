@@ -10,9 +10,9 @@ require (
 	golang.org/x/net v0.8.0
 	golang.org/x/sys v0.7.0
 	google.golang.org/grpc v1.54.0
-	k8s.io/api v0.27.1
+	k8s.io/api v0.26.4
 	k8s.io/klog/v2 v2.90.1
-	k8s.io/mount-utils v0.26.3
+	k8s.io/mount-utils v0.26.4
 )
 
 require (
@@ -30,8 +30,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apimachinery v0.27.1 // indirect
-	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749 // indirect
+	k8s.io/apimachinery v0.26.4 // indirect
+	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
