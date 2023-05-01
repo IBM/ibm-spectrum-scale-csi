@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package utils
+package consistencygroup
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -60,7 +59,7 @@ type VolumeHandle struct {
 // GetVolumeHandle get's the CSI volume handle from a CSI PV source.
 // VolumeHandle format:
 // <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
-func GetVolumeHandle(ctx context.Context, pvs *corev1.CSIPersistentVolumeSource) (VolumeHandle, error) {
+func GetVolumeHandle(pvs *corev1.CSIPersistentVolumeSource) (VolumeHandle, error) {
 	var vh VolumeHandle
 	if pvs == nil {
 		return vh, ErrNoCsiVolume
@@ -97,15 +96,15 @@ func GetFilesystem(pvs *corev1.CSIPersistentVolumeSource) (string, error) {
 }
 
 // GetConsistencyGroupFileset reads the consistency group fileset name from a CSI PV source.
-func GetConsistencyGroupFileset(ctx context.Context, pvs *corev1.CSIPersistentVolumeSource) (string, error) {
-	volHandle, err := GetVolumeHandle(ctx, pvs)
+func GetConsistencyGroupFileset(pvs *corev1.CSIPersistentVolumeSource) (string, error) {
+	volHandle, err := GetVolumeHandle(pvs)
 	// The consistency group name is the same as the name of the independent fileset that represents the consistency group.
 	return volHandle.ConsistencyGroup, err
 }
 
 // GetConsistencyGroupFilesetLinkPath returns the link path of the consistency group fileset.
-func GetConsistencyGroupFilesetLinkPath(ctx context.Context, pvs *corev1.CSIPersistentVolumeSource) (string, error) {
-	volHandle, err := GetVolumeHandle(ctx, pvs)
+func GetConsistencyGroupFilesetLinkPath(pvs *corev1.CSIPersistentVolumeSource) (string, error) {
+	volHandle, err := GetVolumeHandle(pvs)
 	if err != nil {
 		return "", err
 	}
