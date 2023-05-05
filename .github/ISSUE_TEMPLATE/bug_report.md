@@ -26,8 +26,8 @@ Environmental output
 - What openshift/kubernetes version are you running, and the architecture? 
 - `kubectl get pods -o wide -n < csi driver namespace> `
 - `kubectl get nodes -o wide`
-- CNSA/Storage Scale version 
-- Remote Storage Scale version 
+- IBM Storage Scale container native version 
+- IBM Storage Scale version 
 - Output for `./tools/spectrum-scale-driver-snap.sh -n < csi driver namespace> -v `
 
 
