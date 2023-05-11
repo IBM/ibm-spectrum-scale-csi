@@ -117,3 +117,8 @@ func GetConsistencyGroupFilesetLinkPath(pvs *corev1.CSIPersistentVolumeSource) (
 
 	return cgFsetLinkPath, nil
 }
+
+// ToVolumeHandleString returns the volume handle in string format
+func (vh VolumeHandle) ToVolumeHandleString() string {
+	return fmt.Sprintf("%x;%x;%s;%s;%s;%s;%s", vh.StorageClassType, vh.VolumeType, vh.ClusterID, vh.FilesystemUID, vh.ConsistencyGroup, vh.FilesetName, vh.FilesetLinkPath)
+}
