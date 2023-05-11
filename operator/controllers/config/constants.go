@@ -92,10 +92,10 @@ const (
 	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:4a4cae5118c4404e35d66059346b7fa0835d7e6319ff45ed73f4bba335cf5183"
 	//  registry.k8s.io/sig-storage/livenessprobe:v2.9.0
 	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:2b10b24dafdc3ba94a03fc94d9df9941ca9d6a9207b927f5dfd21d59fbe05ba0"
-	//  registry.k8s.io/sig-storage/csi-attacher:v4.1.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:08721106b949e4f5c7ba34b059e17300d73c8e9495201954edc90eeb3e6d8461"
-	//  registry.k8s.io/sig-storage/csi-provisioner:v3.4.0
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:e468dddcd275163a042ab297b2d8c2aca50d5e148d2d22f3b6ba119e2f31fa79"
+	//  registry.k8s.io/sig-storage/csi-attacher:v4.2.0
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:34cf9b32736c6624fc9787fb149ea6e0fbeb45415707ac2f6440ac960f1116e6"
+	//  registry.k8s.io/sig-storage/csi-provisioner:v3.4.1
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:893e37a388e7a7463d6c3523311b28cfbc5ae536dbef35430eed272cdc6850dc"
 	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.1
 	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:714aa06ccdd3781f1a76487e2dc7592ece9a12ae9e0b726e4f93d1639129b771"
 	//  registry.k8s.io/sig-storage/csi-resizer:v1.7.0
