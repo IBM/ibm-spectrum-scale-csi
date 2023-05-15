@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-#USAGE spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
-
 function find_versions()
 {
 
@@ -106,6 +104,8 @@ function collect_csi_pod_logs()
 {
   ns=$1
   cmd=$2
+  since=$3
+  previous=$4
 
   csi_pod_logs=${logdir}/namespaces/${ns}/pod/
   mkdir -p "$csi_pod_logs"
@@ -163,9 +163,9 @@ function help()
    # Display Help
    echo "USAGE: spectrum-scale-driver-snap.sh [-n|o|p|s|v|h]"
    echo "options:"
-   echo "     n     CSI Driver Plugin namespace"
+   echo "     n     CSI driver plugin namespace"
    echo "     o     output-dir"
-   echo "     p     previous[=True]: If false, does not collect the logs for the previous instance of the container in a pod"
+   echo "     p     previous[=True]: If False, does not collect the logs for the previous instance of the container in a pod"
    echo "     s     Only return logs newer than a relative duration like 2h, or 4d. Defaults to all logs"
    echo "     v     Print CSI version"
    echo "     h     Print Help"
@@ -257,7 +257,7 @@ echo "The log files will be saved in the folder [$logdir]"
 get_version_images=${logdir}/version
 find_versions $ns $cmd >> "$get_version_images" 2>&1 || :
 get_kind $ns $cmd
-collect_csi_pod_logs  $ns $cmd
+collect_csi_pod_logs  $ns $cmd $since $previous
 
 get_clusterinfo_cmd="$cmd cluster-info dump --namespaces kube-system --output-directory=$logdir"
 echo "$get_clusterinfo_cmd"
