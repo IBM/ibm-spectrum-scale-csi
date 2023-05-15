@@ -106,7 +106,6 @@ function collect_csi_pod_logs()
   cmd=$2
   since=$3
   previous=$4
-
   csi_pod_logs=${logdir}/namespaces/${ns}/pod/
   mkdir -p "$csi_pod_logs"
   klog="$cmd logs --namespace $ns"
@@ -175,7 +174,8 @@ ns="ibm-spectrum-scale-csi-driver"
 outdir="."
 cmd="kubectl"
 version_flag=0
-
+previous="True"
+since="0s"
 while getopts 'n:o:p:s:vh' OPTION; do
   case "$OPTION" in
     n)
