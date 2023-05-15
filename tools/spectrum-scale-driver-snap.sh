@@ -107,7 +107,7 @@ function collect_csi_pod_logs()
   ns=$1
   cmd=$2
 
-  csi_pod_logs=${logdir}/namespaces/${ns}/pods/
+  csi_pod_logs=${logdir}/namespaces/${ns}/pod/
   mkdir -p "$csi_pod_logs"
   klog="$cmd logs --namespace $ns"
 
