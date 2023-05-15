@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2019 IBM Corp.
+# Copyright 20239 IBM Corp.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -191,7 +191,6 @@ fi
 time=$(date +"%m-%d-%Y-%T"| sed 's/://g')
 logdir=${outdir%/}/ibm-spectrum-scale-csi-logs_$time
 
-klog="$cmd logs --namespace $ns"
 mkdir "$logdir"
 CSI_SPECTRUM_SCALE_LABEL="ibm-spectrum-scale-csi"
 PRODUCT_NAME="ibm-spectrum-scale-csi"
@@ -199,79 +198,61 @@ PRODUCT_NAME="ibm-spectrum-scale-csi"
 echo "Collecting \"$PRODUCT_NAME\" logs..."
 echo "The log files will be saved in the folder [$logdir]"
 
-describe_all_per_label=${logdir}/ibm-spectrum-scale-csi-describe-all-by-label
-get_all_per_label=${logdir}/ibm-spectrum-scale-csi-get-all-by-label
-get_configmap=${logdir}/ibm-spectrum-scale-csi-configmap
-get_k8snodes=${logdir}/ibm-spectrum-scale-csi-k8snodes
-get_csinodes=${logdir}/ibm-spectrum-scale-csi-csinodes
-get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
-describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
-get_version_images=${logdir}/ibm-spectrum-scale-csi-versions
-get_events=${logdir}/ibm-spectrum-scale-csi-events
+function collect_csi_pod_logs()
+{
+  ns=$1
+  cmd=$2
 
-# kubectl describe operator pod
-operatorName=$($cmd get deployment ibm-spectrum-scale-csi-operator  --namespace "$ns"  | grep -v NAME | awk '{print $1}')
-if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
-   describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
-   echo "$describeCSIScaleOperator"
-   $describeCSIScaleOperator > "${describe_CSIScaleOperator}" 2>&1 || :
- fi
+  csi_pod_logs=${logdir}/namespaces/${ns}/pods/
+  mkdir -p "$csi_pod_logs"
+  klog="$cmd logs --namespace $ns"
 
-# kubectl logs on csi driver and operator pods
-for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
-  echo "$klog pod/${opPodName}"
-  if [[ $since != "" ]]
-  then
-    $klog pod/"${opPodName}" --all-containers --since "$since" > "${logdir}"/"${opPodName}".log 2>&1 || :
-  else 
-    $klog pod/"${opPodName}" --all-containers > "${logdir}"/"${opPodName}".log 2>&1 || :
-  fi
-  if [[ $previous != "False" ]]
-  then
-    echo "$klog pod/${opPodName} --previous" 
-    $klog pod/"${opPodName}" --all-containers  --previous > "${logdir}"/"${opPodName}"-previous.log 2>&1 || :
-  fi    
-done
+  for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
+    echo "Gather data for pod/${opPodName}"
+    if [[ $since != "" ]]
+    then
+      $klog pod/"${opPodName}" --all-containers --since "$since" > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
+    else 
+      $klog pod/"${opPodName}" --all-containers > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
+    fi
+    if [[ $previous != "False" ]]
+    then
+      echo "Gather data for pod/${opPodName} --previous " 
+      $klog pod/"${opPodName}" --all-containers  --previous > "${csi_pod_logs}"/"${opPodName}"-previous.log 2>&1 || :
+    fi    
+  done
+}
 
-describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount,clusterroles,clusterrolebindings -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
-echo "$describe_label_cmd"
-$describe_label_cmd > "$describe_all_per_label" 2>&1 || :
 
-get_label_cmd="$cmd get cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings,csidriver --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
-echo "$get_label_cmd"
-$get_label_cmd > "$get_all_per_label" 2>&1 || :
+function get_kind() 
+{
 
-get_label_cmd="$cmd get all --namespace $ns -o wide  -l product=${CSI_SPECTRUM_SCALE_LABEL}"
-echo "$get_label_cmd"
-$get_label_cmd >> "$get_all_per_label" 2>&1 || :
+  ns=$1
+  cmd=$2
 
-get_configmap_cmd="$cmd get configmap spectrum-scale-config --namespace $ns -o yaml"
-echo "$get_configmap_cmd"
-$get_configmap_cmd > "$get_configmap" 2>&1 || :
+  cluster_scoped_kinds=(storageclass clusterroles clusterrolebindings nodes pv volumeattachment csinodes )
+  namespace_kinds=(pod secret configmap demonset pvc serviceaccount deployment events CSIScaleOperator)
+  namespace_kind_log=${logdir}/namespaces/${ns}
 
-get_k8snodes_cmd="$cmd get nodes --show-labels"
-echo "$get_k8snodes_cmd"
-$get_k8snodes_cmd > "$get_k8snodes" 2>&1 || :
+  for kind in ${namespace_kinds[@]}
+  do
+    echo "Gather data for kind $kind..."
+    mkdir -p "${namespace_kind_log}"/"${kind}"
+    $cmd get $kind --namespace $ns > "${namespace_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
+    $cmd describe $kind --namespace $ns  > "${namespace_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
+  done
 
-get_k8snodes_cmd="$cmd describe nodes"
-echo "$get_k8snodes_cmd"
-$get_k8snodes_cmd >> "$get_k8snodes" 2>&1 || :
+  cluster_scoped_kind_log=${logdir}/clusterscoped
 
-get_csinodes_cmd="$cmd get csinodes"
-echo "$get_csinodes_cmd"
-$get_csinodes_cmd > "$get_csinodes" 2>&1 || :
+  for kind in ${cluster_scoped_kinds[@]}
+  do
+    echo "Gather data for kind $kind..."
+    mkdir -p "${cluster_scoped_kind_log}"/"${kind}"
+    $cmd get $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
+    $cmd describe $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
+  done
 
-get_csinodes_cmd="$cmd describe csinodes"
-echo "$get_csinodes_cmd"
-$get_csinodes_cmd >> "$get_csinodes" 2>&1 || :
-
-get_spectrum_cmd="$cmd describe ds -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator -n $ns"
-echo "$get_spectrum_cmd"
-$get_spectrum_cmd >> "$get_daemonset" 2>&1 || :
-
-get_events_cmd="$cmd get events --namespace $ns"
-echo "$get_events_cmd"
-$get_events_cmd >> "$get_events" 2>&1 || :
+}
 
 if [[ "$cmd" == "oc" ]]
 then
@@ -280,7 +261,10 @@ then
    $get_scc_cmd > "${logdir}"/${PRODUCT_NAME}-scc.log 2>&1 || :
 fi
 
+get_version_images=${logdir}/version
 find_versions $ns $cmd >> "$get_version_images" 2>&1 || :
+get_kind $ns $cmd
+collect_csi_pod_logs  $ns $cmd
 
 get_clusterinfo_cmd="$cmd cluster-info dump --namespaces kube-system --output-directory=$logdir"
 echo "$get_clusterinfo_cmd"
