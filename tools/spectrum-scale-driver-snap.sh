@@ -135,7 +135,7 @@ function get_kind()
   cmd=$2
 
   cluster_scoped_kinds=(storageclass clusterroles clusterrolebindings nodes pv volumeattachment csinodes )
-  namespace_kinds=(pod secret configmap demonset pvc serviceaccount deployment events CSIScaleOperator scc)
+  namespace_kinds=(pod secret configmap daemonset pvc serviceaccount deployment events CSIScaleOperator scc)
   namespace_kind_log=${logdir}/namespaces/${ns}
 
   for kind in ${namespace_kinds[@]}
@@ -146,7 +146,7 @@ function get_kind()
     $cmd describe $kind --namespace $ns  > "${namespace_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
   done
 
-  cluster_scoped_kind_log=${logdir}/clusterscoped
+  cluster_scoped_kind_log=${logdir}/cluster-scoped-resources
 
   for kind in ${cluster_scoped_kinds[@]}
   do
