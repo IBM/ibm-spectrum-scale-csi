@@ -105,11 +105,10 @@ func main() {
 	}
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// PluginFolder defines the location of scaleplugin
 	PluginFolder := path.Join(*kubeletRootDir, "plugins/spectrumscale.csi.ibm.com")
-	OldPluginFolder := path.Join(*kubeletRootDir, "plugins/ibm-spectrum-scale-csi")
 
 	if err := createPersistentStorage(path.Join(PluginFolder, "controller")); err != nil {
 		klog.Errorf("[%s] failed to create persistent storage for controller %v", loggerId, err)
@@ -120,9 +119,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := deleteStalePluginDir(OldPluginFolder); err != nil {
-		klog.Errorf("[%s] failed to delete stale plugin folder %v, please delete manually. %v", loggerId, OldPluginFolder, err)
-	}
 	defer klog.Flush()
 	handle(ctx)
 	os.Exit(0)
@@ -144,10 +140,6 @@ func createPersistentStorage(persistentStoragePath string) error {
 		}
 	}
 	return nil
-}
-
-func deleteStalePluginDir(stalePluginPath string) error {
-	return os.RemoveAll(stalePluginPath)
 }
 
 func setContext() context.Context {
