@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 20239 IBM Corp.
+# Copyright 2023 IBM Corp.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,6 +102,62 @@ function find_versions()
 
 }
 
+function collect_csi_pod_logs()
+{
+  ns=$1
+  cmd=$2
+
+  csi_pod_logs=${logdir}/namespaces/${ns}/pods/
+  mkdir -p "$csi_pod_logs"
+  klog="$cmd logs --namespace $ns"
+
+  for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
+    echo "Gather data for pod/${opPodName}"
+    if [[ $since != "" ]]
+    then
+      $klog pod/"${opPodName}" --all-containers --since "$since" > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
+    else
+      $klog pod/"${opPodName}" --all-containers > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
+    fi
+    if [[ $previous != "False" ]]
+    then
+      echo "Gather data for pod/${opPodName} --previous "
+      $klog pod/"${opPodName}" --all-containers  --previous > "${csi_pod_logs}"/"${opPodName}"-previous.log 2>&1 || :
+    fi
+  done
+}
+
+
+function get_kind()
+{
+
+  ns=$1
+  cmd=$2
+
+  cluster_scoped_kinds=(storageclass clusterroles clusterrolebindings nodes pv volumeattachment csinodes )
+  namespace_kinds=(pod secret configmap demonset pvc serviceaccount deployment events CSIScaleOperator scc)
+  namespace_kind_log=${logdir}/namespaces/${ns}
+
+  for kind in ${namespace_kinds[@]}
+  do
+    echo "Gather data for kind $kind..."
+    mkdir -p "${namespace_kind_log}"/"${kind}"
+    $cmd get $kind --namespace $ns > "${namespace_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
+    $cmd describe $kind --namespace $ns  > "${namespace_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
+  done
+
+  cluster_scoped_kind_log=${logdir}/clusterscoped
+
+  for kind in ${cluster_scoped_kinds[@]}
+  do
+    echo "Gather data for kind $kind..."
+    mkdir -p "${cluster_scoped_kind_log}"/"${kind}"
+    $cmd get $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
+    $cmd describe $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
+  done
+
+}
+
 function help()
 {
    # Display Help
@@ -197,69 +253,6 @@ PRODUCT_NAME="ibm-spectrum-scale-csi"
 
 echo "Collecting \"$PRODUCT_NAME\" logs..."
 echo "The log files will be saved in the folder [$logdir]"
-
-function collect_csi_pod_logs()
-{
-  ns=$1
-  cmd=$2
-
-  csi_pod_logs=${logdir}/namespaces/${ns}/pods/
-  mkdir -p "$csi_pod_logs"
-  klog="$cmd logs --namespace $ns"
-
-  for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
-    echo "Gather data for pod/${opPodName}"
-    if [[ $since != "" ]]
-    then
-      $klog pod/"${opPodName}" --all-containers --since "$since" > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
-    else 
-      $klog pod/"${opPodName}" --all-containers > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
-    fi
-    if [[ $previous != "False" ]]
-    then
-      echo "Gather data for pod/${opPodName} --previous " 
-      $klog pod/"${opPodName}" --all-containers  --previous > "${csi_pod_logs}"/"${opPodName}"-previous.log 2>&1 || :
-    fi    
-  done
-}
-
-
-function get_kind() 
-{
-
-  ns=$1
-  cmd=$2
-
-  cluster_scoped_kinds=(storageclass clusterroles clusterrolebindings nodes pv volumeattachment csinodes )
-  namespace_kinds=(pod secret configmap demonset pvc serviceaccount deployment events CSIScaleOperator)
-  namespace_kind_log=${logdir}/namespaces/${ns}
-
-  for kind in ${namespace_kinds[@]}
-  do
-    echo "Gather data for kind $kind..."
-    mkdir -p "${namespace_kind_log}"/"${kind}"
-    $cmd get $kind --namespace $ns > "${namespace_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
-    $cmd describe $kind --namespace $ns  > "${namespace_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
-  done
-
-  cluster_scoped_kind_log=${logdir}/clusterscoped
-
-  for kind in ${cluster_scoped_kinds[@]}
-  do
-    echo "Gather data for kind $kind..."
-    mkdir -p "${cluster_scoped_kind_log}"/"${kind}"
-    $cmd get $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
-    $cmd describe $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
-  done
-
-}
-
-if [[ "$cmd" == "oc" ]]
-then
-   get_scc_cmd="$cmd describe scc spectrum-scale-csiaccess"
-   echo "$get_scc_cmd"
-   $get_scc_cmd > "${logdir}"/${PRODUCT_NAME}-scc.log 2>&1 || :
-fi
 
 get_version_images=${logdir}/version
 find_versions $ns $cmd >> "$get_version_images" 2>&1 || :
