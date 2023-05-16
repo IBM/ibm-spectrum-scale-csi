@@ -802,7 +802,7 @@ spec:
                       maxLength: 20
                     primary:
                       type: object
-                      description: primary is the primary file system for the Storage Scale cluster.
+                      description: primary is the primary file system for the IBM Storage Scale cluster.
                       properties:
                         inodeLimit:
                           type: string
@@ -825,10 +825,10 @@ spec:
                         properties:
                           guiHost:
                             type: string
-                            description: guiHost is the hostname/IP of the Storage Scale GUI node.
+                            description: guiHost is the hostname/IP of the IBM Storage Scale GUI node.
                           guiPort:
                             type: integer
-                            description: guiPort is the port number of the Storage Scale GUI node.
+                            description: guiPort is the port number of the IBM Storage Scale GUI node.
                         required:
                         - guiHost
                     secrets:
@@ -863,7 +863,7 @@ spec:
                 description: livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
               nodeMapping:
                 type: array
-                description: nodeMapping specifies mapping of K8s node with Storage Scale node.
+                description: nodeMapping specifies mapping of K8s node with IBM Storage Scale node.
                 items:
                   type: object
                   description: Defines mapping between kubernetes node and StorageScale nodes
