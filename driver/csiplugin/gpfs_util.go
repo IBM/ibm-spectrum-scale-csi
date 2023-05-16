@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"k8s.io/klog/v2"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"k8s.io/klog/v2"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -96,24 +97,6 @@ type scaleSnapId struct {
 	ConsistencyGroup string
 	VolType          string
 }
-
-// nolint
-type scaleVolSnapshot struct {
-	SnapName   string `json:"snapName"`
-	SourceVol  string `json:"sourceVol"`
-	Filesystem string `json:"filesystem"`
-	Fileset    string `json:"fileset"`
-	ClusterId  string `json:"clusterId"`
-	SnapSize   uint64 `json:"snapSize"`
-} //nolint
-
-// nolint
-type scaleVolSnapId struct {
-	ClusterId string
-	FsUUID    string
-	FsetId    string
-	SnapId    string
-} //nolint
 
 func IsValidCompressionAlgorithm(input string) bool {
 	switch strings.ToLower(input) {
@@ -444,7 +427,7 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 		}
 	}
 	if Iter == 0 {
-		return 0, fmt.Errorf("Invalid number specified %v", inputStr)
+		return 0, fmt.Errorf("invalid number specified %v", inputStr)
 	}
 
 	retValue, err := strconv.ParseUint(inputStr[:Iter], 10, 64)
@@ -472,11 +455,11 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	case "t", "tb", "terabytes", "terabyte":
 		retValue *= (1024 * 1024 * 1024 * 1024)
 	default:
-		return 0, fmt.Errorf("Invalid Unit %v supplied with %v", unit, inputStr)
+		return 0, fmt.Errorf("invalid Unit %v supplied with %v", unit, inputStr)
 	}
 
 	if retValue > uintMax64 {
-		return 0, fmt.Errorf("Overflow detected %v", inputStr)
+		return 0, fmt.Errorf("overflow detected %v", inputStr)
 	}
 
 	return retValue, nil

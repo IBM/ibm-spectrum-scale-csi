@@ -349,10 +349,10 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
-		for _, cmEnv := range cmEnvVars {
+		/*for _, cmEnv := range cmEnvVars {
 			EnvVars = append(EnvVars, cmEnv)
-		}
-
+		}*/
+		EnvVars = append(EnvVars, cmEnvVars...)
 		return append(EnvVars, []corev1.EnvVar{
 			{
 				Name:  "CSI_ENDPOINT",

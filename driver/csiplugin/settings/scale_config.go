@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -98,12 +98,10 @@ const (
 	CertificatePath string = "/var/lib/ibm/ssl/public"
 )
 
-var eCtx context.Context = nil
-
 func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
 	klog.V(6).Infof("[%s] scale_config LoadScaleConfigSettings", utils.GetLoggerId(ctx))
 
-	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
+	file, e := os.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
 		klog.Errorf("[%s] IBM Storage Scale configuration not found: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
@@ -128,9 +126,9 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
-			file, e := ioutil.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
+			file, e := os.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("IBM Storage Scale secret not found: %v\n", e)
+				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
 			}
 			file_s := string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -138,9 +136,9 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			cmap.Clusters[i].MgmtUsername = file_s
 
 			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
-			file, e = ioutil.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
+			file, e = os.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("IBM Storage Scale secret not found: %v\n", e)
+				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
 			}
 			file_s = string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -151,9 +149,9 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
 			certPath := path.Join(CertificatePath, cmap.Clusters[i].Cacert)
 			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
-			file, e := ioutil.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
+			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("IBM Storage Scale CA certificate not found: %v\n", e)
+				return fmt.Errorf("the IBM Storage Scale CA certificate not found: %v", e)
 			}
 			cmap.Clusters[i].CacertValue = file
 		}

@@ -197,7 +197,7 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context,
 func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVersion, nodeID string) error {
 	klog.V(0).Infof("[%s] gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
 	if name == "" {
-		return fmt.Errorf("Driver name missing")
+		return fmt.Errorf("driver name missing")
 	}
 
 	scmap, cmap, primary, err := driver.PluginInitialize(ctx)
