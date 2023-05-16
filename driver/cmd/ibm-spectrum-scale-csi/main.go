@@ -20,11 +20,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math/rand"
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -104,8 +102,6 @@ func main() {
 		klog.Infof("[%s] logValue: %s", loggerId, level)
 	}
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
-
-	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// PluginFolder defines the location of scaleplugin
 	PluginFolder := path.Join(*kubeletRootDir, "plugins/spectrumscale.csi.ibm.com")
