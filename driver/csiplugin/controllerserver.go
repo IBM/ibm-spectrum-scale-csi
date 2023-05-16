@@ -226,7 +226,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 
 	filesetQuotaBytes, err := ConvertToBytes(quota)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid number specified") {
+		if strings.Contains(err.Error(), "invalid number specified") {
 			// Invalid number specified means quota is not set
 			filesetQuotaBytes = 0
 		} else {
@@ -327,7 +327,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
+		_, err := cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -352,7 +352,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
-		filesetPath, err = cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -415,7 +415,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Spectrum Scale CSI driver. Cannot use it.", volName))
 		}
 		listFilesetType := ""
-		if filesetInfo.Config.IsInodeSpaceOwner == true {
+		if filesetInfo.Config.IsInodeSpaceOwner {
 			listFilesetType = independentFileset
 		} else {
 			listFilesetType = dependentFileset
@@ -522,7 +522,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 	return strings.Join(invalidParams[:], ", "), false
 }
 
-func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (error, connectors.SpectrumScaleConnector, string, string, string, string, string) {
+func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (connectors.SpectrumScaleConnector, string, string, string, string, string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] getPrimaryClusterDetails", loggerId)
 
@@ -537,7 +537,7 @@ func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (
 	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
 	if err != nil {
 		klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
-		return err, nil, "", "", "", "", ""
+		return nil, "", "", "", "", "", err
 	}
 
 	primaryFSMount := fsMountInfo.MountPoint
@@ -550,10 +550,10 @@ func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (
 	symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
 	klog.Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
 
-	return err, primaryConn, symlinkDirRelativePath, cs.Driver.primary.GetPrimaryFs(), primaryFSMount, symlinkDirAbsolutePath, cs.Driver.primary.PrimaryCid
+	return primaryConn, symlinkDirRelativePath, cs.Driver.primary.GetPrimaryFs(), primaryFSMount, symlinkDirAbsolutePath, cs.Driver.primary.PrimaryCid, err
 }
 
-func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (error, string) {
+func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] getPrimaryFSMountPoint", loggerId)
 
@@ -562,10 +562,10 @@ func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (er
 	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
 	if err != nil {
 		klog.Errorf("[%s] Failed to get details of primary filesystem %s:Error: %v", loggerId, primaryFS, err)
-		return status.Error(codes.NotFound, fmt.Sprintf("Failed to get details of primary filesystem %s. Error: %v", primaryFS, err)), ""
+		return "", status.Error(codes.NotFound, fmt.Sprintf("Failed to get details of primary filesystem %s. Error: %v", primaryFS, err))
 
 	}
-	return nil, fsMountInfo.MountPoint
+	return fsMountInfo.MountPoint, nil
 }
 
 // CreateVolume - Create Volume
@@ -626,7 +626,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	/* Get details for Primary Cluster */
-	err, primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID := cs.getPrimaryClusterDetails(ctx)
+	primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1108,7 +1108,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		response, err = conn.WaitForJobCompletionWithResp(ctx, jobStatus, jobID)
 	} else {
-		err, primaryFSMountPoint := cs.getPrimaryFSMountPoint(ctx)
+		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
 		if err != nil {
 			return err
 		}
@@ -1125,6 +1125,9 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		jobDetails = VolCopyJobDetails{VOLCOPY_JOB_RUNNING, volID}
 		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		response, err = conn.WaitForJobCompletionWithResp(ctx, jobStatus, jobID)
+		if err != nil {
+			klog.Errorf("[%s] failed while calling WaitForJobCompletionWithResp: %v.", loggerId, err)
+		}
 	}
 	isResponseStatusUnknown := false
 	if len(response.Jobs) != 0 {
@@ -1195,10 +1198,11 @@ func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version str
 	assembledFsVer := strings.ReplaceAll(fsVersion, ".", "")
 
 	klog.Infof("fs version (%s) vs min required version (%s)", assembledFsVer, version)
-	if assembledFsVer < version {
-		return false
-	}
-	return true
+	/*	if assembledFsVer < version {
+			return false
+		}
+		return true*/
+	return assembledFsVer >= version
 }
 
 func (cs *ScaleControllerServer) checkSnapshotSupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
@@ -1252,8 +1256,8 @@ func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connec
 	return nil
 }
 
-func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	/* Verify Spectrum Scale Version is not below 5.1.5-0 */
+/*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
+	// Verify Spectrum Scale Version is not below 5.1.5-0
 
 	versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
 	if err != nil {
@@ -1264,7 +1268,7 @@ func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn con
 		return status.Error(codes.FailedPrecondition, "the minimum required Spectrum Scale version for GUI HA support with CSI is 5.1.5-0")
 	}
 	return nil
-}
+}*/
 
 func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string) error {
 	loggerId := utils.GetLoggerId(ctx)
@@ -1608,7 +1612,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
-		err, primaryFSMountPoint := cs.getPrimaryFSMountPoint(ctx)
+		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -1899,10 +1903,9 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 		return "", err
 	}
 
-	var timestampSecs int64
-	timestampSecs = timestamp.GetSeconds()
+	var timestampSecs int64 = timestamp.GetSeconds()
 	lastSnapTime := time.Unix(timestampSecs, 0)
-	passedTime := time.Now().Sub(lastSnapTime).Seconds()
+	passedTime := time.Since(lastSnapTime).Seconds()
 	klog.Infof("[%s] Fileset [%s:%s], last snapshot time: [%v], current time: [%v], passed time: %v seconds, snapWindow: %v minutes", loggerId, filesystemName, filesetName, lastSnapTime, time.Now(), int64(passedTime), snapWindow)
 
 	snapWindowSeconds := snapWindow * 60
@@ -2016,7 +2019,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		klog.V(4).Infof("[%s] CreateSnapshot - creating snapshot for classic storageClass", loggerId)
-		err, primaryFSMountPoint := cs.getPrimaryFSMountPoint(ctx)
+		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
 		if err != nil {
 			return nil, err
 		}

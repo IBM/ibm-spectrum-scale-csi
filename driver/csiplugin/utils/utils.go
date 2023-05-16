@@ -19,17 +19,20 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"golang.org/x/sys/unix"
-	"io/ioutil"
-	"k8s.io/klog/v2"
+	"io"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
+	"k8s.io/klog/v2"
 )
 
-const loggerId = "logger_id"
+type loggerKey string
+
+const loggerId loggerKey = "logger_id"
 
 func ReadFile(path string) ([]byte, error) {
 	klog.V(6).Infof("utils ReadFile. path: %s", path)
@@ -46,7 +49,7 @@ func ReadFile(path string) ([]byte, error) {
 		}
 	}()
 
-	bytes, err := ioutil.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		klog.Errorf("Error in read file %s: %v", path, err)
 		return nil, err
@@ -75,7 +78,7 @@ func GetPath(paths []string) string {
 }
 
 func Exists(path string) bool {
-//	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
+	//	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
@@ -83,7 +86,7 @@ func Exists(path string) bool {
 }
 
 func MkDir(path string) error {
-//	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
+	//	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
@@ -126,7 +129,7 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	}
 
 	if Iter == 0 {
-		return 0, fmt.Errorf("Invalid number specified %v", inputStr)
+		return 0, fmt.Errorf("invalid number specified %v", inputStr)
 	}
 
 	retValue, err := strconv.ParseUint(inputStr[:Iter], 10, 64)
@@ -154,11 +157,11 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	case "t", "tb", "terabytes", "terabyte":
 		retValue *= (1024 * 1024 * 1024 * 1024)
 	default:
-		return 0, fmt.Errorf("Invalid Unit %v supplied with %v", unit, inputStr)
+		return 0, fmt.Errorf("invalid Unit %v supplied with %v", unit, inputStr)
 	}
 
 	if retValue > uintMax64 {
-		return 0, fmt.Errorf("Overflow detected %v", inputStr)
+		return 0, fmt.Errorf("overflow detected %v", inputStr)
 	}
 
 	return retValue, nil
