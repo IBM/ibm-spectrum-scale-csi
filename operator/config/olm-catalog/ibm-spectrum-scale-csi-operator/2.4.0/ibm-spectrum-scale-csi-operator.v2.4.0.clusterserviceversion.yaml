@@ -235,7 +235,7 @@ spec:
         path: snapshotter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: Sidecar liveness probe image for csi storage scale plugin pods.
+      - description: Sidecar liveness probe image for csi Storage Scale plugin pods.
         displayName: Liveness probe Image
         path: livenessprobe
         x-descriptors:
@@ -250,7 +250,7 @@ spec:
         path: resizer
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: Sidecar container image for the csi storage scale plugin pods.
+      - description: Sidecar container image for the csi Storage Scale plugin pods.
         displayName: Driver Registrar Image
         path: driverRegistrar
         x-descriptors:

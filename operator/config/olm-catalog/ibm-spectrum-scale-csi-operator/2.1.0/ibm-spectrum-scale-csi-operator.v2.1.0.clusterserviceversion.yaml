@@ -82,7 +82,7 @@ spec:
         path: clusters
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Image name for the csi storage scale plugin container.
+      - description: Image name for the csi Storage Scale plugin container.
         displayName: Storage Scale Image
         path: spectrumScale
         x-descriptors:
@@ -106,7 +106,7 @@ spec:
         path: provisioner
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Sidecar container image for the csi storage scale plugin pods.
+      - description: Sidecar container image for the csi Storage Scale plugin pods.
         displayName: Driver Registrar Image
         path: driverRegistrar
         x-descriptors:
@@ -217,7 +217,7 @@ spec:
         - urn:alm:descriptor:io.kubernetes.phase
       version: v1
   description: "\nThe IBM Storage Scale CSI Operator runs within a Kubernetes cluster\
-    \ providing a means to \ndeploy and manage the CSI plugin for storage scale.\
+    \ providing a means to \ndeploy and manage the CSI plugin for Storage Scale.\
     \ For more in depth documentation please refer\nto the [knowledge center](https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR).\n\
     \nThis operator should be used to deploy the CSI plugin.\n\nThe configuration\
     \ process is as follows:\n\n1. [Storage Scale GUI Setup](#spectrum-scale-gui-setup)\n\

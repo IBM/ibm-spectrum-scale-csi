@@ -21,9 +21,9 @@ usage() {
                 -l|--path <full Path of Volume in Primary Filesystem>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
-                -u|--username <Username of storage scale GUI user account.>
-                -p|--password <Password of storage scale GUI user account.>
-                -r|--guihost <Route host name used to route traffic to the storage scale GUI service.>
+                -u|--username <Username of Storage Scale GUI user account.>
+                -p|--password <Password of Storage Scale GUI user account.>
+                -r|--guihost <Route host name used to route traffic to the Storage Scale GUI service.>
                 [-P|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
@@ -37,8 +37,8 @@ fullUsage() {
                 -l|--path <full Path of Volume in Primary Filesystem>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
-                -u|--username <Username of storage scale GUI user account.>
-                -p|--password <Password of storage scale GUI user account.>
+                -u|--username <Username of Storage Scale GUI user account.>
+                -p|--password <Password of Storage Scale GUI user account.>
                 -r|--guihost <HostName(or route) used to access IBM Storage Scale GUI service running on Primary Cluster.>
                 [-P|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
@@ -265,7 +265,7 @@ else
   STORAGECLASS="storageClassName: \"\""
 fi
 
-# Check if this is storage scale node
+# Check if this is Storage Scale node
 #if [[ ! -f /usr/lpp/mmfs/bin/mmlscluster ]]; then
 #  echo "ERROR: Storage Scale cli's are not present on this node"
 #  exit 2

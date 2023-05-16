@@ -84,7 +84,7 @@ spec:
         path: clusters
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Image name for the csi storage scale plugin container.
+      - description: Image name for the csi Storage Scale plugin container.
         displayName: Storage Scale Image
         path: spectrumScale
         x-descriptors:
@@ -113,12 +113,12 @@ spec:
         path: snapshotter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Sidecar liveness probe image for csi storage scale plugin pods.
+      - description: Sidecar liveness probe image for csi Storage Scale plugin pods.
         displayName: Liveness probe Image
         path: livenessprobe
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Sidecar container image for the csi storage scale plugin pods.
+      - description: Sidecar container image for the csi Storage Scale plugin pods.
         displayName: Driver Registrar Image
         path: driverRegistrar
         x-descriptors:

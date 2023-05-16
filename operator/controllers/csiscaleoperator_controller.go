@@ -1799,7 +1799,7 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 // cluster ID is valid.
 func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) (error, time.Duration) {
 	logger := csiLog.WithName("handleStorageScaleConnectors")
-	logger.Info("Checking storage scale connectors")
+	logger.Info("Checking Storage Scale connectors")
 
 	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists

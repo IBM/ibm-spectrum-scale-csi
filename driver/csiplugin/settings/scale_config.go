@@ -105,7 +105,7 @@ func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
 
 	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		klog.Errorf("[%s] storage scale configuration not found: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] Storage Scale configuration not found: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}

@@ -155,7 +155,7 @@ fi
 
 [[ -z "${NAMESPACE}" ]] && NAMESPACE="default"
 
-# Check if this is storage scale node
+# Check if this is Storage Scale node
 if [[ ! -f /usr/lpp/mmfs/bin/mmlscluster ]] ; then
     echo "ERROR: Storage Scale cli's are not present on this node"
     exit 2

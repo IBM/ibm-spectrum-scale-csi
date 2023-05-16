@@ -240,7 +240,7 @@ func (s *SpectrumRestV2) GetScaleVersion(ctx context.Context) (string, error) {
 	}
 
 	if len(getVersionResponse.Info.ServerVersion) == 0 {
-		return "", fmt.Errorf("unable to get storage scale version")
+		return "", fmt.Errorf("unable to get Storage Scale version")
 	}
 
 	return getVersionResponse.Info.ServerVersion, nil

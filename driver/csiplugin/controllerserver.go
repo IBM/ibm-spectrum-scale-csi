@@ -782,7 +782,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 
-	klog.Infof("[%s] volume:[%v] -  storage scale volume create params : %v\n", loggerId, scaleVol.VolName, scaleVol)
+	klog.Infof("[%s] volume:[%v] -  Storage Scale volume create params : %v\n", loggerId, scaleVol.VolName, scaleVol)
 
 	if scaleVol.IsFilesetBased && scaleVol.Compression != "" {
 		klog.Infof("[%s] createvolume: compression is enabled: changing volume name", loggerId)
