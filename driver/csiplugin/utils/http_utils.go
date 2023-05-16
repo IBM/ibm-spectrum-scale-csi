@@ -21,11 +21,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"k8s.io/klog/v2"
+	"io"
 	"net/http"
-)
 
+	"k8s.io/klog/v2"
+)
 
 /*
 	func ExtractErrorResponse(response *http.Response) error {
@@ -41,7 +41,7 @@ import (
 func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}) error {
 	klog.V(6).Infof("[%s] http_utils UnmarshalResponse. response: %v", GetLoggerId(ctx), r.Body)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadAll failed %v", err)
 	}
@@ -60,17 +60,17 @@ func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestTy
 
 	payload, err := json.MarshalIndent(rawPayload, "", " ")
 	if err != nil {
-		err = fmt.Errorf("Internal error marshaling params. url: %s: %#v", requestURL, err)
+		err = fmt.Errorf("internal error marshaling params. url: %s: %#v", requestURL, err)
 		return nil, fmt.Errorf("failed %v", err)
 	}
 
 	if user == "" {
-		return nil, fmt.Errorf("Empty UserName passed")
+		return nil, fmt.Errorf("empty UserName passed")
 	}
 
 	request, err := http.NewRequest(requestType, requestURL, bytes.NewBuffer(payload))
 	if err != nil {
-		err = fmt.Errorf("Error in creating request. url: %s: %#v", requestURL, err)
+		err = fmt.Errorf("error in creating request. url: %s: %#v", requestURL, err)
 		return nil, fmt.Errorf("failed %v", err)
 	}
 
@@ -99,7 +99,7 @@ func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
 func Unmarshal(r *http.Request, object interface{}) error {
 	klog.V(6).Infof("http_utils Unmarshal. request: %v, object: %v", r, object)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func Unmarshal(r *http.Request, object interface{}) error {
 func UnmarshalDataFromRequest(r *http.Request, object interface{}) error {
 	klog.V(6).Infof("http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
