@@ -897,17 +897,17 @@ spec:
                   type: object
                 type: array
               clusters:
-                description: clusters is a collection of Storage Scale cluster properties
+                description: clusters is a collection of IBM Storage Scale cluster properties
                   for the CSI driver to mount.
                 items:
-                  description: Defines the fields of a Storage Scale cluster specification
+                  description: Defines the fields of a IBM Storage Scale cluster specification
                   properties:
                     cacert:
                       description: cacert is the name of the configMap storing GUI
                         certificates. Mandatory if secureSslMode is true.
                       type: string
                     id:
-                      description: id is the cluster ID of the Storage Scale cluster.
+                      description: id is the cluster ID of the IBM Storage Scale cluster.
                       maxLength: 20
                       type: string
                     primary:
@@ -925,7 +925,7 @@ spec:
                             primaryFs
                           type: string
                         remoteCluster:
-                          description: Remote Storage Scale cluster ID
+                          description: Remote IBM Storage Scale cluster ID
                           type: string
                       type: object
                     restApi:
@@ -952,7 +952,7 @@ spec:
                     secureSslMode:
                       default: false
                       description: secureSslMode specifies if a secure SSL connection
-                        to connect to Storage Scale cluster is required.
+                        to connect to IBM Storage Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -974,7 +974,7 @@ spec:
                 type: string
               driverRegistrar:
                 description: driverRegistrar is the Sidecar container image for the
-                  CSI Storage Scale plugin pods.
+                  IBM Storage Scale CSI plugin pods.
                 type: string
               imagePullSecrets:
                 description: A passthrough option that distributes an imagePullSecrets

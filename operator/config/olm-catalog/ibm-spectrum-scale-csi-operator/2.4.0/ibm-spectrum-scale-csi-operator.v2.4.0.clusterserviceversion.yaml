@@ -30,8 +30,8 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents a deployment of the IBM CSI Storage Scale driver.
-      displayName: IBM CSI Storage Scale Driver
+    - description: Represents a deployment of the IBM Storage Scale CSI driver.
+      displayName: IBM Storage Scale CSI Driver
       kind: CSIScaleOperator
       name: csiscaleoperators.csi.ibm.com
       resources:
@@ -221,7 +221,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
       - description: Image name for IBM Storage Scale CSI plugin container.
-        displayName: Storage Scale Image
+        displayName: IBM Storage Scale Image
         path: spectrumScale
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
@@ -235,7 +235,7 @@ spec:
         path: snapshotter
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: Sidecar liveness probe image for csi Storage Scale plugin pods.
+      - description: Sidecar liveness probe image for IBM Storage Scale CSI plugin pods.
         displayName: Liveness probe Image
         path: livenessprobe
         x-descriptors:
@@ -250,7 +250,7 @@ spec:
         path: resizer
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: Sidecar container image for the csi Storage Scale plugin pods.
+      - description: Sidecar container image for the IBM Storage Scale CSI plugin pods.
         displayName: Driver Registrar Image
         path: driverRegistrar
         x-descriptors:
@@ -473,11 +473,11 @@ spec:
   keywords:
   - IBM
   - GPFS
-  - Storage Scale
+  - IBM Storage Scale
   labels:
     operator: ibm-spectrum-scale-csi-operator
   links:
-  - name: IBM CSI Storage Scale Documentation
+  - name: IBM Storage Scale CSI Documentation
     url: https://www.ibm.com/docs/en/spectrum-scale-csi
   - name: CSI Developer Documentation
     url: https://kubernetes-csi.github.io/docs/

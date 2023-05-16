@@ -788,17 +788,17 @@ spec:
                   - value
               clusters:
                 type: array
-                description: clusters is a collection of Storage Scale cluster properties for the CSI driver to mount.
+                description: clusters is a collection of IBM Storage Scale cluster properties for the CSI driver to mount.
                 items:
                   type: object
-                  description: Defines the fields of a Storage Scale cluster specification
+                  description: Defines the fields of a IBM Storage Scale cluster specification
                   properties:
                     cacert:
                       type: string
                       description: cacert is the name of the configMap storing GUI certificates. Mandatory if secureSslMode is true.
                     id:
                       type: string
-                      description: id is the cluster ID of the Storage Scale cluster.
+                      description: id is the cluster ID of the IBM Storage Scale cluster.
                       maxLength: 20
                     primary:
                       type: object
@@ -815,7 +815,7 @@ spec:
                           description: The name of the primary fileset, created in primaryFs
                         remoteCluster:
                           type: string
-                          description: Remote Storage Scale cluster ID
+                          description: Remote IBM Storage Scale cluster ID
                     restApi:
                       type: array
                       description: restApi is a collection of targets for REST calls
@@ -837,7 +837,7 @@ spec:
                     secureSslMode:
                       type: boolean
                       default: false
-                      description: secureSslMode specifies if a secure SSL connection to connect to Storage Scale cluster is required.
+                      description: secureSslMode specifies if a secure SSL connection to connect to IBM Storage Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -854,7 +854,7 @@ spec:
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
               driverRegistrar:
                 type: string
-                description: driverRegistrar is the Sidecar container image for the CSI Storage Scale plugin pods.
+                description: driverRegistrar is the Sidecar container image for the IBM Storage Scale CSI plugin pods.
               kubeletRootDirPath:
                 type: string
                 description: kubeletRootDirPath is the path for kubelet root directory.
@@ -882,7 +882,7 @@ spec:
                 default:
                 - value: "true"
                   key: scale
-                description: pluginNodeSelector is the node selector for Storage Scale CSI plugin.
+                description: pluginNodeSelector is the node selector for IBM Storage Scale CSI plugin.
                 items:
                   type: object
                   description: CSINodeSelector defines the fields of Node Selector
@@ -964,7 +964,7 @@ spec:
                   - value
               spectrumScale:
                 type: string
-                description: spectrumScale is the image name for the CSI Storage Scale node driver plugin container.
+                description: spectrumScale is the image name for the IBM Storage Scale CSI node driver plugin container.
             required:
             - clusters
           status:

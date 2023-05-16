@@ -92,7 +92,7 @@ spec:
   customresourcedefinitions:
     owned:
     - description: CSIScaleOperator is the Schema for the csiscaleoperators API
-      displayName: IBM CSI Storage Scale Driver
+      displayName: IBM Storage Scale CSI Driver
       kind: CSIScaleOperator
       name: csiscaleoperators.csi.ibm.com
       resources:
@@ -135,7 +135,7 @@ spec:
         path: attacherNodeSelector[0].value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: clusters is a collection of Storage Scale cluster properties
+      - description: clusters is a collection of IBM Storage Scale cluster properties
           for the CSI driver to mount.
         displayName: Clusters
         path: clusters
@@ -145,12 +145,12 @@ spec:
         path: clusters[0].cacert
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:ConfigMap
-      - description: id is the cluster ID of the Storage Scale cluster.
+      - description: id is the cluster ID of the IBM Storage Scale cluster.
         displayName: Cluster ID
         path: clusters[0].id
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: primary is the primary file system for the Storage Scale cluster.
+      - description: primary is the primary file system for the IBM Storage Scale cluster.
         displayName: Primary
         path: clusters[0].primary
         x-descriptors:
@@ -160,12 +160,12 @@ spec:
         path: clusters[0].restApi
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: guiHost is the hostname/IP of the Storage Scale GUI node.
+      - description: guiHost is the hostname/IP of the IBM Storage Scale GUI node.
         displayName: GUI Host
         path: clusters[0].restApi[0].guiHost
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: guiPort is the port number of the Storage Scale GUI node.
+      - description: guiPort is the port number of the IBM Storage Scale GUI node.
         displayName: GUI Port
         path: clusters[0].restApi[0].guiPort
         x-descriptors:
@@ -177,7 +177,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
       - description: secureSslMode specifies if a secure SSL connection to connect
-          to Storage Scale cluster is required.
+          to IBM Storage Scale cluster is required.
         displayName: Secure SSL Mode
         path: clusters[0].secureSslMode
         x-descriptors:
@@ -219,7 +219,7 @@ spec:
         path: livenessprobe
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: nodeMapping specifies mapping of K8s node with Storage Scale
+      - description: nodeMapping specifies mapping of K8s node with IBM Storage Scale
           node.
         displayName: Node Mapping
         path: nodeMapping
@@ -231,11 +231,11 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: spectrumscaleNode is the name of the StorageScale node
-        displayName: Storage Scale Node
+        displayName: IBM Storage Scale Node
         path: nodeMapping[0].spectrumscaleNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: pluginNodeSelector is the node selector for Storage Scale CSI
+      - description: pluginNodeSelector is the node selector for IBM Storage Scale CSI
           plugin.
         displayName: Plugin Node Selector
         path: pluginNodeSelector
@@ -316,9 +316,9 @@ spec:
         path: snapshotterNodeSelector[0].value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: spectrumScale is the image name for the CSI Storage Scale node
+      - description: spectrumScale is the image name for the IBM Storage Scale CSI node
           driver plugin container.
-        displayName: Storage Scale Image
+        displayName: IBM Storage Scale Image
         path: spectrumScale
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
@@ -535,12 +535,12 @@ spec:
   keywords:
   - IBM
   - GPFS
-  - Storage Scale
+  - IBM Storage Scale
   - CSI Driver
   labels:
     operator: ibm-spectrum-scale-csi-operator
   links:
-  - name: IBM CSI Storage Scale Documentation
+  - name: IBM Storage Scale CSI Documentation
     url: https://www.ibm.com/docs/en/spectrum-scale-csi
   - name: CSI Developer Documentation
     url: https://kubernetes-csi.github.io/docs/

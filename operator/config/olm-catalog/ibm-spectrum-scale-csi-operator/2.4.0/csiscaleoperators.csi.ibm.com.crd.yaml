@@ -111,12 +111,12 @@ spec:
               type: array
             driverRegistrar:
               description:
-                Sidecar container image for the csi Storage Scale plugin
+                Sidecar container image for the IBM Storage Scale CSI plugin
                 pods.
               type: string
             livenessprobe:
               description:
-                Sidecar liveness probe image for the csi Storage Scale plugin
+                Sidecar liveness probe image for the IBM Storage Scale CSI plugin
                 pods.
               type: string
             nodeMapping:
@@ -197,7 +197,7 @@ spec:
               description: A generic trigger to be used in kickin off the ansible operator.
               type: string
             spectrumScale:
-              description: Image name for the csi Storage Scale plugin container.
+              description: Image name for the IBM Storage Scale CSI plugin container.
               type: string
             imagePullSecrets:
               description:

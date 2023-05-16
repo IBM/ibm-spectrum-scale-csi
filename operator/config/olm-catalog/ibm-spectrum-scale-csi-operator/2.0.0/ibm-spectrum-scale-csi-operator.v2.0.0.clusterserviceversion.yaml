@@ -10,7 +10,7 @@ metadata:
     certified: 'false'
     containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator:v2.0.0
     createdAt: Tue Jun  9 11:18:01 EDT 2020
-    description: An operator for deploying and managing the IBM CSI Storage Scale
+    description: An operator for deploying and managing the IBM Storage Scale CSI
       Driver.
     repository: https://github.com/IBM/ibm-spectrum-scale-csi/
     support: IBM
@@ -25,8 +25,8 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents a deployment of the IBM CSI Storage Scale driver.
-      displayName: IBM CSI Storage Scale Driver
+    - description: Represents a deployment of the IBM Storage Scale CSI driver.
+      displayName: IBM Storage Scale CSI Driver
       kind: CSIScaleOperator
       name: csiscaleoperators.csi.ibm.com
       resources:
@@ -79,8 +79,8 @@ spec:
         path: clusters
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
-      - description: Image name for the csi Storage Scale plugin container.
-        displayName: Storage Scale Image
+      - description: Image name for the IBM Storage Scale CSI plugin container.
+        displayName: IBM Storage Scale Image
         path: spectrumScale
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
@@ -103,13 +103,13 @@ spec:
         path: provisioner
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: Sidecar container image for the csi Storage Scale plugin pods.
+      - description: Sidecar container image for the IBM Storage Scale CSI plugin pods.
         displayName: Driver Registrar Image
         path: driverRegistrar
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
       - description: The path to the gpfs file system mounted on the host machine.
-        displayName: Storage Scale Hostpath
+        displayName: IBM Storage Scale Hostpath
         path: scaleHostpath
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
@@ -214,15 +214,15 @@ spec:
         - urn:alm:descriptor:io.kubernetes.phase
       version: v1
   description: "\nThe IBM Storage Scale CSI Operator runs within a Kubernetes cluster\
-    \ providing a means to \ndeploy and manage the CSI plugin for Storage Scale.\
+    \ providing a means to \ndeploy and manage the CSI plugin for IBM Storage Scale.\
     \ For more in depth documentation please refer\nto the [knowledge center](https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR).\n\
     \nThis operator should be used to deploy the CSI plugin.\n\nThe configuration\
-    \ process is as follows:\n\n1. [Storage Scale GUI Setup](#spectrum-scale-gui-setup)\n\
+    \ process is as follows:\n\n1. [IBM Storage Scale GUI Setup](#spectrum-scale-gui-setup)\n\
     2. [Custom Resource Configuration](#custom-resource-configuration)\n\nSpectrum\
     \ Scale GUI Setup \n------------------------\n> **NOTE:** This step only needs\
     \ to be preformed once per GUI.\n\n> **WARNING:** If your daemonset pods (driver\
     \ pods) do not come up, generally this means you have a  secret that  has not\
-    \ been defined in the correct namespace.\n\n1. Ensure the Storage Scale GUI is\
+    \ been defined in the correct namespace.\n\n1. Ensure the IBM Storage Scale GUI is\
     \ running by pointing your browser to the IP hosting the GUI:\n\n \n    > If you\
     \ do not see a login follow on screen instructions, or review the [GUI Documentation](https://www.ibm.com/support/knowledgecenter/en/STXKQY_5.0.5/com.ibm.spectrum.scale.v5r05.doc/bl1ins_quickrefforgui.htm)\n\
     \n\n3. Create a CsiAdmin group account on in the GUI (currently requires a CLI\
@@ -405,11 +405,11 @@ spec:
   keywords:
   - IBM
   - GPFS
-  - Storage Scale
+  - IBM Storage Scale
   labels:
     operator: ibm-spectrum-scale-csi-operator
   links:
-  - name: IBM CSI Storage Scale Knowledge Center
+  - name: IBM Storage Scale CSI Knowledge Center
     url: https://www.ibm.com/support/knowledgecenter/STXKQY_CSI_SHR
   - name: CSI Developer Documentation
     url: https://kubernetes-csi.github.io/docs/

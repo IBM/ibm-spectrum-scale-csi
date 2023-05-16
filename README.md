@@ -14,7 +14,7 @@ IBM Storage Scale CSI driver is part of the IBM Storage Scale offering. Please f
 
 ## Report Bugs 
 
-For help with urgent situations, please use the IBM PMR process.  All Storage Scale customers using CSI, 
+For help with urgent situations, please use the IBM PMR process.  All IBM Storage Scale customers using CSI, 
 who also have ongoing support contracts, are entitled to the PMR process.  Feature requests through the official RFE channels are also encouraged.
 
 For non-urgent issues, suggestions, recommendations, feel free to open an issue in [github](https://github.com/IBM/ibm-spectrum-scale-csi/issues).

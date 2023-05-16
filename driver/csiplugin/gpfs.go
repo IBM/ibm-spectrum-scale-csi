@@ -71,9 +71,9 @@ type VolCopyJobDetails struct {
 
 // ClusterDetails stores information of the cluster.
 type ClusterDetails struct {
-	// id of the Storage Scale cluster
+	// id of the IBM Storage Scale cluster
 	id string
-	// name of the Storage Scale cluster
+	// name of the IBM Storage Scale cluster
 	name string
 	// time when the object was last updated.
 	lastupdated time.Time
@@ -83,13 +83,13 @@ type ClusterDetails struct {
 
 // ClusterName stores the name of the cluster.
 type ClusterName struct {
-	// name of the Storage Scale cluster
+	// name of the IBM Storage Scale cluster
 	name string
 }
 
 // ClusterID stores the id of the cluster.
 type ClusterID struct {
-	// id of the Storage Scale cluster
+	// id of the IBM Storage Scale cluster
 	id string
 }
 
@@ -253,7 +253,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 		sc, err := connectors.GetSpectrumScaleConnector(ctx, cluster)
 		if err != nil {
-			klog.Errorf("[%s] Unable to initialize Storage Scale connector for cluster %s", utils.GetLoggerId(ctx), cluster.ID)
+			klog.Errorf("[%s] Unable to initialize IBM Storage Scale connector for cluster %s", utils.GetLoggerId(ctx), cluster.ID)
 			return nil, scaleConfig, primaryInfo, err
 		}
 

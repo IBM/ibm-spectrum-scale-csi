@@ -891,22 +891,22 @@ spec:
                   type: object
                 type: array
               clusters:
-                description: clusters is a collection of Storage Scale cluster properties
-                  for the CSI driver to mount.
+                description: clusters is a collection of IBM Storage Scale cluster
+                  properties for the CSI driver to mount.
                 items:
-                  description: Defines the fields of a Storage Scale cluster specification
+                  description: Defines the fields of a IBM Storage Scale cluster specification
                   properties:
                     cacert:
                       description: cacert is the name of the configMap storing GUI
                         certificates. Mandatory if secureSslMode is true.
                       type: string
                     id:
-                      description: id is the cluster ID of the Storage Scale cluster.
+                      description: id is the cluster ID of the IBM Storage Scale cluster.
                       maxLength: 20
                       type: string
                     primary:
-                      description: primary is the primary file system for the Storage
-                        Scale cluster.
+                      description: primary is the primary file system for the IBM
+                        Storage Scale cluster.
                       properties:
                         inodeLimit:
                           description: Inode limit for Primary Fileset
@@ -919,7 +919,7 @@ spec:
                             primaryFs
                           type: string
                         remoteCluster:
-                          description: Remote Storage Scale cluster ID
+                          description: Remote IBM Storage Scale cluster ID
                           type: string
                       type: object
                     restApi:
@@ -928,11 +928,11 @@ spec:
                         description: Defines the fields for REST API server information.
                         properties:
                           guiHost:
-                            description: guiHost is the hostname/IP of the Storage
+                            description: guiHost is the hostname/IP of the IBM Storage
                               Scale GUI node.
                             type: string
                           guiPort:
-                            description: guiPort is the port number of the Storage
+                            description: guiPort is the port number of the IBM Storage
                               Scale GUI node.
                             type: integer
                         required:
@@ -946,7 +946,7 @@ spec:
                     secureSslMode:
                       default: false
                       description: secureSslMode specifies if a secure SSL connection
-                        to connect to Storage Scale cluster is required.
+                        to connect to IBM Storage Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -968,7 +968,7 @@ spec:
                 type: string
               driverRegistrar:
                 description: driverRegistrar is the Sidecar container image for the
-                  CSI Storage Scale plugin pods.
+                  IBM Storage Scale CSI plugin pods.
                 type: string
               imagePullSecrets:
                 description: A passthrough option that distributes an imagePullSecrets
@@ -986,7 +986,7 @@ spec:
                   (liveness probe is used to know when to restart a container).
                 type: string
               nodeMapping:
-                description: nodeMapping specifies mapping of K8s node with Storage
+                description: nodeMapping specifies mapping of K8s node with IBM Storage
                   Scale node.
                 items:
                   description: Defines mapping between kubernetes node and StorageScale
@@ -1008,8 +1008,8 @@ spec:
                 default:
                 - key: scale
                   value: "true"
-                description: pluginNodeSelector is the node selector for Storage Scale
-                  CSI plugin.
+                description: pluginNodeSelector is the node selector for IBM Storage
+                  Scale CSI plugin.
                 items:
                   description: CSINodeSelector defines the fields of Node Selector
                   properties:
@@ -1097,8 +1097,8 @@ spec:
                   type: object
                 type: array
               spectrumScale:
-                description: spectrumScale is the image name for the CSI Storage Scale
-                  node driver plugin container.
+                description: spectrumScale is the image name for the IBM Storage Scale
+                  CSI node driver plugin container.
                 type: string
               tolerations:
                 description: Array of tolerations that will be distributed to CSI

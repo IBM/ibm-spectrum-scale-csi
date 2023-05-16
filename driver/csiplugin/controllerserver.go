@@ -499,7 +499,7 @@ func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid s
 }
 
 // checkSCSupportedParams checks if given CreateVolume request parameter keys
-// are supported by Storage Scale CSI and returns ("", true) if all parameter
+// are supported by IBM Storage Scale CSI and returns ("", true) if all parameter
 // keys are supported, otherwise returns (<list of invalid keys seperated by
 // comma>, false)
 func checkSCSupportedParams(params map[string]string) (string, bool) {
@@ -782,7 +782,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 
-	klog.Infof("[%s] volume:[%v] -  Storage Scale volume create params : %v\n", loggerId, scaleVol.VolName, scaleVol)
+	klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create params : %v\n", loggerId, scaleVol.VolName, scaleVol)
 
 	if scaleVol.IsFilesetBased && scaleVol.Compression != "" {
 		klog.Infof("[%s] createvolume: compression is enabled: changing volume name", loggerId)
@@ -921,10 +921,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	if scaleVol.VolPermissions != "" {
 		versionCheck, err := cs.checkMinScaleVersion(ctx, scaleVol.Connector, "5112")
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("the minimum Storage Scale version check for permissions failed with error %s", err))
+			return nil, status.Error(codes.Internal, fmt.Sprintf("the minimum IBM Storage Scale version check for permissions failed with error %s", err))
 		}
 		if !versionCheck {
-			return nil, status.Error(codes.Internal, "the minimum required Storage Scale version for permissions support with CSI is 5.1.1-2")
+			return nil, status.Error(codes.Internal, "the minimum required IBM Storage Scale version for permissions support with CSI is 5.1.1-2")
 		}
 	}
 
@@ -1167,11 +1167,11 @@ func (cs *ScaleControllerServer) checkMinScaleVersion(ctx context.Context, conn 
 	if err != nil {
 		return false, err
 	}
-	/* Assuming Storage Scale version is in a format like 5.0.0-0_170818.165000 */
+	/* Assuming IBM Storage Scale version is in a format like 5.0.0-0_170818.165000 */
 	// "serverVersion" : "5.1.1.1-developer build",
 	splitScaleVer := strings.Split(scaleVersion, ".")
 	if len(splitScaleVer) < 3 {
-		return false, status.Error(codes.Internal, fmt.Sprintf("invalid Storage Scale version - %s", scaleVersion))
+		return false, status.Error(codes.Internal, fmt.Sprintf("invalid IBM Storage Scale version - %s", scaleVersion))
 	}
 	var splitMinorVer []string
 	assembledScaleVer := ""
@@ -1202,44 +1202,44 @@ func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version str
 }
 
 func (cs *ScaleControllerServer) checkSnapshotSupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	/* Verify Storage Scale Version is not below 5.1.1-0 */
+	/* Verify IBM Storage Scale Version is not below 5.1.1-0 */
 	versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5110")
 	if err != nil {
 		return err
 	}
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Storage Scale version for snapshot support with CSI is 5.1.1-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for snapshot support with CSI is 5.1.1-0")
 	}
 	return nil
 }
 
 func (cs *ScaleControllerServer) checkVolCloneSupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	/* Verify Storage Scale Version is not below 5.1.2-1 */
+	/* Verify IBM Storage Scale Version is not below 5.1.2-1 */
 	versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5121")
 	if err != nil {
 		return err
 	}
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Storage Scale version for volume cloning support with CSI is 5.1.2-1")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for volume cloning support with CSI is 5.1.2-1")
 	}
 	return nil
 }
 
 func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
-	/* Verify Storage Scale Filesystem Version is not below 5.1.3-0 (27.00) */
+	/* Verify IBM Storage Scale Filesystem Version is not below 5.1.3-0 (27.00) */
 
 	versionCheck := cs.checkMinFsVersion(version, "2700")
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Storage Scale Filesystem version for tiering support with CSI is 27.00 (5.1.3-0)")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale Filesystem version for tiering support with CSI is 27.00 (5.1.3-0)")
 	}
 	return nil
 }
 
 func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	/* Verify Storage Scale Version is not below 5.1.3-0 */
+	/* Verify IBM Storage Scale Version is not below 5.1.3-0 */
 
 	versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5130")
 	if err != nil {
@@ -1247,13 +1247,13 @@ func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connec
 	}
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Storage Scale version for consistency group support with CSI is 5.1.3-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for consistency group support with CSI is 5.1.3-0")
 	}
 	return nil
 }
 
 func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	/* Verify Storage Scale Version is not below 5.1.5-0 */
+	/* Verify IBM Storage Scale Version is not below 5.1.5-0 */
 
 	versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
 	if err != nil {
@@ -1261,7 +1261,7 @@ func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn con
 	}
 
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required Storage Scale version for GUI HA support with CSI is 5.1.5-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
 	}
 	return nil
 }
@@ -1296,7 +1296,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, sourcesnaps
 	// 	return status.Error(codes.Unimplemented, "creating dependent fileset based volume from snapshot is not supported")
 	// }
 
-	/* Check if Storage Scale supports Snapshot */
+	/* Check if IBM Storage Scale supports Snapshot */
 	chkSnapshotErr := cs.checkSnapshotSupport(ctx, conn)
 	if chkSnapshotErr != nil {
 		return chkSnapshotErr
@@ -1967,7 +1967,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, err
 	}
 
-	/* Check if Storage Scale supports Snapshot */
+	/* Check if IBM Storage Scale supports Snapshot */
 	chkSnapshotErr := cs.checkSnapshotSupport(ctx, conn)
 	if chkSnapshotErr != nil {
 		return nil, chkSnapshotErr
