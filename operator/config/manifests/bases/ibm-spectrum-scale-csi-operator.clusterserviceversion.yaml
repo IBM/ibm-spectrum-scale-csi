@@ -164,7 +164,7 @@ spec:
         path: nodeMapping[0].k8sNode
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:label
-      - description: spectrumscaleNode is the name of the StorageScale node
+      - description: spectrumscaleNode is the name of the IBM Storage Scale node
         displayName: IBM Storage Scale Node
         path: nodeMapping[0].spectrumscaleNode
         x-descriptors:

@@ -89,7 +89,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 	volScalePath := volumeIDMembers.Path
 
-	klog.V(4).Infof("[%s] Target StorageScale Path : %v\n", loggerId, volScalePath)
+	klog.V(4).Infof("[%s] Target IBM Storage Scale Path : %v\n", loggerId, volScalePath)
 
 	volScalePathInContainer := hostDir + volScalePath
 	f, err := os.Lstat(volScalePathInContainer)

@@ -866,14 +866,14 @@ spec:
                 description: nodeMapping specifies mapping of K8s node with IBM Storage Scale node.
                 items:
                   type: object
-                  description: Defines mapping between kubernetes node and StorageScale nodes
+                  description: Defines mapping between kubernetes node and IBM Storage ScaleScale nodes
                   properties:
                     k8sNode:
                       type: string
                       description: k8sNode is the name of the kubernetes node
                     spectrumscaleNode:
                       type: string
-                      description: spectrumscaleNode is the name of the StorageScale node
+                      description: spectrumscaleNode is the name of the IBM Storage Scale node
                   required:
                   - k8sNode
                   - spectrumscaleNode

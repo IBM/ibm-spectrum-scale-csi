@@ -291,14 +291,14 @@ const (
 )
 */
 
-// Defines mapping between kubernetes node and StorageScale nodes
+// Defines mapping between kubernetes node and IBM Storage Scale nodes
 type NodeMapping struct {
 
 	// k8sNode is the name of the kubernetes node
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubernetes Node",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	K8sNode string `json:"k8sNode"`
 
-	// spectrumscaleNode is the name of the StorageScale node
+	// spectrumscaleNode is the name of the IBM Storage Scale node
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="IBM Storage Scale Node",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	SpectrumscaleNode string `json:"spectrumscaleNode"`
 }

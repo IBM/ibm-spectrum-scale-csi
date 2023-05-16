@@ -1705,7 +1705,7 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
 	logger := csiLog.WithName("newStorageScaleConnector")
-	logger.Info("Creating new StorageScaleConnector for cluster with", "ID", cluster.Id)
+	logger.Info("Creating new IBM Storage Scale Connector for cluster with", "ID", cluster.Id)
 
 	var rest *connectors.SpectrumRestV2
 	var tr *http.Transport
