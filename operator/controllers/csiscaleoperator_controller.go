@@ -1732,8 +1732,8 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 			)
 			return nil, err
 		}
-		username = string(secret.Data[config.SecretUsername])
-		password = string(secret.Data[config.SecretPassword])
+		username = strings.TrimSpace(string(secret.Data[config.SecretUsername]))
+		password = strings.TrimSuffix(string(secret.Data[config.SecretPassword]), "\n")
 	}
 
 	if cluster.SecureSslMode == true && cluster.Cacert != "" {

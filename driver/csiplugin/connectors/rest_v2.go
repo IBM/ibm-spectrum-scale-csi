@@ -1022,30 +1022,30 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			}
 		} else {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return err
+			return status.Error(codes.Internal, fmt.Sprintf("Error in authentication: %s request %v%v, user: %v, param: %v, response status: %v", method, endpoint, urlSuffix, s.User, param, response.Status))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return err
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response status: %v", method, endpoint, urlSuffix, s.User, param, response.Status))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request to %v: %v", http.StatusUnauthorized, method, endpoint, response.Status))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response status: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, s.User, param, response.Status))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request to %v: %v", http.StatusForbidden, method, endpoint, response.Status))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response status: %v", http.StatusForbidden, method, endpoint, urlSuffix, s.User, param, response.Status))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return err
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response status: %v, error %v", method, endpoint, urlSuffix, s.User, param, response.Status, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return fmt.Errorf("remote call completed with error [%v]. Error in response [%v]", response.Status, responseObject)
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response status: %v", responseObject, method, endpoint, urlSuffix, s.User, param, response.Status))
 	}
 
 	return nil
