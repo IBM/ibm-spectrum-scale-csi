@@ -128,8 +128,8 @@ spec:
         path: csipspname
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: driverRegistrar is the Sidecar container image for the CSI Storage
-          Scale plugin pods.
+      - description: driverRegistrar is the Sidecar container image for the IBM Storage
+          Scale CSI plugin pods.
         displayName: Driver Registrar
         path: driverRegistrar
         x-descriptors:
