@@ -282,7 +282,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if !cmExists || clustersStanzaModified {
 		err = ValidateCRParams(instance)
 		if err != nil {
-			message := "Failed to validate Spectrum Scale CSI configurations." +
+			message := "Failed to validate IBM Storage Scale CSI configurations." +
 				" Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
 			logger.Error(fmt.Errorf(message), "")
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -290,7 +290,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			)
 			return ctrl.Result{}, err
 		}
-		logger.Info("The Spectrum Scale CSI configurations are validated successfully")
+		logger.Info("The IBM Storage Scale CSI configurations are validated successfully")
 	}
 
 	if len(instance.Spec.Clusters) != 0 {
@@ -682,7 +682,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	logger := csiLog.WithName("SetupWithManager")
 
-	logger.Info("Running IBM Spectrum Scale CSI operator", "version", config.OperatorVersion)
+	logger.Info("Running IBM Storage Scale CSI operator", "version", config.OperatorVersion)
 	logger.Info("Setting up the controller with the manager.")
 
 	CSIReconcileRequestFunc := func(obj client.Object) []reconcile.Request {
@@ -1704,8 +1704,8 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 // newConnector creates and return a new connector to make REST calls for the passed cluster
 func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
-	logger := csiLog.WithName("newSpectrumScaleConnector")
-	logger.Info("Creating new SpectrumScaleConnector for cluster with", "ID", cluster.Id)
+	logger := csiLog.WithName("newConnector")
+	logger.Info("Creating new IBM Storage Scale Connector for cluster with", "ID", cluster.Id)
 
 	var rest *connectors.SpectrumRestV2
 	var tr *http.Transport
@@ -1765,12 +1765,12 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 			return nil, fmt.Errorf("parsing CA cert %v failed", cluster.Cacert)
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
-		logger.Info("Created Spectrum Scale connector with SSL mode for guiHost(s)")
+		logger.Info("Created IBM Storage Scale connector with SSL mode for guiHost(s)")
 
 	} else {
 		//#nosec G402 InsecureSkipVerify was requested by user.
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
-		logger.Info("Created Spectrum Scale connector without SSL mode for guiHost(s)")
+		logger.Info("Created IBM Storage Scale connector without SSL mode for guiHost(s)")
 	}
 
 	rest = &connectors.SpectrumRestV2{
@@ -1800,7 +1800,7 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 // cluster ID is valid.
 func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) (time.Duration, error) {
 	logger := csiLog.WithName("handleSpectrumScaleConnectors")
-	logger.Info("Checking spectrum scale connectors")
+	logger.Info("Checking IBM Storage Scale connectors")
 
 	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
@@ -1851,7 +1851,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 						message += ". " + config.ErrorForbidden +
 							", GUI user specified in the Secret " + cluster.Secrets +
 							" is locked due to multiple connection attempts with incorrect credentials," +
-							" please contact Spectrum Scale Administrator"
+							" please contact IBM Storage Scale Administrator"
 						requeAfterDelay = 1 * time.Minute
 					}
 
@@ -1872,7 +1872,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					continue
 				}
 				if id != cluster.Id {
-					message := fmt.Sprintf("The cluster ID %v in Spectrum Scale CSI configurations does not match with the cluster ID %v obtained from cluster."+
+					message := fmt.Sprintf("The cluster ID %v in IBM Storage Scale CSI configurations does not match with the cluster ID %v obtained from cluster."+
 						" Please check the Spec.Clusters section in the resource %s/%s", cluster.Id, id, instance.Kind, instance.Name,
 					)
 					logger.Error(err, message)
@@ -1897,7 +1897,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
 	primaryReference := r.getPrimaryCluster(instance)
 	if primaryReference == nil {
-		message := fmt.Sprintf("No primary cluster is defined in the Spectrum Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
+		message := fmt.Sprintf("No primary cluster is defined in the IBM Storage Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
 		err := fmt.Errorf(message)
 		logger.Error(err, "")
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -2126,10 +2126,10 @@ func getSymlinkDirPath(fsetLinkPath string, fsMountPath string) (string, string)
 // ValidateCRParams validates driver configuration parameters and returns error if any validation fails
 func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	logger := csiLog.WithName("ValidateCRParams")
-	logger.Info(fmt.Sprintf("Validating the Spectrum Scale CSI configurations of the resource %s/%s", instance.Kind, instance.Name))
+	logger.Info(fmt.Sprintf("Validating the IBM Storage Scale CSI configurations of the resource %s/%s", instance.Kind, instance.Name))
 
 	if len(instance.Spec.Clusters) == 0 {
-		return fmt.Errorf("missing cluster information in Spectrum Scale configuration")
+		return fmt.Errorf("missing cluster information in IBM Storage Scale configuration")
 	}
 
 	primaryClusterFound, issueFound := false, false

@@ -271,7 +271,7 @@ class Driver:
 
         if "permissions" in value_sc.keys() and not(filesetfunc.feature_available("permissions")):
             LOGGER.warning(
-                "Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+                "Min required IBM Storage Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
 
@@ -463,7 +463,7 @@ class Snapshot():
 
         if "permissions" in value_sc.keys() and not(filesetfunc.feature_available("permissions")):
             LOGGER.warning(
-                "Min required Spectrum Scale version for permissions in storageclass support with CSI is 5.1.1-2")
+                "Min required IBM Storage Scale version for permissions in storageclass support with CSI is 5.1.1-2")
             LOGGER.warning("Skipping Testcase")
             return
 
@@ -505,7 +505,7 @@ class Snapshot():
 
             if not(filesetfunc.feature_available("snapshot")):
                 if reason is None:
-                    reason = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
+                    reason = "Min required IBM Storage Scale version for snapshot support with CSI is 5.1.1-0"
                 test_restore = False
 
             vs_name = csistoragefunc.get_random_name("vs")
@@ -619,7 +619,7 @@ class Snapshot():
                 csistoragefunc.check_vs_detail_for_static(vs_name+"-"+str(num), created_objects)
 
             if not(filesetfunc.feature_available("snapshot")):
-                pvc_value["reason"] = "Min required Spectrum Scale version for snapshot support with CSI is 5.1.1-0"
+                pvc_value["reason"] = "Min required IBM Storage Scale version for snapshot support with CSI is 5.1.1-0"
 
             if test_restore:
                 if restore_sc is not None:

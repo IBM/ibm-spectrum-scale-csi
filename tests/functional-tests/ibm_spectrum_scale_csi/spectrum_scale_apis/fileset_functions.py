@@ -726,7 +726,7 @@ def feature_available(feature_name):
 
 def return_scale_version():
     """
-    get spectrum scale version and return it
+    get IBM Storage Scale version and return it
     """
     if scalevalidation == "False":
         LOGGER.warning(f'Get scale version : skipped for gui {test["guiHost"]} as scalevalidation = "False" in config file'
@@ -745,7 +745,7 @@ def return_scale_version():
 
 def get_scale_version(test_data):
     """
-    get spectrum scale version and display it
+    get IBM Storage Scale version and display it
     """
     if scalevalidation == "False":
         LOGGER.warning(f'Get scale version : skipped for gui {test["guiHost"]} as scalevalidation = "False" in config file')

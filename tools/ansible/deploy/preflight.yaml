@@ -5,7 +5,7 @@
     src: hacks
     dest: /tmp/csi-deploy
 
-- name: Gather Spectrum Scale cluster information
+- name: Gather IBM Storage Scale cluster information
   script: "/tmp/csi-deploy/hacks/getscalecluster.py --templates /tmp/csi-deploy/hacks"
   register: cluster_std
 

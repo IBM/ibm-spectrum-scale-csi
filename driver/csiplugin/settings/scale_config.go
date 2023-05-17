@@ -103,13 +103,13 @@ func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
 
 	file, e := os.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		klog.Errorf("[%s] spectrum scale configuration not found: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] IBM Storage Scale configuration not found: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}
 	e = json.Unmarshal(file, cmsj)
 	if e != nil {
-		klog.Errorf("[%s] error in unmarshalling Spectrum Scale configuration json: %v", utils.GetLoggerId(ctx), e)
+		klog.Errorf("[%s] error in unmarshalling IBM Storage Scale configuration json: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 
@@ -128,7 +128,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
 			file, e := os.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("spectrum Scale secret not found: %v", e)
+				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
 			}
 			file_s := string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -138,7 +138,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
 			file, e = os.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("spectrum Scale secret not found: %v", e)
+				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
 			}
 			file_s = string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -151,7 +151,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
 			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("spectrum Scale CA certificate not found: %v", e)
+				return fmt.Errorf("the IBM Storage Scale CA certificate not found: %v", e)
 			}
 			cmap.Clusters[i].CacertValue = file
 		}

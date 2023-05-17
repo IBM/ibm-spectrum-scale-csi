@@ -53,7 +53,7 @@ def create_custom_object(custom_object_body):
             pretty=True
         )
         LOGGER.debug(custom_object_api_response)
-        LOGGER.info("SpectrumScale CSI custom object created")
+        LOGGER.info("StorageScale CSI custom object created")
     except ApiException as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -113,10 +113,10 @@ def check_scaleoperatorobject_is_deleted():
             count = count-1
             time.sleep(20)
         except ApiException:
-            LOGGER.info("SpectrumScale CSI custom object has been deleted")
+            LOGGER.info("StorageScale CSI custom object has been deleted")
             return
 
-    LOGGER.error("SpectrumScale CSI custom object is not deleted")
+    LOGGER.error("StorageScale CSI custom object is not deleted")
     assert False
 
 
@@ -144,10 +144,10 @@ def check_scaleoperatorobject_is_deployed(csiscaleoperator_name="ibm-spectrum-sc
                                                                                  name=csiscaleoperator_name
                                                                                  )
         LOGGER.debug(str(read_co_api_response))
-        LOGGER.info("SpectrumScale CSI custom object exists")
+        LOGGER.info("StorageScale CSI custom object exists")
         return True
     except ApiException:
-        LOGGER.info("SpectrumScale CSI custom object does not exist")
+        LOGGER.info("StorageScale CSI custom object does not exist")
         return False
 
 
