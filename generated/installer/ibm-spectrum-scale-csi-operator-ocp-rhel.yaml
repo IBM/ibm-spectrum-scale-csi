@@ -450,7 +450,7 @@ spec:
                                       description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                                 namespaceSelector:
                                   type: object
-                                  description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                  description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                   properties:
                                     matchExpressions:
                                       type: array
@@ -480,7 +480,7 @@ spec:
                                       description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                                 namespaces:
                                   type: array
-                                  description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace"
+                                  description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                   items:
                                     type: string
                                 topologyKey:
@@ -534,7 +534,7 @@ spec:
                                   description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                             namespaceSelector:
                               type: object
-                              description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                              description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                               properties:
                                 matchExpressions:
                                   type: array
@@ -564,7 +564,7 @@ spec:
                                   description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                             namespaces:
                               type: array
-                              description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace"
+                              description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                               items:
                                 type: string
                             topologyKey:
@@ -619,7 +619,7 @@ spec:
                                       description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                                 namespaceSelector:
                                   type: object
-                                  description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                                  description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                   properties:
                                     matchExpressions:
                                       type: array
@@ -649,7 +649,7 @@ spec:
                                       description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                                 namespaces:
                                   type: array
-                                  description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace"
+                                  description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                   items:
                                     type: string
                                 topologyKey:
@@ -703,7 +703,7 @@ spec:
                                   description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                             namespaceSelector:
                               type: object
-                              description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled.
+                              description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                               properties:
                                 matchExpressions:
                                   type: array
@@ -733,7 +733,7 @@ spec:
                                   description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                             namespaces:
                               type: array
-                              description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace"
+                              description: namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                               items:
                                 type: string
                             topologyKey:
@@ -788,21 +788,21 @@ spec:
                   - value
               clusters:
                 type: array
-                description: clusters is a collection of Spectrum Scale cluster properties for the CSI driver to mount.
+                description: clusters is a collection of IBM Storage Scale cluster properties for the CSI driver to mount.
                 items:
                   type: object
-                  description: Defines the fields of a Spectrum Scale cluster specification
+                  description: Defines the fields of a IBM Storage Scale cluster specification
                   properties:
                     cacert:
                       type: string
                       description: cacert is the name of the configMap storing GUI certificates. Mandatory if secureSslMode is true.
                     id:
                       type: string
-                      description: id is the cluster ID of the Spectrum Scale cluster.
+                      description: id is the cluster ID of the IBM Storage Scale cluster.
                       maxLength: 20
                     primary:
                       type: object
-                      description: primary is the primary file system for the Spectrum Scale cluster.
+                      description: primary is the primary file system for the IBM Storage Scale cluster.
                       properties:
                         inodeLimit:
                           type: string
@@ -815,7 +815,7 @@ spec:
                           description: The name of the primary fileset, created in primaryFs
                         remoteCluster:
                           type: string
-                          description: Remote Spectrum Scale cluster ID
+                          description: Remote IBM Storage Scale cluster ID
                     restApi:
                       type: array
                       description: restApi is a collection of targets for REST calls
@@ -825,19 +825,19 @@ spec:
                         properties:
                           guiHost:
                             type: string
-                            description: guiHost is the hostname/IP of the Spectrum Scale GUI node.
+                            description: guiHost is the hostname/IP of the IBM Storage Scale GUI node.
                           guiPort:
                             type: integer
-                            description: guiPort is the port number of the Spectrum Scale GUI node.
+                            description: guiPort is the port number of the IBM Storage Scale GUI node.
                         required:
                         - guiHost
                     secrets:
                       type: string
-                      description: secret is the name of the basic-auth secret containing credentials to connect to IBM Spectrum Scale REST API server.
+                      description: secret is the name of the basic-auth secret containing credentials to connect to IBM Storage Scale REST API server.
                     secureSslMode:
                       type: boolean
                       default: false
-                      description: secureSslMode specifies if a secure SSL connection to connect to Spectrum Scale cluster is required.
+                      description: secureSslMode specifies if a secure SSL connection to connect to IBM Storage Scale cluster is required.
                       enum:
                       - true
                       - false
@@ -854,7 +854,7 @@ spec:
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
               driverRegistrar:
                 type: string
-                description: driverRegistrar is the Sidecar container image for the CSI Spectrum Scale plugin pods.
+                description: driverRegistrar is the Sidecar container image for the IBM Storage Scale CSI plugin pods.
               kubeletRootDirPath:
                 type: string
                 description: kubeletRootDirPath is the path for kubelet root directory.
@@ -863,17 +863,17 @@ spec:
                 description: livenessprobe is the image for livenessProbe container (liveness probe is used to know when to restart a container).
               nodeMapping:
                 type: array
-                description: nodeMapping specifies mapping of K8s node with Spectrum Scale node.
+                description: nodeMapping specifies mapping of K8s node with IBM Storage Scale node.
                 items:
                   type: object
-                  description: Defines mapping between kubernetes node and spectrumscale nodes
+                  description: Defines mapping between kubernetes node and IBM Storage Scale nodes
                   properties:
                     k8sNode:
                       type: string
                       description: k8sNode is the name of the kubernetes node
                     spectrumscaleNode:
                       type: string
-                      description: spectrumscaleNode is the name of the SpectrumScale node
+                      description: spectrumscaleNode is the name of the IBM Storage Scale node
                   required:
                   - k8sNode
                   - spectrumscaleNode
@@ -882,7 +882,7 @@ spec:
                 default:
                 - value: "true"
                   key: scale
-                description: pluginNodeSelector is the node selector for Spectrum Scale CSI plugin.
+                description: pluginNodeSelector is the node selector for IBM Storage Scale CSI plugin.
                 items:
                   type: object
                   description: CSINodeSelector defines the fields of Node Selector
@@ -964,7 +964,7 @@ spec:
                   - value
               spectrumScale:
                 type: string
-                description: spectrumScale is the image name for the CSI Spectrum Scale node driver plugin container.
+                description: spectrumScale is the image name for the IBM Storage Scale CSI node driver plugin container.
             required:
             - clusters
           status:
@@ -976,7 +976,7 @@ spec:
                 description: conditions contains the details for one aspect of the current state of this custom resource.
                 items:
                   type: object
-                  description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n     // other fields }"
+                  description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, \n \ttype FooStatus struct{ \t    // Represents the observations of a foo's current state. \t    // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\" \t    // +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map \t    // +listMapKey=type \t    Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields \t}"
                   properties:
                     type:
                       type: string

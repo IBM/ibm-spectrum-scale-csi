@@ -1,20 +1,20 @@
 # Functional Test Automation Suite
 
-This Functional Test Automation Suite exercises and tests the IBM Spectrum Scale CSI functionality.
+This Functional Test Automation Suite exercises and tests the IBM Storage Scale CSI functionality.
 
 ### Tested Testbed environment
 
-- IBM Spectrum Scale Cluster - 5.1.0.1+ Version  (**IBM Spectrum Scale supported kernel version**)
+- IBM Storage Scale Cluster - 5.1.0.1+ Version  (**IBM Storage Scale supported kernel version**)
 - Kubernetes Cluster Version 1.19 - 1.22
 - Openshift Version 4.8.x, 4.9.x
-- IBM Spectrum Scale Cluster CSI Version - 2.4.0+
+- IBM Storage Scale Cluster CSI Version - 2.4.0+
 
 
-### How to run IBM Spectrum Scale CSI test automation using container
+### How to run IBM Storage Scale CSI test automation using container
 
 Note: Use `oc` command instead of `kubectl` in case of Openshift Container Platform 
 
-#### In case IBM Spectrum Scale CSI operator and driver is already deployed
+#### In case IBM Storage Scale CSI operator and driver is already deployed
 
 - Configuring parameters such as remote/local filesystem name, uid/gid, you must modify relevant fields in [test.config](./config/test.config) file.
 
@@ -28,7 +28,7 @@ Example
 kubectl create configmap  test-config  --from-file=test.config=/root/ibm-spectrum-scale-csi/tests/functional-tests/config/test.config 
 ```
 
-#### In case IBM Spectrum Scale CSI operator and driver is not deployed
+#### In case IBM Storage Scale CSI operator and driver is not deployed
 - Configure parameters in [csiscaleoperators.csi.ibm.com_cr.yaml](../../operator/config/samples/csiscaleoperators.csi.ibm.com_cr.yaml) file.
 
 - Configuring parameters such as secret username/password, cacert path, uid/gid  & remote/local filesystem name, you must modify relevant fields in [test.config](./config/test.config) file.
