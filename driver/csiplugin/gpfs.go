@@ -71,9 +71,9 @@ type VolCopyJobDetails struct {
 
 // ClusterDetails stores information of the cluster.
 type ClusterDetails struct {
-	// id of the Spectrum Scale cluster
+	// id of the IBM Storage Scale cluster
 	id string
-	// name of the Spectrum Scale cluster
+	// name of the IBM Storage Scale cluster
 	name string
 	// time when the object was last updated.
 	lastupdated time.Time
@@ -83,13 +83,13 @@ type ClusterDetails struct {
 
 // ClusterName stores the name of the cluster.
 type ClusterName struct {
-	// name of the Spectrum Scale cluster
+	// name of the IBM Storage Scale cluster
 	name string
 }
 
 // ClusterID stores the id of the cluster.
 type ClusterID struct {
-	// id of the Spectrum Scale cluster
+	// id of the IBM Storage Scale cluster
 	id string
 }
 
@@ -197,7 +197,7 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context,
 func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVersion, nodeID string) error {
 	klog.V(0).Infof("[%s] gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
 	if name == "" {
-		return fmt.Errorf("Driver name missing")
+		return fmt.Errorf("driver name missing")
 	}
 
 	scmap, cmap, primary, err := driver.PluginInitialize(ctx)
@@ -253,7 +253,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 		sc, err := connectors.GetSpectrumScaleConnector(ctx, cluster)
 		if err != nil {
-			klog.Errorf("[%s] Unable to initialize Spectrum Scale connector for cluster %s", utils.GetLoggerId(ctx), cluster.ID)
+			klog.Errorf("[%s] Unable to initialize IBM Storage Scale connector for cluster %s", utils.GetLoggerId(ctx), cluster.ID)
 			return nil, scaleConfig, primaryInfo, err
 		}
 
@@ -279,7 +279,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 		}
 	}
 
-	klog.Infof("[%s] IBM Spectrum Scale: Plugin initialized", utils.GetLoggerId(ctx))
+	klog.Infof("[%s] IBM Storage Scale: Plugin initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
 }
 

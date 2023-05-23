@@ -153,11 +153,11 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 			return &SpectrumRestV2{}, fmt.Errorf("parsing CA cert %v failed", scaleConfig.Cacert)
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
-		klog.V(4).Infof("[%s] created Spectrum Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
+		klog.V(4).Infof("[%s] created IBM Storage Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	} else {
 		//#nosec G402 InsecureSkipVerify was requested by user.
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
-		klog.V(4).Infof("[%s] created Spectrum Scale connector without SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
+		klog.V(4).Infof("[%s] created IBM Storage Scale connector without SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	}
 
 	rest = &SpectrumRestV2{
@@ -235,12 +235,12 @@ func (s *SpectrumRestV2) GetScaleVersion(ctx context.Context) (string, error) {
 
 	err := s.doHTTP(ctx, getVersionURL, "GET", &getVersionResponse, nil)
 	if err != nil {
-		klog.Errorf("[%s] unable to get Spectrum Scale version: [%v]", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] unable to get IBM Storage Scale version: [%v]", utils.GetLoggerId(ctx), err)
 		return "", err
 	}
 
 	if len(getVersionResponse.Info.ServerVersion) == 0 {
-		return "", fmt.Errorf("unable to get spectrum scale version")
+		return "", fmt.Errorf("unable to get IBM Storage Scale version")
 	}
 
 	return getVersionResponse.Info.ServerVersion, nil
@@ -1022,30 +1022,30 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			}
 		} else {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return err
+			return status.Error(codes.Internal, fmt.Sprintf("Error in authentication: %s request %v%v, user: %v, param: %v, response status: %v", method, endpoint, urlSuffix, s.User, param, response.Status))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return err
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response status: %v", method, endpoint, urlSuffix, s.User, param, response.Status))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request to %v: %v", http.StatusUnauthorized, method, endpoint, response.Status))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response status: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, s.User, param, response.Status))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request to %v: %v", http.StatusForbidden, method, endpoint, response.Status))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response status: %v", http.StatusForbidden, method, endpoint, urlSuffix, s.User, param, response.Status))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return err
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response status: %v, error %v", method, endpoint, urlSuffix, s.User, param, response.Status, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return fmt.Errorf("remote call completed with error [%v]. Error in response [%v]", response.Status, responseObject)
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response status: %v", responseObject, method, endpoint, urlSuffix, s.User, param, response.Status))
 	}
 
 	return nil

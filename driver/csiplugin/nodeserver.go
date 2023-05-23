@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"k8s.io/klog/v2"
 
@@ -36,7 +35,7 @@ import (
 type ScaleNodeServer struct {
 	Driver *ScaleDriver
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
-	mux sync.Mutex
+	//mux sync.Mutex
 }
 
 const hostDir = "/host"
@@ -55,7 +54,7 @@ func checkGpfsType(path string) (bool error) {
 	if err != nil {
 		return fmt.Errorf("checkGpfsType: failed to get type of file with stat of [%s]. Error [%v]", path, err)
 	}
-	outString := fmt.Sprintf("%s", out)
+	outString := string(out[:])
 	outString = strings.TrimRight(outString, "\n")
 	if outString != "gpfs" {
 		return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path, the path is of type [%s]", strings.TrimPrefix(path, hostDir), outString)
@@ -90,7 +89,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 	volScalePath := volumeIDMembers.Path
 
-	klog.V(4).Infof("[%s] Target SpectrumScale Path : %v\n", loggerId, volScalePath)
+	klog.V(4).Infof("[%s] Target IBM Storage Scale Path : %v\n", loggerId, volScalePath)
 
 	volScalePathInContainer := hostDir + volScalePath
 	f, err := os.Lstat(volScalePathInContainer)
@@ -171,7 +170,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		}
 	} else {
 		mounter := &mount.Mounter{}
-		notMP, err := mount.IsNotMountPoint(mounter, targetPath)
+		mntPoint, err := mounter.IsMountPoint(targetPath)
 		if err != nil {
 			if os.IsNotExist(err) {
 				if err = os.Mkdir(targetPath, 0750); err != nil {
@@ -183,7 +182,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 				return nil, fmt.Errorf("NodePublishVolume - failed to check target path [%s]. Error [%v]", targetPath, err)
 			}
 		}
-		if !notMP {
+		if mntPoint {
 			klog.V(4).Infof("[%s] NodePublishVolume - returning success as the path [%s] is already a mount point", loggerId, targetPath)
 			return &csi.NodePublishVolumeResponse{}, nil
 		}

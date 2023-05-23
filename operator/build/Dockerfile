@@ -1,4 +1,4 @@
-# docker build for IBM Spectrum Scale CSI Operator
+# docker build for IBM Storage Scale CSI Operator
 FROM --platform=$BUILDPLATFORM golang:1.20 as builder
 
 ARG TARGETOS
@@ -41,13 +41,13 @@ ENV version $version
 ENV commit $commit
 ENV build_date $build_date
 
-LABEL name="IBM Spectrum Scale CSI Operator" \
+LABEL name="IBM Storage Scale CSI Operator" \
       vendor="ibm" \
       version=$version \
       release="1" \
-      summary="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
-      description="A Go based operator to run and manage the deployment of the IBM Spectrum Scale CSI Driver." \
-      maintainers="IBM Spectrum Scale" \
+      summary="A Go based operator to run and manage the deployment of the IBM Storage Scale CSI Driver." \
+      description="A Go based operator to run and manage the deployment of the IBM Storage Scale CSI Driver." \
+      maintainers="IBM Storage Scale" \
       build-date=$build_date \
       vcs-ref=$commit \
       vcs-type="git" \

@@ -155,18 +155,18 @@ fi
 
 [[ -z "${NAMESPACE}" ]] && NAMESPACE="default"
 
-# Check if this is spectrum scale node
+# Check if this is IBM Storage Scale node
 if [[ ! -f /usr/lpp/mmfs/bin/mmlscluster ]] ; then
-    echo "ERROR: Spectrum Scale cli's are not present on this node"
+    echo "ERROR: IBM Storage Scale cli's are not present on this node"
     exit 2
 fi
 
 echo > ${ERROROUT}
 
-# Get the Spectrum Scale cluster ID 
+# Get the IBM Storage Scale cluster ID 
 clusterID=`/usr/lpp/mmfs/bin/mmlscluster -Y 2>${ERROROUT} | /usr/bin/grep clusterSummary | /usr/bin/grep -v HEADER | /usr/bin/awk '{split($0,a,":"); print a[8]}'` 
 if [[ $? -ne 0 ]] || [[ -z "$clusterID" ]]; then
-     echo "ERROR: Failed to get the Spectrum Scale cluster ID"
+     echo "ERROR: Failed to get the IBM Storage Scale cluster ID"
      /usr/bin/cat ${ERROROUT}
      exit 2
 fi

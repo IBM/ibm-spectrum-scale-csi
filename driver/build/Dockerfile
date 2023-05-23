@@ -1,6 +1,6 @@
-# docker build for IBM Spectrum Scale CSI Driver
+# docker build for IBM Storage Scale CSI Driver
 # usage: docker build -f build/Dockerfile -t my_image_tag .
-# Multi-arch build for IBM Spectrum Scale CSI Driver
+# Multi-arch build for IBM Storage Scale CSI Driver
 # usage: docker buildx build -f build/multi-arch.Dockerfile --platform=linux/amd64 -t my_image_tag .
 
 FROM --platform=$BUILDPLATFORM golang:1.20 AS builder
@@ -29,13 +29,13 @@ ENV version $version
 ENV commit $commit
 ENV build_date $build_date
 
-LABEL name="IBM Spectrum Scale CSI driver" \
+LABEL name="IBM Storage Scale CSI driver" \
       vendor="ibm" \
       version=$version \
       release="1" \
-      summary="An implementation of CSI Plugin for the IBM Spectrum Scale product." \
-      description="An implementation of CSI Plugin for the IBM Spectrum Scale product." \
-      maintainers="IBM Spectrum Scale" \
+      summary="An implementation of CSI Plugin for the IBM Storage Scale product." \
+      description="An implementation of CSI Plugin for the IBM Storage Scale product." \
+      maintainers="IBM Storage Scale" \
       build-date=$build_date \
       vcs-ref=$commit \
       vcs-type="git" \

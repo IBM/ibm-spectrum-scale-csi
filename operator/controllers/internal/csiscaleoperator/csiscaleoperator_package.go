@@ -716,7 +716,7 @@ func (c *CSIScaleOperator) GetPodAffinityTerms(resource string) []corev1.PodAffi
 	return podAffinityTerms
 }
 
-// GetNodeAffinity returns kubernetes nodeAffinity based on architectures supported by Spectrum Scale CSI.
+// GetNodeAffinity returns kubernetes nodeAffinity based on architectures supported by IBM Storage Scale CSI.
 func (c *CSIScaleOperator) GetNodeAffinity(resource string) *corev1.NodeAffinity {
 
 	nodeSelector := &corev1.NodeSelector{
@@ -729,7 +729,7 @@ func (c *CSIScaleOperator) GetNodeAffinity(resource string) *corev1.NodeAffinity
 	return &nodeAffinity
 }
 
-// GetNodeSelectorTerms returns corev1 NodeSelectorTerms based on architectures supported by Spectrum Scale CSI.
+// GetNodeSelectorTerms returns corev1 NodeSelectorTerms based on architectures supported by IBM Storage Scale CSI.
 func (c *CSIScaleOperator) GetNodeSelectorTerms(resource string) []corev1.NodeSelectorTerm {
 
 	nodeSelectorTerms := []corev1.NodeSelectorTerm{

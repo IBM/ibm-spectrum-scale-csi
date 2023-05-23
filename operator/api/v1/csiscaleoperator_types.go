@@ -39,19 +39,19 @@ type CSIScaleOperatorSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Attacher Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	AttacherNodeSelector []CSINodeSelector `json:"attacherNodeSelector,omitempty"`
 
-	// clusters is a collection of Spectrum Scale cluster properties for the CSI driver to mount.
+	// clusters is a collection of IBM Storage Scale cluster properties for the CSI driver to mount.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Clusters"
 	Clusters []CSICluster `json:"clusters"`
 
-	// driverRegistrar is the Sidecar container image for the CSI Spectrum Scale plugin pods.
+	// driverRegistrar is the Sidecar container image for the IBM Storage Scale CSI plugin pods.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Driver Registrar",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	DriverRegistrar string `json:"driverRegistrar,omitempty"`
 
-	// nodeMapping specifies mapping of K8s node with Spectrum Scale node.
+	// nodeMapping specifies mapping of K8s node with IBM Storage Scale node.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Node Mapping",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	NodeMapping []NodeMapping `json:"nodeMapping,omitempty"`
 
-	// pluginNodeSelector is the node selector for Spectrum Scale CSI plugin.
+	// pluginNodeSelector is the node selector for IBM Storage Scale CSI plugin.
 	// +kubebuilder:default:={{key:scale,value:`true`}}
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Plugin Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	PluginNodeSelector []CSINodeSelector `json:"pluginNodeSelector,omitempty"`
@@ -87,8 +87,8 @@ type CSIScaleOperatorSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LivenessProbe",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	LivenessProbe string `json:"livenessprobe,omitempty"`
 
-	// spectrumScale is the image name for the CSI Spectrum Scale node driver plugin container.
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Spectrum Scale Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
+	// spectrumScale is the image name for the IBM Storage Scale CSI node driver plugin container.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="IBM Storage Scale Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	SpectrumScale string `json:"spectrumScale,omitempty"`
 
 	// A passthrough option that distributes an imagePullSecrets array to the
@@ -291,31 +291,31 @@ const (
 )
 */
 
-// Defines mapping between kubernetes node and spectrumscale nodes
+// Defines mapping between kubernetes node and IBM Storage Scale nodes
 type NodeMapping struct {
 
 	// k8sNode is the name of the kubernetes node
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubernetes Node",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	K8sNode string `json:"k8sNode"`
 
-	// spectrumscaleNode is the name of the SpectrumScale node
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Spectrum Scale Node",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
+	// spectrumscaleNode is the name of the IBM Storage Scale node
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="IBM Storage Scale Node",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	SpectrumscaleNode string `json:"spectrumscaleNode"`
 }
 
-// Defines the fields of a Spectrum Scale cluster specification
+// Defines the fields of a IBM Storage Scale cluster specification
 type CSICluster struct {
 
 	// cacert is the name of the configMap storing GUI certificates. Mandatory if secureSslMode is true.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="CA Certificate Resource Name",xDescriptors="urn:alm:descriptor:io.kubernetes:ConfigMap"
 	Cacert string `json:"cacert,omitempty"` // TODO: Rename to CACert or caCert
 
-	// id is the cluster ID of the Spectrum Scale cluster.
+	// id is the cluster ID of the IBM Storage Scale cluster.
 	// +kubebuilder:validation:MaxLength:=20
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Cluster ID",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	Id string `json:"id"` // TODO: Rename to ID or id
 
-	// primary is the primary file system for the Spectrum Scale cluster.
+	// primary is the primary file system for the IBM Storage Scale cluster.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Primary",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	Primary *CSIFilesystem `json:"primary,omitempty"`
 
@@ -323,18 +323,18 @@ type CSICluster struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="REST API",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	RestApi []RestApi `json:"restApi"` // TODO: Rename to RESTApi or restApi
 
-	// secret is the name of the basic-auth secret containing credentials to connect to IBM Spectrum Scale REST API server.
+	// secret is the name of the basic-auth secret containing credentials to connect to IBM Storage Scale REST API server.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secrets",xDescriptors="urn:alm:descriptor:io.kubernetes:Secret"
 	Secrets string `json:"secrets"` // TODO: Secrets should be Singular
 
-	// secureSslMode specifies if a secure SSL connection to connect to Spectrum Scale cluster is required.
+	// secureSslMode specifies if a secure SSL connection to connect to IBM Storage Scale cluster is required.
 	// +kubebuilder:default:=false
 	// +kubebuilder:validation:Enum:=true;false
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secure SSL Mode",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	SecureSslMode bool `json:"secureSslMode"`
 }
 
-// Defines the fields for CSI for Spectrum Scale file system
+// Defines the fields for CSI for IBM Storage Scale file system
 type CSIFilesystem struct {
 
 	// Inode limit for Primary Fileset
@@ -346,18 +346,18 @@ type CSIFilesystem struct {
 	// The name of the primary fileset, created in primaryFs
 	PrimaryFset string `json:"primaryFset,omitempty"`
 
-	// Remote Spectrum Scale cluster ID
+	// Remote IBM Storage Scale cluster ID
 	RemoteCluster string `json:"remoteCluster,omitempty"`
 }
 
 // Defines the fields for REST API server information.
 type RestApi struct {
 
-	// guiHost is the hostname/IP of the Spectrum Scale GUI node.
+	// guiHost is the hostname/IP of the IBM Storage Scale GUI node.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="GUI Host",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	GuiHost string `json:"guiHost"`
 
-	// guiPort is the port number of the Spectrum Scale GUI node.
+	// guiPort is the port number of the IBM Storage Scale GUI node.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="GUI Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	GuiPort int `json:"guiPort,omitempty"`
 }
@@ -371,7 +371,7 @@ type RestApi struct {
 // +kubebuilder:resource:shortName=cso, categories=scale, scope=Namespaced
 
 // CSIScaleOperator is the Schema for the csiscaleoperators API
-//+operator-sdk:csv:customresourcedefinitions:displayName="IBM CSI Spectrum Scale Driver",resources={{Deployment,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="IBM Storage Scale CSI Driver",resources={{Deployment,v1beta2},{DaemonSet,v1beta2},{Pod,v1},{ConfigMap,v1}}
 type CSIScaleOperator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

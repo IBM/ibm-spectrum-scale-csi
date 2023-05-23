@@ -1,5 +1,5 @@
-# IBM Spectrum Scale CSI Driver 
+# IBM Storage Scale CSI Driver 
 
 ## Overview
-This is the source code for packaging IBM Spectrum Scale CSI Driver
+This is the source code for packaging IBM Storage Scale CSI Driver
 

@@ -1,20 +1,20 @@
-# IBM Spectrum Scale CSI (Container Storage Interface)
+# IBM Storage Scale CSI (Container Storage Interface)
 
 [Official IBM Documentation](https://www.ibm.com/docs/en/spectrum-scale-csi)
 
 
-The IBM Spectrum Scale Container Storage Interface (CSI) project enables container orchestrators, such as Kubernetes and OpenShift, to manage the life-cycle of persistent storage.
+The IBM Storage Scale Container Storage Interface (CSI) project enables container orchestrators, such as Kubernetes and OpenShift, to manage the life-cycle of persistent storage.
 
-This project contains an [go-based operator](https://sdk.operatorframework.io) to run and manage the deployment of the IBM Spectrum Scale CSI Driver.
+This project contains an [go-based operator](https://sdk.operatorframework.io) to run and manage the deployment of the IBM Storage Scale CSI Driver.
 
 
 ## Support
 
-IBM Spectrum Scale CSI driver is part of the IBM Spectrum Scale offering. Please follow the [IBM support procedure](https://www.ibm.com/mysupport/s/) for any issues with the driver.
+IBM Storage Scale CSI driver is part of the IBM Storage Scale offering. Please follow the [IBM support procedure](https://www.ibm.com/mysupport/s/) for any issues with the driver.
 
 ## Report Bugs 
 
-For help with urgent situations, please use the IBM PMR process.  All Spectrum Scale customers using CSI, 
+For help with urgent situations, please use the IBM PMR process.  All IBM Storage Scale customers using CSI, 
 who also have ongoing support contracts, are entitled to the PMR process.  Feature requests through the official RFE channels are also encouraged.
 
 For non-urgent issues, suggestions, recommendations, feel free to open an issue in [github](https://github.com/IBM/ibm-spectrum-scale-csi/issues).

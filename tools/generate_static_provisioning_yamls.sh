@@ -21,9 +21,9 @@ usage() {
                 -l|--path <full Path of Volume in Primary Filesystem>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
-                -u|--username <Username of spectrum scale GUI user account.>
-                -p|--password <Password of spectrum scale GUI user account.>
-                -r|--guihost <Route host name used to route traffic to the spectrum scale GUI service.>
+                -u|--username <Username of IBM Storage Scale GUI user account.>
+                -p|--password <Password of IBM Storage Scale GUI user account.>
+                -r|--guihost <Route host name used to route traffic to the IBM Storage Scale GUI service.>
                 [-P|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
@@ -37,9 +37,9 @@ fullUsage() {
                 -l|--path <full Path of Volume in Primary Filesystem>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
-                -u|--username <Username of spectrum scale GUI user account.>
-                -p|--password <Password of spectrum scale GUI user account.>
-                -r|--guihost <HostName(or route) used to access IBM Spectrum Scale GUI service running on Primary Cluster.>
+                -u|--username <Username of IBM Storage Scale GUI user account.>
+                -p|--password <Password of IBM Storage Scale GUI user account.>
+                -r|--guihost <HostName(or route) used to access IBM Storage Scale GUI service running on Primary Cluster.>
                 [-P|--pvname <name for pv>]
                 [-c|--storageclass <StorageClass for pv>]
                 [-a|--accessmode <AccessMode for pv>]
@@ -265,9 +265,9 @@ else
   STORAGECLASS="storageClassName: \"\""
 fi
 
-# Check if this is spectrum scale node
+# Check if this is IBM Storage Scale node
 #if [[ ! -f /usr/lpp/mmfs/bin/mmlscluster ]]; then
-#  echo "ERROR: Spectrum Scale cli's are not present on this node"
+#  echo "ERROR: IBM Storage Scale cli's are not present on this node"
 #  exit 2
 #fi
 
@@ -287,13 +287,13 @@ elif [[  -z ${response} ]]; then
   exit 2
 fi
 
-# Get the Spectrum Scale cluster ID
+# Get the IBM Storage Scale cluster ID
 clusterID=$(curl -k -u "${USERNAME}":"${PASSWORD}" -X GET \
   --header 'accept:application/json' \
   "https://${URL}:443/scalemgmt/v2/cluster" \
   2>${ERROROUT} | python3 -c "import sys, json; print(json.load(sys.stdin)['cluster']['clusterSummary']['clusterId'])" 2>>${ERROROUT})
 if [[ $? -ne 0 ]] || [[ -z "$clusterID" ]]; then
-  echo "ERROR: Failed to get the Spectrum Scale cluster ID."
+  echo "ERROR: Failed to get the IBM Storage Scale cluster ID."
   #cat ${ERROROUT}
   exit 2
 fi

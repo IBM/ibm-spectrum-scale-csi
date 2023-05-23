@@ -20,7 +20,7 @@ spec:
 #    - APullSecret
 #    - AnotherOptional
 
-# Below specifies the details of a SpectrumScale cluster configuration used by the
+# Below specifies the details of a IBM Storage Scale cluster configuration used by the
 # plugin. It can have multiple values.
 # ==================================================================================
   clusters:
@@ -95,15 +95,15 @@ spec:
     - key: "scale"
       value: "true"
 
-# In case K8s nodes name differs from SpectrumScale nodes name, we can provide
+# In case K8s nodes name differs from IBM Storage Scale nodes name, we can provide
 # node mapping using nodeMapping attribute. Can have multiple entries.
 # ==================================================================================
 #  nodeMapping:
 #    - k8sNode: "< K8s Node Name >"
-#      spectrumscaleNode: "< SpectrumScale Node Name >"
+#      spectrumscaleNode: "< IBM Storage Scale Node Name >"
 # In case K8s node name start with number then use following node mapping format.
 #    - k8sNode: "K8sNodePrefix_< K8s Node Name >"
-#      spectrumscaleNode: "< SpectrumScale Node Name >"
+#      spectrumscaleNode: "< IBM Storage Scale Node Name >"
 
 # Array of tolerations that will be distribued to CSI pods. Please refer to official
 # k8s documentation for your environment for more details.

@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 
-## IBM Spectrum Scale CSI Driver GA release Checklist
+## IBM Storage Scale CSI Driver GA release Checklist
 
 - [ ]  CSI snap works on Vanila k8s, Openshift with and without OLM deployment 
 - [ ]  Verify GitHub links are working
