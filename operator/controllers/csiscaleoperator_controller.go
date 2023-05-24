@@ -447,8 +447,12 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if err == nil && len(cm.Data) != 0 {
 		cmData, daemonSetMaxUnavailable = r.parseConfigMap(instance, cm)
+		logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
 	} else {
 		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
+		// setting default values if values are empty
+		setDefaultDriverEnvValues(cmData)
+		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
 	}
 
 	if len(daemonSetMaxUnavailable) > 0 {
@@ -2254,11 +2258,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
-	// Set default LogLevel when log level not provided in the configMap
-	if _, ok := data[config.CSIEnvLogLevelKey]; !ok {
-		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to INFO", config.CSIEnvLogLevelDefaultValue)
-		data[config.CSIEnvLogLevelKey] = config.CSIEnvLogLevelDefaultValue
-	}
+	// setting default values if values are empty/wrong
+	setDefaultDriverEnvValues(data)
 	logger.Info("Final accepted value ", "from the optional configmap", data)
 	if len(invalidEnv) > 0 || len(invalidEnvValue) > 0 {
 		message := fmt.Sprintf("There are few entries %v with wrong key and few having wrong values %v in the configmap %s which will not be processed", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
@@ -2313,5 +2314,24 @@ func checkStringExistsOrInvalidValue(inputSlice []string, key string, value stri
 		data[key[11:]] = value
 	} else {
 		invalidEnvValue[key] = value
+	}
+}
+
+func setDefaultDriverEnvValues(data map[string]string) {
+	logger := csiLog.WithName("setDefaultDriverEnvValues")
+	// Set default LogLevel when log level not provided in the configMap
+	if _, ok := data[config.CSIEnvLogLevelKey]; !ok {
+		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to", config.CSIEnvLogLevelDefaultValue)
+		data[config.CSIEnvLogLevelKey] = config.CSIEnvLogLevelDefaultValue
+	}
+	// Set default PersistentLog when PersistentLog not provided in the configMap
+	if _, ok := data[config.CSIEnvPersistentLog]; !ok {
+		logger.Info("PersistentLog is empty or incorrect.", "Defaulting PersistentLog to", config.CSIEnvPersistentLogDefaultValue)
+		data[config.CSIEnvPersistentLog] = config.CSIEnvPersistentLogDefaultValue
+	}
+	// Set default NodePublishMethod when NodePublishMethod not provided in the configMap
+	if _, ok := data[config.CSIEnvNodePublishMethod]; !ok {
+		logger.Info("NodePublishMethod is empty or incorrect.", "Defaulting NodePublishMethod to", config.CSIEnvNodePublishMethodDefaultValue)
+		data[config.CSIEnvNodePublishMethod] = config.CSIEnvNodePublishMethodDefaultValue
 	}
 }

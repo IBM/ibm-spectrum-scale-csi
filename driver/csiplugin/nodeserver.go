@@ -115,9 +115,6 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	method := strings.ToUpper(os.Getenv(nodePublishMethod))
-	if !(method == nodePublishMethodSymlink) {
-		method = nodePublishMethodBindMount
-	}
 	klog.Infof("[%s] NodePublishVolume - NodePublishVolume method used: %s", loggerId, method)
 
 	if method == nodePublishMethodSymlink {

@@ -144,7 +144,11 @@ const (
 	CSIEnvVarNodePublishMethod           = "VAR_DRIVER_NODEPUBLISH_METHOD"
 	CSIDaemonSetUpgradeMaxUnavailable    = "DRIVER_UPGRADE_MAXUNAVAILABLE"
 	CSIEnvLogLevelKey                    = "LOGLEVEL"
+	CSIEnvPersistentLog                  = "PERSISTENT_LOG"
+	CSIEnvNodePublishMethod              = "NODEPUBLISH_METHOD"
 	CSIEnvLogLevelDefaultValue           = "INFO"
+	CSIEnvPersistentLogDefaultValue      = "DISABLED"
+	CSIEnvNodePublishMethodDefaultValue  = "BINDMOUNT"
 	CSIDaemonSetUpgradeUpdateStrateyType = "RollingUpdate"
 )
 
