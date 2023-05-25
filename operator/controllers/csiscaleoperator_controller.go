@@ -457,7 +457,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if len(daemonSetMaxUnavailable) > 0 {
 		if !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-			logger.Error(fmt.Errorf("%s  : daemonset maxunavailable is not valid", daemonSetMaxUnavailable), "input value of daemonset maxunavailable is : ")
+			logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
 			message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value. Using default value to 1"
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
@@ -2261,12 +2261,16 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 	// setting default values if values are empty/wrong
 	setDefaultDriverEnvValues(data)
 	logger.Info("Final accepted value ", "from the optional configmap", data)
-	if len(invalidEnv) > 0 || len(invalidEnvValue) > 0 {
-		message := fmt.Sprintf("There are few entries %v with wrong key and few having wrong values %v in the configmap %s which will not be processed", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
+	if len(invalidEnv) > 0 {
+		message := fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnv, config.CSIEnvVarConfigMap)
 		logger.Info(message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
-		)
+		//SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+		//	metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+		//)
+	}
+	if len(invalidEnvValue) > 0 {
+		message := fmt.Sprintf("There are few entries having wrong values %v in the configmap %s which will not be processed, deafult values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
+		logger.Info(message)
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data, daemonSetMaxUnavailable
