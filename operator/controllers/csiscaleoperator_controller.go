@@ -2269,7 +2269,7 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 		//)
 	}
 	if len(invalidEnvValue) > 0 {
-		message := fmt.Sprintf("There are few entries having wrong values %v in the configmap %s which will not be processed, deafult values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
+		message := fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
 		logger.Info(message)
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
