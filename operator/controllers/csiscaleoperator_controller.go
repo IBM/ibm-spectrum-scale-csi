@@ -91,7 +91,7 @@ var changedClusters = make(map[string]bool)
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 
 var cmData = make(map[string]string)
-var cmdataCOpy = make(map[string]string)
+var cmDataCopy = make(map[string]string)
 
 //var symlinkDirPath = ""
 
@@ -449,7 +449,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if errors.IsNotFound(err) {
 		cmData = map[string]string{}
-		cmdataCOpy = map[string]string{}
+		cmDataCopy = map[string]string{}
 		//this means cm is deleted, so set defaults
 		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.CSIEnvVarConfigMap)
 		// setting default values if values are empty
@@ -458,10 +458,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	} else {
 		isValidationNeeded := false
 		// for the first iteration or if there is change in cm data, then validation is required
-		if len(cmdataCOpy) == 0 || !reflect.DeepEqual(cm.Data, cmdataCOpy) {
+		if len(cmDataCopy) == 0 || !reflect.DeepEqual(cm.Data, cmDataCopy) {
 			isValidationNeeded = true
 		}
-		cmdataCOpy = cm.Data
+		cmDataCopy = cm.Data
 
 		if isValidationNeeded {
 			if err == nil && len(cm.Data) != 0 {
