@@ -478,7 +478,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if len(daemonSetMaxUnavailable) > 0 {
 		if !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-			logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable+". Using default value to 1")
+			logger.Info("daemonset maxunavailable is not valid, input value of daemonset maxunavailable is : " + daemonSetMaxUnavailable + ". Using default value to 1")
 			daemonSetMaxUnavailable = ""
 		}
 	}
