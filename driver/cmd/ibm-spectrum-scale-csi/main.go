@@ -47,6 +47,7 @@ const dirPath = "scalecsilogs"
 const logFile = "ibm-spectrum-scale-csi.logs"
 const logLevel = "LOGLEVEL"
 const persistentLog = "PERSISTENT_LOG"
+const nodePublishMethod = "NODEPUBLISH_METHOD"
 const hostPath = "/host/var/adm/ras/"
 const rotateSize = 1024
 
@@ -63,6 +64,15 @@ const (
 
 func main() {
 	klog.InitFlags(nil)
+	if val, ok := os.LookupEnv(logLevel); ok {
+		klog.Infof("[%s] found in the env : %s", logLevel, val)
+	}
+	if val, ok := os.LookupEnv(persistentLog); ok {
+		klog.Infof("[%s] found in the env : %s", persistentLog, val)
+	}
+	if val, ok := os.LookupEnv(nodePublishMethod); ok {
+		klog.Infof("[%s] found in the env : %s", nodePublishMethod, val)
+	}
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
@@ -96,7 +106,6 @@ func main() {
 		klog.Errorf("[%s] Failed to set flag value", loggerId)
 	}
 
-	klog.Infof("[%s] logValue: %s", loggerId, level)
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	// PluginFolder defines the location of scaleplugin

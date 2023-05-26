@@ -90,6 +90,9 @@ var changedClusters = make(map[string]bool)
 // a map of connectors to make REST calls to GUI
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 
+var cmData = make(map[string]string)
+var cmdataCOpy = make(map[string]string)
+
 //var symlinkDirPath = ""
 
 // watchResources stores resource kind and resource names of the resources
@@ -439,29 +442,43 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	cmData := map[string]string{}
 	var daemonSetMaxUnavailable string
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
-	if err == nil && len(cm.Data) != 0 {
-		cmData, daemonSetMaxUnavailable = r.parseConfigMap(instance, cm)
-		logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
-	} else {
-		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
+	if errors.IsNotFound(err) {
+		cmData = map[string]string{}
+		cmdataCOpy = map[string]string{}
+		//this means cm is deleted, so set defaults
+		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.CSIEnvVarConfigMap)
 		// setting default values if values are empty
 		setDefaultDriverEnvValues(cmData)
 		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
+	} else {
+		isValidationNeeded := false
+		// for the first iteration or if there is change in cm data, then validation is required
+		if len(cmdataCOpy) == 0 || !reflect.DeepEqual(cm.Data, cmdataCOpy) {
+			isValidationNeeded = true
+		}
+		cmdataCOpy = cm.Data
+
+		if isValidationNeeded {
+			if err == nil && len(cm.Data) != 0 {
+				cmData, daemonSetMaxUnavailable = r.parseConfigMap(instance, cm)
+				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
+			} else {
+				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
+				// setting default values if values are empty
+				setDefaultDriverEnvValues(cmData)
+				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
+			}
+		}
 	}
 
 	if len(daemonSetMaxUnavailable) > 0 {
 		if !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-			logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
-			message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value. Using default value to 1"
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
-			)
+			logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable+". Using default value to 1")
 			daemonSetMaxUnavailable = ""
 		}
 	}
