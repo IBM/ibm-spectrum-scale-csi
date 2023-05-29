@@ -137,25 +137,29 @@ const (
 	ImagePullSecretEntitlementKey = "ibm-entitlement-key"
 
 	// Constants for Optional ConfigMap
-	CSIEnvVarConfigMap                   = "ibm-spectrum-scale-csi-config"
-	CSIEnvVarPrefix                      = "VAR_DRIVER_"
-	CSIEnvVarLogLevel                    = "VAR_DRIVER_LOGLEVEL"
-	CSIEnvVarPersistentLog               = "VAR_DRIVER_PERSISTENT_LOG"
-	CSIEnvVarNodePublishMethod           = "VAR_DRIVER_NODEPUBLISH_METHOD"
-	CSIDaemonSetUpgradeMaxUnavailable    = "DRIVER_UPGRADE_MAXUNAVAILABLE"
-	CSIEnvLogLevelKey                    = "LOGLEVEL"
-	CSIEnvPersistentLog                  = "PERSISTENT_LOG"
-	CSIEnvNodePublishMethod              = "NODEPUBLISH_METHOD"
-	CSIEnvLogLevelDefaultValue           = "INFO"
-	CSIEnvPersistentLogDefaultValue      = "DISABLED"
-	CSIEnvNodePublishMethodDefaultValue  = "BINDMOUNT"
-	CSIDaemonSetUpgradeUpdateStrateyType = "RollingUpdate"
+	CSIEnvVarConfigMap                      = "ibm-spectrum-scale-csi-config"
+	CSIEnvVarPrefix                         = "VAR_DRIVER_"
+	CSIEnvVarLogLevel                       = "VAR_DRIVER_LOGLEVEL"
+	CSIEnvVarPersistentLog                  = "VAR_DRIVER_PERSISTENT_LOG"
+	CSIEnvVarNodePublishMethod              = "VAR_DRIVER_NODEPUBLISH_METHOD"
+	CSIEnvVarVolumeStatsCapability          = "VAR_DRIVER_VOLUME_STATS_CAPABILITY"
+	CSIDaemonSetUpgradeMaxUnavailable       = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	CSIEnvLogLevelKey                       = "LOGLEVEL"
+	CSIEnvPersistentLog                     = "PERSISTENT_LOG"
+	CSIEnvNodePublishMethod                 = "NODEPUBLISH_METHOD"
+	CSIEnvVolumeStatsCapability             = "VOLUME_STATS_CAPABILITY"
+	CSIEnvLogLevelDefaultValue              = "INFO"
+	CSIEnvPersistentLogDefaultValue         = "DISABLED"
+	CSIEnvNodePublishMethodDefaultValue     = "BINDMOUNT"
+	CSIEnvVolumeStatsCapabilityDefaultValue = "ENABLED"
+	CSIDaemonSetUpgradeUpdateStrateyType    = "RollingUpdate"
 )
 
-var CSIOptionalConfigMapKeys = [4]string{CSIEnvVarLogLevel, CSIEnvVarPersistentLog, CSIEnvVarNodePublishMethod, CSIDaemonSetUpgradeMaxUnavailable}
+var CSIOptionalConfigMapKeys = [5]string{CSIEnvVarLogLevel, CSIEnvVarPersistentLog, CSIEnvVarNodePublishMethod, CSIEnvVarVolumeStatsCapability, CSIDaemonSetUpgradeMaxUnavailable}
 var CSILogLevels = [6]string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var CSINodePublishMethods = [2]string{"SYMLINK", "BINDMOUNT"}
 var CSIPersistentLogValues = [2]string{"ENABLED", "DISABLED"}
+var CSIVolumeStatsCapabilityValues = [2]string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"

@@ -43,13 +43,16 @@ var (
 	vendorVersion  = "2.10.0"
 )
 
-const dirPath = "scalecsilogs"
-const logFile = "ibm-spectrum-scale-csi.logs"
-const logLevel = "LOGLEVEL"
-const persistentLog = "PERSISTENT_LOG"
-const nodePublishMethod = "NODEPUBLISH_METHOD"
-const hostPath = "/host/var/adm/ras/"
-const rotateSize = 1024
+const (
+	dirPath               = "scalecsilogs"
+	logFile               = "ibm-spectrum-scale-csi.logs"
+	logLevel              = "LOGLEVEL"
+	persistentLog         = "PERSISTENT_LOG"
+	nodePublishMethod     = "NODEPUBLISH_METHOD"
+	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
+	hostPath              = "/host/var/adm/ras/"
+	rotateSize            = 1024
+)
 
 type LoggerLevel int
 
@@ -72,6 +75,9 @@ func main() {
 	}
 	if val, ok := os.LookupEnv(nodePublishMethod); ok {
 		klog.Infof("[%s] found in the env : %s", nodePublishMethod, val)
+	}
+	if val, ok := os.LookupEnv(volumeStatsCapability); ok {
+		klog.Infof("[%s] found in the env : %s", volumeStatsCapability, val)
 	}
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)

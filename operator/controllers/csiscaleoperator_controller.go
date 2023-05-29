@@ -2267,6 +2267,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 					checkStringExistsOrInvalidValue(config.CSIPersistentLogValues[:], keyUpper, value, data, invalidEnvValue)
 				case config.CSIEnvVarNodePublishMethod:
 					checkStringExistsOrInvalidValue(config.CSINodePublishMethods[:], keyUpper, value, data, invalidEnvValue)
+				case config.CSIEnvVarVolumeStatsCapability:
+					checkStringExistsOrInvalidValue(config.CSIVolumeStatsCapabilityValues[:], keyUpper, value, data, invalidEnvValue)
 				}
 			} else if keyUpper == config.CSIDaemonSetUpgradeMaxUnavailable {
 				daemonSetMaxUnavailable = value
@@ -2354,5 +2356,10 @@ func setDefaultDriverEnvValues(data map[string]string) {
 	if _, ok := data[config.CSIEnvNodePublishMethod]; !ok {
 		logger.Info("NodePublishMethod is empty or incorrect.", "Defaulting NodePublishMethod to", config.CSIEnvNodePublishMethodDefaultValue)
 		data[config.CSIEnvNodePublishMethod] = config.CSIEnvNodePublishMethodDefaultValue
+	}
+	// Set default VolumeStatsCapability when VOLUME_STATS_CAPABILITY not provided in the configMap
+	if _, ok := data[config.CSIEnvVolumeStatsCapability]; !ok {
+		logger.Info("VolumeStatsCapability is empty or incorrect.", "Defaulting VolumeStatsCapability to", config.CSIEnvVolumeStatsCapabilityDefaultValue)
+		data[config.CSIEnvVolumeStatsCapability] = config.CSIEnvVolumeStatsCapabilityDefaultValue
 	}
 }
