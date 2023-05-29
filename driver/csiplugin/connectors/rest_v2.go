@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"errors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"google.golang.org/grpc/codes"
@@ -1001,7 +1001,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 
 	activeEndpointFound := false
 	if err != nil {
-		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) {
+		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || errors.Is(err, context.DeadlineExceeded) {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
@@ -1013,7 +1013,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 					activeEndpointFound = true
 					break
 				} else {
-					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) {
+					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || errors.Is(err, context.DeadlineExceeded) {
 						klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 					} else {
 						klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
