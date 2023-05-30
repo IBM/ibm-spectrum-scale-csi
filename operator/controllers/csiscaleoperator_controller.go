@@ -442,7 +442,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	var daemonSetMaxUnavailable string
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
@@ -465,8 +464,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		if isValidationNeeded {
 			if err == nil && len(cm.Data) != 0 {
-				cmData, daemonSetMaxUnavailable = r.parseConfigMap(instance, cm)
+				cmData = r.parseConfigMap(instance, cm)
 				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
+
 			} else {
 				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 				// setting default values if values are empty
@@ -475,14 +475,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 		}
 	}
-
-	if len(daemonSetMaxUnavailable) > 0 {
-		if !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-			logger.Info("daemonset maxunavailable is not valid, input value of daemonset maxunavailable is : " + daemonSetMaxUnavailable + ". Using default value to 1")
-			daemonSetMaxUnavailable = ""
-		}
-	}
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData, daemonSetMaxUnavailable)
+	logger.Info("Final optional configmap values ", "when the sent to syncer is ", cmData)
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -2247,13 +2241,12 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 }
 
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
-func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) (map[string]string, string) {
+func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) map[string]string {
 
 	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
 
 	data := map[string]string{}
-	var daemonSetMaxUnavailable string
 	invalidEnv := []string{}
 	invalidEnvValue := map[string]string{}
 	for key, value := range cm.Data {
@@ -2271,7 +2264,7 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 					checkStringExistsOrInvalidValue(config.CSIVolumeStatsCapabilityValues[:], keyUpper, value, data, invalidEnvValue)
 				}
 			} else if keyUpper == config.CSIDaemonSetUpgradeMaxUnavailable {
-				daemonSetMaxUnavailable = value
+				validateMaxUnavailableValue(keyUpper, value, data, invalidEnvValue)
 			}
 		} else {
 			invalidEnv = append(invalidEnv, key)
@@ -2292,7 +2285,7 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 		logger.Info(message)
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
-	return data, daemonSetMaxUnavailable
+	return data
 }
 
 func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
@@ -2306,16 +2299,16 @@ func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
 	rec.Event(instance, eventType, reason, msg)
 }
 
-func validateMaxUnavailableValue(inputMaxunavailable string) bool {
+func validateMaxUnavailableValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateMaxUnavailableValue")
-	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", inputMaxunavailable)
-	input := strings.TrimSuffix(inputMaxunavailable, "%")
+	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", value)
+	input := strings.TrimSuffix(value, "%")
 	if s, err := strconv.Atoi(input); err == nil {
 		logger.Info("daemonset maxunavailable parsed integer ", "inputMaxunavailableInt", s)
-		return true
+		data[key] = value
 	} else {
 		logger.Error(err, " Failed to parse the input maxunvaialble value")
-		return false
+		invalidEnvValue[key] = value
 	}
 }
 
@@ -2361,5 +2354,10 @@ func setDefaultDriverEnvValues(data map[string]string) {
 	if _, ok := data[config.CSIEnvVolumeStatsCapability]; !ok {
 		logger.Info("VolumeStatsCapability is empty or incorrect.", "Defaulting VolumeStatsCapability to", config.CSIEnvVolumeStatsCapabilityDefaultValue)
 		data[config.CSIEnvVolumeStatsCapability] = config.CSIEnvVolumeStatsCapabilityDefaultValue
+	}
+	// Make empty DaemonSetUpgradeMaxUnavailable when DRIVER_UPGRADE_MAXUNAVAILABLE not provided in the configMap
+	if _, ok := data[config.CSIDaemonSetUpgradeMaxUnavailable]; !ok {
+		logger.Info("DaemonSetUpgradeMaxUnavailable is empty or incorrect.", "Defaulting DaemonSetUpgradeMaxUnavailable to", "1")
+		data[config.CSIDaemonSetUpgradeMaxUnavailable] = ""
 	}
 }
