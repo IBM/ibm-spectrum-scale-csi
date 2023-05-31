@@ -311,9 +311,13 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	//For first pass handle primary FS and fileset
 	if !cmExists {
-		_, err = r.handlePrimaryFSandFileset(instance)
+		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
 		if err != nil {
-			return ctrl.Result{}, err
+			if requeAfterDelay == 0 {
+				return ctrl.Result{}, err
+			} else {
+				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
+			}
 		}
 	}
 
@@ -1910,8 +1914,9 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 // If primary fileset does not exist, it is created and also if a directory
 // to store symlinks is created if it does not exist. It returns the absolute path of symlink
 // directory and error if there is any.
-func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (string, error) {
+func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (time.Duration, error) {
 	logger := csiLog.WithName("handlePrimaryFSandFileset")
+	requeAfterDelay := time.Duration(0)
 	primaryReference := r.getPrimaryCluster(instance)
 	if primaryReference == nil {
 		message := fmt.Sprintf("No primary cluster is defined in the IBM Storage Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
@@ -1920,7 +1925,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.PrimaryClusterUndefined), message,
 		)
-		return "", err
+		return requeAfterDelay, err
 	}
 
 	primary := *primaryReference
@@ -1929,12 +1934,13 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	// check if primary filesystem exists
 	fsMountInfo, err := sc.GetFilesystemMountDetails(context.TODO(), primary.PrimaryFs)
 	if err != nil {
-		message := fmt.Sprintf("Failed to get the details of the primary filesystem: %s", primary.PrimaryFs)
+		requeAfterDelay = 2 * time.Minute
+		message := fmt.Sprintf("Failed to get the details of the primary filesystem: %s, retrying after 2 minutes", primary.PrimaryFs)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.GetFileSystemFailed), message,
 		)
-		return "", err
+		return requeAfterDelay, err
 	}
 
 	// In case primary fset value is not specified in configuation then use default
@@ -1971,7 +1977,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.GetRemoteFileSystemFailed), message,
 			)
-			return "", fmt.Errorf(message)
+			return requeAfterDelay, fmt.Errorf(message)
 		}
 	}
 
@@ -1983,7 +1989,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.GetFileSystemFailed), message,
 		)
-		return "", err
+		return requeAfterDelay, err
 	}
 
 	fsMountPoint := fsMountInfo.MountPoint
@@ -1992,7 +1998,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	if err != nil {
 		message := fmt.Sprintf("Failed to create the primary fileset %s on the primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
 		logger.Error(err, message)
-		return "", err
+		return requeAfterDelay, err
 	}
 
 	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
@@ -2007,7 +2013,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.FilesetRefreshFailed), message,
 				)
-				return "", err
+				return requeAfterDelay, err
 			}
 
 			// retry listing fileset again after some time after refresh
@@ -2019,7 +2025,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 					metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
 				)
-				return "", err
+				return requeAfterDelay, err
 			}
 		}
 	}
@@ -2034,10 +2040,10 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	if err != nil {
 		message := fmt.Sprintf("Failed to create the directory %s on the primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
 		logger.Error(err, message)
-		return "", err
+		return requeAfterDelay, err
 	}
 	logger.Info("The symlinks directory path is:", "symlinkDirPath", symlinkDirPath)
-	return symlinkDirPath, nil
+	return requeAfterDelay, nil
 }
 
 // getPrimaryCluster returns primary cluster of the passed instance.
@@ -2082,6 +2088,7 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 			)
 			return "", err
 		}
+		logger.Info("Primary fileset is created successfully", "filesetName", filesetName)
 	} else {
 		linkPath := fsetResponse.Config.Path
 		if linkPath == "" || linkPath == "--" {
