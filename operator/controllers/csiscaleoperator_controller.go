@@ -1915,8 +1915,8 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	// check if primary filesystem exists
 	fsMountInfo, err := sc.GetFilesystemMountDetails(context.TODO(), primary.PrimaryFs)
 	if err != nil {
-		requeAfterDelay = 5 * time.Minute
-		message := fmt.Sprintf("Failed to get the details of the primary filesystem: %s, retrying after 5 minutes", primary.PrimaryFs)
+		requeAfterDelay = 2 * time.Minute
+		message := fmt.Sprintf("Failed to get the details of the primary filesystem: %s, retrying after 2 minutes", primary.PrimaryFs)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.GetFileSystemFailed), message,
