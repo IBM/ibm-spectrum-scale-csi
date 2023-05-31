@@ -119,19 +119,19 @@ type ScaleDriver struct {
 }
 
 func GetScaleDriver(ctx context.Context) *ScaleDriver {
-	klog.V(0).Infof("[%s] gpfs GetScaleDriver", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] IBM Storage Scale GetScaleDriver", utils.GetLoggerId(ctx))
 	return &ScaleDriver{}
 }
 
 func NewIdentityServer(ctx context.Context, d *ScaleDriver) *ScaleIdentityServer {
-	klog.Infof("[%s] gpfs NewIdentityServer", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] Starting IdentityServer", utils.GetLoggerId(ctx))
 	return &ScaleIdentityServer{
 		Driver: d,
 	}
 }
 
 func NewControllerServer(ctx context.Context, d *ScaleDriver, connMap map[string]connectors.SpectrumScaleConnector, cmap settings.ScaleSettingsConfigMap, primary settings.Primary) *ScaleControllerServer {
-	klog.Infof("[%s] gpfs NewControllerServer", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] Starting ControllerServer", utils.GetLoggerId(ctx))
 	d.connmap = connMap
 	d.cmap = cmap
 	d.primary = primary
@@ -142,17 +142,17 @@ func NewControllerServer(ctx context.Context, d *ScaleDriver, connMap map[string
 }
 
 func NewNodeServer(ctx context.Context, d *ScaleDriver) *ScaleNodeServer {
-	klog.Infof("[%s] gpfs NewNodeServer", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] Starting NewNodeServer", utils.GetLoggerId(ctx))
 	return &ScaleNodeServer{
 		Driver: d,
 	}
 }
 
 func (driver *ScaleDriver) AddVolumeCapabilityAccessModes(ctx context.Context, vc []csi.VolumeCapability_AccessMode_Mode) error {
-	klog.Infof("[%s] gpfs AddVolumeCapabilityAccessModes", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] AddVolumeCapabilityAccessModes", utils.GetLoggerId(ctx))
 	var vca []*csi.VolumeCapability_AccessMode
 	for _, c := range vc {
-		klog.V(4).Infof("[%s] Enabling volume access mode: %v", utils.GetLoggerId(ctx), c.String())
+		klog.Infof("[%s] Enabling volume access mode: %v", utils.GetLoggerId(ctx), c.String())
 		vca = append(vca, NewVolumeCapabilityAccessMode(c))
 	}
 	driver.vcap = vca
@@ -160,10 +160,10 @@ func (driver *ScaleDriver) AddVolumeCapabilityAccessModes(ctx context.Context, v
 }
 
 func (driver *ScaleDriver) AddControllerServiceCapabilities(ctx context.Context, cl []csi.ControllerServiceCapability_RPC_Type) error {
-	klog.Infof("[%s] gpfs AddControllerServiceCapabilities", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] AddControllerServiceCapabilities", utils.GetLoggerId(ctx))
 	var csc []*csi.ControllerServiceCapability
 	for _, c := range cl {
-		klog.V(4).Infof("[%s] Enabling controller service capability: %v", utils.GetLoggerId(ctx), c.String())
+		klog.Infof("[%s] Enabling controller service capability: %v", utils.GetLoggerId(ctx), c.String())
 		csc = append(csc, NewControllerServiceCapability(c))
 	}
 	driver.cscap = csc
@@ -171,7 +171,7 @@ func (driver *ScaleDriver) AddControllerServiceCapabilities(ctx context.Context,
 }
 
 func (driver *ScaleDriver) AddNodeServiceCapabilities(ctx context.Context, nl []csi.NodeServiceCapability_RPC_Type) error {
-	klog.Infof("[%s] gpfs AddNodeServiceCapabilities", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] AddNodeServiceCapabilities", utils.GetLoggerId(ctx))
 	var nsc []*csi.NodeServiceCapability
 	for _, n := range nl {
 		klog.V(4).Infof("[%s] Enabling node service capability: %v", utils.GetLoggerId(ctx), n.String())
@@ -182,7 +182,7 @@ func (driver *ScaleDriver) AddNodeServiceCapabilities(ctx context.Context, nl []
 }
 
 func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context, c csi.ControllerServiceCapability_RPC_Type) error {
-	klog.Infof("[%s] gpfs ValidateControllerServiceRequest", utils.GetLoggerId(ctx))
+	klog.Infof("[%s] ValidateControllerServiceRequest", utils.GetLoggerId(ctx))
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
 	}
@@ -195,7 +195,7 @@ func (driver *ScaleDriver) ValidateControllerServiceRequest(ctx context.Context,
 }
 
 func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVersion, nodeID string) error {
-	klog.V(0).Infof("[%s] gpfs SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
+	klog.Infof("[%s] SetupScaleDriver. name: %s, version: %v, nodeID: %s", utils.GetLoggerId(ctx), name, vendorVersion, nodeID)
 	if name == "" {
 		return fmt.Errorf("driver name missing")
 	}
@@ -228,10 +228,10 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	ns := []csi.NodeServiceCapability_RPC_Type{}
 	statsCapability := os.Getenv(volumeStatsCapability)
 	if strings.ToUpper(statsCapability) != "DISABLED" {
-		klog.Infof("[%s] volume stats capabililty is enabled", utils.GetLoggerId(ctx))
+		klog.Infof("[%s] volume stats capability is enabled", utils.GetLoggerId(ctx))
 		ns = append(ns, csi.NodeServiceCapability_RPC_GET_VOLUME_STATS)
 	} else {
-		klog.Infof("[%s] volume stats capabililty is disabled", utils.GetLoggerId(ctx))
+		klog.Infof("[%s] volume stats capability is disabled", utils.GetLoggerId(ctx))
 	}
 	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
@@ -242,7 +242,7 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 }
 
 func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error) { //nolint:funlen
-	klog.Infof("[%s] gpfs PluginInitialize", utils.GetLoggerId(ctx))
+	klog.Infof("[%s] Initialize IBM Storage Scale CSI driver", utils.GetLoggerId(ctx))
 	scaleConfig := settings.LoadScaleConfigSettings(ctx)
 
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
@@ -279,12 +279,11 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 		}
 	}
 
-	klog.Infof("[%s] IBM Storage Scale: Plugin initialized", utils.GetLoggerId(ctx))
+	klog.Infof("[%s] IBM Storage Scale CSI driver initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
 }
 
 func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {
-	klog.Infof("[%s] Driver: %v version: %v", utils.GetLoggerId(ctx), driver.name, driver.vendorVersion)
 	s := NewNonBlockingGRPCServer()
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()
