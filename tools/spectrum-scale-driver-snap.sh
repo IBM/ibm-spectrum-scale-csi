@@ -107,22 +107,24 @@ function collect_csi_pod_logs()
   since=$3
   previous=$4
   csi_pod_logs=${logdir}/namespaces/${ns}/pod/
-  mkdir -p "$csi_pod_logs"
   klog="$cmd logs --namespace $ns"
 
   for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
     echo "Gather data for pod/${opPodName}"
-    if [[ $since != "" ]]
-    then
-      $klog pod/"${opPodName}" --all-containers --since "$since" > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
-    else
-      $klog pod/"${opPodName}" --all-containers > "${csi_pod_logs}"/"${opPodName}".log 2>&1 || :
-    fi
-    if [[ $previous != "False" ]]
-    then
-      echo "Gather data for pod/${opPodName} --previous "
-      $klog pod/"${opPodName}" --all-containers  --previous > "${csi_pod_logs}"/"${opPodName}"-previous.log 2>&1 || :
-    fi
+    for containerName in $($cmd get pods "$opPodName" --namespace "$ns" -o jsonpath="{.spec.containers[*].name}"); do
+      mkdir -p "$csi_pod_logs"/"${opPodName}"/"${containerName}"
+      if [[ $since != "" ]]
+      then
+        $klog pod/"${opPodName}" -c ${containerName} --since "$since" > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}".log 2>&1 || :
+      else
+        $klog pod/"${opPodName}" -c ${containerName} > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}".log 2>&1 || :
+      fi
+      if [[ $previous != "False" ]]
+      then
+        echo "Gather data for pod/${opPodName} --previous "
+        $klog pod/"${opPodName}" -c ${containerName} > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}"-previous.log 2>&1 || :
+      fi
+    done
   done
 }
 
