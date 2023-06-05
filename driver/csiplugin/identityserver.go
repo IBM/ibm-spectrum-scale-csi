@@ -49,34 +49,24 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Probe called with args: %#v", loggerId, req)
 
-	// Determine plugin health
-	// If unhealthy return gRPC error code
-	// more on error codes https://github.com/container-storage-interface/spec/blob/master/spec.md#probe-errors
-
 	// Node mapping check
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
-	klog.V(4).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
+	klog.V(6).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
 	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
 	if !ghealthy {
-		klog.Errorf("[%s] Probe: GPFS component on node %v is not healthy. Error: %v", loggerId, scalenodeID, err)
+		// Even gpfs health is unhealthy, success is return because restarting csi driver is not going help fix the issue
+		klog.Errorf("[%s] Probe: IBM Storage Scale on node %v is unhealthy. Error: %v", loggerId, scalenodeID, err)
 		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 	}
 
-	// nhealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "NODE")
-	// if nhealthy == false {
-	// 	logger.Errorf("Probe: NODE component on node %v is not healthy. Error: %v", scalenodeID, err)
-	// 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
-	// }
-
-	klog.Infof("[%s] Probe: GPFS on node %v is healthy", loggerId, scalenodeID)
-
+	klog.V(4).Infof("[%s] Probe: IBM Storage Scale on node %v is healthy", loggerId, scalenodeID)
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 
 func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] Using default GetPluginInfo", loggerId)
+	klog.V(4).Infof("[%s] Using default GetPluginInfo", loggerId)
 
 	if is.Driver.name == "" {
 		return nil, status.Error(codes.Unavailable, "Driver name not configured")

@@ -93,7 +93,7 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 		klog.Fatalf("%v endpoint scheme not supported", u.Scheme)
 	}
 
-	klog.Infof("Start listening with scheme %v, addr %v", u.Scheme, addr)
+	klog.V(4).Infof("Start listening with scheme %v, addr %v", u.Scheme, addr)
 	listener, err := net.Listen(u.Scheme, addr)
 	if err != nil {
 		klog.Fatalf("Failed to listen: %v", err)
@@ -115,7 +115,7 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 		csi.RegisterNodeServer(server, ns)
 	}
 
-	klog.Infof("Listening for connections on address: %#v", listener.Addr())
+	klog.Infof("Started listening on %#v", listener.Addr())
 
 	if err := server.Serve(listener); err != nil {
 		klog.Fatalf("Failed to serve: %v", err)

@@ -17,6 +17,8 @@
 package scale
 
 import (
+	"strings"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
@@ -51,17 +53,40 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	newCtx := utils.SetLoggerId(ctx)
 	loggerId := utils.GetLoggerId(newCtx)
-	klog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+
+	skipLog := skipLogging(info.FullMethod)
+	if skipLog {
+		klog.V(4).Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+	} else {
+		klog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+	}
+
 	klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
+
 	startTime := utils.GetExecutionTime()
 	resp, err := handler(newCtx, req)
 	if err != nil {
 		klog.Errorf("[%s] GRPC error: %v", loggerId, err)
 	} else {
-		klog.Infof("[%s] GRPC response: %+v", loggerId, resp)
+		klog.V(4).Infof("[%s] GRPC response: %+v", loggerId, resp)
 	}
 	endTime := utils.GetExecutionTime()
 	diffTime := endTime - startTime
-	klog.Infof("[%s] Time taken to execute GRPC request(in milli): %d", loggerId, diffTime)
+
+	if skipLog {
+		klog.V(4).Infof("[%s] Time taken to execute %s request(in milliseconds): %d", loggerId, info.FullMethod, diffTime)
+	} else {
+		klog.Infof("[%s] Time taken to execute %s request(in milliseconds): %d", loggerId, info.FullMethod, diffTime)
+	}
 	return resp, err
+}
+
+func skipLogging(methodName string) bool {
+	method := [...]string{"NodeGetCapabilities", "Identity/Probe", "Identity/GetPluginInfo", "Node/NodeGetInfo", "Node/NodeGetVolumeStats"}
+	for _, m := range method {
+		if strings.Contains(methodName, m) {
+			return true
+		}
+	}
+	return false
 }
