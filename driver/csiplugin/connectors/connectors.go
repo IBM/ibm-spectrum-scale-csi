@@ -18,6 +18,7 @@ package connectors
 
 import (
 	"context"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"k8s.io/klog/v2"
@@ -118,6 +119,6 @@ const (
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
-	klog.Infof("[%s] connector GetSpectrumScaleConnector", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] connector GetSpectrumScaleConnector", utils.GetLoggerId(ctx))
 	return NewSpectrumRestV2(ctx, config)
 }
