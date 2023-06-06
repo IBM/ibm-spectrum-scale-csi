@@ -1715,18 +1715,18 @@ func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context,
 
 func (cs *ScaleControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] controllerserver ControllerUnpublishVolume", loggerId)
-	klog.V(4).Infof("[%s] ControllerUnpublishVolume : req %#v", loggerId, req)
+	klog.Infof("[%s] ControllerUnpublishVolume - request: %#v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME); err != nil {
-		klog.Errorf("[%s] invalid Unpublish volume request: %v", loggerId, req)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume: ValidateControllerServiceRequest failed: %v", err))
+		klog.Errorf("[%s] ControllerUnpublishVolume - invalid controller unpublish request with error [%v]", loggerId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerUnpublishVolume - ValidateControllerServiceRequest failed: %v", err))
 	}
 
 	volumeID := req.GetVolumeId()
 	_, err := getVolIDMembers(volumeID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "ControllerUnpublishVolume : VolumeID is not in proper format")
+		klog.Errorf("[%s] ControllerUnpublishVolume - volumeID is not in proper format", loggerId)
+		return nil, status.Error(codes.InvalidArgument, "volumeID is not in proper format")
 	}
 
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
