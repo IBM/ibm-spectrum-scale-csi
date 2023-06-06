@@ -2375,16 +2375,16 @@ func (cs *ScaleControllerServer) ListVolumes(ctx context.Context, req *csi.ListV
 }
 func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] ControllerExpandVolume - Volume expand req: %v", loggerId, req)
+	klog.Infof("[%s] ControllerExpandVolume - request: %#v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_EXPAND_VOLUME); err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - invalid expand volume req: %v", loggerId, req)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume ValidateControllerServiceRequest failed: %v", err))
+		klog.Errorf("[%s] ControllerExpandVolume - volume expand request validation failed with error [%v]", loggerId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("volume expand request validation failed with error [%v]", err))
 	}
 
 	volID := req.GetVolumeId()
 	if len(volID) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "volume ID missing in request")
+		return nil, status.Error(codes.InvalidArgument, "volumeID missing in request")
 	}
 
 	capRange := req.GetCapacityRange()
@@ -2397,8 +2397,8 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	volumeIDMembers, err := getVolIDMembers(volID)
 
 	if err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - Error in source Volume ID %v: %v", loggerId, volID, err)
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err))
+		klog.Errorf("[%s] ControllerExpandVolume - volumeID validation failed with error [%v]", loggerId, err)
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("volumeID validation failed with error [%v]", err))
 	}
 
 	// For lightweight return volume expanded as no action is required
@@ -2416,47 +2416,48 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	filesystemName, err := conn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+		klog.Errorf("[%s] ControllerExpandVolume - filesystem uuid to name conversion failed with error [%v]", loggerId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("filesystem uuid to name conversion failed with error [%v]", err))
 	}
 
 	filesetName := volumeIDMembers.FsetName
 
 	fsetExist, err := conn.CheckIfFilesetExist(ctx, filesystemName, filesetName)
 	if err != nil {
-		klog.Errorf("[%s] unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+		klog.Errorf("[%s] ControllerExpandVolume - fileset [%v] check failed with error [%v]", loggerId, filesetName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] check failed with error [%v]", filesetName, err))
 	}
 
 	if !fsetExist {
-		klog.Errorf("[%s] Fileset [%v] does not exist in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+		klog.Errorf("[%s] ControllerExpandVolume - fileset [%v] is not present [%v]", loggerId, filesetName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] is not present", filesetName))
 	}
 
 	quota, err := conn.ListFilesetQuota(ctx, filesystemName, filesetName)
 	if err != nil {
-		klog.Errorf("[%s] unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+		klog.Errorf("[%s] ControllerExpandVolume - listing quota failed with error [%v]", loggerId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("listing quota failed with error [%v]", err))
 	}
 
 	filesetQuotaBytes, err := ConvertToBytes(quota)
 	if err != nil {
-		klog.Errorf("[%s] unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+		klog.Errorf("[%s] ControllerExpandVolume - invalid quota details [%v]", loggerId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("invalid quota details [%v]", err))
 	}
 
 	if filesetQuotaBytes < capacity {
 		volsize := strconv.FormatUint(capacity, 10)
 		err = conn.SetFilesetQuota(ctx, filesystemName, filesetName, volsize)
 		if err != nil {
-			klog.Errorf("[%s] unable to update the quota. Error [%v]", loggerId, err)
+			klog.Errorf("[%s] ControllerExpandVolume - unable to update the quota. Error [%v]", loggerId, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to expand the volume. Error [%v]", err))
 		}
 	}
 
 	fsetDetails, err := conn.ListFileset(ctx, filesystemName, filesetName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
+		klog.Errorf("[%s] ControllerExpandVolume - quota update failed with error [%v]", loggerId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("quota update failed with error [%v]", err))
 	}
 	//check if fileset is dependent of independent\
 	maxInodesCombination := []int{100096, 100352, 102400, 106496, 114688, 131072}
@@ -2468,8 +2469,8 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 				opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
 				fseterr := conn.UpdateFileset(ctx, filesystemName, filesetName, opt)
 				if fseterr != nil {
-					klog.Errorf("[%s] Volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesetName, filesystemName, fseterr)
-					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
+					klog.Errorf("[%s] ControllerExpandVolume - fileset update failed with error [%v]", loggerId, fseterr)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("ileset update failed with error [%v]", fseterr))
 				}
 			}
 		}
