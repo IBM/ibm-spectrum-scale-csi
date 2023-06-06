@@ -1782,8 +1782,8 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	//Get filesystem name from UUID
 	fsName, err := cs.Driver.connmap["primary"].GetFilesystemName(ctx, filesystemID)
 	if err != nil {
-		klog.Errorf("[%s] ControllerPublishVolume - filesystem uuid [%s] to name conversion failed with error [%v]", loggerId, filesystemID, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf(" filesystem uuid [%s] to name conversion failed with error [%v]", filesystemID, err))
+		klog.Errorf("[%s] ControllerPublishVolume - fetching filesystem name for uuid [%s] failed with error [%v]", loggerId, filesystemID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fetching filesystem name for uuid [%s] failed with error [%v]", filesystemID, err))
 	}
 
 	//Check if primary filesystem is mounted.
@@ -2274,25 +2274,27 @@ func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn co
 // DeleteSnapshot - Delete snapshot
 func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] DeleteSnapshot - delete snapshot req: %v", loggerId, req)
+	klog.Infof("[%s] DeleteSnapshot - request: %#v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
-		klog.Errorf("[%s] DeleteSnapshot - invalid delete snapshot req %v: %v", loggerId, req, err)
+		klog.Errorf("[%s] DeleteSnapshot - invalid delete snapshot request", loggerId, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - ValidateControllerServiceRequest failed: %v", err))
 	}
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "DeleteSnapshot - request cannot be empty")
+		klog.Errorf("[%s] DeleteSnapshot - request is empty", loggerId)
+		return nil, status.Error(codes.InvalidArgument, "request is empty")
 	}
 	snapID := req.GetSnapshotId()
 
 	if snapID == "" {
-		return nil, status.Error(codes.InvalidArgument, "DeleteSnapshot - snapshot Id is a required field")
+		klog.Errorf("[%s] DeleteSnapshot - snapshotID is missing in request", loggerId)
+		return nil, status.Error(codes.InvalidArgument, "snapshotID is missing in request")
 	}
 
 	snapIdMembers, err := cs.GetSnapIdMembers(snapID)
 	if err != nil {
-		klog.Errorf("[%s] Invalid snapshot ID %s [%v]", loggerId, snapID, err)
+		klog.Errorf("[%s] DeleteSnapshot - snapshotID is invalid", loggerId)
 		return nil, err
 	}
 
@@ -2303,7 +2305,8 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 
 	filesystemName, err := conn.GetFilesystemName(ctx, snapIdMembers.FsUUID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get filesystem Name for Filesystem UID [%v] and clusterId [%v]. Error [%v]", snapIdMembers.FsUUID, snapIdMembers.ClusterId, err))
+		klog.Errorf("[%s] DeleteSnapshot - fetching filesystem name for uuid [%s] failed with error [%v]", loggerId, snapIdMembers.FsUUID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fetching filesystem name for uuid [%s] failed with error [%v]", snapIdMembers.FsUUID, err))
 	}
 
 	filesetExist := false
@@ -2313,24 +2316,27 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		filesetExist, err = conn.CheckIfFilesetExist(ctx, filesystemName, snapIdMembers.FsetName)
 	}
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the fileset %s details details. Error [%v]", snapIdMembers.FsetName, err))
+		klog.Errorf("[%s] DeleteSnapshot - fetching fileset [%s] details failed with error [%v]", loggerId, snapIdMembers.FsetName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fetching fileset [%s] details failed with error [%v]", snapIdMembers.FsetName, err))
 	}
 
 	//skip delete if snapshot not exist, return success
 	if filesetExist {
 		snapExist := false
 		if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-			klog.V(4).Infof("[%s] DeleteSnapshot - for advanced storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, snapIdMembers.ConsistencyGroup, filesystemName)
+			//klog.V(4).Infof("[%s] DeleteSnapshot - for advanced storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, snapIdMembers.ConsistencyGroup, filesystemName)
 			chkSnapExist, err := conn.CheckIfSnapshotExist(ctx, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName)
 			if err != nil {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the snapshot details. Error [%v]", err))
+				klog.Errorf("[%s] DeleteSnapshot - fetching snapshot [%s] details failed with error [%v]", loggerId, snapIdMembers.SnapName, err)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("fetching snapshot [%s] details failed with error [%v]", snapIdMembers.SnapName, err))
 			}
 			snapExist = chkSnapExist
 		} else {
-			klog.V(4).Infof("[%s] DeleteSnapshot - for classic storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, snapIdMembers.FsetName, filesystemName)
+			//klog.V(4).Infof("[%s] DeleteSnapshot - for classic storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, snapIdMembers.FsetName, filesystemName)
 			chkSnapExist, err := conn.CheckIfSnapshotExist(ctx, filesystemName, snapIdMembers.FsetName, snapIdMembers.SnapName)
 			if err != nil {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the snapshot details. Error [%v]", err))
+				klog.Errorf("[%s] DeleteSnapshot - fetching snapshot details failed with error [%v]", loggerId, err)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("fetching snapshot details failed with error [%v]", err))
 			}
 			snapExist = chkSnapExist
 		}
@@ -2342,19 +2348,19 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 			if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 				delSnap, snaperr := cs.DelSnapMetadataDir(ctx, conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName)
 				if snaperr != nil {
-					klog.Errorf("[%s] DeleteSnapshot - error while deleting snapshot %v: Error: %v", loggerId, snapIdMembers.SnapName, snaperr)
+					klog.Errorf("[%s] DeleteSnapshot - delete snapshot [%s] failed with error [%v]", loggerId, snapIdMembers.SnapName, snaperr)
 					return nil, snaperr
 				}
 				if delSnap {
 					filesetName = snapIdMembers.ConsistencyGroup
-					klog.V(4).Infof("[%s] DeleteSnapshot - for advanced storageClass we can delete snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+					klog.V(4).Infof("[%s] DeleteSnapshot - delete snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
 				} else {
 					deleteSnapshot = false
 				}
 			}
 
 			if deleteSnapshot {
-				klog.Infof("[%s] DeleteSnapshot - deleting snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+				//klog.Infof("[%s] DeleteSnapshot - deleting snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
 				snaperr := conn.DeleteSnapshot(ctx, filesystemName, filesetName, snapIdMembers.SnapName)
 				if snaperr != nil {
 					klog.Errorf("[%s] DeleteSnapshot - error deleting snapshot %v: %v", loggerId, snapIdMembers.SnapName, snaperr)
@@ -2421,8 +2427,8 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	filesystemName, err := conn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - filesystem uuid to name conversion failed with error [%v]", loggerId, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("filesystem uuid to name conversion failed with error [%v]", err))
+		klog.Errorf("[%s] ControllerExpandVolume - fetching filesystem name for uuid [%s] failed with error [%v]", loggerId, volumeIDMembers.FsUUID, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("fetching filesystem name for uuid [%s] failed with error [%v]", volumeIDMembers.FsUUID, err))
 	}
 
 	filesetName := volumeIDMembers.FsetName
