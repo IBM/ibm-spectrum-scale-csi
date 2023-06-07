@@ -2311,7 +2311,7 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 	logger := csiLog.WithName("validateMaxUnavailableValue")
 	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", value)
 	input := strings.TrimSuffix(value, "%")
-	if s, err := strconv.Atoi(input); err == nil {
+	if s, err := strconv.Atoi(input); err == nil && (s > 0 && s < 100) {
 		logger.Info("daemonset maxunavailable parsed integer ", "inputMaxunavailableInt", s)
 		data[key] = value
 	} else {
