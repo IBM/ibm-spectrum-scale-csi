@@ -472,6 +472,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
 
 			} else {
+				cmData = map[string]string{}
 				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
 				// setting default values if values are empty
 				setDefaultDriverEnvValues(cmData)
