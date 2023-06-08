@@ -81,7 +81,6 @@ type csiNodeSyncer struct {
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
 	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
-	logger := csiLog.WithName("GetCSIDaemonsetSyncer")
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -115,7 +114,6 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 			Value: envVars[k],
 		})
 	}
-	logger.Info("upgrade_straegty shouldn't be present in cmEnvVars", "cmEnvVars:", cmEnvVars)
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable)
