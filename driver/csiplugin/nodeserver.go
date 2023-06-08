@@ -43,7 +43,6 @@ const errStaleNFSFileHandle = "stale NFS file handle"
 
 const nodePublishMethod = "NODEPUBLISH_METHOD"
 const nodePublishMethodSymlink = "SYMLINK"
-const nodePublishMethodBindMount = "BINDMOUNT"
 
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
@@ -110,9 +109,6 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 
 	method := strings.ToUpper(os.Getenv(nodePublishMethod))
-	if !(method == nodePublishMethodSymlink) {
-		method = nodePublishMethodBindMount
-	}
 	klog.V(4).Infof("[%s] NodePublishVolume - NodePublishVolume method used: %s", loggerId, method)
 
 	if method == nodePublishMethodSymlink {
