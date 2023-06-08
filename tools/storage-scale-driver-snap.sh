@@ -136,7 +136,7 @@ function get_kind()
   cmd=$2
 
   cluster_scoped_kinds=(storageclass clusterroles clusterrolebindings nodes pv volumeattachment csinodes )
-  namespace_kinds=(pod secret configmap daemonset pvc serviceaccount deployment events CSIScaleOperator scc)
+  namespace_kinds=(pod secret configmap daemonset serviceaccount deployment events CSIScaleOperator )
   namespace_kind_log=${logdir}/namespaces/${ns}
 
   for kind in ${namespace_kinds[@]}
