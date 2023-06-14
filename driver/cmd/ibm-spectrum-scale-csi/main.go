@@ -82,8 +82,10 @@ func main() {
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
+	err := flag.Set("logtostderr", "false")
 	err1 := flag.Set("stderrthreshold", logValue)
 	err2 := flag.Set("v", value)
+	flag.Parse()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -91,24 +93,13 @@ func main() {
 		}
 	}()
 	if persistentLogEnabled == "ENABLED" {
-		errf := flag.Set("logtostderr", "false")
-		flag.Parse()
-		if errf != nil {
-			klog.Errorf("Failed to set logtostderr value to false")
-		}
 		fpClose := InitFileLogger()
 		defer fpClose()
-	} else {
-		errf := flag.Set("logtostderr", "true")
-		flag.Parse()
-		if errf != nil {
-			klog.Errorf("Failed to set logtostderr value to true")
-		}
 	}
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
-	if err1 != nil || err2 != nil {
+	if err != nil || err1 != nil || err2 != nil {
 		klog.Errorf("[%s] Failed to set flag value", loggerId)
 	}
 
