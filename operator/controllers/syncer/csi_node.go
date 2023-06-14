@@ -245,7 +245,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	nodePlugin.SecurityContext = ensureDriverContainersSecurityContext(true, true, true, false)
+	nodePlugin.SecurityContext = ensureDriverContainersSecurityContext(true, true, false, false)
 	fillSecurityContextCapabilities(nodePlugin.SecurityContext)
 
 	nodePlugin.Lifecycle = &corev1.Lifecycle{
