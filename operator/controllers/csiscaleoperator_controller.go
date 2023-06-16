@@ -355,18 +355,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 5. Resizer deployment
 	// 6. Driver daemonset
 
-	// Synchronizing cluster configMap
-	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
-		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of ConfigMap %s is successful", config.CSIConfigMap))
-
 	// Synchronizing attacher deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
@@ -491,6 +479,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	logger.Info(fmt.Sprintf("Synchronization of node/driver %s DaemonSet is successful", config.GetNameForResource(config.CSINode, instance.Name)))
+
+	// Synchronizing cluster configMap
+	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
+	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
+		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of ConfigMap %s is successful", config.CSIConfigMap))
 
 	message := "The CSI driver resources have been created/updated successfully"
 	logger.Info(message)

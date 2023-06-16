@@ -428,10 +428,10 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 		}
 
 		for _, cluster := range s.driver.Spec.Clusters {
-			secret := cluster.Secrets
+			secretVolumeName := cluster.Id + config.SecretVolumeSuffix
 			secretVolumeMount := corev1.VolumeMount{
-				Name:      secret,
-				MountPath: config.SecretsMountPath + secret}
+				Name:      secretVolumeName,
+				MountPath: config.SecretsMountPath + secretVolumeName}
 			volumeMounts = append(volumeMounts, secretVolumeMount)
 
 			//There is already an error mesaage, logged by operator if the cacert
@@ -440,9 +440,10 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 			isSecureSslMode := cluster.SecureSslMode
 			cacert := cluster.Cacert
 			if isSecureSslMode && len(cacert) != 0 {
+				cacertVolumeName := cluster.Id + config.CacertVolumeSuffix
 				cacertVolumeMount := corev1.VolumeMount{
-					Name:      cacert,
-					MountPath: config.CAcertMountPath + cacert}
+					Name:      cacertVolumeName,
+					MountPath: config.CAcertMountPath + cacertVolumeName}
 				volumeMounts = append(volumeMounts, cacertVolumeMount)
 			}
 		}
@@ -484,7 +485,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	}
 
 	for _, cluster := range s.driver.Spec.Clusters {
-		volume := k8sutil.EnsureVolume(cluster.Secrets,
+		volume := k8sutil.EnsureVolume(cluster.Id+config.SecretVolumeSuffix,
 			ensureSecretVolumeSource(cluster.Secrets))
 		volumes = append(volumes, volume)
 
@@ -498,7 +499,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 				logger.Error(errors.New("SecureSslMode Error"),
 					"CA certificate is not specified in secure SSL mode for cluster with ID "+cluster.Id)
 			} else {
-				cacertVolume := k8sutil.EnsureVolume(cacert,
+				cacertVolume := k8sutil.EnsureVolume(cluster.Id+config.CacertVolumeSuffix,
 					k8sutil.EnsureConfigMapVolumeSource(cacert))
 				volumes = append(volumes, cacertVolume)
 				logger.Info("SSL communication with GPFS cluster with ID " +
