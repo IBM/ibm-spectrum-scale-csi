@@ -435,15 +435,21 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		instance.Spec.CGPrefix = CGPrefix
 		err := r.Client.Update(ctx, instance.Unwrap())
 		if err != nil {
-			logger.Error(err, "Reconciler Client.Update() failed.")
 			message := "Failed to update the consistency group prefix in CSIScaleOperator resource " + instance.Name
+			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
 			)
 			return ctrl.Result{}, err
 		}
 		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
-
+	} else if len(instance.Spec.CGPrefix) != 36 {
+		message := "The length of consistency group prefix is invalid in CSIScaleOperator instance " + instance.Name + ", the length of must be 36"
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+		)
+		return ctrl.Result{}, err
 	}
 
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)

@@ -35,6 +35,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230529112832-85319addc49a h1:qpglq7bwVaNWF4fxYJM/EaY5O2FlhrkxLlt1AcvlCfM=
 github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230529112832-85319addc49a/go.mod h1:uh9AEol21serVp8iOrRmlVBUSHfwoqxtpBfPrS1rzEQ=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230616124659-a1ef411b1d0d h1:JSPFBAuSJxzzL0H+YrOxwB3fpLSd9ymoMnutX14KWEQ=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20230616124659-a1ef411b1d0d/go.mod h1:uh9AEol21serVp8iOrRmlVBUSHfwoqxtpBfPrS1rzEQ=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
