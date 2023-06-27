@@ -672,7 +672,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
-		err = cs.checkVolTierNdSetFilesystemPolicy(ctx, scaleVol, volFsInfo, primaryClusterID)
+		err = cs.checkVolTierAndSetFilesystemPolicy(ctx, scaleVol, volFsInfo, primaryClusterID)
 		if err != nil {
 			return nil, err
 		}
@@ -689,7 +689,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Aborted, fmt.Sprintf("volume creation already in process : %v", scaleVol.VolName))
 	}
 
-	volResponse, err := cs.mapStatusOfDriverCopyJob(ctx, req, volSrc, scaleVol, isVolSource, isSnapSource, snapIdMembers)
+	volResponse, err := cs.getCopyJobStatus(ctx, req, volSrc, scaleVol, isVolSource, isSnapSource, snapIdMembers)
 	if err != nil {
 		return nil, err
 	} else if volResponse != nil {
@@ -887,6 +887,8 @@ func checkVolumeFilesystemMountOnPrimary(ctx context.Context, scaleVol *scaleVol
 
 func (cs *ScaleControllerServer) setScaleVolumeWithRemoteCluster(ctx context.Context, scaleVol *scaleVolume, volFsInfo connectors.FileSystem_v2, primaryClusterID string) error {
 	loggerId := utils.GetLoggerId(ctx)
+	/* scaleVol.VolBackendFs will always be local cluster FS. So we need to find a
+	   remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and	create fileset on that FS. */
 	if scaleVol.IsFilesetBased {
 		remoteDeviceName := volFsInfo.Mount.RemoteDeviceName
 		scaleVol.LocalFS = scaleVol.VolBackendFs
@@ -932,7 +934,7 @@ func (cs *ScaleControllerServer) setScaleVolumeWithRemoteCluster(ctx context.Con
 	return nil
 }
 
-func (cs *ScaleControllerServer) checkVolTierNdSetFilesystemPolicy(ctx context.Context, scaleVol *scaleVolume, volFsInfo connectors.FileSystem_v2, volName string) error {
+func (cs *ScaleControllerServer) checkVolTierAndSetFilesystemPolicy(ctx context.Context, scaleVol *scaleVolume, volFsInfo connectors.FileSystem_v2, volName string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	if err := cs.checkVolTierSupport(volFsInfo.Version); err != nil {
 		// TODO: Remove this secondary call to local gui when GUI refreshes remote cache immediately
@@ -988,7 +990,7 @@ func (cs *ScaleControllerServer) checkVolTierNdSetFilesystemPolicy(ctx context.C
 	return nil
 }
 
-func (cs *ScaleControllerServer) mapStatusOfDriverCopyJob(ctx context.Context, req *csi.CreateVolumeRequest, volSrc *csi.VolumeContentSource, scaleVol *scaleVolume, isVolSource bool, isSnapSource bool, snapIdMembers scaleSnapId) (*csi.CreateVolumeResponse, error) {
+func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.CreateVolumeRequest, volSrc *csi.VolumeContentSource, scaleVol *scaleVolume, isVolSource bool, isSnapSource bool, snapIdMembers scaleSnapId) (*csi.CreateVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	if isVolSource {
 		jobDetails, found := cs.Driver.volcopyjobstatusmap.Load(scaleVol.VolName)
