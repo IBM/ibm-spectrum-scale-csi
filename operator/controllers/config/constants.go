@@ -166,10 +166,12 @@ const (
 	StatusConditionSuccess = "Success"
 	StatusConditionEnabled = "Enabled"
 
-	SecretUsername    = "username" // #nosec G101 false positive
-	SecretPassword    = "password" // #nosec G101 false positive
-	Primary           = "primary"
-	HTTPClientTimeout = 60
+	SecretUsername     = "username" // #nosec G101 false positive
+	SecretPassword     = "password" // #nosec G101 false positive
+	SecretVolumeSuffix = "-secret"  // #nosec G101 false positive
+	CacertVolumeSuffix = "-cacert"
+	Primary            = "primary"
+	HTTPClientTimeout  = 60
 
 	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
 	SymlinkDir            = ".volumes"
