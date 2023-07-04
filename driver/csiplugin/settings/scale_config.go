@@ -47,6 +47,11 @@ type Primary struct {
 	SymlinkRelativePath string
 }
 
+const (
+	secretFileSuffix = "-secret" // #nosec G101 false positive
+	cacertFileSuffix = "-cacert"
+)
+
 /*
 To support backwards compatibility if the PrimaryFs field is not defined then
 
@@ -125,7 +130,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 	klog.V(6).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
-			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
+			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].ID+secretFileSuffix, "username")
 			file, e := os.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
 				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
@@ -135,7 +140,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 			file_s = strings.TrimSuffix(file_s, "\n")
 			cmap.Clusters[i].MgmtUsername = file_s
 
-			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
+			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].ID+secretFileSuffix, "password")
 			file, e = os.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
 				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
@@ -147,7 +152,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 		}
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
-			certPath := path.Join(CertificatePath, cmap.Clusters[i].Cacert)
+			certPath := path.Join(CertificatePath, cmap.Clusters[i].ID+cacertFileSuffix)
 			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
 			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {

@@ -20,12 +20,13 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-	"errors"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"google.golang.org/grpc/codes"
@@ -1022,30 +1023,30 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			}
 		} else {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return status.Error(codes.Internal, fmt.Sprintf("Error in authentication: %s request %v%v, user: %v, param: %v, response status: %v", method, endpoint, urlSuffix, s.User, param, response.Status))
+			return status.Error(codes.Internal, fmt.Sprintf("Error in authentication: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response status: %v", method, endpoint, urlSuffix, s.User, param, response.Status))
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response status: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, s.User, param, response.Status))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, s.User, param, response))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response status: %v", http.StatusForbidden, method, endpoint, urlSuffix, s.User, param, response.Status))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, s.User, param, response))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response status: %v, error %v", method, endpoint, urlSuffix, s.User, param, response.Status, err))
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, s.User, param, response, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response status: %v", responseObject, method, endpoint, urlSuffix, s.User, param, response.Status))
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, s.User, param, response))
 	}
 
 	return nil
