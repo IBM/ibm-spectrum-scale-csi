@@ -619,14 +619,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
-	err = cs.checkPrimaryFileSetLink(ctx, scaleVol)
+	err = cs.checkFileSetLink(ctx, scaleVol.PrimaryConnector, scaleVol, scaleVol.PrimaryFS, cs.Driver.primary.PrimaryFset, "primary")
 	if err != nil {
 		return nil, err
 	}
 	if scaleVol.PrimaryFS != scaleVol.VolBackendFs {
 		// primary filesytem must be mounted on GUI node so that we can create the softlink
 		// skip if primary and volume filesystem is same
-		err := checkPrimaryFilesystemMountOnGUI(ctx, scaleVol)
+		err := checkFilesystemMountOnGUI(ctx, scaleVol.PrimaryConnector, scaleVol.PrimaryFS, scaleVol.VolName, "primary")
 
 		if err != nil {
 			return nil, err
@@ -648,7 +648,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 	if isVolSource {
-		err = cs.validateCloneRequest(ctx, &srcVolumeIDMembers, scaleVol, primaryClusterID, volFsInfo)
+		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, primaryClusterID, volFsInfo)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source volume validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -657,7 +657,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		err = cs.validateSnapId(ctx, &snapIdMembers, scaleVol, primaryClusterID)
+		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -829,36 +829,36 @@ func (cs *ScaleControllerServer) getVolORSnapMembers(ctx context.Context, req *c
 	return isSnapSource, isVolSource, volSrc, snapIdMembers, srcVolumeIDMembers, nil
 }
 
-func (cs *ScaleControllerServer) checkPrimaryFileSetLink(ctx context.Context, scaleVol *scaleVolume) error {
+func (cs *ScaleControllerServer) checkFileSetLink(ctx context.Context, connector connectors.SpectrumScaleConnector, scaleVol *scaleVolume, filesystem string, fileset string, primaryOrSource string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	// Check if Primary Fileset is linked
-	primaryFileset := cs.Driver.primary.PrimaryFset
-	klog.Infof("[%s] volume:[%v] - check if primary fileset [%v] is linked", loggerId, scaleVol.VolName, primaryFileset)
-	isPrimaryFilesetLinked, err := scaleVol.PrimaryConnector.IsFilesetLinked(ctx, scaleVol.PrimaryFS, primaryFileset)
+	//primaryFileset := cs.Driver.primary.PrimaryFset
+	klog.Infof("[%s] volume:[%v] - check if %s fileset [%v] is linked", loggerId, scaleVol.VolName, primaryOrSource, fileset)
+	isFilesetLinked, err := connector.IsFilesetLinked(ctx, filesystem, fileset)
 	if err != nil {
-		klog.Errorf("[%s] volume:[%v] - unable to get details of Primary Fileset [%v]. Error : [%v]", loggerId, scaleVol.VolName, primaryFileset, err)
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get details of Primary Fileset [%v]. Error : [%v]", primaryFileset, err))
+		klog.Errorf("[%s] volume:[%v] - unable to get details of %s fileset [%v]. Error : [%v]", loggerId, scaleVol.VolName, primaryOrSource, fileset, err)
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get details of %s fileset link information for [%v]. Error : [%v]", primaryOrSource, fileset, err))
 	}
-	if !isPrimaryFilesetLinked {
-		klog.Errorf("[%s] volume:[%v] - primary fileset [%v] is not linked", loggerId, scaleVol.VolName, primaryFileset)
-		return status.Error(codes.Internal, fmt.Sprintf("primary fileset [%v] is not linked", primaryFileset))
+	if !isFilesetLinked {
+		klog.Errorf("[%s] volume:[%v] - %s [%v] is not linked", loggerId, scaleVol.VolName, fileset)
+		return status.Error(codes.Internal, fmt.Sprintf("%s  fileset [%v] is not linked", primaryOrSource, fileset))
 	}
 	return nil
 }
 
-func checkPrimaryFilesystemMountOnGUI(ctx context.Context, scaleVol *scaleVolume) error {
+func checkFilesystemMountOnGUI(ctx context.Context, connector connectors.SpectrumScaleConnector, fsName string, scaleVolName string, primaryOrNone string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	// primary filesytem must be mounted on GUI node so that we can create the softlink
 	// skip if primary and volume filesystem is same
-	klog.V(4).Infof("[%s] volume:[%v] - check if primary filesystem [%v] is mounted on GUI node of Primary cluster", loggerId, scaleVol.VolName, scaleVol.PrimaryFS)
-	isPfsMounted, err := scaleVol.PrimaryConnector.IsFilesystemMountedOnGUINode(ctx, scaleVol.PrimaryFS)
+	klog.V(4).Infof("[%s] volume:[%v] - check if %s filesystem [%v] is mounted on GUI node of %s cluster", loggerId, scaleVolName, primaryOrNone, fsName, primaryOrNone)
+	isFsMounted, err := connector.IsFilesystemMountedOnGUINode(ctx, fsName)
 	if err != nil {
-		klog.Errorf("[%s] volume:[%v] - unable to get filesystem mount details for %s on Primary cluster. Error: %v", loggerId, scaleVol.VolName, scaleVol.PrimaryFS, err)
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on Primary cluster. Error: %v", scaleVol.PrimaryFS, err))
+		klog.Errorf("[%s] volume:[%v] - unable to get filesystem mount details for %s on %s cluster. Error: %v", loggerId, scaleVolName, fsName, primaryOrNone, err)
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on GUI cluster. Error: %v", fsName, err))
 	}
-	if !isPfsMounted {
-		klog.Errorf("[%s] volume:[%v] - primary filesystem %s is not mounted on GUI node of Primary cluster", loggerId, scaleVol.VolName, scaleVol.PrimaryFS)
-		return status.Error(codes.Internal, fmt.Sprintf("primary filesystem %s is not mounted on GUI node of Primary cluster", scaleVol.PrimaryFS))
+	if !isFsMounted {
+		klog.Errorf("[%s] volume:[%v] - %s filesystem %s is not mounted on GUI node of GUI cluster", loggerId, scaleVolName, primaryOrNone, fsName)
+		return status.Error(codes.Internal, fmt.Sprintf("%s filesystem %s is not mounted on GUI node of %s cluster", primaryOrNone, fsName, primaryOrNone))
 	}
 	return nil
 }
@@ -888,7 +888,7 @@ func checkVolumeFilesystemMountOnPrimary(ctx context.Context, scaleVol *scaleVol
 func (cs *ScaleControllerServer) setScaleVolumeWithRemoteCluster(ctx context.Context, scaleVol *scaleVolume, volFsInfo connectors.FileSystem_v2, primaryClusterID string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	/* scaleVol.VolBackendFs will always be local cluster FS. So we need to find a
-	   remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and	create fileset on that FS. */
+	remote cluster FS in case local cluster FS is remotely mounted. We will find local FS RemoteDeviceName on local cluster, will use that as VolBackendFs and	create fileset on that FS. */
 	if scaleVol.IsFilesetBased {
 		remoteDeviceName := volFsInfo.Mount.RemoteDeviceName
 		scaleVol.LocalFS = scaleVol.VolBackendFs
@@ -1274,9 +1274,9 @@ func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version str
 
 	klog.Infof("fs version (%s) vs min required version (%s)", assembledFsVer, version)
 	/*	if assembledFsVer < version {
-			return false
-		}
-		return true*/
+			 return false
+		 }
+		 return true*/
 	return assembledFsVer >= version
 }
 
@@ -1332,20 +1332,20 @@ func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connec
 }
 
 /*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	// Verify IBM Storage Scale Version is not below 5.1.5-0
+	 // Verify IBM Storage Scale Version is not below 5.1.5-0
 
-	versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
-	if err != nil {
-		return err
-	}
+	 versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
+	 if err != nil {
+		 return err
+	 }
 
-	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
-	}
-	return nil
-}*/
+	 if !versionCheck {
+		 return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
+	 }
+	 return nil
+ }*/
 
-func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string) error {
+func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateSnapId [%v]", loggerId, sourcesnapshot)
 	conn, err := cs.getConnFromClusterID(ctx, sourcesnapshot.ClusterId)
@@ -1399,12 +1399,17 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, sourcesnaps
 	}
 
 	if sourcesnapshot.FsName != newvolume.VolBackendFs {
-		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(ctx, sourcesnapshot.FsName)
+		/*		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(ctx, sourcesnapshot.FsName)
+				 if err != nil {
+					 return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sourcesnapshot.FsName))
+				 }
+				 if !isFsMounted {
+					 return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sourcesnapshot.FsName))
+				 }*/
+		err = checkFilesystemMountOnGUI(ctx, conn, sourcesnapshot.FsName, "", "")
+
 		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sourcesnapshot.FsName))
-		}
-		if !isFsMounted {
-			return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sourcesnapshot.FsName))
+			return err
 		}
 	}
 
@@ -1412,12 +1417,17 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, sourcesnaps
 	if sourcesnapshot.StorageClassType == STORAGECLASS_ADVANCED {
 		filesetToCheck = sourcesnapshot.ConsistencyGroup
 	}
-	isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcesnapshot.FsName, filesetToCheck)
+	/*isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcesnapshot.FsName, filesetToCheck)
+	 if err != nil {
+		 return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	 }
+	 if !isFsetLinked {
+		 return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+	 }*/
+
+	err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcesnapshot.FsName, filesetToCheck, "source snapshot")
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-	}
-	if !isFsetLinked {
-		return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+		return err
 	}
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(ctx, sourcesnapshot.FsName, filesetToCheck, sourcesnapshot.SnapName)
@@ -1431,7 +1441,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, sourcesnaps
 	return nil
 }
 
-func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, sourcevolume *scaleVolId, newvolume *scaleVolume, pCid string, volFsInfo connectors.FileSystem_v2) error {
+func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scaleVol *scaleVolume, sourcevolume *scaleVolId, newvolume *scaleVolume, pCid string, volFsInfo connectors.FileSystem_v2) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateVolId [%v]", loggerId, sourcevolume)
 
@@ -1499,12 +1509,17 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, sourc
 			}
 		}
 
-		isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcevolume.FsName, sourcevolume.FsetName)
+		/*	isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcevolume.FsName, sourcevolume.FsetName)
+			 if err != nil {
+				 return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sourcevolume.FsetName))
+			 }
+			 if !isFsetLinked {
+				 return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", sourcevolume.FsetName))
+			 }*/
+
+		err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcevolume.FsName, sourcevolume.FsetName, "source")
 		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sourcevolume.FsetName))
-		}
-		if !isFsetLinked {
-			return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", sourcevolume.FsetName))
+			return err
 		}
 	}
 
@@ -1670,7 +1685,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	}
 
 	/* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
-	   from Primary cluster */
+	from Primary cluster */
 	FilesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIdMembers.FsUUID)
 
 	if err != nil {
