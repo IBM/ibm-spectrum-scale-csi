@@ -81,7 +81,7 @@ func getGpfsPaths(ctx context.Context) []string {
         for _, out := range strOutput {
                 finalOutput := strings.Split(out, " ")
                 if len(finalOutput) == mountPathLength {
-                        if finalOutput[1] != "" {
+                        if finalOutput[1] != "" && finalOutput[2] == "gpfs"{
                                 val,ok := os.LookupEnv(isOpenShiftCluster)
                                 if ok && val == "True"{
                                         before, after, found := strings.Cut(finalOutput[1], "/var")
