@@ -70,32 +70,33 @@ func checkGpfsType(ctx context.Context, path string) error {
 
 func getGpfsPaths(ctx context.Context) []string {
         var gpfsPaths []string
-        gpfsPathCmd := `cat /proc/mounts | grep -i "gpfs"`
+        gpfsPathCmd := `cat /proc/mounts | grep "gpfs"`
         cmd := exec.Command("bash", "-c", gpfsPathCmd)
         output, err := cmd.CombinedOutput()
         if err != nil {
                 klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
-        }
-        outputPaths := string(output)
-        strOutput := strings.Split(outputPaths, "\n")
-        for _, out := range strOutput {
-                finalOutput := strings.Split(out, " ")
-                if len(finalOutput) == mountPathLength {
-                        if finalOutput[1] != "" && finalOutput[2] == "gpfs"{
-                                val,ok := os.LookupEnv(isOpenShiftCluster)
-                                if ok && val == "True"{
-                                        before, after, found := strings.Cut(finalOutput[1], "/var")
-                                        if found && before == hostDir && strings.HasPrefix(after,mountPath){
-                                                openShiftMountPath := before + after
-                                                gpfsPaths = append(gpfsPaths, openShiftMountPath)
-                                        }else{
-                                                gpfsPaths = append(gpfsPaths, finalOutput[1])
-                                        }
-                                }else{
-                                        gpfsPaths = append(gpfsPaths, finalOutput[1])
-                                }
-                        }
-                }
+        }else{
+        	outputPaths := string(output)
+        	strOutput := strings.Split(outputPaths, "\n")
+        	for _, out := range strOutput {
+                	finalOutput := strings.Split(out, " ")
+                	if len(finalOutput) == mountPathLength {
+                        	if finalOutput[1] != "" && finalOutput[2] == "gpfs"{
+                                	val,ok := os.LookupEnv(isOpenShiftCluster)
+                                	if ok && val == "True"{
+                                        	before, after, found := strings.Cut(finalOutput[1], "/var")
+                                        	if found && before == hostDir && strings.HasPrefix(after,mountPath){
+                                                	openShiftMountPath := before + after
+                                                	gpfsPaths = append(gpfsPaths, openShiftMountPath)
+                                        	}else{
+                                                	gpfsPaths = append(gpfsPaths, finalOutput[1])
+                                        	}
+                                	}else{
+                                        	gpfsPaths = append(gpfsPaths, finalOutput[1])
+                                	}
+                        	}
+                	}
+		}
         }
         return gpfsPaths
 }
