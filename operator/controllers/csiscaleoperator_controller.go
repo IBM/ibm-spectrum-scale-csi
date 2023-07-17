@@ -90,6 +90,11 @@ var changedClusters = make(map[string]bool)
 // a map of connectors to make REST calls to GUI
 var scaleConnMap = make(map[string]connectors.SpectrumScaleConnector)
 
+var cmData = make(map[string]string)
+var cmDataCopy = make(map[string]string)
+
+//var symlinkDirPath = ""
+
 // watchResources stores resource kind and resource names of the resources
 // that the controller is going to watch.
 // Namespace information is not stored in the variable
@@ -350,18 +355,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 5. Resizer deployment
 	// 6. Driver daemonset
 
-	// Synchronizing cluster configMap
-	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
-	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
-		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of ConfigMap %s is successful", config.CSIConfigMap))
-
 	// Synchronizing attacher deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
@@ -441,27 +434,42 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	cmData := map[string]string{}
-	var daemonSetMaxUnavailable string
 	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
-	if err == nil && len(cm.Data) != 0 {
-		cmData, daemonSetMaxUnavailable = parseConfigMap(cm)
+	if errors.IsNotFound(err) {
+		cmData = map[string]string{}
+		cmDataCopy = map[string]string{}
+		//this means cm is deleted, so set defaults
+		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.CSIEnvVarConfigMap)
+		// setting default values if values are empty
+		setDefaultDriverEnvValues(cmData)
+		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
 	} else {
-		logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
-	}
+		isValidationNeeded := false
+		// for the first iteration or if there is change in cm data, then validation is required
+		if len(cmDataCopy) == 0 || !reflect.DeepEqual(cm.Data, cmDataCopy) {
+			isValidationNeeded = true
+		}
+		cmDataCopy = cm.Data
 
-	if len(daemonSetMaxUnavailable) > 0 && !validateMaxUnavailableValue(daemonSetMaxUnavailable) {
-		logger.Error(fmt.Errorf("daemonset maxunavailable is not valid"), "input value of daemonset maxunavailable is : "+daemonSetMaxUnavailable)
-		message := "Failed to validate value of DRIVER_UPGRADE_MaxUnavailable for daemonset upgrade strategy from configmap ibm-spectrum-scale-csi-config. Please use a valid percentage value"
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
-		)
-		return ctrl.Result{}, err
+		if isValidationNeeded {
+			if err == nil && len(cm.Data) != 0 {
+				cmData = r.parseConfigMap(instance, cm)
+				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
+
+			} else {
+				cmData = map[string]string{}
+				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
+				// setting default values if values are empty
+				setDefaultDriverEnvValues(cmData)
+				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
+			}
+		}
 	}
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData, daemonSetMaxUnavailable)
+	logger.Info("Final optional configmap values ", "when the sent to syncer is ", cmData)
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -471,6 +479,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	logger.Info(fmt.Sprintf("Synchronization of node/driver %s DaemonSet is successful", config.GetNameForResource(config.CSINode, instance.Name)))
+
+	// Synchronizing cluster configMap
+	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
+	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
+		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of ConfigMap %s is successful", config.CSIConfigMap))
 
 	message := "The CSI driver resources have been created/updated successfully"
 	logger.Info(message)
@@ -2229,28 +2249,51 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 }
 
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
-func parseConfigMap(cm *corev1.ConfigMap) (map[string]string, string) {
+func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) map[string]string {
 
 	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
 
 	data := map[string]string{}
-	var daemonSetMaxUnavailable string
 	invalidEnv := []string{}
+	invalidEnvValue := map[string]string{}
 	for key, value := range cm.Data {
-		if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) {
-			data[strings.ToUpper(key[11:])] = value
-		} else if strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
-			daemonSetMaxUnavailable = strings.ToUpper(value)
+		keyUpper := strings.ToUpper(key)
+		if containsStringInSlice(config.CSIOptionalConfigMapKeys[:], keyUpper) {
+			if strings.HasPrefix(keyUpper, config.CSIEnvVarPrefix) {
+				switch keyUpper {
+				case config.CSIEnvVarLogLevel:
+					checkStringExistsOrInvalidValue(config.CSILogLevels[:], keyUpper, value, data, invalidEnvValue)
+				case config.CSIEnvVarPersistentLog:
+					checkStringExistsOrInvalidValue(config.CSIPersistentLogValues[:], keyUpper, value, data, invalidEnvValue)
+				case config.CSIEnvVarNodePublishMethod:
+					checkStringExistsOrInvalidValue(config.CSINodePublishMethods[:], keyUpper, value, data, invalidEnvValue)
+				case config.CSIEnvVarVolumeStatsCapability:
+					checkStringExistsOrInvalidValue(config.CSIVolumeStatsCapabilityValues[:], keyUpper, value, data, invalidEnvValue)
+				}
+			} else if keyUpper == config.CSIDaemonSetUpgradeMaxUnavailable {
+				validateMaxUnavailableValue(keyUpper, value, data, invalidEnvValue)
+			}
 		} else {
 			invalidEnv = append(invalidEnv, key)
 		}
 	}
+	// setting default values if values are empty/wrong
+	setDefaultDriverEnvValues(data)
+	logger.Info("Final accepted value ", "from the optional configmap", data)
 	if len(invalidEnv) > 0 {
-		logger.Info(fmt.Sprintf("There are few entries %v without %s prefix in configmap %s which will not be processed", invalidEnv, config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+		message := fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnv, config.CSIEnvVarConfigMap)
+		logger.Info(message)
+		//SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+		//	metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
+		//)
+	}
+	if len(invalidEnvValue) > 0 {
+		message := fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
+		logger.Info(message)
 	}
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
-	return data, daemonSetMaxUnavailable
+	return data
 }
 
 func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
@@ -2264,15 +2307,65 @@ func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
 	rec.Event(instance, eventType, reason, msg)
 }
 
-func validateMaxUnavailableValue(inputMaxunavailable string) bool {
+func validateMaxUnavailableValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateMaxUnavailableValue")
-	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", inputMaxunavailable)
-	input := strings.TrimSuffix(inputMaxunavailable, "%")
-	if s, err := strconv.Atoi(input); err == nil {
+	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", value)
+	input := strings.TrimSuffix(value, "%")
+	if s, err := strconv.Atoi(input); err == nil && (s > 0 && s < 100) {
 		logger.Info("daemonset maxunavailable parsed integer ", "inputMaxunavailableInt", s)
-		return true
+		data[key] = value
 	} else {
 		logger.Error(err, " Failed to parse the input maxunvaialble value")
-		return false
+		invalidEnvValue[key] = value
+	}
+}
+
+// containsStringInSlice checks if a string is present in a slice
+func containsStringInSlice(inputSlice []string, stringToFind string) bool {
+	for _, v := range inputSlice {
+		if v == stringToFind {
+			return true
+		}
+	}
+	return false
+}
+
+// checkStringExistsOrInvalidValue checks if a variable present in the allowed variable value
+// If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
+// or if value is not correct as set in the allowed lists , then add wrong data into invalid map
+func checkStringExistsOrInvalidValue(inputSlice []string, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
+		data[key[11:]] = value
+	} else {
+		invalidEnvValue[key] = value
+	}
+}
+
+func setDefaultDriverEnvValues(data map[string]string) {
+	logger := csiLog.WithName("setDefaultDriverEnvValues")
+	// Set default LogLevel when log level not provided in the configMap
+	if _, ok := data[config.CSIEnvLogLevelKey]; !ok {
+		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to", config.CSIEnvLogLevelDefaultValue)
+		data[config.CSIEnvLogLevelKey] = config.CSIEnvLogLevelDefaultValue
+	}
+	// Set default PersistentLog when PersistentLog not provided in the configMap
+	if _, ok := data[config.CSIEnvPersistentLog]; !ok {
+		logger.Info("PersistentLog is empty or incorrect.", "Defaulting PersistentLog to", config.CSIEnvPersistentLogDefaultValue)
+		data[config.CSIEnvPersistentLog] = config.CSIEnvPersistentLogDefaultValue
+	}
+	// Set default NodePublishMethod when NodePublishMethod not provided in the configMap
+	if _, ok := data[config.CSIEnvNodePublishMethod]; !ok {
+		logger.Info("NodePublishMethod is empty or incorrect.", "Defaulting NodePublishMethod to", config.CSIEnvNodePublishMethodDefaultValue)
+		data[config.CSIEnvNodePublishMethod] = config.CSIEnvNodePublishMethodDefaultValue
+	}
+	// Set default VolumeStatsCapability when VOLUME_STATS_CAPABILITY not provided in the configMap
+	if _, ok := data[config.CSIEnvVolumeStatsCapability]; !ok {
+		logger.Info("VolumeStatsCapability is empty or incorrect.", "Defaulting VolumeStatsCapability to", config.CSIEnvVolumeStatsCapabilityDefaultValue)
+		data[config.CSIEnvVolumeStatsCapability] = config.CSIEnvVolumeStatsCapabilityDefaultValue
+	}
+	// Make empty DaemonSetUpgradeMaxUnavailable when DRIVER_UPGRADE_MAXUNAVAILABLE not provided in the configMap
+	if _, ok := data[config.CSIDaemonSetUpgradeMaxUnavailable]; !ok {
+		logger.Info("DaemonSetUpgradeMaxUnavailable is empty or incorrect.", "Defaulting DaemonSetUpgradeMaxUnavailable to", "1")
+		data[config.CSIDaemonSetUpgradeMaxUnavailable] = ""
 	}
 }

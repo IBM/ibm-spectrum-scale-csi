@@ -43,12 +43,16 @@ var (
 	vendorVersion  = "2.10.0"
 )
 
-const dirPath = "scalecsilogs"
-const logFile = "ibm-spectrum-scale-csi.logs"
-const logLevel = "LOGLEVEL"
-const persistentLog = "PERSISTENT_LOG"
-const hostPath = "/host/var/adm/ras/"
-const rotateSize = 1024
+const (
+	dirPath               = "scalecsilogs"
+	logFile               = "ibm-spectrum-scale-csi.logs"
+	logLevel              = "LOGLEVEL"
+	persistentLog         = "PERSISTENT_LOG"
+	nodePublishMethod     = "NODEPUBLISH_METHOD"
+	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
+	hostPath              = "/host/var/adm/ras/"
+	rotateSize            = 1024
+)
 
 type LoggerLevel int
 
@@ -63,11 +67,25 @@ const (
 
 func main() {
 	klog.InitFlags(nil)
+	if val, ok := os.LookupEnv(logLevel); ok {
+		klog.Infof("[%s] found in the env : %s", logLevel, val)
+	}
+	if val, ok := os.LookupEnv(persistentLog); ok {
+		klog.Infof("[%s] found in the env : %s", persistentLog, val)
+	}
+	if val, ok := os.LookupEnv(nodePublishMethod); ok {
+		klog.Infof("[%s] found in the env : %s", nodePublishMethod, val)
+	}
+	if val, ok := os.LookupEnv(volumeStatsCapability); ok {
+		klog.Infof("[%s] found in the env : %s", volumeStatsCapability, val)
+	}
 	level, persistentLogEnabled := getLogEnv()
-	logValue, isIncorrectLogLevel := getLogLevel(level)
+	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
+	err := flag.Set("logtostderr", "false")
 	err1 := flag.Set("stderrthreshold", logValue)
 	err2 := flag.Set("v", value)
+	flag.Parse()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -75,32 +93,16 @@ func main() {
 		}
 	}()
 	if persistentLogEnabled == "ENABLED" {
-		errf := flag.Set("logtostderr", "false")
-		flag.Parse()
-		if errf != nil {
-			klog.Errorf("Failed to set logtostderr value to false")
-		}
 		fpClose := InitFileLogger()
 		defer fpClose()
-	} else {
-		errf := flag.Set("logtostderr", "true")
-		flag.Parse()
-		if errf != nil {
-			klog.Errorf("Failed to set logtostderr value to true")
-		}
 	}
 
 	ctx := setContext()
 	loggerId := utils.GetLoggerId(ctx)
-	if err1 != nil || err2 != nil {
+	if err != nil || err1 != nil || err2 != nil {
 		klog.Errorf("[%s] Failed to set flag value", loggerId)
 	}
 
-	if isIncorrectLogLevel {
-		klog.Infof("[%s] logger level is empty or incorrect. Defaulting logValue to INFO", loggerId)
-	} else {
-		klog.Infof("[%s] logValue: %s", loggerId, level)
-	}
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
 
 	// PluginFolder defines the location of scaleplugin
@@ -147,25 +149,17 @@ func setContext() context.Context {
 func getLogEnv() (string, string) {
 	level := os.Getenv(logLevel)
 	persistentLogEnabled := os.Getenv(persistentLog)
-	if strings.ToUpper(persistentLogEnabled) != "ENABLED" {
-		persistentLogEnabled = "DISABLED"
-	}
 	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
 }
 
-func getLogLevel(level string) (string, bool) {
+func getLogLevel(level string) string {
 	var logValue string
-	isIncorrectLogLevel := false
-
-	if !(level == TRACE.String() || level == DEBUG.String() || level == INFO.String() || level == WARNING.String() || level == ERROR.String() || level == FATAL.String()) {
-		isIncorrectLogLevel = true
-	}
-	if level == DEBUG.String() || level == TRACE.String() || isIncorrectLogLevel {
+	if level == DEBUG.String() || level == TRACE.String() {
 		logValue = INFO.String()
 	} else {
 		logValue = level
 	}
-	return logValue, isIncorrectLogLevel
+	return logValue
 }
 
 func (level LoggerLevel) String() string {
