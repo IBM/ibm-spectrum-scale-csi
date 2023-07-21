@@ -45,7 +45,7 @@ const (
 	oneGB                 uint64 = 1024 * 1024 * 1024
 	smallestVolSize       uint64 = oneGB // 1GB
 	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
-
+	cgPrefixLen                  = 37
 )
 
 type ScaleControllerServer struct {
@@ -250,6 +250,51 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	return nil
 }
 
+func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVolume) (string, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] DEEBUG: Validate CG", loggerId)
+	fsetlist, err := scVol.Connector.ListFilesets(ctx, scVol.VolBackendFs)
+
+	if err != nil {
+		return "", err
+	}
+	klog.Infof("[%s] DEEBUG: Validate CG total fset [%v]", loggerId, len(fsetlist))
+
+	localCGFound := false
+	newCG := ""
+
+	for _, fset := range fsetlist {
+		klog.Infof("[%s] DEEBUG: Checking fileset [%v]", loggerId, fset.FilesetName)
+		if len(fset.FilesetName) > cgPrefixLen {
+			if fset.FilesetName == scVol.ConsistencyGroup {
+				localCGFound = true
+				klog.Infof("[%s] DEEBUG: Local CG found [%v]", loggerId, fset.FilesetName)
+				continue
+			}
+			if fset.FilesetName[cgPrefixLen:] == scVol.ConsistencyGroup[cgPrefixLen:] {
+				klog.Infof("[%s] DEEBUG: Validate CG found [%v]", loggerId, fset.FilesetName)
+				if newCG == "" {
+					newCG = fset.FilesetName
+					klog.Infof("[%s] DEEBUG: Remote CG found [%v]", loggerId, fset.FilesetName)
+				} else {
+					return "", status.Error(codes.Internal, fmt.Sprintf("found two remote cg fileset %s and %s", newCG, fset.FilesetName))
+				}
+			}
+		}
+	}
+	if localCGFound && newCG != "" {
+		// Why this happened
+		return "", status.Error(codes.Internal, fmt.Sprintf("found local cg fileset as well as remote cg fileset %s", newCG))
+	}
+
+	if newCG == "" {
+		return newCG, nil
+	} else {
+		return scVol.ConsistencyGroup, nil
+	}
+
+}
+
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
 func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isNewVolumeType bool) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
@@ -312,6 +357,16 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 	if isNewVolumeType {
 		// For new storageClass first create independent fileset if not present
+
+		// Check for consistencyGroup
+		if fsDetails.Type != filesystemTypeRemote {
+			_, err := cs.validateCG(ctx, scVol)
+			if err != nil {
+				klog.Errorf("ValidateCG failed")
+				return "", err
+			}
+		}
+
 		indepFilesetName := scVol.ConsistencyGroup
 		klog.Infof("[%s] creating independent fileset for new storageClass with fileset name: [%v]", loggerId, indepFilesetName)
 		opt[connectors.UserSpecifiedFilesetType] = independentFileset
@@ -327,7 +382,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err := cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
