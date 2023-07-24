@@ -266,7 +266,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	registrar.SecurityContext = ensureDriverContainersSecurityContext(true, true, true, true)
+	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()
