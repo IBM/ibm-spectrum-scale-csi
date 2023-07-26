@@ -888,18 +888,15 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		Operator: corev1.TolerationOpExists,
 	}
 
-	logger.Info(fmt.Sprintf("Tolerations from CNSA %+v",tolerations))
 	for _, toleration := range tolerations {
 		if !(reflect.DeepEqual(toleration, noScheduleToleration)) && !(reflect.DeepEqual(toleration, noExecuteToleration)) {
 			podTolerations = append(podTolerations, toleration)
-			logger.Info(fmt.Sprintf("Toleration %+v",toleration))
 		}
 	}
 
 	podTolerations = append(podTolerations, masterNodeToleration)
 	podTolerations = append(podTolerations, infraNodeToleration)
 
-	logger.Info(fmt.Sprintf("Final pod tolerations are %+v", podTolerations))
 	return podTolerations
 }
 

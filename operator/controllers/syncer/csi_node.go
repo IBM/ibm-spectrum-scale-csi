@@ -222,13 +222,7 @@ func (s *csiNodeSyncer) ensureDriverPodTolerations(tolerations []corev1.Tolerati
 		Effect:   corev1.TaintEffectNoSchedule,
 	}
 
-	for _, toleration := range tolerations {
-		if !(reflect.DeepEqual(toleration, masterNodeToleration)) && !(reflect.DeepEqual(toleration, infraNodeToleration)) {
-			podTolerations = append(podTolerations, toleration)
-		}
-	}
-
-	if tolerations == nil || len(tolerations) == 0{
+	if reflect.ValueOf(podTolerations).IsZero(){
 		podTolerations = append(podTolerations, masterNodeToleration)
 		podTolerations = append(podTolerations, infraNodeToleration)
 	}
