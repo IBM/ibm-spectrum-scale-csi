@@ -27,6 +27,9 @@ const (
 	LabelAppManagedBy = "app.kubernetes.io/managed-by"
 	// LabelArchitecture is the label applied on node, used to identify the architecture of node.
 	LabelArchitecture = "kubernetes.io/arch"
+	LabelNodeMaster           = "node-role.kubernetes.io/master"
+	LabelNodeInfra            = "node-role.kubernetes.io/infra"
+	LabelNodeControlPlane     = "node-role.kubernetes.io/control-plane"
 )
 
 // CSI resource labels

@@ -52,6 +52,7 @@ const (
 	EnvVarForCSIProvisionerImage = "CSI_PROVISIONER_IMAGE"
 	EnvVarForCSISnapshotterImage = "CSI_SNAPSHOTTER_IMAGE"
 	EnvVarForCSIResizerImage     = "CSI_RESIZER_IMAGE"
+
 )
 
 var csiLog = log.Log.WithName("csiscaleoperator_syncer")
@@ -854,17 +855,32 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 	return image
 }
 
-// ensurePodTolerations method removes the `NoExecute` & `NoSchedule` toleration for all taints
-// from existing list of tolerations.
+// ensurePodTolerations method adds  the `masterNode` & `infraNode` toleration for all taints
+// with existing list of tolerations.
 func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
 	logger := csiLog.WithName("ensurePodTolerations")
 	logger.Info("Fetching tolerations for sidecar controller pods.")
 
 	podTolerations := []corev1.Toleration{}
 
+	// sideCarPods need to be able to run on master nodes
+	masterNodeToleration := corev1.Toleration{
+		Key:      config.LabelNodeMaster,
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
+	// sideCarPods need to be able to run on infra nodes
+	infraNodeToleration := corev1.Toleration{
+		Key:      config.LabelNodeInfra,
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
 	noScheduleToleration := corev1.Toleration{
 		Effect:   corev1.TaintEffectNoSchedule,
 		Operator: corev1.TolerationOpExists,
+	
 	}
 
 	noExecuteToleration := corev1.Toleration{
@@ -872,12 +888,18 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		Operator: corev1.TolerationOpExists,
 	}
 
+	logger.Info(fmt.Sprintf("Tolerations from CNSA %+v",tolerations))
 	for _, toleration := range tolerations {
 		if !(reflect.DeepEqual(toleration, noScheduleToleration)) && !(reflect.DeepEqual(toleration, noExecuteToleration)) {
 			podTolerations = append(podTolerations, toleration)
+			logger.Info(fmt.Sprintf("Toleration %+v",toleration))
 		}
 	}
 
+	podTolerations = append(podTolerations, masterNodeToleration)
+	podTolerations = append(podTolerations, infraNodeToleration)
+
+	logger.Info(fmt.Sprintf("Final pod tolerations are %+v", podTolerations))
 	return podTolerations
 }
 
