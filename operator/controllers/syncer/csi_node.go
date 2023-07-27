@@ -171,6 +171,15 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	}
 	out.Spec.UpdateStrategy = strategy
 
+	if out.Spec.Template.Spec.Containers != nil {
+		for i := range out.Spec.Template.Spec.Containers {
+			if out.Spec.Template.Spec.Containers[i].Name == nodeDriverRegistrarContainerName {
+				out.Spec.Template.Spec.Containers[i].SecurityContext = &corev1.SecurityContext{
+					Privileged: boolptr.False()}
+			}
+		}
+	}
+
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err
