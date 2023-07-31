@@ -171,6 +171,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	}
 	out.Spec.UpdateStrategy = strategy
 
+	// TODO: When an alternative for mergo package is found, this should be done at only one place
 	if out.Spec.Template.Spec.Containers != nil {
 		for i := range out.Spec.Template.Spec.Containers {
 			if out.Spec.Template.Spec.Containers[i].Name == nodeDriverRegistrarContainerName {

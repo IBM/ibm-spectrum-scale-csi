@@ -896,7 +896,7 @@ func ensureProbe(delay, timeout, period int32, handler corev1.ProbeHandler) *cor
 	}
 }
 
-/*
+/* // TODO: Keeping this function because this might be used if we got any way to run side-cars as non-root users.
 // ensurePodSecurityContext set pod security with runAsUser, runAsGroup and runAsNonRoot.
 func ensurePodSecurityContext(runAsUser int64, runAsGroup int64, runAsNonRoot bool) *corev1.PodSecurityContext {
 	var localRunAsNonRoot bool
