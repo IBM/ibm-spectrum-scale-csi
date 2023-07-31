@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/mergo/transformers"
@@ -32,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
+	"reflect"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
@@ -877,6 +876,15 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		Effect:   corev1.TaintEffectNoSchedule,
 	}
 
+	// sideCarPods need to be able to run on control plane
+	controlPlaneToleration := corev1.Toleration{
+		Key:      config.LabelNodeControlPlane,
+                Operator: corev1.TolerationOpExists,
+                Effect:   corev1.TaintEffectNoSchedule,
+        }
+
+	// noSchedule and noExecute Toleration need to be removed for sidecar 
+	// as this holds good only for daemon pods
 	noScheduleToleration := corev1.Toleration{
 		Effect:   corev1.TaintEffectNoSchedule,
 		Operator: corev1.TolerationOpExists,
@@ -894,9 +902,11 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		}
 	}
 
-	podTolerations = append(podTolerations, masterNodeToleration)
-	podTolerations = append(podTolerations, infraNodeToleration)
-
+	if len(tolerations) > 0{	
+		podTolerations = append(podTolerations, masterNodeToleration)
+		podTolerations = append(podTolerations, infraNodeToleration)
+		podTolerations = append(podTolerations, controlPlaneToleration)
+	}
 	return podTolerations
 }
 

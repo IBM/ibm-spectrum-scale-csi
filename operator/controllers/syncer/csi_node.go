@@ -21,7 +21,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"reflect"
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/mergo/transformers"
 	"github.com/presslabs/controller-util/pkg/syncer"
@@ -183,7 +182,6 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
 func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
 
-	tolerations := s.driver.Spec.Tolerations
 	pod := corev1.PodSpec{
 		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
@@ -191,43 +189,12 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		HostNetwork:        true,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
-		Tolerations:        s.ensureDriverPodTolerations(tolerations),
+		Tolerations:        s.driver.Spec.Tolerations,
 		ImagePullSecrets:   secrets,
 		Affinity:           s.driver.GetAffinity(config.NodePlugin.String()),
 		PriorityClassName:  "system-node-critical",
 	}
 	return pod
-}
-
-// ensureDriverPodTolerations method adds the `masterNode` & `infraNode` toleration for all taints
-// with existing list of tolerations.
-func (s *csiNodeSyncer) ensureDriverPodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
-	logger := csiLog.WithName("ensureDriverPodTolerations")
-	logger.Info("Fetching tolerations for driver pods.")
-
-	podTolerations := []corev1.Toleration{}
-	podTolerations = tolerations
-
-	// driverPods need to be able to run on master nodes
-	masterNodeToleration := corev1.Toleration{
-		Key:      config.LabelNodeMaster,
-		Operator: corev1.TolerationOpExists,
-		Effect:   corev1.TaintEffectNoSchedule,
-	}
-
-	// driverPods need to be able to run on infra nodes
-	infraNodeToleration := corev1.Toleration{
-		Key:      config.LabelNodeInfra,
-		Operator: corev1.TolerationOpExists,
-		Effect:   corev1.TaintEffectNoSchedule,
-	}
-
-	if reflect.ValueOf(podTolerations).IsZero(){
-		podTolerations = append(podTolerations, masterNodeToleration)
-		podTolerations = append(podTolerations, infraNodeToleration)
-	}
-
-	return podTolerations
 }
 
 // ensureContainersSpec returns array of containers which has the desired
