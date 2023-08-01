@@ -19,8 +19,10 @@ package scale
 import (
 	"fmt"
 	"os"
-	"strings"
 	"os/exec"
+	"strings"
+	"sync"
+
 	"k8s.io/klog/v2"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -48,59 +50,91 @@ const nodePublishMethodSymlink = "SYMLINK"
 const isOpenShiftCluster = "IS_OpenShift"
 const mountPathLength = 6
 
+// A map for locking/unlocking a target path for NodePublish/NodeUnpublish
+// calls. The key is target path and value is a boolean true in case there
+// is any NodePublishVolume or NodeUnpublishVolume request in progress for
+// the target path.
+var nodePublishUnpublishLock map[string]bool
+
+// a mutex var used to make sure certain code blocks are executed by
+// only one goroutine at a time.
+var mutex sync.Mutex
+
+func lock(targetPath string, ctx context.Context) bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if len(nodePublishUnpublishLock) == 0 {
+		nodePublishUnpublishLock = make(map[string]bool)
+	}
+
+	if _, exists := nodePublishUnpublishLock[targetPath]; exists {
+		return false
+	}
+	nodePublishUnpublishLock[targetPath] = true
+	klog.V(4).Infof("[%s] The target path is locked for NodePublish/NodeUnpublish: [%s]", utils.GetLoggerId(ctx), targetPath)
+	return true
+}
+
+func unlock(targetPath string, ctx context.Context) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	delete(nodePublishUnpublishLock, targetPath)
+	klog.V(4).Infof("[%s] The target path is unlocked for NodePublish/NodeUnpublish: [%s]", utils.GetLoggerId(ctx), targetPath)
+}
+
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
 // corresponding error.
 func checkGpfsType(ctx context.Context, path string) error {
-        gpfsPaths := getGpfsPaths(ctx)
-        isGpfsPath := false
-        for _, gpfsPath := range gpfsPaths {
-                if strings.HasPrefix(path, gpfsPath) {
-                        isGpfsPath = true
-                        break
-                }
-        }
+	gpfsPaths := getGpfsPaths(ctx)
+	isGpfsPath := false
+	for _, gpfsPath := range gpfsPaths {
+		if strings.HasPrefix(path, gpfsPath) {
+			isGpfsPath = true
+			break
+		}
+	}
 
-        if !isGpfsPath {
-                return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path ", strings.TrimPrefix(path, hostDir))
-        }
+	if !isGpfsPath {
+		return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path ", strings.TrimPrefix(path, hostDir))
+	}
 
-        return nil
+	return nil
 }
 
 func getGpfsPaths(ctx context.Context) []string {
-        var gpfsPaths []string
-        gpfsPathCmd := `cat /proc/mounts | grep "gpfs"`
-        cmd := exec.Command("bash", "-c", gpfsPathCmd)
-        output, err := cmd.CombinedOutput()
-        if err != nil {
-                klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
-        }else{
-        	outputPaths := string(output)
-        	strOutput := strings.Split(outputPaths, "\n")
-        	for _, out := range strOutput {
-                	finalOutput := strings.Split(out, " ")
-                	if len(finalOutput) == mountPathLength {
-                        	if finalOutput[1] != "" && finalOutput[2] == "gpfs"{
-                                	val,ok := os.LookupEnv(isOpenShiftCluster)
-                                	if ok && val == "True"{
-                                        	before, after, found := strings.Cut(finalOutput[1], "/var")
-                                        	if found && before == hostDir && strings.HasPrefix(after,mountPath){
-                                                	openShiftMountPath := before + after
-                                                	gpfsPaths = append(gpfsPaths, openShiftMountPath)
-                                        	}else{
-                                                	gpfsPaths = append(gpfsPaths, finalOutput[1])
-                                        	}
-                                	}else{
-                                        	gpfsPaths = append(gpfsPaths, finalOutput[1])
-                                	}
-                        	}
-                	}
+	var gpfsPaths []string
+	gpfsPathCmd := `cat /proc/mounts | grep "gpfs"`
+	cmd := exec.Command("bash", "-c", gpfsPathCmd)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
+	} else {
+		outputPaths := string(output)
+		strOutput := strings.Split(outputPaths, "\n")
+		for _, out := range strOutput {
+			finalOutput := strings.Split(out, " ")
+			if len(finalOutput) == mountPathLength {
+				if finalOutput[1] != "" && finalOutput[2] == "gpfs" {
+					val, ok := os.LookupEnv(isOpenShiftCluster)
+					if ok && val == "True" {
+						before, after, found := strings.Cut(finalOutput[1], "/var")
+						if found && before == hostDir && strings.HasPrefix(after, mountPath) {
+							openShiftMountPath := before + after
+							gpfsPaths = append(gpfsPaths, openShiftMountPath)
+						} else {
+							gpfsPaths = append(gpfsPaths, finalOutput[1])
+						}
+					} else {
+						gpfsPaths = append(gpfsPaths, finalOutput[1])
+					}
+				}
+			}
 		}
-        }
-        return gpfsPaths
+	}
+	return gpfsPaths
 }
-
 
 func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
@@ -119,6 +153,15 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 	}
 	if volumeCapability == nil {
 		return nil, status.Error(codes.InvalidArgument, "volume capability must be provided")
+	}
+
+	lockSuccess := lock(targetPath, ctx)
+	if !lockSuccess {
+		message := fmt.Sprintf("NodePublishVolume - another NodePublish/NodeUnpublish is in progress for the targetPath: [%s]", targetPath)
+		klog.Errorf("[%s] "+message, loggerId)
+		return nil, status.Error(codes.Internal, message)
+	} else {
+		defer unlock(targetPath, ctx)
 	}
 
 	volumeIDMembers, err := getVolIDMembers(volumeID)
@@ -207,6 +250,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 				if err = os.Mkdir(targetPath, 0750); err != nil {
 					klog.Errorf("[%s] NodePublishVolume - targetPath [%s] creation failed with error [%v]", loggerId, targetPath, err)
 					return nil, fmt.Errorf("NodePublishVolume - targetPath [%s] creation failed with error [%v]", targetPath, err)
+				} else {
+					klog.Infof("[%s] NodePublishVolume - the target directory [%s] is created successfully", loggerId, targetPath)
 				}
 			} else {
 				klog.Errorf("[%s] NodePublishVolume - targetPath [%s] check failed with error [%v]", loggerId, targetPath, err)
@@ -262,6 +307,7 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 			klog.Errorf("[%s] mount point check on [%s] failed with error [%v]", loggerId, targetPathInContainer, err)
 			return true, nil, fmt.Errorf("mount point check on [%s] failed with error [%v]", targetPathInContainer, err)
 		}
+		klog.V(4).Infof("[%s] isMP value for the target path [%s] is [%t]", loggerId, targetPath, isMP)
 	}
 	if forceful || isMP {
 		// Unmount the targetPath
@@ -296,6 +342,15 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 	}
 	if len(targetPath) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "targetPath must be provided")
+	}
+
+	lockSuccess := lock(targetPath, ctx)
+	if !lockSuccess {
+		message := fmt.Sprintf("NodeUnpublishVolume - another NodePublish/NodeUnpublish is in progress for the targetPath: [%s]", targetPath)
+		klog.Errorf("[%s] "+message, loggerId)
+		return nil, status.Error(codes.Internal, message)
+	} else {
+		defer unlock(targetPath, ctx)
 	}
 
 	//Check if target is a symlink or bind mount and cleanup accordingly
