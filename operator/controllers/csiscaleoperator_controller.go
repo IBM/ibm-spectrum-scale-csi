@@ -2281,9 +2281,18 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 	// setting default values if values are empty/wrong
 	setDefaultDriverEnvValues(data)
 	logger.Info("Final accepted value ", "from the optional configmap", data)
+	var message string = ""
+	if len(invalidEnv) > 0 && len(invalidEnvValue) > 0 {
+		message = fmt.Sprintf("There are few entries %v with wrong key which will not be processed and few entries having wrong values %v in the configmap %s, default values will be used", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
 
-	if len(invalidEnv) > 0 || len(invalidEnvValue) > 0 {
-		message := fmt.Sprintf("There are few entries %v with wrong key which will not be processed and there are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
+	} else if len(invalidEnv) > 0 {
+		message = fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnv, config.CSIEnvVarConfigMap)
+
+	} else if len(invalidEnvValue) > 0 {
+		message = fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
+	}
+
+	if len(message) > 0 {
 		logger.Info(message)
 		RaiseCSOEvent(instance, r.Recorder, corev1.EventTypeWarning,
 			string(csiv1.ValidationWarning), message,
