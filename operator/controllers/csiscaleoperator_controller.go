@@ -2298,17 +2298,24 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 	// setting default values if values are empty/wrong
 	setDefaultDriverEnvValues(data)
 	logger.Info("Final accepted value ", "from the optional configmap", data)
-	if len(invalidEnv) > 0 {
-		message := fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnv, config.CSIEnvVarConfigMap)
-		logger.Info(message)
-		//SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-		//	metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
-		//)
+	var message string = ""
+	if len(invalidEnv) > 0 && len(invalidEnvValue) > 0 {
+		message = fmt.Sprintf("There are few entries %v with wrong key which will not be processed and few entries having wrong values %v in the configmap %s, default values will be used", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
+
+	} else if len(invalidEnv) > 0 {
+		message = fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnv, config.CSIEnvVarConfigMap)
+
+	} else if len(invalidEnvValue) > 0 {
+		message = fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
 	}
-	if len(invalidEnvValue) > 0 {
-		message := fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
+
+	if len(message) > 0 {
 		logger.Info(message)
+		RaiseCSOEvent(instance, r.Recorder, corev1.EventTypeWarning,
+			string(csiv1.ValidationWarning), message,
+		)
 	}
+
 	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
 	return data
 }
@@ -2321,6 +2328,11 @@ func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
 		Reason:  reason,
 		Message: msg,
 	})
+	rec.Event(instance, eventType, reason, msg)
+}
+
+func RaiseCSOEvent(instance runtime.Object, rec record.EventRecorder,
+	eventType string, reason string, msg string) {
 	rec.Event(instance, eventType, reason, msg)
 }
 
