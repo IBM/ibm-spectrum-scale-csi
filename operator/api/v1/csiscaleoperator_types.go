@@ -406,6 +406,7 @@ const (
 	CreateFilesetFailed          CSIReason = "CreateFilesetFailed"
 	LinkFilesetFailed            CSIReason = "LinkFilesetFailed"
 	ValidationFailed             CSIReason = "ValidationFailed"
+	ValidationWarning            CSIReason = "ValidationWarning"
 	GUIConnFailed                CSIReason = "GUIConnFailed"
 	ClusterIDMismatch            CSIReason = "ClusterIDMismatch"
 	PrimaryClusterUndefined      CSIReason = "PrimaryClusterUndefined"
