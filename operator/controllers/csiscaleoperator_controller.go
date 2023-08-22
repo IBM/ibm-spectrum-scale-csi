@@ -510,8 +510,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if len(clusters) > 0 {
 			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", clusters)
 			logger.Info(message)
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning,
-				string(config.StatusConditionSuccess), metav1.ConditionFalse, string(csiv1.AuthError), message,
+
+			RaiseCSOEvent(instance, r.Recorder, corev1.EventTypeWarning,
+				string(csiv1.AuthError), message,
 			)
 		}
 		logger.Info("Done with checking GUI password expiry")
@@ -2407,7 +2408,7 @@ func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
 	for _, cls := range clusters {
 		if conn, ok := scaleConnMap[cls.Id]; ok {
 			_, err := conn.GetClusterId(context.TODO())
-			if err != nil && isUnauthorized(err) {
+			if err != nil && isGUIUnauthorized(err) {
 				expiredGui = append(expiredGui, cls.Id)
 			}
 		}
@@ -2415,6 +2416,6 @@ func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
 	return expiredGui
 }
 
-func isUnauthorized(err error) bool {
-	return strings.Contains(err.Error(), "Unauthorized")
+func isGUIUnauthorized(err error) bool {
+	return strings.Contains(err.Error(), config.ErrorUnauthorized)
 }
