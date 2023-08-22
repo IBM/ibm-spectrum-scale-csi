@@ -253,46 +253,39 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVolume) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] DEEBUG: Validate CG", loggerId)
-	fsetlist, err := scVol.Connector.ListFilesets(ctx, scVol.VolBackendFs)
 
+	fsetlist, err := scVol.Connector.ListIndependentFilesets(ctx, scVol.VolBackendFs)
 	if err != nil {
 		return "", err
 	}
+
+	var flist []string
+	pvcns := scVol.ConsistencyGroup[cgPrefixLen:]
+
 	klog.Infof("[%s] DEEBUG: Validate CG total fset [%v]", loggerId, len(fsetlist))
-
-	localCGFound := false
-	newCG := ""
-
 	for _, fset := range fsetlist {
 		klog.Infof("[%s] DEEBUG: Checking fileset [%v]", loggerId, fset.FilesetName)
 		if len(fset.FilesetName) > cgPrefixLen {
-			if fset.FilesetName == scVol.ConsistencyGroup {
-				localCGFound = true
-				klog.Infof("[%s] DEEBUG: Local CG found [%v]", loggerId, fset.FilesetName)
-				continue
-			}
-			if fset.FilesetName[cgPrefixLen:] == scVol.ConsistencyGroup[cgPrefixLen:] {
-				klog.Infof("[%s] DEEBUG: Validate CG found [%v]", loggerId, fset.FilesetName)
-				if newCG == "" {
-					newCG = fset.FilesetName
-					klog.Infof("[%s] DEEBUG: Remote CG found [%v]", loggerId, fset.FilesetName)
-				} else {
-					return "", status.Error(codes.Internal, fmt.Sprintf("found two remote cg fileset %s and %s", newCG, fset.FilesetName))
-				}
+			if fset.FilesetName[cgPrefixLen:] == pvcns {
+				flist = append(flist, fset.FilesetName)
 			}
 		}
 	}
-	if localCGFound && newCG != "" {
-		// Why this happened
-		return "", status.Error(codes.Internal, fmt.Sprintf("found local cg fileset as well as remote cg fileset %s", newCG))
-	}
 
-	if newCG == "" {
-		return newCG, nil
-	} else {
+	klog.Infof("[%s] DEEBUG: shortlisted [%v]", loggerId, flist)
+
+	// no fileset with this namespace found
+	if len(flist) == 0 {
 		return scVol.ConsistencyGroup, nil
 	}
 
+	// no fileset with this namespace found
+	if len(flist) > 1 {
+		return "", status.Error(codes.Internal, fmt.Sprintf("conflicting filesets found %+v", flist))
+	}
+
+	// this is either local CG or Remote CG
+	return flist[0], nil
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
@@ -360,11 +353,12 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		// Check for consistencyGroup
 		if fsDetails.Type != filesystemTypeRemote {
-			_, err := cs.validateCG(ctx, scVol)
+			newcg, err := cs.validateCG(ctx, scVol)
 			if err != nil {
-				klog.Errorf("ValidateCG failed")
+				klog.Errorf("ValidateCG failed. Error: %v", err)
 				return "", err
 			}
+			scVol.ConsistencyGroup = newcg
 		}
 
 		indepFilesetName := scVol.ConsistencyGroup

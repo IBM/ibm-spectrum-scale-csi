@@ -705,8 +705,8 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 	return getFilesetResponse.Filesets[0], nil
 }
 
-func (s *SpectrumRestV2) ListFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
-	klog.V(4).Infof("[%s] rest_v2 ListFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
+func (s *SpectrumRestV2) ListIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
+	klog.V(4).Infof("[%s] rest_v2 ListIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.parentId=0", filesystemName)
 	getFilesetResponse := GetFilesetResponse_v2{}
