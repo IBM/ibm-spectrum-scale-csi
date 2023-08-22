@@ -708,7 +708,7 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 func (s *SpectrumRestV2) ListIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
 	klog.V(4).Infof("[%s] rest_v2 ListIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 
-	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?filter=config.parentId=0", filesystemName)
+	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName&filter=config.parentId=0", filesystemName)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
