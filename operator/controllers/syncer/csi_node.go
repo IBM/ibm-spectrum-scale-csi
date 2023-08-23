@@ -170,6 +170,16 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	}
 	out.Spec.UpdateStrategy = strategy
 
+	// TODO: When an alternative for mergo package is found, this should be done at only one place
+	if out.Spec.Template.Spec.Containers != nil {
+		for i := range out.Spec.Template.Spec.Containers {
+			if out.Spec.Template.Spec.Containers[i].Name == nodeDriverRegistrarContainerName {
+				out.Spec.Template.Spec.Containers[i].SecurityContext = &corev1.SecurityContext{
+					Privileged: boolptr.False()}
+			}
+		}
+	}
+
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
 		return err
@@ -265,7 +275,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	registrar.SecurityContext = ensureDriverContainersSecurityContext(true, true, true, true)
+	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()
