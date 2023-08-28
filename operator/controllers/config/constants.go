@@ -130,36 +130,47 @@ const (
 	ConfigMapPath             = "/var/lib/ibm/config"
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
-	DefaultLogLevel           = "DEBUG"
 
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
 	ImagePullSecretEntitlementKey = "ibm-entitlement-key"
 
-	// Constants for Optional ConfigMap
-	CSIEnvVarConfigMap                      = "ibm-spectrum-scale-csi-config"
-	CSIEnvVarPrefix                         = "VAR_DRIVER_"
-	CSIEnvVarLogLevel                       = "VAR_DRIVER_LOGLEVEL"
-	CSIEnvVarPersistentLog                  = "VAR_DRIVER_PERSISTENT_LOG"
-	CSIEnvVarNodePublishMethod              = "VAR_DRIVER_NODEPUBLISH_METHOD"
-	CSIEnvVarVolumeStatsCapability          = "VAR_DRIVER_VOLUME_STATS_CAPABILITY"
-	CSIDaemonSetUpgradeMaxUnavailable       = "DRIVER_UPGRADE_MAXUNAVAILABLE"
-	CSIEnvLogLevelKey                       = "LOGLEVEL"
-	CSIEnvPersistentLog                     = "PERSISTENT_LOG"
-	CSIEnvNodePublishMethod                 = "NODEPUBLISH_METHOD"
-	CSIEnvVolumeStatsCapability             = "VOLUME_STATS_CAPABILITY"
-	CSIEnvLogLevelDefaultValue              = "INFO"
-	CSIEnvPersistentLogDefaultValue         = "DISABLED"
-	CSIEnvNodePublishMethodDefaultValue     = "BINDMOUNT"
-	CSIEnvVolumeStatsCapabilityDefaultValue = "ENABLED"
-	CSIDaemonSetUpgradeUpdateStrateyType    = "RollingUpdate"
+	DaemonSetUpgradeUpdateStrategyType = "RollingUpdate"
+
+	// Optional ConfigMap constants for CSI driver environment variables
+	EnvVarConfigMap = "ibm-spectrum-scale-csi-config"
+	EnvVarPrefix    = "VAR_DRIVER_"
+
+	// Optional ConfigMap keys
+	DaemonSetUpgradeMaxUnavailableKey = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	EnvLogLevelKey                    = "LOGLEVEL"
+	EnvPersistentLogKey               = "PERSISTENT_LOG"
+	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
+	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
+	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
+
+	// Optional ConfigMap keys with prefix
+	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
+	EnvPersistentLogKeyPrefixed         = EnvVarPrefix + EnvPersistentLogKey
+	EnvNodePublishMethodKeyPrefixed     = EnvVarPrefix + EnvNodePublishMethodKey
+	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
+	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
+
+	// Optional ConfigMap default values
+	EnvLogLevelDefaultValue              = "INFO"
+	EnvPersistentLogDefaultValue         = "DISABLED"
+	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
+	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
+	EnvDiscoverCGFilesetDefaultValue     = "ENABLED"
 )
 
-var CSIOptionalConfigMapKeys = [5]string{CSIEnvVarLogLevel, CSIEnvVarPersistentLog, CSIEnvVarNodePublishMethod, CSIEnvVarVolumeStatsCapability, CSIDaemonSetUpgradeMaxUnavailable}
-var CSILogLevels = [6]string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
-var CSINodePublishMethods = [2]string{"SYMLINK", "BINDMOUNT"}
-var CSIPersistentLogValues = [2]string{"ENABLED", "DISABLED"}
-var CSIVolumeStatsCapabilityValues = [2]string{"ENABLED", "DISABLED"}
+var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,
+	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey, EnvDiscoverCGFilesetKeyPrefixed}
+var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
+var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
+var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
+var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
+var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"

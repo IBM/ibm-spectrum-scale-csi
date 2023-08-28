@@ -207,7 +207,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	watchResources[corev1.ResourceConfigMaps.String()][config.CSIEnvVarConfigMap] = true
+	watchResources[corev1.ResourceConfigMaps.String()][config.EnvVarConfigMap] = true
 
 	logger.Info("Adding Finalizer")
 	if err := r.addFinalizerIfNotPresent(instance); err != nil {
@@ -434,7 +434,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	cm, err := r.getConfigMap(instance, config.CSIEnvVarConfigMap)
+	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
@@ -442,7 +442,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		cmData = map[string]string{}
 		cmDataCopy = map[string]string{}
 		//this means cm is deleted, so set defaults
-		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.CSIEnvVarConfigMap)
+		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.EnvVarConfigMap)
 		// setting default values if values are empty
 		setDefaultDriverEnvValues(cmData)
 		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
@@ -461,7 +461,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 			} else {
 				cmData = map[string]string{}
-				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.CSIEnvVarConfigMap)
+				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.EnvVarConfigMap)
 				// setting default values if values are empty
 				setDefaultDriverEnvValues(cmData)
 				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
@@ -732,11 +732,11 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//Do not restart driver pods when the configmap contains invalid Envs.
 	shouldRequeueOnCreateOrDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
+			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey {
 				return true
 			}
 		}
-		logger.Info(fmt.Sprintf("No env vars found with prefix %s in the configmap %s, skipping proccessing them", config.CSIEnvVarPrefix, config.CSIEnvVarConfigMap))
+		logger.Info(fmt.Sprintf("No env vars found with prefix %s in the configmap %s, skipping proccessing them", config.EnvVarPrefix, config.EnvVarConfigMap))
 		return false
 	}
 
@@ -746,10 +746,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		for key, newVal := range newCfgMapData {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable {
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey {
 					return true
 				}
-			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix) || strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable) {
+			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) {
 				return true
 			}
 		}
@@ -758,7 +758,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.CSIEnvVarPrefix)) || (strings.ToUpper(key) == config.CSIDaemonSetUpgradeMaxUnavailable) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || (strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) {
 					return true
 				}
 			}
@@ -771,7 +771,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
+					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.EnvVarConfigMap {
 						if shouldRequeueOnCreateOrDelete(e.Object.(*corev1.ConfigMap).Data) {
 							r.setRestartedAtValues()
 							logger.Info("Restarting driver and sidecar pods due to creation of", "Resource", resourceKind, "Name", e.Object.GetName())
@@ -792,7 +792,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 						logger.Info("Restarting driver and sidecar pods due to update of", "Resource", resourceKind, "Name", e.ObjectOld.GetName())
 						return true
 					} else if resourceKind == corev1.ResourceConfigMaps.String() {
-						if e.ObjectNew.GetName() == config.CSIEnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
+						if e.ObjectNew.GetName() == config.EnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 							if shouldRequeueOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 								r.setRestartedAtValues()
 								logger.Info("Restarting driver and sidecar pods due to update of", "Resource", resourceKind, "Name", e.ObjectOld.GetName())
@@ -805,7 +805,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
-					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.CSIEnvVarConfigMap {
+					if resourceKind == corev1.ResourceConfigMaps.String() && e.Object.GetName() == config.EnvVarConfigMap {
 						if shouldRequeueOnCreateOrDelete(e.Object.(*corev1.ConfigMap).Data) {
 							r.setRestartedAtValues()
 							logger.Info("Restarting driver and sidecar pods due to deletion of", "Resource", resourceKind, "Name", e.Object.GetName())
@@ -2251,45 +2251,47 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
 func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) map[string]string {
 
-	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.CSIEnvVarConfigMap)
-	logger.Info("Parsing the data from the optional configmap.", "configmap", config.CSIEnvVarConfigMap)
+	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.EnvVarConfigMap)
+	logger.Info("Parsing the data from the optional configmap.", "configmap", config.EnvVarConfigMap)
 
-	data := map[string]string{}
-	invalidEnv := []string{}
-	invalidEnvValue := map[string]string{}
+	validEnvMap := map[string]string{}
+	invalidEnvKeys := []string{}
+	invalidEnvValueMap := map[string]string{}
 	for key, value := range cm.Data {
 		keyUpper := strings.ToUpper(key)
 		if containsStringInSlice(config.CSIOptionalConfigMapKeys[:], keyUpper) {
-			if strings.HasPrefix(keyUpper, config.CSIEnvVarPrefix) {
+			if strings.HasPrefix(keyUpper, config.EnvVarPrefix) {
 				switch keyUpper {
-				case config.CSIEnvVarLogLevel:
-					checkStringExistsOrInvalidValue(config.CSILogLevels[:], keyUpper, value, data, invalidEnvValue)
-				case config.CSIEnvVarPersistentLog:
-					checkStringExistsOrInvalidValue(config.CSIPersistentLogValues[:], keyUpper, value, data, invalidEnvValue)
-				case config.CSIEnvVarNodePublishMethod:
-					checkStringExistsOrInvalidValue(config.CSINodePublishMethods[:], keyUpper, value, data, invalidEnvValue)
-				case config.CSIEnvVarVolumeStatsCapability:
-					checkStringExistsOrInvalidValue(config.CSIVolumeStatsCapabilityValues[:], keyUpper, value, data, invalidEnvValue)
+				case config.EnvLogLevelKeyPrefixed:
+					validateEnvVarValue(config.EnvLogLevelValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+				case config.EnvPersistentLogKeyPrefixed:
+					validateEnvVarValue(config.EnvPersistentLogValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+				case config.EnvNodePublishMethodKeyPrefixed:
+					validateEnvVarValue(config.EnvNodePublishMethodValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+				case config.EnvVolumeStatsCapabilityKeyPrefixed:
+					validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+				case config.EnvDiscoverCGFilesetKeyPrefixed:
+					validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 				}
-			} else if keyUpper == config.CSIDaemonSetUpgradeMaxUnavailable {
-				validateMaxUnavailableValue(keyUpper, value, data, invalidEnvValue)
+			} else if keyUpper == config.DaemonSetUpgradeMaxUnavailableKey {
+				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
-			invalidEnv = append(invalidEnv, key)
+			invalidEnvKeys = append(invalidEnvKeys, key)
 		}
 	}
 	// setting default values if values are empty/wrong
-	setDefaultDriverEnvValues(data)
-	logger.Info("Final accepted value ", "from the optional configmap", data)
+	setDefaultDriverEnvValues(validEnvMap)
+	logger.Info("Final accepted value ", "from the optional configmap", validEnvMap)
 	var message string = ""
-	if len(invalidEnv) > 0 && len(invalidEnvValue) > 0 {
-		message = fmt.Sprintf("There are few entries %v with wrong key which will not be processed and few entries having wrong values %v in the configmap %s, default values will be used", invalidEnv, invalidEnvValue, config.CSIEnvVarConfigMap)
+	if len(invalidEnvKeys) > 0 && len(invalidEnvValueMap) > 0 {
+		message = fmt.Sprintf("There are few entries %v with wrong key which will not be processed and few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvKeys, invalidEnvValueMap, config.EnvVarConfigMap)
 
-	} else if len(invalidEnv) > 0 {
-		message = fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnv, config.CSIEnvVarConfigMap)
+	} else if len(invalidEnvKeys) > 0 {
+		message = fmt.Sprintf("There are few entries %v with wrong key in the configmap %s which will not be processed", invalidEnvKeys, config.EnvVarConfigMap)
 
-	} else if len(invalidEnvValue) > 0 {
-		message = fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValue, config.CSIEnvVarConfigMap)
+	} else if len(invalidEnvValueMap) > 0 {
+		message = fmt.Sprintf("There are few entries having wrong values %v in the configmap %s, default values will be used", invalidEnvValueMap, config.EnvVarConfigMap)
 	}
 
 	if len(message) > 0 {
@@ -2299,8 +2301,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 		)
 	}
 
-	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.CSIEnvVarConfigMap)
-	return data
+	logger.Info("Parsing the data from the optional configmap is successful", "configmap", config.EnvVarConfigMap)
+	return validEnvMap
 }
 
 func SetStatusAndRaiseEvent(instance runtime.Object, rec record.EventRecorder,
@@ -2342,42 +2344,47 @@ func containsStringInSlice(inputSlice []string, stringToFind string) bool {
 	return false
 }
 
-// checkStringExistsOrInvalidValue checks if a variable present in the allowed variable value
-// If present then remove predefined prefix from the variable key which is associated only for driver pod env variable
-// or if value is not correct as set in the allowed lists , then add wrong data into invalid map
-func checkStringExistsOrInvalidValue(inputSlice []string, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+// validateEnvVarValue checks if the input environment variable value is valid (one of the allowed values), and if
+// it is valid then removes predefined prefix from the key which is associated only for driver pod env var
+// and adds the env var to validEnvMap. If the value is not valid, then adds the env var to invalidEnvMap
+func validateEnvVarValue(inputSlice []string, key string, value string, validEnvMap map[string]string, invalidEnvMap map[string]string) {
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
-		data[key[11:]] = value
+		validEnvMap[key[11:]] = value
 	} else {
-		invalidEnvValue[key] = value
+		invalidEnvMap[key] = value
 	}
 }
 
-func setDefaultDriverEnvValues(data map[string]string) {
+func setDefaultDriverEnvValues(envMap map[string]string) {
 	logger := csiLog.WithName("setDefaultDriverEnvValues")
-	// Set default LogLevel when log level not provided in the configMap
-	if _, ok := data[config.CSIEnvLogLevelKey]; !ok {
-		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to", config.CSIEnvLogLevelDefaultValue)
-		data[config.CSIEnvLogLevelKey] = config.CSIEnvLogLevelDefaultValue
+	// Set default LogLevel when it is not present in envMap
+	if _, ok := envMap[config.EnvLogLevelKey]; !ok {
+		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to", config.EnvLogLevelDefaultValue)
+		envMap[config.EnvLogLevelKey] = config.EnvLogLevelDefaultValue
 	}
-	// Set default PersistentLog when PersistentLog not provided in the configMap
-	if _, ok := data[config.CSIEnvPersistentLog]; !ok {
-		logger.Info("PersistentLog is empty or incorrect.", "Defaulting PersistentLog to", config.CSIEnvPersistentLogDefaultValue)
-		data[config.CSIEnvPersistentLog] = config.CSIEnvPersistentLogDefaultValue
+	// Set default PersistentLog when it is not present in envMap
+	if _, ok := envMap[config.EnvPersistentLogKey]; !ok {
+		logger.Info("PersistentLog is empty or incorrect.", "Defaulting PersistentLog to", config.EnvPersistentLogDefaultValue)
+		envMap[config.EnvPersistentLogKey] = config.EnvPersistentLogDefaultValue
 	}
-	// Set default NodePublishMethod when NodePublishMethod not provided in the configMap
-	if _, ok := data[config.CSIEnvNodePublishMethod]; !ok {
-		logger.Info("NodePublishMethod is empty or incorrect.", "Defaulting NodePublishMethod to", config.CSIEnvNodePublishMethodDefaultValue)
-		data[config.CSIEnvNodePublishMethod] = config.CSIEnvNodePublishMethodDefaultValue
+	// Set default NodePublishMethod when it is not present in envMap
+	if _, ok := envMap[config.EnvNodePublishMethodKey]; !ok {
+		logger.Info("NodePublishMethod is empty or incorrect.", "Defaulting NodePublishMethod to", config.EnvNodePublishMethodDefaultValue)
+		envMap[config.EnvNodePublishMethodKey] = config.EnvNodePublishMethodDefaultValue
 	}
-	// Set default VolumeStatsCapability when VOLUME_STATS_CAPABILITY not provided in the configMap
-	if _, ok := data[config.CSIEnvVolumeStatsCapability]; !ok {
-		logger.Info("VolumeStatsCapability is empty or incorrect.", "Defaulting VolumeStatsCapability to", config.CSIEnvVolumeStatsCapabilityDefaultValue)
-		data[config.CSIEnvVolumeStatsCapability] = config.CSIEnvVolumeStatsCapabilityDefaultValue
+	// Set default VolumeStatsCapability when it is not present in envMap
+	if _, ok := envMap[config.EnvVolumeStatsCapabilityKey]; !ok {
+		logger.Info("VolumeStatsCapability is empty or incorrect.", "Defaulting VolumeStatsCapability to", config.EnvVolumeStatsCapabilityDefaultValue)
+		envMap[config.EnvVolumeStatsCapabilityKey] = config.EnvVolumeStatsCapabilityDefaultValue
 	}
-	// Make empty DaemonSetUpgradeMaxUnavailable when DRIVER_UPGRADE_MAXUNAVAILABLE not provided in the configMap
-	if _, ok := data[config.CSIDaemonSetUpgradeMaxUnavailable]; !ok {
+	// Make empty DaemonSetUpgradeMaxUnavailable when it is not present in envMap
+	if _, ok := envMap[config.DaemonSetUpgradeMaxUnavailableKey]; !ok {
 		logger.Info("DaemonSetUpgradeMaxUnavailable is empty or incorrect.", "Defaulting DaemonSetUpgradeMaxUnavailable to", "1")
-		data[config.CSIDaemonSetUpgradeMaxUnavailable] = ""
+		envMap[config.DaemonSetUpgradeMaxUnavailableKey] = ""
+	}
+	// Set default DiscoverCGFileset when it is not present in envMap
+	if _, ok := envMap[config.EnvDiscoverCGFilesetKey]; !ok {
+		logger.Info("DiscoverCGFileset is empty or incorrect.", "Defaulting DiscoverCGFileset to", config.EnvDiscoverCGFilesetDefaultValue)
+		envMap[config.EnvDiscoverCGFilesetKey] = config.EnvDiscoverCGFilesetDefaultValue
 	}
 }

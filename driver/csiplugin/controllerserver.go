@@ -18,6 +18,7 @@ package scale
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -46,6 +47,9 @@ const (
 	smallestVolSize       uint64 = oneGB // 1GB
 	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
 	cgPrefixLen                  = 37
+
+	discoverCGFileset         = "DISCOVER_CG_FILESET"
+	discoverCGFilesetDisabled = "DISABLED"
 )
 
 type ScaleControllerServer struct {
@@ -272,14 +276,14 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 		}
 	}
 
-	klog.Infof("[%s] DEEBUG: shortlisted [%v]", loggerId, flist)
+	klog.Infof("[%s] DEEBUG: Filesets with namespace [%s] as suffix: [%v]", loggerId, pvcns, flist)
 
 	// no fileset with this namespace found
 	if len(flist) == 0 {
 		return scVol.ConsistencyGroup, nil
 	}
 
-	// no fileset with this namespace found
+	// multiple filesets with this namespace found
 	if len(flist) > 1 {
 		return "", status.Error(codes.Internal, fmt.Sprintf("conflicting filesets found %+v", flist))
 	}
@@ -351,16 +355,20 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	if isNewVolumeType {
 		// For new storageClass first create independent fileset if not present
 
-		// Check for consistencyGroup
-		if fsDetails.Type != filesystemTypeRemote {
-			newcg, err := cs.validateCG(ctx, scVol)
-			if err != nil {
-				klog.Errorf("ValidateCG failed. Error: %v", err)
-				return "", err
-			}
-			scVol.ConsistencyGroup = newcg
-		}
+		discoverCGFileset := strings.ToUpper(os.Getenv(discoverCGFileset))
+		klog.Infof("[%s] discoverCGFileset is : %s", loggerId, discoverCGFileset)
 
+		if discoverCGFileset != discoverCGFilesetDisabled && len(scVol.ConsistencyGroup) > cgPrefixLen {
+			// Check for consistencyGroup
+			if fsDetails.Type != filesystemTypeRemote {
+				newcg, err := cs.validateCG(ctx, scVol)
+				if err != nil {
+					klog.Errorf("ValidateCG failed. Error: %v", err)
+					return "", err
+				}
+				scVol.ConsistencyGroup = newcg
+			}
+		}
 		indepFilesetName := scVol.ConsistencyGroup
 		klog.Infof("[%s] creating independent fileset for new storageClass with fileset name: [%v]", loggerId, indepFilesetName)
 		opt[connectors.UserSpecifiedFilesetType] = independentFileset
