@@ -854,8 +854,8 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 	return image
 }
 
-// ensurePodTolerations method adds  the `masterNode` & `infraNode` toleration for all taints
-// with existing list of tolerations.
+// ensurePodTolerations method adds  the `masterNode` & `infraNode` toleration and  removes the `NoExecute` & `NoSchedule` toleration for all taints
+// with  existing list of tolerations.
 func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
 	logger := csiLog.WithName("ensurePodTolerations")
 	logger.Info("Fetching tolerations for sidecar controller pods.")
