@@ -902,11 +902,9 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		}
 	}
 
-	if len(tolerations) > 0{	
-		podTolerations = append(podTolerations, masterNodeToleration)
-		podTolerations = append(podTolerations, infraNodeToleration)
-		podTolerations = append(podTolerations, controlPlaneToleration)
-	}
+	podTolerations = append(podTolerations, masterNodeToleration)
+	podTolerations = append(podTolerations, infraNodeToleration)
+	podTolerations = append(podTolerations, controlPlaneToleration)
 	return podTolerations
 }
 
