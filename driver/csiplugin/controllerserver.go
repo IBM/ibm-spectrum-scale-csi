@@ -256,7 +256,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 
 func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVolume) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] DEEBUG: Validate CG", loggerId)
+	klog.V(4).Infof("[%s] Validate CG for volume [%v]", loggerId, scVol)
 
 	fsetlist, err := scVol.Connector.ListIndependentFilesets(ctx, scVol.VolBackendFs)
 	if err != nil {
@@ -266,9 +266,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 	var flist []string
 	pvcns := scVol.ConsistencyGroup[cgPrefixLen:]
 
-	klog.Infof("[%s] DEEBUG: Validate CG total fset [%v]", loggerId, len(fsetlist))
 	for _, fset := range fsetlist {
-		klog.Infof("[%s] DEEBUG: Checking fileset [%v]", loggerId, fset.FilesetName)
 		if len(fset.FilesetName) > cgPrefixLen {
 			if fset.FilesetName[cgPrefixLen:] == pvcns {
 				flist = append(flist, fset.FilesetName)
@@ -276,7 +274,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 		}
 	}
 
-	klog.Infof("[%s] DEEBUG: Filesets with namespace [%s] as suffix: [%v]", loggerId, pvcns, flist)
+	klog.Infof("[%s] Filesets with namespace [%s] as suffix: [%v]", loggerId, pvcns, flist)
 
 	// no fileset with this namespace found
 	if len(flist) == 0 {
