@@ -413,6 +413,7 @@ const (
 	GetRemoteFileSystemFailed    CSIReason = "GetRemoteFileSystemFailed"
 	PrimaryClusterStanzaModified CSIReason = "PrimaryClusterStanzaModified"
 	UnmarshalFailed              CSIReason = "UnmarshalFailed"
+	AuthError                    CSIReason = "AuthError"
 
 	//for create/update/delete/get operations on k8s resources
 	GetFailed    CSIReason = "GetFailed"

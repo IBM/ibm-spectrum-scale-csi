@@ -55,6 +55,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
+
 	//v1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	config "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	csiscaleoperator "github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
@@ -307,6 +308,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
 			}
 		}
+
 	}
 
 	//For first pass handle primary FS and fileset
@@ -500,6 +502,22 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	)
 
 	logger.Info("CSI setup completed successfully.")
+
+	if len(instance.Spec.Clusters) != 0 {
+		logger.Info("Checking GUI password expiry")
+		// For validating gui password expires in every 24hours.
+		clusters := listGUIPasswdExpiredClusters(instance.Spec.Clusters)
+		if len(clusters) > 0 {
+			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", clusters)
+			logger.Info(message)
+
+			RaiseCSOEvent(instance, r.Recorder, corev1.EventTypeWarning,
+				string(csiv1.AuthError), message,
+			)
+		}
+		logger.Info("Done with checking GUI password expiry")
+		return ctrl.Result{RequeueAfter: 24 * time.Hour}, nil
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -2380,4 +2398,24 @@ func setDefaultDriverEnvValues(data map[string]string) {
 		logger.Info("DaemonSetUpgradeMaxUnavailable is empty or incorrect.", "Defaulting DaemonSetUpgradeMaxUnavailable to", "1")
 		data[config.CSIDaemonSetUpgradeMaxUnavailable] = ""
 	}
+}
+
+// listGUIPasswdExpiredClusters returns a list having clusterIds whose password is expired
+func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
+	logger := csiLog.WithName("listPasswdExpiredClusters")
+	logger.Info("Checking each cluster if its GUI password expired")
+	expiredGui := []string{}
+	for _, cls := range clusters {
+		if conn, ok := scaleConnMap[cls.Id]; ok {
+			_, err := conn.GetClusterId(context.TODO())
+			if err != nil && isGUIUnauthorized(err) {
+				expiredGui = append(expiredGui, cls.Id)
+			}
+		}
+	}
+	return expiredGui
+}
+
+func isGUIUnauthorized(err error) bool {
+	return strings.Contains(err.Error(), config.ErrorUnauthorized)
 }
