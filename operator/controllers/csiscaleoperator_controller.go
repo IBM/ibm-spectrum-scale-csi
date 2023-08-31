@@ -2384,7 +2384,19 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	}
 	// Set default DiscoverCGFileset when it is not present in envMap
 	if _, ok := envMap[config.EnvDiscoverCGFilesetKey]; !ok {
-		logger.Info("DiscoverCGFileset is empty or incorrect.", "Defaulting DiscoverCGFileset to", config.EnvDiscoverCGFilesetDefaultValue)
-		envMap[config.EnvDiscoverCGFilesetKey] = config.EnvDiscoverCGFilesetDefaultValue
+		envDiscoverCGFilesetDefaultValue := getDiscoverCGFilesetDefaultValue()
+		logger.Info("DiscoverCGFileset is empty or incorrect.", "Defaulting DiscoverCGFileset to", envDiscoverCGFilesetDefaultValue)
+		envMap[config.EnvDiscoverCGFilesetKey] = envDiscoverCGFilesetDefaultValue
 	}
+}
+
+// getDiscoverCGFilesetDefaultValue returns default value for CG fileset discovery
+func getDiscoverCGFilesetDefaultValue() string {
+	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	if isOpenShift {
+		//CG fileset discovery is enabled by default on OpenShift cluster
+		return "ENABLED"
+	}
+	//CG fileset discovery is disabled by default on k8s cluster
+	return "DISABLED"
 }
