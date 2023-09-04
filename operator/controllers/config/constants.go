@@ -88,18 +88,18 @@ const (
 
 	//  Default images for containers
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.10.0"
-	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.7.0
-	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:4a4cae5118c4404e35d66059346b7fa0835d7e6319ff45ed73f4bba335cf5183"
+	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f6717ce72a2615c7fbc746b4068f788e78579c54c43b8716e5ce650d97af2df1"
 	//  registry.k8s.io/sig-storage/livenessprobe:v2.10.0
 	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:4dc0b87ccd69f9865b89234d8555d3a614ab0a16ed94a3016ffd27f8106132ce"
-	//  registry.k8s.io/sig-storage/csi-attacher:v4.2.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:34cf9b32736c6624fc9787fb149ea6e0fbeb45415707ac2f6440ac960f1116e6"
-	//  registry.k8s.io/sig-storage/csi-provisioner:v3.4.1
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:893e37a388e7a7463d6c3523311b28cfbc5ae536dbef35430eed272cdc6850dc"
+	//  registry.k8s.io/sig-storage/csi-attacher:v4.3.0
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:4eb73137b66381b7b5dfd4d21d460f4b4095347ab6ed4626e0199c29d8d021af"
+	//  registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:d078dc174323407e8cc6f0f9abd4efaac5db27838f1564d0253d5e3233e3f17f"
 	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.2
 	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:becc53e25b96573f61f7469923a92fb3e9d3a3781732159954ce0d9da07233a2"
-	//  registry.k8s.io/sig-storage/csi-resizer:v1.7.0
-	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:3a7bdf5d105783d05d0962fa06ca53032b01694556e633f27366201c2881e01d"
+	//  registry.k8s.io/sig-storage/csi-resizer:v1.8.0
+	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:2e2b44393539d744a55b9370b346e8ebd95a77573064f3f9a8caf18c22f4d0d0"
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
