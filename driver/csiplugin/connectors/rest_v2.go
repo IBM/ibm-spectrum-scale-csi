@@ -705,10 +705,11 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 	return getFilesetResponse.Filesets[0], nil
 }
 
-func (s *SpectrumRestV2) ListIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
-	klog.V(4).Infof("[%s] rest_v2 ListIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
+func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 
-	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName&filter=config.parentId=0", filesystemName)
+	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
+	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName&filter=config.parentId=0,config.comment=%s", filesystemName, encodedFilesetComment)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)

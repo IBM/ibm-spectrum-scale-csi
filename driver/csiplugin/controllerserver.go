@@ -258,7 +258,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Validate CG for volume [%v]", loggerId, scVol)
 
-	fsetlist, err := scVol.Connector.ListIndependentFilesets(ctx, scVol.VolBackendFs)
+	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs)
 	if err != nil {
 		return "", err
 	}
