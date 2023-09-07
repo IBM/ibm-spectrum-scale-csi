@@ -124,7 +124,7 @@ jobs:
         #- python3 hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
           #Disabling for now..
         #- operator-courier --verbose verify --ui_validate_io /tmp/operator
-        - golangci-lint run --no-config --disable-all -E gosec --out-format json --timeout 3m0s
+        - golangci-lint run --no-config --disable-all -E gosec --out-format json,colored-line-number --timeout 3m0s
 
     # stage: lint
     - name: "Lint - Operator: CASE"
