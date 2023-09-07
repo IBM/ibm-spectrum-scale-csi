@@ -134,7 +134,7 @@ const (
 
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
-	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
+	ImagePullSecretEntitlementKey = "ibm-entitlement-key"
 
 	// Constants for Optional ConfigMap
 	CSIEnvVarConfigMap                      = "ibm-spectrum-scale-csi-config"
