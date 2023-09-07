@@ -60,7 +60,7 @@ const (
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
 	EnvVarForDriverImage           = "CSI_DRIVER_IMAGE"
-	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE"
+	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE" // #nosec G101 false positive
 	EnvVarForCSILivenessProbeImage = "CSI_LIVENESSPROBE_IMAGE"
 	EnvVarForLivenessHealthPort    = "LIVENESS_HEALTH_PORT"
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
