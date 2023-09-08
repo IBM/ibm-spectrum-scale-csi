@@ -94,12 +94,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
-	maxUnavailable := envVars[config.CSIDaemonSetUpgradeMaxUnavailable]
+	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
 	for k := range envVars {
-		if k != config.CSIDaemonSetUpgradeMaxUnavailable {
+		if k != config.DaemonSetUpgradeMaxUnavailableKey {
 			keys = append(keys, k)
 		}
 	}
@@ -162,7 +162,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	deploy := appsv1.RollingUpdateDaemonSet{
 		MaxUnavailable: &maxUnavailableLocal,
 	}
-	var strategyType appsv1.DaemonSetUpdateStrategyType = config.CSIDaemonSetUpgradeUpdateStrateyType
+	var strategyType appsv1.DaemonSetUpdateStrategyType = config.DaemonSetUpgradeUpdateStrategyType
 	strategy := appsv1.DaemonSetUpdateStrategy{
 		RollingUpdate: &deploy,
 		Type:          strategyType,
