@@ -128,20 +128,20 @@ type GetNodeHealthStatesResponse_v2 struct {
 }
 
 type State struct {
-	activeSince   string `json:"activeSince,omitempty"`
-	component     string `json:"component,omitempty"`
-	entityName    string `json:"entityName,omitempty"`
-	entityType    string `json:"entityType,omitempty"`
-	oid           int    `json:"oid,omitempty"`
-	parentName    string `json:"parentName,omitempty"`
-	reportingNode string `json:"reportingNode,omitempty"`
-	state         string `json:"state,omitempty"`
-	etype         string `json:"type,omitempty"`
-	name          string `json:"name,omitempty"`
-	message       string `json:"message,omitempty"`
-	userAction    string `json:"userAction,omitempty"`
-	description   string `json:"description,omitempty"`
-	severity      string `json:"severity,omitempty"`
+	ActiveSince   string `json:"activeSince,omitempty"`
+	Component     string `json:"component,omitempty"`
+	EntityName    string `json:"entityName,omitempty"`
+	EntityType    string `json:"entityType,omitempty"`
+	Oid           int    `json:"oid,omitempty"`
+	ParentName    string `json:"parentName,omitempty"`
+	ReportingNode string `json:"reportingNode,omitempty"`
+	State         string `json:"state,omitempty"`
+	Etype         string `json:"type,omitempty"`
+	Name          string `json:"name,omitempty"`
+	Message       string `json:"message,omitempty"`
+	UserAction    string `json:"userAction,omitempty"`
+	Description   string `json:"description,omitempty"`
+	Severity      string `json:"severity,omitempty"`
 }
 
 type GetFilesystemResponse struct {

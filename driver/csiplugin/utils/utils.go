@@ -17,34 +17,41 @@
 package utils
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/golang/glog"
+	"github.com/google/uuid"
 	"golang.org/x/sys/unix"
+	"k8s.io/klog/v2"
 )
 
+type loggerKey string
+
+const loggerId loggerKey = "logger_id"
+
 func ReadFile(path string) ([]byte, error) {
-	glog.V(6).Infof("utils ReadFile. path: %s", path)
+	klog.V(6).Infof("utils ReadFile. path: %s", path)
 
 	file, err := os.Open(path) // #nosec G304 This is valid path gererated internally. it is False positive
 	if err != nil {
-		glog.Errorf("Error in opening file %s: %v", path, err)
+		klog.Errorf("Error in opening file %s: %v", path, err)
 		return nil, err
 	}
 
 	defer func() {
 		if err := file.Close(); err != nil {
-			glog.Errorf("Error in closing file %s: %v", path, err)
+			klog.Errorf("Error in closing file %s: %v", path, err)
 		}
 	}()
 
-	bytes, err := ioutil.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
-		glog.Errorf("Error in read file %s: %v", path, err)
+		klog.Errorf("Error in read file %s: %v", path, err)
 		return nil, err
 	}
 
@@ -52,7 +59,7 @@ func ReadFile(path string) ([]byte, error) {
 }
 
 func GetPath(paths []string) string {
-	glog.V(6).Infof("utils GetPath. paths: %v", paths)
+	klog.V(6).Infof("utils GetPath. paths: %v", paths)
 
 	workDirectory, _ := os.Getwd()
 
@@ -71,7 +78,7 @@ func GetPath(paths []string) string {
 }
 
 func Exists(path string) bool {
-	glog.V(6).Infof("utils Exists. path: %s", path)
+	//	klog.V(6).Infof("[%s] utils Exists. path: %s", GetLoggerId(ctx), path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
@@ -79,12 +86,12 @@ func Exists(path string) bool {
 }
 
 func MkDir(path string) error {
-	glog.V(6).Infof("utils MkDir. path: %s", path)
+	//	klog.V(6).Infof("[%s] utils MkDir. path: %s", GetLoggerId(ctx), path)
 	var err error
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0700)
 		if err != nil {
-			glog.Errorf("Error in creating dir %s: %v", path, err)
+			klog.Errorf("Error in creating dir %s: %v", path, err)
 			return err
 		}
 	}
@@ -93,7 +100,7 @@ func MkDir(path string) error {
 }
 
 func StringInSlice(a string, list []string) bool {
-	glog.V(6).Infof("utils StringInSlice. string: %s, slice: %v", a, list)
+	klog.V(6).Infof("utils StringInSlice. string: %s, slice: %v", a, list)
 	for _, b := range list {
 		if strings.EqualFold(b, a) {
 			return true
@@ -103,7 +110,7 @@ func StringInSlice(a string, list []string) bool {
 }
 
 func ConvertToBytes(inputStr string) (uint64, error) {
-	glog.V(6).Infof("utils ConvertToBytes. string: %s", inputStr)
+	klog.V(6).Infof("utils ConvertToBytes. string: %s", inputStr)
 	var Iter int
 	var byteSlice []byte
 	var retValue uint64
@@ -122,7 +129,7 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	}
 
 	if Iter == 0 {
-		return 0, fmt.Errorf("Invalid number specified %v", inputStr)
+		return 0, fmt.Errorf("invalid number specified %v", inputStr)
 	}
 
 	retValue, err := strconv.ParseUint(inputStr[:Iter], 10, 64)
@@ -150,18 +157,18 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	case "t", "tb", "terabytes", "terabyte":
 		retValue *= (1024 * 1024 * 1024 * 1024)
 	default:
-		return 0, fmt.Errorf("Invalid Unit %v supplied with %v", unit, inputStr)
+		return 0, fmt.Errorf("invalid Unit %v supplied with %v", unit, inputStr)
 	}
 
 	if retValue > uintMax64 {
-		return 0, fmt.Errorf("Overflow detected %v", inputStr)
+		return 0, fmt.Errorf("overflow detected %v", inputStr)
 	}
 
 	return retValue, nil
 }
 
 func GetEnv(envName string, defaultValue string) string {
-	glog.V(6).Infof("utils GetEnv. envName: %s", envName)
+	klog.V(6).Infof("utils GetEnv. envName: %s", envName)
 	envValue := os.Getenv(envName)
 	if envValue == "" {
 		envValue = defaultValue
@@ -184,4 +191,20 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	inodesUsed := inodes - inodesFree
 
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
+}
+
+func SetLoggerId(ctx context.Context) context.Context {
+	id := uuid.New().String()
+	return context.WithValue(ctx, loggerId, id)
+}
+
+func GetLoggerId(ctx context.Context) string {
+	logger, _ := ctx.Value(loggerId).(string)
+	return logger
+}
+
+func GetExecutionTime() int64 {
+	t := time.Now()
+	timeinMilliSec := int64(time.Nanosecond) * t.UnixNano() / int64(time.Millisecond)
+	return timeinMilliSec
 }

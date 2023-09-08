@@ -17,10 +17,13 @@
 package scale
 
 import (
+	"strings"
+
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"k8s.io/klog/v2"
 )
 
 func NewVolumeCapabilityAccessMode(mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability_AccessMode {
@@ -48,13 +51,42 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 }
 
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	glog.V(3).Infof("GRPC call: %s", info.FullMethod)
-	glog.V(5).Infof("GRPC request: %+v", req)
-	resp, err := handler(ctx, req)
-	if err != nil {
-		glog.Errorf("GRPC error: %v", err)
+	newCtx := utils.SetLoggerId(ctx)
+	loggerId := utils.GetLoggerId(newCtx)
+
+	skipLog := skipLogging(info.FullMethod)
+	if skipLog {
+		klog.V(4).Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
 	} else {
-		glog.V(5).Infof("GRPC response: %+v", resp)
+		klog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
+	}
+
+	klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
+
+	startTime := utils.GetExecutionTime()
+	resp, err := handler(newCtx, req)
+	if err != nil {
+		klog.Errorf("[%s] GRPC error: %v", loggerId, err)
+	} else {
+		klog.V(4).Infof("[%s] GRPC response: %+v", loggerId, resp)
+	}
+	endTime := utils.GetExecutionTime()
+	diffTime := endTime - startTime
+
+	if skipLog {
+		klog.V(4).Infof("[%s] Time taken to execute %s request(in milliseconds): %d", loggerId, info.FullMethod, diffTime)
+	} else {
+		klog.Infof("[%s] Time taken to execute %s request(in milliseconds): %d", loggerId, info.FullMethod, diffTime)
 	}
 	return resp, err
+}
+
+func skipLogging(methodName string) bool {
+	method := [...]string{"NodeGetCapabilities", "Identity/Probe", "Identity/GetPluginInfo", "Node/NodeGetInfo", "Node/NodeGetVolumeStats"}
+	for _, m := range method {
+		if strings.Contains(methodName, m) {
+			return true
+		}
+	}
+	return false
 }

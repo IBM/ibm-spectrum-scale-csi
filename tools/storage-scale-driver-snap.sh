@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2019 IBM Corp.
+# Copyright 2023 IBM Corp.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-#USAGE spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-h]
 
 function find_versions()
 {
@@ -102,12 +100,85 @@ function find_versions()
 
 }
 
+function collect_csi_pod_logs()
+{
+  ns=$1
+  cmd=$2
+  since=$3
+  previous=$4
+  csi_pod_logs=${logdir}/namespaces/${ns}/pod/
+  klog="$cmd logs --namespace $ns"
+
+  for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
+    echo "Gather data for pod/${opPodName}"
+    for containerName in $($cmd get pods "$opPodName" --namespace "$ns" -o jsonpath="{.spec.containers[*].name}"); do
+      mkdir -p "$csi_pod_logs"/"${opPodName}"/"${containerName}"
+      if [[ $since != "" ]]
+      then
+        $klog pod/"${opPodName}" -c ${containerName} --since "$since" > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}".log 2>&1 || :
+      else
+        $klog pod/"${opPodName}" -c ${containerName} > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}".log 2>&1 || :
+      fi
+      if [[ $previous != "False" ]]
+      then
+        echo "Gather data for pod/${opPodName} --previous "
+        $klog pod/"${opPodName}" -c ${containerName} > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}"-previous.log 2>&1 || :
+      fi
+    done
+  done
+}
+
+
+function get_kind()
+{
+
+  ns=$1
+  cmd=$2
+
+  cluster_scoped_kinds=(storageclass clusterroles clusterrolebindings nodes pv volumeattachment csinodes )
+  namespace_kinds=(pod secret configmap daemonset serviceaccount deployment events CSIScaleOperator )
+  namespace_kind_log=${logdir}/namespaces/${ns}
+
+  for kind in ${namespace_kinds[@]}
+  do
+    echo "Gather data for kind $kind..."
+    mkdir -p "${namespace_kind_log}"/"${kind}"
+    $cmd get $kind --namespace $ns > "${namespace_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
+    $cmd describe $kind --namespace $ns  > "${namespace_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
+  done
+
+  cluster_scoped_kind_log=${logdir}/cluster-scoped-resources
+
+  for kind in ${cluster_scoped_kinds[@]}
+  do
+    echo "Gather data for kind $kind..."
+    mkdir -p "${cluster_scoped_kind_log}"/"${kind}"
+    $cmd get $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}"  2>&1 || :
+    $cmd describe $kind  > "${cluster_scoped_kind_log}"/"${kind}"/"${kind}".yaml 2>&1 || :
+  done
+
+}
+
+function help()
+{
+   # Display Help
+   echo "USAGE: spectrum-scale-driver-snap.sh [-n|o|p|s|v|h]"
+   echo "options:"
+   echo "     n     CSI driver plugin namespace"
+   echo "     o     output-dir"
+   echo "     p     previous[=True]: If False, does not collect the logs for the previous instance of the container in a pod"
+   echo "     s     Only return logs newer than a relative duration like 2h, or 4d. Defaults to all logs"
+   echo "     v     Print CSI version"
+   echo "     h     Print Help"
+}
+
 ns="ibm-spectrum-scale-csi-driver"
 outdir="."
 cmd="kubectl"
 version_flag=0
-
-while getopts 'n:o:vh' OPTION; do
+previous="True"
+since="0s"
+while getopts 'n:o:p:s:vh' OPTION; do
   case "$OPTION" in
     n)
       ns="$OPTARG"
@@ -116,18 +187,25 @@ while getopts 'n:o:vh' OPTION; do
     o)
       outdir="$OPTARG"
       ;;
+    p)
+      previous="$OPTARG"
+      ;;
+
+    s)
+      since="$OPTARG"
+      ;;
 
     v)
       version_flag=1
       ;;
 
     h)
-      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-v (get CSI version)] [-h]"
+      help
       exit 0
       ;;
 
     ?)
-      echo "USAGE: spectrum-scale-driver-snap.sh [-n namespace] [-o output-dir] [-v (get CSI version)] [-h]"
+      help
       exit 1
       ;;
   esac
@@ -145,6 +223,7 @@ then
   if (oc status &>/dev/null)
   then
     cmd="oc"
+    ns="ibm-spectrum-scale-csi"
   fi
 fi
 
@@ -167,10 +246,9 @@ if [[ "$operator" != "ibm-spectrum-scale-csi-operator" ]]; then
       exit 1
 fi
 
-time=$(date +"%m-%d-%Y-%T")
+time=$(date +"%m-%d-%Y-%T"| sed 's/://g')
 logdir=${outdir%/}/ibm-spectrum-scale-csi-logs_$time
 
-klog="$cmd logs --namespace $ns"
 mkdir "$logdir"
 CSI_SPECTRUM_SCALE_LABEL="ibm-spectrum-scale-csi"
 PRODUCT_NAME="ibm-spectrum-scale-csi"
@@ -178,74 +256,10 @@ PRODUCT_NAME="ibm-spectrum-scale-csi"
 echo "Collecting \"$PRODUCT_NAME\" logs..."
 echo "The log files will be saved in the folder [$logdir]"
 
-describe_all_per_label=${logdir}/ibm-spectrum-scale-csi-describe-all-by-label
-get_all_per_label=${logdir}/ibm-spectrum-scale-csi-get-all-by-label
-get_configmap=${logdir}/ibm-spectrum-scale-csi-configmap
-get_k8snodes=${logdir}/ibm-spectrum-scale-csi-k8snodes
-get_csinodes=${logdir}/ibm-spectrum-scale-csi-csinodes
-get_daemonset=${logdir}/ibm-spectrum-scale-csi-daemonsets
-describe_CSIScaleOperator=${logdir}/ibm-spectrum-scale-csi-describe-CSIScaleOperator
-get_version_images=${logdir}/ibm-spectrum-scale-csi-versions
-
-# kubectl logs on operator pods
-operatorName=$($cmd get deployment ibm-spectrum-scale-csi-operator  --namespace "$ns"  | grep -v NAME | awk '{print $1}')
-if [[ "$operatorName" == "ibm-spectrum-scale-csi-operator" ]]; then
-   describeCSIScaleOperator="$cmd describe CSIScaleOperator --namespace $ns"
-   echo "$describeCSIScaleOperator"
-   $describeCSIScaleOperator > "${describe_CSIScaleOperator}" 2>&1 || :
- fi
-
-# kubectl logs on csi pods
-for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
-  echo "$klog pod/${opPodName}"
-  $klog pod/"${opPodName}" --all-containers  > "${logdir}"/"${opPodName}".log 2>&1 || :
-  $klog pod/"${opPodName}" --all-containers  --previous > "${logdir}"/"${opPodName}"-previous.log 2>&1 || :
-done
-
-describe_label_cmd="$cmd describe all,cm,secret,storageclass,pvc,ds,serviceaccount,clusterroles,clusterrolebindings -l product=${CSI_SPECTRUM_SCALE_LABEL} --namespace $ns"
-echo "$describe_label_cmd"
-$describe_label_cmd > "$describe_all_per_label" 2>&1 || :
-
-get_label_cmd="$cmd get all,cm,secret,storageclass,pvc,serviceaccount,clusterroles,clusterrolebindings,csidriver --namespace $ns -l product=${CSI_SPECTRUM_SCALE_LABEL}"
-echo "$get_label_cmd"
-$get_label_cmd > "$get_all_per_label" 2>&1 || :
-
-get_label_cmd="$cmd get pod --namespace $ns -o wide  -l product=${CSI_SPECTRUM_SCALE_LABEL}"
-echo "$get_label_cmd"
-$get_label_cmd >> "$get_all_per_label" 2>&1 || :
-
-get_configmap_cmd="$cmd get configmap spectrum-scale-config --namespace $ns -o yaml"
-echo "$get_configmap_cmd"
-$get_configmap_cmd > "$get_configmap" 2>&1 || :
-
-get_k8snodes_cmd="$cmd get nodes"
-echo "$get_k8snodes_cmd"
-$get_k8snodes_cmd > "$get_k8snodes" 2>&1 || :
-
-get_k8snodes_cmd="$cmd describe nodes"
-echo "$get_k8snodes_cmd"
-$get_k8snodes_cmd >> "$get_k8snodes" 2>&1 || :
-
-get_csinodes_cmd="$cmd get csinodes"
-echo "$get_csinodes_cmd"
-$get_csinodes_cmd > "$get_csinodes" 2>&1 || :
-
-get_csinodes_cmd="$cmd describe csinodes"
-echo "$get_csinodes_cmd"
-$get_csinodes_cmd >> "$get_csinodes" 2>&1 || :
-
-get_spectrum_cmd="$cmd describe ds -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator -n $ns"
-echo "$get_spectrum_cmd"
-$get_spectrum_cmd >> "$get_daemonset" 2>&1 || :
-
-if [[ "$cmd" == "oc" ]]
-then
-   get_scc_cmd="$cmd describe scc spectrum-scale-csiaccess"
-   echo "$get_scc_cmd"
-   $get_scc_cmd > "${logdir}"/${PRODUCT_NAME}-scc.log 2>&1 || :
-fi
-
+get_version_images=${logdir}/version
 find_versions $ns $cmd >> "$get_version_images" 2>&1 || :
+get_kind $ns $cmd
+collect_csi_pod_logs  $ns $cmd $since $previous
 
 get_clusterinfo_cmd="$cmd cluster-info dump --namespaces kube-system --output-directory=$logdir"
 echo "$get_clusterinfo_cmd"
