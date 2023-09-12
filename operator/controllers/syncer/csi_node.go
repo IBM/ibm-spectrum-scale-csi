@@ -60,7 +60,7 @@ const (
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
 	EnvVarForDriverImage           = "CSI_DRIVER_IMAGE"
-	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE"
+	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE" // #nosec G101 false positive
 	EnvVarForCSILivenessProbeImage = "CSI_LIVENESSPROBE_IMAGE"
 	EnvVarForLivenessHealthPort    = "LIVENESS_HEALTH_PORT"
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
@@ -96,12 +96,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
-	maxUnavailable := envVars[config.CSIDaemonSetUpgradeMaxUnavailable]
+	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
 	for k := range envVars {
-		if k != config.CSIDaemonSetUpgradeMaxUnavailable {
+		if k != config.DaemonSetUpgradeMaxUnavailableKey {
 			keys = append(keys, k)
 		}
 	}
@@ -164,12 +164,22 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	deploy := appsv1.RollingUpdateDaemonSet{
 		MaxUnavailable: &maxUnavailableLocal,
 	}
-	var strategyType appsv1.DaemonSetUpdateStrategyType = config.CSIDaemonSetUpgradeUpdateStrateyType
+	var strategyType appsv1.DaemonSetUpdateStrategyType = config.DaemonSetUpgradeUpdateStrategyType
 	strategy := appsv1.DaemonSetUpdateStrategy{
 		RollingUpdate: &deploy,
 		Type:          strategyType,
 	}
 	out.Spec.UpdateStrategy = strategy
+
+	// TODO: When an alternative for mergo package is found, this should be done at only one place
+	if out.Spec.Template.Spec.Containers != nil {
+		for i := range out.Spec.Template.Spec.Containers {
+			if out.Spec.Template.Spec.Containers[i].Name == nodeDriverRegistrarContainerName {
+				out.Spec.Template.Spec.Containers[i].SecurityContext = &corev1.SecurityContext{
+					Privileged: boolptr.False()}
+			}
+		}
+	}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
 	if err != nil {
@@ -266,7 +276,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	registrar.SecurityContext = ensureDriverContainersSecurityContext(true, true, true, true)
+	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()

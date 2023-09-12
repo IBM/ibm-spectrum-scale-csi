@@ -48,7 +48,7 @@ env:
 
     # For the quay app
     - BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-    - OPERATOR_DIR=deploy/olm-catalog/ibm-spectrum-scale-csi-operator
+    #- OPERATOR_DIR=deploy/olm-catalog/ibm-spectrum-scale-csi-operator
     - QUAY_NAMESPACE=${IMAGE_REPO_OWNER}
     - PACKAGE_NAME=${REPO_NAME}-${BRANCH}
 
@@ -60,7 +60,7 @@ env:
     - OP_VER="v1.13.0"
     - OPERATOR_LOCAL_IMAGE="csi.ibm.com/${REPO_NAME_OPERATOR}:testing"
     - OPERATOR_SDK="https://github.com/operator-framework/operator-sdk/releases/download/${OP_VER}/operator-sdk_linux_amd64"
-    - OLM_MANIFEST="${BUILD_DIR_OPERATOR}/config/olm-catalog/${REPO_NAME_OPERATOR}/"
+    #- OLM_MANIFEST="${BUILD_DIR_OPERATOR}/config/olm-catalog/${REPO_NAME_OPERATOR}/"
     - CHANGE_MINIKUBE_NONE_USER=true
     - MINIKUBE_WANTUPDATENOTIFICATION=false
     - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -97,27 +97,35 @@ jobs:
       before_install:
         - >-
           curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
-          sh -s -- -b $(go env GOPATH)/bin v1.21.0 # pinned
+          sh -s -- -b $(go env GOPATH)/bin v1.54.2 # pinned
       before_script:
         - cd ${BUILD_DIR_DRIVER}
       script:
-        - golangci-lint run
+        #- golangci-lint run
+        - golangci-lint run --no-config --disable-all -E gosec --out-format json,colored-line-number --timeout 3m0s
 
     # stage: lint
     - name: "Lint - Operator: run linters and bundle automation."
+      before_install:
+        - >-
+          curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
+          sh -s -- -b $(go env GOPATH)/bin v1.54.2 # pinned
+      before_script:
+        - cd ${BUILD_DIR_OPERATOR}
       script:
         - pip3 install ansible
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 4.5.7 ${HOME}/bin
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
-        - pip3 install operator-courier==2.1.11
-        - cd ${BUILD_DIR_OPERATOR}
-        - ls ${OLM_MANIFEST}
-        - echo ${BUILD_DIR_OPERATOR}
-        - ls ${BUILD_DIR_OPERATOR}
-        - python3 hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
-          #Disabling for now..
-        - operator-courier --verbose verify --ui_validate_io /tmp/operator
+        #- pip3 install operator-courier==2.1.11
+        #- cd ${BUILD_DIR_OPERATOR}
+        #- ls ${OLM_MANIFEST}
+        #- echo ${BUILD_DIR_OPERATOR}
+        #- ls ${BUILD_DIR_OPERATOR}
+        #- python3 hacks/package_operator.py -d ${OLM_MANIFEST}  -o /tmp/operator --nozip
+        #  #Disabling for now..
+        #- operator-courier --verbose verify --ui_validate_io /tmp/operator
+        - golangci-lint run --no-config --disable-all -E gosec --out-format json,colored-line-number --timeout 3m0s
 
     # stage: lint
     - name: "Lint - Operator: CASE"

@@ -406,12 +406,14 @@ const (
 	CreateFilesetFailed          CSIReason = "CreateFilesetFailed"
 	LinkFilesetFailed            CSIReason = "LinkFilesetFailed"
 	ValidationFailed             CSIReason = "ValidationFailed"
+	ValidationWarning            CSIReason = "ValidationWarning"
 	GUIConnFailed                CSIReason = "GUIConnFailed"
 	ClusterIDMismatch            CSIReason = "ClusterIDMismatch"
 	PrimaryClusterUndefined      CSIReason = "PrimaryClusterUndefined"
 	GetRemoteFileSystemFailed    CSIReason = "GetRemoteFileSystemFailed"
 	PrimaryClusterStanzaModified CSIReason = "PrimaryClusterStanzaModified"
 	UnmarshalFailed              CSIReason = "UnmarshalFailed"
+	AuthError                    CSIReason = "AuthError"
 
 	//for create/update/delete/get operations on k8s resources
 	GetFailed    CSIReason = "GetFailed"

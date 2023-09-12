@@ -18,6 +18,7 @@ package scale
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -45,7 +46,10 @@ const (
 	oneGB                 uint64 = 1024 * 1024 * 1024
 	smallestVolSize       uint64 = oneGB // 1GB
 	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
+	cgPrefixLen                  = 37
 
+	discoverCGFileset         = "DISCOVER_CG_FILESET"
+	discoverCGFilesetDisabled = "DISABLED"
 )
 
 type ScaleControllerServer struct {
@@ -250,8 +254,44 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	return nil
 }
 
+func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVolume) (string, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] Validate CG for volume [%v]", loggerId, scVol)
+
+	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs)
+	if err != nil {
+		return "", err
+	}
+
+	var flist []string
+	pvcns := scVol.ConsistencyGroup[cgPrefixLen:]
+
+	for _, fset := range fsetlist {
+		if len(fset.FilesetName) > cgPrefixLen {
+			if fset.FilesetName[cgPrefixLen:] == pvcns {
+				flist = append(flist, fset.FilesetName)
+			}
+		}
+	}
+
+	klog.Infof("[%s] Filesets with namespace [%s] as suffix: [%v]", loggerId, pvcns, flist)
+
+	// no fileset with this namespace found
+	if len(flist) == 0 {
+		return scVol.ConsistencyGroup, nil
+	}
+
+	// multiple filesets with this namespace found
+	if len(flist) > 1 {
+		return "", status.Error(codes.Internal, fmt.Sprintf("conflicting filesets found %+v", flist))
+	}
+
+	// this is either local CG or Remote CG
+	return flist[0], nil
+}
+
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isNewVolumeType bool) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isNewVolumeType bool, fsType string) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol", loggerId, scVol.VolName)
 	opt := make(map[string]interface{})
@@ -312,6 +352,21 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 	if isNewVolumeType {
 		// For new storageClass first create independent fileset if not present
+
+		discoverCGFileset := strings.ToUpper(os.Getenv(discoverCGFileset))
+		klog.Infof("[%s] discoverCGFileset is : %s", loggerId, discoverCGFileset)
+
+		if discoverCGFileset != discoverCGFilesetDisabled && len(scVol.ConsistencyGroup) > cgPrefixLen {
+			// Check for consistencyGroup
+			if fsType != filesystemTypeRemote {
+				newcg, err := cs.validateCG(ctx, scVol)
+				if err != nil {
+					klog.Errorf("ValidateCG failed. Error: %v", err)
+					return "", err
+				}
+				scVol.ConsistencyGroup = newcg
+			}
+		}
 		indepFilesetName := scVol.ConsistencyGroup
 		klog.Infof("[%s] creating independent fileset for new storageClass with fileset name: [%v]", loggerId, indepFilesetName)
 		opt[connectors.UserSpecifiedFilesetType] = independentFileset
@@ -327,7 +382,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err := cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -714,7 +769,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	var targetPath string
 
 	if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isNewVolumeType)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isNewVolumeType, volFsInfo.Type)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}
