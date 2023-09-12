@@ -55,9 +55,15 @@ def create_namespace(namespace_name):
         LOGGER.debug(str(namespace_api_response))
         LOGGER.info(f'Namespace Create : {namespace_name} is created')
     except ApiException as e:
-        LOGGER.error(
-            f"Exception when calling CoreV1Api->create_namespace: {e}")
-        assert False
+        """
+        If e.status is 409 means namespace already exists
+        """
+        if e.status == 409:
+            LOGGER.info(f"Namespace Check : {namespace_name} exists")
+        else:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->create_namespace: {e}")
+            assert False
 
 
 def create_deployment(body):
