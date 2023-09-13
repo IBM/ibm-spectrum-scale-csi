@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/imdario/mergo"
-	"github.com/presslabs/controller-util/pkg/mergo/transformers"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -244,7 +243,7 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -281,7 +280,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -318,7 +317,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -355,7 +354,7 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -392,7 +391,7 @@ func (s *csiControllerSyncer) SyncFn() error {
 	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
