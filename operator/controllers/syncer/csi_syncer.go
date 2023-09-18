@@ -20,10 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/imdario/mergo"
-	"github.com/presslabs/controller-util/pkg/mergo/transformers"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
+	"reflect"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
@@ -52,6 +50,7 @@ const (
 	EnvVarForCSIProvisionerImage = "CSI_PROVISIONER_IMAGE"
 	EnvVarForCSISnapshotterImage = "CSI_SNAPSHOTTER_IMAGE"
 	EnvVarForCSIResizerImage     = "CSI_RESIZER_IMAGE"
+
 )
 
 var csiLog = log.Log.WithName("csiscaleoperator_syncer")
@@ -244,7 +243,7 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -281,7 +280,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -318,7 +317,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -355,7 +354,7 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -392,7 +391,7 @@ func (s *csiControllerSyncer) SyncFn() error {
 	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -854,17 +853,41 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 	return image
 }
 
-// ensurePodTolerations method removes the `NoExecute` & `NoSchedule` toleration for all taints
-// from existing list of tolerations.
+// ensurePodTolerations method adds  the `masterNode` & `infraNode` toleration and  removes the `NoExecute` & `NoSchedule` toleration for all taints
+// with  existing list of tolerations.
 func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
 	logger := csiLog.WithName("ensurePodTolerations")
 	logger.Info("Fetching tolerations for sidecar controller pods.")
 
 	podTolerations := []corev1.Toleration{}
 
+	// sideCarPods need to be able to run on master nodes
+	masterNodeToleration := corev1.Toleration{
+		Key:      config.LabelNodeMaster,
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
+	// sideCarPods need to be able to run on infra nodes
+	infraNodeToleration := corev1.Toleration{
+		Key:      config.LabelNodeInfra,
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
+	// sideCarPods need to be able to run on control plane
+	controlPlaneToleration := corev1.Toleration{
+		Key:      config.LabelNodeControlPlane,
+                Operator: corev1.TolerationOpExists,
+                Effect:   corev1.TaintEffectNoSchedule,
+        }
+
+	// noSchedule and noExecute Toleration need to be removed for sidecar 
+	// as this holds good only for daemon pods
 	noScheduleToleration := corev1.Toleration{
 		Effect:   corev1.TaintEffectNoSchedule,
 		Operator: corev1.TolerationOpExists,
+	
 	}
 
 	noExecuteToleration := corev1.Toleration{
@@ -878,6 +901,9 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		}
 	}
 
+	podTolerations = append(podTolerations, masterNodeToleration)
+	podTolerations = append(podTolerations, infraNodeToleration)
+	podTolerations = append(podTolerations, controlPlaneToleration)
 	return podTolerations
 }
 
