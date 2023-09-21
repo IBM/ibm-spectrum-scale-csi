@@ -1049,8 +1049,10 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				klog.Errorf("[%s] volume:[%v] -  volume cloning request in progress.", loggerId, scaleVol.VolName)
 				return nil, status.Error(codes.Aborted, fmt.Sprintf("volume cloning request in progress for volume: %s", scaleVol.VolName))
 			case VOLCOPY_JOB_FAILED:
-				klog.Errorf("[%s] volume:[%v] -  volume cloning job had failed", loggerId, scaleVol.VolName)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v]", scaleVol.VolName))
+				//Delete the entry from map, so that it is retried
+				klog.Errorf("[%s] volume:[%v] -  volume cloning job had failed and it will be retried", loggerId, scaleVol.VolName)
+				cs.Driver.volcopyjobstatusmap.Delete(scaleVol.VolName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v] and it will be retried", scaleVol.VolName))
 			case VOLCOPY_JOB_COMPLETED:
 				klog.Infof("[%s] volume:[%v] -  volume cloning request has already completed successfully.", loggerId, scaleVol.VolName)
 				return &csi.CreateVolumeResponse{
@@ -1082,8 +1084,10 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				klog.Errorf("[%s] volume:[%v] -  snapshot copy request in progress for snapshot: %s.", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
 				return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
 			case SNAP_JOB_FAILED:
-				klog.Errorf("[%s] volume:[%v] -  snapshot copy job had failed for snapshot %s", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+				klog.Errorf("[%s] volume:[%v] -  snapshot copy job had failed for snapshot %s and it will be retried", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
+				//Delete the entry from map, so that it is retried
+				cs.Driver.snapjobstatusmap.Delete(scaleVol.VolName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s and it will be retried", snapIdMembers.SnapName))
 			case SNAP_JOB_COMPLETED:
 				klog.V(6).Infof("[%s] volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
 				return &csi.CreateVolumeResponse{
