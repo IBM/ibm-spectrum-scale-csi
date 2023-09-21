@@ -512,8 +512,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
 			if err != nil {
-					return "", status.Error(codes.Internal, err.Error())
-				}
+				return "", status.Error(codes.Internal, err.Error())
 			}
 		}
 
