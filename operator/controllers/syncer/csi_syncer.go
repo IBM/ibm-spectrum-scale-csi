@@ -655,7 +655,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 
 // Helper function that calls ensureResources method with the resources needed for sidecar containers.
 func ensureSidecarResources() corev1.ResourceRequirements {
-	return ensureResources("20m", "300m", "20Mi", "300Mi", "1Gi", "5Gi")
+	return ensureResources("20m", "300m", "20Mi", "800Mi", "1Gi", "5Gi")
 }
 
 // Helper function that calls ensureResources method with the resources needed for driver containers.
