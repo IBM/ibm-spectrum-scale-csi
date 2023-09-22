@@ -238,12 +238,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 		}
 	}
 
-	if filesetQuotaBytes < scVol.VolSize && filesetQuotaBytes != 0 {
-		// quota does not match and it is not 0 - It might not be fileset created by us
-		return fmt.Errorf("fileset %v present but quota %v does not match with requested size %v", volName, filesetQuotaBytes, scVol.VolSize)
-	}
-
-	if filesetQuotaBytes == 0 {
+	if filesetQuotaBytes != scVol.VolSize {
 		volsiz := strconv.FormatUint(scVol.VolSize, 10)
 		err = scVol.Connector.SetFilesetQuota(ctx, scVol.VolBackendFs, volName, volsiz)
 		if err != nil {
@@ -517,11 +512,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
 			if err != nil {
-				if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
-					return "", status.Error(codes.AlreadyExists, err.Error())
-				} else {
-					return "", status.Error(codes.Internal, err.Error())
-				}
+				return "", status.Error(codes.Internal, err.Error())
 			}
 		}
 
