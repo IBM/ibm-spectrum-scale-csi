@@ -1,16 +1,16 @@
 
 actions:
   metadata:
-    displayDescription: "Represents a deployment of the IBM CSI Spectrum Scale driver."
-    displayName: "IBM CSI Spectrum Scale Driver"
+    displayDescription: "Represents a deployment of the IBM CSI Storage Scale driver."
+    displayName: "IBM CSI Storage Scale Driver"
     name: "ibmCSIScaleOperator"
-    description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+    description: "Represents a deployment of the IBM CSI Storage Scale driver."
   actionDefs:
     applyCustomResources:
       metadata :
         name: applyCustomResources
         displayName: applyCustomResources
-        displayDescription: Install the IBM Spectrum Scale CSI Driver Instance
+        displayDescription: Install the IBM Storage Scale CSI Driver Instance
         #case.launcher.type: "script"
         #case.launcher.isdefault: true
         #case.cli.alias: "apply-custom-resources"
@@ -48,7 +48,7 @@ actions:
       metadata :
         name: deleteCustomResources
         displayName: deleteCustomResources
-        displayDescription: Uninstall the IBM Spectrum Scale CSI Driver Instance
+        displayDescription: Uninstall the IBM Storage Scale CSI Driver Instance
         #case.launcher.type: "script"
         #case.cli.alias: "delete-custom-resources"
       roles:

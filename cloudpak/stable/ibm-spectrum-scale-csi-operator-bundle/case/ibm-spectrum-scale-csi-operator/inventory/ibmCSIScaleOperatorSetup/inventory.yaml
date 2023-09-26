@@ -1,7 +1,7 @@
 inventory:
   k8sScope: cluster
   metadata:
-    displayDescription: "Represents a deployment of the IBM CSI Spectrum Scale driver."
-    displayName: "IBM CSI Spectrum Scale DriverSetup"
+    displayDescription: "Represents a deployment of the IBM CSI Storage Scale driver."
+    displayName: "IBM CSI Storage Scale DriverSetup"
     name: "ibmCSIScaleOperatorSetup"
-    description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+    description: "Represents a deployment of the IBM CSI Storage Scale driver."
