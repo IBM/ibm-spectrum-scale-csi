@@ -20,8 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -243,7 +242,7 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithOverride, mergo.WithoutDereference)
 	if err != nil {
 		return err
 	}
@@ -280,7 +279,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithOverride, mergo.WithoutDereference)
 	if err != nil {
 		return err
 	}
@@ -317,7 +316,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithOverride, mergo.WithoutDereference)
 	if err != nil {
 		return err
 	}
@@ -354,7 +353,7 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithOverride, mergo.WithoutDereference)
 	if err != nil {
 		return err
 	}
@@ -416,7 +415,7 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
 		PriorityClassName:  "system-node-critical",
-		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, false),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -439,7 +438,7 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 		Affinity:           s.driver.GetAffinity(config.Provisioner.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
-		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, false),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -462,7 +461,7 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 		Affinity:           s.driver.GetAffinity(config.Snapshotter.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
-		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, false),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -485,7 +484,7 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 		Affinity:           s.driver.GetAffinity(config.Resizer.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
-		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
+		SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, false),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
