@@ -709,7 +709,10 @@ func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesys
 	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 
 	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
-	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName&filter=config.parentId=0,config.comment=%s", filesystemName, encodedFilesetComment)
+	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName", filesystemName)
+	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment=%s", encodedFilesetComment)
+	getFilesetURL := url + "&" + filter
+	klog.V(6).Infof("getFilesetURL [%v] ", getFilesetURL)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
@@ -718,7 +721,33 @@ func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesys
 		return nil, err
 	}
 
-	return getFilesetResponse.Filesets, nil
+	filesets := getFilesetResponse.Filesets
+
+	emptyPages := Pages{}
+	for getFilesetResponse.Paging != emptyPages {
+		lastID := getLastID(getFilesetResponse.Paging.Next)
+
+		getFilesetURL := url + "&lastId=" + lastID + "&" + filter
+		getFilesetResponse = GetFilesetResponse_v2{}
+		klog.V(6).Infof("getFilesetURL with lastId [%v] ", getFilesetURL)
+		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
+		if err != nil {
+			klog.Errorf("[%s] Error in list fileset request with lastId: %v", utils.GetLoggerId(ctx), err)
+			return nil, err
+		}
+		filesets = append(filesets, getFilesetResponse.Filesets...)
+	}
+	return filesets, nil
+}
+
+func getLastID(nextURL string) string {
+	//Sample next URL format:
+	//"/scalemgmt/v2/filesystems/fs2/filesets?lastId=4368&fields=filesetName&filter=config.isInodeSpaceOwner=true,config.comment=Fileset created by IBM Container Storage Interface driver"
+	splitURL1 := strings.Split(nextURL, "&")
+	splitURL2 := strings.Split(splitURL1[0], "lastId=")
+	lastID := splitURL2[1]
+	klog.V(6).Infof("getLastID: lastID [%v] ", lastID)
+	return lastID
 }
 
 func (s *SpectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
