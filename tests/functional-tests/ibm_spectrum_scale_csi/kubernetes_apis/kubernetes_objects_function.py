@@ -55,14 +55,20 @@ def create_namespace(namespace_name):
         LOGGER.debug(str(namespace_api_response))
         LOGGER.info(f'Namespace Create : {namespace_name} is created')
     except ApiException as e:
-        LOGGER.error(
-            f"Exception when calling CoreV1Api->create_namespace: {e}")
-        assert False
+        """
+        If e.status is 409 means namespace already exists
+        """
+        if e.status == 409:
+            LOGGER.info(f"Namespace Check : {namespace_name} exists")
+        else:
+            LOGGER.error(
+                f"Exception when calling CoreV1Api->create_namespace: {e}")
+            assert False
 
 
 def create_deployment(body):
     """
-    Create IBM Spectrum Scale CSI Operator deployment object using operator.yaml file
+    Create IBM Storage Scale CSI Operator deployment object using operator.yaml file
 
     Args:
         None
@@ -88,7 +94,7 @@ def create_deployment(body):
 
 def create_cluster_role(body):
     """
-    Create IBM Spectrum Scale CSI Operator cluster role using role.yaml file
+    Create IBM Storage Scale CSI Operator cluster role using role.yaml file
 
     Args:
        None
@@ -114,7 +120,7 @@ def create_cluster_role(body):
 
 def create_cluster_role_binding(body):
     """
-    Create IBM Spectrum Scale CSI Operator ClusterRoleBinding object using role_binding.yaml
+    Create IBM Storage Scale CSI Operator ClusterRoleBinding object using role_binding.yaml
 
     Args:
        None
@@ -141,7 +147,7 @@ def create_cluster_role_binding(body):
 
 def create_service_account(body):
     """
-    Create IBM Spectrum Scale CSI Operator ServiceAccount using service_account.yaml
+    Create IBM Storage Scale CSI Operator ServiceAccount using service_account.yaml
 
     Args:
        None
@@ -168,7 +174,7 @@ def create_service_account(body):
 
 def create_crd(body):
     """
-    Create IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
+    Create IBM Storage Scale CSI Operator CRD (Custom Resource Defination) Object
 
     Args:
        None
@@ -191,7 +197,7 @@ def create_crd(body):
         )
         LOGGER.debug(custom_object_api_response)
         LOGGER.info(
-            "Creating IBM SpectrumScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
+            "Creating IBM StorageScale CRD object using csiscaleoperators.csi.ibm.com.crd.yaml file")
     except ValueError as e:
         LOGGER.error(
             f"Exception when calling CustomObjectsApi->create_namespaced_custom_object: {e}")
@@ -202,7 +208,7 @@ def create_crd(body):
 
 def delete_crd():
     """
-    Delete existing IBM Spectrum Scale CSI Operator CRD (Custom Resource Defination) Object
+    Delete existing IBM Storage Scale CSI Operator CRD (Custom Resource Defination) Object
 
     Args:
        None
@@ -232,7 +238,7 @@ def delete_crd():
 
 def delete_namespace(namespace_name):
     """
-    Delete IBM Spectrum Scale CSI Operator namespace
+    Delete IBM Storage Scale CSI Operator namespace
 
     Args:
        None
@@ -257,7 +263,7 @@ def delete_namespace(namespace_name):
 
 def delete_deployment():
     """
-    Delete IBM Spectrum Scale CSI Operator Deployment object from Operator namespace
+    Delete IBM Storage Scale CSI Operator Deployment object from Operator namespace
 
     Args:
        None
@@ -282,7 +288,7 @@ def delete_deployment():
 
 def delete_service_account(service_account_name):
     """
-    Delete IBM Spectrum Scale CSI Operator ServiceAccount from Operator namespace
+    Delete IBM Storage Scale CSI Operator ServiceAccount from Operator namespace
 
     Args:
        param1: service_accout_name - service account name to be deleted
@@ -307,7 +313,7 @@ def delete_service_account(service_account_name):
 
 def delete_cluster_role(cluster_role_name):
     """
-    Delete IBM Spectrum Scale CSI Operator ClusterRole Object
+    Delete IBM Storage Scale CSI Operator ClusterRole Object
 
     Args:
        param1: cluster_role_name - cluster role name to be deleted
@@ -332,7 +338,7 @@ def delete_cluster_role(cluster_role_name):
 
 def delete_cluster_role_binding(cluster_role_binding_name):
     """
-    Delete IBM Spectrum Scale CSI Operator ClusterRoleBinding Object
+    Delete IBM Storage Scale CSI Operator ClusterRoleBinding Object
 
     Args:
        param1: cluster_role_name - cluster role name to be deleted

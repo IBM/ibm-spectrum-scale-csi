@@ -12,11 +12,11 @@ overrides:
   #  rule: PrereqsContainSCC
 
   - rule: LicensingAnnotationsDefined
-    reason: "Not applicable to Spectrum Scale CSI Driver"
+    reason: "Not applicable to IBM Storage Scale CSI Driver"
     reduceTo: INFO
 
   - rule: MeteringAnnotationsDefined
-    reason: "Not applicable to Spectrum Scale CSI Driver"
+    reason: "Not applicable to IBM Storage Scale CSI Driver"
     reduceTo: INFO
 
   - rule: ProductHasNetworkPolicy
@@ -48,7 +48,7 @@ overrides:
     reduceTo: WARNING
 
   - rule: NoForbiddenSCCRBACRules
-    reason: "Not applicable to Spectrum Scale CSI Driver"
+    reason: "Not applicable to IBM Storage Scale CSI Driver"
     reduceTo: WARNING
 
   - rule: RBACSpecifiesExplicitSCC
@@ -56,7 +56,7 @@ overrides:
     reduceTo: WARNING
 
   - rule: RequiredMetadataLabelsDefined
-    reason: "Not applicable to Spectrum Scale CSI Driver"
+    reason: "Not applicable to IBM Storage Scale CSI Driver"
     reduceTo: WARNING
 
   - rule: ContainerDefinesResources
@@ -64,7 +64,7 @@ overrides:
     reduceTo: WARNING
 
   - rule: NoHostPath
-    reason: "Hostpath is required for CSI driver's pod to communicate with driver socket dir, so not applicable to Spectrum Scale CSI Driver"
+    reason: "Hostpath is required for CSI driver's pod to communicate with driver socket dir, so not applicable to IBM Storage Scale CSI Driver"
     reduceTo: INFO
 
   - rule: ContainerHasLivenessProbe

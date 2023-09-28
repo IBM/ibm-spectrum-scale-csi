@@ -19,11 +19,10 @@ package syncer
 import (
 	"errors"
 	"os"
+	"sort"
 	"strconv"
-
 	"github.com/imdario/mergo"
-	"github.com/presslabs/controller-util/mergo/transformers"
-	"github.com/presslabs/controller-util/syncer"
+	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,8 +48,6 @@ const (
 	pluginDir                        = "plugin-dir"
 	registrationDir                  = "registration-dir"
 	registrationDirPath              = "/registration"
-	secretUsername                   = "username"
-	secretPassword                   = "password"
 
 	// FS-Group requirement.
 	// Mount `/` filesystem from host machine to driver container on path `/host`
@@ -61,16 +58,18 @@ const (
 	//EnvVarForDriverImage is the name of environment variable for
 	//CSI driver image name, passed by operator.
 	EnvVarForDriverImage           = "CSI_DRIVER_IMAGE"
-	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE"
+	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE" // #nosec G101 false positive
 	EnvVarForCSILivenessProbeImage = "CSI_LIVENESSPROBE_IMAGE"
 	EnvVarForLivenessHealthPort    = "LIVENESS_HEALTH_PORT"
 	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
 )
 
-var nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
-
-// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
-var UUID string
+var (
+	// UUID is a unique cluster ID assigned to the kubernetes/ OCP platform.
+	UUID                    string
+	nodeContainerHealthPort = intstr.FromInt(nodeContainerHealthPortNumber)
+	cmEnvVars               []corev1.EnvVar
+)
 
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -79,7 +78,7 @@ type csiNodeSyncer struct {
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
 func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string) syncer.Interface {
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -95,14 +94,32 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	UUID = CGPrefix
+	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
+
+	cmEnvVars = []corev1.EnvVar{}
+	var keys []string
+	for k := range envVars {
+		if k != config.DaemonSetUpgradeMaxUnavailableKey {
+			keys = append(keys, k)
+		}
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		cmEnvVars = append(cmEnvVars, corev1.EnvVar{
+			Name:  k,
+			Value: envVars[k],
+		})
+	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string, maxUnavailable string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -134,7 +151,25 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	// set daemonSetUpgradeStrategy
+	var maxUnavailableLocal intstr.IntOrString
+	if len(maxUnavailable) > 0 {
+		maxUnavailableLocal = intstr.FromString(maxUnavailable)
+	} else {
+		maxUnavailableLocal = intstr.FromInt(1)
+	}
+	logger.Info("Final updateStrategy for RollingUpdate set for ", "MaxUnavailable", maxUnavailableLocal)
+	deploy := appsv1.RollingUpdateDaemonSet{
+		MaxUnavailable: &maxUnavailableLocal,
+	}
+	var strategyType appsv1.DaemonSetUpdateStrategyType = config.DaemonSetUpgradeUpdateStrategyType
+	strategy := appsv1.DaemonSetUpdateStrategy{
+		RollingUpdate: &deploy,
+		Type:          strategyType,
+	}
+	out.Spec.UpdateStrategy = strategy
+
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -145,6 +180,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
 func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
+
 	pod := corev1.PodSpec{
 		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
@@ -155,6 +191,7 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		Tolerations:        s.driver.Spec.Tolerations,
 		ImagePullSecrets:   secrets,
 		Affinity:           s.driver.GetAffinity(config.NodePlugin.String()),
+		PriorityClassName:  "system-node-critical",
 	}
 	return pod
 }
@@ -172,7 +209,6 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		[]string{
 			"--nodeid=$(NODE_ID)",
 			"--endpoint=$(CSI_ENDPOINT)",
-			"--v=5",
 			"--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)",
 		},
 	)
@@ -199,7 +235,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			logger.Info("Invalid liveness probe port number", "received port: ", healthPortStr)
 		}
 	}
-	nodePlugin.LivenessProbe = ensureProbe(10, 3, 10, corev1.ProbeHandler{
+	nodePlugin.LivenessProbe = ensureProbe(10, 30, 120, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
 			Port:   healthPort,
@@ -207,13 +243,16 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	})
 
-	sc := &corev1.SecurityContext{
-		Privileged:               boolptr.True(),
-		AllowPrivilegeEscalation: boolptr.True(),
-	}
-	fillSecurityContextCapabilities(sc)
+	nodePlugin.SecurityContext = ensureDriverContainersSecurityContext(true, true, false, false)
+	fillSecurityContextCapabilities(nodePlugin.SecurityContext)
 
-	nodePlugin.SecurityContext = sc
+	nodePlugin.Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{"/bin/sh", "-c", "rm -f " + s.driver.GetSocketPath()},
+			},
+		},
+	}
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
@@ -224,16 +263,9 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	registrar.Lifecycle = &corev1.Lifecycle{
-		PreStop: &corev1.LifecycleHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/sh", "-c", "rm -rf", s.driver.GetSocketPath()},
-			},
-		},
-	}
-	// registrar.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.True()}
-	registrar.SecurityContext = &corev1.SecurityContext{Privileged: boolptr.True()}
-	// fillSecurityContextCapabilities(registrar.SecurityContext)
+
+	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
+	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
 	registrar.Resources = ensureSidecarResources()
 
@@ -246,8 +278,8 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--v=5",
 		},
 	)
-	// livenessProbe.SecurityContext = &corev1.SecurityContext{AllowPrivilegeEscalation: boolptr.False()}
-	// fillSecurityContextCapabilities(livenessProbe.SecurityContext)
+	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
+	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
 	livenessProbe.Resources = ensureSidecarResources()
 
@@ -314,14 +346,24 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		CGPrefixObj.Value = UUID
 		EnvVars = append(EnvVars, CGPrefixObj)
 
+		OpenShiftObj := corev1.EnvVar{}
+		OpenShiftObj.Name = config.ENVIsOpenShift
+		IsOpenShift, ok := os.LookupEnv(config.ENVIsOpenShift)
+		if ok {
+			OpenShiftObj.Value = IsOpenShift
+		} else {
+			OpenShiftObj.Value = "False"
+		}
+		EnvVars = append(EnvVars, OpenShiftObj)
+
+		/*for _, cmEnv := range cmEnvVars {
+			EnvVars = append(EnvVars, cmEnv)
+		}*/
+		EnvVars = append(EnvVars, cmEnvVars...)
 		return append(EnvVars, []corev1.EnvVar{
 			{
 				Name:  "CSI_ENDPOINT",
 				Value: s.driver.GetCSIEndpoint(),
-			},
-			{
-				Name:  "CSI_LOGLEVEL",
-				Value: "trace",
 			},
 			{
 				Name:  "KUBELET_ROOT_DIR_PATH",
@@ -394,10 +436,10 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 		}
 
 		for _, cluster := range s.driver.Spec.Clusters {
-			secret := cluster.Secrets
+			secretVolumeName := cluster.Id + config.SecretVolumeSuffix
 			secretVolumeMount := corev1.VolumeMount{
-				Name:      secret,
-				MountPath: config.SecretsMountPath + secret}
+				Name:      secretVolumeName,
+				MountPath: config.SecretsMountPath + secretVolumeName}
 			volumeMounts = append(volumeMounts, secretVolumeMount)
 
 			//There is already an error mesaage, logged by operator if the cacert
@@ -406,9 +448,10 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 			isSecureSslMode := cluster.SecureSslMode
 			cacert := cluster.Cacert
 			if isSecureSslMode && len(cacert) != 0 {
+				cacertVolumeName := cluster.Id + config.CacertVolumeSuffix
 				cacertVolumeMount := corev1.VolumeMount{
-					Name:      cacert,
-					MountPath: config.CAcertMountPath + cacert}
+					Name:      cacertVolumeName,
+					MountPath: config.CAcertMountPath + cacertVolumeName}
 				volumeMounts = append(volumeMounts, cacertVolumeMount)
 			}
 		}
@@ -437,7 +480,7 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 	return nil
 }
 
-//ensureVolumes returns volumes for CSI driver pods.
+// ensureVolumes returns volumes for CSI driver pods.
 func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	logger := csiLog.WithName("ensureVolumes")
 	volumes := []corev1.Volume{
@@ -450,7 +493,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 	}
 
 	for _, cluster := range s.driver.Spec.Clusters {
-		volume := k8sutil.EnsureVolume(cluster.Secrets,
+		volume := k8sutil.EnsureVolume(cluster.Id+config.SecretVolumeSuffix,
 			ensureSecretVolumeSource(cluster.Secrets))
 		volumes = append(volumes, volume)
 
@@ -464,7 +507,7 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 				logger.Error(errors.New("SecureSslMode Error"),
 					"CA certificate is not specified in secure SSL mode for cluster with ID "+cluster.Id)
 			} else {
-				cacertVolume := k8sutil.EnsureVolume(cacert,
+				cacertVolume := k8sutil.EnsureVolume(cluster.Id+config.CacertVolumeSuffix,
 					k8sutil.EnsureConfigMapVolumeSource(cacert))
 				volumes = append(volumes, cacertVolume)
 				logger.Info("SSL communication with GPFS cluster with ID " +
@@ -519,7 +562,7 @@ func (s *csiNodeSyncer) getImage(name string) string {
 	return image
 }
 
-//ensureSecretVolumeSource returns SecretVolumeSource with given name
+// ensureSecretVolumeSource returns SecretVolumeSource with given name
 // with items username and password.
 func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 	return corev1.VolumeSource{
@@ -527,24 +570,23 @@ func ensureSecretVolumeSource(name string) corev1.VolumeSource {
 			SecretName: name,
 			Items: []corev1.KeyToPath{
 				{
-					Key:  secretUsername,
-					Path: secretUsername,
+					Key:  config.SecretUsername,
+					Path: config.SecretUsername,
 				},
 				{
-					Key:  secretPassword,
-					Path: secretPassword,
+					Key:  config.SecretPassword,
+					Path: config.SecretPassword,
 				},
 			},
 		},
 	}
 }
 
-//fillSecurityContextCapabilities adds POSIX capabilities to given SCC.
+// fillSecurityContextCapabilities adds POSIX capabilities to given SCC.
 func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) {
 	sc.Capabilities = &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},
 	}
-
 	if len(add) > 0 {
 		adds := []corev1.Capability{}
 		for _, a := range add {
@@ -552,4 +594,40 @@ func fillSecurityContextCapabilities(sc *corev1.SecurityContext, add ...string) 
 		}
 		sc.Capabilities.Add = adds
 	}
+}
+
+// ensureDriverContainersSecurityContext sets AllowPrivilegeEscalation, Privileged, ReadOnlyRootFilesystem
+// and runAsNonRoot for the containers of driver pod, if runAsNonRoot is true, default values are set for
+// runAsUser and runAsGroup.
+func ensureDriverContainersSecurityContext(allowPrivilegeEscalation bool, privileged bool, readOnlyRootFilesystem bool, runAsNonRoot bool) *corev1.SecurityContext {
+	var (
+		localAllowPrivilegeEscalation *bool = boolptr.False()
+		localPrivileged               *bool = boolptr.False()
+		localReadOnlyRootFilesystem   *bool = boolptr.True()
+	)
+	if allowPrivilegeEscalation {
+		localAllowPrivilegeEscalation = boolptr.True()
+	}
+	if privileged {
+		localPrivileged = boolptr.True()
+	}
+	if !readOnlyRootFilesystem {
+		localReadOnlyRootFilesystem = boolptr.False()
+	}
+	securityContext := &corev1.SecurityContext{
+		AllowPrivilegeEscalation: localAllowPrivilegeEscalation,
+		Privileged:               localPrivileged,
+		ReadOnlyRootFilesystem:   localReadOnlyRootFilesystem}
+
+	if runAsNonRoot {
+		runAsUser := int64(config.RunAsUser)
+		runAsGroup := int64(config.RunAsGroup)
+
+		securityContext.RunAsNonRoot = boolptr.True()
+		securityContext.RunAsUser = &runAsUser
+		securityContext.RunAsGroup = &runAsGroup
+	} else {
+		securityContext.RunAsNonRoot = boolptr.False()
+	}
+	return securityContext
 }

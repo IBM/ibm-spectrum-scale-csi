@@ -18,30 +18,30 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
-	//"github.com/gorilla/mux"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 /*
-func ExtractErrorResponse(response *http.Response) error {
-	errorResponse := connectors.GenericResponse{}
-	err := UnmarshalResponse(response, &errorResponse)
-	if err != nil {
-		return fmt.Errorf("json.Unmarshal failed %v", err)
+	func ExtractErrorResponse(response *http.Response) error {
+		errorResponse := connectors.GenericResponse{}
+		err := UnmarshalResponse(response, &errorResponse)
+		if err != nil {
+			return fmt.Errorf("json.Unmarshal failed %v", err)
+		}
+		return fmt.Errorf(errorResponse.Err)
 	}
-	return fmt.Errorf(errorResponse.Err)
-}
 */
 
-func UnmarshalResponse(r *http.Response, object interface{}) error {
-	glog.V(5).Infof("http_utils UnmarshalResponse. response: %v", r.Body)
+func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}) error {
+	klog.V(6).Infof("[%s] http_utils UnmarshalResponse. response: %v", GetLoggerId(ctx), r.Body)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadAll failed %v", err)
 	}
@@ -54,23 +54,23 @@ func UnmarshalResponse(r *http.Response, object interface{}) error {
 	return nil
 }
 
-func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {
-	glog.V(5).Infof("http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", requestType, requestURL, user)
-	glog.V(6).Infof("http_utils HttpExecuteUserAuth. request payload: %v", rawPayload)
+func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {
+	klog.V(4).Infof("[%s] http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", GetLoggerId(ctx), requestType, requestURL, user)
+	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth. request payload: %v", GetLoggerId(ctx), rawPayload)
 
 	payload, err := json.MarshalIndent(rawPayload, "", " ")
 	if err != nil {
-		err = fmt.Errorf("Internal error marshaling params. url: %s: %#v", requestURL, err)
+		err = fmt.Errorf("internal error marshaling params. url: %s: %#v", requestURL, err)
 		return nil, fmt.Errorf("failed %v", err)
 	}
 
 	if user == "" {
-		return nil, fmt.Errorf("Empty UserName passed")
+		return nil, fmt.Errorf("empty UserName passed")
 	}
 
 	request, err := http.NewRequest(requestType, requestURL, bytes.NewBuffer(payload))
 	if err != nil {
-		err = fmt.Errorf("Error in creating request. url: %s: %#v", requestURL, err)
+		err = fmt.Errorf("error in creating request. url: %s: %#v", requestURL, err)
 		return nil, fmt.Errorf("failed %v", err)
 	}
 
@@ -78,13 +78,13 @@ func HttpExecuteUserAuth(httpClient *http.Client, requestType string, requestURL
 	request.Header.Add("Accept", "application/json")
 
 	request.SetBasicAuth(user, password)
-	glog.V(6).Infof("http_utils HttpExecuteUserAuth request: %+v", request)
+	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), request)
 
 	return httpClient.Do(request)
 }
 
 func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
-	glog.V(5).Infof("http_utils WriteResponse. code: %d, object: %v", code, object)
+	klog.V(4).Infof("http_utils WriteResponse. code: %d, object: %v", code, object)
 
 	data, err := json.Marshal(object)
 	if err != nil {
@@ -97,9 +97,9 @@ func WriteResponse(w http.ResponseWriter, code int, object interface{}) {
 }
 
 func Unmarshal(r *http.Request, object interface{}) error {
-	glog.V(5).Infof("http_utils Unmarshal. request: %v, object: %v", r, object)
+	klog.V(6).Infof("http_utils Unmarshal. request: %v, object: %v", r, object)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
@@ -113,9 +113,9 @@ func Unmarshal(r *http.Request, object interface{}) error {
 }
 
 func UnmarshalDataFromRequest(r *http.Request, object interface{}) error {
-	glog.V(5).Infof("http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
+	klog.V(6).Infof("http_utils UnmarshalDataFromRequest. request: %v, object: %v", r, object)
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}

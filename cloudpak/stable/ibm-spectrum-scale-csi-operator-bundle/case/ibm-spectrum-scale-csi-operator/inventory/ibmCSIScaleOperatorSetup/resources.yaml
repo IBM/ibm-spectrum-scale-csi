@@ -1,38 +1,38 @@
 resources:
   metadata:
-    displayDescription: "Represents a deployment of the IBM CSI Spectrum Scale driver."
-    displayName: "IBM CSI Spectrum Scale Driver Setup"
+    displayDescription: "Represents a deployment of the IBM CSI Storage Scale driver."
+    displayName: "IBM CSI Storage Scale Driver Setup"
     name: "ibmCSIScaleOperatorSetup"
-    description: "Represents a deployment of the IBM CSI Spectrum Scale driver."
+    description: "Represents a deployment of the IBM CSI Storage Scale driver."
   resourceDefs:
     containerImages:
     - metadata:
         name: ibm_spectrum_scale_csi_operator
       image: cpopen/ibm-spectrum-scale-csi-operator
-      tag: v2.8.0
-      digest: sha256:355a4bfc89a96b81664ec915b63ed02d5a35d49a9c8386d9c09567f33765004e
+      tag: v2.10.0
+      digest: sha256:da7ada19c06b20edc9b3c8067a8380f6879899022dda8a5c1cbed7c15b2a381d
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: icr.io
       manifests:
-      - digest: sha256:e213f6162bb04278ed9bc4ae27149a8d31d2a9489cbc5868bf7805ed96305e34
+      - digest: sha256:36f410d228bd5329444ed82e17ad996103f166aad58db2a17b4fa5ce2601db15
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v2.8.0-amd64
-      - digest: sha256:8ecf57d81ebd39c6b6941bfca54e008a771695e3c6400ebc5adfd05327ec4c67
+        tag: v2.10.0-amd64
+      - digest: sha256:5e9ae31d0be1fc843da44ddd85c3ac5540ef3d54ee50952f4fff99a7cf6e0478
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.8.0-ppc64le
-      - digest: sha256:4be20e1de9eed90bccf28bef1de0afc7a2b0c1ef0526cf956190a04951db6f5c
+        tag: v2.10.0-ppc64le
+      - digest: sha256:ead53b0e0514b55735d9fb1aeb26925f9dbd0700c2ece4ee6d83d09118818518
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.8.0-s390x
+        tag: v2.10.0-s390x
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
       ref: cluster/deploy/crds/csi_v1_csiscaleoperator.yaml

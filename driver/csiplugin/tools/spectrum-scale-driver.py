@@ -6,7 +6,7 @@ from ConfigParser import ConfigParser
 from string import Template
 
 def configureDriver(conf_dict, infile, outfile):
-        """Configures Spectrum Scale driver from config file.
+        """Configures IBM Storage Scale driver from config file.
 
         Args:
             conf_dict (dict): Dictionary of the configuration file section
@@ -168,7 +168,7 @@ def generateDeployScript(config, deployscript):
 
 if len(sys.argv) != 2 or os.path.isfile(sys.argv[1]) == False :
       print "Usage: spectrum-scale-driver.py <path_to_spectrum-scale-driver.conf>"
-      print "    This command configures the Spectrum Scale Driver. Ensure that the environment variable 'CSI_SCALE_PATH' is set to the sample files base path. Configure the CSI driver parameters in spectrum-scale-driver.conf and run 'spectrum-scale-driver.py <path_to_spectrum-scale-driver.conf'"
+      print "    This command configures the IBM Storage Scale Driver. Ensure that the environment variable 'CSI_SCALE_PATH' is set to the sample files base path. Configure the CSI driver parameters in spectrum-scale-driver.conf and run 'spectrum-scale-driver.py <path_to_spectrum-scale-driver.conf'"
       exit(1)
 
 basepath = ""
@@ -213,6 +213,6 @@ print "Configured 'deploy/common/csi-plugin-attacher.yaml'"
 generateDeployScript(config, os.path.join(classicbasepath, "create.sh"))
 print "Generated deployment script 'deploy/classic/create.sh'"
 
-print "Spectrum Scale CSI driver configuration is complete. Please review the configuration and run 'deploy/classic/create.sh' to deploy the driver"
+print "IBM Storage Scale CSI driver configuration is complete. Please review the configuration and run 'deploy/classic/create.sh' to deploy the driver"
 
 exit(0)

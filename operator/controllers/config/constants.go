@@ -27,6 +27,9 @@ const (
 	LabelAppManagedBy = "app.kubernetes.io/managed-by"
 	// LabelArchitecture is the label applied on node, used to identify the architecture of node.
 	LabelArchitecture = "kubernetes.io/arch"
+	LabelNodeMaster           = "node-role.kubernetes.io/master"
+	LabelNodeInfra            = "node-role.kubernetes.io/infra"
+	LabelNodeControlPlane     = "node-role.kubernetes.io/control-plane"
 )
 
 // CSI resource labels
@@ -68,9 +71,10 @@ const (
 	ENVKubeVersion = "KUBE_VERSION"
 	ENVIsOpenShift = "IS_OpenShift"
 	ENVCGPrefix    = "CSI_CG_PREFIX"
+	ENVSymDirPath  = "SYMLINK_DIR_PATH"
 
-	DriverVersion   = "2.8.0"
-	OperatorVersion = "2.8.0"
+	DriverVersion   = "2.10.0"
+	OperatorVersion = "2.10.0"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
@@ -78,27 +82,27 @@ const (
 	TolerationsSeconds = int64(300)
 	// ContainerPort for /healthz/leader-election endpoint
 	LeaderLivenessPort = int32(8080)
-	// 64-Bit machine architecture supported by Spectrum Scale CSI.
+	// 64-Bit machine architecture supported by IBM Storage Scale CSI.
 	AMD64 = "amd64"
-	// Power PC machine architecture supported by Spectrum Scale CSI.
+	// Power PC machine architecture supported by IBM Storage Scale CSI.
 	PPC = "ppc64le"
-	// IBM zSystems machine architecture supported by Spectrum Scale CSI.
+	// IBM zSystems machine architecture supported by IBM Storage Scale CSI.
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.8.0"
-	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.1
-	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:0103eee7c35e3e0b5cd8cdca9850dc71c793cdeb6669d8be7a89440da2d06ae4"
-	//  registry.k8s.io/sig-storage/livenessprobe:v2.8.0
-	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:cacee2b5c36dd59d4c7e8469c05c9e4ef53ecb2df9025fa8c10cdaf61bce62f0"
-	//  registry.k8s.io/sig-storage/csi-attacher:v4.0.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:9a685020911e2725ad019dbce6e4a5ab93d51e3d4557f115e64343345e05781b"
-	//  registry.k8s.io/sig-storage/csi-provisioner:v3.3.0
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:ee3b525d5b89db99da3b8eb521d9cd90cb6e9ef0fbb651e98bb37be78d36b5b8"
-	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.1.0
-	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:291334908ddf71a4661fd7f6d9d97274de8a5378a2b6fdfeb2ce73414a34f82f"
-	//  registry.k8s.io/sig-storage/csi-resizer:v1.6.0
-	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:425d8f1b769398127767b06ed97ce62578a3179bcb99809ce93a1649e025ffe7"
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.10.0"
+	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f6717ce72a2615c7fbc746b4068f788e78579c54c43b8716e5ce650d97af2df1" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/livenessprobe:v2.10.0
+	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:4dc0b87ccd69f9865b89234d8555d3a614ab0a16ed94a3016ffd27f8106132ce" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-attacher:v4.3.0
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:4eb73137b66381b7b5dfd4d21d460f4b4095347ab6ed4626e0199c29d8d021af" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:d078dc174323407e8cc6f0f9abd4efaac5db27838f1564d0253d5e3233e3f17f" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.2
+	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:becc53e25b96573f61f7469923a92fb3e9d3a3781732159954ce0d9da07233a2" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-resizer:v1.8.0
+	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:2e2b44393539d744a55b9370b346e8ebd95a77573064f3f9a8caf18c22f4d0d0" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
@@ -129,16 +133,66 @@ const (
 	ConfigMapPath             = "/var/lib/ibm/config"
 	CAcertMountPath           = "/var/lib/ibm/ssl/public/"
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
-	DefaultLogLevel           = "DEBUG"
 
 	//Default imagePullSecrets
 	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
 	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
 
+	DaemonSetUpgradeUpdateStrategyType = "RollingUpdate"
+
+	// Optional ConfigMap constants for CSI driver environment variables
+	EnvVarConfigMap = "ibm-spectrum-scale-csi-config"
+	EnvVarPrefix    = "VAR_DRIVER_"
+
+	// Optional ConfigMap keys
+	DaemonSetUpgradeMaxUnavailableKey = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	EnvLogLevelKey                    = "LOGLEVEL"
+	EnvPersistentLogKey               = "PERSISTENT_LOG"
+	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
+	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
+	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
+
+	// Optional ConfigMap keys with prefix
+	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
+	EnvPersistentLogKeyPrefixed         = EnvVarPrefix + EnvPersistentLogKey
+	EnvNodePublishMethodKeyPrefixed     = EnvVarPrefix + EnvNodePublishMethodKey
+	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
+	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
+
+	// Optional ConfigMap default values
+	EnvLogLevelDefaultValue              = "INFO"
+	EnvPersistentLogDefaultValue         = "DISABLED"
+	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
+	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 )
+
+var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,
+	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey, EnvDiscoverCGFilesetKeyPrefixed}
+var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
+var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
+var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
+var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
+var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"
 	StatusConditionSuccess = "Success"
 	StatusConditionEnabled = "Enabled"
+
+	SecretUsername     = "username" // #nosec G101 false positive
+	SecretPassword     = "password" // #nosec G101 false positive
+	SecretVolumeSuffix = "-secret"  // #nosec G101 false positive
+	CacertVolumeSuffix = "-cacert"
+	Primary            = "primary"
+	HTTPClientTimeout  = 60
+
+	DefaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+	SymlinkDir            = ".volumes"
+	DefaultUID            = "0"
+	DefaultGID            = "0"
+	RunAsUser             = 10001
+	RunAsGroup            = 10001
+
+	ErrorForbidden    = "403: Forbidden"
+	ErrorUnauthorized = "401: Unauthorized"
 )

@@ -359,7 +359,7 @@ def create_clone_pvc(pvc_values, sc_name, pvc_name, from_pvc_name, created_objec
 def pvc_bound_fileset_check(api_response, pv_name, pvc_name, pvc_values, created_objects):
     """
     calculates bound time for pvc and checks fileset created by
-    pvc on spectrum scale
+    pvc on IBM Storage Scale
     """
     now1 = api_response.metadata.creation_timestamp
     now = datetime.now(timezone.utc)
@@ -644,7 +644,7 @@ def create_file_inside_pod(value_pod, pod_name, created_objects):
     create snaptestfile inside the pod using touch
     """
     api_instance = client.CoreV1Api()
-    LOGGER.info("POD Check : Trying to create snaptestfile on SpectrumScale mount point inside the pod")
+    LOGGER.info("POD Check : Trying to create snaptestfile on StorageScale mount point inside the pod")
     exec_command1 = "touch "+value_pod["mount_path"]+"/snaptestfile"
     exec_command = [
         '/bin/sh',
@@ -658,7 +658,7 @@ def create_file_inside_pod(value_pod, pod_name, created_objects):
                   stdout=True, tty=False)
 
     if resp == "":
-        LOGGER.info("file snaptestfile created successfully on SpectrumScale mount point inside the pod")
+        LOGGER.info("file snaptestfile created successfully on StorageScale mount point inside the pod")
         return
 
     if "reason" in value_pod:
@@ -723,7 +723,7 @@ def check_pod_execution(value_pod, pod_name, created_objects):
         None
     """
     api_instance = client.CoreV1Api()
-    LOGGER.info("POD Check : Trying to create testfile on SpectrumScale mount point inside the pod")
+    LOGGER.info("POD Check : Trying to create testfile on StorageScale mount point inside the pod")
     if "fsgroup" in value_pod:
         exec_command1 = "id"
         exec_command = [
@@ -758,7 +758,7 @@ def check_pod_execution(value_pod, pod_name, created_objects):
                   stdout=True, tty=False)
     if resp == "":
         LOGGER.info("POD Check : Create testfile operation completed successfully")
-        LOGGER.info("POD Check : Deleting testfile from pod's SpectrumScale mount point")
+        LOGGER.info("POD Check : Deleting testfile from pod's StorageScale mount point")
         exec_command1 = "rm -rvf "+value_pod["mount_path"]+"/testfile"
         exec_command = [
             '/bin/sh',
@@ -1397,7 +1397,7 @@ def check_vs_detail(vs_name, pvc_name, body_params, reason, created_objects):
     """
     checks volume snapshot vs_name exits , 
     checks volume snapshot content for vs_name is created
-    check snapshot is created on spectrum scale
+    check snapshot is created on IBM Storage Scale
     """
     api_instance = client.CustomObjectsApi()
     try:
@@ -1562,7 +1562,7 @@ def check_vs_content(vs_content_name):
 def get_snapshot_and_related_fileset(vs_content_name, pvc_name, created_objects):
     """
     checks volume snapshot content vs_content_name 
-    return snapshot and its related fileset name on spectrum scale
+    return snapshot and its related fileset name on IBM Storage Scale
     by parsing snapshotHandle
     """
     api_instance = client.CustomObjectsApi()

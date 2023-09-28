@@ -1,9 +1,9 @@
-# docker build for IBM Spectrum Scale CSI Driver
+# docker build for IBM Storage Scale CSI Driver
 # usage: docker build -f build/Dockerfile -t my_image_tag .
-# Multi-arch build for IBM Spectrum Scale CSI Driver
+# Multi-arch build for IBM Storage Scale CSI Driver
 # usage: docker buildx build -f build/multi-arch.Dockerfile --platform=linux/amd64 -t my_image_tag .
 
-FROM --platform=$BUILDPLATFORM golang:1.18 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.20 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
 COPY ./go.mod .
 COPY ./go.sum .
@@ -20,8 +20,8 @@ ENV REVISION $commit
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
-FROM registry.access.redhat.com/ubi8-minimal:latest
-ARG version=2.8.0
+FROM registry.access.redhat.com/ubi9-minimal:latest
+ARG version=2.10.0
 ARG commit
 ARG build_date
 
@@ -29,13 +29,13 @@ ENV version $version
 ENV commit $commit
 ENV build_date $build_date
 
-LABEL name="IBM Spectrum Scale CSI driver" \
+LABEL name="IBM Storage Scale CSI driver" \
       vendor="ibm" \
       version=$version \
       release="1" \
-      summary="An implementation of CSI Plugin for the IBM Spectrum Scale product." \
-      description="An implementation of CSI Plugin for the IBM Spectrum Scale product." \
-      maintainers="IBM Spectrum Scale" \
+      summary="An implementation of CSI Plugin for the IBM Storage Scale product." \
+      description="An implementation of CSI Plugin for the IBM Storage Scale product." \
+      maintainers="IBM Storage Scale" \
       build-date=$build_date \
       vcs-ref=$commit \
       vcs-type="git" \

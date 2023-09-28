@@ -19,11 +19,12 @@ package scale
 import (
 	"context"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/klog/v2"
 )
 
 type ScaleIdentityServer struct {
@@ -45,35 +46,27 @@ func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *c
 }
 
 func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	glog.V(4).Infof("Probe called with args: %#v", req)
-
-	// Determine plugin health
-	// If unhealthy return gRPC error code
-	// more on error codes https://github.com/container-storage-interface/spec/blob/master/spec.md#probe-errors
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] Probe called with args: %#v", loggerId, req)
 
 	// Node mapping check
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
-	glog.V(4).Infof("Probe: scalenodeID:%s --known as-- k8snodeName: %s", scalenodeID, is.Driver.nodeID)
+	klog.V(6).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
-	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "GPFS")
-	if ghealthy == false {
-		glog.Errorf("Probe: GPFS component on node %v is not healthy. Error: %v", scalenodeID, err)
+	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
+	if !ghealthy {
+		// Even gpfs health is unhealthy, success is return because restarting csi driver is not going help fix the issue
+		klog.Errorf("[%s] Probe: IBM Storage Scale on node %v is unhealthy. Error: %v", loggerId, scalenodeID, err)
 		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 	}
 
-	// nhealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(scalenodeID, "NODE")
-	// if nhealthy == false {
-	// 	glog.Errorf("Probe: NODE component on node %v is not healthy. Error: %v", scalenodeID, err)
-	// 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, err
-	// }
-
-	glog.V(4).Infof("Probe: GPFS on node %v is healthy", scalenodeID)
-
+	klog.V(4).Infof("[%s] Probe: IBM Storage Scale on node %v is healthy", loggerId, scalenodeID)
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
 }
 
 func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
-	glog.V(5).Infof("Using default GetPluginInfo")
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] Using default GetPluginInfo", loggerId)
 
 	if is.Driver.name == "" {
 		return nil, status.Error(codes.Unavailable, "Driver name not configured")

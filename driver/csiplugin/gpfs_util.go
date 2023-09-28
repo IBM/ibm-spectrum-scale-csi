@@ -18,14 +18,16 @@ package scale
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 
+	"k8s.io/klog/v2"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"github.com/golang/glog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -96,24 +98,6 @@ type scaleSnapId struct {
 	VolType          string
 }
 
-//nolint
-type scaleVolSnapshot struct {
-	SnapName   string `json:"snapName"`
-	SourceVol  string `json:"sourceVol"`
-	Filesystem string `json:"filesystem"`
-	Fileset    string `json:"fileset"`
-	ClusterId  string `json:"clusterId"`
-	SnapSize   uint64 `json:"snapSize"`
-} //nolint
-
-//nolint
-type scaleVolSnapId struct {
-	ClusterId string
-	FsUUID    string
-	FsetId    string
-	SnapId    string
-} //nolint
-
 func IsValidCompressionAlgorithm(input string) bool {
 	switch strings.ToLower(input) {
 	case
@@ -133,9 +117,10 @@ func getRemoteFsName(remoteDeviceName string) string {
 	return remDevFs
 }
 
-func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
+func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*scaleVolume, error) { //nolint:gocyclo,funlen
 	//var err error
 	scaleVol := &scaleVolume{}
+	loggerId := utils.GetLoggerId(ctx)
 
 	volBckFs, fsSpecified := volOptions[connectors.UserSpecifiedVolBackendFs]
 	volDirPath, volDirPathSpecified := volOptions[connectors.UserSpecifiedVolDirPath]
@@ -388,30 +373,30 @@ func getScaleVolumeOptions(volOptions map[string]string) (*scaleVolume, error) {
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
 		if strings.ToLower(compression) == "true" {
-			glog.V(5).Infof("gpfs_util compression was set to true. Defaulting to Z")
+			klog.V(6).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
 
 		if !IsValidCompressionAlgorithm(compression) {
-			glog.V(5).Infof("gpfs_util invalid compression algorithm specified: %s",
-				compression)
+			klog.V(4).Infof("[%s] gpfs_util invalid compression algorithm specified: %s",
+				loggerId, compression)
 			return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
 				"invalid compression algorithm specified: %s", compression)
 		}
 		scaleVol.Compression = compression
-		glog.V(5).Infof("gpfs_util compression was set to %s", compression)
+		klog.V(4).Infof("[%s] gpfs_util compression was set to %s", loggerId, compression)
 	}
 
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
-		glog.V(5).Infof("gpfs_util tier was set: %s", tier)
+		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
 	return scaleVol, nil
 }
 
 func executeCmd(command string, args []string) ([]byte, error) {
-	glog.V(5).Infof("gpfs_util executeCmd")
+	klog.V(6).Infof("gpfs_util executeCmd")
 
 	cmd := exec.Command(command, args...)
 	var stdout bytes.Buffer
@@ -442,7 +427,7 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 		}
 	}
 	if Iter == 0 {
-		return 0, fmt.Errorf("Invalid number specified %v", inputStr)
+		return 0, fmt.Errorf("invalid number specified %v", inputStr)
 	}
 
 	retValue, err := strconv.ParseUint(inputStr[:Iter], 10, 64)
@@ -470,11 +455,11 @@ func ConvertToBytes(inputStr string) (uint64, error) {
 	case "t", "tb", "terabytes", "terabyte":
 		retValue *= (1024 * 1024 * 1024 * 1024)
 	default:
-		return 0, fmt.Errorf("Invalid Unit %v supplied with %v", unit, inputStr)
+		return 0, fmt.Errorf("invalid Unit %v supplied with %v", unit, inputStr)
 	}
 
 	if retValue > uintMax64 {
-		return 0, fmt.Errorf("Overflow detected %v", inputStr)
+		return 0, fmt.Errorf("overflow detected %v", inputStr)
 	}
 
 	return retValue, nil
@@ -493,7 +478,7 @@ func getNodeMapping(kubernetesNodeID string) (gpfsAdminName string) {
 		prefix := utils.GetEnv(SCALE_NODE_MAPPING_PREFIX, DefaultScaleNodeMapPrefix)
 		gpfsAdminName = utils.GetEnv(prefix+kubernetesNodeID, notFound)
 		if gpfsAdminName == notFound {
-			glog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
+			klog.V(4).Infof("getNodeMapping: scale node mapping not found for %s using %s", prefix+kubernetesNodeID, kubernetesNodeID)
 			gpfsAdminName = kubernetesNodeID
 		}
 	}
@@ -506,7 +491,7 @@ const (
 )
 
 func shortnameInSlice(shortname string, nodeNames []string) bool {
-	glog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
+	klog.V(6).Infof("gpfs_util shortnameInSlice. string: %s, slice: %v", shortname, nodeNames)
 	for _, name := range nodeNames {
 		short := strings.SplitN(name, ".", 2)[0]
 		if strings.EqualFold(short, shortname) {

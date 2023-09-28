@@ -17,13 +17,15 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
-	"github.com/golang/glog"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
+	"k8s.io/klog/v2"
 )
 
 type ScaleSettingsConfigMap struct {
@@ -45,8 +47,16 @@ type Primary struct {
 	SymlinkRelativePath string
 }
 
-/* To support backwards compatibility if the PrimaryFs field is not defined then
-   use the previous version of the field. */
+const (
+	secretFileSuffix = "-secret" // #nosec G101 false positive
+	cacertFileSuffix = "-cacert"
+)
+
+/*
+To support backwards compatibility if the PrimaryFs field is not defined then
+
+	use the previous version of the field.
+*/
 func (primary Primary) GetPrimaryFs() string {
 	if primary.PrimaryFs == "" {
 		return primary.PrimaryFSDep
@@ -54,8 +64,11 @@ func (primary Primary) GetPrimaryFs() string {
 	return primary.PrimaryFs
 }
 
-/* To support backwards compatibility if the InodeLimit field is not defined then
-   use the previous version of the field. */
+/*
+To support backwards compatibility if the InodeLimit field is not defined then
+
+	use the previous version of the field.
+*/
 func (primary Primary) GetInodeLimit() string {
 	if primary.InodeLimits == "" {
 		return primary.InodeLimitDep
@@ -90,47 +103,47 @@ const (
 	CertificatePath string = "/var/lib/ibm/ssl/public"
 )
 
-func LoadScaleConfigSettings() ScaleSettingsConfigMap {
-	glog.V(5).Infof("scale_config LoadScaleConfigSettings")
+func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
+	klog.V(6).Infof("[%s] scale_config LoadScaleConfigSettings", utils.GetLoggerId(ctx))
 
-	file, e := ioutil.ReadFile(ConfigMapFile) // TODO
+	file, e := os.ReadFile(ConfigMapFile) // TODO
 	if e != nil {
-		glog.Errorf("Spectrum Scale configuration not found: %v", e)
+		klog.Errorf("[%s] IBM Storage Scale configuration not found: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	cmsj := &ScaleSettingsConfigMap{}
 	e = json.Unmarshal(file, cmsj)
 	if e != nil {
-		glog.Errorf("Error in unmarshalling Spectrum Scale configuration json: %v", e)
+		klog.Errorf("[%s] error in unmarshalling IBM Storage Scale configuration json: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 
-	e = HandleSecretsAndCerts(cmsj)
+	e = HandleSecretsAndCerts(ctx, cmsj)
 	if e != nil {
-		glog.Errorf("Error in secrets or certificates: %v", e)
+		klog.Errorf("[%s] error in secrets or certificates: %v", utils.GetLoggerId(ctx), e)
 		return ScaleSettingsConfigMap{}
 	}
 	return *cmsj
 }
 
-func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
-	glog.V(5).Infof("scale_config HandleSecrets")
+func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) error {
+	klog.V(6).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
-			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "username")
-			file, e := ioutil.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
+			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].ID+secretFileSuffix, "username")
+			file, e := os.ReadFile(unamePath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("Spectrum Scale secret not found: %v\n", e)
+				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
 			}
 			file_s := string(file)
 			file_s = strings.TrimSpace(file_s)
 			file_s = strings.TrimSuffix(file_s, "\n")
 			cmap.Clusters[i].MgmtUsername = file_s
 
-			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].Secrets, "password")
-			file, e = ioutil.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
+			pwdPath := path.Join(SecretBasePath, cmap.Clusters[i].ID+secretFileSuffix, "password")
+			file, e = os.ReadFile(pwdPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("Spectrum Scale secret not found: %v\n", e)
+				return fmt.Errorf("the IBM Storage Scale secret not found: %v", e)
 			}
 			file_s = string(file)
 			file_s = strings.TrimSpace(file_s)
@@ -139,11 +152,11 @@ func HandleSecretsAndCerts(cmap *ScaleSettingsConfigMap) error {
 		}
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
-			certPath := path.Join(CertificatePath, cmap.Clusters[i].Cacert)
+			certPath := path.Join(CertificatePath, cmap.Clusters[i].ID+cacertFileSuffix)
 			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
-			file, e := ioutil.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
+			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
-				return fmt.Errorf("Spectrum Scale CA certificate not found: %v\n", e)
+				return fmt.Errorf("the IBM Storage Scale CA certificate not found: %v", e)
 			}
 			cmap.Clusters[i].CacertValue = file
 		}

@@ -20,11 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/imdario/mergo"
-	"github.com/presslabs/controller-util/mergo/transformers"
-	"github.com/presslabs/controller-util/syncer"
+	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -32,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
+	"reflect"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
@@ -52,6 +50,7 @@ const (
 	EnvVarForCSIProvisionerImage = "CSI_PROVISIONER_IMAGE"
 	EnvVarForCSISnapshotterImage = "CSI_SNAPSHOTTER_IMAGE"
 	EnvVarForCSIResizerImage     = "CSI_RESIZER_IMAGE"
+
 )
 
 var csiLog = log.Log.WithName("csiscaleoperator_syncer")
@@ -89,7 +88,8 @@ func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscal
 }
 
 // GetAttacherSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI attacher service.
-func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string) syncer.Interface {
 
 	logger := csiLog.WithName("GetAttacherSyncer")
 	logger.Info("Creating a syncer object for the attacher deployment.")
@@ -109,12 +109,13 @@ func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscale
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncAttacherFn()
+		return sync.SyncAttacherFn(restartedAtKey, restartedAtValue)
 	})
 }
 
 // GetProvisionerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI provisioner service.
-func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string) syncer.Interface {
 
 	logger := csiLog.WithName("GetProvisionerSyncer")
 	logger.Info("Creating a syncer object for the provisioner deployment.")
@@ -134,12 +135,13 @@ func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncProvisionerFn()
+		return sync.SyncProvisionerFn(restartedAtKey, restartedAtValue)
 	})
 }
 
 // GetSnapshotterSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI snapshotter service.
-func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string) syncer.Interface {
 
 	logger := csiLog.WithName("GetSnapshotterSyncer")
 	logger.Info("Creating a syncer object for the snapshotter deployment.")
@@ -159,12 +161,13 @@ func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncSnapshotterFn()
+		return sync.SyncSnapshotterFn(restartedAtKey, restartedAtValue)
 	})
 }
 
 // GetResizerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI resizer service.
-func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string) syncer.Interface {
 
 	logger := csiLog.WithName("GetResizerSyncer")
 	logger.Info("Creating a syncer object for the resizer deployment.")
@@ -184,7 +187,7 @@ func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleo
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncResizerFn()
+		return sync.SyncResizerFn(restartedAtKey, restartedAtValue)
 	})
 }
 
@@ -210,7 +213,7 @@ func (s *csiControllerSyncer) SyncConfigMapFn() error {
 }
 
 // SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncAttacherFn() error {
+func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtValue string) error {
 
 	logger := csiLog.WithName("SyncAttacherFn")
 	logger.Info("Mutating the attacher deployment object into it's desired state.")
@@ -234,13 +237,13 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
+	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -249,7 +252,7 @@ func (s *csiControllerSyncer) SyncAttacherFn() error {
 }
 
 // SyncProvisionerFn is a function which mutates the existing provisioner deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncProvisionerFn() error {
+func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restartedAtValue string) error {
 
 	logger := csiLog.WithName("SyncProvisionerFn")
 	logger.Info("Mutating the provisioner deployment object into it's desired state.")
@@ -271,13 +274,13 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
+	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ProvisionerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -286,7 +289,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn() error {
 }
 
 // SyncSnapshotterFn is a function which mutates the existing snapshotter deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncSnapshotterFn() error {
+func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restartedAtValue string) error {
 
 	logger := csiLog.WithName("SyncSnapshotterFn")
 	logger.Info("Mutating the snapshotter deployment object into it's desired state.")
@@ -308,13 +311,13 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
+	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.SnapshotterNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -323,7 +326,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn() error {
 }
 
 // SyncResizerFn is a function which mutates the existing resizer deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncResizerFn() error {
+func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtValue string) error {
 
 	logger := csiLog.WithName("SyncResizerFn")
 	logger.Info("Mutating the resizer deployment object into it's desired state.")
@@ -345,13 +348,13 @@ func (s *csiControllerSyncer) SyncResizerFn() error {
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations("", "")
+	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ResizerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -388,7 +391,7 @@ func (s *csiControllerSyncer) SyncFn() error {
 	out.Spec.Template.Spec.Tolerations = s.driver.Spec.Tolerations
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(), mergo.WithTransformers(transformers.PodSpec))
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -405,18 +408,15 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 	logger.Info("Generating pod description for the attacher pod.")
 
 	tolerations := s.driver.Spec.Tolerations
-	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureAttacherContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureAttacherContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Attacher.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		PriorityClassName:  "system-node-critical",
+		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -433,16 +433,13 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureProvisionerContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureProvisionerContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Provisioner.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -459,16 +456,13 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureSnapshotterContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureSnapshotterContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Snapshotter.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -485,16 +479,13 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers: s.ensureResizerContainersSpec(),
-		Volumes:    s.ensureVolumes(),
-		//		SecurityContext: &corev1.PodSecurityContext{
-		//			FSGroup:   &fsGroup,
-		//			RunAsUser: &fsGroup,
-		//		},
+		Containers:         s.ensureResizerContainersSpec(),
+		Volumes:            s.ensureVolumes(),
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Resizer.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 		ImagePullSecrets:   secrets,
+		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
 	pod.Tolerations = append(pod.Tolerations, s.driver.GetNodeTolerations()...)
@@ -625,7 +616,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	provisioner := s.ensureContainer(provisionerContainerName,
 		s.getSidecarImage(config.CSIProvisioner),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=30s", "--default-fstype=ext4"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=30s", "--default-fstype=ext4"},
 	)
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
 
@@ -633,7 +624,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	attacher := s.ensureContainer(attacherContainerName,
 		s.getSidecarImage(config.CSIAttacher),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=180s"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=180s"},
 	)
 	attacher.ImagePullPolicy = config.CSIAttacherImagePullPolicy
 
@@ -641,7 +632,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=30s"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=30s"},
 	)
 	snapshotter.ImagePullPolicy = config.CSISnapshotterImagePullPolicy
 
@@ -649,7 +640,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 	resizer := s.ensureContainer(resizerContainerName,
 		s.getSidecarImage(config.CSIResizer),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=30s"},
+		[]string{"--csi-address=$(ADDRESS)", "--timeout=30s"},
 	)
 	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
 
@@ -664,7 +655,7 @@ func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 
 // Helper function that calls ensureResources method with the resources needed for sidecar containers.
 func ensureSidecarResources() corev1.ResourceRequirements {
-	return ensureResources("20m", "300m", "20Mi", "300Mi", "1Gi", "5Gi")
+	return ensureResources("20m", "300m", "20Mi", "800Mi", "1Gi", "5Gi")
 }
 
 // Helper function that calls ensureResources method with the resources needed for driver containers.
@@ -718,13 +709,6 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 	logger := csiLog.WithName("ensureContainer")
 	logger.Info("Container information: ", "Name", name, "Image", image)
 
-	sc := &corev1.SecurityContext{
-		//		AllowPrivilegeEscalation: boolptr.False(),
-		Privileged: boolptr.True(),
-	}
-
-	fillSecurityContextCapabilities(sc)
-
 	container := corev1.Container{
 		Name:  name,
 		Image: image,
@@ -736,10 +720,8 @@ func (s *csiControllerSyncer) ensureContainer(name, image string, args []string)
 		LivenessProbe: s.driver.GetLivenessProbe(),
 		Resources:     ensureSidecarResources(),
 	}
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
-	if isOpenShift {
-		container.SecurityContext = sc
-	}
+	container.SecurityContext = ensureContainerSecurityContext(false, false, true)
+	fillSecurityContextCapabilities(container.SecurityContext)
 	return container
 }
 
@@ -766,18 +748,6 @@ func (s *csiControllerSyncer) envVarFromSecret(sctName, name, key string, opt bo
 func (s *csiControllerSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 	switch name {
-	case controllerContainerName:
-		return []corev1.EnvVar{
-			{
-				Name:  "CSI_ENDPOINT",
-				Value: s.driver.GetCSIEndpoint(),
-			},
-			{
-				Name:  "CSI_LOGLEVEL",
-				Value: config.DefaultLogLevel,
-			},
-		}
-
 	case provisionerContainerName, attacherContainerName, snapshotterContainerName, resizerContainerName:
 		return []corev1.EnvVar{
 			{
@@ -883,17 +853,41 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 	return image
 }
 
-// ensurePodTolerations method removes the `NoExecute` & `NoSchedule` toleration for all taints
-// from existing list of tolerations.
+// ensurePodTolerations method adds  the `masterNode` & `infraNode` toleration and  removes the `NoExecute` & `NoSchedule` toleration for all taints
+// with  existing list of tolerations.
 func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
 	logger := csiLog.WithName("ensurePodTolerations")
 	logger.Info("Fetching tolerations for sidecar controller pods.")
 
 	podTolerations := []corev1.Toleration{}
 
+	// sideCarPods need to be able to run on master nodes
+	masterNodeToleration := corev1.Toleration{
+		Key:      config.LabelNodeMaster,
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
+	// sideCarPods need to be able to run on infra nodes
+	infraNodeToleration := corev1.Toleration{
+		Key:      config.LabelNodeInfra,
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
+	// sideCarPods need to be able to run on control plane
+	controlPlaneToleration := corev1.Toleration{
+		Key:      config.LabelNodeControlPlane,
+                Operator: corev1.TolerationOpExists,
+                Effect:   corev1.TaintEffectNoSchedule,
+        }
+
+	// noSchedule and noExecute Toleration need to be removed for sidecar 
+	// as this holds good only for daemon pods
 	noScheduleToleration := corev1.Toleration{
 		Effect:   corev1.TaintEffectNoSchedule,
 		Operator: corev1.TolerationOpExists,
+	
 	}
 
 	noExecuteToleration := corev1.Toleration{
@@ -907,12 +901,15 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 		}
 	}
 
+	podTolerations = append(podTolerations, masterNodeToleration)
+	podTolerations = append(podTolerations, infraNodeToleration)
+	podTolerations = append(podTolerations, controlPlaneToleration)
 	return podTolerations
 }
 
-func ensurePorts(ports ...corev1.ContainerPort) []corev1.ContainerPort {
+/*func ensurePorts(ports ...corev1.ContainerPort) []corev1.ContainerPort {
 	return ports
-}
+}*/
 
 func ensureProbe(delay, timeout, period int32, handler corev1.ProbeHandler) *corev1.Probe {
 	return &corev1.Probe{
@@ -923,4 +920,43 @@ func ensureProbe(delay, timeout, period int32, handler corev1.ProbeHandler) *cor
 		SuccessThreshold:    1,
 		FailureThreshold:    30,
 	}
+}
+
+/* // TODO: Keeping this function because this might be used if we got any way to run side-cars as non-root users.
+// ensurePodSecurityContext set pod security with runAsUser, runAsGroup and runAsNonRoot.
+func ensurePodSecurityContext(runAsUser int64, runAsGroup int64, runAsNonRoot bool) *corev1.PodSecurityContext {
+	var localRunAsNonRoot bool
+	if runAsNonRoot {
+		localRunAsNonRoot = *boolptr.True()
+	} else {
+		localRunAsNonRoot = *boolptr.False()
+	}
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: &localRunAsNonRoot,
+		RunAsUser:    &runAsUser,
+		RunAsGroup:   &runAsGroup,
+	}
+}*/
+
+// ensureContainerSecurityContext configure AllowPrivilegeEscalation, Privileged, ReadOnlyRootFilesystem for the container.
+func ensureContainerSecurityContext(allowPrivilegeEscalation bool, privileged bool, readOnlyRootFilesystem bool) *corev1.SecurityContext {
+	var (
+		localAllowPrivilegeEscalation *bool = boolptr.False()
+		localPrivileged               *bool = boolptr.False()
+		localReadOnlyRootFilesystem   *bool = boolptr.True()
+	)
+	if allowPrivilegeEscalation {
+		localAllowPrivilegeEscalation = boolptr.True()
+	}
+	if privileged {
+		localPrivileged = boolptr.True()
+	}
+	if !readOnlyRootFilesystem {
+		localReadOnlyRootFilesystem = boolptr.False()
+	}
+	return &corev1.SecurityContext{
+		AllowPrivilegeEscalation: localAllowPrivilegeEscalation,
+		Privileged:               localPrivileged,
+		ReadOnlyRootFilesystem:   localReadOnlyRootFilesystem,
+		RunAsNonRoot:             boolptr.False()}
 }
