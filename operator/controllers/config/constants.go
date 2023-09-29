@@ -26,10 +26,10 @@ const (
 	// LabelAppManagedBy is the controller/user who created the resource.
 	LabelAppManagedBy = "app.kubernetes.io/managed-by"
 	// LabelArchitecture is the label applied on node, used to identify the architecture of node.
-	LabelArchitecture = "kubernetes.io/arch"
-	LabelNodeMaster           = "node-role.kubernetes.io/master"
-	LabelNodeInfra            = "node-role.kubernetes.io/infra"
-	LabelNodeControlPlane     = "node-role.kubernetes.io/control-plane"
+	LabelArchitecture     = "kubernetes.io/arch"
+	LabelNodeMaster       = "node-role.kubernetes.io/master"
+	LabelNodeInfra        = "node-role.kubernetes.io/infra"
+	LabelNodeControlPlane = "node-role.kubernetes.io/control-plane"
 )
 
 // CSI resource labels
@@ -66,13 +66,12 @@ const (
 
 	ProductName = "IBM Spectrum Scale CSI Operator"
 
-	ENVEndpoint    = "ENDPOINT"
-	ENVNodeName    = "NODE_NAME"
-	ENVKubeVersion = "KUBE_VERSION"
-	ENVIsOpenShift = "IS_OpenShift"
-	ENVCGPrefix    = "CSI_CG_PREFIX"
-	ENVSymDirPath  = "SYMLINK_DIR_PATH"
-
+	ENVEndpoint     = "ENDPOINT"
+	ENVNodeName     = "NODE_NAME"
+	ENVKubeVersion  = "KUBE_VERSION"
+	ENVIsOpenShift  = "IS_OpenShift"
+	ENVCGPrefix     = "CSI_CG_PREFIX"
+	ENVSymDirPath   = "SYMLINK_DIR_PATH"
 	DriverVersion   = "2.10.0"
 	OperatorVersion = "2.10.0"
 
@@ -195,4 +194,12 @@ const (
 
 	ErrorForbidden    = "403: Forbidden"
 	ErrorUnauthorized = "401: Unauthorized"
+
+	ENVClusterConfiguration    = "ClusterConfiguration"
+	Openshift_Without_CNSA     = "Openshift_Without_CNSA"
+	Openshift_With_CNSA        = "Openshift_With_CNSA"
+	Kubernetes_Without_CNSA    = "Kubernetes_Without_CNSA"
+	Kubernetes_With_CNSA       = "Kubernetes_With_CNSA"
+	CNSAOperatorNamespace      = "ibm-spectrum-scale-operator"
+	CNSAOperatorDeploymentName = "ibm-spectrum-scale-controller-manager"
 )

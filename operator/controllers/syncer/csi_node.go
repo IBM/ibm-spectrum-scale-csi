@@ -21,6 +21,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -354,7 +355,7 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		} else {
 			OpenShiftObj.Value = "False"
 		}
-		EnvVars = append(EnvVars, OpenShiftObj)
+		//EnvVars = append(EnvVars, OpenShiftObj)
 
 		/*for _, cmEnv := range cmEnvVars {
 			EnvVars = append(EnvVars, cmEnv)

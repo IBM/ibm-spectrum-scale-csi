@@ -63,6 +63,9 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // CSIScaleOperatorReconciler reconciles a CSIScaleOperator object
@@ -436,6 +439,13 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
+	/*found, err := getCNSAOperator("ibm-spectrum-scale-operator")
+	if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		logger.Info("CNSA operator pod is present ", "CNSA", found)
+	}*/
+
 	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
@@ -470,7 +480,15 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 		}
 	}
+
+	// Calling function to check whether CNSA is present or not in the cluster
+	err = getCNSAOperator(config.CNSAOperatorNamespace, cmData)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("Final optional configmap values ", "when the sent to syncer is ", cmData)
+
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
@@ -2437,4 +2455,53 @@ func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
 
 func isGUIUnauthorized(err error) bool {
 	return strings.Contains(err.Error(), config.ErrorUnauthorized)
+}
+
+// getCNSAPOd fetches CNSA operator pod from the cluster
+// and returns a .
+func getCNSAOperator(namespace string, cmdata map[string]string) (err error) {
+
+	logger := csiLog.WithName("getCNSAOperator").WithValues("Kind", "Pod")
+	logger.Info("Reading resources from the cluster in the ", "Namespace", namespace)
+	found := false
+	inClusterConfig, err := rest.InClusterConfig()
+	if err != nil {
+		logger.Error(err, " Failed to set inclusterconfig instance")
+		return err
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(inClusterConfig)
+	if err != nil {
+		logger.Error(err, " Failed to set clientset with config")
+		return err
+	}
+
+	// get pods in a ibm-spectrum-scale-operator namespace
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		logger.Error(err, " Failed to get list of all pods from the ibm-spectrum-scale-operator namespace")
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		logger.Info("Pod name found in the ", "namespace", namespace, "podName", pod.GetName())
+
+		if strings.Contains(pod.GetName(), config.CNSAOperatorDeploymentName) {
+			logger.Info("cnsa operator pod found in the ", "namespace", namespace)
+			found = true
+			break
+		}
+	}
+
+	_, ok := os.LookupEnv(config.ENVIsOpenShift)
+	if ok && found {
+		cmdata[config.ENVClusterConfiguration] = config.Openshift_With_CNSA
+	} else if ok && !found {
+		cmdata[config.ENVClusterConfiguration] = config.Openshift_Without_CNSA
+	} else if !ok && found {
+		cmdata[config.ENVClusterConfiguration] = config.Kubernetes_With_CNSA
+	} else {
+		cmdata[config.ENVClusterConfiguration] = config.Kubernetes_Without_CNSA
+	}
+	return nil
 }
