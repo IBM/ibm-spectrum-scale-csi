@@ -195,11 +195,10 @@ const (
 	ErrorForbidden    = "403: Forbidden"
 	ErrorUnauthorized = "401: Unauthorized"
 
-	ENVClusterConfiguration    = "ClusterConfiguration"
-	Openshift_Without_CNSA     = "Openshift_Without_CNSA"
-	Openshift_With_CNSA        = "Openshift_With_CNSA"
-	Kubernetes_Without_CNSA    = "Kubernetes_Without_CNSA"
-	Kubernetes_With_CNSA       = "Kubernetes_With_CNSA"
-	CNSAOperatorNamespace      = "ibm-spectrum-scale-operator"
-	CNSAOperatorDeploymentName = "ibm-spectrum-scale-controller-manager"
+	ENVCluster_ConfigurationType          = "ClusterConfigurationType"
+	ENVCluster_Type_Openshift             = "OpenShiftPlatform"
+	ENVCluster_Type_Kubernetes            = "KubernetesPlatform"
+	ENVCluster_CNSAPresenceCheck          = "CNSADeployment"
+	ENVCluster_CNSAOperatorNamespace      = "ibm-spectrum-scale-operator"
+	ENVCluster_CNSAOperatorDeploymentName = "ibm-spectrum-scale-controller-manager"
 )

@@ -439,13 +439,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	/*found, err := getCNSAOperator("ibm-spectrum-scale-operator")
-	if err != nil {
-		return ctrl.Result{}, err
-	} else {
-		logger.Info("CNSA operator pod is present ", "CNSA", found)
-	}*/
-
 	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
@@ -481,12 +474,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	// Calling function to check whether CNSA is present or not in the cluster
-	err = getCNSAOperator(config.CNSAOperatorNamespace, cmData)
-	if err != nil {
-		return ctrl.Result{}, err
+	// Calling the function to get cluster type along with to check whether CNSA is present or not in the cluster when clusterType is not set in the driver env
+	if _, exists := cmData[config.ENVCluster_ConfigurationType]; !exists {
+		logger.Info("Checking the clusterType and presence of CNSA")
+		err = getClusterTypeAndCNSAOperatorPresence(config.ENVCluster_CNSAOperatorNamespace, cmData)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
-
 	logger.Info("Final optional configmap values ", "when the sent to syncer is ", cmData)
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
@@ -2457,11 +2452,12 @@ func isGUIUnauthorized(err error) bool {
 	return strings.Contains(err.Error(), config.ErrorUnauthorized)
 }
 
-// getCNSAPOd fetches CNSA operator pod from the cluster
-// and returns a .
-func getCNSAOperator(namespace string, cmdata map[string]string) (err error) {
+// getCNSAOperator fetches CNSA operator deployment from the cluster
+// and set two parameters in the env map which is being to set environment of driver
+func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]string) (err error) {
 
-	logger := csiLog.WithName("getCNSAOperator").WithValues("Kind", "Pod")
+	// Checking the presence of CNSA operator into the cluster
+	logger := csiLog.WithName("getClusterTypeAndCNSAOperatorPresence").WithValues("Kind", "Deployment")
 	logger.Info("Reading resources from the cluster in the ", "Namespace", namespace)
 	found := false
 	inClusterConfig, err := rest.InClusterConfig()
@@ -2476,32 +2472,37 @@ func getCNSAOperator(namespace string, cmdata map[string]string) (err error) {
 		return err
 	}
 
-	// get pods in a ibm-spectrum-scale-operator namespace
-	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+	// get deployments in a ibm-spectrum-scale-operator namespace
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		logger.Error(err, " Failed to get list of all pods from the ibm-spectrum-scale-operator namespace")
+		logger.Error(err, " Failed to get list of all deployments from the ibm-spectrum-scale-operator namespace")
 		return err
 	}
 
-	for _, pod := range pods.Items {
-		logger.Info("Pod name found in the ", "namespace", namespace, "podName", pod.GetName())
+	for _, deployment := range deployments.Items {
+		logger.Info("Deployment name found in the ", "namespace", namespace, "deployments", deployment.GetName())
 
-		if strings.Contains(pod.GetName(), config.CNSAOperatorDeploymentName) {
-			logger.Info("cnsa operator pod found in the ", "namespace", namespace)
+		if strings.Contains(deployment.GetName(), config.ENVCluster_CNSAOperatorDeploymentName) {
+			logger.Info("cnsa operator deployment found in the ", "namespace", namespace)
 			found = true
 			break
 		}
 	}
 
+	// Default env/cluster type setup
+	cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Kubernetes
+	cmData[config.ENVCluster_CNSAPresenceCheck] = "False"
+
+	// Lookup for cluster OS Type whether
+	// e.g. Openshift cluster
 	_, ok := os.LookupEnv(config.ENVIsOpenShift)
 	if ok && found {
-		cmdata[config.ENVClusterConfiguration] = config.Openshift_With_CNSA
+		cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Openshift
+		cmData[config.ENVCluster_CNSAPresenceCheck] = "True"
 	} else if ok && !found {
-		cmdata[config.ENVClusterConfiguration] = config.Openshift_Without_CNSA
+		cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Openshift
 	} else if !ok && found {
-		cmdata[config.ENVClusterConfiguration] = config.Kubernetes_With_CNSA
-	} else {
-		cmdata[config.ENVClusterConfiguration] = config.Kubernetes_Without_CNSA
+		cmData[config.ENVCluster_CNSAPresenceCheck] = "True"
 	}
 	return nil
 }
