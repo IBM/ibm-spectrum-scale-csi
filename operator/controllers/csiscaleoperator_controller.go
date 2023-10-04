@@ -482,6 +482,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 	}
+
 	logger.Info("Final optional configmap values ", "when the sent to syncer is ", cmData)
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
@@ -2453,13 +2454,13 @@ func isGUIUnauthorized(err error) bool {
 }
 
 // getCNSAOperator fetches CNSA operator deployment from the cluster
-// and set two parameters in the env map which is being to set environment of driver
+// and set two parameters in the env map which is being to set later in environment of driver
 func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]string) (err error) {
 
 	// Checking the presence of CNSA operator into the cluster
 	logger := csiLog.WithName("getClusterTypeAndCNSAOperatorPresence").WithValues("Kind", "Deployment")
 	logger.Info("Reading resources from the cluster in the ", "Namespace", namespace)
-	found := false
+	CNSA_found := false
 	inClusterConfig, err := rest.InClusterConfig()
 	if err != nil {
 		logger.Error(err, " Failed to set inclusterconfig instance")
@@ -2484,7 +2485,7 @@ func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]s
 
 		if strings.Contains(deployment.GetName(), config.ENVCluster_CNSAOperatorDeploymentName) {
 			logger.Info("cnsa operator deployment found in the ", "namespace", namespace)
-			found = true
+			CNSA_found = true
 			break
 		}
 	}
@@ -2495,13 +2496,29 @@ func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]s
 
 	// Lookup for cluster OS Type whether
 	// e.g. Openshift cluster
-	_, ok := os.LookupEnv(config.ENVIsOpenShift)
-	if ok && found {
+	apiList, err := clientset.ServerGroups()
+	if err != nil {
+		logger.Error(err, " Failed to get ServerGroups")
+		return err
+	}
+
+	openshift_found := false
+	apiGroups := apiList.Groups
+	for i := 0; i < len(apiGroups); i++ {
+		if apiGroups[i].Name == "route.openshift.io" {
+			logger.Info("Found apiGroup having openshiftroute :", "apiGroup", apiGroups[i])
+			openshift_found = true
+			break
+		}
+	}
+
+	// Setting env varibales for driver
+	if openshift_found && CNSA_found {
 		cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Openshift
 		cmData[config.ENVCluster_CNSAPresenceCheck] = "True"
-	} else if ok && !found {
+	} else if openshift_found && !CNSA_found {
 		cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Openshift
-	} else if !ok && found {
+	} else if !openshift_found && CNSA_found {
 		cmData[config.ENVCluster_CNSAPresenceCheck] = "True"
 	}
 	return nil
