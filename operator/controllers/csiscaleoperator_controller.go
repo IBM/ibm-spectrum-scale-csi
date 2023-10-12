@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"path"
 	"reflect"
 	"strconv"
@@ -138,7 +137,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger := csiLog.WithName("Reconcile")
 	logger.Info("CSI setup started.")
 
-	setENVIsOpenShift(r)
+	//setENVIsOpenShift(r)
 
 	// Fetch the CSIScaleOperator instance
 	logger.Info("Fetching CSIScaleOperator instance.")
@@ -475,9 +474,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Calling the function to get cluster type along with to check whether CNSA is present or not in the cluster when clusterType is not set in the driver env
-	if _, exists := cmData[config.ENVCluster_ConfigurationType]; !exists {
+	if _, exists := cmData[config.ENVClusterConfigurationType]; !exists {
 		logger.Info("Checking the clusterType and presence of CNSA")
-		err = getClusterTypeAndCNSAOperatorPresence(config.ENVCluster_CNSAOperatorNamespace, cmData)
+		err = getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace, cmData)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -1575,7 +1574,7 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.
 // CSI operator is running on an OpenShift cluster. If running on an
 // OpenShift cluster, an environment variable is set, which is later
 // used to reconcile resources needed only for OpenShift.
-func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
+/*func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 	logger := csiLog.WithName("setENVIsOpenShift")
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if !isOpenShift {
@@ -1592,7 +1591,7 @@ func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
 			}
 		}
 	}
-}
+}*/
 
 // GetConsistencyGroupPrefix returns a universal unique ideintiier(UUID) of string format.
 // For Redhat Openshift Cluster Platform, Cluster ID as string is returned.
@@ -1608,7 +1607,11 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscal
 
 	logger.Info("Consistency group prefix is not found in CSIScaleOperator specs.")
 	logger.Info("Fetching cluster information.")
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	isOpenShift, errs := checkOpenshiftCluster()
+	if errs != nil {
+		logger.Error(errs, " Failed to get openshift cluster type")
+		return fmt.Sprint(errs)
+	}
 	if !isOpenShift {
 		logger.Info("Cluster is a Kubernetes Platform.")
 		UUID := r.GenerateUUID()
@@ -2424,7 +2427,12 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 
 // getDiscoverCGFilesetDefaultValue returns default value for CG fileset discovery
 func getDiscoverCGFilesetDefaultValue() string {
-	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
+	logger := csiLog.WithName("getDiscoverCGFilesetDefaultValue")
+	logger.Info("Setting DISCOVER_CG_FILESET default value")
+	isOpenShift, err := checkOpenshiftCluster()
+	if err != nil {
+		logger.Error(err, "Failed to get Openshift cluster type")
+	}
 	if isOpenShift {
 		//CG fileset discovery is enabled by default on OpenShift cluster
 		return "ENABLED"
@@ -2453,8 +2461,8 @@ func isGUIUnauthorized(err error) bool {
 	return strings.Contains(err.Error(), config.ErrorUnauthorized)
 }
 
-// getCNSAOperator fetches CNSA operator deployment from the cluster
-// and set two parameters in the env map which is being to set later in environment of driver
+// getClusterTypeAndCNSAOperatorPresence fetches CNSA operator deployment from the cluster
+// and sets two parameters in the env map which is being set later in environment of driver
 func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]string) (err error) {
 
 	// Checking the presence of CNSA operator into the cluster
@@ -2483,7 +2491,7 @@ func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]s
 	for _, deployment := range deployments.Items {
 		logger.Info("Deployment name found in the ", "namespace", namespace, "deployments", deployment.GetName())
 
-		if strings.Contains(deployment.GetName(), config.ENVCluster_CNSAOperatorDeploymentName) {
+		if strings.Contains(deployment.GetName(), config.CNSAOperatorDeploymentName) {
 			logger.Info("cnsa operator deployment found in the ", "namespace", namespace)
 			CNSA_found = true
 			break
@@ -2491,35 +2499,51 @@ func getClusterTypeAndCNSAOperatorPresence(namespace string, cmData map[string]s
 	}
 
 	// Default env/cluster type setup
-	cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Kubernetes
-	cmData[config.ENVCluster_CNSAPresenceCheck] = "False"
+	cmData[config.ENVClusterConfigurationType] = config.ENVClusterTypeKubernetes
+	cmData[config.ENVClusterCNSAPresenceCheck] = "False"
+	isOpenShift, err := checkOpenshiftCluster()
+	if err != nil {
+		logger.Error(err, " Failed to get openshift cluster type")
+		return err
+	}
+	// Setting env varibales for driver
+	if isOpenShift {
+		cmData[config.ENVClusterConfigurationType] = config.ENVClusterTypeOpenshift
+	}
+	if CNSA_found {
+		cmData[config.ENVClusterCNSAPresenceCheck] = "True"
+	}
+	return nil
+}
 
-	// Lookup for cluster OS Type whether
-	// e.g. Openshift cluster
+func checkOpenshiftCluster() (bool, error) {
+	logger := csiLog.WithName("checkOpenshiftCluster")
+	logger.Info("Checking cluster OS type whether openshift or not")
+	isOpenShift := false
+	inClusterConfig, err := rest.InClusterConfig()
+	if err != nil {
+		logger.Error(err, " Failed to set inclusterconfig instance")
+		return isOpenShift, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(inClusterConfig)
+	if err != nil {
+		logger.Error(err, " Failed to set clientset with config")
+		return isOpenShift, err
+	}
 	apiList, err := clientset.ServerGroups()
 	if err != nil {
 		logger.Error(err, " Failed to get ServerGroups")
-		return err
+		return isOpenShift, err
 	}
 
-	openshift_found := false
 	apiGroups := apiList.Groups
 	for i := 0; i < len(apiGroups); i++ {
 		if apiGroups[i].Name == "route.openshift.io" {
 			logger.Info("Found apiGroup having openshiftroute :", "apiGroup", apiGroups[i])
-			openshift_found = true
+			isOpenShift = true
 			break
 		}
 	}
-
-	// Setting env varibales for driver
-	if openshift_found && CNSA_found {
-		cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Openshift
-		cmData[config.ENVCluster_CNSAPresenceCheck] = "True"
-	} else if openshift_found && !CNSA_found {
-		cmData[config.ENVCluster_ConfigurationType] = config.ENVCluster_Type_Openshift
-	} else if !openshift_found && CNSA_found {
-		cmData[config.ENVCluster_CNSAPresenceCheck] = "True"
-	}
-	return nil
+	return isOpenShift, nil
 }
