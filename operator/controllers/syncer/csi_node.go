@@ -21,6 +21,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -276,6 +277,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--health-port=" + healthPort.String(),
 			"--csi-address=$(ADDRESS)",
 			"--v=5",
+			"--probe-timeout=20s",
 		},
 	)
 	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
