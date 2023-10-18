@@ -116,7 +116,6 @@ const (
 	UserSpecifiedConsistencyGroup string = "consistencyGroup"
 	UserSpecifiedShared           string = "shared"
 	AFMModeSecondary              string = "secondary"
-	AFMModePrimary                string = "primary"
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
 )
 
