@@ -277,6 +277,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 			"--health-port=" + healthPort.String(),
 			"--csi-address=$(ADDRESS)",
 			"--v=5",
+			"--probe-timeout=20s",
 		},
 	)
 	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
