@@ -1626,25 +1626,29 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	return sIdMem, nil
 }
 
-func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (bool, error) {
+func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector, checkForSnapshots bool) (bool, error) {
 	//Check if fileset exist has any snapshot
-	snapshotList, err := conn.ListFilesetSnapshots(ctx, FilesystemName, FilesetName)
 	loggerId := utils.GetLoggerId(ctx)
-	if err != nil {
-		if strings.Contains(err.Error(), "EFSSG0072C") ||
-			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-			klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
-			return true, nil
+	if checkForSnapshots {
+		klog.Infof("[%s] Checking if there is any snapshot present in the fileset [%v]", loggerId, FilesetName)
+		snapshotList, err := conn.ListFilesetSnapshots(ctx, FilesystemName, FilesetName)
+
+		if err != nil {
+			if strings.Contains(err.Error(), "EFSSG0072C") ||
+				strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+				klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
+				return true, nil
+			}
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 		}
-		return false, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+
+		if len(snapshotList) > 0 {
+			return false, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+		}
+		klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
 	}
 
-	if len(snapshotList) > 0 {
-		return false, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
-	}
-	klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
-
-	err = conn.DeleteFileset(ctx, FilesystemName, FilesetName)
+	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
@@ -1702,7 +1706,7 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 		}
 
 		// Delete independent fileset for consistency group
-		_, err = cs.DeleteFilesetVol(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+		_, err = cs.DeleteFilesetVol(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn, true)
 		if err != nil {
 			return err
 		}
@@ -1809,7 +1813,11 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(relPath)
 			if pvName == FilesetName {
-				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(ctx, FilesystemName, FilesetName, volumeIdMembers, conn)
+				checkForSnapshots := false
+				if volumeIdMembers.VolType == FILE_INDEPENDENTFILESET_VOLUME {
+					checkForSnapshots = true
+				}
+				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(ctx, FilesystemName, FilesetName, volumeIdMembers, conn, checkForSnapshots)
 				if err != nil {
 					return nil, err
 				}
@@ -1824,6 +1832,8 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 					err := cs.DeleteCGFileset(ctx, FilesystemName, volumeIdMembers, conn)
+					// DeleteCGFileset calls DeleteFilesetVol function with checkForSnapshots=true to
+					// check for snapshots before deleting the CG independent fileset
 					if err != nil {
 						return nil, err
 					}
