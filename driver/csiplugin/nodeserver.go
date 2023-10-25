@@ -47,10 +47,8 @@ const errStaleNFSFileHandle = "stale NFS file handle"
 const nodePublishMethod = "NODEPUBLISH_METHOD"
 const nodePublishMethodSymlink = "SYMLINK"
 
-// const isOpenShiftCluster = "IS_OpenShift"
 const mountPathLength = 6
-const ENVClusterConfigurationType = "ClusterConfigurationType"
-const ENVClusterTypeOpenshift = "OpenShiftPlatform"
+
 const ENVClusterCNSAPresenceCheck = "CNSADeployment"
 
 // A map for locking/unlocking a target path for NodePublish/NodeUnpublish

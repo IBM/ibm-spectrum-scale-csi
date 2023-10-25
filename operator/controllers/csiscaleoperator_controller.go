@@ -421,6 +421,19 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
 
+	// Calling the function to get pltaform type and check whether CNSA is present or not in the cluster
+	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
+	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
+
+	if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
+		logger.Info("Checking the clusterType and presence of CNSA")
+		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
+		if err != nil {
+			logger.Error(err, "Failed to check cluster platform and cnsa presence")
+			return ctrl.Result{}, err
+		}
+	}
+
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
 
@@ -475,10 +488,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	// Setting the clusterType and presence of CNSA in final cmData before driver sync
+	// Setting the clusterType and presence of CNSA in the final cmData before driver sync
 	if _, exists := cmData[config.ENVClusterConfigurationType]; !exists {
 		logger.Info("Setting the clusterType and presence of CNSA in final cmData")
-		cmData[config.ENVClusterConfigurationType] = clusterTypeData[config.ENVClusterConfigurationType]
 		cmData[config.ENVClusterCNSAPresenceCheck] = clusterTypeData[config.ENVClusterCNSAPresenceCheck]
 	}
 
@@ -1608,15 +1620,6 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscal
 	logger.Info("Consistency group prefix is not found in CSIScaleOperator specs.")
 	logger.Info("Fetching cluster information.")
 
-	// Calling the function to get cluster type along with to check whether CNSA is present or not in the cluster when clusterType is not set in the driver env
-	if _, exists := clusterTypeData[config.ENVClusterConfigurationType]; !exists {
-		logger.Info("Checking the clusterType and presence of CNSA")
-		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
-		if err != nil {
-			logger.Error(err, "Failed to check cluster platform and cnsa presence")
-		}
-	}
-
 	if clusterTypeData[config.ENVClusterConfigurationType] != config.ENVClusterTypeOpenshift {
 		logger.Info("Cluster is a Kubernetes Platform.")
 		UUID := r.GenerateUUID()
@@ -2435,14 +2438,6 @@ func getDiscoverCGFilesetDefaultValue() string {
 	logger := csiLog.WithName("getDiscoverCGFilesetDefaultValue")
 	logger.Info("Getting DISCOVER_CG_FILESET default value")
 
-	// Calling the function to get cluster type along with to check whether CNSA is present or not in the cluster when clusterType is not set in the driver env
-	if _, exists := clusterTypeData[config.ENVClusterConfigurationType]; !exists {
-		logger.Info("Checking the clusterType and presence of CNSA")
-		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
-		if err != nil {
-			logger.Error(err, "Failed to get CNSA Cluster deployment presence")
-		}
-	}
 	if CNSAClusterPresence, ok := clusterTypeData[config.ENVClusterCNSAPresenceCheck]; ok {
 
 		if CNSAClusterPresence == "True" {
@@ -2475,13 +2470,17 @@ func isGUIUnauthorized(err error) bool {
 }
 
 // getClusterTypeAndCNSAOperatorPresence fetches CNSA operator deployment from the cluster
-// and sets two parameters in the env map which is being set later in environment of driver
+// and sets two parameters in the clusterTypeData map which is being set later in environment of the driver
 func getClusterTypeAndCNSAOperatorPresence(namespace string) (err error) {
 
 	// Checking the presence of CNSA operator into the cluster
 	logger := csiLog.WithName("getClusterTypeAndCNSAOperatorPresence")
 	logger.Info("Reading resources from the cluster in the", "Namespace", namespace)
-	CNSAfound := false
+
+	// Default env/cluster type setup
+	clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeKubernetes
+	clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "False"
+
 	inClusterConfig, err := rest.InClusterConfig()
 	if err != nil {
 		logger.Error(err, "Failed to set inclusterconfig instance")
@@ -2502,61 +2501,28 @@ func getClusterTypeAndCNSAOperatorPresence(namespace string) (err error) {
 	}
 
 	for _, deployment := range deployments.Items {
-		logger.Info("Deployment name found in the", "namespace", namespace, "deployments", deployment.GetName())
-
 		if strings.Contains(deployment.GetName(), config.CNSAOperatorDeploymentName) {
-			logger.Info("CNSA operator deployment found in the", "namespace", namespace)
-			CNSAfound = true
+			logger.Info("Cluster is having CNSA deployment")
+			clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "True"
 			break
 		}
 	}
 
-	// Default env/cluster type setup
-	clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeKubernetes
-	clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "False"
-	isOpenShiftPlatform, err := checkOpenshiftPlatform()
-	if err != nil {
-		logger.Error(err, "Failed to get openshift platform type")
-		return err
-	}
-	// Setting env varibales for driver
-	if isOpenShiftPlatform {
-		clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeOpenshift
-	}
-	if CNSAfound {
-		clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "True"
-	}
-	return nil
-}
-
-func checkOpenshiftPlatform() (bool, error) {
-	logger := csiLog.WithName("checkOpenshiftPlatform")
-	logger.Info("Checking if the platform is OpenShift")
-	isOpenShiftPlatform := false
-	inClusterConfig, err := rest.InClusterConfig()
-	if err != nil {
-		logger.Error(err, "Failed to set inclusterconfig instance")
-		return isOpenShiftPlatform, err
-	}
-
-	clientset, err := kubernetes.NewForConfig(inClusterConfig)
-	if err != nil {
-		logger.Error(err, "Failed to set clientset with config")
-		return isOpenShiftPlatform, err
-	}
+	// Checking if the platform is OpenShift
 	apiList, err := clientset.ServerGroups()
 	if err != nil {
-		logger.Error(err, "Failed to get ServerGroups")
-		return isOpenShiftPlatform, err
+		logger.Error(err, "Failed to get ServerGroups while getting openshift platform type")
+		return err
 	}
 
 	apiGroups := apiList.Groups
 	for i := 0; i < len(apiGroups); i++ {
 		if apiGroups[i].Name == "route.openshift.io" {
 			logger.Info("Found apiGroup having route.openshift.io :", "apiGroup", apiGroups[i])
-			isOpenShiftPlatform = true
+			logger.Info("Platform is a Openshift")
+			clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeOpenshift
 			break
 		}
 	}
-	return isOpenShiftPlatform, nil
+	return nil
 }
