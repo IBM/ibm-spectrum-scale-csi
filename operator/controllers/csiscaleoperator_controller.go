@@ -421,7 +421,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
 
-	// Calling the function to get pltaform type and check whether CNSA is present or not in the cluster
+	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
 	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
 	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
 
