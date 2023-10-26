@@ -9,7 +9,7 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	golang.org/x/net v0.17.0
 	golang.org/x/sys v0.13.0
-	google.golang.org/grpc v1.58.2
+	google.golang.org/grpc v1.58.3
 	k8s.io/api v0.26.9
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/mount-utils v0.26.9
