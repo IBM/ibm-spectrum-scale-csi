@@ -21,7 +21,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
-
+	"fmt"
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -96,6 +96,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 
 	UUID = CGPrefix
 	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
+	networkPolicy := envVars[config.NetworkPolicyKey]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
@@ -115,12 +116,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, networkPolicy)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonSetRestartedValue string, maxUnavailable string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, networkPolicy string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -169,6 +170,11 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey string, daemonS
 		Type:          strategyType,
 	}
 	out.Spec.UpdateStrategy = strategy
+	if networkPolicy == "ENABLED"{
+                out.Spec.Template.Spec.HostNetwork = false
+        }else{
+		out.Spec.Template.Spec.HostNetwork = true
+	}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithOverride)
 	if err != nil {
@@ -186,7 +192,6 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 		Containers:         s.ensureContainersSpec(),
 		Volumes:            s.ensureVolumes(),
 		HostIPC:            false,
-		HostNetwork:        true,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
 		Tolerations:        s.driver.Spec.Tolerations,
