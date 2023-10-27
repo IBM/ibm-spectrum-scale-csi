@@ -28,12 +28,12 @@ Environmental output
 - `kubectl get nodes -o wide`
 - IBM Storage Scale container native version 
 - IBM Storage Scale version 
-- Output for `./tools/spectrum-scale-driver-snap.sh -n < csi driver namespace> -v `
+- Output for `./tools/storage-scale-driver-snap.sh -n < csi driver namespace> -v `
 
 
 Tool to collect the CSI snap:
 
-`./tools/spectrum-scale-driver-snap.sh -n < csi driver namespace>`
+`./tools/storage-scale-driver-snap.sh -n < csi driver namespace>`
 
 ## Screenshots
 If applicable, add screenshots to help explain your problem.
