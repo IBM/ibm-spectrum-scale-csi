@@ -162,7 +162,7 @@ function get_kind()
 function help()
 {
    # Display Help
-   echo "USAGE: spectrum-scale-driver-snap.sh [-n|o|p|s|v|h]"
+   echo "USAGE: storage-scale-driver-snap.sh [-n|o|p|s|v|h]"
    echo "options:"
    echo "     n     CSI driver plugin namespace"
    echo "     o     output-dir"
