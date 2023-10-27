@@ -21,7 +21,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"fmt"
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
