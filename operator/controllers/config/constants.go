@@ -163,7 +163,7 @@ const (
 	EnvPersistentLogDefaultValue         = "DISABLED"
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
-	EnvHostNetworkDefaultValue           = "DISABLED"
+	EnvHostNetworkDefaultValue           = "ENABLED"
 )
 
 var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,

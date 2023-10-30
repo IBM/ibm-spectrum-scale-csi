@@ -170,9 +170,9 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 	}
 	out.Spec.UpdateStrategy = strategy
 	if hostNetwork == "ENABLED"{
-                out.Spec.Template.Spec.HostNetwork = false
+                out.Spec.Template.Spec.HostNetwork = true
         }else{
-		out.Spec.Template.Spec.HostNetwork = true
+		out.Spec.Template.Spec.HostNetwork = false
 	}
 
 	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithOverride)
