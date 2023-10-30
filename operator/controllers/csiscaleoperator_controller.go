@@ -2386,6 +2386,8 @@ func validateHostNetworkValue(inputSlice []string, key, value string, envMap, in
 	
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
 		 envMap[key] = value
+	}else{
+		invalidEnvValue[key] = value
 	}
 }
 

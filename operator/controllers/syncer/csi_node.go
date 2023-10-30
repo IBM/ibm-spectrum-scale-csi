@@ -100,7 +100,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
 	for k := range envVars {
-		if k != config.DaemonSetUpgradeMaxUnavailableKey {
+		if !(k == config.DaemonSetUpgradeMaxUnavailableKey || k == config.HostNetworkKey){
 			keys = append(keys, k)
 		}
 	}
