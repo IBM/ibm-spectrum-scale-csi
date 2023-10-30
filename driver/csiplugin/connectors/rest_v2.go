@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -706,18 +707,19 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 }
 
 func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
-	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", loggerID, filesystemName)
 
 	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
-	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName", filesystemName)
+	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
 	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment=%s", encodedFilesetComment)
-	getFilesetURL := url + "&" + filter
-	klog.V(6).Infof("getFilesetURL [%v] ", getFilesetURL)
+	getFilesetURL := url + "?" + filter
+	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, getFilesetURL)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		klog.Errorf("[%s] Error in list fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in list fileset request: %v", loggerID, err)
 		return nil, err
 	}
 
@@ -725,29 +727,31 @@ func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesys
 
 	emptyPages := Pages{}
 	for getFilesetResponse.Paging != emptyPages {
-		lastID := getLastID(getFilesetResponse.Paging.Next)
+		lastID := strconv.Itoa(getFilesetResponse.Paging.LastID)
 
-		getFilesetURL := url + "&lastId=" + lastID + "&" + filter
+		getFilesetURL := url + "?lastId=" + lastID + "&" + filter
 		getFilesetResponse = GetFilesetResponse_v2{}
-		klog.V(6).Infof("getFilesetURL with lastId [%v] ", getFilesetURL)
+		klog.V(6).Infof("[%s] getFilesetURL with lastId [%v] ", loggerID, getFilesetURL)
 		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 		if err != nil {
-			klog.Errorf("[%s] Error in list fileset request with lastId: %v", utils.GetLoggerId(ctx), err)
+			klog.Errorf("[%s] Error in list fileset request with lastId: %v", loggerID, err)
 			return nil, err
 		}
 		filesets = append(filesets, getFilesetResponse.Filesets...)
 	}
-	return filesets, nil
-}
 
-func getLastID(nextURL string) string {
-	//Sample next URL format:
-	//"/scalemgmt/v2/filesystems/fs2/filesets?lastId=4368&fields=filesetName&filter=config.isInodeSpaceOwner=true,config.comment=Fileset created by IBM Container Storage Interface driver"
-	splitURL1 := strings.Split(nextURL, "&")
-	splitURL2 := strings.Split(splitURL1[0], "lastId=")
-	lastID := splitURL2[1]
-	klog.V(6).Infof("getLastID: lastID [%v] ", lastID)
-	return lastID
+	// Add the list of filesets in logs only for TRACE log level,
+	// skip iterating over the list for other log levels
+	if logLevel, ok := os.LookupEnv(settings.LogLevel); ok {
+		if logLevel == settings.TRACE.String() {
+			var filesetNames []string
+			for _, fileset := range filesets {
+				filesetNames = append(filesetNames, fileset.FilesetName)
+			}
+			klog.V(6).Infof("[%s] List of independent filesets created by Storage Scale CSI [%v] ", loggerID, filesetNames)
+		}
+	}
+	return filesets, nil
 }
 
 func (s *SpectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
