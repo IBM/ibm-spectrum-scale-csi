@@ -95,7 +95,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 
 	UUID = CGPrefix
 	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
-	networkPolicy := envVars[config.NetworkPolicyKey]
+	hostNetwork := envVars[config.HostNetworkKey]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
@@ -115,12 +115,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, networkPolicy)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, networkPolicy string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -169,7 +169,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		Type:          strategyType,
 	}
 	out.Spec.UpdateStrategy = strategy
-	if networkPolicy == "ENABLED"{
+	if hostNetwork == "ENABLED"{
                 out.Spec.Template.Spec.HostNetwork = false
         }else{
 		out.Spec.Template.Spec.HostNetwork = true

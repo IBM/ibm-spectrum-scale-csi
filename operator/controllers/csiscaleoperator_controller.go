@@ -775,7 +775,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//Do not restart driver pods when the configmap contains invalid Envs.
 	shouldRequeueOnCreateOrDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||                                                                         strings.ToUpper(key) == config.NetworkPolicyKey{
+			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||                                                                         strings.ToUpper(key) == config.HostNetworkKey{
 				return true
 			}
 		}
@@ -790,10 +790,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
 				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey || 
-                                    strings.ToUpper(key) == config.NetworkPolicyKey{
+                                    strings.ToUpper(key) == config.HostNetworkKey{
 					return true
 				}
-			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||                                                 strings.ToUpper(key) == config.NetworkPolicyKey{
+			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||                                                 strings.ToUpper(key) == config.HostNetworkKey{
 				return true
 			}
 		}
@@ -802,7 +802,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || (strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||                                                                     (strings.ToUpper(key) == config.NetworkPolicyKey) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || (strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||                                                                     (strings.ToUpper(key) == config.HostNetworkKey) {
 					return true
 				}
 			}
@@ -2319,8 +2319,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				}
 			} else if keyUpper == config.DaemonSetUpgradeMaxUnavailableKey {
 				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
-			} else if keyUpper == config.NetworkPolicyKey{
-				validateNetworkPolicyValue(config.EnvNetworkPolicyValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			} else if keyUpper == config.HostNetworkKey{
+				validateHostNetworkValue(config.EnvHostNetworkValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
 			invalidEnvKeys = append(invalidEnvKeys, key)
@@ -2380,9 +2380,9 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 	}
 }
 
-func validateNetworkPolicyValue(inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateNetworkPolicyValue")
-        logger.Info("Validating network policy input", "inputNetworkPolicy", value)
+func validateHostNetworkValue(inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
+	logger := csiLog.WithName("validateHostNetworkValue")
+        logger.Info("Validating host network input", "inputHostNetwork", value)
 	
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
 		 envMap[key] = value
@@ -2444,10 +2444,10 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 		envMap[config.EnvDiscoverCGFilesetKey] = envDiscoverCGFilesetDefaultValue
 	}
 
-	// set default NetworkPolicy env when it is not present in envMap
-	if _,ok := envMap[config.NetworkPolicyKey]; !ok{
-		logger.Info("Network Policy is empty or incorrect.", "Defaulting Network Policy to", config.EnvNetworkPolicyDefaultValue)
-		envMap[config.NetworkPolicyKey] = config.EnvNetworkPolicyDefaultValue
+	// set default HostNetwork env when it is not present in envMap
+	if _,ok := envMap[config.HostNetworkKey]; !ok{
+		logger.Info("Host Network is empty or incorrect.", "Defaulting Host Network to", config.EnvHostNetworkDefaultValue)
+		envMap[config.HostNetworkKey] = config.EnvHostNetworkDefaultValue
 	}
 }
 
