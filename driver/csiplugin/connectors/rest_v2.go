@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -740,17 +739,6 @@ func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesys
 		filesets = append(filesets, getFilesetResponse.Filesets...)
 	}
 
-	// Add the list of filesets in logs only for TRACE log level,
-	// skip iterating over the list for other log levels
-	if logLevel, ok := os.LookupEnv(settings.LogLevel); ok {
-		if logLevel == settings.TRACE.String() {
-			var filesetNames []string
-			for _, fileset := range filesets {
-				filesetNames = append(filesetNames, fileset.FilesetName)
-			}
-			klog.V(6).Infof("[%s] List of independent filesets created by Storage Scale CSI [%v] ", loggerID, filesetNames)
-		}
-	}
 	return filesets, nil
 }
 
