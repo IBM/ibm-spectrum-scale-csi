@@ -775,7 +775,9 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//Do not restart driver pods when the configmap contains invalid Envs.
 	shouldRequeueOnCreateOrDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||                                                                         strings.ToUpper(key) == config.HostNetworkKey{
+			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || 
+				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
+				strings.ToUpper(key) == config.HostNetworkKey{
 				return true
 			}
 		}
@@ -789,11 +791,14 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		for key, newVal := range newCfgMapData {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey || 
-                                    strings.ToUpper(key) == config.HostNetworkKey{
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || 
+					strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
+					strings.ToUpper(key) == config.HostNetworkKey{
 					return true
 				}
-			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||                                                 strings.ToUpper(key) == config.HostNetworkKey{
+			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || 
+				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
+				strings.ToUpper(key) == config.HostNetworkKey{
 				return true
 			}
 		}
@@ -802,7 +807,9 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || (strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||                                                                     (strings.ToUpper(key) == config.HostNetworkKey) {
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || 
+					(strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
+					strings.ToUpper(key) == config.HostNetworkKey{
 					return true
 				}
 			}
