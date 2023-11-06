@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/natefinch/lumberjack"
 	"k8s.io/klog/v2"
@@ -43,41 +44,19 @@ var (
 	vendorVersion  = "2.10.0"
 )
 
-const (
-	dirPath               = "scalecsilogs"
-	logFile               = "ibm-spectrum-scale-csi.logs"
-	logLevel              = "LOGLEVEL"
-	persistentLog         = "PERSISTENT_LOG"
-	nodePublishMethod     = "NODEPUBLISH_METHOD"
-	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
-	hostPath              = "/host/var/adm/ras/"
-	rotateSize            = 1024
-)
-
-type LoggerLevel int
-
-const (
-	TRACE LoggerLevel = iota
-	DEBUG
-	INFO
-	WARNING
-	ERROR
-	FATAL
-)
-
 func main() {
 	klog.InitFlags(nil)
-	if val, ok := os.LookupEnv(logLevel); ok {
-		klog.Infof("[%s] found in the env : %s", logLevel, val)
+	if val, ok := os.LookupEnv(settings.LogLevel); ok {
+		klog.Infof("[%s] found in the env : %s", settings.LogLevel, val)
 	}
-	if val, ok := os.LookupEnv(persistentLog); ok {
-		klog.Infof("[%s] found in the env : %s", persistentLog, val)
+	if val, ok := os.LookupEnv(settings.PersistentLog); ok {
+		klog.Infof("[%s] found in the env : %s", settings.PersistentLog, val)
 	}
-	if val, ok := os.LookupEnv(nodePublishMethod); ok {
-		klog.Infof("[%s] found in the env : %s", nodePublishMethod, val)
+	if val, ok := os.LookupEnv(settings.NodePublishMethod); ok {
+		klog.Infof("[%s] found in the env : %s", settings.NodePublishMethod, val)
 	}
-	if val, ok := os.LookupEnv(volumeStatsCapability); ok {
-		klog.Infof("[%s] found in the env : %s", volumeStatsCapability, val)
+	if val, ok := os.LookupEnv(settings.VolumeStatsCapability); ok {
+		klog.Infof("[%s] found in the env : %s", settings.VolumeStatsCapability, val)
 	}
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
@@ -147,44 +126,25 @@ func setContext() context.Context {
 }
 
 func getLogEnv() (string, string) {
-	level := os.Getenv(logLevel)
-	persistentLogEnabled := os.Getenv(persistentLog)
+	level := os.Getenv(settings.LogLevel)
+	persistentLogEnabled := os.Getenv(settings.PersistentLog)
 	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
 }
 
 func getLogLevel(level string) string {
 	var logValue string
-	if level == DEBUG.String() || level == TRACE.String() {
-		logValue = INFO.String()
+	if level == settings.DEBUG.String() || level == settings.TRACE.String() {
+		logValue = settings.INFO.String()
 	} else {
 		logValue = level
 	}
 	return logValue
 }
 
-func (level LoggerLevel) String() string {
-	switch level {
-	case TRACE:
-		return "TRACE"
-	case DEBUG:
-		return "DEBUG"
-	case WARNING:
-		return "WARNING"
-	case ERROR:
-		return "ERROR"
-	case FATAL:
-		return "FATAL"
-	case INFO:
-		return "INFO"
-	default:
-		return "INFO"
-	}
-}
-
 func getVerboseLevel(level string) string {
-	if level == DEBUG.String() {
+	if level == settings.DEBUG.String() {
 		return "4"
-	} else if level == TRACE.String() {
+	} else if level == settings.TRACE.String() {
 		return "6"
 	} else {
 		return "1"
@@ -192,7 +152,7 @@ func getVerboseLevel(level string) string {
 }
 
 func InitFileLogger() func() {
-	filePath := hostPath + dirPath + "/" + logFile
+	filePath := settings.HostPath + settings.DirPath + "/" + settings.LogFile
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		fileDir, _ := path.Split(filePath)
@@ -211,7 +171,7 @@ func InitFileLogger() func() {
 
 	l := &lumberjack.Logger{
 		Filename:   filePath,
-		MaxSize:    rotateSize,
+		MaxSize:    settings.RotateSize,
 		MaxBackups: 5,
 		MaxAge:     0,
 		Compress:   true,

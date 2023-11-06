@@ -51,6 +51,46 @@ const (
 	secretFileSuffix = "-secret" // #nosec G101 false positive
 	cacertFileSuffix = "-cacert"
 )
+const (
+	DirPath               = "scalecsilogs"
+	LogFile               = "ibm-spectrum-scale-csi.logs"
+	LogLevel              = "LOGLEVEL"
+	PersistentLog         = "PERSISTENT_LOG"
+	NodePublishMethod     = "NODEPUBLISH_METHOD"
+	VolumeStatsCapability = "VOLUME_STATS_CAPABILITY"
+	HostPath              = "/host/var/adm/ras/"
+	RotateSize            = 1024
+)
+
+type LoggerLevel int
+
+const (
+	TRACE LoggerLevel = iota
+	DEBUG
+	INFO
+	WARNING
+	ERROR
+	FATAL
+)
+
+func (level LoggerLevel) String() string {
+	switch level {
+	case TRACE:
+		return "TRACE"
+	case DEBUG:
+		return "DEBUG"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	case FATAL:
+		return "FATAL"
+	case INFO:
+		return "INFO"
+	default:
+		return "INFO"
+	}
+}
 
 /*
 To support backwards compatibility if the PrimaryFs field is not defined then
