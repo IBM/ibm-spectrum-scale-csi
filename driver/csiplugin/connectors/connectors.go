@@ -115,8 +115,8 @@ const (
 	UserSpecifiedSnapWindow       string = "snapWindow"
 	UserSpecifiedConsistencyGroup string = "consistencyGroup"
 	UserSpecifiedShared           string = "shared"
-
-	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
+	AFMModeSecondary              string = "secondary"
+	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
