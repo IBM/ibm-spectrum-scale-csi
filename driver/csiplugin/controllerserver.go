@@ -1660,6 +1660,20 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 	return false, nil
 }
 
+// GetAFMMode returns the AFM mode of the fileset and also the error
+// if there is any (including the fileset not found error) while getting
+// the fileset info
+func (cs *ScaleControllerServer) GetAFMMode(ctx context.Context, filesystemName string, filesetName string, conn connectors.SpectrumScaleConnector) (string, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	filesetDetails, err := conn.ListFileset(ctx, filesystemName, filesetName)
+	if err != nil {
+		return "", status.Error(codes.Internal, fmt.Sprintf("failed to get fileset info, filesystem: [%v], fileset: [%v], error: [%v]", filesystemName, filesetName, err))
+	}
+
+	klog.V(4).Infof("[%s] AFM mode of the fileset [%v] is [%v]", loggerId, filesetName, filesetDetails.AFM.AFMMode)
+	return filesetDetails.AFM.AFMMode, nil
+}
+
 // This function deletes fileset for Consitency Group
 func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, FilesystemName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) error {
 	loggerId := utils.GetLoggerId(ctx)
@@ -1774,6 +1788,24 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			FilesetName, err = conn.GetFileSetNameFromId(ctx, FilesystemName, volumeIdMembers.FsetId)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get Fileset Name for Id [%v] FS [%v] ClusterId [%v]", volumeIdMembers.FsetId, FilesystemName, volumeIdMembers.ClusterId))
+			}
+		}
+
+		// Additional check for RDR fileset in secondary mode
+		if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+			AFMMode, err := cs.GetAFMMode(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, conn)
+			if err != nil {
+				if strings.Contains(err.Error(), "EFSSG0072C") ||
+					strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+					klog.V(4).Infof("[%s] the ConsistencyGroup fileset [%v] is deleted already", loggerId, FilesetName)
+					return &csi.DeleteVolumeResponse{}, nil
+				}
+				return nil, err
+			}
+			if AFMMode == connectors.AFMModeSecondary {
+				// AFM will take care of deletion on secondary
+				klog.Infof("[%s] skipping the deletion of fileset [%v] because ConsistencyGroup fileset [%v] is in AFM Secondary mode", loggerId, FilesetName, volumeIdMembers.ConsistencyGroup)
+				return &csi.DeleteVolumeResponse{}, nil
 			}
 		}
 
@@ -2200,6 +2232,16 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		snapWindowInt, err = strconv.Atoi(snapWindow)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot [%s] - invalid snapWindow value: [%v]", snapName, snapWindow))
+		}
+
+		// Additional check for RDR fileset in secondary mode
+		AFMMode, err := cs.GetAFMMode(ctx, filesystemName, filesetName, conn)
+		if err != nil {
+			return nil, err
+		}
+		if AFMMode == connectors.AFMModeSecondary {
+			klog.Errorf("[%s] snapshot is not supported for AFM Secondary mode of ConsistencyGroup fileset [%v]", loggerId, filesetName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot is not supported for AFM Secondary mode of ConsistencyGroup fileset [%v]", filesetName))
 		}
 	}
 
