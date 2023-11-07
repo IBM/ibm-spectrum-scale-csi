@@ -192,17 +192,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.V(1).Info("Updated resource status.", "Status", cr.Status)
 	}()
 
-	r.Scheme.Default(instanceUnwrap)
-	err = r.Client.Update(context.TODO(), instanceUnwrap)
-	if err != nil {
-		logger.Error(err, "Reconciler Client.Update() failed")
-		message := fmt.Sprintf("Failed to set defaults on the instance %s. Please check Operator logs", instanceUnwrap.Name)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-
 	for _, cluster := range instance.Spec.Clusters {
 		if cluster.Cacert != "" {
 			watchResources[corev1.ResourceConfigMaps.String()][cluster.Cacert] = true
