@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -36,6 +35,7 @@ import (
 
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
+const errContextDeadlineExceeded string = "context deadline exceeded" 
 
 var GetLoggerId = utils.GetLoggerId
 
@@ -1039,7 +1039,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 
 	activeEndpointFound := false
 	if err != nil {
-		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || errors.Is(err, context.DeadlineExceeded) {
+		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded){
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
@@ -1051,16 +1051,16 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 					activeEndpointFound = true
 					break
 				} else {
-					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || errors.Is(err, context.DeadlineExceeded) {
+					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded) {
 						klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 					} else {
-						klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
+						klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
 					}
 				}
 			}
 		} else {
-			klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return status.Error(codes.Internal, fmt.Sprintf("Error in authentication: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
+			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
+			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
 		}
 	} else {
 		activeEndpointFound = true
