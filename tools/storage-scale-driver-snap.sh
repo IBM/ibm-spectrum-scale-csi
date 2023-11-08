@@ -162,7 +162,7 @@ function get_kind()
 function help()
 {
    # Display Help
-   echo "USAGE: spectrum-scale-driver-snap.sh [-n|o|p|s|v|h]"
+   echo "USAGE: storage-scale-driver-snap.sh [-n|o|p|s|v|h]"
    echo "options:"
    echo "     n     CSI driver plugin namespace"
    echo "     o     output-dir"
@@ -178,6 +178,17 @@ cmd="kubectl"
 version_flag=0
 previous="True"
 since="0s"
+
+# use oc commands on openshift cluster
+if (which oc &>/dev/null)
+then
+  if (oc status &>/dev/null)
+  then
+    cmd="oc"
+    ns="ibm-spectrum-scale-csi"
+  fi
+fi
+
 while getopts 'n:o:p:s:vh' OPTION; do
   case "$OPTION" in
     n)
@@ -215,16 +226,6 @@ if [[ $outdir != "." && ! -d $outdir ]]
 then
   echo "Output directory $outdir does not exist. "
   exit 1
-fi
-
-# use oc commands on openshift cluster
-if (which oc &>/dev/null)
-then
-  if (oc status &>/dev/null)
-  then
-    cmd="oc"
-    ns="ibm-spectrum-scale-csi"
-  fi
 fi
 
 # check if the namespace is valid and active

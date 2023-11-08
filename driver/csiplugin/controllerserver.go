@@ -238,12 +238,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 		}
 	}
 
-	if filesetQuotaBytes < scVol.VolSize && filesetQuotaBytes != 0 {
-		// quota does not match and it is not 0 - It might not be fileset created by us
-		return fmt.Errorf("fileset %v present but quota %v does not match with requested size %v", volName, filesetQuotaBytes, scVol.VolSize)
-	}
-
-	if filesetQuotaBytes == 0 {
+	if filesetQuotaBytes != scVol.VolSize {
 		volsiz := strconv.FormatUint(scVol.VolSize, 10)
 		err = scVol.Connector.SetFilesetQuota(ctx, scVol.VolBackendFs, volName, volsiz)
 		if err != nil {
@@ -517,11 +512,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
 			if err != nil {
-				if strings.Contains(fmt.Sprint(err), "does not match with requested size") {
-					return "", status.Error(codes.AlreadyExists, err.Error())
-				} else {
-					return "", status.Error(codes.Internal, err.Error())
-				}
+				return "", status.Error(codes.Internal, err.Error())
 			}
 		}
 
@@ -1058,8 +1049,10 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				klog.Errorf("[%s] volume:[%v] -  volume cloning request in progress.", loggerId, scaleVol.VolName)
 				return nil, status.Error(codes.Aborted, fmt.Sprintf("volume cloning request in progress for volume: %s", scaleVol.VolName))
 			case VOLCOPY_JOB_FAILED:
-				klog.Errorf("[%s] volume:[%v] -  volume cloning job had failed", loggerId, scaleVol.VolName)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v]", scaleVol.VolName))
+				//Delete the entry from map, so that it is retried
+				klog.Errorf("[%s] volume:[%v] -  volume cloning job had failed and it will be retried", loggerId, scaleVol.VolName)
+				cs.Driver.volcopyjobstatusmap.Delete(scaleVol.VolName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("volume cloning job had failed for volume:[%v] and it will be retried", scaleVol.VolName))
 			case VOLCOPY_JOB_COMPLETED:
 				klog.Infof("[%s] volume:[%v] -  volume cloning request has already completed successfully.", loggerId, scaleVol.VolName)
 				return &csi.CreateVolumeResponse{
@@ -1091,8 +1084,10 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				klog.Errorf("[%s] volume:[%v] -  snapshot copy request in progress for snapshot: %s.", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
 				return nil, status.Error(codes.Aborted, fmt.Sprintf("snapshot copy request in progress for snapshot: %s", snapIdMembers.SnapName))
 			case SNAP_JOB_FAILED:
-				klog.Errorf("[%s] volume:[%v] -  snapshot copy job had failed for snapshot %s", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s", snapIdMembers.SnapName))
+				klog.Errorf("[%s] volume:[%v] -  snapshot copy job had failed for snapshot %s and it will be retried", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
+				//Delete the entry from map, so that it is retried
+				cs.Driver.snapjobstatusmap.Delete(scaleVol.VolName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot copy job had failed for snapshot: %s and it will be retried", snapIdMembers.SnapName))
 			case SNAP_JOB_COMPLETED:
 				klog.V(6).Infof("[%s] volume:[%v] -  snapshot copy request has already completed successfully for snapshot: %s", loggerId, scaleVol.VolName, snapIdMembers.SnapName)
 				return &csi.CreateVolumeResponse{
@@ -1631,25 +1626,29 @@ func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, erro
 	return sIdMem, nil
 }
 
-func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector) (bool, error) {
+func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, FilesystemName string, FilesetName string, volumeIdMembers scaleVolId, conn connectors.SpectrumScaleConnector, checkForSnapshots bool) (bool, error) {
 	//Check if fileset exist has any snapshot
-	snapshotList, err := conn.ListFilesetSnapshots(ctx, FilesystemName, FilesetName)
 	loggerId := utils.GetLoggerId(ctx)
-	if err != nil {
-		if strings.Contains(err.Error(), "EFSSG0072C") ||
-			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
-			klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
-			return true, nil
+	if checkForSnapshots {
+		klog.Infof("[%s] Checking if there is any snapshot present in the fileset [%v]", loggerId, FilesetName)
+		snapshotList, err := conn.ListFilesetSnapshots(ctx, FilesystemName, FilesetName)
+
+		if err != nil {
+			if strings.Contains(err.Error(), "EFSSG0072C") ||
+				strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+				klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
+				return true, nil
+			}
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
 		}
-		return false, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshot for fileset [%v]. Error: [%v]", FilesetName, err))
+
+		if len(snapshotList) > 0 {
+			return false, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
+		}
+		klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
 	}
 
-	if len(snapshotList) > 0 {
-		return false, status.Error(codes.Internal, fmt.Sprintf("volume fileset [%v] contains one or more snapshot, delete snapshot/volumesnapshot", FilesetName))
-	}
-	klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
-
-	err = conn.DeleteFileset(ctx, FilesystemName, FilesetName)
+	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
@@ -1659,6 +1658,20 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 		return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 	}
 	return false, nil
+}
+
+// GetAFMMode returns the AFM mode of the fileset and also the error
+// if there is any (including the fileset not found error) while getting
+// the fileset info
+func (cs *ScaleControllerServer) GetAFMMode(ctx context.Context, filesystemName string, filesetName string, conn connectors.SpectrumScaleConnector) (string, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	filesetDetails, err := conn.ListFileset(ctx, filesystemName, filesetName)
+	if err != nil {
+		return "", status.Error(codes.Internal, fmt.Sprintf("failed to get fileset info, filesystem: [%v], fileset: [%v], error: [%v]", filesystemName, filesetName, err))
+	}
+
+	klog.V(4).Infof("[%s] AFM mode of the fileset [%v] is [%v]", loggerId, filesetName, filesetDetails.AFM.AFMMode)
+	return filesetDetails.AFM.AFMMode, nil
 }
 
 // This function deletes fileset for Consitency Group
@@ -1693,7 +1706,7 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 		}
 
 		// Delete independent fileset for consistency group
-		_, err = cs.DeleteFilesetVol(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn)
+		_, err = cs.DeleteFilesetVol(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, volumeIdMembers, conn, true)
 		if err != nil {
 			return err
 		}
@@ -1778,11 +1791,33 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 			}
 		}
 
+		// Additional check for RDR fileset in secondary mode
+		if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+			AFMMode, err := cs.GetAFMMode(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, conn)
+			if err != nil {
+				if strings.Contains(err.Error(), "EFSSG0072C") ||
+					strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+					klog.V(4).Infof("[%s] the ConsistencyGroup fileset [%v] is deleted already", loggerId, FilesetName)
+					return &csi.DeleteVolumeResponse{}, nil
+				}
+				return nil, err
+			}
+			if AFMMode == connectors.AFMModeSecondary {
+				// AFM will take care of deletion on secondary
+				klog.Infof("[%s] skipping the deletion of fileset [%v] because ConsistencyGroup fileset [%v] is in AFM Secondary mode", loggerId, FilesetName, volumeIdMembers.ConsistencyGroup)
+				return &csi.DeleteVolumeResponse{}, nil
+			}
+		}
+
 		if FilesetName != "" {
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(relPath)
 			if pvName == FilesetName {
-				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(ctx, FilesystemName, FilesetName, volumeIdMembers, conn)
+				checkForSnapshots := false
+				if volumeIdMembers.VolType == FILE_INDEPENDENTFILESET_VOLUME {
+					checkForSnapshots = true
+				}
+				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(ctx, FilesystemName, FilesetName, volumeIdMembers, conn, checkForSnapshots)
 				if err != nil {
 					return nil, err
 				}
@@ -1797,6 +1832,8 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 					err := cs.DeleteCGFileset(ctx, FilesystemName, volumeIdMembers, conn)
+					// DeleteCGFileset calls DeleteFilesetVol function with checkForSnapshots=true to
+					// check for snapshots before deleting the CG independent fileset
 					if err != nil {
 						return nil, err
 					}
@@ -2200,6 +2237,16 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		snapWindowInt, err = strconv.Atoi(snapWindow)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot [%s] - invalid snapWindow value: [%v]", snapName, snapWindow))
+		}
+
+		// Additional check for RDR fileset in secondary mode
+		AFMMode, err := cs.GetAFMMode(ctx, filesystemName, filesetName, conn)
+		if err != nil {
+			return nil, err
+		}
+		if AFMMode == connectors.AFMModeSecondary {
+			klog.Errorf("[%s] snapshot is not supported for AFM Secondary mode of ConsistencyGroup fileset [%v]", loggerId, filesetName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("snapshot is not supported for AFM Secondary mode of ConsistencyGroup fileset [%v]", filesetName))
 		}
 	}
 

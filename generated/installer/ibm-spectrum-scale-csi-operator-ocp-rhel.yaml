@@ -33,7 +33,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:3e5b73cfbffa72d9cdf71fe369522cd2c9841970372715896e99b733d96eaed6
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:52a24a97a9ad649603c8708d874c538fc22ef067767761fef9ffae091846695e
         args:
         - --leaderElection=true
         env:
@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:ee9bd3e431cf0d3fb1e407a6e2ed51d6be957dd1445c2cd88f329cbb5b1ea494
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:05837457d22e79593aa476f61374e640b9762e3e53b57b433d08140de70be96d
         resources:
           limits:
             cpu: 600m
@@ -85,6 +85,16 @@ spec:
                 - amd64
                 - ppc64le
                 - s390x
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
       securityContext:
         runAsGroup: 10001
         runAsNonRoot: true
