@@ -446,7 +446,10 @@ type FileSystem_v2 struct {
 }
 
 type Pages struct {
-	Next string `json:"next,omitempty"`
+	BaseURL string `json:"baseUrl,omitempty"`
+	Filter  string `json:"filter,omitempty"`
+	LastID  int    `json:"lastId,omitempty"`
+	Next    string `json:"next,omitempty"`
 }
 
 type GetNodesResponse_v2 struct {

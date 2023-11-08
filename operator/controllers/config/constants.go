@@ -26,10 +26,10 @@ const (
 	// LabelAppManagedBy is the controller/user who created the resource.
 	LabelAppManagedBy = "app.kubernetes.io/managed-by"
 	// LabelArchitecture is the label applied on node, used to identify the architecture of node.
-	LabelArchitecture = "kubernetes.io/arch"
-	LabelNodeMaster           = "node-role.kubernetes.io/master"
-	LabelNodeInfra            = "node-role.kubernetes.io/infra"
-	LabelNodeControlPlane     = "node-role.kubernetes.io/control-plane"
+	LabelArchitecture     = "kubernetes.io/arch"
+	LabelNodeMaster       = "node-role.kubernetes.io/master"
+	LabelNodeInfra        = "node-role.kubernetes.io/infra"
+	LabelNodeControlPlane = "node-role.kubernetes.io/control-plane"
 )
 
 // CSI resource labels
@@ -66,13 +66,11 @@ const (
 
 	ProductName = "IBM Spectrum Scale CSI Operator"
 
-	ENVEndpoint    = "ENDPOINT"
-	ENVNodeName    = "NODE_NAME"
-	ENVKubeVersion = "KUBE_VERSION"
-	ENVIsOpenShift = "IS_OpenShift"
-	ENVCGPrefix    = "CSI_CG_PREFIX"
-	ENVSymDirPath  = "SYMLINK_DIR_PATH"
-
+	ENVEndpoint     = "ENDPOINT"
+	ENVNodeName     = "NODE_NAME"
+	ENVKubeVersion  = "KUBE_VERSION"
+	ENVCGPrefix     = "CSI_CG_PREFIX"
+	ENVSymDirPath   = "SYMLINK_DIR_PATH"
 	DriverVersion   = "2.10.0"
 	OperatorVersion = "2.10.0"
 
@@ -151,6 +149,7 @@ const (
 	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
 	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
+	HostNetworkKey                    = "HOST_NETWORK"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -164,15 +163,17 @@ const (
 	EnvPersistentLogDefaultValue         = "DISABLED"
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
+	EnvHostNetworkDefaultValue           = "ENABLED"
 )
 
 var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,
-	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey, EnvDiscoverCGFilesetKeyPrefixed}
+	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey, EnvDiscoverCGFilesetKeyPrefixed, HostNetworkKey}
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
 var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
 var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
+var EnvHostNetworkValues = []string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"
@@ -195,4 +196,11 @@ const (
 
 	ErrorForbidden    = "403: Forbidden"
 	ErrorUnauthorized = "401: Unauthorized"
+
+	ENVClusterConfigurationType = "ClusterConfigurationType"
+	ENVClusterTypeOpenshift     = "OpenShiftPlatform"
+	ENVClusterTypeKubernetes    = "KubernetesPlatform"
+	ENVClusterCNSAPresenceCheck = "CNSADeployment"
+	CNSAOperatorNamespace       = "ibm-spectrum-scale-operator"
+	CNSAOperatorDeploymentName  = "ibm-spectrum-scale-controller-manager"
 )
