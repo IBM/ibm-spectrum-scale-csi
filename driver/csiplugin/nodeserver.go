@@ -48,7 +48,7 @@ const nodePublishMethod = "NODEPUBLISH_METHOD"
 const nodePublishMethodSymlink = "SYMLINK"
 
 const mountPathLength = 6
-const mountPath = "/proc/mounts"
+const mountPathFile = "/proc/mounts"
 
 const ENVClusterCNSAPresenceCheck = "CNSADeployment"
 
@@ -107,7 +107,7 @@ func checkGpfsType(ctx context.Context, path string) error {
 
 func getGpfsPaths(ctx context.Context) []string {
 	var gpfsPaths []string
-	file, err := os.Open(mountPath)
+	file, err := os.Open(mountPathFile)
         if err != nil {
                 klog.Errorf("[%s] Error in opening file: [%s]", utils.GetLoggerId(ctx), err)
         }
