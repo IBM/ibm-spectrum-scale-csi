@@ -19,7 +19,7 @@ package scale
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"bufio"
 	"strings"
 	"sync"
 
@@ -48,6 +48,7 @@ const nodePublishMethod = "NODEPUBLISH_METHOD"
 const nodePublishMethodSymlink = "SYMLINK"
 
 const mountPathLength = 6
+const mountPath = "/proc/mounts"
 
 const ENVClusterCNSAPresenceCheck = "CNSADeployment"
 
@@ -106,30 +107,28 @@ func checkGpfsType(ctx context.Context, path string) error {
 
 func getGpfsPaths(ctx context.Context) []string {
 	var gpfsPaths []string
-	gpfsPathCmd := `cat /proc/mounts | grep "gpfs"`
-	cmd := exec.Command("bash", "-c", gpfsPathCmd)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
-	} else {
-		outputPaths := string(output)
-		strOutput := strings.Split(outputPaths, "\n")
-		for _, out := range strOutput {
-			finalOutput := strings.Split(out, " ")
-			if len(finalOutput) == mountPathLength {
-				if finalOutput[1] != "" && finalOutput[2] == "gpfs" {
-					cnsaPresence, ok := os.LookupEnv(ENVClusterCNSAPresenceCheck)
-					if ok && cnsaPresence == "True" {
-						before, after, found := strings.Cut(finalOutput[1], "/var")
-						if found && before == hostDir && strings.HasPrefix(after, mountPath) {
-							openShiftMountPath := before + after
-							gpfsPaths = append(gpfsPaths, openShiftMountPath)
-						} else {
-							gpfsPaths = append(gpfsPaths, finalOutput[1])
-						}
+	file, err := os.Open(mountPath)
+        if err != nil {
+                klog.Errorf("[%s] Error in opening file: [%s]", utils.GetLoggerId(ctx), err)
+        }
+	defer file.Close()
+        scanner := bufio.NewScanner(file)
+        for scanner.Scan() {
+                fileContent := scanner.Text()
+                finalOutput := strings.Split(fileContent, " ")
+                if len(finalOutput) == mountPathLength {
+			if finalOutput[1] != "" && finalOutput[2] == "gpfs" {
+				cnsaPresence, ok := os.LookupEnv(ENVClusterCNSAPresenceCheck)
+				if ok && cnsaPresence == "True" {
+					before, after, found := strings.Cut(finalOutput[1], "/var")
+					if found && before == hostDir && strings.HasPrefix(after, mountPath) {
+						openShiftMountPath := before + after
+						gpfsPaths = append(gpfsPaths, openShiftMountPath)
 					} else {
 						gpfsPaths = append(gpfsPaths, finalOutput[1])
 					}
+				} else {
+					gpfsPaths = append(gpfsPaths, finalOutput[1])
 				}
 			}
 		}
