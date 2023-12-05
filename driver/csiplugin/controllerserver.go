@@ -666,12 +666,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
-	isShallowCopyVol := false
+	isShallowCopyVolume := false
 	for _, reqCap := range reqCapabilities {
 		if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
 			if isSnapSource {
-				klog.Infof("[%s] shallow copy is set to true", loggerId)
-				isShallowCopyVol = true
+				klog.Infof("[%s] Requested pvc will be shallow copy volume", loggerId)
+				isShallowCopyVolume = true
 			} else {
 				return nil, status.Error(codes.Unimplemented, "Volume source with Access Mode ReadOnlyMany is not supported")
 			}
@@ -715,9 +715,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	}
 
-	isPvcFromSnap := false
+	isPvcFromSnapshot := false
 	if isSnapSource {
-		isPvcFromSnap, err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID, isShallowCopyVol)
+		isPvcFromSnapshot, err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID, isShallowCopyVolume)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -750,7 +750,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 
-	if isPvcFromSnap {
+	if isPvcFromSnapshot {
 		err = cs.createSnapshotDir(ctx, &snapIdMembers, scaleVol, isNewVolumeType)
 		if err != nil {
 			return nil, err
@@ -791,7 +791,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
         	return nil, err
         }
 
-	if !isPvcFromSnap {
+	if !isPvcFromSnapshot {
 		if !isNewVolumeType {
 			// Create symbolic link if not present
 			err = cs.createSoftlink(ctx, scaleVol, targetPath)
@@ -805,15 +805,14 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
                 }else{
                         targetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",scaleVol.PrimaryFSMount,snapIdMembers.FsetName,snapIdMembers.SnapName,snapIdMembers.Path)
                 }
-                klog.Infof("[%s] Target path: [%s]", loggerId, targetPath)
 	}
 
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isNewVolumeType, isPvcFromSnap, targetPath)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isNewVolumeType, isPvcFromSnapshot, targetPath)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
 
-	if isPvcFromSnap {
+	if isPvcFromSnapshot {
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      volID,
@@ -1437,7 +1436,7 @@ func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connec
 	 return nil
  }*/
 
-func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string, isShallowCopyVol bool) (bool, error) {
+func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string, isShallowCopyVolume bool) (bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateSnapId [%v]", loggerId, sourcesnapshot)
 	conn, err := cs.getConnFromClusterID(ctx, sourcesnapshot.ClusterId)
@@ -1531,7 +1530,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	}
 
 	isReadOnlyPvc := false
-	if isShallowCopyVol {
+	if isShallowCopyVolume {
 		isReadOnlyPvc = cs.validateShallowCopyVolume(ctx, sourcesnapshot, newvolume)
 		return isReadOnlyPvc, nil
 	}
@@ -1542,7 +1541,6 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 
 func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume) bool {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] sourecsnapshot:[%+v], newvolume:[%+v]", loggerId, sourcesnapshot, newvolume)
 	if newvolume.StorageClassType != sourcesnapshot.StorageClassType && newvolume.VolBackendFs != sourcesnapshot.FsName {
 		klog.Errorf("[%s] validation of shallow copy volume [%s] with source pvc [%s] failed ", loggerId, newvolume.VolName, sourcesnapshot.SnapName)
 		return false
@@ -1578,7 +1576,7 @@ func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesn
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	klog.Infof("[%s] snapshotPath: [%s]", loggerId, snapshotPath)
+	klog.Infof("[%s] createSnapshotDir reference path [%s] for shallow copy volume: [%s]", loggerId, snapshotPath, newvolume.VolName)
 	err := cs.createDirectory(ctx, newvolume, newvolume.VolName, snapshotPath)
 	if err != nil {
 		klog.Errorf("[%s] Failed to create snapshot reference directory", loggerId)
@@ -1929,7 +1927,6 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 					return nil, err
 				}
 			}
-    			klog.Infof("[%s] isPvcFromSnapshot: [%d]", loggerId, isPvcFromSnapshot)
 
 			if (pvName == FilesetName && !isPvcFromSnapshot) || isPvcFromSnapshot {
 				checkForSnapshots := false
@@ -1983,6 +1980,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 
 func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, FilesystemName, FilesetName, ShallowCopyRefPath string, conn connectors.SpectrumScaleConnector) (bool, error){
 	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] Deleting shallow copy reference path [%s]", loggerId, ShallowCopyRefPath)
 	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
 	dirExists, err := conn.CheckIfFileDirPresent(ctx, FilesystemName, shallowCopyRefCompletePath)
 	if err != nil {
@@ -2688,14 +2686,17 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		}
 
 		// skip delete snapshot if not exist, return success
+		refVolumeExists := false
 		if snapExist {
 			if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED{
 				shallowCopyRefPath = fmt.Sprintf("%s/%s",snapIdMembers.ConsistencyGroup,snapIdMembers.SnapName)	
+				refVolumeExists = cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, snapIdMembers.MetaSnapName, conn)
 			}else{
 				shallowCopyRefPath = fmt.Sprintf("%s/%s",snapIdMembers.FsetName, snapIdMembers.SnapName)
+				refVolumeExists = cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, "", conn)
 			}
-			refExists := cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, conn)
-			if !refExists{
+			
+			if !refVolumeExists{
 				deleteSnapshot := true
 				filesetName := snapIdMembers.FsetName
 				if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2728,9 +2729,8 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 	return &csi.DeleteSnapshotResponse{}, nil
 }
 
-func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, path, filesystemName string, conn connectors.SpectrumScaleConnector) bool{
+func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, path, filesystemName string, metaSnap string, conn connectors.SpectrumScaleConnector) bool{
 	loggerId := utils.GetLoggerId(ctx)	
-	klog.Infof("[%s] CheckShallowCopyReference - path: %s", loggerId, path)
 	dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, path)
 	if err != nil {
 		klog.Errorf("[%s] unable to check if directory path [%v] exists in filesystem [%v]. Error : %v", loggerId, path, filesystemName, err)
@@ -2738,6 +2738,16 @@ func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, 
 	}
 
 	if dirExists{
+		metaSnapPathExists := false
+		if metaSnap != ""{
+			metaSnapPath := fmt.Sprintf("%s/%s", path, metaSnap)
+			metaSnapPathExists, err = conn.CheckIfFileDirPresent(ctx, filesystemName, metaSnapPath)
+			if err != nil {
+				klog.Errorf("[%s] unable to check if metaSnap directory path [%v] exists in filesystem [%v]. Error : %v", loggerId, path, filesystemName, err)
+				return true
+			}
+		}
+
 		statInfo,err := conn.StatDirectory(ctx, filesystemName, path)
 		if err != nil{
 			klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, filesystemName, path, err)
@@ -2749,6 +2759,9 @@ func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, 
 				return true
 			}
 			if nlink == 2{
+				return false
+			}
+			if metaSnapPathExists && nlink == 3{
 				return false
 			}
 		}
