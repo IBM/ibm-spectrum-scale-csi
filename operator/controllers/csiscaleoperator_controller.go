@@ -764,9 +764,9 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//Do not restart driver pods when the configmap contains invalid Envs.
 	shouldRequeueOnCreateOrDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || 
+			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) ||
 				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
-				strings.ToUpper(key) == config.HostNetworkKey{
+				strings.ToUpper(key) == config.HostNetworkKey {
 				return true
 			}
 		}
@@ -780,14 +780,14 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		for key, newVal := range newCfgMapData {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || 
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) ||
 					strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
-					strings.ToUpper(key) == config.HostNetworkKey{
+					strings.ToUpper(key) == config.HostNetworkKey {
 					return true
 				}
-			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || 
+			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) ||
 				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
-				strings.ToUpper(key) == config.HostNetworkKey{
+				strings.ToUpper(key) == config.HostNetworkKey {
 				return true
 			}
 		}
@@ -796,9 +796,9 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || 
+				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) ||
 					(strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
-					strings.ToUpper(key) == config.HostNetworkKey{
+					strings.ToUpper(key) == config.HostNetworkKey {
 					return true
 				}
 			}
@@ -2315,7 +2315,7 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				}
 			} else if keyUpper == config.DaemonSetUpgradeMaxUnavailableKey {
 				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
-			} else if keyUpper == config.HostNetworkKey{
+			} else if keyUpper == config.HostNetworkKey {
 				validateHostNetworkValue(config.EnvHostNetworkValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
@@ -2378,11 +2378,11 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 
 func validateHostNetworkValue(inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateHostNetworkValue")
-        logger.Info("Validating host network input", "inputHostNetwork", value)
-	
+	logger.Info("Validating host network input", "inputHostNetwork", value)
+
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
-		 envMap[key] = value
-	}else{
+		envMap[key] = value
+	} else {
 		invalidEnvValue[key] = value
 	}
 }
@@ -2437,33 +2437,33 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	}
 	// Set default DiscoverCGFileset when it is not present in envMap
 	if _, ok := envMap[config.EnvDiscoverCGFilesetKey]; !ok {
-		envDiscoverCGFilesetDefaultValue := getDiscoverCGFilesetDefaultValue()
+		envDiscoverCGFilesetDefaultValue := "DISABLED"
 		logger.Info("DiscoverCGFileset is empty or incorrect.", "Defaulting DiscoverCGFileset to", envDiscoverCGFilesetDefaultValue)
 		envMap[config.EnvDiscoverCGFilesetKey] = envDiscoverCGFilesetDefaultValue
 	}
 
 	// set default HostNetwork env when it is not present in envMap
-	if _,ok := envMap[config.HostNetworkKey]; !ok{
+	if _, ok := envMap[config.HostNetworkKey]; !ok {
 		logger.Info("Host Network is empty or incorrect.", "Defaulting Host Network to", config.EnvHostNetworkDefaultValue)
 		envMap[config.HostNetworkKey] = config.EnvHostNetworkDefaultValue
 	}
 }
 
 // getDiscoverCGFilesetDefaultValue returns default value for CG fileset discovery
-func getDiscoverCGFilesetDefaultValue() string {
-	logger := csiLog.WithName("getDiscoverCGFilesetDefaultValue")
-	logger.Info("Getting DISCOVER_CG_FILESET default value")
+//func getDiscoverCGFilesetDefaultValue() string {
+//	logger := csiLog.WithName("getDiscoverCGFilesetDefaultValue")
+//	logger.Info("Getting DISCOVER_CG_FILESET default value")
 
-	if CNSAClusterPresence, ok := clusterTypeData[config.ENVClusterCNSAPresenceCheck]; ok {
+//	if CNSAClusterPresence, ok := clusterTypeData[config.ENVClusterCNSAPresenceCheck]; ok {
 
-		if CNSAClusterPresence == "True" {
-			//CG fileset discovery is enabled by default with CNSA cluster required for RDR
-			return "ENABLED"
-		}
-	}
-	//CG fileset discovery is disabled by default on k8s cluster
-	return "DISABLED"
-}
+//		if CNSAClusterPresence == "True" {
+//			//CG fileset discovery is enabled by default with CNSA cluster required for RDR
+//			return "ENABLED"
+//		}
+//	}
+//	//CG fileset discovery is disabled by default on k8s cluster
+//	return "DISABLED"
+//}
 
 // listGUIPasswdExpiredClusters returns a list having clusterIds whose password is expired
 func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
