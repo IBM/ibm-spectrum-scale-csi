@@ -1982,39 +1982,40 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] Deleting shallow copy reference path [%s]", loggerId, ShallowCopyRefPath)
 	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
+
+	mutex.Lock()
+	defer mutex.Unlock()
 	dirExists, err := conn.CheckIfFileDirPresent(ctx, FilesystemName, shallowCopyRefCompletePath)
 	if err != nil {
 		klog.Errorf("[%s] unable to check if directory path [%v] exists in filesystem [%v]. Error : %v", loggerId, shallowCopyRefCompletePath, FilesystemName, err)
 		return false,err
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	if dirExists{
 		err = conn.DeleteDirectory(ctx, FilesystemName, shallowCopyRefCompletePath, false)
 		if err != nil {
 			return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))			
-		}
-	}
+		}else{
+			statInfo, err := conn.StatDirectory(ctx, FilesystemName, ShallowCopyRefPath)
+        		if err != nil{
+                		klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, FilesystemName, ShallowCopyRefPath, err)
+                		return false, err
+        		}else{
+                		nlink,err := parseStatDirInfo(statInfo)
+                		if err != nil{
+                        		klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, FilesystemName, ShallowCopyRefPath)
+                        		return false, err
+                		}
 
-	statInfo, err := conn.StatDirectory(ctx, FilesystemName, ShallowCopyRefPath)
-	if err != nil{
-		klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, FilesystemName, ShallowCopyRefPath, err)
-		return false, err
-	}else{
-		nlink,err := parseStatDirInfo(statInfo)
-		if err != nil{
-			klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, FilesystemName, ShallowCopyRefPath)
-			return false, err
+                		if nlink == 2{
+                        		err = conn.DeleteDirectory(ctx, FilesystemName, ShallowCopyRefPath, false)
+                        		if err != nil {
+                                		return false, status.Error(codes.Internal,fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))
+                        		}
+                		}
+        		}
 		}
 
-		if nlink == 2{
-			err = conn.DeleteDirectory(ctx, FilesystemName, ShallowCopyRefPath, false)
-			if err != nil {
-				return false, status.Error(codes.Internal,fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))			
-			}
-		}
 	}
 	return true, nil
 }
@@ -2690,51 +2691,54 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		if snapExist {
 			if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED{
 				shallowCopyRefPath = fmt.Sprintf("%s/%s",snapIdMembers.ConsistencyGroup,snapIdMembers.SnapName)	
-				refVolumeExists = cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, snapIdMembers.MetaSnapName, conn)
+				refVolumeExists, err = cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, snapIdMembers.MetaSnapName, conn)
 			}else{
 				shallowCopyRefPath = fmt.Sprintf("%s/%s",snapIdMembers.FsetName, snapIdMembers.SnapName)
-				refVolumeExists = cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, "", conn)
+				refVolumeExists, err = cs.CheckShallowCopyReference(ctx, shallowCopyRefPath, filesystemName, "", conn)
+			}
+
+			if refVolumeExists{
+				return nil, status.Error(codes.Internal, fmt.Sprintf("error deleting snapshot as there is shallow copy volume reference [%v]. Error: [%v]", snapIdMembers.SnapName, err))
 			}
 			
-			if !refVolumeExists{
-				deleteSnapshot := true
-				filesetName := snapIdMembers.FsetName
-				if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-					delSnap, snaperr := cs.DelSnapMetadataDir(ctx, conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName)
-					if snaperr != nil {
-						klog.Errorf("[%s] DeleteSnapshot - error while deleting snapshot %v: Error: %v", loggerId, snapIdMembers.SnapName, snaperr)
-						return nil, snaperr
-					}
-					if delSnap {
-						filesetName = snapIdMembers.ConsistencyGroup
-						klog.V(4).Infof("[%s] DeleteSnapshot - for advanced storageClass we can delete snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
-					} else {
-						deleteSnapshot = false
-					}
+			deleteSnapshot := true
+			filesetName := snapIdMembers.FsetName
+			if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+				delSnap, snaperr := cs.DelSnapMetadataDir(ctx, conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName)
+				if snaperr != nil {
+					klog.Errorf("[%s] DeleteSnapshot - error while deleting snapshot %v: Error: %v", loggerId, snapIdMembers.SnapName, snaperr)
+					return nil, snaperr
 				}
-
-				if deleteSnapshot {
-					klog.Infof("[%s] DeleteSnapshot - deleting snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
-					snaperr := conn.DeleteSnapshot(ctx, filesystemName, filesetName, snapIdMembers.SnapName)
-					if snaperr != nil {
-						klog.Errorf("[%s] DeleteSnapshot - error deleting snapshot %v: %v", loggerId, snapIdMembers.SnapName, snaperr)
-						return nil, snaperr
-					}
-					klog.Infof("[%s] DeleteSnapshot - successfully deleted snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+				if delSnap {
+					filesetName = snapIdMembers.ConsistencyGroup
+					klog.V(4).Infof("[%s] DeleteSnapshot - for advanced storageClass we can delete snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+				} else {
+					deleteSnapshot = false
 				}
 			}
+
+			if deleteSnapshot {
+				klog.Infof("[%s] DeleteSnapshot - deleting snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+				snaperr := conn.DeleteSnapshot(ctx, filesystemName, filesetName, snapIdMembers.SnapName)
+				if snaperr != nil {
+					klog.Errorf("[%s] DeleteSnapshot - error deleting snapshot %v: %v", loggerId, snapIdMembers.SnapName, snaperr)
+					return nil, snaperr
+				}
+				klog.Infof("[%s] DeleteSnapshot - successfully deleted snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+			}
+			
 		}
 	}
 
 	return &csi.DeleteSnapshotResponse{}, nil
 }
 
-func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, path, filesystemName string, metaSnap string, conn connectors.SpectrumScaleConnector) bool{
+func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, path, filesystemName string, metaSnap string, conn connectors.SpectrumScaleConnector) (bool,error) {
 	loggerId := utils.GetLoggerId(ctx)	
 	dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, path)
 	if err != nil {
 		klog.Errorf("[%s] unable to check if directory path [%v] exists in filesystem [%v]. Error : %v", loggerId, path, filesystemName, err)
-		return true
+		return true, err
 	}
 
 	if dirExists{
@@ -2744,31 +2748,31 @@ func (cs *ScaleControllerServer) CheckShallowCopyReference(ctx context.Context, 
 			metaSnapPathExists, err = conn.CheckIfFileDirPresent(ctx, filesystemName, metaSnapPath)
 			if err != nil {
 				klog.Errorf("[%s] unable to check if metaSnap directory path [%v] exists in filesystem [%v]. Error : %v", loggerId, path, filesystemName, err)
-				return true
+				return true, err
 			}
 		}
 
 		statInfo,err := conn.StatDirectory(ctx, filesystemName, path)
 		if err != nil{
 			klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, filesystemName, path, err)
-			return true
+			return true, err
 		}else{
 			nlink,err := parseStatDirInfo(statInfo)
 			if err != nil{
 				klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, filesystemName, path)
-				return true
+				return true, err
 			}
 			if nlink == 2{
-				return false
+				return false, nil
 			}
 			if metaSnapPathExists && nlink == 3{
-				return false
+				return false, nil
 			}
 		}
 	}else{
-		return false
+		return false, nil
 	}
-	return true
+	return true, err
 }
 
 func (cs *ScaleControllerServer) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
