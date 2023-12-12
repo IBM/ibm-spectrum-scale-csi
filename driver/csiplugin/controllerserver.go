@@ -152,6 +152,10 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 		}
 	}
 
+	if isPvcFromSnap{
+		volumeType = FILE_SHALLOWCOPY_VOLUME
+	}
+
 	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, consistencyGroup, filesetName, path)
 	return volID, nil
 }
@@ -1874,18 +1878,20 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	relPath = strings.Trim(relPath, "!/")
 	isPvcFromSnapshot := false
 	var shallowCopyRefPath string
-    	if relPath != "" && strings.Contains(relPath, ".snapshots"){
-        	volPath := strings.Split(relPath, "/")
-        	if len(volPath) > 2{
-            		if volPath[1] == ".snapshots"{
-                		isPvcFromSnapshot = true
-            		}
-        	}
+	if volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME{
+    		if relPath != "" && strings.Contains(relPath, ".snapshots"){
+        		volPath := strings.Split(relPath, "/")
+        		if len(volPath) > 2{
+            			if volPath[1] == ".snapshots"{
+                			isPvcFromSnapshot = true
+            			}
+        		}
 
-		if isPvcFromSnapshot{
-			shallowCopyRefPath = fmt.Sprintf("%s/%s",volPath[0],volPath[2])		
+			if isPvcFromSnapshot{
+				shallowCopyRefPath = fmt.Sprintf("%s/%s",volPath[0],volPath[2])		
+			}
 		}
-    	}
+	}
 
 	if volumeIdMembers.IsFilesetBased {
 		var FilesetName string
