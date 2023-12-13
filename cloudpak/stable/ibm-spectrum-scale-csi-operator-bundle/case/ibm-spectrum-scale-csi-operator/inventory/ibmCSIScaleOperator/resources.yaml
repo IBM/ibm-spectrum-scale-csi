@@ -9,7 +9,7 @@ resources:
     - metadata:
         name: ibm_spectrum_scale_csi_driver
       image: cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver
-      tag: v2.10.0
+      tag: v2.11.0
       digest: sha256:57b4ee494ca48342d1ffaf22a166286202b0406b88316e4dcbe87212df6ca8f0
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
@@ -20,19 +20,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.10.0-amd64
+        tag: v2.11.0-amd64
       - digest: sha256:4bcdd8eccc13908d8b6c9c21b4ffed63177c53b410d7d50a2bd036ff8398ef46
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.10.0-ppc64le
+        tag: v2.11.0-ppc64le
       - digest: sha256:17d0601ca92224d38abc78a6a5771827ef130a49379270e536b3ca26cc9fc89f
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.10.0-s390x
+        tag: v2.11.0-s390x
 
     - metadata:
         name: csi_snapshotter
@@ -149,7 +149,7 @@ resources:
     - metadata:
         name: livenessprobe
       image: cp/spectrum/scale/csi/livenessprobe
-      tag: v2.10.0
+      tag: v2.11.0
       digest: sha256:4dc0b87ccd69f9865b89234d8555d3a614ab0a16ed94a3016ffd27f8106132ce
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
@@ -160,19 +160,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.10.0-amd64
+        tag: v2.11.0-amd64
       - digest: sha256:91c7227cd0acbec49499e537927ef0743880d802879114cb89228b195e9e272b
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.10.0-ppc64le
+        tag: v2.11.0-ppc64le
       - digest: sha256:e91a93baedc80920bd690e8554a613937d5b22c4b717625bd9982607e280804e
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.10.0-s390x
+        tag: v2.11.0-s390x
 
     - metadata:
         name: csi_resizer
