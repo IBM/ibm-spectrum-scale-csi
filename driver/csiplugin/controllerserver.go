@@ -50,6 +50,8 @@ const (
 
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
+
+	snapshotReferencePath = ".csi" // will be pathToPrimaryFilesystem/.csi
 )
 
 type ScaleControllerServer struct {
@@ -2104,7 +2106,7 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 
 func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) error {
 	loggerId := utils.GetLoggerId(ctx)
-	path := fmt.Sprintf("%s/%s/%s", indepFileset, cgSnapName, metaSnapName)
+	path := fmt.Sprintf("%s/%s/%s/%s", snapshotReferencePath, indepFileset, cgSnapName, metaSnapName)
 	klog.Infof("[%s] MakeSnapMetadataDir - creating directory [%s] for fileset: [%s:%s]", loggerId, path, filesystemName, filesetName)
 	err := conn.MakeDirectory(ctx, filesystemName, path, "0", "0")
 	if err != nil {
@@ -2413,8 +2415,23 @@ func (cs *ScaleControllerServer) isExistingSnapUseableForVol(ctx context.Context
 
 func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
-	err := conn.DeleteDirectory(ctx, filesystemName, pathDir, false)
+
+	// Check if the snapshot was created earlier at fileset level i.e. mountfs/cg-ns/snapshotpath
+	pathDir := fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+
+	snapExistsUnderFileset, err := conn.CheckIfFileDirPresent(ctx, filesystemName, pathDir)
+	if err != nil {
+		return false, status.Error(codes.Internal, fmt.Sprintf("unable to check if snapMetadir created under filset [%s] at path [%s] exists or not. Error [%v]", filesystemName, pathDir, err))
+	}
+	klog.Infof("[%s] DelSnapMetadataDir - snapExistsUnderFileset=%s", loggerId, snapExistsUnderFileset)
+
+	if snapExistsUnderFileset {
+		pathDir = fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
+	} else {
+		pathDir = fmt.Sprintf("%s/%s/%s/%s", snapshotReferencePath, consistencyGroup, cgSnapName, metaSnapName)
+	}
+	klog.Infof("[%s] DelSnapMetadataDir - deleting directory [%s] for fileset: [%s:%s]", loggerId, pathDir, filesystemName, filesetName)
+	err = conn.DeleteDirectory(ctx, filesystemName, pathDir, false)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
 			strings.Contains(err.Error(), "does not exist")) { // directory is already deleted
@@ -2423,7 +2440,11 @@ func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn co
 	}
 
 	// Now check if consistency group snapshot metadata directory can be deleted
-	pathDir = fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	if snapExistsUnderFileset {
+		pathDir = fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	} else {
+		pathDir = fmt.Sprintf("%s/%s/%s", snapshotReferencePath, consistencyGroup, cgSnapName)
+	}
 	statInfo, err := conn.StatDirectory(ctx, filesystemName, pathDir)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
@@ -2482,7 +2503,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.De
 		klog.Errorf("[%s] Invalid snapshot ID %s [%v]", loggerId, snapID, err)
 		return nil, err
 	}
-
+	klog.Infof("[%s] DeleteSnapshot - snapIdMembers : [%v]", loggerId, snapIdMembers)
 	conn, err := cs.getConnFromClusterID(ctx, snapIdMembers.ClusterId)
 	if err != nil {
 		return nil, err
