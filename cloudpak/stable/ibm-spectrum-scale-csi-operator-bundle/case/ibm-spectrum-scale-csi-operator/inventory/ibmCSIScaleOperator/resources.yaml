@@ -149,7 +149,7 @@ resources:
     - metadata:
         name: livenessprobe
       image: cp/spectrum/scale/csi/livenessprobe
-      tag: v2.11.0
+      tag: v2.10.0
       digest: sha256:4dc0b87ccd69f9865b89234d8555d3a614ab0a16ed94a3016ffd27f8106132ce
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
