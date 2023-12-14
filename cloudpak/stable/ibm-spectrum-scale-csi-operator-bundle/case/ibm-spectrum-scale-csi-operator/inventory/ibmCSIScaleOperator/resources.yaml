@@ -37,114 +37,114 @@ resources:
     - metadata:
         name: csi_snapshotter
       image: cp/spectrum/scale/csi/csi-snapshotter
-      tag: v6.3.1
-      digest: sha256:65c5ffde8fe6f68a2f19310cfd789befe7bdd16eedda219d9a0024f8fc68b802
+      tag: v6.3.2
+      digest: sha256:4c5a1b57e685b2631909b958487f65af7746361346fcd82a8635bea3ef14509d
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:534197f2c56be3601719e2d8e1154ff0b76583333c65798df87f18e634ffa817
+      - digest: sha256:651fa888ed4bdd708d4ec430d958db8fa870f4156f2f406da659878729d799db
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v6.3.1-amd64
-      - digest: sha256:7bd26e89e3276baa3b6061eb72ebe11e5d57129d5381dc21739b49e8a421bc58
+        tag: v6.3.2-amd64
+      - digest: sha256:871810ea2129cd078fa3c30a94dfed6bca831eb0ed54ae3cce90c3089f81d294
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v6.3.1-ppc64le
-      - digest: sha256:8c4818b732ad0206f4fefbc38c7a728e13e31f18070e427050608fda72fd8a9e
+        tag: v6.3.2-ppc64le
+      - digest: sha256:1d85fddb18d3abbb025446379ff2d373192de88ec38819bf46648ae4b2597cf3
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v6.3.1-s390x
+        tag: v6.3.2-s390x
     
     - metadata:
         name: csi_provisioner
       image: cp/spectrum/scale/csi/csi-provisioner 
-      tag: v3.6.1
-      digest: sha256:91c874488fbca39c6787a19b3e686836c29abcf069304064dba6bb9c9befb6e1
+      tag: v3.6.2
+      digest: sha256:49b94f975603d85a1820b72b1188e5b351d122011b3e5351f98c49d72719aa78
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:67020d237a372d713e8dc0f55348960b816a67ee3a5be4ca87e51794bad4c2be
+      - digest: sha256:ee68f59f5c183abee8c866cb2ab3c40d0b90c89c8526b59a709fbf3e16a782ca
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v3.6.1-amd64
-      - digest: sha256:6d0b55934c07e046a82d3d85e62addf66a857cd55a22561573124cb3e31af4b6
+        tag: v3.6.2-amd64
+      - digest: sha256:b785d3350ff71c5512e94eaa63bf7a954a7e512109cb28d88e0a8676bfa4b410
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v3.6.1-ppc64le
-      - digest: sha256:2eab46e23760055ef973253af9d5ad67218ed97207f865371bfc6171872008ca
+        tag: v3.6.2-ppc64le
+      - digest: sha256:02ab0741a4802242e97cec1a3bae76c2d4f2edbd0c4137fefbba0f02d541ea4f
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v3.6.1-s390x
+        tag: v3.6.2-s390x
 
     - metadata:
         name: csi_attacher
       image: cp/spectrum/scale/csi/csi-attacher
-      tag: v4.4.1
-      digest: sha256:033c2e5d3a190686c32298e0ae972a79aff903958db204a084c503356e66967d
+      tag: v4.4.2
+      digest: sha256:11b955fe4da278aa0e8ca9d6fd70758f2aec4b0c1e23168c665ca345260f1882
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:77c19b78d53ca2e1c2ee908fb67ee3873634d770e63c5d6bff96305d4d6487c1
+      - digest: sha256:304e8bfd8e59f2ef77b950aa4e812866b29b74412ed481f92645d898757db1e0
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v4.4.1-amd64
-      - digest: sha256:e521a4c3b5cc22ec67c70268d25f4a569f672e3e524fae54fb6b00be470fd396
+        tag: v4.4.2-amd64
+      - digest: sha256:2c9fe3f4362583d0f0b2b65d3119f43287157b17dc3f0857f52d88de1de73391
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v4.4.1-ppc64le
-      - digest: sha256:630c6619e966e6260256d578ca6cdeb521c6061df56890ef7a630bf9207a72fc
+        tag: v4.4.2-ppc64le
+      - digest: sha256:d62a1d333d5aabdc2707bf1f1baacd9b4156d12f583bfbe38bd7df47be1bd49e
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v4.4.1-s390x
+        tag: v4.4.2-s390x
 
     - metadata:
         name: csi_node_driver_registrar
       image: cp/spectrum/scale/csi/csi-node-driver-registrar 
-      tag: v2.9.0
-      digest: sha256:cd21e19cd8bbd5bc56f1b4f1398a436e7897da2995d6d036c9729be3f4e456e6
+      tag: v2.9.2
+      digest: sha256:a18e989a93722e43885120e90bc1d0da0740fcbf44bc10403572b368b9800606
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:4da2674bae016b1011c2042cb719cffd9a80d34f3cf933c705b425054f86cea9
+      - digest: sha256:af21613822081eb20021fc8725f9803195b1e0d0c30330b84d4178b560a67481
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v2.9.0-amd64
-      - digest: sha256:4502f547850084461d009b6408bfa79c0420719c87d889ae5e1e4b3965ccb80f
+        tag: v2.9.2-amd64
+      - digest: sha256:c66354e9d76c5d300cdb316dff7e7abc6ac38a22adaecea8a70fc9daf40ae915
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.9.0-ppc64le
-      - digest: sha256:b83a204a7111a3f42193cf8e9ef2ca6b7951829b5f62ccc61bb07252c1827955
+        tag: v2.9.2-ppc64le
+      - digest: sha256:110ee366ad92db4ffa1ec50a0abac0979d43c1df54018bcb8fafa636cc1e9ae0
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.9.0-s390x
+        tag: v2.9.2-s390x
 
     - metadata:
         name: livenessprobe
@@ -177,30 +177,30 @@ resources:
     - metadata:
         name: csi_resizer
       image: cp/spectrum/scale/csi/csi-resizer
-      tag: v1.9.1
-      digest: sha256:835f2deb8c024733d72ccf87a80d7cc2f3ce87b8235b08e43b2b1e93da03cef3
+      tag: v1.9.2
+      digest: sha256:e998f22243869416f9860fc6a1fb07d4202eac8846defc1b85ebd015c1207605
       mediaType: application/vnd.docker.distribution.manifest.list.v2
       registries:
       - host: cp.icr.io
       manifests:
-      - digest: sha256:ccac502f1585cf0b877a6b12f756cce2be6814d0017ae94d527dd1527276cf57
+      - digest: sha256:8b9354b49c04564d9902e9b1ae6b323ba8f6ecd2d4a8e0bd4870192d1c586bd0
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: amd64
           os: linux
-        tag: v1.9.1-amd64
-      - digest: sha256:704a0592545d8d5385347bbfe7c5dfa77f6cd759ce454a7401cd511ffaae6c95
+        tag: v1.9.2-amd64
+      - digest: sha256:086292de70dff10370d0a97ee7510555a14a38fc8aa604126731ab33fbde4ff7
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v1.9.1-ppc64le
-      - digest: sha256:893816c2cb9a12c8ad2d2f673abd38a48ef2df40b962f586c3104732eefb98a8
+        tag: v1.9.2-ppc64le
+      - digest: sha256:9c1a9abc70dbdf3657a7992246b324b5494a5e49f00454a82919b46d7d4b5e14
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v1.9.1-s390x
+        tag: v1.9.2-s390x
 
     files:
     - mediaType: application/vnd.case.resource.k8s.v1+yaml
