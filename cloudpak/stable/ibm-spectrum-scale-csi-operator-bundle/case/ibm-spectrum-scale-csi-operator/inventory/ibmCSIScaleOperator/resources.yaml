@@ -160,19 +160,19 @@ resources:
         platform:
           architecture: amd64
           os: linux
-        tag: v2.11.0-amd64
+        tag: v2.10.0-amd64
       - digest: sha256:91c7227cd0acbec49499e537927ef0743880d802879114cb89228b195e9e272b
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: ppc64le
           os: linux
-        tag: v2.11.0-ppc64le
+        tag: v2.10.0-ppc64le
       - digest: sha256:e91a93baedc80920bd690e8554a613937d5b22c4b717625bd9982607e280804e
         mediaType: application/vnd.docker.distribution.manifest.v2
         platform:
           architecture: s390x
           os: linux
-        tag: v2.11.0-s390x
+        tag: v2.10.0-s390x
 
     - metadata:
         name: csi_resizer
