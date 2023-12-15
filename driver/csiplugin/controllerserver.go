@@ -1543,7 +1543,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		return isValidShallowCopyVolume, nil
 	}
 
-	return false, nil
+	return true, nil
 }
 
 
