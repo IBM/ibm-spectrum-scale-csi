@@ -759,7 +759,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 
-	if isValidPvcFromSnapshot {
+	if isShallowCopyVolume {
 		err = cs.createSnapshotDir(ctx, &snapIdMembers, scaleVol, isNewVolumeType)
 		if err != nil {
 			return nil, err
@@ -800,7 +800,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
         	return nil, err
         }
 
-	if !isValidPvcFromSnapshot {
+	if !isShallowCopyVolume {
 		if !isNewVolumeType {
 			// Create symbolic link if not present
 			err = cs.createSoftlink(ctx, scaleVol, targetPath)
@@ -816,12 +816,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
                 }
 	}
 
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isNewVolumeType, isValidPvcFromSnapshot, targetPath)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isNewVolumeType, isShallowCopyVolume, targetPath)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
 
-	if isValidPvcFromSnapshot {
+	if isShallowCopyVolume {
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      volID,
@@ -1999,10 +1999,11 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 	isShallowCopyRefPathDeleted := false
 	err := conn.DeleteDirectory(ctx, FilesystemName, shallowCopyRefCompletePath, false)
 	if err != nil {
-		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
+		if (strings.Contains(err.Error(), "EFSSG0264C") ||
 			strings.Contains(err.Error(), "does not exist")) { // directory is already deleted
 			isShallowCopyRefPathDeleted = true
-			return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))			
+		}else{
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))
 		}
 	}else{
 		isShallowCopyRefPathDeleted = true
