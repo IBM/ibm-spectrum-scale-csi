@@ -810,11 +810,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}else{
 		if isNewVolumeType{
-                        targetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",scaleVol.PrimaryFSMount,snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName,snapIdMembers.Path)
+                        targetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",scaleVol.PrimaryFSMount,snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName,snapIdMembers.FsetName)
                 }else{
                         targetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",scaleVol.PrimaryFSMount,snapIdMembers.FsetName,snapIdMembers.SnapName,snapIdMembers.Path)
                 }
 	}
+
 
 	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isNewVolumeType, isShallowCopyVolume, targetPath)
 	if volIDErr != nil {
