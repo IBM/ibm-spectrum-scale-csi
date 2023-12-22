@@ -728,6 +728,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 
 		if !isValidPvcFromSnapshot{
+			klog.Errorf("[%s] volume:[%v] - Error in validating shallow copy volume", loggerId, volName)
 			return nil, status.Error(codes.Internal, "CreateVolume ValidateShallowCopyVolume failed")
 		}
 		
