@@ -1556,30 +1556,46 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 
 func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume) bool {
 	loggerId := utils.GetLoggerId(ctx)
-	if newvolume.StorageClassType != sourcesnapshot.StorageClassType{
-		if newvolume.VolBackendFs != sourcesnapshot.FsName {
-			klog.Errorf("[%s] validation of shallow copy volume [%s] failed as filesystem [%s] is different from source pvc [%s] failed ", loggerId, newvolume.VolName, 
-			newvolume.VolBackendFs, sourcesnapshot.SnapName)
+
+	if !newvolume.IsFilesetBased {
+		klog.Errorf("[%s] shallow copy volume as directory based volume is not supported", loggerId)
+		return false
+	}
+
+	if newvolume.ClusterId != sourcesnapshot.ClusterId {
+		klog.Errorf("[%s] shallow copy volume across clusters is not supported", loggerId)
+		return false
+	}
+
+	if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
+		if newvolume.StorageClassType != sourcesnapshot.StorageClassType{
+			klog.Errorf("[%s] validation of shallow copy volume [%s] failed as storage class type is different from source pvc [%s]", loggerId, newvolume.VolName, sourcesnapshot.SnapName)
 			return false
-		} 
-				
-		if sourcesnapshot.StorageClassType == STORAGECLASS_CLASSIC {
-			isSamefsetType := false
-			if newvolume.FilesetType == independentFileset {
-				if sourcesnapshot.VolType == FILE_INDEPENDENTFILESET_VOLUME{
-					isSamefsetType = true
-				}
-			}else if newvolume.FilesetType == dependentFileset{
-				if sourcesnapshot.VolType == FILE_DEPENDENTFILESET_VOLUME{
-					isSamefsetType = true
-				}
-			}
-			
-			if !isSamefsetType {
-				klog.Errorf("[%s] Filesettype is not same for both source snapshot and new volume", loggerId)
+		}else{
+			if newvolume.VolBackendFs != sourcesnapshot.FsName {
+				klog.Errorf("[%s] validation of shallow copy volume [%s] failed as filesystem [%s] is different from source pvc [%s] failed ", loggerId, newvolume.VolName, 
+				newvolume.VolBackendFs, sourcesnapshot.SnapName)
 				return false
+			}else{
+				if sourcesnapshot.StorageClassType == STORAGECLASS_CLASSIC {
+                        		isSamefsetType := false
+                        		if newvolume.FilesetType == independentFileset {
+                                		if sourcesnapshot.VolType == FILE_INDEPENDENTFILESET_VOLUME{
+                                        		isSamefsetType = true
+                                		}
+                       	 		}else if newvolume.FilesetType == dependentFileset{
+                                		if sourcesnapshot.VolType == FILE_DEPENDENTFILESET_VOLUME{
+                                        		isSamefsetType = true
+                                		}
+                        		}
+
+                        		if !isSamefsetType {
+                                		klog.Errorf("[%s] Filesettype is not same for both source snapshot and new volume", loggerId)
+                                		return false
+                        		}
+                		}
 			}
-		}
+		} 
 	}
 	return true
 }
