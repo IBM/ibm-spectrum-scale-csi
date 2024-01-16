@@ -106,10 +106,45 @@ function collect_csi_pod_logs()
   cmd=$2
   since=$3
   previous=$4
+  specific_logs=$5
   csi_pod_logs=${logdir}/namespaces/${ns}/pod/
   klog="$cmd logs --namespace $ns"
 
-  for opPodName in $($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}'); do
+  if [[ $specific_logs -eq 1 ]]
+  then
+    nodes=""
+    sidecar_pods=""
+    # Find nodes on which sidecar pods are running
+    for pod in $($cmd get pods --no-headers --namespace "$ns" -l type=sidecar -o jsonpath='{range .items[*]}{.metadata.name},{.spec.nodeName}{"\n"}{end}' ); do
+      sidecar_pods+="$(echo $pod | cut -d ',' -f 1) "
+      node=$(echo $pod | cut -d ',' -f 2)
+      if !(echo "$nodes" | grep -q -E "$node"); then 
+        nodes+="$node "
+      fi
+      echo $nodes
+    done 
+
+    # Find driver pods scheduled on nodes on which sidecar pods are running
+    driver_pods=""
+    for pod in $($cmd get pods --no-headers --namespace "$ns" -l app=ibm-spectrum-scale-csi -o jsonpath='{range .items[*]}{.metadata.name},{.spec.nodeName}{"\n"}{end}' ); do
+      node_name=$(echo "$pod" | cut -d "," -f 2)
+      if (echo "$nodes" | grep -q -E "$node_name"); then
+        driver_pod=$(echo "$pod" | cut -d "," -f 1)
+        driver_pods+="$driver_pod " 
+      fi
+      echo $driver_pods
+    done 
+
+    # Get operator pod name 
+    operator_pod=$($cmd get pods --no-headers --namespace "$ns" -l name=ibm-spectrum-scale-csi-operator | awk '{print $1}')
+
+    # kubectl logs on specific csi driver, sidecar and operator pods
+    opPodNames="$sidecar_pods $driver_pods $operator_pod"
+  else
+    # kubectl logs on all csi driver and operator pods
+    opPodNames=$($cmd get pods --no-headers --namespace "$ns" -l app.kubernetes.io/name=ibm-spectrum-scale-csi-operator | awk '{print $1}')
+  fi
+  for opPodName in $opPodNames; do
     echo "Gather data for pod/${opPodName}"
     for containerName in $($cmd get pods "$opPodName" --namespace "$ns" -o jsonpath="{.spec.containers[*].name}"); do
       mkdir -p "$csi_pod_logs"/"${opPodName}"/"${containerName}"
@@ -162,8 +197,9 @@ function get_kind()
 function help()
 {
    # Display Help
-   echo "USAGE: storage-scale-driver-snap.sh [-n|o|p|s|v|h]"
+   echo "USAGE: storage-scale-driver-snap.sh [-l|n|o|p|s|v|h]"
    echo "options:"
+   echo "     l     Collect logs only from driver pods which are running along with sidecars"
    echo "     n     CSI driver plugin namespace"
    echo "     o     output-dir"
    echo "     p     previous[=True]: If False, does not collect the logs for the previous instance of the container in a pod"
@@ -189,8 +225,11 @@ then
   fi
 fi
 
-while getopts 'n:o:p:s:vh' OPTION; do
+while getopts 'ln:o:p:s:vh' OPTION; do
   case "$OPTION" in
+    l)
+      specific_logs=1
+      ;;
     n)
       ns="$OPTARG"
       ;;
@@ -260,7 +299,7 @@ echo "The log files will be saved in the folder [$logdir]"
 get_version_images=${logdir}/version
 find_versions $ns $cmd >> "$get_version_images" 2>&1 || :
 get_kind $ns $cmd
-collect_csi_pod_logs  $ns $cmd $since $previous
+collect_csi_pod_logs  $ns $cmd $since $previous $specific_logs
 
 get_clusterinfo_cmd="$cmd cluster-info dump --namespaces kube-system --output-directory=$logdir"
 echo "$get_clusterinfo_cmd"
