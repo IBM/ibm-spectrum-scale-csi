@@ -35,7 +35,7 @@ import (
 
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
-const errContextDeadlineExceeded string = "context deadline exceeded" 
+const errContextDeadlineExceeded string = "context deadline exceeded"
 
 var GetLoggerId = utils.GetLoggerId
 
@@ -1039,7 +1039,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 
 	activeEndpointFound := false
 	if err != nil {
-		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded){
+		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded) {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
