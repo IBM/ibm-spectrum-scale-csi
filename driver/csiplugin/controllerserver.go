@@ -328,9 +328,13 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	// check if quota is enabled on volume filesystem
 	klog.Infof("[%s] check if quota is enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
 	if scVol.VolSize != 0 {
-		err = scVol.Connector.CheckIfFSQuotaEnabled(ctx, scVol.VolBackendFs)
-		if err != nil {
-			klog.Errorf("[%s] volume:[%v] - quota not enabled for filesystem %v of cluster %v. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
+		/*	err = scVol.Connector.CheckIfFSQuotaEnabled(ctx, scVol.VolBackendFs)
+			if err != nil {
+				klog.Errorf("[%s] volume:[%v] - quota not enabled for filesystem %v of cluster %v. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("quota not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+			}*/
+		klog.Infof("[%s] quota status on filesystem [%v] is [%t]", loggerId, scVol.VolBackendFs, fsDetails.Quota.FilesetdfEnabled)
+		if !fsDetails.Quota.FilesetdfEnabled {
 			return "", status.Error(codes.Internal, fmt.Sprintf("quota not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
 		}
 	}
@@ -706,7 +710,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 	assembledScaleversion, err := cs.assembledScaleVersion(ctx, scaleVol.Connector)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("the  IBM Storage Scale version check for permissions failed with error %s", err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("IBM Storage Scale version check for permissions failed with error %s", err))
 	}
 	if isNewVolumeType {
 		if err := cs.checkCGSupport(ctx, scaleVol.Connector, assembledScaleversion); err != nil {
@@ -1376,10 +1380,7 @@ func (cs *ScaleControllerServer) assembledScaleVersion(ctx context.Context, conn
 }
 
 func checkMinScaleVersionValid(assembledScaleVer string, version string) bool {
-	if assembledScaleVer < version {
-		return false
-	}
-	return true
+	return assembledScaleVer >= version
 }
 
 func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version string) bool {
