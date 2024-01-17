@@ -134,7 +134,6 @@ function collect_csi_pod_logs()
         driver_pod=$(echo "$pod" | cut -d "," -f 1)
         driver_pods+="$driver_pod " 
       fi
-      echo $driver_pods
     done 
 
     # Get operator pod name 
