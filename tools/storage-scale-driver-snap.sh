@@ -115,7 +115,7 @@ function collect_csi_pod_logs()
     nodes=""
     sidecar_pods=""
     # Find nodes on which sidecar pods are running
-    for pod in $($cmd get pods --no-headers --namespace "$ns" -l app=ibm-spectrum-scale-csi-sidecar -o jsonpath='{range .items[*]}{.metadata.name},{.spec.nodeName}{"\n"}{end}' ); do
+    for pod in $($cmd get pods --no-headers --namespace "$ns" -l type=ibm-spectrum-scale-csi-sidecar -o jsonpath='{range .items[*]}{.metadata.name},{.spec.nodeName}{"\n"}{end}' ); do
       sidecar_pods+="$(echo $pod | cut -d ',' -f 1) "
       node=$(echo $pod | cut -d ',' -f 2)
       if !(echo "$nodes" | grep -q -E "$node"); then 

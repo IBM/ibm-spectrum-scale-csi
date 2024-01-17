@@ -40,6 +40,8 @@ const (
 	LabelRelease = "release"
 	// LabelApp is the name of the CSI application.
 	LabelApp = "app"
+	// LabelType is the type of CSI pod 
+	LabelType = "type"
 )
 
 // CSI resource label values
@@ -54,6 +56,8 @@ const (
 	ResourceInstance = "ibm-spectrum-scale-csi-operator"
 	// ResourceManagedBy is the controller/user who created this resource.
 	ResourceManagedBy = "ibm-spectrum-scale-csi-operator"
+	// Type specifies whether it is a sidecar pod 
+	Type = "ibm-spectrum-scale-csi-sidecar"
 )
 
 // Add a field here if it never changes, if it changes over time, put it to settings.go
