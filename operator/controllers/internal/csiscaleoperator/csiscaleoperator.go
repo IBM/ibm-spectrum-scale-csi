@@ -106,17 +106,8 @@ func (c *CSIScaleOperator) GetSelectorLabels(appName string) labels.Set {
 	}
 }
 
-func (c *CSIScaleOperator) GetSidecarSelectorLabels(appName string) labels.Set {
-	return labels.Set{
-		// "app.kubernetes.io/component": component,
-		config.LabelProduct: config.Product,
-		config.LabelApp:     appName,
-		config.LabelType:    config.Type,
-	}
-}
-
 func (c *CSIScaleOperator) GetCSIControllerSelectorLabels(appName string) labels.Set {
-	return c.GetSidecarSelectorLabels(appName)
+	return c.GetSelectorLabels(appName)
 }
 
 func (c *CSIScaleOperator) GetCSINodeSelectorLabels(appName string) labels.Set {
