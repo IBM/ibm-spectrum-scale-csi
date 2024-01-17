@@ -115,13 +115,15 @@ function collect_csi_pod_logs()
     nodes=""
     sidecar_pods=""
     # Find nodes on which sidecar pods are running
-    for pod in $($cmd get pods --no-headers --namespace "$ns" -l app=ibm-spectrum-scale-csi-sidecar -o jsonpath='{range .items[*]}{.metadata.name},{.spec.nodeName}{"\n"}{end}' ); do
-      sidecar_pods+="$(echo $pod | cut -d ',' -f 1) "
-      node=$(echo $pod | cut -d ',' -f 2)
-      if !(echo "$nodes" | grep -q -E "$node"); then 
-        nodes+="$node "
-      fi
-      echo $nodes
+    sidecar_labels="attacher provisioner resizer snapshotter"
+    for label in $sidecar_labels; do
+      for pod in $($cmd get pods --no-headers --namespace "$ns" -l app=ibm-spectrum-scale-csi-"$label" -o jsonpath='{range .items[*]}{.metadata.name},{.spec.nodeName}{"\n"}{end}' ); do
+        sidecar_pods+="$(echo $pod | cut -d ',' -f 1) "
+        node=$(echo $pod | cut -d ',' -f 2)
+        if !(echo "$nodes" | grep -q -E "$node"); then 
+          nodes+="$node "
+        fi
+      done
     done 
 
     # Find driver pods scheduled on nodes on which sidecar pods are running
@@ -156,7 +158,7 @@ function collect_csi_pod_logs()
       fi
       if [[ $previous != "False" ]]
       then
-        echo "Gather data for pod/${opPodName} --previous "
+        echo "Gather data for pod/${opPodName} for container ${containerName} --previous "
         $klog pod/"${opPodName}" -c ${containerName} > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}"-previous.log 2>&1 || :
       fi
     done
