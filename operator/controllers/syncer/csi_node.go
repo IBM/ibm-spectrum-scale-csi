@@ -21,6 +21,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -96,11 +97,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	UUID = CGPrefix
 	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
 	hostNetwork := envVars[config.HostNetworkKey]
+	cpuLimits := envVars[config.DriverCPULimits]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
 	for k := range envVars {
-		if !(k == config.DaemonSetUpgradeMaxUnavailableKey || k == config.HostNetworkKey){
+		if !(k == config.DaemonSetUpgradeMaxUnavailableKey || k == config.HostNetworkKey) {
 			keys = append(keys, k)
 		}
 	}
@@ -115,12 +117,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -169,13 +171,13 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		Type:          strategyType,
 	}
 	out.Spec.UpdateStrategy = strategy
-	if hostNetwork == "ENABLED"{
-                out.Spec.Template.Spec.HostNetwork = true
-        }else{
+	if hostNetwork == "ENABLED" {
+		out.Spec.Template.Spec.HostNetwork = true
+	} else {
 		out.Spec.Template.Spec.HostNetwork = false
 	}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, cpuLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -185,10 +187,10 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpuLimits string) corev1.PodSpec {
 
 	pod := corev1.PodSpec{
-		Containers:         s.ensureContainersSpec(),
+		Containers:         s.ensureContainersSpec(cpuLimits),
 		Volumes:            s.ensureVolumes(),
 		HostIPC:            false,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
@@ -204,7 +206,7 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference) cor
 // ensureContainersSpec returns array of containers which has the desired
 // fields for all 3 containers driver plugin, driver registrar and
 // liveness probe.
-func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
+func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string) []corev1.Container {
 
 	logger := csiLog.WithName("ensureContainersSpec")
 
@@ -218,7 +220,7 @@ func (s *csiNodeSyncer) ensureContainersSpec() []corev1.Container {
 		},
 	)
 
-	nodePlugin.Resources = ensureDriverResources()
+	nodePlugin.Resources = ensureDriverResources(cpuLimits)
 
 	//nodePlugin.Ports = ensurePorts(corev1.ContainerPort{
 	//	Name:          nodeContainerHealthPortName,

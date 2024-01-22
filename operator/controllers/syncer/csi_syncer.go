@@ -21,6 +21,12 @@ import (
 	"fmt"
 	"os"
 
+	"reflect"
+
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/k8sutil"
 	"github.com/imdario/mergo"
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
@@ -30,11 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"reflect"
-	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
-	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
-	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/boolptr"
-	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/util/k8sutil"
 )
 
 const (
@@ -50,7 +51,6 @@ const (
 	EnvVarForCSIProvisionerImage = "CSI_PROVISIONER_IMAGE"
 	EnvVarForCSISnapshotterImage = "CSI_SNAPSHOTTER_IMAGE"
 	EnvVarForCSIResizerImage     = "CSI_RESIZER_IMAGE"
-
 )
 
 var csiLog = log.Log.WithName("csiscaleoperator_syncer")
@@ -659,8 +659,8 @@ func ensureSidecarResources() corev1.ResourceRequirements {
 }
 
 // Helper function that calls ensureResources method with the resources needed for driver containers.
-func ensureDriverResources() corev1.ResourceRequirements {
-	return ensureResources("20m", "600m", "20Mi", "600Mi", "1Gi", "10Gi")
+func ensureDriverResources(cpuLimits string) corev1.ResourceRequirements {
+	return ensureResources("20m", cpuLimits, "20Mi", "600Mi", "1Gi", "10Gi")
 }
 
 // ensureResources generates k8s resourceRequirements object.
@@ -878,16 +878,15 @@ func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Tolerati
 	// sideCarPods need to be able to run on control plane
 	controlPlaneToleration := corev1.Toleration{
 		Key:      config.LabelNodeControlPlane,
-                Operator: corev1.TolerationOpExists,
-                Effect:   corev1.TaintEffectNoSchedule,
-        }
+		Operator: corev1.TolerationOpExists,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
 
-	// noSchedule and noExecute Toleration need to be removed for sidecar 
+	// noSchedule and noExecute Toleration need to be removed for sidecar
 	// as this holds good only for daemon pods
 	noScheduleToleration := corev1.Toleration{
 		Effect:   corev1.TaintEffectNoSchedule,
 		Operator: corev1.TolerationOpExists,
-	
 	}
 
 	noExecuteToleration := corev1.Toleration{

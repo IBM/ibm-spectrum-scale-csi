@@ -145,6 +145,7 @@ const (
 
 	// Optional ConfigMap keys
 	DaemonSetUpgradeMaxUnavailableKey = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	DriverCPULimits                   = "DRIVER_CPU_LIMITS"
 	EnvLogLevelKey                    = "LOGLEVEL"
 	EnvPersistentLogKey               = "PERSISTENT_LOG"
 	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
@@ -160,6 +161,7 @@ const (
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
 
 	// Optional ConfigMap default values
+	DriverCPULimitsDefaultValue          = "600m"
 	EnvLogLevelDefaultValue              = "INFO"
 	EnvPersistentLogDefaultValue         = "DISABLED"
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
@@ -168,7 +170,8 @@ const (
 )
 
 var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,
-	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey, EnvDiscoverCGFilesetKeyPrefixed, HostNetworkKey}
+	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey,
+	EnvDiscoverCGFilesetKeyPrefixed, HostNetworkKey, DriverCPULimits}
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
