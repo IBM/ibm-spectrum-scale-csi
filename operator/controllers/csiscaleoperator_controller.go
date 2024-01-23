@@ -2391,7 +2391,7 @@ func validateHostNetworkValue(inputSlice []string, key, value string, envMap, in
 	}
 }
 
-// Input can be either range of (0.1 - 1.0) OR (1m - 1000m)
+// Input can be either range of (0.001 - 1.0) OR (1m - 1000m)
 func validateCPULimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateCPULimitsValue")
 	logger.Info("Validating CPU limits Value input ", "cpuLimits", value)
@@ -2403,16 +2403,16 @@ func validateCPULimitsValue(key string, value string, data map[string]string, in
 			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.1 to 1.0) ]")
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.001 to 1.0) ]")
 			invalidEnvValue[key] = value
 		}
 	} else {
 		intFloatValue, err := strconv.ParseFloat(value, 64)
-		if err == nil && (intFloatValue >= 0.1 && intFloatValue <= 1.0) {
+		if err == nil && (intFloatValue >= 0.001 && intFloatValue <= 1.0) {
 			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.1 to 1.0) ]")
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.001 to 1.0) ]")
 			invalidEnvValue[key] = value
 		}
 	}
