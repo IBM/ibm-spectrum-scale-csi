@@ -200,7 +200,7 @@ function help()
    # Display Help
    echo "USAGE: storage-scale-driver-snap.sh [-l|n|o|p|s|v|h]"
    echo "options:"
-   echo "     l     Collect logs only from driver pods which are running along with sidecars"
+   echo "     l     Collect logs from driver pods running on the same node as sidecar pods"
    echo "     n     CSI driver plugin namespace"
    echo "     o     output-dir"
    echo "     p     previous[=True]: If False, does not collect the logs for the previous instance of the container in a pod"
