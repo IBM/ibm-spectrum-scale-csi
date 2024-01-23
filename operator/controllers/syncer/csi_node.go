@@ -99,6 +99,8 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	hostNetwork := envVars[config.HostNetworkKey]
 	cpuLimits := envVars[config.DriverCPULimits]
 	memoryLimits := envVars[config.DriverMemoryLimits]
+	sidecarCPULimits := envVars[config.SidecarCPULimits]
+	sidecarMemoryLimits := envVars[config.SidecarMemoryLimits]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
@@ -118,12 +120,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits, memoryLimits)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string, memoryLimits string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -178,7 +180,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		out.Spec.Template.Spec.HostNetwork = false
 	}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -188,10 +190,10 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) corev1.PodSpec {
 
 	pod := corev1.PodSpec{
-		Containers:         s.ensureContainersSpec(cpuLimits, memoryLimits),
+		Containers:         s.ensureContainersSpec(cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits),
 		Volumes:            s.ensureVolumes(),
 		HostIPC:            false,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
@@ -207,7 +209,7 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpu
 // ensureContainersSpec returns array of containers which has the desired
 // fields for all 3 containers driver plugin, driver registrar and
 // liveness probe.
-func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits string) []corev1.Container {
+func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) []corev1.Container {
 
 	logger := csiLog.WithName("ensureContainersSpec")
 
@@ -275,7 +277,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits stri
 	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(registrar.SecurityContext)
 	registrar.ImagePullPolicy = config.CSINodeDriverRegistrarImagePullPolicy
-	registrar.Resources = ensureSidecarResources()
+	registrar.Resources = ensureSidecarResources(sidecarCPULimits, sidecarMemoryLimits)
 
 	// liveness probe sidecar
 	livenessProbe := s.ensureContainer(nodeLivenessProbeContainerName,
@@ -290,7 +292,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits stri
 	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
-	livenessProbe.Resources = ensureSidecarResources()
+	livenessProbe.Resources = ensureSidecarResources(sidecarCPULimits, sidecarMemoryLimits)
 
 	return []corev1.Container{
 		nodePlugin,

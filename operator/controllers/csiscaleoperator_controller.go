@@ -399,7 +399,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
+	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerAttacher, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -414,7 +414,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
+	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -429,7 +429,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
+	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -444,7 +444,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
+	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerResizer, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
