@@ -2391,8 +2391,31 @@ func validateHostNetworkValue(inputSlice []string, key, value string, envMap, in
 	}
 }
 
+// Input can be either range of (0.1 - 1.0) OR (1m - 1000m)
 func validateCPULimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	//TODO: Add validation for CPU limits for driver container
+	logger := csiLog.WithName("validateCPULimitsValue")
+	logger.Info("Validating CPU limits Value input ", "cpuLimits", value)
+
+	if strings.HasSuffix(value, "m") {
+		input := strings.TrimSuffix(value, "m")
+		inputIntegerValue, err := strconv.Atoi(input)
+		if err == nil && (inputIntegerValue > 1 && inputIntegerValue < 1000) {
+			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
+			data[key] = value
+		} else {
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.1 to 1.0) ]")
+			invalidEnvValue[key] = value
+		}
+	} else {
+		intFloatValue, err := strconv.ParseFloat(value, 64)
+		if err == nil && (intFloatValue >= 0.1 && intFloatValue <= 1.0) {
+			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
+			data[key] = value
+		} else {
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.1 to 1.0) ]")
+			invalidEnvValue[key] = value
+		}
+	}
 }
 
 // containsStringInSlice checks if a string is present in a slice

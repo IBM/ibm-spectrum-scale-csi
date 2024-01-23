@@ -169,9 +169,15 @@ const (
 	EnvHostNetworkDefaultValue           = "ENABLED"
 )
 
-var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,
-	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey,
-	EnvDiscoverCGFilesetKeyPrefixed, HostNetworkKey, DriverCPULimits}
+var CSIOptionalConfigMapKeys = []string{
+	EnvLogLevelKeyPrefixed,
+	EnvPersistentLogKeyPrefixed,
+	EnvNodePublishMethodKeyPrefixed,
+	EnvVolumeStatsCapabilityKeyPrefixed,
+	DaemonSetUpgradeMaxUnavailableKey,
+	EnvDiscoverCGFilesetKeyPrefixed,
+	HostNetworkKey,
+	DriverCPULimits}
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
