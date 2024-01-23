@@ -659,8 +659,8 @@ func ensureSidecarResources() corev1.ResourceRequirements {
 }
 
 // Helper function that calls ensureResources method with the resources needed for driver containers.
-func ensureDriverResources(cpuLimits string) corev1.ResourceRequirements {
-	return ensureResources("20m", cpuLimits, "20Mi", "600Mi", "1Gi", "10Gi")
+func ensureDriverResources(cpuLimits string, memoryLimits string) corev1.ResourceRequirements {
+	return ensureResources("20m", cpuLimits, "20Mi", memoryLimits, "1Gi", "10Gi")
 }
 
 // ensureResources generates k8s resourceRequirements object.

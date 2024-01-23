@@ -146,6 +146,9 @@ const (
 	// Optional ConfigMap keys
 	DaemonSetUpgradeMaxUnavailableKey = "DRIVER_UPGRADE_MAXUNAVAILABLE"
 	DriverCPULimits                   = "DRIVER_CPU_LIMITS"
+	DriverMemoryLimits                = "DRIVER_MEMORY_LIMITS"
+	SidecarCPULimits                  = "SIDECAR_CPU_LIMITS"
+	SidecarMemoryLimits               = "SIDECAR_MEMORY_LIMITS"
 	EnvLogLevelKey                    = "LOGLEVEL"
 	EnvPersistentLogKey               = "PERSISTENT_LOG"
 	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
@@ -162,11 +165,19 @@ const (
 
 	// Optional ConfigMap default values
 	DriverCPULimitsDefaultValue          = "600m"
+	DriverMemoryLimitsDefaultValue       = "600Mi"
+	SidecarCPULimitsDefaultValue         = "300m"
+	SidecarMemoryLimitsDefaultValue      = "800Mi"
 	EnvLogLevelDefaultValue              = "INFO"
 	EnvPersistentLogDefaultValue         = "DISABLED"
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
+
+	// Driver and Sidecar Containers Resources limits
+	PodsCPULimitsLowerValue      = 20    //20 is 20m
+	PodsCPULimitsFloatLowerValue = 0.020 // 0.020 is equivalent to 20m
+	PodsMemoryLimitsLowerValue   = 20    // 20 is 20Mi
 )
 
 var CSIOptionalConfigMapKeys = []string{

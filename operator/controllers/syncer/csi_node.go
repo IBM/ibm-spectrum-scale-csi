@@ -98,6 +98,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	maxUnavailable := envVars[config.DaemonSetUpgradeMaxUnavailableKey]
 	hostNetwork := envVars[config.HostNetworkKey]
 	cpuLimits := envVars[config.DriverCPULimits]
+	memoryLimits := envVars[config.DriverMemoryLimits]
 
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
@@ -117,12 +118,12 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits)
+		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits, memoryLimits)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string) error {
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string, memoryLimits string) error {
 	logger := csiLog.WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
@@ -177,7 +178,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		out.Spec.Template.Spec.HostNetwork = false
 	}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, cpuLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, cpuLimits, memoryLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -187,10 +188,10 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpuLimits string) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string) corev1.PodSpec {
 
 	pod := corev1.PodSpec{
-		Containers:         s.ensureContainersSpec(cpuLimits),
+		Containers:         s.ensureContainersSpec(cpuLimits, memoryLimits),
 		Volumes:            s.ensureVolumes(),
 		HostIPC:            false,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
@@ -206,7 +207,7 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpu
 // ensureContainersSpec returns array of containers which has the desired
 // fields for all 3 containers driver plugin, driver registrar and
 // liveness probe.
-func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string) []corev1.Container {
+func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits string) []corev1.Container {
 
 	logger := csiLog.WithName("ensureContainersSpec")
 
@@ -220,7 +221,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string) []corev1.Containe
 		},
 	)
 
-	nodePlugin.Resources = ensureDriverResources(cpuLimits)
+	nodePlugin.Resources = ensureDriverResources(cpuLimits, memoryLimits)
 
 	//nodePlugin.Ports = ensurePorts(corev1.ContainerPort{
 	//	Name:          nodeContainerHealthPortName,

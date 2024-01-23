@@ -344,11 +344,56 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing the resources which change over time.
 	// Resource list:
 	// 1. Cluster configMap
-	// 2. Attacher deployment
-	// 3. Provisioner deployment
-	// 4. Snapshotter deployment
-	// 5. Resizer deployment
-	// 6. Driver daemonset
+	// 2. Optional configMap
+	// 3. Attacher deployment
+	// 4. Provisioner deployment
+	// 5. Snapshotter deployment
+	// 6. Resizer deployment
+	// 7. Driver daemonset
+
+	// Synchronizing optional configMap
+	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
+	if err != nil && !errors.IsNotFound(err) {
+		return ctrl.Result{}, err
+	}
+	if errors.IsNotFound(err) {
+		cmData = map[string]string{}
+		cmDataCopy = map[string]string{}
+		//this means cm is deleted, so set defaults
+		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.EnvVarConfigMap)
+		// setting default values if values are empty
+		setDefaultDriverEnvValues(cmData)
+		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
+	} else {
+		isValidationNeeded := false
+		// for the first iteration or if there is change in cm data, then validation is required
+		if len(cmDataCopy) == 0 || !reflect.DeepEqual(cm.Data, cmDataCopy) {
+			isValidationNeeded = true
+		}
+		cmDataCopy = cm.Data
+
+		if isValidationNeeded {
+			if err == nil && len(cm.Data) != 0 {
+				cmData = r.parseConfigMap(instance, cm)
+				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
+
+			} else {
+				cmData = map[string]string{}
+				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.EnvVarConfigMap)
+				// setting default values if values are empty
+				setDefaultDriverEnvValues(cmData)
+				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
+			}
+		}
+	}
+
+	// Setting the clusterType and presence of CNSA in the final cmData before driver sync
+	if _, exists := cmData[config.ENVClusterConfigurationType]; !exists {
+		logger.Info("Setting the clusterType and presence of CNSA in final cmData")
+		cmData[config.ENVClusterCNSAPresenceCheck] = clusterTypeData[config.ENVClusterCNSAPresenceCheck]
+	}
+
+	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
 	// Synchronizing attacher deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
@@ -441,49 +486,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
 
 	}
-
-	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
-	if err != nil && !errors.IsNotFound(err) {
-		return ctrl.Result{}, err
-	}
-	if errors.IsNotFound(err) {
-		cmData = map[string]string{}
-		cmDataCopy = map[string]string{}
-		//this means cm is deleted, so set defaults
-		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.EnvVarConfigMap)
-		// setting default values if values are empty
-		setDefaultDriverEnvValues(cmData)
-		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
-	} else {
-		isValidationNeeded := false
-		// for the first iteration or if there is change in cm data, then validation is required
-		if len(cmDataCopy) == 0 || !reflect.DeepEqual(cm.Data, cmDataCopy) {
-			isValidationNeeded = true
-		}
-		cmDataCopy = cm.Data
-
-		if isValidationNeeded {
-			if err == nil && len(cm.Data) != 0 {
-				cmData = r.parseConfigMap(instance, cm)
-				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
-
-			} else {
-				cmData = map[string]string{}
-				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.EnvVarConfigMap)
-				// setting default values if values are empty
-				setDefaultDriverEnvValues(cmData)
-				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
-			}
-		}
-	}
-
-	// Setting the clusterType and presence of CNSA in the final cmData before driver sync
-	if _, exists := cmData[config.ENVClusterConfigurationType]; !exists {
-		logger.Info("Setting the clusterType and presence of CNSA in final cmData")
-		cmData[config.ENVClusterCNSAPresenceCheck] = clusterTypeData[config.ENVClusterCNSAPresenceCheck]
-	}
-
-	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
@@ -2321,6 +2323,12 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateHostNetworkValue(config.EnvHostNetworkValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.DriverCPULimits:
 				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.DriverMemoryLimits:
+				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.SidecarCPULimits:
+				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.SidecarMemoryLimits:
+				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
 			invalidEnvKeys = append(invalidEnvKeys, key)
@@ -2391,7 +2399,7 @@ func validateHostNetworkValue(inputSlice []string, key, value string, envMap, in
 	}
 }
 
-// Input can be either range of (0.001 - 1.0) OR (1m - 1000m)
+// Input can be either of 0.001 OR 1m
 func validateCPULimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateCPULimitsValue")
 	logger.Info("Validating CPU limits Value input ", "cpuLimits", value)
@@ -2399,22 +2407,43 @@ func validateCPULimitsValue(key string, value string, data map[string]string, in
 	if strings.HasSuffix(value, "m") {
 		input := strings.TrimSuffix(value, "m")
 		inputIntegerValue, err := strconv.Atoi(input)
-		if err == nil && (inputIntegerValue > 1 && inputIntegerValue < 1000) {
+		if err == nil && (inputIntegerValue >= config.PodsCPULimitsLowerValue) {
 			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.001 to 1.0) ]")
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be greater than or equal to %dm OR greater than or equal to %v ) ]", config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue)
 			invalidEnvValue[key] = value
 		}
 	} else {
 		intFloatValue, err := strconv.ParseFloat(value, 64)
-		if err == nil && (intFloatValue >= 0.001 && intFloatValue <= 1.0) {
+		if err == nil && (intFloatValue >= config.PodsCPULimitsFloatLowerValue) {
 			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be either in (1m to 1000m) OR (0.001 to 1.0) ]")
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be greater than or equal to %dm OR greater than or equal to %v ) ]", config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue)
 			invalidEnvValue[key] = value
 		}
+	}
+}
+
+// Input must be equal or geater than 20Mi
+func validateMemoryLimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.WithName("validateMemoryLimitsValue")
+	logger.Info("Validating memory limits Value input ", "memoryLimits", value)
+
+	if strings.HasSuffix(value, "Mi") {
+		input := strings.TrimSuffix(value, "Mi")
+		inputIntegerValue, err := strconv.Atoi(input)
+		if err == nil && (inputIntegerValue >= config.PodsMemoryLimitsLowerValue) {
+			logger.Info("Validation of memomry limits Value successful ", "memoryLimits", value)
+			data[key] = value
+		} else {
+			logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed %v", value, err), "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
+			invalidEnvValue[key] = value
+		}
+	} else {
+		logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed", value), "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
+		invalidEnvValue[key] = value
 	}
 }
 
@@ -2483,6 +2512,21 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.DriverCPULimits]; !ok {
 		logger.Info("Driver CPU limits is empty or incorrect.", "Defaulting CPU limits to", config.DriverCPULimitsDefaultValue)
 		envMap[config.DriverCPULimits] = config.DriverCPULimitsDefaultValue
+	}
+	// set default Memory limits for driver container when it is not present in envMap
+	if _, ok := envMap[config.DriverMemoryLimits]; !ok {
+		logger.Info("Driver Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.DriverMemoryLimitsDefaultValue)
+		envMap[config.DriverMemoryLimits] = config.DriverMemoryLimitsDefaultValue
+	}
+	// set default CPU limits for sidecars container when it is not present in envMap
+	if _, ok := envMap[config.SidecarCPULimits]; !ok {
+		logger.Info("Sidecars CPU limits is empty or incorrect.", "Defaulting CPU limits to", config.SidecarCPULimitsDefaultValue)
+		envMap[config.SidecarCPULimits] = config.SidecarCPULimitsDefaultValue
+	}
+	// set default Memory limits for sidecars container when it is not present in envMap
+	if _, ok := envMap[config.SidecarMemoryLimits]; !ok {
+		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
+		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
 	}
 }
 
