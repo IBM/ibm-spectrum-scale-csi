@@ -105,7 +105,7 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	cmEnvVars = []corev1.EnvVar{}
 	var keys []string
 	for k := range envVars {
-		if !(k == config.DaemonSetUpgradeMaxUnavailableKey || k == config.HostNetworkKey) {
+		if !(k == config.DaemonSetUpgradeMaxUnavailableKey || k == config.HostNetworkKey || k == config.DriverCPULimits || k == config.DriverMemoryLimits || k == config.SidecarCPULimits || k == config.SidecarMemoryLimits) {
 			keys = append(keys, k)
 		}
 	}

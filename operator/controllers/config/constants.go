@@ -188,7 +188,10 @@ var CSIOptionalConfigMapKeys = []string{
 	DaemonSetUpgradeMaxUnavailableKey,
 	EnvDiscoverCGFilesetKeyPrefixed,
 	HostNetworkKey,
-	DriverCPULimits}
+	DriverCPULimits,
+	DriverMemoryLimits,
+	SidecarCPULimits,
+	SidecarMemoryLimits}
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}

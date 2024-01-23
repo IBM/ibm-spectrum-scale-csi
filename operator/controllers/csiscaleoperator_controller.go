@@ -2411,7 +2411,7 @@ func validateCPULimitsValue(key string, value string, data map[string]string, in
 			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be greater than or equal to %dm OR greater than or equal to %v ) ]", config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue)
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed. The value must be greater than or equal to %dm OR greater than or equal to %v, error : %v", value, config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue, err), "CPU limits validation error")
 			invalidEnvValue[key] = value
 		}
 	} else {
@@ -2420,7 +2420,7 @@ func validateCPULimitsValue(key string, value string, data map[string]string, in
 			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed %v", value, err), "[ Value must be greater than or equal to %dm OR greater than or equal to %v ) ]", config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue)
+			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed. The value must be greater than or equal to %dm OR greater than or equal to %v, error : %v", value, config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue, err), "CPU limits validation error")
 			invalidEnvValue[key] = value
 		}
 	}
@@ -2438,11 +2438,11 @@ func validateMemoryLimitsValue(key string, value string, data map[string]string,
 			logger.Info("Validation of memomry limits Value successful ", "memoryLimits", value)
 			data[key] = value
 		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed %v", value, err), "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
+			logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed %v", value, err), "memoryLimitsError", "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
 			invalidEnvValue[key] = value
 		}
 	} else {
-		logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed", value), "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
+		logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed", value), "memoryLimitsError", "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
 		invalidEnvValue[key] = value
 	}
 }
