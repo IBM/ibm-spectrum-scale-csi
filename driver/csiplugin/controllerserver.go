@@ -328,11 +328,6 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	// check if quota is enabled on volume filesystem
 	klog.Infof("[%s] check if quota is enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
 	if scVol.VolSize != 0 {
-		/*	err = scVol.Connector.CheckIfFSQuotaEnabled(ctx, scVol.VolBackendFs)
-			if err != nil {
-				klog.Errorf("[%s] volume:[%v] - quota not enabled for filesystem %v of cluster %v. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
-				return "", status.Error(codes.Internal, fmt.Sprintf("quota not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
-			}*/
 		klog.Infof("[%s] quota status on filesystem [%v] is [%t]", loggerId, scVol.VolBackendFs, fsDetails.Quota.FilesetdfEnabled)
 		if !fsDetails.Quota.FilesetdfEnabled {
 			return "", status.Error(codes.Internal, fmt.Sprintf("quota not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
@@ -807,9 +802,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	if scaleVol.VolPermissions != "" {
 		versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5112")
-		//if err != nil {
-		//	return nil, status.Error(codes.Internal, fmt.Sprintf("the minimum IBM Storage Scale version check for permissions failed with error %s", err))
-		//}
 		if !versionCheck {
 			return nil, status.Error(codes.Internal, "the minimum required IBM Storage Scale version for permissions support with CSI is 5.1.1-2")
 		}
@@ -1446,7 +1438,6 @@ func (cs *ScaleControllerServer) assembledScaleVersion(ctx context.Context, conn
 		return assembledScaleVer, status.Error(codes.Internal, fmt.Sprintf("invalid IBM Storage Scale version - %s", scaleVersion))
 	}
 	var splitMinorVer []string
-	//assembledScaleVer := ""
 	if len(splitScaleVer) == 4 {
 		//dev build e.g. "5.1.5.0-developer build"
 		splitMinorVer = strings.Split(splitScaleVer[3], "-")
@@ -1456,9 +1447,6 @@ func (cs *ScaleControllerServer) assembledScaleVersion(ctx context.Context, conn
 		splitMinorVer = strings.Split(splitScaleVer[2], "-")
 		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
 	}
-	//if assembledScaleVer < version {
-	//	return false, nil
-	//}
 	return assembledScaleVer, nil
 }
 
@@ -1471,19 +1459,11 @@ func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version str
 	assembledFsVer := strings.ReplaceAll(fsVersion, ".", "")
 
 	klog.Infof("fs version (%s) vs min required version (%s)", assembledFsVer, version)
-	/*	if assembledFsVer < version {
-			 return false
-		 }
-		 return true*/
 	return assembledFsVer >= version
 }
 
 func (cs *ScaleControllerServer) checkSnapshotSupport(ctx context.Context, conn connectors.SpectrumScaleConnector, assembledScaleversion string) error {
 	/* Verify IBM Storage Scale Version is not below 5.1.1-0 */
-	//versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5110")
-	//if err != nil {
-	//	return err
-	//}
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5110")
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for snapshot support with CSI is 5.1.1-0")
@@ -1493,10 +1473,6 @@ func (cs *ScaleControllerServer) checkSnapshotSupport(ctx context.Context, conn 
 
 func (cs *ScaleControllerServer) checkVolCloneSupport(ctx context.Context, conn connectors.SpectrumScaleConnector, assembledScaleversion string) error {
 	/* Verify IBM Storage Scale Version is not below 5.1.2-1 */
-	//versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5121")
-	//if err != nil {
-	//	return err
-	//}
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5121")
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for volume cloning support with CSI is 5.1.2-1")
@@ -1517,11 +1493,6 @@ func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
 
 func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connectors.SpectrumScaleConnector, assembledScaleversion string) error {
 	/* Verify IBM Storage Scale Version is not below 5.1.3-0 */
-
-	//versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5130")
-	//if err != nil {
-	//	return err
-	//}
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5130")
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for consistency group support with CSI is 5.1.3-0")
