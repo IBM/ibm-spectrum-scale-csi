@@ -38,6 +38,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -344,12 +345,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Synchronizing the resources which change over time.
 	// Resource list:
 	// 1. Cluster configMap
-	// 2. Optional configMap
-	// 3. Attacher deployment
-	// 4. Provisioner deployment
-	// 5. Snapshotter deployment
-	// 6. Resizer deployment
-	// 7. Driver daemonset
+	// 2. Attacher deployment
+	// 3. Provisioner deployment
+	// 4. Snapshotter deployment
+	// 5. Resizer deployment
+	// 6. Driver daemonset
 
 	// Synchronizing optional configMap
 	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
@@ -399,7 +399,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
+	cpuLimits := cmData[config.SidecarCPULimits]
+	memoryLimits := cmData[config.SidecarMemoryLimits]
+
+	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerAttacher, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -414,7 +417,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
+	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -429,7 +432,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
+	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -444,7 +447,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cmData)
+	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerResizer, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -769,7 +772,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) ||
 				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
 				strings.ToUpper(key) == config.HostNetworkKey ||
-				strings.ToUpper(key) == config.DriverCPULimits {
+				strings.ToUpper(key) == config.DriverCPULimits ||
+				strings.ToUpper(key) == config.DriverMemoryLimits ||
+				strings.ToUpper(key) == config.SidecarCPULimits ||
+				strings.ToUpper(key) == config.SidecarMemoryLimits {
 				return true
 			}
 		}
@@ -786,13 +792,19 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) ||
 					strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
 					strings.ToUpper(key) == config.HostNetworkKey ||
-					strings.ToUpper(key) == config.DriverCPULimits {
+					strings.ToUpper(key) == config.DriverCPULimits ||
+					strings.ToUpper(key) == config.DriverMemoryLimits ||
+					strings.ToUpper(key) == config.SidecarCPULimits ||
+					strings.ToUpper(key) == config.SidecarMemoryLimits {
 					return true
 				}
 			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) ||
 				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
 				strings.ToUpper(key) == config.HostNetworkKey ||
-				strings.ToUpper(key) == config.DriverCPULimits {
+				strings.ToUpper(key) == config.DriverCPULimits ||
+				strings.ToUpper(key) == config.DriverMemoryLimits ||
+				strings.ToUpper(key) == config.SidecarCPULimits ||
+				strings.ToUpper(key) == config.SidecarMemoryLimits {
 				return true
 			}
 		}
@@ -804,7 +816,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) ||
 					(strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
 					strings.ToUpper(key) == config.HostNetworkKey ||
-					strings.ToUpper(key) == config.DriverCPULimits {
+					strings.ToUpper(key) == config.DriverCPULimits ||
+					strings.ToUpper(key) == config.DriverMemoryLimits ||
+					strings.ToUpper(key) == config.SidecarCPULimits ||
+					strings.ToUpper(key) == config.SidecarMemoryLimits {
 					return true
 				}
 			}
@@ -2399,51 +2414,58 @@ func validateHostNetworkValue(inputSlice []string, key, value string, envMap, in
 	}
 }
 
-// Input can be either of 0.001 OR 1m
+// validateCPULimitsValue: To set only accepted CPU limit from configMap
 func validateCPULimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateCPULimitsValue")
 	logger.Info("Validating CPU limits Value input ", "cpuLimits", value)
 
-	if strings.HasSuffix(value, "m") {
-		input := strings.TrimSuffix(value, "m")
-		inputIntegerValue, err := strconv.Atoi(input)
-		if err == nil && (inputIntegerValue >= config.PodsCPULimitsLowerValue) {
-			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
-			data[key] = value
-		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed. The value must be greater than or equal to %dm OR greater than or equal to %v, error : %v", value, config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue, err), "CPU limits validation error")
-			invalidEnvValue[key] = value
-		}
+	isResourceRequestValid, err := checkMinResourceRequirement(value, config.PodsCPULimitsLowerValue)
+	if isResourceRequestValid {
+		logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
+		data[key] = value
 	} else {
-		intFloatValue, err := strconv.ParseFloat(value, 64)
-		if err == nil && (intFloatValue >= config.PodsCPULimitsFloatLowerValue) {
-			logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
-			data[key] = value
-		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed. The value must be greater than or equal to %dm OR greater than or equal to %v, error : %v", value, config.PodsCPULimitsLowerValue, config.PodsCPULimitsFloatLowerValue, err), "CPU limits validation error")
-			invalidEnvValue[key] = value
-		}
+		logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.PodsCPULimitsLowerValue, err), "CPU limits validation error")
+		invalidEnvValue[key] = value
 	}
 }
 
-// Input must be equal or geater than 20Mi
+// validateMemoryLimitsValue: To set only accepted memory limit from configMap
 func validateMemoryLimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateMemoryLimitsValue")
 	logger.Info("Validating memory limits Value input ", "memoryLimits", value)
 
-	if strings.HasSuffix(value, "Mi") {
-		input := strings.TrimSuffix(value, "Mi")
-		inputIntegerValue, err := strconv.Atoi(input)
-		if err == nil && (inputIntegerValue >= config.PodsMemoryLimitsLowerValue) {
-			logger.Info("Validation of memomry limits Value successful ", "memoryLimits", value)
-			data[key] = value
-		} else {
-			logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed %v", value, err), "memoryLimitsError", "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
-			invalidEnvValue[key] = value
-		}
+	isResourceRequestValid, err := checkMinResourceRequirement(value, config.PodsMemoryLimitsLowerValue)
+	if isResourceRequestValid {
+		logger.Info("Validation of memomry limits Value successful ", "memoryLimits", value)
+		data[key] = value
 	} else {
-		logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed", value), "memoryLimitsError", "[ Value must be greater than or equal to %dMi ]", config.PodsMemoryLimitsLowerValue)
+		logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.PodsMemoryLimitsLowerValue, err), "Memory limits validation error")
 		invalidEnvValue[key] = value
+	}
+}
+
+// checkMinResourceRequirement: Requested resource must be greater or equal to it's lower limit.
+// Return true when requestedresource is greater than min required resource
+func checkMinResourceRequirement(resourceRequested string, minResourceRequired string) (bool, error) {
+	logger := csiLog.WithName("checkMinResourceRequirement")
+	logger.Info("Validating resource limit requirement ", "resourceRequested", resourceRequested, "minResourceRequired", minResourceRequired)
+	var minResourceSizeMilli, resourceRequestedMilliValue int64
+	minResourceSize, err := resource.ParseQuantity(minResourceRequired)
+	if err != nil {
+		return false, err
+	} else {
+		minResourceSizeMilli = minResourceSize.MilliValue()
+	}
+	resourceSize, err := resource.ParseQuantity(resourceRequested)
+	if err != nil {
+		return false, err
+	} else {
+		resourceRequestedMilliValue = resourceSize.MilliValue()
+	}
+	if minResourceSizeMilli <= resourceRequestedMilliValue {
+		return true, nil
+	} else {
+		return false, nil
 	}
 }
 

@@ -89,7 +89,7 @@ func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscal
 
 // GetAttacherSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI attacher service.
 func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, envVars map[string]string) syncer.Interface {
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
 
 	logger := csiLog.WithName("GetAttacherSyncer")
 	logger.Info("Creating a syncer object for the attacher deployment.")
@@ -108,9 +108,6 @@ func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscale
 		obj:    obj,
 	}
 
-	cpuLimits := envVars[config.SidecarCPULimits]
-	memoryLimits := envVars[config.SidecarMemoryLimits]
-
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncAttacherFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	})
@@ -118,7 +115,7 @@ func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscale
 
 // GetProvisionerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI provisioner service.
 func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, envVars map[string]string) syncer.Interface {
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
 
 	logger := csiLog.WithName("GetProvisionerSyncer")
 	logger.Info("Creating a syncer object for the provisioner deployment.")
@@ -137,9 +134,6 @@ func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 		obj:    obj,
 	}
 
-	cpuLimits := envVars[config.SidecarCPULimits]
-	memoryLimits := envVars[config.SidecarMemoryLimits]
-
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncProvisionerFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	})
@@ -147,7 +141,7 @@ func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 
 // GetSnapshotterSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI snapshotter service.
 func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, envVars map[string]string) syncer.Interface {
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
 
 	logger := csiLog.WithName("GetSnapshotterSyncer")
 	logger.Info("Creating a syncer object for the snapshotter deployment.")
@@ -166,9 +160,6 @@ func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 		obj:    obj,
 	}
 
-	cpuLimits := envVars[config.SidecarCPULimits]
-	memoryLimits := envVars[config.SidecarMemoryLimits]
-
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncSnapshotterFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	})
@@ -176,7 +167,7 @@ func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 
 // GetResizerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI resizer service.
 func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, envVars map[string]string) syncer.Interface {
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
 
 	logger := csiLog.WithName("GetResizerSyncer")
 	logger.Info("Creating a syncer object for the resizer deployment.")
@@ -194,9 +185,6 @@ func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleo
 		driver: driver,
 		obj:    obj,
 	}
-
-	cpuLimits := envVars[config.SidecarCPULimits]
-	memoryLimits := envVars[config.SidecarMemoryLimits]
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
 		return sync.SyncResizerFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)

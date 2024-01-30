@@ -175,9 +175,8 @@ const (
 	EnvHostNetworkDefaultValue           = "ENABLED"
 
 	// Driver and Sidecar Containers Resources limits
-	PodsCPULimitsLowerValue      = 20    //20 is 20m
-	PodsCPULimitsFloatLowerValue = 0.020 // 0.020 is equivalent to 20m
-	PodsMemoryLimitsLowerValue   = 20    // 20 is 20Mi
+	PodsCPULimitsLowerValue    = "20m"
+	PodsMemoryLimitsLowerValue = "20Mi"
 )
 
 var CSIOptionalConfigMapKeys = []string{
