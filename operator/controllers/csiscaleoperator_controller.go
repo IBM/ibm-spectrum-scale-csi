@@ -351,6 +351,19 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 5. Resizer deployment
 	// 6. Driver daemonset
 
+	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
+	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
+	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
+
+	if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
+		logger.Info("Checking the clusterType and presence of CNSA")
+		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
+		if err != nil {
+			logger.Error(err, "Failed to check cluster platform and cnsa presence")
+			return ctrl.Result{}, err
+		}
+	}
+
 	// Synchronizing optional configMap
 	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
@@ -457,19 +470,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
-
-	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
-	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
-	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
-
-	if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
-		logger.Info("Checking the clusterType and presence of CNSA")
-		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
-		if err != nil {
-			logger.Error(err, "Failed to check cluster platform and cnsa presence")
-			return ctrl.Result{}, err
-		}
-	}
 
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
