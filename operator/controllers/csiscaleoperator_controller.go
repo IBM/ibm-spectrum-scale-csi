@@ -408,12 +408,43 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
+	// Synchronizing node/driver daemonset
+	CGPrefix := r.GetConsistencyGroupPrefix(instance)
+
+	if instance.Spec.CGPrefix == "" {
+		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
+		instance.Spec.CGPrefix = CGPrefix
+		err := r.Client.Update(ctx, instance.Unwrap())
+		if err != nil {
+			logger.Error(err, "Reconciler Client.Update() failed.")
+			message := "Failed to update the consistency group prefix in CSIScaleOperator resource " + instance.Name
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+			)
+			return ctrl.Result{}, err
+		}
+		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
+
+	}
+
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
+	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
+		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of node/driver %s DaemonSet is successful", config.GetNameForResource(config.CSINode, instance.Name)))
+
+	// Setting resources limit values for sidecars
+	cpuLimits := cmData[config.SidecarCPULimits]
+	memoryLimits := cmData[config.SidecarMemoryLimits]
 	// Synchronizing attacher deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	cpuLimits := cmData[config.SidecarCPULimits]
-	memoryLimits := cmData[config.SidecarMemoryLimits]
 
 	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
@@ -470,36 +501,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
-
-	// Synchronizing node/driver daemonset
-	CGPrefix := r.GetConsistencyGroupPrefix(instance)
-
-	if instance.Spec.CGPrefix == "" {
-		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
-		instance.Spec.CGPrefix = CGPrefix
-		err := r.Client.Update(ctx, instance.Unwrap())
-		if err != nil {
-			logger.Error(err, "Reconciler Client.Update() failed.")
-			message := "Failed to update the consistency group prefix in CSIScaleOperator resource " + instance.Name
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-			)
-			return ctrl.Result{}, err
-		}
-		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
-
-	}
-
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
-	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
-		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of node/driver %s DaemonSet is successful", config.GetNameForResource(config.CSINode, instance.Name)))
 
 	// Synchronizing cluster configMap
 	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
