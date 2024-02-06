@@ -1938,7 +1938,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		}
 
 		if FilesetName != "" && isPvcFromSnapshot {
-			 _,err := cs.DeleteShallowCopyRefPath(ctx, FilesystemName, FilesetName, shallowCopyRefPath, volumeIdMembers.StorageClassType, independentFileset, snapshotName, conn)
+			 err := cs.DeleteShallowCopyRefPath(ctx, FilesystemName, FilesetName, shallowCopyRefPath, volumeIdMembers.StorageClassType, independentFileset, snapshotName, conn)
                          if err != nil{
                          	return nil, err
                          }
@@ -2017,7 +2017,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
-func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, FilesystemName, FilesetName, ShallowCopyRefPath, storageClassType, independentFileset, snapshotName string, conn connectors.SpectrumScaleConnector) (bool, error){
+func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, FilesystemName, FilesetName, ShallowCopyRefPath, storageClassType, independentFileset, snapshotName string, conn connectors.SpectrumScaleConnector) error{
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] Deleting shallow copy reference path [%s]", loggerId, ShallowCopyRefPath)
 	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
@@ -2032,7 +2032,7 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 			strings.Contains(err.Error(), "does not exist")) { // directory is already deleted
 			isShallowCopyRefPathDeleted = true
 		}else{
-			return false, status.Error(codes.Internal, fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))
+			return status.Error(codes.Internal, fmt.Sprintf("unable to Delete shallow copy reference Dir using FS [%v] Error [%v]", FilesystemName, err))
 		}
 	}else{
 		isShallowCopyRefPathDeleted = true
@@ -2043,24 +2043,24 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 
         	if err != nil{
                 	klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, FilesystemName, ShallowCopyRefPath, err)
-                	return false, err
+                	return err
         	}else{
                 	nlink,err := parseStatDirInfo(statInfo)
                 	if err != nil{
                         	klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, FilesystemName, ShallowCopyRefPath)
-                        	return false, err
+                        	return err
                 	}
 
                 	if nlink == 2{
                         	err = conn.DeleteDirectory(ctx, FilesystemName, ShallowCopyRefPath, false)
                         	if err != nil {
-                                	return false, status.Error(codes.Internal,fmt.Sprintf("unable to Delete shallow copy reference parent dir using FS [%v] Error [%v]", FilesystemName, err))
+                                	return status.Error(codes.Internal,fmt.Sprintf("unable to Delete shallow copy reference parent dir using FS [%v] Error [%v]", FilesystemName, err))
                         	}
 		
 				if storageClassType == STORAGECLASS_ADVANCED{	
 					snaperr := conn.DeleteSnapshot(ctx, FilesystemName, independentFileset, snapshotName)	
 					if snaperr != nil {
-                        			return false, status.Error(codes.Internal, fmt.Sprintf("unable to delete snapshot dir [%s] Error [%v]", snapshotName, err))
+                        			return status.Error(codes.Internal, fmt.Sprintf("unable to delete snapshot dir [%s] Error [%v]", snapshotName, err))
         				}else{
                 				klog.Infof("[%s] delete snapshot reference directory [%s] successfully", loggerId, snapshotName)
         				}
@@ -2070,7 +2070,7 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 		}
 
 	}
-	return true, nil
+	return nil
 }
 
 // ControllerGetCapabilities implements the default GRPC callout.
