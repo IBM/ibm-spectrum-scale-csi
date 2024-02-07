@@ -141,6 +141,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
+	out.ObjectMeta.Annotations = annotations
 	annotations["kubectl.kubernetes.io/default-container"] = config.Product
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSINodeSelectorLabels(config.GetNameForResource(config.CSINode, s.driver.Name)))
