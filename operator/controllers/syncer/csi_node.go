@@ -149,6 +149,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSINodePodLabels(config.GetNameForResource(config.CSINode, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = annotations
+
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 	if out.Spec.Template.Spec.Containers != nil {
 		for i := range out.Spec.Template.Spec.Containers {
