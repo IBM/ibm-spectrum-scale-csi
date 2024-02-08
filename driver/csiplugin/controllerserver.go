@@ -652,6 +652,10 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		if reqCap.GetBlock() != nil {
 			return nil, status.Error(codes.Unimplemented, "Block Volume is not supported")
 		}
+
+		if reqCap.GetMount().GetMountFlags() != nil {
+			return nil, status.Error(codes.Unimplemented, "mountOptions are not supported")
+		}
 	}
 
 	invalidParams, allValid := checkSCSupportedParams(req.GetParameters())

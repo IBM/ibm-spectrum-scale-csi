@@ -237,7 +237,9 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	out.ObjectMeta.Annotations = annotations
+	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
@@ -274,7 +276,9 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	out.ObjectMeta.Annotations = annotations
+	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ProvisionerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
@@ -311,7 +315,9 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	out.ObjectMeta.Annotations = annotations
+	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.SnapshotterNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
@@ -348,7 +354,9 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name))
-	out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
+	out.ObjectMeta.Annotations = annotations
+	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.ResizerNodeSelector)
 	//out.Spec.Template.ObjectMeta.Annotations = s.driver.GetAnnotations()
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
