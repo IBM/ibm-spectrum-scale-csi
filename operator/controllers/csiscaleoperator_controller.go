@@ -38,6 +38,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -350,66 +351,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 5. Resizer deployment
 	// 6. Driver daemonset
 
-	// Synchronizing attacher deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
-	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
-		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerAttacher, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerAttacher, instance.Name)))
-
-	// Synchronizing provisioner deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
-		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)))
-
-	// Synchronizing snapshotter deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
-	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, nil); err != nil {
-		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)))
-
-	// Synchronizing resizer deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
-		return ctrl.Result{}, err
-	}
-	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue)
-	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, nil); err != nil {
-		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerResizer, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-		)
-		return ctrl.Result{}, err
-	}
-	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
-
 	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
 	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
 	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
@@ -423,25 +364,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
-	// Synchronizing node/driver daemonset
-	CGPrefix := r.GetConsistencyGroupPrefix(instance)
-
-	if instance.Spec.CGPrefix == "" {
-		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
-		instance.Spec.CGPrefix = CGPrefix
-		err := r.Client.Update(ctx, instance.Unwrap())
-		if err != nil {
-			logger.Error(err, "Reconciler Client.Update() failed.")
-			message := "Failed to update the consistency group prefix in CSIScaleOperator resource " + instance.Name
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-			)
-			return ctrl.Result{}, err
-		}
-		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
-
-	}
-
+	// Synchronizing optional configMap
 	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
@@ -485,6 +408,25 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
+	// Synchronizing node/driver daemonset
+	CGPrefix := r.GetConsistencyGroupPrefix(instance)
+
+	if instance.Spec.CGPrefix == "" {
+		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
+		instance.Spec.CGPrefix = CGPrefix
+		err := r.Client.Update(ctx, instance.Unwrap())
+		if err != nil {
+			logger.Error(err, "Reconciler Client.Update() failed.")
+			message := "Failed to update the consistency group prefix in CSIScaleOperator resource " + instance.Name
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+			)
+			return ctrl.Result{}, err
+		}
+		logger.Info("Successfully updated consistency group prefix in CSIScaleOperator resource.")
+
+	}
+
 	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
@@ -495,6 +437,70 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	logger.Info(fmt.Sprintf("Synchronization of node/driver %s DaemonSet is successful", config.GetNameForResource(config.CSINode, instance.Name)))
+
+	// Setting resources limit values for sidecars
+	cpuLimits := cmData[config.SidecarCPULimits]
+	memoryLimits := cmData[config.SidecarMemoryLimits]
+	// Synchronizing attacher deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
+		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerAttacher, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerAttacher, instance.Name)))
+
+	// Synchronizing provisioner deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
+		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)))
+
+	// Synchronizing snapshotter deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, nil); err != nil {
+		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)))
+
+	// Synchronizing resizer deployment
+	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
+		return ctrl.Result{}, err
+	}
+	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, nil); err != nil {
+		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerResizer, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+		)
+		return ctrl.Result{}, err
+	}
+	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
 
 	// Synchronizing cluster configMap
 	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
@@ -764,9 +770,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//Do not restart driver pods when the configmap contains invalid Envs.
 	shouldRequeueOnCreateOrDelete := func(cfgmapData map[string]string) bool {
 		for key := range cfgmapData {
-			if strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || 
-				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
-				strings.ToUpper(key) == config.HostNetworkKey{
+			if containsStringInSlice(config.CSIOptionalConfigMapKeys, strings.ToUpper(key)) {
 				return true
 			}
 		}
@@ -780,14 +784,10 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		for key, newVal := range newCfgMapData {
 			//Allow restart of driver pods when a new valid env var is found or the value of existing valid env var is updated
 			if oldVal, ok := oldCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || 
-					strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey ||
-					strings.ToUpper(key) == config.HostNetworkKey{
+				if containsStringInSlice(config.CSIOptionalConfigMapKeys, strings.ToUpper(key)) {
 					return true
 				}
-			} else if oldVal != newVal && (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix) || 
-				strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
-				strings.ToUpper(key) == config.HostNetworkKey{
+			} else if oldVal != newVal && containsStringInSlice(config.CSIOptionalConfigMapKeys, strings.ToUpper(key)) {
 				return true
 			}
 		}
@@ -796,9 +796,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			//look for deleted valid env vars of the old configmap in the new configmap
 			//if deleted restart driver pods
 			if _, ok := newCfgMapData[key]; !ok {
-				if (strings.HasPrefix(strings.ToUpper(key), config.EnvVarPrefix)) || 
-					(strings.ToUpper(key) == config.DaemonSetUpgradeMaxUnavailableKey) ||
-					strings.ToUpper(key) == config.HostNetworkKey{
+				if containsStringInSlice(config.CSIOptionalConfigMapKeys, strings.ToUpper(key)) {
 					return true
 				}
 			}
@@ -2300,23 +2298,29 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 	for key, value := range cm.Data {
 		keyUpper := strings.ToUpper(key)
 		if containsStringInSlice(config.CSIOptionalConfigMapKeys[:], keyUpper) {
-			if strings.HasPrefix(keyUpper, config.EnvVarPrefix) {
-				switch keyUpper {
-				case config.EnvLogLevelKeyPrefixed:
-					validateEnvVarValue(config.EnvLogLevelValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-				case config.EnvPersistentLogKeyPrefixed:
-					validateEnvVarValue(config.EnvPersistentLogValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-				case config.EnvNodePublishMethodKeyPrefixed:
-					validateEnvVarValue(config.EnvNodePublishMethodValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-				case config.EnvVolumeStatsCapabilityKeyPrefixed:
-					validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-				case config.EnvDiscoverCGFilesetKeyPrefixed:
-					validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-				}
-			} else if keyUpper == config.DaemonSetUpgradeMaxUnavailableKey {
+			switch keyUpper {
+			case config.EnvLogLevelKeyPrefixed:
+				validateEnvVarValue(config.EnvLogLevelValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvPersistentLogKeyPrefixed:
+				validateEnvVarValue(config.EnvPersistentLogValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvNodePublishMethodKeyPrefixed:
+				validateEnvVarValue(config.EnvNodePublishMethodValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvVolumeStatsCapabilityKeyPrefixed:
+				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvDiscoverCGFilesetKeyPrefixed:
+				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.DaemonSetUpgradeMaxUnavailableKey:
 				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
-			} else if keyUpper == config.HostNetworkKey{
+			case config.HostNetworkKey:
 				validateHostNetworkValue(config.EnvHostNetworkValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.DriverCPULimits:
+				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.DriverMemoryLimits:
+				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.SidecarCPULimits:
+				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.SidecarMemoryLimits:
+				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
 			invalidEnvKeys = append(invalidEnvKeys, key)
@@ -2378,12 +2382,67 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 
 func validateHostNetworkValue(inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validateHostNetworkValue")
-        logger.Info("Validating host network input", "inputHostNetwork", value)
-	
+	logger.Info("Validating host network input", "inputHostNetwork", value)
+
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
-		 envMap[key] = value
-	}else{
+		envMap[key] = value
+	} else {
 		invalidEnvValue[key] = value
+	}
+}
+
+// validateCPULimitsValue: To set only accepted CPU limit from configMap
+func validateCPULimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.WithName("validateCPULimitsValue")
+	logger.Info("Validating CPU limits Value input ", "cpuLimits", value)
+
+	isResourceRequestValid, err := checkMinResourceRequirement(value, config.PodsCPULimitsLowerValue)
+	if isResourceRequestValid {
+		logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
+		data[key] = value
+	} else {
+		logger.Error(fmt.Errorf("failed to parse [inputCPULimitValue=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.PodsCPULimitsLowerValue, err), "CPU limits validation error")
+		invalidEnvValue[key] = value
+	}
+}
+
+// validateMemoryLimitsValue: To set only accepted memory limit from configMap
+func validateMemoryLimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.WithName("validateMemoryLimitsValue")
+	logger.Info("Validating memory limits Value input ", "memoryLimits", value)
+
+	isResourceRequestValid, err := checkMinResourceRequirement(value, config.PodsMemoryLimitsLowerValue)
+	if isResourceRequestValid {
+		logger.Info("Validation of memomry limits Value successful ", "memoryLimits", value)
+		data[key] = value
+	} else {
+		logger.Error(fmt.Errorf("failed to parse [inputMemoryLimitValue=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.PodsMemoryLimitsLowerValue, err), "Memory limits validation error")
+		invalidEnvValue[key] = value
+	}
+}
+
+// checkMinResourceRequirement: Requested resource must be greater or equal to it's lower limit.
+// Return true when requestedresource is greater than min required resource
+func checkMinResourceRequirement(resourceRequested string, minResourceRequired string) (bool, error) {
+	logger := csiLog.WithName("checkMinResourceRequirement")
+	logger.Info("Validating resource limit requirement ", "resourceRequested", resourceRequested, "minResourceRequired", minResourceRequired)
+	var minResourceSizeMilli, resourceRequestedMilliValue int64
+	minResourceSize, err := resource.ParseQuantity(minResourceRequired)
+	if err != nil {
+		return false, err
+	} else {
+		minResourceSizeMilli = minResourceSize.MilliValue()
+	}
+	resourceSize, err := resource.ParseQuantity(resourceRequested)
+	if err != nil {
+		return false, err
+	} else {
+		resourceRequestedMilliValue = resourceSize.MilliValue()
+	}
+	if minResourceSizeMilli <= resourceRequestedMilliValue {
+		return true, nil
+	} else {
+		return false, nil
 	}
 }
 
@@ -2443,9 +2502,30 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	}
 
 	// set default HostNetwork env when it is not present in envMap
-	if _,ok := envMap[config.HostNetworkKey]; !ok{
+	if _, ok := envMap[config.HostNetworkKey]; !ok {
 		logger.Info("Host Network is empty or incorrect.", "Defaulting Host Network to", config.EnvHostNetworkDefaultValue)
 		envMap[config.HostNetworkKey] = config.EnvHostNetworkDefaultValue
+	}
+
+	// set default CPU limits for driver container when it is not present in envMap
+	if _, ok := envMap[config.DriverCPULimits]; !ok {
+		logger.Info("Driver CPU limits is empty or incorrect.", "Defaulting CPU limits to", config.DriverCPULimitsDefaultValue)
+		envMap[config.DriverCPULimits] = config.DriverCPULimitsDefaultValue
+	}
+	// set default Memory limits for driver container when it is not present in envMap
+	if _, ok := envMap[config.DriverMemoryLimits]; !ok {
+		logger.Info("Driver Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.DriverMemoryLimitsDefaultValue)
+		envMap[config.DriverMemoryLimits] = config.DriverMemoryLimitsDefaultValue
+	}
+	// set default CPU limits for sidecars container when it is not present in envMap
+	if _, ok := envMap[config.SidecarCPULimits]; !ok {
+		logger.Info("Sidecars CPU limits is empty or incorrect.", "Defaulting CPU limits to", config.SidecarCPULimitsDefaultValue)
+		envMap[config.SidecarCPULimits] = config.SidecarCPULimitsDefaultValue
+	}
+	// set default Memory limits for sidecars container when it is not present in envMap
+	if _, ok := envMap[config.SidecarMemoryLimits]; !ok {
+		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
+		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
 	}
 }
 
