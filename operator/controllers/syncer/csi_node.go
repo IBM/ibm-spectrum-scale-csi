@@ -141,6 +141,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
+	out.ObjectMeta.Annotations = annotations
 	annotations["kubectl.kubernetes.io/default-container"] = config.Product
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSINodeSelectorLabels(config.GetNameForResource(config.CSINode, s.driver.Name)))
@@ -148,6 +149,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSINodePodLabels(config.GetNameForResource(config.CSINode, s.driver.Name))
 	out.Spec.Template.ObjectMeta.Annotations = annotations
+
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.PluginNodeSelector)
 	if out.Spec.Template.Spec.Containers != nil {
 		for i := range out.Spec.Template.Spec.Containers {
