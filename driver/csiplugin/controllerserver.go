@@ -749,9 +749,9 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
                 }
 		
 		if isNewVolumeType{
-                        shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",scaleVol.PrimaryFSMount,snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName,snapIdMembers.FsetName)
+                        shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",volFsInfo.Mount.MountPoint,snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName,snapIdMembers.FsetName)
                 }else{
-                        shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",scaleVol.PrimaryFSMount,snapIdMembers.FsetName,snapIdMembers.SnapName,snapIdMembers.Path)
+                        shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s",volFsInfo.Mount.MountPoint,snapIdMembers.FsetName,snapIdMembers.SnapName,snapIdMembers.Path)
                 }
 
 		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isNewVolumeType, isShallowCopyVolume, shallowCopyTargetPath)
