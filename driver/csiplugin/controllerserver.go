@@ -2057,13 +2057,13 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 				if volumeIdMembers.VolType == FILE_INDEPENDENTFILESET_VOLUME {
 					checkForSnapshots = true
 				}
-				isFilesetAlreadyDel, err := cs.DeleteFilesetVol(ctx, FilesystemName, FilesetName, volumeIdMembers, conn, checkForSnapshots)
+				_, err := cs.DeleteFilesetVol(ctx, FilesystemName, FilesetName, volumeIdMembers, conn, checkForSnapshots)
 				if err != nil {
 					return nil, err
 				}
 
 				// Delete fileset related symlink
-				if !isFilesetAlreadyDel && volumeIdMembers.StorageClassType != STORAGECLASS_ADVANCED {
+				if volumeIdMembers.StorageClassType != STORAGECLASS_ADVANCED {
 					err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
 					if err != nil {
 						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
