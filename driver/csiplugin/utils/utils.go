@@ -177,6 +177,7 @@ func GetEnv(envName string, defaultValue string) string {
 }
 
 func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
+	klog.V(6).Infof("utils FsStatInfo. envName: %s", path)
 	statfs := &unix.Statfs_t{}
 	err := unix.Statfs(path, statfs)
 

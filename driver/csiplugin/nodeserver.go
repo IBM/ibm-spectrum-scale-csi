@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -453,7 +454,25 @@ func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.Node
 		return nil, status.Error(codes.InvalidArgument, "volume stats are not supported for lightweight volumes")
 	}
 
-	available, capacity, used, inodes, inodesFree, inodesUsed, err := utils.FsStatInfo(req.GetVolumePath())
+	volumePath := req.GetVolumePath()
+
+	fileInfo, err := os.Lstat(volumePath)
+	if err != nil {
+		klog.Errorf("[%s] NodeGetVolumeStats - Lstat failed with error [%v]", loggerId, err)
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("FsStatInfo [%s] failed with error [%v]", volumePath, err))
+	}
+	if fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
+		// This is a symlink
+		dst, err := os.Readlink(req.GetVolumePath())
+		if err != nil {
+			klog.Errorf("[%s] NodeGetVolumeStats - destination [%s] failed with error [%v]", loggerId, req.GetVolumePath(), err)
+		} else if len(dst) > 0 {
+			volumePath = hostDir + dst
+			klog.V(4).Infof("[%s] %s links to (%s) is a SYMLINK", loggerId, filepath.Base(req.GetVolumePath()), volumePath)
+		}
+	}
+
+	available, capacity, used, inodes, inodesFree, inodesUsed, err := utils.FsStatInfo(volumePath)
 	if err != nil {
 		klog.Errorf("[%s] NodeGetVolumeStats - FsStatInfo [%s] failed with error [%v]", loggerId, req.GetVolumePath(), err)
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("FsStatInfo [%s] failed with error [%v]", req.GetVolumePath(), err))
