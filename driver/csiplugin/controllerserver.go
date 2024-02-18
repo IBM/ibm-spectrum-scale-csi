@@ -678,7 +678,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	for _, reqCap := range reqCapabilities {
 		if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
 			if isSnapSource {
-				klog.Infof("[%s] Requested pvc will be shallow copy volume", loggerId)
+				klog.Infof("[%s] Requested pvc is a shallow copy volume", loggerId)
 				isShallowCopyVolume = true
 			} else {
 				return nil, status.Error(codes.Unimplemented, "Volume source with Access Mode ReadOnlyMany is not supported")
@@ -726,17 +726,19 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	}
 
-	isValidPvcFromSnapshot := false
 	if isSnapSource {
-		isValidPvcFromSnapshot, err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID, isShallowCopyVolume)
+		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
-			return nil, err
+			return nil,err
 		}
 
-		if !isValidPvcFromSnapshot{
-			klog.Errorf("[%s] volume:[%v] - Error in validating shallow copy volume", loggerId, volName)
-			return nil, status.Error(codes.Internal, "CreateVolume ValidateShallowCopyVolume failed")
+		if isShallowCopyVolume{
+			err = cs.validateShallowCopyVolume(ctx, &snapIdMembers, scaleVol)
+			if err != nil{
+				klog.Errorf("[%s] volume:[%v] - Error in validating shallow copy volume", loggerId, volName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume ValidateShallowCopyVolume failed: %v",err))
+			}
 		}
 		
 	}
@@ -1267,17 +1269,7 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
                 return err
         }
 
-        targetFsName, err := conn.GetFilesystemName(ctx, fsDetails.UUID)
-        if err != nil {
-                return err
-        }
-
-        targetFsDetails, err := conn.GetFilesystemDetails(ctx, targetFsName)
-        if err != nil {
-                return err
-        }
-
-        fsMntPt := targetFsDetails.Mount.MountPoint
+        fsMntPt := fsDetails.Mount.MountPoint
         targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
         jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
@@ -1287,8 +1279,22 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
         if err != nil {
                 return err
         }
-        sLinkRelPath := strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
+        sLinkRelPath := strings.Replace(sourcevolume.Path, fsMntPt, "", 1)
         sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
+
+	if primaryFSMountPoint != fsMntPt && fsDetails.Type == filesystemTypeRemote{
+		remotefsDetails,err := conn.GetFilesystemDetails(ctx, newvolume.VolBackendFs)
+		if err != nil {
+			if strings.Contains(err.Error(), "Invalid value in filesystemName") {
+				klog.Errorf("[%s] filesystem %s in not known to cluster %v. Error: %v", loggerId, newvolume.VolBackendFs, newvolume.ClusterId, err)
+				return status.Error(codes.Internal, fmt.Sprintf("Filesystem %s in not known to cluster %v. Error: %v", newvolume.VolBackendFs, newvolume.ClusterId, err))
+			}
+			klog.Errorf("[%s] unable to check type of filesystem [%v]. Error: %v", loggerId, newvolume.VolBackendFs, err)
+			return status.Error(codes.Internal, fmt.Sprintf("unable to check type of filesystem [%v]. Error: %v", newvolume.VolBackendFs, err))
+		}
+		remoteMntPt := remotefsDetails.Mount.MountPoint
+		targetPath = strings.Replace(targetPath, fsMntPt, remoteMntPt, 1)
+	}
 
         jobStatus, jobID, jobErr := conn.CopyDirectoryPath(ctx, sourcevolume.FsName, sLinkRelPath, targetPath, newvolume.NodeClass)
 
@@ -1539,17 +1545,17 @@ func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connec
 	 return nil
  }*/
 
-func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string, isShallowCopyVolume bool) (bool, error) {
+func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateSnapId [%v]", loggerId, sourcesnapshot)
 	conn, err := cs.getConnFromClusterID(ctx, sourcesnapshot.ClusterId)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Restrict cross cluster cloning
 	if newvolume.ClusterId != sourcesnapshot.ClusterId {
-		return false, status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
+		return status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
 	}
 
 	// Restrict cross storage class version volume from snapshot
@@ -1572,24 +1578,24 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	/* Check if IBM Storage Scale supports Snapshot */
 	chkSnapshotErr := cs.checkSnapshotSupport(ctx, conn)
 	if chkSnapshotErr != nil {
-		return false, chkSnapshotErr
+		return chkSnapshotErr
 	}
 
 	if newvolume.NodeClass != "" {
 		isValidNodeclass, err := conn.IsValidNodeclass(ctx, newvolume.NodeClass)
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		if !isValidNodeclass {
-			return false, status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", newvolume.NodeClass, newvolume.ClusterId))
+			return status.Error(codes.NotFound, fmt.Sprintf("nodeclass [%s] not found on cluster [%v]", newvolume.NodeClass, newvolume.ClusterId))
 		}
 	}
 
 	sourcesnapshot.FsName, err = conn.GetFilesystemName(ctx, sourcesnapshot.FsUUID)
 
 	if err != nil {
-		return false, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
 	}
 
 	if sourcesnapshot.FsName != newvolume.VolBackendFs {
@@ -1603,7 +1609,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		err = checkFilesystemMountOnGUI(ctx, conn, sourcesnapshot.FsName, "", "")
 
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
@@ -1621,48 +1627,43 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 
 	err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcesnapshot.FsName, filesetToCheck, "source snapshot")
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	isSnapExist, err := conn.CheckIfSnapshotExist(ctx, sourcesnapshot.FsName, filesetToCheck, sourcesnapshot.SnapName)
 	if err != nil {
-		return false,status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sourcesnapshot.SnapName))
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get snapshot information for [%v]", sourcesnapshot.SnapName))
 	}
 	if !isSnapExist {
-		return false, status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sourcesnapshot.SnapName, filesetToCheck))
+		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sourcesnapshot.SnapName, filesetToCheck))
 	}
 
-	if isShallowCopyVolume {
-		isValidShallowCopyVolume := cs.validateShallowCopyVolume(ctx, sourcesnapshot, newvolume)
-		return isValidShallowCopyVolume, nil
-	}
-
-	return true, nil
+	return nil
 }
 
 
-func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume) bool {
+func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume) error {
 	loggerId := utils.GetLoggerId(ctx)
 
 	if !newvolume.IsFilesetBased {
-		klog.Errorf("[%s] shallow copy volume as directory based volume is not supported", loggerId)
-		return false
+		klog.Errorf("[%s] creating shallow copy volume as directory based volume is not supported", loggerId)
+		return status.Error(codes.Internal, fmt.Sprintf("creating shallow copy volume as directory based volume is not supported"))
 	}
 
 	if newvolume.ClusterId != sourcesnapshot.ClusterId {
 		klog.Errorf("[%s] shallow copy volume across clusters is not supported", loggerId)
-		return false
+		return status.Error(codes.Internal, fmt.Sprintf("shallow copy volume across clusters is not supported"))
 	}
 
 	if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
 		if newvolume.StorageClassType != sourcesnapshot.StorageClassType{
 			klog.Errorf("[%s] validation of shallow copy volume [%s] failed as storage class type is different from source pvc [%s]", loggerId, newvolume.VolName, sourcesnapshot.SnapName)
-			return false
+			return status.Error(codes.Internal, fmt.Sprintf("validation of shallow copy volume [%s] failed as storage class type is different from source pvc [%s]", newvolume.VolName, sourcesnapshot.SnapName))
 		}else{
 			if newvolume.VolBackendFs != sourcesnapshot.FsName {
 				klog.Errorf("[%s] validation of shallow copy volume [%s] failed as filesystem [%s] is different from source pvc [%s] failed ", loggerId, newvolume.VolName, 
 				newvolume.VolBackendFs, sourcesnapshot.SnapName)
-				return false
+				return status.Error(codes.Internal, fmt.Sprintf("validation of shallow copy volume [%s] failed as filesystem [%s] is different from source pvc [%s] failed", newvolume.VolName, newvolume.VolBackendFs, sourcesnapshot.SnapName))
 			}else{
 				if sourcesnapshot.StorageClassType == STORAGECLASS_CLASSIC {
                         		isSamefsetType := false
@@ -1678,13 +1679,13 @@ func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, 
 
                         		if !isSamefsetType {
                                 		klog.Errorf("[%s] Filesettype is not same for both source snapshot and new volume", loggerId)
-                                		return false
+                                		return status.Error(codes.Internal, fmt.Sprintf("Filesettype is not same for both source snapshot and new volume"))
                         		}
                 		}
 			}
 		} 
 	}
-	return true
+	return nil
 }
 
 func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, isNewVolumeType bool) error {
@@ -1985,7 +1986,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	}
 
 	relPath := ""
-	if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+	if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME{
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
@@ -2109,10 +2110,10 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, FilesystemName, FilesetName, ShallowCopyRefPath, storageClassType, independentFileset, snapshotName string, conn connectors.SpectrumScaleConnector) error{
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] Deleting shallow copy reference path [%s]", loggerId, ShallowCopyRefPath)
-	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
 
 	mutex.Lock()
 	defer mutex.Unlock()
+	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
 
 	isShallowCopyRefPathDeleted := false
 	err := conn.DeleteDirectory(ctx, FilesystemName, shallowCopyRefCompletePath, false)
