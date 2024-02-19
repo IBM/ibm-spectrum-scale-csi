@@ -237,7 +237,9 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name))
+	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
 	SetScaleAnnotations(out.ObjectMeta.Annotations)
+	out.Spec.Template.ObjectMeta.Annotations = annotations
 	out.Spec.Template.Spec.NodeSelector = s.driver.GetNodeSelectors(s.driver.Spec.AttacherNodeSelector)
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
