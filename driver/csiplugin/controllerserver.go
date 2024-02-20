@@ -730,7 +730,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID)
+		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID, assembledScaleversion)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
 			return nil,err
@@ -748,7 +748,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	var shallowCopyTargetPath string
 	if isShallowCopyVolume {
-		err = cs.createSnapshotDir(ctx, &snapIdMembers, scaleVol, isNewVolumeType
+		err = cs.createSnapshotDir(ctx, &snapIdMembers, scaleVol, isNewVolumeType)
 		if err != nil {
 			return nil, err
 		}
