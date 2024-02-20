@@ -1275,14 +1275,10 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
         jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
         response := connectors.GenericResponse{}
 
-        primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
-        if err != nil {
-                return err
-        }
         sLinkRelPath := strings.Replace(sourcevolume.Path, fsMntPt, "", 1)
         sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
-	if primaryFSMountPoint != fsMntPt && fsDetails.Type == filesystemTypeRemote{
+	if fsDetails.Type == filesystemTypeRemote{
 		remotefsDetails,err := conn.GetFilesystemDetails(ctx, newvolume.VolBackendFs)
 		if err != nil {
 			if strings.Contains(err.Error(), "Invalid value in filesystemName") {
