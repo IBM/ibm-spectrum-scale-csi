@@ -1645,14 +1645,8 @@ func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, 
 			}else{
 				if sourcesnapshot.StorageClassType == STORAGECLASS_CLASSIC {
           				isSamefsetType := false
-          				if newvolume.FilesetType == independentFileset {
-            					if sourcesnapshot.VolType == FILE_INDEPENDENTFILESET_VOLUME{
+          				if (newvolume.FilesetType == independentFileset && sourcesnapshot.VolType == FILE_INDEPENDENTFILESET_VOLUME) || (newvolume.FilesetType == dependentFileset && sourcesnapshot.VolType == FILE_DEPENDENTFILESET_VOLUME) {
               						isSamefsetType = true
-            					}
-          				}else if newvolume.FilesetType == dependentFileset{
-            					if sourcesnapshot.VolType == FILE_DEPENDENTFILESET_VOLUME{
-              						isSamefsetType = true
-             					}
           				}
 
           				if !isSamefsetType {
