@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	driver "github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin"
@@ -166,7 +167,7 @@ func InitFileLogger() func() {
 	}
 
 	/* #nosec G302 -- false positive */
-	logFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
+	logFile, err := os.OpenFile(filepath.Clean(filePath), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init logger %v", err))
 	}
