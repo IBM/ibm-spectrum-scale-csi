@@ -1,0 +1,12 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ibm-scale-cache-s3
+provisioner: spectrumscale.csi.ibm.com
+parameters:
+  volBackendFs: "remote-sample"
+  caching: "true"
+  cachingMode: "s3"
+  #PrefetchThreshold: "50"
+  #cacheTemplate: "Vela|Watsonx"
+reclaimPolicy: Delete

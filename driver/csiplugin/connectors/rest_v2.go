@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -571,6 +572,83 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	}
 
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
+	createFilesetResponse := GenericResponse{}
+
+	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)
+	if err != nil {
+		klog.Errorf("[%s] Error in create fileset request: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, createFilesetResponse, createFilesetURL)
+	if err != nil {
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
+			fmt.Println(err)
+			return nil
+		}
+		klog.Errorf("[%s] Unable to create fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]interface{}) error {
+	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys. opts: %v", utils.GetLoggerId(ctx), opts)
+	
+	keyreq := SetCosKeysRequest{}
+	
+	// TODO: hard code for now
+	keyreq.Bucket = "company"
+	keyreq.AccessKey = "minio"
+	keyreq.SecretKey = "minio123"
+	
+	// Extract the hostname without the port
+	endpoint := "http://jc-minio1.fyre.ibm.com:9000"
+	parsedURL, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %v", err)
+	}	
+	hostname := parsedURL.Hostname()
+	keyreq.Server = hostname
+
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
+	klog.V(4).Infof("[%s] rest_v2 CreateCosFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
+
+	filesetreq := CreateCosFilesetRequest{}
+	filesetreq.FilesetName = filesetName
+	filesetreq.Mode = "iw" // TODO: default to iw?
+	//filesetreq.Comment = FilesetComment
+
+	// TODO: hard coding my EP for now
+	// will need to pull this from CacheSource CR
+	filesetreq.Endpoint = "http://jc-minio1.fyre.ibm.com:9000"
+	filesetreq.BucketName = "company"
+
+	gid, gidSpecified := opts[UserSpecifiedGID]
+	if gidSpecified {
+		filesetreq.GID = fmt.Sprintf("%s", gid)
+	}
+
+	uid, uidSpecified := opts[UserSpecifiedUID]
+	if uidSpecified {
+		filesetreq.UID = fmt.Sprintf("%s", uid)
+	}
+
+	permissions, permissionsSpecified := opts[UserSpecifiedPermissions]
+	if permissionsSpecified {
+		filesetreq.Permission = fmt.Sprintf("%s", permissions)
+	}
+
+	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/cos", filesystemName)
 	createFilesetResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)

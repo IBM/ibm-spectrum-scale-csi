@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: scale-pvc-afm
+  namespace: default
+  annotations:
+    scale.spectrum.ibm.com/cache-source: my-s3-bucket
+spec:
+  storageClassName: ibm-scale-cache-s3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

@@ -446,8 +446,22 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	loggerId := utils.GetLoggerId(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
-			// This means fileset is not present, create it
-			fseterr := scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
+			var fseterr error
+			if scVol.Caching && scVol.CachingMode == CACHING_MODE_S3 {
+				// TODO: extract keys from CacheSource CR
+				keyerr := scVol.Connector.SetBucketKeys(ctx, opt)
+				if keyerr != nil {
+					klog.Errorf("[%s] volume:[%v] - failed setting bucket keys", loggerId, volName)
+					return "", status.Error(codes.Internal, fmt.Sprintf("unable to set bucket keys. Error: %v", keyerr))					
+				}
+				fseterr = scVol.Connector.CreateCosFileset(ctx, scVol.VolBackendFs, volName, opt)
+			} else if scVol.Caching && scVol.CachingMode == CACHING_MODE_NFS {
+				klog.Errorf("[%s] volume:[%v] - NFS is an unsupported caching mode, will be supported in Future", loggerId, volName)
+				return "", status.Error(codes.Internal, fmt.Sprintf("unable to create fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, fseterr))
+			} else {
+				// This means fileset is not present, create it
+				fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
+			}
 
 			if fseterr != nil {
 				// fileset creation failed return without cleanup
@@ -563,7 +577,8 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"csi.storage.k8s.io/pvc/namespace", "storage.kubernetes.io/csiProvisionerIdentity",
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
-			"version", "tier", "compression", "consistencyGroup", "shared":
+			"version", "tier", "compression", "consistencyGroup", "shared",
+			"caching", "cachingMode":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)

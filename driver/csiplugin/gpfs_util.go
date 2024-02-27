@@ -40,6 +40,11 @@ const (
 	sharedPermissions  = "777"
 )
 
+const (
+	CACHING_MODE_S3 = "s3"
+	CACHING_MODE_NFS = "nfs"
+)
+
 type scaleVolume struct {
 	VolName            string                            `json:"volName"`
 	VolSize            uint64                            `json:"volSize"`
@@ -69,6 +74,8 @@ type scaleVolume struct {
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
+	Caching            bool                              `json:"caching"`
+	CachingMode        string                            `json:"cachingMode"`
 }
 
 type scaleVolId struct {
@@ -137,6 +144,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+	caching, cachingSpecified := volOptions[connectors.UserSpecifiedCaching]
+	cachingMode, cachingModeSpecified := volOptions[connectors.UserSpecifiedCachingMode]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -390,6 +399,26 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
+	}
+
+	if cachingSpecified {
+		caching = strings.ToLower(caching)
+		if caching == "true" {
+			scaleVol.Caching = true
+		} else if caching == "false" {
+			scaleVol.Caching = false
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Caching must be specified as a boolean")
+		}
+	}
+	
+	if cachingModeSpecified {
+		caching = strings.ToLower(cachingMode)
+		if cachingMode == CACHING_MODE_S3 || cachingMode == CACHING_MODE_NFS {
+			scaleVol.CachingMode = cachingMode
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("CachingMode invalid: %s", cachingMode))
+		}
 	}
 
 	return scaleVol, nil
