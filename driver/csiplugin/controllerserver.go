@@ -1622,7 +1622,12 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 
 func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume) error {
 	loggerId := utils.GetLoggerId(ctx)
-
+	
+	if sourcesnapshot.VolType == "" && sourcesnapshot.ConsistencyGroup == ""{
+		klog.Errorf("[%s] creating shallow copy volume is not supported for static volume or old snapshot handle", loggerId)
+		return status.Error(codes.Internal, fmt.Sprintf("creating shallow copy volume is not supported for static volume or old snapshot handle"))
+	}
+	
 	if !newvolume.IsFilesetBased {
 		klog.Errorf("[%s] creating shallow copy volume as directory based volume is not supported", loggerId)
 		return status.Error(codes.Internal, fmt.Sprintf("creating shallow copy volume as directory based volume is not supported"))
@@ -2902,6 +2907,11 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	if err != nil {
 		klog.Errorf("[%s] ControllerExpandVolume - Error in source Volume ID %v: %v", loggerId, volID, err)
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err))
+	}
+
+	if volumeIDMembers.VolType == FILE_SHALLOWCOPY_VOLUME{
+		klog.Errorf("[%s] ControllerExpandVolume - volume expansion is not supported for shallow copy volume", loggerId)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - volume expansion is not supported for shallow copy volume %s", volID))
 	}
 
 	// For lightweight return volume expanded as no action is required
