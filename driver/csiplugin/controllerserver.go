@@ -2105,8 +2105,13 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 	if isShallowCopyRefPathDeleted{
 		statInfo, err := conn.StatDirectory(ctx, FilesystemName, ShallowCopyRefPath)
     		if err != nil{
-      			klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, FilesystemName, ShallowCopyRefPath, err)
-      			return err
+			if strings.Contains(err.Error(), "EFSSG0264C") ||
+			   strings.Contains(err.Error(), "does not exist") {
+				klog.Infof("[%s] snapshot path [%s] is already deleted", loggerId, ShallowCopyRefPath)
+			} else {
+      				klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, FilesystemName, ShallowCopyRefPath, err)
+      				return err
+			}
     		}else{
       			nlink,err := parseStatDirInfo(statInfo)
       			if err != nil{
