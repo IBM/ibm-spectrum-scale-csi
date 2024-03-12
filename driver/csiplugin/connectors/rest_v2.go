@@ -598,18 +598,34 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	return nil
 }
 
-func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]interface{}) error {
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]interface{}, access map[string]string) error {
 	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys. opts: %v", utils.GetLoggerId(ctx), opts)
 	
 	keyreq := SetCosKeysRequest{}
 	
 	// TODO: hard code for now
-	keyreq.Bucket = "company"
-	keyreq.AccessKey = "minio"
-	keyreq.SecretKey = "minio123"
-	
+	endpoint, exists := access["endpoint"]
+	if !exists {
+		return fmt.Errorf("missing Endpoint")
+	}
+	bucket, exists := access["bucket"]
+	if !exists {
+		return fmt.Errorf("missing Bucket")
+	}
+	akey, exists := access["accesskey"]
+	if !exists {
+		return fmt.Errorf("missing AccessKey")
+	}
+	skey, exists := access["secretkey"]
+	if !exists {
+		return fmt.Errorf("missing SecretKey")
+	}	
+
+	keyreq.Bucket = bucket
+	keyreq.AccessKey = akey
+	keyreq.SecretKey = skey
+
 	// Extract the hostname without the port
-	endpoint := "http://jc-minio1.fyre.ibm.com:9000"
 	parsedURL, err := url.Parse(endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to parse URL: %v", err)
@@ -620,7 +636,7 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]inte
 	return nil
 }
 
-func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
+func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}, access map[string]string) error {
 	klog.V(4).Infof("[%s] rest_v2 CreateCosFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 
 	filesetreq := CreateCosFilesetRequest{}
@@ -628,10 +644,17 @@ func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName st
 	filesetreq.Mode = "iw" // TODO: default to iw?
 	//filesetreq.Comment = FilesetComment
 
-	// TODO: hard coding my EP for now
-	// will need to pull this from CacheSource CR
-	filesetreq.Endpoint = "http://jc-minio1.fyre.ibm.com:9000"
-	filesetreq.BucketName = "company"
+	endpoint, exists := access["endpoint"]
+	if !exists {
+		return fmt.Errorf("missing Endpoint")
+	}
+	filesetreq.Endpoint = endpoint
+
+	bucket, exists := access["bucket"]
+	if !exists {
+		return fmt.Errorf("missing Bucket")
+	}
+	filesetreq.BucketName = bucket
 
 	gid, gidSpecified := opts[UserSpecifiedGID]
 	if gidSpecified {

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csi-afmdemo-pod
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  containers:
+   - name: web-server
+     image: nginx 
+     volumeMounts:
+       - name: mypvc
+         mountPath: /usr/share/nginx/html/scale
+     ports:
+     - containerPort: 80
+  volumes:
+   - name: mypvc
+     persistentVolumeClaim:
+       claimName: scale-pvc-afm
+       readOnly: false
+

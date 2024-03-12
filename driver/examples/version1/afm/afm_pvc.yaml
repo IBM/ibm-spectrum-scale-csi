@@ -12,3 +12,16 @@ spec:
   resources:
     requests:
       storage: 2Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: scale-pvc-afm-secret
+type: Opaque
+data:
+  # encode values
+  # endpoint should include https:// and port as necessary
+  endpoint: aHR0cDovL2pjLW1pbmlvMS5meXJlLmlibS5jb206OTAwMA== 
+  bucket: Y29tcGFueQ==
+  accesskey: bWluaW8=
+  secretkey: bWluaW8xMjM=

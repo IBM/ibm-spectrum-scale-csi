@@ -4,9 +4,11 @@ metadata:
   name: ibm-scale-cache-s3
 provisioner: spectrumscale.csi.ibm.com
 parameters:
+  csi.storage.k8s.io/provisioner-secret-name: ${pvc.name}-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: ${pvc.namespace}
   volBackendFs: "remote-sample"
   caching: "true"
   cachingMode: "s3"
   #PrefetchThreshold: "50"
-  #cacheTemplate: "Vela|Watsonx"
+  #cacheTemplate: ""
 reclaimPolicy: Delete
