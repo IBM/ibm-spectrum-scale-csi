@@ -448,7 +448,6 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
 			var fseterr error
 			if scVol.Caching && scVol.CachingMode == CACHING_MODE_S3 {
-				// TODO: extract keys from CacheSource CR
 				keyerr := scVol.Connector.SetBucketKeys(ctx, opt, access)
 				if keyerr != nil {
 					klog.Errorf("[%s] volume:[%v] - failed setting bucket keys", loggerId, volName)

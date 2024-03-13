@@ -603,7 +603,6 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]inte
 	
 	keyreq := SetCosKeysRequest{}
 	
-	// TODO: hard code for now
 	endpoint, exists := access["endpoint"]
 	if !exists {
 		return fmt.Errorf("missing Endpoint")
