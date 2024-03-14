@@ -640,6 +640,7 @@ func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName st
 
 	filesetreq := CreateCosFilesetRequest{}
 	filesetreq.FilesetName = filesetName
+	filesetreq.UseObjectFs = true
 	filesetreq.Mode = "iw" // TODO: default to iw?
 	//filesetreq.Comment = FilesetComment
 
