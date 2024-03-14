@@ -300,8 +300,8 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 	if !forceful {
 		klog.V(4).Infof("[%s] inside in !forceful", loggerId)
 		isMP, err = mounter.IsMountPoint(targetPath)
-		klog.Errorf("[%s] checking mounter.IsMountPoint targetPath: [%s],failed with error [%v]", loggerId, targetPath, err)
 		if err != nil {
+			klog.Errorf("[%s] checking mounter.IsMountPoint targetPath: [%s],failed with error [%v]", loggerId, targetPath, err)
 			if os.IsNotExist(err) {
 				klog.V(4).Infof("[%s] targetPath [%v] is not present when !forceful ", loggerId, targetPath)
 				return true, &csi.NodeUnpublishVolumeResponse{}, nil
