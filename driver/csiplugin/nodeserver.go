@@ -293,24 +293,26 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 // to be returned if there are any.
 func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] unmount and delete %s", loggerId, targetPath)
-	targetPathInContainer := hostDir + targetPath
+	klog.V(4).Infof("[%s] unmount and delete targetPath:[%s], forceful:[%s]", loggerId, targetPath)
 	isMP := false
 	var err error
 	mounter := &mount.Mounter{}
 	if !forceful {
-		isMP, err = mounter.IsMountPoint(targetPathInContainer)
+		klog.V(4).Infof("[%s] inside in !forceful", loggerId)
+		isMP, err = mounter.IsMountPoint(targetPath)
+		klog.Errorf("[%s] checking mounter.IsMountPoint targetPath: [%s],failed with error [%v]", loggerId, targetPath, err)
 		if err != nil {
 			if os.IsNotExist(err) {
-				klog.V(4).Infof("[%s] targetPath %v is not present", loggerId, targetPathInContainer)
+				klog.V(4).Infof("[%s] targetPath [%v] is not present when !forceful ", loggerId, targetPath)
 				return true, &csi.NodeUnpublishVolumeResponse{}, nil
 			}
-			klog.Errorf("[%s] mount point check on [%s] failed with error [%v]", loggerId, targetPathInContainer, err)
-			return true, nil, fmt.Errorf("mount point check on [%s] failed with error [%v]", targetPathInContainer, err)
+			klog.Errorf("[%s] mount point check on [%s] failed with error [%v]", loggerId, targetPath, err)
+			return true, nil, fmt.Errorf("mount point check on [%s] failed with error [%v]", targetPath, err)
 		}
 		klog.V(4).Infof("[%s] isMP value for the target path [%s] is [%t]", loggerId, targetPath, isMP)
 	}
 	if forceful || isMP {
+		klog.V(4).Infof("[%s] inside in forceful || isMP ", loggerId)
 		// Unmount the targetPath
 		err = mounter.Unmount(targetPath)
 		if err != nil {
@@ -320,13 +322,15 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 		klog.V(4).Infof("[%s] %v is unmounted successfully", loggerId, targetPath)
 	}
 	// Delete the mount point
-	if err = os.Remove(targetPathInContainer); err != nil {
+	klog.V(4).Infof("[%s] remove mount point ", loggerId)
+	if err = os.Remove(targetPath); err != nil {
+		klog.Errorf("[%s] remove targetPath: [%s] failed with error [%v]", loggerId, targetPath, err)
 		if os.IsNotExist(err) {
-			klog.V(4).Infof("[%s] targetPath [%s] is not present", loggerId, targetPath)
+			klog.V(4).Infof("[%s] inside when targetPath [%s] is not present", loggerId, targetPath)
 			return false, nil, nil
 		}
-		klog.V(4).Infof("[%s] mount point [%s] removal failed with error [%v]", loggerId, targetPathInContainer, err)
-		return true, nil, fmt.Errorf("mount point [%s] removal failed with error [%v]", targetPathInContainer, err)
+		klog.V(4).Infof("[%s] mount point [%s] removal failed with error [%v]", loggerId, targetPath, err)
+		return true, nil, fmt.Errorf("mount point [%s] removal failed with error [%v]", targetPath, err)
 	}
 	klog.V(4).Infof("[%s] Path [%s] is deleted", loggerId, targetPath)
 	return false, nil, nil
