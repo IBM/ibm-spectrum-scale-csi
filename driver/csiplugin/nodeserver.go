@@ -293,7 +293,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 // to be returned if there are any.
 func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] unmount and delete targetPath:[%s], forceful:[%s]", loggerId, targetPath)
+	klog.V(4).Infof("[%s] unmount and delete targetPath:[%s], forceful:[%s]", loggerId, targetPath, forceful)
 	isMP := false
 	var err error
 	mounter := &mount.Mounter{}
