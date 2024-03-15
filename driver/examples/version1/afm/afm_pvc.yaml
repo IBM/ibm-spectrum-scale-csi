@@ -22,6 +22,6 @@ data:
   # encode values
   # endpoint should include https:// and port as necessary
   endpoint: aHR0cDovL2pjLW1pbmlvMS5meXJlLmlibS5jb206OTAwMA== 
-  bucket: Y29tcGFueQ==
+  bucket: YnVja2V0MQ==
   accesskey: bWluaW8=
   secretkey: bWluaW8xMjM=

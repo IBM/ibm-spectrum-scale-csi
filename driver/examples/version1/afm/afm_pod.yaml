@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
    - name: web-server
-     image: nginx 
+     image: gcr.io/google-containers/nginx
      volumeMounts:
        - name: mypvc
          mountPath: /usr/share/nginx/html/scale
