@@ -298,7 +298,6 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 	var err error
 	mounter := &mount.Mounter{}
 	if !forceful {
-		klog.V(4).Infof("[%s] inside in !forceful", loggerId)
 		isMP, err = mounter.IsMountPoint(targetPath)
 		if err != nil {
 			klog.Errorf("[%s] checking mounter.IsMountPoint targetPath: [%s],failed with error [%v]", loggerId, targetPath, err)
@@ -312,7 +311,6 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 		klog.V(4).Infof("[%s] isMP value for the target path [%s] is [%t]", loggerId, targetPath, isMP)
 	}
 	if forceful || isMP {
-		klog.V(4).Infof("[%s] inside in forceful || isMP ", loggerId)
 		// Unmount the targetPath
 		err = mounter.Unmount(targetPath)
 		if err != nil {
@@ -326,7 +324,7 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 	if err = os.Remove(targetPath); err != nil {
 		klog.Errorf("[%s] remove targetPath: [%s] failed with error [%v]", loggerId, targetPath, err)
 		if os.IsNotExist(err) {
-			klog.V(4).Infof("[%s] inside when targetPath [%s] is not present", loggerId, targetPath)
+			klog.V(4).Infof("[%s] when targetPath [%s] is not present", loggerId, targetPath)
 			return false, nil, nil
 		}
 		klog.V(4).Infof("[%s] mount point [%s] removal failed with error [%v]", loggerId, targetPath, err)
