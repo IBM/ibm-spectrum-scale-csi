@@ -8,7 +8,8 @@ parameters:
   csi.storage.k8s.io/provisioner-secret-namespace: ${pvc.namespace}
   volBackendFs: "remote-sample"
   caching: "true"
-  cachingMode: "s3"
+  protocol: "s3"
+  #mode: "iw|ro|lu"
   #PrefetchThreshold: "50"
   #cacheTemplate: ""
 reclaimPolicy: Delete

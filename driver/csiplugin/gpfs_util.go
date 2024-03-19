@@ -41,8 +41,15 @@ const (
 )
 
 const (
-	CACHING_MODE_S3 = "s3"
-	CACHING_MODE_NFS = "nfs"
+	AFM_PROTOCOL_S3 = "s3"
+	AFM_PROTOCOL_NFS = "nfs"
+)
+
+const (
+	AFM_MODE_IW = "iw"  // Independent Writer
+	AFM_MODE_SW = "sw"  // Single-Writer
+	AFM_MODE_RO = "ro"  // Read-Only
+	AFM_MODE_LU = "lu"  // Local-Update
 )
 
 type scaleVolume struct {
@@ -75,7 +82,8 @@ type scaleVolume struct {
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
 	Caching            bool                              `json:"caching"`
-	CachingMode        string                            `json:"cachingMode"`
+	Protocol           string                            `json:"protocol"` // AFM protocol
+	Mode               string                            `json:"mode"`     // AFM mode
 }
 
 type scaleVolId struct {
@@ -145,7 +153,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
 	caching, cachingSpecified := volOptions[connectors.UserSpecifiedCaching]
-	cachingMode, cachingModeSpecified := volOptions[connectors.UserSpecifiedCachingMode]
+	protocol, protocolSpecified := volOptions[connectors.UserSpecifiedProtocol]
+	mode, modeSpecified := volOptions[connectors.UserSpecifiedMode]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -412,13 +421,26 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 	
-	if cachingModeSpecified {
-		caching = strings.ToLower(cachingMode)
-		if cachingMode == CACHING_MODE_S3 || cachingMode == CACHING_MODE_NFS {
-			scaleVol.CachingMode = cachingMode
+	if protocolSpecified {
+		protocol = strings.ToLower(protocol)
+		if protocol == AFM_PROTOCOL_S3 || protocol == AFM_PROTOCOL_NFS {
+			scaleVol.Protocol = protocol
 		} else {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("CachingMode invalid: %s", cachingMode))
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Protocol invalid: %s", protocol))
 		}
+	}
+
+	if modeSpecified {
+		mode = strings.ToLower(mode)
+		if protocol == AFM_MODE_IW || protocol == AFM_MODE_SW || 
+		   protocol == AFM_MODE_RO || protocol == AFM_MODE_LU {
+			scaleVol.Protocol = protocol
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Mode invalid: %s", protocol))
+		}
+	} else {
+		// Default to IW mode
+		scaleVol.Protocol = AFM_MODE_IW
 	}
 
 	return scaleVol, nil
