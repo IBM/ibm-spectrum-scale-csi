@@ -641,7 +641,6 @@ type CreateFilesetRequest struct {
 
 type CreateCosFilesetRequest struct {
 	FilesetName      string `json:"filesetName"`
-	Comment          string `json:"comment,omitempty"`
 	Mode             string `json:"mode"`
 	Endpoint         string `json:"endpoint"`
 	UseObjectFs      bool   `json:"useObjectFs,omitempty"`

@@ -467,12 +467,26 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				klog.Errorf("[%s] volume:[%v] - unable to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, fseterr)
 				return "", status.Error(codes.Internal, fmt.Sprintf("unable to create fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, fseterr))
 			}
+
 			// list fileset and update filesetInfo
 			filesetInfo, err = scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 			if err != nil {
 				// fileset got created but listing failed, return without cleanup
 				klog.Errorf("[%s] volume:[%v] - unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
+			} else {
+				// Fileset found...
+				
+				if scVol.Caching && scVol.Protocol == AFM_PROTOCOL_S3 {
+					// Create COS Fileset interface doesn't allow setting Fileset Comment, so need add it it here.
+					updateOpts := make(map[string]interface{})
+					updateOpts[connectors.FilesetComment] = connectors.FilesetComment  
+					updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
+					if updateerr != nil {
+						klog.Errorf("[%s] volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, updateerr)
+						return "", status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, updateerr))					
+					}
+				}
 			}
 		} else {
 			klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)

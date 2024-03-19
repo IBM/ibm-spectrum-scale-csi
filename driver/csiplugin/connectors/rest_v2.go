@@ -642,7 +642,6 @@ func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName st
 	filesetreq.FilesetName = filesetName
 	filesetreq.UseObjectFs = true
 	filesetreq.Mode = fmt.Sprintf("%s", opts[UserSpecifiedMode])
-	filesetreq.Comment = FilesetComment
 
 	endpoint, exists := access["endpoint"]
 	if !exists {
