@@ -692,6 +692,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	scaleVol, isNewVolumeType, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize)
+	klog.Infof("[%s] scaleVol: %v", loggerId, scaleVol)
 	if err != nil {
 		return nil, err
 	}
