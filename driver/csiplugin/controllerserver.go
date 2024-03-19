@@ -528,7 +528,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 	}
 	targetBasePath := ""
-	if !isCGIndependentFset {
+	if !isCGIndependentFset && !scVol.Caching {
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
 			if err != nil {
