@@ -410,6 +410,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
+	fmt.Printf("JACDEBUG %v", caching)
+	fmt.Printf("JACDEBUG %v", protocol)
+	fmt.Printf("JACDEBUG %v", mode)
 	if cachingSpecified {
 		caching = strings.ToLower(caching)
 		if caching == "true" {
@@ -419,28 +422,29 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		} else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Caching must be specified as a boolean")
 		}
-	}
-	
-	if protocolSpecified {
+
+		if !protocolSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Protocol must be specified")
+		}
 		protocol = strings.ToLower(protocol)
 		if protocol == AFM_PROTOCOL_S3 || protocol == AFM_PROTOCOL_NFS {
 			scaleVol.Protocol = protocol
 		} else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Protocol invalid: %s", protocol))
 		}
-	}
-
-	if modeSpecified {
-		mode = strings.ToLower(mode)
-		if protocol == AFM_MODE_IW || protocol == AFM_MODE_SW || 
-		   protocol == AFM_MODE_RO || protocol == AFM_MODE_LU {
-			scaleVol.Protocol = protocol
+	
+		if modeSpecified {
+			mode = strings.ToLower(mode)
+			if protocol == AFM_MODE_IW || protocol == AFM_MODE_SW || 
+			   protocol == AFM_MODE_RO || protocol == AFM_MODE_LU {
+				scaleVol.Protocol = protocol
+			} else {
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Mode invalid: %s", protocol))
+			}
 		} else {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Mode invalid: %s", protocol))
-		}
-	} else {
-		// Default to IW mode
-		scaleVol.Protocol = AFM_MODE_IW
+			// Default to IW mode
+			scaleVol.Protocol = AFM_MODE_IW
+		}	
 	}
 
 	return scaleVol, nil
