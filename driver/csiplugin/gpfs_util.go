@@ -410,9 +410,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
-	fmt.Printf("JACDEBUG %v", caching)
-	fmt.Printf("JACDEBUG %v", protocol)
-	fmt.Printf("JACDEBUG %v", mode)
+	fmt.Printf("JACDEBUG caching=%v\n", caching)
+	fmt.Printf("JACDEBUG protocol=%v\n", protocol)
+	fmt.Printf("JACDEBUG mode=%v\n", mode)
 	if cachingSpecified {
 		caching = strings.ToLower(caching)
 		if caching == "true" {
