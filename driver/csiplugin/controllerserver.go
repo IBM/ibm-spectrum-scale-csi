@@ -447,6 +447,8 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
 			var fseterr error
+			fmt.Printf("JACDEBUG scVol.Caching=%v\n", scVol.Caching)
+			fmt.Printf("JACDEBUG scVol.Protocol=%v, AFM_PROTOCOL_S3=%s\n", scVol.Protocol, AFM_PROTOCOL_S3)
 			if scVol.Caching && scVol.Protocol == AFM_PROTOCOL_S3 {
 				keyerr := scVol.Connector.SetBucketKeys(ctx, opt, access)
 				if keyerr != nil {
