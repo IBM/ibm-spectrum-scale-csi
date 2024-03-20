@@ -551,9 +551,6 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 
 		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType, scVol.Caching)
-		fmt.Printf("JACDEBUG filesetInfo.Config.Path=%v\n", filesetInfo.Config.Path)
-		fmt.Printf("JACDEBUG fsDetails.Mount.MountPoint=%v\n", fsDetails.Mount.MountPoint)
-		fmt.Printf("JACDEBUG targetBasePath=%v\n", targetBasePath)
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
 		}
