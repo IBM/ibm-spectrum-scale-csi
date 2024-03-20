@@ -435,15 +435,15 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	
 		if modeSpecified {
 			mode = strings.ToLower(mode)
-			if protocol == AFM_MODE_IW || protocol == AFM_MODE_SW || 
-			   protocol == AFM_MODE_RO || protocol == AFM_MODE_LU {
-				scaleVol.Protocol = protocol
+			if mode == AFM_MODE_IW || mode == AFM_MODE_SW || 
+			   mode == AFM_MODE_RO || mode == AFM_MODE_LU {
+				scaleVol.Mode = mode
 			} else {
-				return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Mode invalid: %s", protocol))
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Mode invalid: %s", mode))
 			}
 		} else {
 			// Default to IW mode
-			scaleVol.Protocol = AFM_MODE_IW
+			scaleVol.Mode = AFM_MODE_IW
 		}	
 	}
 
