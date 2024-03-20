@@ -542,7 +542,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 	}
 	targetBasePath := ""
-	if !isCGIndependentFset && !scVol.Caching {
+	if !isCGIndependentFset {
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
 			if err != nil {
@@ -862,7 +862,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
-	if !isNewVolumeType && !scaleVol.Caching {
+	if !isNewVolumeType {
 		// Create symbolic link if not present
 		err = cs.createSoftlink(ctx, scaleVol, targetPath)
 		if err != nil {
