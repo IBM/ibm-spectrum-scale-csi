@@ -17,6 +17,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: scale-pvc-afm-secret
+  namespace: default
 type: Opaque
 data:
   # encode values
