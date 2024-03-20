@@ -598,8 +598,8 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	return nil
 }
 
-func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]interface{}, access map[string]string) error {
-	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys. opts: %v", utils.GetLoggerId(ctx), opts)
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, access map[string]string) error {
+	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys.", utils.GetLoggerId(ctx))
 	
 	keyreq := SetCosKeysRequest{}
 	
@@ -635,13 +635,13 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, opts map[string]inte
 	return nil
 }
 
-func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}, access map[string]string) error {
+func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string) error {
 	klog.V(4).Infof("[%s] rest_v2 CreateCosFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 
 	filesetreq := CreateCosFilesetRequest{}
 	filesetreq.FilesetName = filesetName
 	filesetreq.UseObjectFs = true
-	filesetreq.Mode = fmt.Sprintf("%s", opts[UserSpecifiedMode])
+	filesetreq.Mode = mode
 
 	endpoint, exists := access["endpoint"]
 	if !exists {
