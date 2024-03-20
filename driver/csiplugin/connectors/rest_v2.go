@@ -502,6 +502,11 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.MaxNumInodes = inodeLimit.(string)
 		//filesetreq.AllocInodes = "1024"
 	}
+    comment, commentSpecified := opts[FilesetComment]
+	if commentSpecified {
+		filesetreq.Comment = fmt.Sprintf("%v", comment)
+	}
+
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
 	err := s.doHTTP(ctx, updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
