@@ -447,8 +447,6 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
 			var fseterr error
-			fmt.Printf("JACDEBUG scVol.Caching=%v\n", scVol.Caching)
-			fmt.Printf("JACDEBUG scVol.Protocol=%v, AFM_PROTOCOL_S3=%s\n", scVol.Protocol, AFM_PROTOCOL_S3)
 			if scVol.Caching && scVol.Protocol == AFM_PROTOCOL_S3 {
 				keyerr := scVol.Connector.SetBucketKeys(ctx, access)
 				if keyerr != nil {
@@ -553,6 +551,9 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 
 		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType)
+		fmt.Printf("JACDEBUG filesetInfo.Config.Path=%v\n", filesetInfo.Config.Path)
+		fmt.Printf("JACDEBUG fsDetails.Mount.MountPoint=%v\n", fsDetails.Mount.MountPoint)
+		fmt.Printf("JACDEBUG targetBasePath=%v\n", targetBasePath)
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
 		}
@@ -861,7 +862,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, err
 	}
 
-	if !isNewVolumeType {
+	if !isNewVolumeType && !scaleVol.Caching {
 		// Create symbolic link if not present
 		err = cs.createSoftlink(ctx, scaleVol, targetPath)
 		if err != nil {
