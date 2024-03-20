@@ -161,14 +161,14 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 }
 
 // getTargetPath: retrun relative volume path from filesystem mount point
-func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isNewVolumeType bool) (string, error) {
+func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isNewVolumeType bool, isCaching bool) (string, error) {
 	if fsetLinkPath == "" || fsMountPoint == "" {
 		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
 	}
 	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:getTargetPath", utils.GetLoggerId(ctx), volumeName)
 	targetPath := strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
-	if createDataDir && !isNewVolumeType {
+	if createDataDir && !isNewVolumeType && !isCaching {
 		targetPath = fmt.Sprintf("%s/%s-data", targetPath, volumeName)
 	}
 	targetPath = strings.Trim(targetPath, "!/")
@@ -550,7 +550,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 		}
 
-		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType)
+		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType, scVol.Caching)
 		fmt.Printf("JACDEBUG filesetInfo.Config.Path=%v\n", filesetInfo.Config.Path)
 		fmt.Printf("JACDEBUG fsDetails.Mount.MountPoint=%v\n", fsDetails.Mount.MountPoint)
 		fmt.Printf("JACDEBUG targetBasePath=%v\n", targetBasePath)
