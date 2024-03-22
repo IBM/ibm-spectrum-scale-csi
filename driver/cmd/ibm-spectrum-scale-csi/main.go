@@ -109,7 +109,8 @@ func handle(ctx context.Context) {
 	if err != nil {
 		klog.Fatalf("[%s] Failed to initialize Scale CSI Driver: %v", loggerId, err)
 	}
-	klog.Infof("[%s] Scale CSI Driver Initialized: [%+v]", loggerId, driver)
+	newDriver := driver
+	newDriver.PrintDriverInit(ctx)
 	driver.Run(ctx, *endpoint)
 }
 
