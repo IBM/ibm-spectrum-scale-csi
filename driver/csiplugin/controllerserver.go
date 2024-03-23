@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"sync"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -50,10 +50,44 @@ const (
 
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
+	createVolume              = "CreateVolume"
+	createSnapshot            = "CreateSnapshot"
+	deleteVolume              = "DeleteVolume"
+	deleteSnapshot            = "DeleteSnapshot"
 )
 
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
+}
+
+
+var cgSnapshotPathLock map[string]string
+
+var cgSnapMutex sync.Mutex
+
+func cgSnapshotLock(targetPath string, ctx context.Context) (bool, string) {
+	cgSnapMutex.Lock()
+	defer cgSnapMutex.Unlock()
+
+	if len(cgSnapshotPathLock) == 0 {
+		cgSnapshotPathLock = make(map[string]string)
+	}
+
+	if _, exists := cgSnapshotPathLock[targetPath]; exists {
+		return false, cgSnapshotPathLock[targetPath]
+	}
+	klog.Infof("[%s] utils.GetModuleName(ctx) :%s",utils.GetLoggerId(ctx), utils.GetModuleName(ctx))
+	klog.Infof("[%s] cgSnapshotPathLock :[%+v]", utils.GetLoggerId(ctx), cgSnapshotPathLock)
+	cgSnapshotPathLock[targetPath] = utils.GetModuleName(ctx)
+	klog.V(4).Infof("[%s] The target path is locked for %s: [%s]", utils.GetLoggerId(ctx), utils.GetModuleName(ctx), targetPath)
+	return true, ""
+}
+
+func cgSnapshotUnlock(targetPath string, ctx context.Context) {
+	cgSnapMutex.Lock()
+	defer cgSnapMutex.Unlock()
+	delete(cgSnapshotPathLock, targetPath)
+	klog.V(4).Infof("[%s] The target path is unlocked for %s: [%s]", utils.GetLoggerId(ctx), utils.GetModuleName(ctx), targetPath)
 }
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
@@ -622,8 +656,9 @@ func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (st
 }
 
 // CreateVolume - Create Volume
-func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, createVolume)
 	klog.Infof("[%s] create volume req: %v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
@@ -1665,14 +1700,23 @@ func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesn
 	loggerId := utils.GetLoggerId(ctx)
 	var snapshotPath string
 	if isNewVolumeType {
-		snapshotPath = fmt.Sprintf("%s/%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName, newvolume.VolName)
+		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName)
 	} else {
-		snapshotPath = fmt.Sprintf("%s/%s/%s", sourcesnapshot.FsetName, sourcesnapshot.SnapName, newvolume.VolName)
+		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.FsetName, sourcesnapshot.SnapName)
 	}
-	mutex.Lock()
-	defer mutex.Unlock()
-	klog.Infof("[%s] createSnapshotDir reference path [%s] for shallow copy volume: [%s]", loggerId, snapshotPath, newvolume.VolName)
-	err := cs.createDirectory(ctx, newvolume, newvolume.VolName, snapshotPath)
+	shallowCopyPath := fmt.Sprintf("%s/%s", snapshotPath, newvolume.VolName)
+
+	lockSuccess,lockModule := cgSnapshotLock(snapshotPath, ctx)
+	if !lockSuccess {
+		message := fmt.Sprintf(" %s is in progress for the targetPath: [%s]", lockModule, snapshotPath)
+		klog.Errorf("[%s] %s", loggerId, message)
+		return status.Error(codes.Internal, message)
+	} else {
+		defer cgSnapshotUnlock(snapshotPath, ctx)
+	}
+
+	klog.Infof("[%s] createSnapshotDir reference path [%s] for shallow copy volume: [%s]", loggerId, shallowCopyPath, newvolume.VolName)
+	err := cs.createDirectory(ctx, newvolume, newvolume.VolName, shallowCopyPath)
 	if err != nil {
 		klog.Errorf("[%s] Failed to create snapshot reference directory", loggerId)
 		return err
@@ -1909,8 +1953,9 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 	return nil
 }
 
-func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, deleteVolume)
 	klog.Infof("[%s] DeleteVolume [%v]", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
@@ -2085,8 +2130,14 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath (ctx context.Context, 
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] Deleting shallow copy reference path [%s]", loggerId, ShallowCopyRefPath)
 
-	mutex.Lock()
-	defer mutex.Unlock()
+	lockSuccess,lockModule := cgSnapshotLock(ShallowCopyRefPath, ctx)
+	if !lockSuccess {
+		message := fmt.Sprintf("%s is in progress for the targetPath: [%s]", lockModule, ShallowCopyRefPath)
+		klog.Errorf("[%s] %s", loggerId, message)
+		return status.Error(codes.Internal, message)
+	} else {
+		defer cgSnapshotUnlock(ShallowCopyRefPath, ctx)
+	}
 	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
 
 	isShallowCopyRefPathDeleted := false
@@ -2384,7 +2435,17 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 
 func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) error {
 	loggerId := utils.GetLoggerId(ctx)
-	path := fmt.Sprintf("%s/%s/%s", indepFileset, cgSnapName, metaSnapName)
+	cgpath := fmt.Sprintf("%s/%s", indepFileset, cgSnapName)
+	path := fmt.Sprintf("%s/%s", cgpath, metaSnapName)
+	
+	lockSuccess,lockModule := cgSnapshotLock(cgpath, ctx)
+	if !lockSuccess {
+		message := fmt.Sprintf("%s is in progress for the targetPath: [%s]", lockModule, cgpath)
+		klog.Errorf("[%s] %s", loggerId, message)
+		return status.Error(codes.Internal, message)
+	} else {
+		defer cgSnapshotUnlock(cgpath, ctx)
+	}
 	klog.Infof("[%s] MakeSnapMetadataDir - creating directory [%s] for fileset: [%s:%s]", loggerId, path, filesystemName, filesetName)
 	err := conn.MakeDirectory(ctx, filesystemName, path, "0", "0")
 	if err != nil {
@@ -2396,8 +2457,9 @@ func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn c
 }
 
 // CreateSnapshot Create Snapshot
-func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) { //nolint:gocyclo,funlen
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, createSnapshot)
 	klog.Infof("[%s] CreateSnapshot - create snapshot req: %v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
@@ -2696,7 +2758,18 @@ func (cs *ScaleControllerServer) isExistingSnapUseableForVol(ctx context.Context
 
 func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
+	cgpath := fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	pathDir := fmt.Sprintf("%s/%s", cgpath, metaSnapName)
+
+	lockSuccess,lockModule := cgSnapshotLock(cgpath, ctx)
+	if !lockSuccess {
+		message := fmt.Sprintf("%s is in progress for the targetPath: [%s]", lockModule, cgpath)
+		klog.Errorf("[%s] %s", loggerId, message)
+		return false, status.Error(codes.Internal, message)
+	} else {
+		defer cgSnapshotUnlock(cgpath, ctx)
+	}
+
 	err := conn.DeleteDirectory(ctx, filesystemName, pathDir, false)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
@@ -2748,8 +2821,9 @@ func parseStatDirInfo(statInfo string) (int, error) {
 }
 
 // DeleteSnapshot - Delete snapshot
-func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, deleteSnapshot)
 	klog.Infof("[%s] DeleteSnapshot - delete snapshot req: %v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
