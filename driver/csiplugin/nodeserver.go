@@ -293,20 +293,20 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 // to be returned if there are any.
 func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] unmount and delete %s", loggerId, targetPath)
-	targetPathInContainer := hostDir + targetPath
+	klog.V(4).Infof("[%s] unmount and delete targetPath:[%s], forceful:[%s]", loggerId, targetPath, forceful)
 	isMP := false
 	var err error
 	mounter := &mount.Mounter{}
 	if !forceful {
-		isMP, err = mounter.IsMountPoint(targetPathInContainer)
+		isMP, err = mounter.IsMountPoint(targetPath)
 		if err != nil {
+			klog.Errorf("[%s] checking the targetPath: [%s] for mountPoint,failed with error [%v]", loggerId, targetPath, err)
 			if os.IsNotExist(err) {
-				klog.V(4).Infof("[%s] targetPath %v is not present", loggerId, targetPathInContainer)
+				klog.V(4).Infof("[%s] NodeUnpublishVolume - targetPath [%s] is not found when !forceful, returning success ", loggerId, targetPath)
 				return true, &csi.NodeUnpublishVolumeResponse{}, nil
 			}
-			klog.Errorf("[%s] mount point check on [%s] failed with error [%v]", loggerId, targetPathInContainer, err)
-			return true, nil, fmt.Errorf("mount point check on [%s] failed with error [%v]", targetPathInContainer, err)
+			klog.Errorf("[%s] mount point check on targetPath:[%s] failed with error [%v]", loggerId, targetPath, err)
+			return true, nil, status.Error(codes.Internal, fmt.Sprintf("NodeUnpublishVolume - mount point check on targetPath:[%s] failed with error [%v]", targetPath, err))
 		}
 		klog.V(4).Infof("[%s] isMP value for the target path [%s] is [%t]", loggerId, targetPath, isMP)
 	}
@@ -315,18 +315,20 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 		err = mounter.Unmount(targetPath)
 		if err != nil {
 			klog.Errorf("[%s] unmount [%s] failed with error [%v]", loggerId, targetPath, err)
-			return true, nil, fmt.Errorf("unmount [%s] failed with error [%v]", targetPath, err)
+			return true, nil, status.Error(codes.Internal, fmt.Sprintf("NodeUnpublishVolume - unmount [%s] failed with error [%v]", targetPath, err))
 		}
 		klog.V(4).Infof("[%s] %v is unmounted successfully", loggerId, targetPath)
 	}
 	// Delete the mount point
-	if err = os.Remove(targetPathInContainer); err != nil {
+	klog.V(4).Infof("[%s] remove mount point ", loggerId)
+	if err = os.Remove(targetPath); err != nil {
+		klog.Errorf("[%s] remove targetPath:[%s] failed with error [%v]", loggerId, targetPath, err)
 		if os.IsNotExist(err) {
 			klog.V(4).Infof("[%s] targetPath [%s] is not present", loggerId, targetPath)
 			return false, nil, nil
 		}
-		klog.V(4).Infof("[%s] mount point [%s] removal failed with error [%v]", loggerId, targetPathInContainer, err)
-		return true, nil, fmt.Errorf("mount point [%s] removal failed with error [%v]", targetPathInContainer, err)
+		klog.V(4).Infof("[%s] mount point:[%s] removal failed with error [%v]", loggerId, targetPath, err)
+		return true, nil, status.Error(codes.Internal, fmt.Sprintf("NodeUnpublishVolume - mount point [%s] removal failed with error [%v]", targetPath, err))
 	}
 	klog.V(4).Infof("[%s] Path [%s] is deleted", loggerId, targetPath)
 	return false, nil, nil
@@ -335,6 +337,7 @@ func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bo
 func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] NodeUnpublishVolume - request: %#v", loggerId, req)
+	defer klog.Infof("[%s] NodeUnpublishVolume has completed", loggerId)
 	// Validate Arguments
 	targetPath := req.GetTargetPath()
 	volID := req.GetVolumeId()
@@ -373,14 +376,14 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 			return &csi.NodeUnpublishVolumeResponse{}, nil
 		} else {
 			klog.Errorf("[%s] NodeUnpublishVolume - lstat [%s] failed with error [%v]", loggerId, targetPath, err)
-			return nil, fmt.Errorf("NodeUnpublishVolume - lstat [%s] failed with error [%v]", targetPath, err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("NodeUnpublishVolume - lstat [%s] failed with error [%v]", targetPath, err))
 		}
 	}
 	if f.Mode()&os.ModeSymlink != 0 {
 		klog.V(6).Infof("[%s] %v is a symlink", loggerId, targetPath)
 		if err := os.Remove(targetPath); err != nil {
 			if os.IsNotExist(err) {
-				klog.Infof("[%s] NodeUnpublishVolume - symlink [%s] is not present]", loggerId, targetPath)
+				klog.Infof("[%s] NodeUnpublishVolume - symlink [%s] is not present, returning success ", loggerId, targetPath)
 				return &csi.NodeUnpublishVolumeResponse{}, nil
 			}
 			return nil, status.Error(codes.Internal, fmt.Sprintf("removal of symlink [%s] failed with error [%v]", targetPath, err.Error()))
