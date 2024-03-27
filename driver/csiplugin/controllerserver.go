@@ -161,14 +161,14 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 }
 
 // getTargetPath: retrun relative volume path from filesystem mount point
-func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isNewVolumeType bool) (string, error) {
+func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isNewVolumeType bool, isCaching bool) (string, error) {
 	if fsetLinkPath == "" || fsMountPoint == "" {
 		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
 	}
 	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:getTargetPath", utils.GetLoggerId(ctx), volumeName)
 	targetPath := strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
-	if createDataDir && !isNewVolumeType {
+	if createDataDir && !isNewVolumeType && !isCaching {
 		targetPath = fmt.Sprintf("%s/%s-data", targetPath, volumeName)
 	}
 	targetPath = strings.Trim(targetPath, "!/")
@@ -294,7 +294,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isNewVolumeType bool, fsType string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isNewVolumeType bool, fsType string, access map[string]string) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol", loggerId, scVol.VolName)
 	opt := make(map[string]interface{})
@@ -384,7 +384,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType)
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isNewVolumeType, access)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -409,7 +409,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType, access)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -429,7 +429,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		// Create fileset
 		klog.Infof("[%s] creating fileset for classic storageClass with fileset name: [%v]", loggerId, scVol.VolName)
 		createDataDir := true
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isNewVolumeType, access)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -440,26 +440,53 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 }
 
-func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isNewVolumeType bool) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isNewVolumeType bool, access map[string]string) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 	loggerId := utils.GetLoggerId(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
-			// This means fileset is not present, create it
-			fseterr := scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
+			var fseterr error
+			if scVol.Caching && scVol.Protocol == AFM_PROTOCOL_S3 {
+				keyerr := scVol.Connector.SetBucketKeys(ctx, access)
+				if keyerr != nil {
+					klog.Errorf("[%s] volume:[%v] - failed setting bucket keys", loggerId, volName)
+					return "", status.Error(codes.Internal, fmt.Sprintf("unable to set bucket keys. Error: %v", keyerr))					
+				}
+				fseterr = scVol.Connector.CreateCosFileset(ctx, scVol.VolBackendFs, volName, scVol.Mode, opt, access)
+			} else if scVol.Caching && scVol.Protocol == AFM_PROTOCOL_NFS {
+				klog.Errorf("[%s] volume:[%v] - NFS is an unsupported caching mode, will be supported in Future", loggerId, volName)
+				return "", status.Error(codes.Internal, fmt.Sprintf("unable to create fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, fseterr))
+			} else {
+				// This means fileset is not present, create it
+				fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
+			}
 
 			if fseterr != nil {
 				// fileset creation failed return without cleanup
 				klog.Errorf("[%s] volume:[%v] - unable to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, fseterr)
 				return "", status.Error(codes.Internal, fmt.Sprintf("unable to create fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, fseterr))
 			}
+
 			// list fileset and update filesetInfo
 			filesetInfo, err = scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 			if err != nil {
 				// fileset got created but listing failed, return without cleanup
 				klog.Errorf("[%s] volume:[%v] - unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
+			} else {
+				// Fileset found...
+				
+				if scVol.Caching && scVol.Protocol == AFM_PROTOCOL_S3 {
+					// Create COS Fileset interface doesn't allow setting Fileset Comment, so need add it it here.
+					updateOpts := make(map[string]interface{})
+					updateOpts[connectors.FilesetComment] = connectors.FilesetComment  
+					updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
+					if updateerr != nil {
+						klog.Errorf("[%s] volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, updateerr)
+						return "", status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, updateerr))					
+					}
+				}
 			}
 		} else {
 			klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
@@ -523,7 +550,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 		}
 
-		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType)
+		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, volName, createDataDir, isNewVolumeType, scVol.Caching)
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
 		}
@@ -563,7 +590,8 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"csi.storage.k8s.io/pvc/namespace", "storage.kubernetes.io/csiProvisionerIdentity",
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
-			"version", "tier", "compression", "consistencyGroup", "shared":
+			"version", "tier", "compression", "consistencyGroup", "shared",
+			"caching", "protocol", "mode":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -664,6 +692,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	scaleVol, isNewVolumeType, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize)
+	klog.Infof("[%s] scaleVol: %v", loggerId, scaleVol)
 	if err != nil {
 		return nil, err
 	}
@@ -821,7 +850,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	var targetPath string
 
 	if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isNewVolumeType, volFsInfo.Type)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isNewVolumeType, volFsInfo.Type, req.Secrets)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}

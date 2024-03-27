@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -501,6 +502,11 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.MaxNumInodes = inodeLimit.(string)
 		//filesetreq.AllocInodes = "1024"
 	}
+    comment, commentSpecified := opts[FilesetComment]
+	if commentSpecified {
+		filesetreq.Comment = fmt.Sprintf("%v", comment)
+	}
+
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
 	err := s.doHTTP(ctx, updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
@@ -571,6 +577,105 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	}
 
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
+	createFilesetResponse := GenericResponse{}
+
+	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)
+	if err != nil {
+		klog.Errorf("[%s] Error in create fileset request: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, createFilesetResponse, createFilesetURL)
+	if err != nil {
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
+			fmt.Println(err)
+			return nil
+		}
+		klog.Errorf("[%s] Unable to create fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, access map[string]string) error {
+	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys.", utils.GetLoggerId(ctx))
+	
+	keyreq := SetCosKeysRequest{}
+	
+	endpoint, exists := access["endpoint"]
+	if !exists {
+		return fmt.Errorf("missing Endpoint")
+	}
+	bucket, exists := access["bucket"]
+	if !exists {
+		return fmt.Errorf("missing Bucket")
+	}
+	akey, exists := access["accesskey"]
+	if !exists {
+		return fmt.Errorf("missing AccessKey")
+	}
+	skey, exists := access["secretkey"]
+	if !exists {
+		return fmt.Errorf("missing SecretKey")
+	}	
+
+	keyreq.Bucket = bucket
+	keyreq.AccessKey = akey
+	keyreq.SecretKey = skey
+
+	// Extract the hostname without the port
+	parsedURL, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %v", err)
+	}	
+	hostname := parsedURL.Hostname()
+	keyreq.Server = hostname
+
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string) error {
+	klog.V(4).Infof("[%s] rest_v2 CreateCosFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
+
+	filesetreq := CreateCosFilesetRequest{}
+	filesetreq.FilesetName = filesetName
+	filesetreq.UseObjectFs = true
+	filesetreq.Mode = mode
+
+	endpoint, exists := access["endpoint"]
+	if !exists {
+		return fmt.Errorf("missing Endpoint")
+	}
+	filesetreq.Endpoint = endpoint
+
+	bucket, exists := access["bucket"]
+	if !exists {
+		return fmt.Errorf("missing Bucket")
+	}
+	filesetreq.BucketName = bucket
+
+	gid, gidSpecified := opts[UserSpecifiedGID]
+	if gidSpecified {
+		filesetreq.GID = fmt.Sprintf("%s", gid)
+	}
+
+	uid, uidSpecified := opts[UserSpecifiedUID]
+	if uidSpecified {
+		filesetreq.UID = fmt.Sprintf("%s", uid)
+	}
+
+	permissions, permissionsSpecified := opts[UserSpecifiedPermissions]
+	if permissionsSpecified {
+		filesetreq.Permission = fmt.Sprintf("%s", permissions)
+	}
+
+	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/cos", filesystemName)
 	createFilesetResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)

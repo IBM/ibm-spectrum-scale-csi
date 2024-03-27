@@ -639,6 +639,42 @@ type CreateFilesetRequest struct {
 	AfmShowHomeSnapshots         string `json:"afmShowHomeSnapshots,omitempty"`
 }
 
+type CreateCosFilesetRequest struct {
+	FilesetName      string `json:"filesetName"`
+	Mode             string `json:"mode"`
+	Endpoint         string `json:"endpoint"`
+	UseObjectFs      bool   `json:"useObjectFs,omitempty"`
+	UseXattr         bool   `json:"useXattr,omitempty"`
+	UseSslCertVerify bool   `json:"useSslCertVerify,omitempty"`
+	UseUserKeys      bool   `json:"useUserKeys,omitempty"`
+	BucketName       string `json:"bucket,omitempty"`
+	NewBucket        string `json:"newBucket,omitempty"`
+	Path             string `json:"path,omitempty"`
+	Policy           string `json:"policy,omitempty"`
+	TmpDir           string `json:"tmpDir,omitempty"`
+	TmpFile          string `json:"tmpFile,omitempty"`
+	QuotaFiles       string `json:"quotaFiles,omitempty"`
+	QuotaBlocks      string `json:"quotaBlocks,omitempty"`
+	UID              string `json:"uid,omitempty"`
+	GID              string `json:"gid,omitempty"`
+	Permission       string `json:"permission,omitempty"`
+	ChunkSize        string `json:"chunkSize,omitempty"`
+	ReadSize         string `json:"readSize,omitempty"`
+	UseFastReadDir   bool   `json:"useFastReadDir,omitempty"`
+	UseVhb           bool   `json:"useVhb,omitempty"`
+	UseGcs           bool   `json:"useGcs,omitempty"`
+	UseACL           bool   `json:"useAcl,omitempty"`
+}
+
+type SetCosKeysRequest struct {
+	Bucket    string `json:"bucket"`
+	AccessKey string `json:"accessKey"`
+	SecretKey string `json:"secretKey"`
+	Filepath  string `json:"filepath,omitempty"`
+	Region    string `json:"region,omitempty"`
+	Server    string `json:"server,omitempty"`
+}
+
 type CreateMakeDirRequest struct {
 	UID         string `json:"uid,omitempty"`         //uidnumber
 	GID         string `json:"gid,omitempty"`         //gidnumber

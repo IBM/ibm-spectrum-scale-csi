@@ -39,6 +39,8 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	SetBucketKeys(ctx context.Context, access map[string]string) error
+	CreateCosFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string) error
 	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
@@ -117,6 +119,9 @@ const (
 	UserSpecifiedShared           string = "shared"
 	AFMModeSecondary              string = "secondary"
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
+	UserSpecifiedCaching          string = "caching"
+	UserSpecifiedProtocol         string = "protocol"
+	UserSpecifiedMode             string = "mode"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
