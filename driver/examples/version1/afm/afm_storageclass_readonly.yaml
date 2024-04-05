@@ -11,5 +11,5 @@ parameters:
   protocol: "s3"
   mode: "ro"
   #PrefetchThreshold: "50"
-  #cacheTemplate: ""
+  #cacheTemplate: "training|fine-tuning|inference"
 reclaimPolicy: Delete

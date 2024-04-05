@@ -9,7 +9,8 @@ parameters:
   volBackendFs: "remote-sample"
   caching: "true"
   protocol: "s3"
-  #mode: "iw|ro|lu"
+  #mode: "rw|ro|lu"
   #PrefetchThreshold: "50"
-  #cacheTemplate: ""
+  #AFM Setting: <number>
+  #cacheTemplate: "training|fine-tuning|inference"
 reclaimPolicy: Delete

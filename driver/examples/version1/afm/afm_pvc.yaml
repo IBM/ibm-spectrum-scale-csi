@@ -3,8 +3,6 @@ apiVersion: v1
 metadata:
   name: scale-pvc-afm
   namespace: default
-  annotations:
-    scale.spectrum.ibm.com/cache-source: my-s3-bucket
 spec:
   storageClassName: ibm-scale-cache-s3
   accessModes:
@@ -20,9 +18,12 @@ metadata:
   namespace: default
 type: Opaque
 data:
-  # encode values
-  # endpoint should include https:// and port as necessary
+  # All encode values
+  # endpoint = http://jc-minio1.fyre.ibm.com:9000
   endpoint: aHR0cDovL2pjLW1pbmlvMS5meXJlLmlibS5jb206OTAwMA== 
+  
+  # bucket = bucket1
   bucket: YnVja2V0MQ==
+  
   accesskey: bWluaW8=
   secretkey: bWluaW8xMjM=
