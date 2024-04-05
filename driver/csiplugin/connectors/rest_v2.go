@@ -637,6 +637,26 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, access map[string]st
 	hostname := parsedURL.Hostname()
 	keyreq.Server = hostname
 
+	setBucketKeysURL := "scalemgmt/v2/bucket/keys"
+	setBucketKeysResponse := GenericResponse{}
+
+	err = s.doHTTP(ctx, setBucketKeysURL, "PUT", &setBucketKeysResponse, keyreq)
+	if err != nil {
+		klog.Errorf("[%s] Error in set buckets keys request: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, setBucketKeysResponse, setBucketKeysURL)
+	if err != nil {
+		klog.Errorf("[%s] Request not accepted for processing: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, setBucketKeysResponse.Status.Code, setBucketKeysResponse.Jobs[0].JobID)
+	if err != nil {
+		klog.Errorf("[%s] Unable to set bucket keys %s: %v", utils.GetLoggerId(ctx), bucket, err)
+		return err
+	}
 	return nil
 }
 
