@@ -40,10 +40,11 @@ const errContextDeadlineExceeded string = "context deadline exceeded"
 var GetLoggerId = utils.GetLoggerId
 
 type SpectrumRestV2 struct {
-	HTTPclient         *http.Client
-	Endpoint           []string
-	EndPointIndex      int
-	scaleClusterConfig settings.Clusters
+	HTTPclient      *http.Client
+	Endpoint        []string
+	EndPointIndex   int
+	ClusterConfig   settings.Clusters
+	RequestCalledBy string // "operator" or none
 }
 
 func (s *SpectrumRestV2) isStatusOK(statusCode int) bool {
@@ -163,8 +164,8 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 			Transport: tr,
 			Timeout:   time.Second * 60,
 		},
-		EndPointIndex:      0, //Use first GUI as primary by default
-		scaleClusterConfig: scaleConfig,
+		EndPointIndex: 0, //Use first GUI as primary by default
+		ClusterConfig: scaleConfig,
 	}
 
 	for i := range scaleConfig.RestAPI {
@@ -1032,14 +1033,20 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	endpoint := s.Endpoint[s.EndPointIndex]
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	var user, password string
-	scaleConfigNew := settings.LoadScaleConfigSettings(ctx)
-
-	for i := range scaleConfigNew.Clusters {
-		if s.scaleClusterConfig.ID == scaleConfigNew.Clusters[i].ID {
-			user = scaleConfigNew.Clusters[i].MgmtUsername
-			password = scaleConfigNew.Clusters[i].MgmtPassword
+	if s.RequestCalledBy == "operator" {
+		klog.V(4).Infof("[%s] rest_v2 doHTTP: requested by operator", utils.GetLoggerId(ctx))
+		user = s.ClusterConfig.MgmtUsername
+		password = s.ClusterConfig.MgmtPassword
+	} else {
+		scaleConfigNew := settings.LoadScaleConfigSettings(ctx)
+		for i := range scaleConfigNew.Clusters {
+			if s.ClusterConfig.ID == scaleConfigNew.Clusters[i].ID {
+				user = scaleConfigNew.Clusters[i].MgmtUsername
+				password = scaleConfigNew.Clusters[i].MgmtPassword
+			}
 		}
 	}
+
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), user)
 	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 
