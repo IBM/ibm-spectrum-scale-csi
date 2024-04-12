@@ -527,9 +527,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if len(instance.Spec.Clusters) != 0 {
 		logger.Info("Checking GUI password expiry")
 		// For validating gui password expires in every 24hours.
-		clusters := listGUIPasswdExpiredClusters(instance.Spec.Clusters)
-		if len(clusters) > 0 {
-			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", clusters)
+		passwordExipredClusters := r.listGUIPasswdExpiredClusters(instance, instance.Spec.Clusters)
+		if len(passwordExipredClusters) > 0 {
+			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", passwordExipredClusters)
 			logger.Info(message)
 
 			RaiseCSOEvent(instance, r.Recorder, corev1.EventTypeWarning,
@@ -826,11 +826,13 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
-					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+					/*if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.setRestartedAtValues()
 						logger.Info("Restarting driver and sidecar pods due to update of", "Resource", resourceKind, "Name", e.ObjectOld.GetName())
+						scaleGuiSecretChanged = true
 						return true
-					} else if resourceKind == corev1.ResourceConfigMaps.String() {
+					} else */
+					if resourceKind == corev1.ResourceConfigMaps.String() {
 						if e.ObjectNew.GetName() == config.EnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 							if shouldRequeueOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 								r.setRestartedAtValues()
@@ -1833,15 +1835,18 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
 		logger.Info("Created IBM Storage Scale connector without SSL mode for guiHost(s)")
 	}
-
+	logger.Info("Created IBM Storage Scale connector rest : ", " username ", username)
 	rest = &connectors.SpectrumRestV2{
 		HTTPclient: &http.Client{
 			Transport: tr,
 			Timeout:   time.Second * config.HTTPClientTimeout,
 		},
-		User:          username,
-		Password:      password,
-		EndPointIndex: 0, //Use first GUI as primary by default
+		ClusterConfig: settings.Clusters{
+			MgmtUsername: username,
+			MgmtPassword: password,
+		},
+		EndPointIndex:   0, //Use first GUI as primary by default
+		RequestCalledBy: "operator",
 	}
 
 	for i := range cluster.RestApi {
@@ -1863,6 +1868,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 	logger := csiLog.WithName("handleSpectrumScaleConnectors")
 	logger.Info("Checking IBM Storage Scale connectors")
 
+	//scaleGuiSecretChanged := false
 	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
 	for _, cluster := range instance.Spec.Clusters {
@@ -2547,13 +2553,18 @@ func getDiscoverCGFilesetDefaultValue() string {
 }
 
 // listGUIPasswdExpiredClusters returns a list having clusterIds whose password is expired
-func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
+func (r *CSIScaleOperatorReconciler) listGUIPasswdExpiredClusters(instance *csiscaleoperator.CSIScaleOperator, clusters []csiv1.CSICluster) []string {
 	logger := csiLog.WithName("listPasswdExpiredClusters")
 	logger.Info("Checking each cluster if its GUI password expired")
+
 	expiredGui := []string{}
 	for _, cls := range clusters {
-		if conn, ok := scaleConnMap[cls.Id]; ok {
-			_, err := conn.GetClusterId(context.TODO())
+		logger.Info("Checking each cluster ", "cluster", cls)
+		connector, err := r.newConnector(instance, cls)
+		if err != nil {
+			logger.Error(err, "Failed to create scale connector")
+		} else {
+			_, err = connector.GetClusterId(context.TODO())
 			if err != nil && isGUIUnauthorized(err) {
 				expiredGui = append(expiredGui, cls.Id)
 			}
