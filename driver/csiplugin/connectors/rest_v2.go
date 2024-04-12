@@ -1034,7 +1034,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	var user, password string
 	if s.RequestCalledBy == "operator" {
-		klog.V(4).Infof("[%s] rest_v2 doHTTP: requested by operator", utils.GetLoggerId(ctx))
+		klog.V(0).Infof("[%s] rest_v2 doHTTP: requested by operator", utils.GetLoggerId(ctx))
 		user = s.ClusterConfig.MgmtUsername
 		password = s.ClusterConfig.MgmtPassword
 	} else {
