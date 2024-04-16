@@ -155,6 +155,8 @@ const (
 	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
+	EnvMinimumPVSizeKey               = "MINIMUM_PV_SIZE"
+	EnvMaximumPVSizeKey               = "MAXIMUM_PV_SIZE"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -162,6 +164,8 @@ const (
 	EnvNodePublishMethodKeyPrefixed     = EnvVarPrefix + EnvNodePublishMethodKey
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
+	EnvMinimumPVSizeKeyPrefixed         = EnvVarPrefix + EnvMinimumPVSizeKey
+	EnvMaximumPVSizeKeyPrefixed         = EnvVarPrefix + EnvMaximumPVSizeKey
 
 	// Optional ConfigMap default values
 	DriverCPULimitsDefaultValue          = "600m"
@@ -173,6 +177,9 @@ const (
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
+	//EnvMinimumPVSizeDefaultValue         uint64 = 1024 * 1024 * 1024
+	EnvMinimumPVSizeDefaultValue = "1Gi"
+	EnvMaxPVSizeAllowedValue     = "100Gi"
 
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"
@@ -186,6 +193,8 @@ var CSIOptionalConfigMapKeys = []string{
 	EnvVolumeStatsCapabilityKeyPrefixed,
 	DaemonSetUpgradeMaxUnavailableKey,
 	EnvDiscoverCGFilesetKeyPrefixed,
+	EnvMinimumPVSizeKeyPrefixed,
+	EnvMaximumPVSizeKeyPrefixed,
 	HostNetworkKey,
 	DriverCPULimits,
 	DriverMemoryLimits,
