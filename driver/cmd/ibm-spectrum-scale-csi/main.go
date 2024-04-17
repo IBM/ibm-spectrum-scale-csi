@@ -47,18 +47,7 @@ var (
 
 func main() {
 	klog.InitFlags(nil)
-	if val, ok := os.LookupEnv(settings.LogLevel); ok {
-		klog.Infof("[%s] found in the env : %s", settings.LogLevel, val)
-	}
-	if val, ok := os.LookupEnv(settings.PersistentLog); ok {
-		klog.Infof("[%s] found in the env : %s", settings.PersistentLog, val)
-	}
-	if val, ok := os.LookupEnv(settings.NodePublishMethod); ok {
-		klog.Infof("[%s] found in the env : %s", settings.NodePublishMethod, val)
-	}
-	if val, ok := os.LookupEnv(settings.VolumeStatsCapability); ok {
-		klog.Infof("[%s] found in the env : %s", settings.VolumeStatsCapability, val)
-	}
+
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
@@ -84,7 +73,7 @@ func main() {
 	}
 
 	klog.V(0).Infof("[%s] Version Info: commit (%s)", loggerId, gitCommit)
-
+	envPrint()
 	// PluginFolder defines the location of scaleplugin
 	PluginFolder := path.Join(*kubeletRootDir, "plugins/spectrumscale.csi.ibm.com")
 
@@ -189,4 +178,22 @@ func InitFileLogger() func() {
 		}
 	}
 	return closeFn
+}
+
+func envPrint() {
+	if val, ok := os.LookupEnv(settings.LogLevel); ok {
+		klog.V(6).Infof("[%s] found in the env : %s", settings.LogLevel, val)
+	}
+	if val, ok := os.LookupEnv(settings.PersistentLog); ok {
+		klog.V(6).Infof("[%s] found in the env : %s", settings.PersistentLog, val)
+	}
+	if val, ok := os.LookupEnv(settings.NodePublishMethod); ok {
+		klog.V(6).Infof("[%s] found in the env : %s", settings.NodePublishMethod, val)
+	}
+	if val, ok := os.LookupEnv(settings.VolumeStatsCapability); ok {
+		klog.V(6).Infof("[%s] found in the env : %s", settings.VolumeStatsCapability, val)
+	}
+	if val, ok := os.LookupEnv(settings.MinimumPVSize); ok {
+		klog.V(6).Infof("[%s] found in the env : %s", settings.MinimumPVSize, val)
+	}
 }

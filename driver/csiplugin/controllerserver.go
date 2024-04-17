@@ -901,7 +901,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	} else if scaleVol.IsFilesetBased && uint64(volSize) > smallestVolSize && uint64(volSize) <= maximumPVSize {
 		scaleVol.VolSize = uint64(volSize)
 	} else {
-		return nil, false, "", fmt.Errorf("volume size should be less than %v", maximumPVSize)
+		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSize)
 	}
 
 	/* Get details for Primary Cluster */
@@ -2936,8 +2936,8 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	}
 
 	if uint64(capacity) > maximumPVSize {
-		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, maximumPVSize)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] is not allowed beyond max PV size:[%v]", volID, maximumPVSize))
+		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, uint64(capacity), maximumPVSize)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] with  requested volSize:[%v] is not allowed beyond max PV size:[%v]", volID, uint64(capacity), maximumPVSize))
 	}
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
 	if err != nil {
