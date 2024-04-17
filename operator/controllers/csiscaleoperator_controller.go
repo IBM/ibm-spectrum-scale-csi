@@ -2312,8 +2312,6 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvMinimumPVSizeKeyPrefixed:
 				validatePVMinSizeLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
-			case config.EnvMaximumPVSizeKeyPrefixed:
-				validatePVMaxSizeAllowedValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
 				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.HostNetworkKey:
@@ -2430,26 +2428,26 @@ func validateMemoryLimitsValue(key string, value string, data map[string]string,
 func validatePVMinSizeLimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
 	logger := csiLog.WithName("validatePVMinSizeLimitsValue")
 	logger.Info("Validating pv min size value input ", "pvMinSizeLimits", value)
+	var minPVSizeRequiredMilli, pvSizeRequestedMilliValue int64
 
-	isPVSizeRequestValid, err := checkPVCSizeValidation(value, "")
-	if isPVSizeRequestValid {
-		data[key[11:]] = value
-	} else {
-		logger.Error(err, "failed in validatePVMinSizeLimitsValue")
+	minPVSizeRequired, err := resource.ParseQuantity(config.EnvMinimumPVSizeDefaultValue)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to parse [pvSizeRequested=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.EnvMinimumPVSizeDefaultValue, err), "PV Minimum Size validation failed")
 		invalidEnvValue[key] = value
+	} else {
+		minPVSizeRequiredMilli = minPVSizeRequired.MilliValue()
 	}
-}
-
-// validatePVMaxSizeAllowedValue: To set only accepted PV size limit from configMap
-func validatePVMaxSizeAllowedValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validatePVSizeMaxAllowedValue")
-	logger.Info("Validating pv max size value input ", "PVMaxSizeInput", value)
-
-	isPVMaxSizeRequestValid, err := checkPVCSizeValidation("", value)
-	if isPVMaxSizeRequestValid {
+	pvSizeRequested, err := resource.ParseQuantity(value)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to parse [pvSizeRequested=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.EnvMinimumPVSizeDefaultValue, err), "PV Minimum Size validation failed")
+		invalidEnvValue[key] = value
+	} else {
+		pvSizeRequestedMilliValue = pvSizeRequested.MilliValue()
+	}
+	if minPVSizeRequiredMilli <= pvSizeRequestedMilliValue {
 		data[key[11:]] = value
 	} else {
-		logger.Error(err, "failed in validatePVMaxSizeAllowedValue")
+		logger.Error(fmt.Errorf("failed to parse [pvSizeRequested=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", value, config.EnvMinimumPVSizeDefaultValue, err), "PV Minimum Size validation failed")
 		invalidEnvValue[key] = value
 	}
 }
@@ -2476,56 +2474,6 @@ func checkMinResourceRequirement(resourceRequested string, minResourceRequired s
 		return true, nil
 	} else {
 		return false, nil
-	}
-}
-
-// checkPVCSizeValidation: To check PV size limit values.
-// Return true when requested value is less or equal to it's upper limit in case of PVMaxSizeAllowed
-// Return true when requested value is greater than min required value in case of PVMinSizeRequired
-func checkPVCSizeValidation(minResourceRequested string, maxResourceRequested string) (bool, error) {
-	var minResourceSizeMilli, maxResourceSizeMilli, resourceRequestedMilliValue int64
-
-	if len(minResourceRequested) > 0 {
-		minResourceSize, err := resource.ParseQuantity(config.EnvMinimumPVSizeDefaultValue)
-		if err != nil {
-			return false, err
-		} else {
-			minResourceSizeMilli = minResourceSize.MilliValue()
-		}
-		resourceSize, err := resource.ParseQuantity(minResourceRequested)
-		if err != nil {
-			return false, err
-		} else {
-			resourceRequestedMilliValue = resourceSize.MilliValue()
-		}
-		if minResourceSizeMilli <= resourceRequestedMilliValue {
-			return true, nil
-		} else {
-			message := fmt.Errorf("failed to parse [inputPVSizeLimitValue=%s] or wrong value passed. The value must be greater than or equal to %s, error : %v", minResourceRequested, config.EnvMinimumPVSizeDefaultValue, err)
-			return false, message
-		}
-	} else if len(maxResourceRequested) > 0 {
-		maxResourceSize, err := resource.ParseQuantity(config.EnvMaxPVSizeAllowedValue)
-		if err != nil {
-			return false, err
-		} else {
-			maxResourceSizeMilli = maxResourceSize.MilliValue()
-		}
-		resourceSize, err := resource.ParseQuantity(maxResourceRequested)
-		if err != nil {
-			return false, err
-		} else {
-			resourceRequestedMilliValue = resourceSize.MilliValue()
-		}
-		if maxResourceSizeMilli >= resourceRequestedMilliValue {
-			return true, nil
-		} else {
-			message := fmt.Errorf("failed to parse [inputPVMaxSizeInputValue=%s] or wrong value passed. The value must be less than or equal to %s, error : %v", maxResourceRequested, config.EnvMaxPVSizeAllowedValue, err)
-			return false, message
-		}
-	} else {
-		message := fmt.Errorf("failed to parse [inputPVMinSizeInputValue:%s] or [inputPVMaxSizeInputValue:%s] or wrong value passed", minResourceRequested, maxResourceRequested)
-		return false, message
 	}
 }
 
@@ -2614,11 +2562,6 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.EnvMinimumPVSizeKey]; !ok {
 		logger.Info("Minimum PV size is empty or incorrect.", "Defaulting Minimum PV size to", config.EnvMinimumPVSizeDefaultValue)
 		envMap[config.EnvMinimumPVSizeKey] = config.EnvMinimumPVSizeDefaultValue
-	}
-	// set Maximum PV size when it is not present in envMap
-	if _, ok := envMap[config.EnvMaximumPVSizeKey]; !ok {
-		logger.Info("Maximum PV size is empty or incorrect.", "Defaulting Maximum PV size to", config.EnvMaxPVSizeAllowedValue)
-		envMap[config.EnvMaximumPVSizeKey] = config.EnvMaxPVSizeAllowedValue
 	}
 }
 

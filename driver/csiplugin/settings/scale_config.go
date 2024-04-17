@@ -61,7 +61,6 @@ const (
 	HostPath              = "/host/var/adm/ras/"
 	RotateSize            = 1024
 	MinimumPVSize         = "MINIMUM_PV_SIZE"
-	MaximumPVSize         = "MAXIMUM_PV_SIZE"
 )
 
 type LoggerLevel int

@@ -37,20 +37,19 @@ import (
 )
 
 const (
-	no                           = "no"
-	yes                          = "yes"
-	notFound                     = "NOT_FOUND"
-	filesystemTypeRemote         = "remote"
-	filesystemMounted            = "mounted"
-	filesetUnlinkedPath          = "--"
-	ResponseStatusUnknown        = "UNKNOWN"
-	oneGB                 uint64 = 1024 * 1024 * 1024
-	//smallestVolSize       uint64 = oneGB // 1GB
-	defaultSnapWindow = "30" // default snapWindow for Consistency Group snapshots is 30 minutes
-	cgPrefixLen       = 37
-
-	discoverCGFileset         = "DISCOVER_CG_FILESET"
-	discoverCGFilesetDisabled = "DISABLED"
+	no                               = "no"
+	yes                              = "yes"
+	notFound                         = "NOT_FOUND"
+	filesystemTypeRemote             = "remote"
+	filesystemMounted                = "mounted"
+	filesetUnlinkedPath              = "--"
+	ResponseStatusUnknown            = "UNKNOWN"
+	oneGB                     uint64 = 1024 * 1024 * 1024
+	maximumPVSize             uint64 = 931322 * 1024 * 1024 * 1024 * 1024 // 999999999999999K
+	defaultSnapWindow                = "30"                               // default snapWindow for Consistency Group snapshots is 30 minutes
+	cgPrefixLen                      = 37
+	discoverCGFileset                = "DISCOVER_CG_FILESET"
+	discoverCGFilesetDisabled        = "DISABLED"
 )
 
 type ScaleControllerServer struct {
@@ -897,18 +896,12 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	}
 	smallestVolSize := uint64(pvMinSizeParsed.Value())
 
-	pvMaxSizeParsed, err := resource.ParseQuantity(os.Getenv(settings.MaximumPVSize))
-	if err != nil {
-		return nil, false, "", err
-	}
-	largestVolSize := uint64(pvMaxSizeParsed.Value())
-
 	if scaleVol.IsFilesetBased && uint64(volSize) <= smallestVolSize {
 		scaleVol.VolSize = smallestVolSize
-	} else if scaleVol.IsFilesetBased && uint64(volSize) > smallestVolSize && uint64(volSize) <= largestVolSize {
+	} else if scaleVol.IsFilesetBased && uint64(volSize) > smallestVolSize && uint64(volSize) <= maximumPVSize {
 		scaleVol.VolSize = uint64(volSize)
 	} else {
-		return nil, false, "", fmt.Errorf("volume size must not be larger than %v", os.Getenv(settings.MaximumPVSize))
+		return nil, false, "", fmt.Errorf("volume size should be less than %v", maximumPVSize)
 	}
 
 	/* Get details for Primary Cluster */
@@ -2942,15 +2935,9 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		}, nil
 	}
 
-	pvMaxSizeParsed, err := resource.ParseQuantity(os.Getenv(settings.MaximumPVSize))
-	if err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - Error in parsing max PV size allowed %v: %v", loggerId, volID, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Error in parsing max PV size allowed %v: %v", volID, err))
-	}
-	largestVolSize := uint64(pvMaxSizeParsed.Value())
-	if uint64(capacity) > largestVolSize {
-		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] is not allowed beyond max PV size:[%s]", loggerId, volID, os.Getenv(settings.MaximumPVSize))
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] is not allowed beyond max PV size:[%s]", volID, os.Getenv(settings.MaximumPVSize)))
+	if uint64(capacity) > maximumPVSize {
+		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, maximumPVSize)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] is not allowed beyond max PV size:[%v]", volID, maximumPVSize))
 	}
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
 	if err != nil {
