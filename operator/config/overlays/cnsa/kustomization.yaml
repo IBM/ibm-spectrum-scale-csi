@@ -42,5 +42,5 @@ patches:
                   - name: CSI_RESIZER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:4c148bbdf883153bc72d321be4dc55c33774a6d98b2b3e0c2da6ae389149a9b7
                   - name: CSI_DRIVER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:c110e2e0427f3799dc3a316db4748be5e8ca98bbaf50c7e3d8c7777c91c1375f
-                image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:90c891b61e51be5ab689a595a4cd06919eacc659fc53967014c9e8d0eb4f7629
+                    value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:b2bc343eadbc11d9ed74a8477d2cd0a7a8460a72203d3f6236d4662e68df1166
+                image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:bd264199ac10d574163bfa32bb88844fd786ee6f794a56e235591d2f051c7807

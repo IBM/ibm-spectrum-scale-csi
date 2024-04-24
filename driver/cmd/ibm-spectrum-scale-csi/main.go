@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2018, 2024 IBM Corporation.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -109,7 +109,8 @@ func handle(ctx context.Context) {
 	if err != nil {
 		klog.Fatalf("[%s] Failed to initialize Scale CSI Driver: %v", loggerId, err)
 	}
-	klog.Infof("[%s] Scale CSI Driver Initialized: [%+v]", loggerId, driver)
+	newDriver := driver
+	newDriver.PrintDriverInit(ctx)
 	driver.Run(ctx, *endpoint)
 }
 
