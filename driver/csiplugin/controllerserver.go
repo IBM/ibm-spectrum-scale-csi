@@ -951,23 +951,6 @@ func (cs *ScaleControllerServer) checkFileSetLink(ctx context.Context, connector
 	return nil
 }
 
-func checkFilesystemMountOnGUI(ctx context.Context, connector connectors.SpectrumScaleConnector, fsName string, scaleVolName string, primaryOrNone string) error {
-	loggerId := utils.GetLoggerId(ctx)
-	// primary filesytem must be mounted on GUI node so that we can create the softlink
-	// skip if primary and volume filesystem is same
-	klog.V(4).Infof("[%s] volume:[%v] - check if %s filesystem [%v] is mounted on GUI node of %s cluster", loggerId, scaleVolName, primaryOrNone, fsName, primaryOrNone)
-	isFsMounted, err := connector.IsFilesystemMountedOnGUINode(ctx, fsName)
-	if err != nil {
-		klog.Errorf("[%s] volume:[%v] - unable to get filesystem mount details for %s on %s cluster. Error: %v", loggerId, scaleVolName, fsName, primaryOrNone, err)
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on GUI cluster. Error: %v", fsName, err))
-	}
-	if !isFsMounted {
-		klog.Errorf("[%s] volume:[%v] - %s filesystem %s is not mounted on GUI node of GUI cluster", loggerId, scaleVolName, primaryOrNone, fsName)
-		return status.Error(codes.Internal, fmt.Sprintf("%s filesystem %s is not mounted on GUI node of %s cluster", primaryOrNone, fsName, primaryOrNone))
-	}
-	return nil
-}
-
 func checkVolumeFilesystemMountOnPrimary(ctx context.Context, scaleVol *scaleVolume) (connectors.FileSystem_v2, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(6).Infof("[%s] volume:[%v] - check if volume filesystem [%v] is mounted on GUI node of Primary cluster", loggerId, scaleVol.VolName, scaleVol.VolBackendFs)
