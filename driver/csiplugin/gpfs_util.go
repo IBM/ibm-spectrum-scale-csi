@@ -17,10 +17,8 @@
 package scale
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -69,6 +67,7 @@ type scaleVolume struct {
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
+	PVMinSize          string                            `json:"pvMinSize"`
 }
 
 type scaleVolId struct {
@@ -137,6 +136,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+	pvMinSize, pvMinSizeSpecified := volOptions[connectors.UserSpecifiedPVMinSize]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -391,11 +391,15 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		scaleVol.Tier = tier
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
+	if pvMinSizeSpecified && pvMinSize != "" {
+		scaleVol.PVMinSize = pvMinSize
+		klog.V(4).Infof("[%s] gpfs_util pvMinSize was set to %s", loggerId, pvMinSize)
+	}
 
 	return scaleVol, nil
 }
 
-func executeCmd(command string, args []string) ([]byte, error) {
+/*func executeCmd(command string, args []string) ([]byte, error) {
 	klog.V(6).Infof("gpfs_util executeCmd")
 
 	cmd := exec.Command(command, args...)
@@ -407,7 +411,7 @@ func executeCmd(command string, args []string) ([]byte, error) {
 	err := cmd.Run()
 	stdOut := stdout.Bytes()
 	return stdOut, err
-}
+}*/
 
 func ConvertToBytes(inputStr string) (uint64, error) {
 	var Iter int

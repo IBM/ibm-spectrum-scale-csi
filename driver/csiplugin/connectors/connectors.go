@@ -117,6 +117,7 @@ const (
 	UserSpecifiedShared           string = "shared"
 	AFMModeSecondary              string = "secondary"
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
+	UserSpecifiedPVMinSize        string = "pvMinSize"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
