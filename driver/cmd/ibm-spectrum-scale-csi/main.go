@@ -42,7 +42,7 @@ var (
 	driverName     = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 	nodeID         = flag.String("nodeid", "", "node id")
 	kubeletRootDir = flag.String("kubeletRootDirPath", "/var/lib/kubelet", "kubelet root directory path")
-	vendorVersion  = "2.11.0"
+	vendorVersion  = "2.11.1"
 )
 
 func main() {
