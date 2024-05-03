@@ -2,7 +2,7 @@ services: docker
 dist: focal
 language: go
 go:
-  - 1.20.x
+  - 1.22.x
 
 env:
   global:

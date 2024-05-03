@@ -3,7 +3,7 @@
   set_fact:
     OPERATOR_SDK_VER: "v1.15.0"
     OPERATOR_VERSION: "2.12.0"
-    GO_VERSION:       "go1.20"
+    GO_VERSION:       "go1.22"
 
 # Something is wrong with this bit.
 #- name: Ensure 'python3' is installed
