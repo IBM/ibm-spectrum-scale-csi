@@ -694,16 +694,6 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		}
 	}
 
-	if scaleVol.PrimaryFS != scaleVol.VolBackendFs {
-		// primary filesytem must be mounted on GUI node so that we can create the softlink
-		// skip if primary and volume filesystem is same
-		err := checkFilesystemMountOnGUI(ctx, scaleVol.PrimaryConnector, scaleVol.PrimaryFS, scaleVol.VolName, "primary")
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	volFsInfo, err := checkVolumeFilesystemMountOnPrimary(ctx, scaleVol)
 	if err != nil {
 		return nil, err
@@ -976,23 +966,6 @@ func (cs *ScaleControllerServer) checkFileSetLink(ctx context.Context, connector
 	if !isFilesetLinked {
 		klog.Errorf("[%s] volume:[%v] - %s [%v] is not linked", loggerId, scaleVol.VolName, fileset)
 		return status.Error(codes.Internal, fmt.Sprintf("%s  fileset [%v] is not linked", primaryOrSource, fileset))
-	}
-	return nil
-}
-
-func checkFilesystemMountOnGUI(ctx context.Context, connector connectors.SpectrumScaleConnector, fsName string, scaleVolName string, primaryOrNone string) error {
-	loggerId := utils.GetLoggerId(ctx)
-	// primary filesytem must be mounted on GUI node so that we can create the softlink
-	// skip if primary and volume filesystem is same
-	klog.V(4).Infof("[%s] volume:[%v] - check if %s filesystem [%v] is mounted on GUI node of %s cluster", loggerId, scaleVolName, primaryOrNone, fsName, primaryOrNone)
-	isFsMounted, err := connector.IsFilesystemMountedOnGUINode(ctx, fsName)
-	if err != nil {
-		klog.Errorf("[%s] volume:[%v] - unable to get filesystem mount details for %s on %s cluster. Error: %v", loggerId, scaleVolName, fsName, primaryOrNone, err)
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem mount details for %s on GUI cluster. Error: %v", fsName, err))
-	}
-	if !isFsMounted {
-		klog.Errorf("[%s] volume:[%v] - %s filesystem %s is not mounted on GUI node of GUI cluster", loggerId, scaleVolName, primaryOrNone, fsName)
-		return status.Error(codes.Internal, fmt.Sprintf("%s filesystem %s is not mounted on GUI node of %s cluster", primaryOrNone, fsName, primaryOrNone))
 	}
 	return nil
 }
@@ -1594,21 +1567,6 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
 	}
 
-	if sourcesnapshot.FsName != newvolume.VolBackendFs {
-		/*		isFsMounted, err := conn.IsFilesystemMountedOnGUINode(ctx, sourcesnapshot.FsName)
-				 if err != nil {
-					 return status.Error(codes.Internal, fmt.Sprintf("error in getting filesystem mount details for %s", sourcesnapshot.FsName))
-				 }
-				 if !isFsMounted {
-					 return status.Error(codes.Internal, fmt.Sprintf("filesystem %s is not mounted on GUI node", sourcesnapshot.FsName))
-				 }*/
-		err = checkFilesystemMountOnGUI(ctx, conn, sourcesnapshot.FsName, "", "")
-
-		if err != nil {
-			return err
-		}
-	}
-
 	filesetToCheck := sourcesnapshot.FsetName
 	if sourcesnapshot.StorageClassType == STORAGECLASS_ADVANCED {
 		filesetToCheck = sourcesnapshot.ConsistencyGroup
@@ -1764,14 +1722,6 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 				return status.Error(codes.Internal, fmt.Sprintf("error in getting fileset details for %s", sourcevolume.FsetId))
 			}
 		}
-
-		/*	isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcevolume.FsName, sourcevolume.FsetName)
-			 if err != nil {
-				 return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", sourcevolume.FsetName))
-			 }
-			 if !isFsetLinked {
-				 return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source volume is not linked", sourcevolume.FsetName))
-			 }*/
 
 		if sourcevolume.VolType != FILE_SHALLOWCOPY_VOLUME {
 			err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcevolume.FsName, sourcevolume.FsetName, "source")
