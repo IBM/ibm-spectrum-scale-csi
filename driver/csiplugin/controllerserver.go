@@ -2832,6 +2832,11 @@ func (cs *ScaleControllerServer) ListSnapshots(ctx context.Context, req *csi.Lis
 func (cs *ScaleControllerServer) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
+
+func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
 func (cs *ScaleControllerServer) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
