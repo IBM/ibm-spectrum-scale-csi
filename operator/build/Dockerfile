@@ -1,5 +1,5 @@
 # docker build for IBM Storage Scale CSI Operator
-FROM --platform=$BUILDPLATFORM golang:1.20 as builder
+FROM --platform=$BUILDPLATFORM golang:1.22 as builder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -33,7 +33,7 @@ RUN CGO_ENABLED=0 go build -ldflags="-X 'main.gitCommit=${REVISION}'" -a -o mana
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-ARG version=2.11.0
+ARG version=2.12.0
 ARG commit
 ARG build_date
 

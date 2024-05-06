@@ -1,6 +1,6 @@
 module github.com/IBM/ibm-spectrum-scale-csi/operator
 
-go 1.20
+go 1.22
 
 replace github.com/IBM/ibm-spectrum-scale-csi/driver => github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20240412110820-aa1735f4618e
 
