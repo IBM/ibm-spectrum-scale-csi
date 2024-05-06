@@ -40,11 +40,11 @@ const errContextDeadlineExceeded string = "context deadline exceeded"
 var GetLoggerId = utils.GetLoggerId
 
 type SpectrumRestV2 struct {
-	HTTPclient    *http.Client
-	Endpoint      []string
-	EndPointIndex int
-	User          string
-	Password      string
+	HTTPclient      *http.Client
+	Endpoint        []string
+	EndPointIndex   int
+	ClusterConfig   settings.Clusters
+	RequestCalledBy string // "operator" or none
 }
 
 func (s *SpectrumRestV2) isStatusOK(statusCode int) bool {
@@ -143,8 +143,6 @@ func (s *SpectrumRestV2) AsyncJobCompletion(ctx context.Context, jobURL string) 
 func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (SpectrumScaleConnector, error) {
 	klog.V(4).Infof("[%s] rest_v2 NewSpectrumRestV2.", utils.GetLoggerId(ctx))
 
-	guiUser := scaleConfig.MgmtUsername
-	guiPwd := scaleConfig.MgmtPassword
 	var rest *SpectrumRestV2
 	var tr *http.Transport
 
@@ -166,9 +164,8 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 			Transport: tr,
 			Timeout:   time.Second * 60,
 		},
-		User:          guiUser,
-		Password:      guiPwd,
 		EndPointIndex: 0, //Use first GUI as primary by default
+		ClusterConfig: scaleConfig,
 	}
 
 	for i := range scaleConfig.RestAPI {
@@ -1035,7 +1032,23 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, param)
 	endpoint := s.Endpoint[s.EndPointIndex]
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
-	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, s.User, s.Password, param)
+	var user, password string
+	if s.RequestCalledBy == "operator" {
+		klog.V(0).Infof("[%s] rest_v2 doHTTP: requested by operator", utils.GetLoggerId(ctx))
+		user = s.ClusterConfig.MgmtUsername
+		password = s.ClusterConfig.MgmtPassword
+	} else {
+		scaleConfigNew := settings.LoadScaleConfigSettings(ctx)
+		for i := range scaleConfigNew.Clusters {
+			if s.ClusterConfig.ID == scaleConfigNew.Clusters[i].ID {
+				user = scaleConfigNew.Clusters[i].MgmtUsername
+				password = scaleConfigNew.Clusters[i].MgmtPassword
+			}
+		}
+	}
+
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), user)
+	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 
 	activeEndpointFound := false
 	if err != nil {
@@ -1046,7 +1059,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			n := len(s.Endpoint)
 			for i := 0; i < n-1; i++ {
 				endpoint = s.getNextEndpoint(ctx)
-				response, err = utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, s.User, s.Password, param)
+				response, err = utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 				if err == nil {
 					activeEndpointFound = true
 					break
@@ -1060,30 +1073,30 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			}
 		} else {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
+			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, param, response))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, param, response))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, user, param, response))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, user, param, response))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, s.User, param, response, err))
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, user, param, response, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, user, param, response))
 	}
 
 	return nil

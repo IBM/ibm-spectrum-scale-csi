@@ -2,6 +2,8 @@ module github.com/IBM/ibm-spectrum-scale-csi/operator
 
 go 1.22
 
+replace github.com/IBM/ibm-spectrum-scale-csi/driver => github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20240412110820-aa1735f4618e
+
 require (
 	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20240315055708-58ba59104fbf
 	github.com/google/uuid v1.3.1

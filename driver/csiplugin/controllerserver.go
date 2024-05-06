@@ -626,7 +626,7 @@ func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (st
 // CreateVolume - Create Volume
 func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] create volume req: %v", loggerId, req)
+	klog.Infof("[%s] CreateVolume req: %v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		klog.Errorf("[%s] invalid create volume req: %v", loggerId, req)
