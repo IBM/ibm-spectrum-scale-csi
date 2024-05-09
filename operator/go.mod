@@ -1,16 +1,14 @@
 module github.com/IBM/ibm-spectrum-scale-csi/operator
 
-go 1.22.0
-
-toolchain go1.22.2
+go 1.22.3
 
 require (
-	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20240507015646-03b09d26bd99
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20240509034444-7a7f88d1cb10
 	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift/api v0.0.0-20240503220213-0a2abb2b630b
+	github.com/openshift/api v0.0.0-20240508125607-95e22923d553
 	github.com/presslabs/controller-util v0.10.2
 	go.uber.org/zap v1.27.0
 	k8s.io/api v0.30.0
@@ -47,7 +45,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.19.0 // indirect
+	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.14.0 // indirect
