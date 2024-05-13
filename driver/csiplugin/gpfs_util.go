@@ -40,6 +40,25 @@ const (
 	sharedPermissions  = "777"
 )
 
+// AFM caching constants
+const (
+	cacheVolume = "cache"
+
+	// AFM cache modes
+	afmModeIW = "iw" // Independent-Writer
+	afmModeRO = "ro" // Read-Only
+	afmModeLU = "lu" // Local-Update
+	afmModeSW = "sw" // Single-Writer
+
+	// User input cache modes
+	//..
+
+)
+
+//var afmModeMap = map[string]string{
+//	"singlewriter": afmModeSW,
+//}
+
 type scaleVolume struct {
 	VolName            string                            `json:"volName"`
 	VolSize            uint64                            `json:"volSize"`
@@ -69,6 +88,8 @@ type scaleVolume struct {
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
+	VolumeType         string                            `json:"volumeType"`
+	CacheMode          string                            `json:"cacheMode"`
 }
 
 type scaleVolId struct {
@@ -137,6 +158,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+
+	//AMOL:TODO: Take `cacheMode` input and handle it
+	volumeType, volumeTypeSpecified := volOptions[connectors.UserSpecifiedVolumeType]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -392,6 +416,15 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
+	if volumeTypeSpecified {
+		volumeType = strings.ToLower(volumeType)
+		if volumeType == cacheVolume {
+			scaleVol.VolumeType = cacheVolume
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s", volumeType))
+		}
+	}
+
 	return scaleVol, nil
 }
 
@@ -557,7 +590,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 	}
 
 	if len(splitVid) == 7 {
-		/* Volume ID created from 2.5.0 onwards  */
+		/* Volume ID created from CSI 2.5.0 onwards  */
 		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]
