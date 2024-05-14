@@ -758,7 +758,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("IBM Storage Scale version check for permissions failed with error %s", err))
 	}
 	if isCGVolume {
-		if err := cs.checkCGSupport(ctx, scaleVol.Connector, assembledScaleversion); err != nil {
+		if err := cs.checkCGSupport(assembledScaleversion); err != nil {
 			return nil, err
 		}
 	}
