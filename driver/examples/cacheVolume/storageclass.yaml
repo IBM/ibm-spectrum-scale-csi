@@ -8,3 +8,5 @@ parameters:
   volumeType: "cache"
   csi.storage.k8s.io/provisioner-secret-name: ${pvc.name}-secret
   csi.storage.k8s.io/provisioner-secret-namespace: ${pvc.namespace}
+reclaimPolicy: Delete
+allowVolumeExpansion: true
