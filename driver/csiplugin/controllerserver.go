@@ -24,11 +24,12 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -705,13 +706,13 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 		return nil, status.Error(codes.Internal, fmt.Sprintf("IBM Storage Scale version check for permissions failed with error %s", err))
 	}
 	if isNewVolumeType {
-		if err := cs.checkCGSupport(ctx, scaleVol.Connector, assembledScaleversion); err != nil {
+		if err := cs.checkCGSupport(assembledScaleversion); err != nil {
 			return nil, err
 		}
 	}
 
 	if isVolSource {
-		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, primaryClusterID, volFsInfo, assembledScaleversion)
+		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, volFsInfo, assembledScaleversion)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source volume validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -720,7 +721,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	}
 
 	if isSnapSource {
-		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, primaryClusterID, assembledScaleversion)
+		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, assembledScaleversion)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -945,7 +946,7 @@ func (cs *ScaleControllerServer) checkFileSetLink(ctx context.Context, connector
 		return status.Error(codes.Internal, fmt.Sprintf("unable to get details of %s fileset link information for [%v]. Error : [%v]", primaryOrSource, fileset, err))
 	}
 	if !isFilesetLinked {
-		klog.Errorf("[%s] volume:[%v] - %s [%v] is not linked", loggerId, scaleVol.VolName, fileset)
+		klog.Errorf("[%s] volume:[%s] - [%s] is not linked", loggerId, scaleVol.VolName, fileset)
 		return status.Error(codes.Internal, fmt.Sprintf("%s  fileset [%v] is not linked", primaryOrSource, fileset))
 	}
 	return nil
@@ -1442,7 +1443,7 @@ func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version str
 	return assembledFsVer >= version
 }
 
-func (cs *ScaleControllerServer) checkSnapshotSupport(ctx context.Context, conn connectors.SpectrumScaleConnector, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) checkSnapshotSupport(assembledScaleversion string) error {
 	/* Verify IBM Storage Scale Version is not below 5.1.1-0 */
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5110")
 	if !versionCheck {
@@ -1451,7 +1452,7 @@ func (cs *ScaleControllerServer) checkSnapshotSupport(ctx context.Context, conn 
 	return nil
 }
 
-func (cs *ScaleControllerServer) checkVolCloneSupport(ctx context.Context, conn connectors.SpectrumScaleConnector, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) checkVolCloneSupport(assembledScaleversion string) error {
 	/* Verify IBM Storage Scale Version is not below 5.1.2-1 */
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5121")
 	if !versionCheck {
@@ -1471,7 +1472,7 @@ func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
 	return nil
 }
 
-func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connectors.SpectrumScaleConnector, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) error {
 	/* Verify IBM Storage Scale Version is not below 5.1.3-0 */
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5130")
 	if !versionCheck {
@@ -1494,7 +1495,7 @@ func (cs *ScaleControllerServer) checkCGSupport(ctx context.Context, conn connec
 	 return nil
  }*/
 
-func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, pCid string, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, assembledScaleversion string) error {
 
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateSnapId [%v]", loggerId, sourcesnapshot)
@@ -1526,7 +1527,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	// }
 
 	/* Check if IBM Storage Scale supports Snapshot */
-	chkSnapshotErr := cs.checkSnapshotSupport(ctx, conn, assembledScaleversion)
+	chkSnapshotErr := cs.checkSnapshotSupport(assembledScaleversion)
 	if chkSnapshotErr != nil {
 		return chkSnapshotErr
 	}
@@ -1581,17 +1582,17 @@ func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, 
 
 	if sourcesnapshot.VolType == "" && sourcesnapshot.ConsistencyGroup == "" {
 		klog.Errorf("[%s] creating shallow copy volume is not supported for static volume or old snapshot handle", loggerId)
-		return status.Error(codes.Internal, fmt.Sprintf("creating shallow copy volume is not supported for static volume or old snapshot handle"))
+		return status.Error(codes.Internal, "creating shallow copy volume is not supported for static volume or old snapshot handle")
 	}
 
 	if !newvolume.IsFilesetBased {
 		klog.Errorf("[%s] creating shallow copy volume as directory based volume is not supported", loggerId)
-		return status.Error(codes.Internal, fmt.Sprintf("creating shallow copy volume as directory based volume is not supported"))
+		return status.Error(codes.Internal, "creating shallow copy volume as directory based volume is not supported")
 	}
 
 	if newvolume.ClusterId != sourcesnapshot.ClusterId {
 		klog.Errorf("[%s] shallow copy volume across clusters is not supported", loggerId)
-		return status.Error(codes.Internal, fmt.Sprintf("shallow copy volume across clusters is not supported"))
+		return status.Error(codes.Internal, "shallow copy volume across clusters is not supported")
 	}
 
 	if len(newvolume.StorageClassType) != 0 || len(sourcesnapshot.StorageClassType) != 0 {
@@ -1607,7 +1608,7 @@ func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, 
 				if sourcesnapshot.StorageClassType == STORAGECLASS_CLASSIC {
 					if !((newvolume.FilesetType == independentFileset && sourcesnapshot.VolType == FILE_INDEPENDENTFILESET_VOLUME) || (newvolume.FilesetType == dependentFileset && sourcesnapshot.VolType == FILE_DEPENDENTFILESET_VOLUME)) {
 						klog.Errorf("[%s] Filesettype is not same for both source snapshot and new volume", loggerId)
-						return status.Error(codes.Internal, fmt.Sprintf("Filesettype is not same for both source snapshot and new volume"))
+						return status.Error(codes.Internal, "Filesettype is not same for both source snapshot and new volume")
 					}
 
 				}
@@ -1636,7 +1637,7 @@ func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesn
 	return nil
 }
 
-func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scaleVol *scaleVolume, sourcevolume *scaleVolId, newvolume *scaleVolume, pCid string, volFsInfo connectors.FileSystem_v2, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scaleVol *scaleVolume, sourcevolume *scaleVolId, newvolume *scaleVolume, volFsInfo connectors.FileSystem_v2, assembledScaleversion string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateVolId [%v]", loggerId, sourcevolume)
 
@@ -1646,7 +1647,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 	}
 
 	// This is kind of snapshot restore
-	chkVolCloneErr := cs.checkVolCloneSupport(ctx, conn, assembledScaleversion)
+	chkVolCloneErr := cs.checkVolCloneSupport(assembledScaleversion)
 	if chkVolCloneErr != nil {
 		return chkVolCloneErr
 	}
@@ -2384,7 +2385,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, status.Error(codes.Internal, fmt.Sprintf("the  IBM Storage Scale version check for permissions failed with error %s", err))
 	}
 	/* Check if IBM Storage Scale supports Snapshot */
-	chkSnapshotErr := cs.checkSnapshotSupport(ctx, conn, assembledScaleversion)
+	chkSnapshotErr := cs.checkSnapshotSupport(assembledScaleversion)
 	if chkSnapshotErr != nil {
 		return nil, chkSnapshotErr
 	}
@@ -2572,8 +2573,8 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 	}, nil
 }
 
-func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(ctx context.Context, conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamp.Timestamp, error) {
-	var timestamp timestamp.Timestamp
+func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(ctx context.Context, conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamppb.Timestamp, error) {
+	var timestamp timestamppb.Timestamp
 
 	createTS, err := conn.GetSnapshotCreateTimestamp(ctx, fs, fset, snap)
 	if err != nil {
