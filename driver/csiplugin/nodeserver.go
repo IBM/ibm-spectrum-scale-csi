@@ -293,7 +293,7 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 // to be returned if there are any.
 func unmountAndDelete(ctx context.Context, targetPath string, forceful bool) (bool, *csi.NodeUnpublishVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] unmount and delete targetPath:[%s], forceful:[%s]", loggerId, targetPath, forceful)
+	klog.V(4).Infof("[%s] unmount and delete targetPath:[%s], forceful:[%v]", loggerId, targetPath, forceful)
 	isMP := false
 	var err error
 	mounter := &mount.Mounter{}
@@ -367,7 +367,7 @@ func (ns *ScaleNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.Nod
 		}
 		//Handling for bindmount if filesystem is unmounted or fileset is unlinked
 		if strings.Contains(err.Error(), errStaleNFSFileHandle) {
-			klog.Warning("[%s] NodeUnpublishVolume - unmount [%s] failed with error [%v]. trying forceful unmount", loggerId, targetPath, err)
+			klog.Warningf("[%s] NodeUnpublishVolume - unmount [%s] failed with error [%v]. trying forceful unmount", loggerId, targetPath, err)
 			needReturn, response, error := unmountAndDelete(ctx, targetPath, true)
 			if needReturn {
 				return response, error
