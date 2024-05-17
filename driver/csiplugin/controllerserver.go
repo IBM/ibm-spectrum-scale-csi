@@ -726,14 +726,23 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 				klog.Infof("[%s] Requested pvc is a shallow copy volume", loggerId)
 				isShallowCopyVolume = true
 			} else if scaleVol.VolumeType == cacheVolume {
-				scaleVol.CacheMode = afmModeRO
+				if scaleVol.CacheMode == "" {
+					// cacheMode is not specified, use AFM mode RO by default for volume access mode ROX
+					scaleVol.CacheMode = afmModeRO
+				} else if scaleVol.CacheMode != afmModeRO {
+					return nil, status.Error(codes.InvalidArgument, "The volume access mode ReadOnlyMany is only supported with the AFM mode readonly (RO)")
+				}
 			} else {
 				return nil, status.Error(codes.Unimplemented, "Volume source with Access Mode ReadOnlyMany is not supported")
 			}
 		} else {
 			if scaleVol.VolumeType == cacheVolume {
-				//AMOL:TODO: Handle other modes based on user inputs
-				scaleVol.CacheMode = afmModeIW
+				if scaleVol.CacheMode == "" {
+					// cacheMode is not specified, use AFM mode IW by default for other volume access modes
+					scaleVol.CacheMode = afmModeIW
+				} else if scaleVol.CacheMode == afmModeRO {
+					return nil, status.Error(codes.InvalidArgument, "The AFM mode readonly (RO) is only supported with the volume access mode ReadOnlyMany")
+				}
 			}
 		}
 	}
