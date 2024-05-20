@@ -21,9 +21,9 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/klog/v2"
 )
 
@@ -57,11 +57,11 @@ func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest)
 	if !ghealthy {
 		// Even gpfs health is unhealthy, success is return because restarting csi driver is not going help fix the issue
 		klog.Errorf("[%s] Probe: IBM Storage Scale on node %v is unhealthy. Error: %v", loggerId, scalenodeID, err)
-		return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
+		return &csi.ProbeResponse{Ready: &wrapperspb.BoolValue{Value: true}}, nil
 	}
 
 	klog.V(4).Infof("[%s] Probe: IBM Storage Scale on node %v is healthy", loggerId, scalenodeID)
-	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: true}}, nil
+	return &csi.ProbeResponse{Ready: &wrapperspb.BoolValue{Value: true}}, nil
 }
 
 func (is *ScaleIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {

@@ -52,7 +52,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 
@@ -746,7 +745,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	logger.Info("Running IBM Storage Scale CSI operator", "version", config.OperatorVersion)
 	logger.Info("Setting up the controller with the manager.")
 
-	CSIReconcileRequestFunc := func(obj client.Object) []reconcile.Request {
+	CSIReconcileRequestFunc := func(ctx context.Context, obj client.Object) []reconcile.Request {
 		var requests = []reconcile.Request{}
 		var CSIScales = csiv1.CSIScaleOperatorList{}
 		_ = mgr.GetClient().List(context.TODO(), &CSIScales)
@@ -865,13 +864,12 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(
-			&source.Kind{Type: &corev1.Secret{}},
+		Watches(&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
 			builder.WithPredicates(predicateFuncs(corev1.ResourceSecrets.String())),
 		).
 		Watches(
-			&source.Kind{Type: &corev1.ConfigMap{}},
+			&corev1.ConfigMap{},
 			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
 			builder.WithPredicates(predicateFuncs(corev1.ResourceConfigMaps.String())),
 		).
