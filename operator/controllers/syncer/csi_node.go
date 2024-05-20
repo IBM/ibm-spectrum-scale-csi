@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 IBM Corp.
+ * Copyright 2022, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
 
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
-	out.ObjectMeta.Annotations = annotations
+	SetScaleAnnotations(out.ObjectMeta.Annotations)
 	annotations["kubectl.kubernetes.io/default-container"] = config.Product
 
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSINodeSelectorLabels(config.GetNameForResource(config.CSINode, s.driver.Name)))

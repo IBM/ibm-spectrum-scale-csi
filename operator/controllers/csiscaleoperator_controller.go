@@ -1,5 +1,5 @@
 /*
-Copyright 2022.
+Copyright 2022, 2024 IBM Corp.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 
@@ -461,6 +460,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
+
 	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
@@ -526,9 +526,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if len(instance.Spec.Clusters) != 0 {
 		logger.Info("Checking GUI password expiry")
 		// For validating gui password expires in every 24hours.
-		clusters := listGUIPasswdExpiredClusters(instance.Spec.Clusters)
-		if len(clusters) > 0 {
-			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", clusters)
+		passwordExipredClusters := r.listGUIPasswdExpiredClusters(instance, instance.Spec.Clusters)
+		if len(passwordExipredClusters) > 0 {
+			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", passwordExipredClusters)
 			logger.Info(message)
 
 			RaiseCSOEvent(instance, r.Recorder, corev1.EventTypeWarning,
@@ -745,7 +745,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	logger.Info("Running IBM Storage Scale CSI operator", "version", config.OperatorVersion)
 	logger.Info("Setting up the controller with the manager.")
 
-	CSIReconcileRequestFunc := func(obj client.Object) []reconcile.Request {
+	CSIReconcileRequestFunc := func(ctx context.Context, obj client.Object) []reconcile.Request {
 		var requests = []reconcile.Request{}
 		var CSIScales = csiv1.CSIScaleOperatorList{}
 		_ = mgr.GetClient().List(context.TODO(), &CSIScales)
@@ -825,11 +825,13 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				if isCSIResource(e.ObjectNew.GetName(), resourceKind) {
-					if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
+					/*if resourceKind == corev1.ResourceSecrets.String() && !reflect.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data) {
 						r.setRestartedAtValues()
 						logger.Info("Restarting driver and sidecar pods due to update of", "Resource", resourceKind, "Name", e.ObjectOld.GetName())
+						scaleGuiSecretChanged = true
 						return true
-					} else if resourceKind == corev1.ResourceConfigMaps.String() {
+					} else */
+					if resourceKind == corev1.ResourceConfigMaps.String() {
 						if e.ObjectNew.GetName() == config.EnvVarConfigMap && !reflect.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 							if shouldRequeueOnUpdate(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data) {
 								r.setRestartedAtValues()
@@ -862,13 +864,12 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(
-			&source.Kind{Type: &corev1.Secret{}},
+		Watches(&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
 			builder.WithPredicates(predicateFuncs(corev1.ResourceSecrets.String())),
 		).
 		Watches(
-			&source.Kind{Type: &corev1.ConfigMap{}},
+			&corev1.ConfigMap{},
 			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
 			builder.WithPredicates(predicateFuncs(corev1.ResourceConfigMaps.String())),
 		).
@@ -1832,15 +1833,18 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
 		logger.Info("Created IBM Storage Scale connector without SSL mode for guiHost(s)")
 	}
-
+	logger.Info("Created IBM Storage Scale connector rest : ", " username ", username)
 	rest = &connectors.SpectrumRestV2{
 		HTTPclient: &http.Client{
 			Transport: tr,
 			Timeout:   time.Second * config.HTTPClientTimeout,
 		},
-		User:          username,
-		Password:      password,
-		EndPointIndex: 0, //Use first GUI as primary by default
+		ClusterConfig: settings.Clusters{
+			MgmtUsername: username,
+			MgmtPassword: password,
+		},
+		EndPointIndex:   0, //Use first GUI as primary by default
+		RequestCalledBy: "operator",
 	}
 
 	for i := range cluster.RestApi {
@@ -1862,6 +1866,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 	logger := csiLog.WithName("handleSpectrumScaleConnectors")
 	logger.Info("Checking IBM Storage Scale connectors")
 
+	//scaleGuiSecretChanged := false
 	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
 	for _, cluster := range instance.Spec.Clusters {
@@ -2546,13 +2551,18 @@ func getDiscoverCGFilesetDefaultValue() string {
 }
 
 // listGUIPasswdExpiredClusters returns a list having clusterIds whose password is expired
-func listGUIPasswdExpiredClusters(clusters []csiv1.CSICluster) []string {
+func (r *CSIScaleOperatorReconciler) listGUIPasswdExpiredClusters(instance *csiscaleoperator.CSIScaleOperator, clusters []csiv1.CSICluster) []string {
 	logger := csiLog.WithName("listPasswdExpiredClusters")
 	logger.Info("Checking each cluster if its GUI password expired")
+
 	expiredGui := []string{}
 	for _, cls := range clusters {
-		if conn, ok := scaleConnMap[cls.Id]; ok {
-			_, err := conn.GetClusterId(context.TODO())
+		logger.Info("Checking each cluster ", "cluster", cls)
+		connector, err := r.newConnector(instance, cls)
+		if err != nil {
+			logger.Error(err, "Failed to create scale connector")
+		} else {
+			_, err = connector.GetClusterId(context.TODO())
 			if err != nil && isGUIUnauthorized(err) {
 				expiredGui = append(expiredGui, cls.Id)
 			}

@@ -1,5 +1,5 @@
 /*
-Copyright 2022.
+Copyright 2022, 2024 IBM Corp.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,11 +26,14 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlmetricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	ctrlwebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -128,17 +131,28 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
-	namespaces := []string{watchNamespace, OCPControllerNamespace}
+	newCache := func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
+		opts.DefaultNamespaces = map[string]cache.Config{
+			watchNamespace:         {},
+			OCPControllerNamespace: {},
+		}
+		return cache.New(config, opts)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
+		Scheme: scheme,
+		Metrics: ctrlmetricsserver.Options{
+			BindAddress: metricsAddr,
+		},
+		WebhookServer: ctrlwebhook.NewServer(ctrlwebhook.Options{
+			Port: 9443,
+		}),
 		//		HealthProbeBindAddress: probeAddr,
 		LeaderElection:          enableLeaderElection,
 		LeaderElectionID:        "ibm-spectrum-scale-csi-operator",
 		LeaderElectionNamespace: watchNamespace, // TODO: Flag should be set to select the namespace where operator is running. Needed for running operator locally.
-		NewCache:                cache.MultiNamespacedCacheBuilder(namespaces),
-	})
+		NewCache:                newCache},
+	)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)

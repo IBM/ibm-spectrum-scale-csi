@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp.
+ * Copyright 2019, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@
 package scale
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -395,7 +393,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	return scaleVol, nil
 }
 
-func executeCmd(command string, args []string) ([]byte, error) {
+/*func executeCmd(command string, args []string) ([]byte, error) {
 	klog.V(6).Infof("gpfs_util executeCmd")
 
 	cmd := exec.Command(command, args...)
@@ -407,7 +405,7 @@ func executeCmd(command string, args []string) ([]byte, error) {
 	err := cmd.Run()
 	stdOut := stdout.Bytes()
 	return stdOut, err
-}
+}*/
 
 func ConvertToBytes(inputStr string) (uint64, error) {
 	var Iter int
