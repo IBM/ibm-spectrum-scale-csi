@@ -33,21 +33,23 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog/v2"
 )
 
 const (
-	no                           = "no"
-	yes                          = "yes"
-	notFound                     = "NOT_FOUND"
-	filesystemTypeRemote         = "remote"
-	filesystemMounted            = "mounted"
-	filesetUnlinkedPath          = "--"
-	ResponseStatusUnknown        = "UNKNOWN"
-	oneGB                 uint64 = 1024 * 1024 * 1024
-	smallestVolSize       uint64 = oneGB // 1GB
-	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
-	cgPrefixLen                  = 37
+	no                            = "no"
+	yes                           = "yes"
+	notFound                      = "NOT_FOUND"
+	filesystemTypeRemote          = "remote"
+	filesystemMounted             = "mounted"
+	filesetUnlinkedPath           = "--"
+	ResponseStatusUnknown         = "UNKNOWN"
+	oneGB                  uint64 = 1024 * 1024 * 1024
+	defaultSmallestVolSize uint64 = oneGB                              // 1GB
+	maximumPVSize          uint64 = 931322 * 1024 * 1024 * 1024 * 1024 // 999999999999999K
+	defaultSnapWindow             = "30"                               // default snapWindow for Consistency Group snapshots is 30 minutes
+	cgPrefixLen                   = 37
 
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
@@ -564,7 +566,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"csi.storage.k8s.io/pvc/namespace", "storage.kubernetes.io/csiProvisionerIdentity",
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
-			"version", "tier", "compression", "consistencyGroup", "shared":
+			"version", "tier", "compression", "consistencyGroup", "shared", "pvMinSize":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -880,11 +882,28 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	}
 
 	scaleVol.VolName = volName
-	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
-		scaleVol.VolSize = smallestVolSize
+	// larger than allowed pv size not allowed
+	if scaleVol.IsFilesetBased && uint64(volSize) > maximumPVSize {
+		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSize)
+	}
+	// scaleVol.PVMinSize set from storage class
+	if scaleVol.IsFilesetBased && scaleVol.PVMinSize != "" {
+		pvMinSizeParsed, err := resource.ParseQuantity(scaleVol.PVMinSize)
+		if err != nil {
+			return nil, false, "", err
+		}
+		minVolSize := uint64(pvMinSizeParsed.Value())
+		if uint64(volSize) < minVolSize {
+			scaleVol.VolSize = minVolSize
+		} else {
+			scaleVol.VolSize = uint64(volSize)
+		}
+	} else if scaleVol.IsFilesetBased && uint64(volSize) < defaultSmallestVolSize {
+		scaleVol.VolSize = defaultSmallestVolSize
 	} else {
 		scaleVol.VolSize = uint64(volSize)
 	}
+	klog.V(6).Infof("[%s] setScaleVolume: scaleVol VolSize set is [%v]", utils.GetLoggerId(ctx), scaleVol.VolSize)
 
 	/* Get details for Primary Cluster */
 	primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
@@ -2880,6 +2899,11 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 			CapacityBytes:         int64(capacity),
 			NodeExpansionRequired: false,
 		}, nil
+	}
+
+	if uint64(capacity) > maximumPVSize {
+		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, uint64(capacity), maximumPVSize)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] with  requested volSize:[%v] is not allowed beyond max PV size:[%v]", volID, uint64(capacity), maximumPVSize))
 	}
 
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)

@@ -67,6 +67,7 @@ type scaleVolume struct {
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
+	PVMinSize          string                            `json:"pvMinSize"`
 }
 
 type scaleVolId struct {
@@ -135,6 +136,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+	pvMinSize, pvMinSizeSpecified := volOptions[connectors.UserSpecifiedPVMinSize]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -388,6 +390,10 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
+	}
+	if pvMinSizeSpecified && pvMinSize != "" {
+		scaleVol.PVMinSize = pvMinSize
+		klog.V(4).Infof("[%s] gpfs_util pvMinSize was set to %s", loggerId, pvMinSize)
 	}
 
 	return scaleVol, nil
