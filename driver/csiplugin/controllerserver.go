@@ -2457,7 +2457,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	// Block snapshot for cache volume
 	if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
-		klog.Errorf("[%s] taking snapshot of cache volume is not supported", loggerId)
 		return nil, status.Error(codes.InvalidArgument, "taking snapshot of cache volume is not supported")
 	}
 
