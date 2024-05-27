@@ -23,10 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-
 	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -2644,8 +2641,8 @@ func (cs *ScaleControllerServer) retryToCreateNewSnap(ctx context.Context, conn 
 	return snapExist
 }
 
-func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(ctx context.Context, conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamp.Timestamp, error) {
-	var timestamp timestamp.Timestamp
+func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(ctx context.Context, conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamppb.Timestamp, error) {
+	var timestamp timestamppb.Timestamp
 
 	createTS, err := conn.GetSnapshotCreateTimestamp(ctx, fs, fset, snap)
 	if err != nil {
