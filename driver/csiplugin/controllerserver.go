@@ -248,8 +248,15 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	}
 
 	if filesetQuotaBytes != scVol.VolSize {
-		volsiz := strconv.FormatUint(scVol.VolSize, 10)
-		err = scVol.Connector.SetFilesetQuota(ctx, scVol.VolBackendFs, volName, volsiz)
+		var hardLimit, softLimit string
+		hardLimit = strconv.FormatUint(scVol.VolSize, 10)
+		if scVol.VolumeType == cacheVolume {
+			softLimit = strconv.FormatUint(((8 / 10) * scVol.VolSize), 10)
+		} else {
+			softLimit = hardLimit
+		}
+
+		err = scVol.Connector.SetFilesetQuota(ctx, scVol.VolBackendFs, volName, hardLimit, softLimit)
 		if err != nil {
 			// failed to set quota, no cleanup, next retry might be able to set quota
 			return fmt.Errorf("unable to set quota [%v] on fileset [%v] of FS [%v]", scVol.VolSize, volName, scVol.VolBackendFs)
@@ -2859,8 +2866,8 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	if capRange == nil {
 		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
 	}
-
-	capacity := uint64(capRange.GetRequiredBytes())
+	capacityInt := capRange.GetRequiredBytes()
+	capacity := uint64(capacityInt)
 
 	volumeIDMembers, err := getVolIDMembers(volID)
 
@@ -2919,8 +2926,14 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	}
 
 	if filesetQuotaBytes < capacity {
-		volsize := strconv.FormatUint(capacity, 10)
-		err = conn.SetFilesetQuota(ctx, filesystemName, filesetName, volsize)
+		var hardLimit, softLimit string
+		hardLimit = strconv.FormatUint(capacity, 10)
+		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
+			softLimit = strconv.FormatUint(uint64(float64(capacityInt)*float64(80)/float64(100)), 10)
+		} else {
+			softLimit = hardLimit
+		}
+		err = conn.SetFilesetQuota(ctx, filesystemName, filesetName, hardLimit, softLimit)
 		if err != nil {
 			klog.Errorf("[%s] unable to update the quota. Error [%v]", loggerId, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to expand the volume. Error [%v]", err))

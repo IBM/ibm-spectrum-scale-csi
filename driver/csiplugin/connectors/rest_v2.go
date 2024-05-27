@@ -905,15 +905,15 @@ func (s *SpectrumRestV2) MakeDirectoryV2(ctx context.Context, filesystemName str
 	return nil
 }
 
-func (s *SpectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error {
+func (s *SpectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, hardLimit string, softLimit string) error {
 	loggerId := GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", loggerId, filesystemName, filesetName, quota)
+	klog.V(4).Infof("[%s] rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, hardLimit: %s, softLimit: %s", loggerId, filesystemName, filesetName, hardLimit, softLimit)
 
 	setQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
 	quotaRequest := SetQuotaRequest_v2{}
 
-	quotaRequest.BlockHardLimit = quota
-	quotaRequest.BlockSoftLimit = quota
+	quotaRequest.BlockHardLimit = hardLimit
+	quotaRequest.BlockSoftLimit = softLimit
 	quotaRequest.OperationType = "setQuota"
 	quotaRequest.QuotaType = "fileset"
 	quotaRequest.ObjectName = filesetName

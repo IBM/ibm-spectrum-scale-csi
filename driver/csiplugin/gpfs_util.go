@@ -38,6 +38,11 @@ const (
 	sharedPermissions  = "777"
 )
 
+// AFM caching constants
+const (
+	cacheVolume = "cache"
+)
+
 type scaleVolume struct {
 	VolName            string                            `json:"volName"`
 	VolSize            uint64                            `json:"volSize"`
@@ -67,6 +72,7 @@ type scaleVolume struct {
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
+	VolumeType         string                            `json:"volumeType"`
 }
 
 type scaleVolId struct {
