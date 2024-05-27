@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2018, 2024 IBM Corporation.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ var (
 	driverName     = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 	nodeID         = flag.String("nodeid", "", "node id")
 	kubeletRootDir = flag.String("kubeletRootDirPath", "/var/lib/kubelet", "kubelet root directory path")
-	vendorVersion  = "2.11.0"
+	vendorVersion  = "2.12.0"
 )
 
 func main() {
@@ -109,7 +109,8 @@ func handle(ctx context.Context) {
 	if err != nil {
 		klog.Fatalf("[%s] Failed to initialize Scale CSI Driver: %v", loggerId, err)
 	}
-	klog.Infof("[%s] Scale CSI Driver Initialized: [%+v]", loggerId, driver)
+	newDriver := driver
+	newDriver.PrintDriverInit(ctx)
 	driver.Run(ctx, *endpoint)
 }
 

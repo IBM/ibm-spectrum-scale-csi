@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 IBM Corp.
+ * Copyright 2022, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,8 +71,8 @@ const (
 	ENVKubeVersion  = "KUBE_VERSION"
 	ENVCGPrefix     = "CSI_CG_PREFIX"
 	ENVSymDirPath   = "SYMLINK_DIR_PATH"
-	DriverVersion   = "2.11.0"
-	OperatorVersion = "2.11.0"
+	DriverVersion   = "2.12.0"
+	OperatorVersion = "2.12.0"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
@@ -89,19 +89,19 @@ const (
 
 	//  Default images for containers
 
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.11.0"
-	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.0
-	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:c53535af8a7f7e3164609838c4b191b42b2d81238d75c1b2a2b582ada62a9780" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/livenessprobe:v2.12.0
-	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-attacher:v4.5.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:d69cc72025f7c40dae112ff989e920a3331583497c8dfb1600c5ae0e37184a29" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-provisioner:v4.0.0
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:de79c8bbc271622eb94d2ee8689f189ea7c1cb6adac260a421980fe5eed66708" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-snapshotter:v7.0.1
-	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:1a29ab1e4ecdc33a84062cec757620d9787c28b28793202c5b78ae097c3dee27" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-resizer:v1.10.0
-	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:4c148bbdf883153bc72d321be4dc55c33774a6d98b2b3e0c2da6ae389149a9b7" // #nosec G101 false positive
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.12.0"
+        //  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.1
+        CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/livenessprobe:v2.12.0
+        LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-attacher:v4.5.1
+        CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:9dcd469f02bbb7592ad61b0f848ec242f9ea2102187a0cd8407df33c2d633e9c" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-provisioner:v4.0.1
+        CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-snapshotter:v7.0.2
+        CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:c4b6b02737bc24906fcce57fe6626d1a36cb2b91baa971af2a5e5a919093c34e" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-resizer:v1.10.1
+        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:4ecda2818f6d88a8f217babd459fdac31588f85581aa95ac7092bb0471ff8541" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
