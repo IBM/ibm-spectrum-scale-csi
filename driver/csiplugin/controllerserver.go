@@ -2535,7 +2535,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 
 		/* For new storageClass check last snapshot creation time, if time passed is less than
 		 * snapWindow then return existing snapshot */
-		klog.Infof("[%s] createNewSnap:[%d], snapExistAfterRetry:[%d]", loggerId, createNewSnap, snapExistAfterRetry)
 		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED && !snapExistAfterRetry {
 			cgSnapName, err := cs.CheckNewSnapRequired(ctx, conn, filesystemName, filesetName, snapWindowInt)
 			if err != nil {
