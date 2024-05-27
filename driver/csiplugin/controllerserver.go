@@ -2571,7 +2571,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	createNewSnap := false
 	snapExistAfterRetry := false
 	lockSuccess := false
-	klog.Infof("[%s] targetPath:[%s], createNewSnap:[%d], snapExistAfterRetry:[%d]", loggerId, filesetName, createNewSnap, snapExistAfterRetry)
 	if !snapExist {
 		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 			klog.Infof("[%s] Target path in CreateSnapshot:[%s]", loggerId, filesetName)
