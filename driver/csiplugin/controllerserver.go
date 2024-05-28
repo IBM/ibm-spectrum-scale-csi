@@ -48,6 +48,7 @@ const (
 	smallestVolSize       uint64 = oneGB // 1GB
 	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
 	cgPrefixLen                  = 37
+	softQuotaPercent             = 80 // This value is % of the hardQuotaLimit e.g. 80%
 
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
@@ -251,7 +252,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 		var hardLimit, softLimit string
 		hardLimit = strconv.FormatUint(scVol.VolSize, 10)
 		if scVol.VolumeType == cacheVolume {
-			softLimit = strconv.FormatUint(((8 / 10) * scVol.VolSize), 10)
+			softLimit = strconv.FormatUint(uint64((float64(softQuotaPercent) / float64(100) * float64(scVol.VolSize))), 10)
 		} else {
 			softLimit = hardLimit
 		}
@@ -2929,7 +2930,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		var hardLimit, softLimit string
 		hardLimit = strconv.FormatUint(capacity, 10)
 		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
-			softLimit = strconv.FormatUint(uint64(float64(capacityInt)*float64(80)/float64(100)), 10)
+			softLimit = strconv.FormatUint(uint64(float64(capacityInt)*float64(softQuotaPercent)/float64(100)), 10)
 		} else {
 			softLimit = hardLimit
 		}
