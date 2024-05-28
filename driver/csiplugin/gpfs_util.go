@@ -152,7 +152,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	clusterID, clusterIDSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
-	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
+	fsetType, fsetTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
 	inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
@@ -207,8 +207,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volBackendFs must be specified in storageClass")
 	}
 
-	if fsTypeSpecified && fsType == "" {
-		fsTypeSpecified = false
+	if fsetTypeSpecified && fsetType == "" {
+		fsetTypeSpecified = false
 	}
 
 	if isCGSpecified && cg == "" {
@@ -219,9 +219,10 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		volDirPathSpecified = false
 	}
 
-	if !fsTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
-		fsTypeSpecified = true
-		fsType = independentFileset
+	isUserInputFsetType := fsetTypeSpecified
+	if !fsetTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
+		fsetTypeSpecified = true
+		fsetType = independentFileset
 	}
 
 	if uidSpecified && uid == "" {
@@ -244,6 +245,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isparentFilesetSpecified && parentFileset == "" {
 		isparentFilesetSpecified = false
 	}
+
 	if clusterIDSpecified && clusterID != "" {
 		scaleVol.ClusterId = clusterID
 	}
@@ -253,7 +255,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if volDirPathSpecified {
-		if fsTypeSpecified {
+		if fsetTypeSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and volDirBasePath must not be specified together in storageClass")
 		}
 		if isparentFilesetSpecified {
@@ -264,12 +266,12 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 
-	if fsTypeSpecified {
-		if fsType == dependentFileset {
+	if fsetTypeSpecified {
+		if fsetType == dependentFileset {
 			if inodeLimSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and filesetType=dependent must not be specified together in storageClass")
 			}
-		} else if fsType == independentFileset {
+		} else if fsetType == independentFileset {
 			if isparentFilesetSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and filesetType=independent(Default) must not be specified together in storageClass")
 			}
@@ -278,7 +280,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 
-	if fsTypeSpecified && inodeLimSpecified {
+	if fsetTypeSpecified && inodeLimSpecified {
 		inodelimit, err := strconv.Atoi(inodeLim)
 		if err != nil {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Invalid value specified for inodeLimit in storageClass")
@@ -295,7 +297,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		scaleVol.IsFilesetBased = false
 	}
 
-	if isSCAdvanced && fsTypeSpecified {
+	if isSCAdvanced && fsetTypeSpecified {
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && isparentFilesetSpecified {
@@ -305,7 +307,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+scversion2+" must not be specified together in storageClass")
 	}
 
-	if fsTypeSpecified || isSCAdvanced {
+	if fsetTypeSpecified || isSCAdvanced {
 		scaleVol.IsFilesetBased = true
 	}
 
@@ -373,8 +375,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if scaleVol.IsFilesetBased {
-		if fsTypeSpecified {
-			scaleVol.FilesetType = fsType
+		if fsetTypeSpecified {
+			scaleVol.FilesetType = fsetType
 		}
 		if isparentFilesetSpecified {
 			scaleVol.ParentFileset = parentFileset
@@ -421,6 +423,22 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if volumeTypeSpecified {
+		if isSCTypeSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"version\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		if isUserInputFsetType {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"filesetType\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		if isparentFilesetSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"parentFileset\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		if volDirPathSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"volDirBasePath\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
 		volumeType = strings.ToLower(volumeType)
 		if volumeType == cacheVolume {
 			scaleVol.StorageClassType = STORAGECLASS_CACHE

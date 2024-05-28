@@ -464,11 +464,28 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
 			var fseterr error
 			if scVol.VolumeType == cacheVolume {
+				// Before creating a cache fileset, check if there is any other cache
+				// fileset pointing to the same bucket, if such fileset is found then
+				// disallow creation of another cache fileset.
+				afmTarget := bucketInfo[connectors.BucketEndpoint] + "/" + bucketInfo[connectors.BucketName]
+				filesetWitAFMTarget, err := scVol.Connector.CheckFilesetWithAFMTarget(ctx, scVol.VolBackendFs, afmTarget)
+				if err != nil {
+					klog.Errorf("[%s] volume:[%v] - failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", loggerId, volName, afmTarget, scVol.VolBackendFs, err)
+					return "", status.Error(codes.Internal, fmt.Sprintf("failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", afmTarget, scVol.VolBackendFs, err))
+				}
+				if filesetWitAFMTarget != "" {
+					klog.Errorf("[%s] volume:[%v] - failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", loggerId, volName, volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget)
+					return "", status.Error(codes.Internal, fmt.Sprintf("failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget))
+				}
+
+				// Set bucket keys for a cache volume
 				keyerr := scVol.Connector.SetBucketKeys(ctx, bucketInfo)
 				if keyerr != nil {
 					klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
 					return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
 				}
+
+				// Create a cache fileset
 				fseterr = scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo)
 			} else {
 				// This means fileset is not present, create it
@@ -717,6 +734,12 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 	isSnapSource, isVolSource, volSrc, snapIdMembers, srcVolumeIDMembers, err := cs.getVolORSnapMembers(ctx, req, volName)
 	if err != nil {
 		return nil, err
+	}
+
+	// Block creating a cache volume from another volume (clone) or
+	// from a snapshot (restore)
+	if scaleVol.VolumeType == cacheVolume && (isSnapSource || isVolSource) {
+		return nil, status.Error(codes.InvalidArgument, "Creating a cache volume from another volume or snapshot is not supported")
 	}
 
 	isShallowCopyVolume := false

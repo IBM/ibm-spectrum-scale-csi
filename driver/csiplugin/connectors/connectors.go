@@ -39,6 +39,7 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
 	SetBucketKeys(ctx context.Context, access map[string]string) error
 	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string) error
 	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
