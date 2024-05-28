@@ -41,7 +41,27 @@ const (
 // AFM caching constants
 const (
 	cacheVolume = "cache"
+
+	// AFM cache modes
+	afmModeRO = "ro" // Read-Only
+	afmModeIW = "iw" // Independent-Writer
+	afmModeSW = "sw" // Single-Writer
+	afmModeLU = "lu" // Local-Update
+
+	// User input cache modes
+	inputModeRO = "readonly"
+	inputModeIW = "parallel"
+	inputModeSW = "exclusive"
+	inputModeLU = "detached"
 )
+
+// A map for mapping the user input mode to actual AFM mode
+var inputToAFMMode = map[string]string{
+	inputModeRO: afmModeRO,
+	inputModeIW: afmModeIW,
+	inputModeSW: afmModeSW,
+	inputModeLU: afmModeLU,
+}
 
 type scaleVolume struct {
 	VolName            string                            `json:"volName"`
@@ -73,6 +93,7 @@ type scaleVolume struct {
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
 	VolumeType         string                            `json:"volumeType"`
+	CacheMode          string                            `json:"cacheMode"`
 }
 
 type scaleVolId struct {
@@ -141,6 +162,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+
+	volumeType, volumeTypeSpecified := volOptions[connectors.UserSpecifiedVolumeType]
+	cacheMode, cacheModeSpecified := volOptions[connectors.UserSpecifiedCacheMode]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -396,6 +420,32 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
+	if volumeTypeSpecified {
+		volumeType = strings.ToLower(volumeType)
+		if volumeType == cacheVolume {
+			scaleVol.StorageClassType = STORAGECLASS_CACHE
+			scaleVol.VolumeType = cacheVolume
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s, only allowed value is: %s", volumeType, cacheVolume))
+		}
+	}
+
+	if cacheModeSpecified && scaleVol.VolumeType != cacheVolume {
+		return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
+			"The storage class parameter cacheMode can only be specified with volumeType=\"cache\"")
+	}
+
+	if cacheModeSpecified {
+		cacheMode = strings.ToLower(cacheMode)
+		switch cacheMode {
+		case inputModeIW, inputModeRO, inputModeSW, inputModeLU:
+			scaleVol.CacheMode = inputToAFMMode[cacheMode]
+		default:
+			allowedCacheModes := inputModeRO + ", " + inputModeIW + ", " + inputModeSW + " or " + inputModeLU
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid cache mode is specified: %s, allowed cache modes are: %s", cacheMode, allowedCacheModes))
+		}
+	}
+
 	return scaleVol, nil
 }
 
@@ -561,7 +611,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 	}
 
 	if len(splitVid) == 7 {
-		/* Volume ID created from 2.5.0 onwards  */
+		/* Volume ID created from CSI 2.5.0 onwards  */
 		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]

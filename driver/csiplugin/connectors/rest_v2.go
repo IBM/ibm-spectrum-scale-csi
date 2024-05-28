@@ -22,6 +22,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,14 @@ import (
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
 const errContextDeadlineExceeded string = "context deadline exceeded"
+
+// Bucket parameters for a AFM cache volume
+const (
+	bucketEndpoint  = "endpoint"
+	bucketName      = "bucket"
+	bucketAccesskey = "accesskey"
+	bucketSecretkey = "secretkey"
+)
 
 var GetLoggerId = utils.GetLoggerId
 
@@ -498,6 +507,11 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.MaxNumInodes = inodeLimit.(string)
 		//filesetreq.AllocInodes = "1024"
 	}
+	comment, commentSpecified := opts[FilesetComment]
+	if commentSpecified {
+		filesetreq.Comment = fmt.Sprintf("%v", comment)
+	}
+
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
 	err := s.doHTTP(ctx, updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
@@ -589,6 +603,86 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 			return nil
 		}
 		klog.Errorf("[%s] Unable to create fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[string]string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys", loggerID)
+
+	keyreq := SetBucketKeysRequest{}
+
+	keyreq.BucketName = bucketInfo[bucketName]
+	keyreq.AccessKey = bucketInfo[bucketAccesskey]
+	keyreq.SecretKey = bucketInfo[bucketSecretkey]
+
+	// Extract the hostname without the port
+	parsedURL, err := url.Parse(bucketInfo[bucketEndpoint])
+	if err != nil {
+		return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[bucketEndpoint], err)
+	}
+	hostname := parsedURL.Hostname()
+	keyreq.Server = hostname
+
+	setBucketKeysURL := "scalemgmt/v2/bucket/keys"
+	setBucketKeysResponse := GenericResponse{}
+
+	err = s.doHTTP(ctx, setBucketKeysURL, "PUT", &setBucketKeysResponse, keyreq)
+	if err != nil {
+		klog.Errorf("[%s] Failed to set keys for the bucket %s, error: %v", loggerID, bucketInfo[bucketName], err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, setBucketKeysResponse, setBucketKeysURL)
+	if err != nil {
+		klog.Errorf("[%s] The set keys request is not accepted for processing for the bucket %s, error: %v", loggerID, bucketInfo[bucketName], err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, setBucketKeysResponse.Status.Code, setBucketKeysResponse.Jobs[0].JobID)
+	if err != nil {
+		klog.Errorf("[%s] Failed to set keys for the bucket %s, error: %v", loggerID, bucketInfo[bucketName], err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v", loggerID, filesystemName, filesetName, mode, opts)
+
+	filesetreq := CreateS3CacheFilesetRequest{}
+	filesetreq.FilesetName = filesetName
+	filesetreq.UseObjectFs = true
+	filesetreq.Mode = mode
+
+	filesetreq.Endpoint = bucketInfo[bucketEndpoint]
+	filesetreq.BucketName = bucketInfo[bucketName]
+
+	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/cos", filesystemName)
+	createFilesetResponse := GenericResponse{}
+
+	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)
+	if err != nil {
+		klog.Errorf("[%s] Failed to create an AFM cache fileset %s, error: %v", loggerID, filesetName, err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, createFilesetResponse, createFilesetURL)
+	if err != nil {
+		klog.Errorf("[%s] The AFM cache fileset creation request for fileset %s is not accepted for processing, error: %v", loggerID, filesetName, err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
+			fmt.Println(err)
+			return nil
+		}
+		klog.Errorf("[%s]  Failed to create an AFM cache fileset %s, error: %v", loggerID, filesetName, err)
 		return err
 	}
 	return nil

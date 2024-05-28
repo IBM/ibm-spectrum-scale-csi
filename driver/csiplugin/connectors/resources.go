@@ -639,6 +639,21 @@ type CreateFilesetRequest struct {
 	AfmShowHomeSnapshots         string `json:"afmShowHomeSnapshots,omitempty"`
 }
 
+type CreateS3CacheFilesetRequest struct {
+	FilesetName string `json:"filesetName"`
+	Mode        string `json:"mode"`
+	Endpoint    string `json:"endpoint"`
+	UseObjectFs bool   `json:"useObjectFs,omitempty"`
+	BucketName  string `json:"bucket,omitempty"`
+}
+
+type SetBucketKeysRequest struct {
+	BucketName string `json:"bucket"`
+	AccessKey  string `json:"accessKey"`
+	SecretKey  string `json:"secretKey"`
+	Server     string `json:"server,omitempty"`
+}
+
 type CreateMakeDirRequest struct {
 	UID         string `json:"uid,omitempty"`         //uidnumber
 	GID         string `json:"gid,omitempty"`         //gidnumber
