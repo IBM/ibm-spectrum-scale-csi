@@ -18,6 +18,7 @@ package scale
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -258,7 +259,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 		var hardLimit, softLimit string
 		hardLimit = strconv.FormatUint(scVol.VolSize, 10)
 		if scVol.VolumeType == cacheVolume {
-			softLimit = strconv.FormatUint(uint64((float64(softQuotaPercent) / float64(100) * float64(scVol.VolSize))), 10)
+			softLimit = strconv.FormatUint(uint64(math.Abs(float64(softQuotaPercent)/float64(100)*float64(scVol.VolSize))), 10)
 		} else {
 			softLimit = hardLimit
 		}
@@ -3022,7 +3023,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		var hardLimit, softLimit string
 		hardLimit = strconv.FormatUint(capacity, 10)
 		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
-			softLimit = strconv.FormatUint(uint64(float64(capacityInt)*float64(softQuotaPercent)/float64(100)), 10)
+			softLimit = strconv.FormatUint(uint64(math.Abs(float64(capacityInt)*float64(softQuotaPercent)/float64(100))), 10)
 		} else {
 			softLimit = hardLimit
 		}
