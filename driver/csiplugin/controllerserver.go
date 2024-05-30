@@ -48,7 +48,7 @@ const (
 	smallestVolSize       uint64 = oneGB // 1GB
 	defaultSnapWindow            = "30"  // default snapWindow for Consistency Group snapshots is 30 minutes
 	cgPrefixLen                  = 37
-	softQuotaPercent             = 80 // This value is % of the hardQuotaLimit e.g. 80%
+	softQuotaPercent             = 70 // This value is % of the hardQuotaLimit e.g. 70%
 
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
