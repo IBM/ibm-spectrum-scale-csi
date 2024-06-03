@@ -490,14 +490,12 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 				// For cache fileset, add a comment as the create COS fileset
 				// interface doesn't allow setting the fileset comment.
-				if scVol.VolumeType == cacheVolume {
-					updateOpts := make(map[string]interface{})
-					updateOpts[connectors.FilesetComment] = connectors.FilesetComment
-					updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
-					if updateerr != nil {
-						klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
-						return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
-					}
+				updateOpts := make(map[string]interface{})
+				updateOpts[connectors.FilesetComment] = connectors.FilesetComment
+				updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
+				if updateerr != nil {
+					klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
+					return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
 				}
 			} else {
 				// This means fileset is not present, create it
