@@ -487,6 +487,18 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 				// Create a cache fileset
 				fseterr = scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo)
+
+				// For cache fileset, add a comment as the create COS fileset
+				// interface doesn't allow setting the fileset comment.
+				if scVol.VolumeType == cacheVolume {
+					updateOpts := make(map[string]interface{})
+					updateOpts[connectors.FilesetComment] = connectors.FilesetComment
+					updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
+					if updateerr != nil {
+						klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
+						return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
+					}
+				}
 			} else {
 				// This means fileset is not present, create it
 				fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
@@ -511,20 +523,8 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	} else {
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment != connectors.FilesetComment {
-			// For cache fileset, add a comment as the create COS fileset
-			// interface doesn't allow setting the fileset comment.
-			if scVol.VolumeType == cacheVolume {
-				updateOpts := make(map[string]interface{})
-				updateOpts[connectors.FilesetComment] = connectors.FilesetComment
-				updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
-				if updateerr != nil {
-					klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
-					return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
-				}
-			} else {
-				klog.Errorf("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, volName)
-				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", volName))
-			}
+			klog.Errorf("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, volName)
+			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", volName))
 		}
 		if scVol.VolumeType != cacheVolume {
 			listFilesetType := ""
