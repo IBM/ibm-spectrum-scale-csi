@@ -757,7 +757,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 					// cacheMode is not specified, use AFM mode RO by default for volume access mode ROX
 					scaleVol.CacheMode = afmModeRO
 				} else if scaleVol.CacheMode != afmModeRO {
-					return nil, status.Error(codes.InvalidArgument, "The volume access mode ReadOnlyMany is only supported with the AFM mode readonly (RO)")
+					return nil, status.Error(codes.InvalidArgument, "The volume access mode ReadOnlyMany is only supported with the cacheMode readonly")
 				}
 			} else {
 				return nil, status.Error(codes.Unimplemented, "Volume source with Access Mode ReadOnlyMany is not supported")
@@ -768,7 +768,7 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 					// cacheMode is not specified, use AFM mode IW by default for other volume access modes
 					scaleVol.CacheMode = afmModeIW
 				} else if scaleVol.CacheMode == afmModeRO {
-					return nil, status.Error(codes.InvalidArgument, "The AFM mode readonly (RO) is only supported with the volume access mode ReadOnlyMany")
+					return nil, status.Error(codes.InvalidArgument, "The cacheMode readonly is only supported with the volume access mode ReadOnlyMany")
 				}
 			}
 		}
