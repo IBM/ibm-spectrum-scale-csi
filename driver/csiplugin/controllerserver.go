@@ -391,7 +391,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, bucketInfo)
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -2021,7 +2021,7 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 	}
 
 	relPath := ""
-	if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED || volumeIdMembers.StorageClassType == STORAGECLASS_CACHE || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
+	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
@@ -2484,7 +2484,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 
 	// Block snapshot for cache volume
 	if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
-		return nil, status.Error(codes.InvalidArgument, "taking snapshot of cache volume is not supported")
+		return nil, status.Error(codes.InvalidArgument, "CreateSnapshot - taking snapshot of cache volume is not supported")
 	}
 
 	if !volumeIDMembers.IsFilesetBased {
