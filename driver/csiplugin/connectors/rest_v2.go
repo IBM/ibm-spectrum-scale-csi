@@ -679,7 +679,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	err = s.WaitForJobCompletion(ctx, createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
-			klog.Info("The cache fileset exists already, error: %v", err)
+			klog.Infof("The cache fileset exists already, error: %v", err)
 			return nil
 		}
 		klog.Errorf("[%s]  Failed to create an AFM cache fileset %s, error: %v", loggerID, filesetName, err)
