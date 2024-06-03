@@ -490,9 +490,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 				// For cache fileset, add a comment as the create COS fileset
 				// interface doesn't allow setting the fileset comment.
-				updateOpts := make(map[string]interface{})
-				updateOpts[connectors.FilesetComment] = connectors.FilesetComment
-				updateerr := scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
+				updateerr := updateComment(ctx, scVol, volName)
 				if updateerr != nil {
 					klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
 					return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
@@ -521,8 +519,16 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	} else {
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment != connectors.FilesetComment {
-			klog.Errorf("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, volName)
-			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", volName))
+			if scVol.VolumeType == cacheVolume {
+				updateerr := updateComment(ctx, scVol, volName)
+				if updateerr != nil {
+					klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
+					return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
+				}
+			} else {
+				klog.Errorf("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, volName)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", volName))
+			}
 		}
 		if scVol.VolumeType != cacheVolume {
 			listFilesetType := ""
@@ -599,6 +605,12 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeRequest) int64 {
 	capacity := req.GetCapacityRange()
 	return capacity.GetRequiredBytes()
+}
+
+func updateComment(ctx context.Context, scVol *scaleVolume, volName string) error {
+	updateOpts := make(map[string]interface{})
+	updateOpts[connectors.FilesetComment] = connectors.FilesetComment
+	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
 }
 
 func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid string) (connectors.SpectrumScaleConnector, error) {
