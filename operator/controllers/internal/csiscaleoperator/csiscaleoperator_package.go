@@ -54,6 +54,7 @@ const (
 	securityContextConstraintsResource   string = "securitycontextconstraints"
 	podSecurityPolicyResource            string = "podsecuritypolicies"
 	leaseResource                        string = "leases"
+	secretResource                       string = "secrets"
 	verbGet                              string = "get"
 	verbList                             string = "list"
 	verbWatch                            string = "watch"
@@ -234,6 +235,11 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				APIGroups: []string{coordinationApiGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{secretResource},
+				Verbs:     []string{verbGet},
 			},
 		},
 	}
