@@ -188,7 +188,7 @@ func (cs *ScaleControllerServer) createDirectory(ctx context.Context, scVol *sca
 		if scVol.VolPermissions != "" {
 			err = scVol.Connector.MakeDirectoryV2(ctx, scVol.VolBackendFs, targetPath, scVol.VolUid, scVol.VolGid, scVol.VolPermissions)
 			if err != nil {
-				// Directory creation failed, no cleanup will retry in next retry
+				// Directory creation failed, no cleanup will eetry in next retry
 				klog.Errorf("[%s] volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", utils.GetLoggerId(ctx), volName, targetPath, scVol.VolBackendFs, err)
 				return fmt.Errorf("unable to create directory [%v] in filesystem [%v]. Error : %v", targetPath, scVol.VolBackendFs, err)
 			}
@@ -2336,6 +2336,7 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 		return "", err
 	}
 
+	klog.Infof("[%s] latestSnapList[0].SnapshotName:%s", loggerId, latestSnapList[0].SnapshotName)
 	var timestampSecs int64 = timestamp.GetSeconds()
 	lastSnapTime := time.Unix(timestampSecs, 0)
 	passedTime := time.Since(lastSnapTime).Seconds()
@@ -2454,6 +2455,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		}
 	}
 
+
 	if volumeIDMembers.StorageClassType != STORAGECLASS_ADVANCED {
 		if filesetResp.Config.ParentId > 0 {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
@@ -2517,66 +2519,11 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get the snapshot details for [%s]. Error [%v]", snapName, err))
 	}
 
-	createNewSnap := false
-	snapExistAfterRetry := false
-	lockSuccess := false
-	if !snapExist {
-		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-			klog.Infof("[%s] Target path in CreateSnapshot:[%s]", loggerId, filesetName)
-			lockSuccess = CgSnapshotLock(ctx, filesetName, snapExist)
-			if !lockSuccess {
-				snapExistAfterRetry = cs.retryToCreateNewSnap(ctx, conn, filesystemName, filesetName, snapName)
-			} else {
-				createNewSnap = true
-			}
-		} else {
-			createNewSnap = true
-		}
+	snapName,err = cs.CreateNewSnapshotIfRequired(ctx, conn, filesystemName, filesetName, filesetResp.FilesetName, snapName, volumeIDMembers.StorageClassType, snapWindowInt, snapExist)
+        if err != nil {
+        	return nil, err
+        } 
 
-		/* For new storageClass check last snapshot creation time, if time passed is less than
-		 * snapWindow then return existing snapshot */
-		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED && !snapExistAfterRetry {
-			cgSnapName, err := cs.CheckNewSnapRequired(ctx, conn, filesystemName, filesetName, snapWindowInt)
-			if err != nil {
-				klog.Errorf("[%s] CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
-				return nil, err
-			}
-			if cgSnapName != "" {
-				usable, err := cs.isExistingSnapUseableForVol(ctx, conn, filesystemName, filesetName, filesetResp.FilesetName, cgSnapName)
-				if !usable {
-					return nil, err
-				}
-				createNewSnap = false
-				snapName = cgSnapName
-			} else {
-				klog.Infof("[%s] CreateSnapshot - creating new snapshot for consistency group for fileset: [%s:%s]", loggerId, filesystemName, filesetName)
-			}
-		}
-
-		if createNewSnap {
-			snapshotList, err := conn.ListFilesetSnapshots(ctx, filesystemName, filesetName)
-			if err != nil {
-				klog.Errorf("[%s] CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
-			}
-
-			if len(snapshotList) >= 256 {
-				klog.Errorf("[%s] CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", loggerId, snapName, filesystemName, filesetName)
-				return nil, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
-			}
-
-			snaperr := conn.CreateSnapshot(ctx, filesystemName, filesetName, snapName)
-			if snaperr != nil {
-				klog.Errorf("[%s] Snapshot [%s] - Unable to create snapshot. Error [%v]", loggerId, snapName, snaperr)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
-			}
-		}
-
-		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED && lockSuccess {
-			CgSnapshotUnlock(ctx, filesetName)
-		}
-
-	}
 
 	snapID := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2626,18 +2573,75 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	}, nil
 }
 
+ func (cs *ScaleControllerServer) CreateNewSnapshotIfRequired(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, fsetName, snapName, storageClassType string, snapWindowInt int,snapExist bool) (string, error) {
 
-func (cs *ScaleControllerServer) retryToCreateNewSnap(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, snapName string) bool {
 	loggerId := utils.GetLoggerId(ctx)
+	lockSuccess := false
+
+	if !snapExist {
+		createNewSnap := true
+		if storageClassType == STORAGECLASS_ADVANCED && createNewSnap{
+                        lockSuccess = CgSnapshotLock(ctx, filesetName, snapExist)
+                        if !lockSuccess {
+                                cs.retryToCreateNewSnap(ctx, conn, filesystemName, filesetName, snapName)
+                        } else {
+                                defer CgSnapshotUnlock(ctx, filesetName)
+                        }
+                }
+
+		//  For new storageClass check last snapshot creation time, if time passed is less than
+		//  snapWindow then return existing snapshot 
+
+		if storageClassType == STORAGECLASS_ADVANCED {
+			cgSnapName, err := cs.CheckNewSnapRequired(ctx, conn, filesystemName, filesetName, snapWindowInt)
+			if err != nil {
+				klog.Errorf("[%s] CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
+				return snapName,err
+			}
+			if cgSnapName != "" {
+				usable, err := cs.isExistingSnapUseableForVol(ctx, conn, filesystemName, filesetName, fsetName, cgSnapName)
+				if !usable {
+					return snapName,err
+				}
+				createNewSnap = false
+				snapName = cgSnapName
+			} else {
+				klog.Infof("[%s] CreateSnapshot - creating new snapshot for consistency group for fileset: [%s:%s]", loggerId, filesystemName, filesetName)
+			}
+		}
+
+
+		if createNewSnap {
+			snapshotList, err := conn.ListFilesetSnapshots(ctx, filesystemName, filesetName)
+			if err != nil {
+				klog.Errorf("[%s] CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
+				return snapName,status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
+			}
+
+			if len(snapshotList) >= 256 {
+				klog.Errorf("[%s] CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", loggerId, snapName, filesystemName, filesetName)
+				return snapName,status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
+			}
+
+			snaperr := conn.CreateSnapshot(ctx, filesystemName, filesetName, snapName)
+			if snaperr != nil {
+				klog.Errorf("[%s] Snapshot [%s] - Unable to create snapshot. Error [%v]", loggerId, snapName, snaperr)
+				return snapName,status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
+			}
+		}
+
+	}
+	return snapName,nil
+} 
+
+func (cs *ScaleControllerServer) retryToCreateNewSnap(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, snapName string) {
+
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] retrying to check whether new snapshot is required", loggerId)
 	for i := 0; i < retryCount; i++ {
-		time.Sleep(retryInterval * time.Second)
+		time.Sleep( retryInterval * time.Second)
 	}
-	snapExist, err := conn.CheckIfSnapshotExist(ctx, filesystemName, filesetName, snapName)
-	if err != nil {
-		klog.Errorf("[%s] retryToCreateNewSnap [%s] - Unable to get the snapshot details. Error [%v]", loggerId, snapName, err)
-		return false
-	}
-	return snapExist
+
 }
 
 func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(ctx context.Context, conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamppb.Timestamp, error) {

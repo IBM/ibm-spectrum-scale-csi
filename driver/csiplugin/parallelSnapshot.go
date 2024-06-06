@@ -55,8 +55,14 @@ func cgParallelSnapshotLock(ctx context.Context, targetPath string, snapExists b
                         return true
                 } else if lockingModule == createSnapshot {
                         if !snapExists {
-                                klog.Infof("[%s] Snap doesn't exist and lock already acquired by another snapshot request", utils.GetLoggerId(ctx))
-                                return false
+				if createSnapCount > 0 {
+					klog.Infof("[%s] Snap doesn't exist and lock already acquired by another snapshot request", utils.GetLoggerId(ctx))
+					return false
+				} else{
+					createSnapshotRefLock[targetPath] = createOpInitCount
+					cgSnapLock[targetPath] = lockingModule
+					return true
+				}
                         } else {
                                 createSnapshotRefLock[targetPath]++
                                 cgSnapLock[targetPath] = lockingModule
@@ -105,6 +111,7 @@ func cgParallelSnapshotUnlock(ctx context.Context, targetPath string) {
                 }
         } else if moduleName == createSnapshot {
                 if createSnapshotRefLock[targetPath] > 0 {
+			klog.Infof("[%s] Decrease the count of createSnapshotRefLock", utils.GetLoggerId(ctx))
                         createSnapshotRefLock[targetPath]--
                 } else {
                         delete(createSnapshotRefLock, targetPath)
@@ -113,7 +120,7 @@ func cgParallelSnapshotUnlock(ctx context.Context, targetPath string) {
                 klog.Infof("[%s] Delete operation released the lock", utils.GetLoggerId(ctx))
         }
         delete(cgSnapLock, targetPath)
-        klog.V(4).Infof("[%s] The target path is unlocked for %s: [%s]", utils.GetLoggerId(ctx), utils.GetModuleName(ctx), targetPath)
+        klog.Infof("[%s] The target path is unlocked for %s: [%s]", utils.GetLoggerId(ctx), utils.GetModuleName(ctx), targetPath)
 }
 
 /*func retrySnapLock(ctx context.Context, targetPath, lockingModule string, snapExists bool) error {
