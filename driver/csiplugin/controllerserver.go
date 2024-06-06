@@ -1757,7 +1757,7 @@ func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesn
 	}
 	shallowCopyPath := fmt.Sprintf("%s/%s", snapshotPath, newvolume.VolName)
 
-	if isNewVolumeType{
+	if isCGVolume{
 		klog.Infof("[%s] Target path in createSnapshotDir:[%s]", loggerId, snapshotPath)
 		lockSuccess := CgSnapshotLock(ctx, snapshotPath, false)
 		if !lockSuccess {
