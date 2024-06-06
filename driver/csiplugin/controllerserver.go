@@ -1751,7 +1751,7 @@ func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesn
 	var snapshotPath string
 
 	if isCGVolume {
-		snapshotPath = fmt.Sprintf("%s/%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName)
+		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName)
 	} else {
 		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.FsetName, sourcesnapshot.SnapName)
 	}
