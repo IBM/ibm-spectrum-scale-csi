@@ -1,0 +1,12 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ibm-scale-cache-s3
+provisioner: spectrumscale.csi.ibm.com
+parameters:
+  volBackendFs: "fs0"
+  volumeType: "cache"
+  csi.storage.k8s.io/provisioner-secret-name: ${pvc.name}-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: ${pvc.namespace}
+reclaimPolicy: Delete
+allowVolumeExpansion: true

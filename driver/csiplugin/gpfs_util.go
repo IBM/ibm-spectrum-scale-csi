@@ -38,6 +38,31 @@ const (
 	sharedPermissions  = "777"
 )
 
+// AFM caching constants
+const (
+	cacheVolume = "cache"
+
+	// AFM cache modes
+	afmModeRO = "ro" // Read-Only
+	afmModeIW = "iw" // Independent-Writer
+	afmModeSW = "sw" // Single-Writer
+	afmModeLU = "lu" // Local-Update
+
+	// User input cache modes
+	inputModeRO = "readonly"
+	inputModeIW = "parallel"
+	inputModeSW = "exclusive"
+	inputModeLU = "detached"
+)
+
+// A map for mapping the user input mode to actual AFM mode
+var inputToAFMMode = map[string]string{
+	inputModeRO: afmModeRO,
+	inputModeIW: afmModeIW,
+	inputModeSW: afmModeSW,
+	inputModeLU: afmModeLU,
+}
+
 type scaleVolume struct {
 	VolName            string                            `json:"volName"`
 	VolSize            uint64                            `json:"volSize"`
@@ -67,6 +92,8 @@ type scaleVolume struct {
 	Compression        string                            `json:"compression"`
 	Tier               string                            `json:"tier"`
 	Shared             bool                              `json:"shared"`
+	VolumeType         string                            `json:"volumeType"`
+	CacheMode          string                            `json:"cacheMode"`
 }
 
 type scaleVolId struct {
@@ -125,7 +152,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	clusterID, clusterIDSpecified := volOptions[connectors.UserSpecifiedClusterId]
 	uid, uidSpecified := volOptions[connectors.UserSpecifiedUid]
 	gid, gidSpecified := volOptions[connectors.UserSpecifiedGid]
-	fsType, fsTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
+	fsetType, fsetTypeSpecified := volOptions[connectors.UserSpecifiedFilesetType]
 	inodeLim, inodeLimSpecified := volOptions[connectors.UserSpecifiedInodeLimit]
 	parentFileset, isparentFilesetSpecified := volOptions[connectors.UserSpecifiedParentFset]
 	nodeClass, isNodeClassSpecified := volOptions[connectors.UserSpecifiedNodeClass]
@@ -135,6 +162,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+
+	volumeType, volumeTypeSpecified := volOptions[connectors.UserSpecifiedVolumeType]
+	cacheMode, cacheModeSpecified := volOptions[connectors.UserSpecifiedCacheMode]
 
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
@@ -177,8 +207,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volBackendFs must be specified in storageClass")
 	}
 
-	if fsTypeSpecified && fsType == "" {
-		fsTypeSpecified = false
+	if fsetTypeSpecified && fsetType == "" {
+		fsetTypeSpecified = false
 	}
 
 	if isCGSpecified && cg == "" {
@@ -189,9 +219,10 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		volDirPathSpecified = false
 	}
 
-	if !fsTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
-		fsTypeSpecified = true
-		fsType = independentFileset
+	isUserInputFsetType := fsetTypeSpecified
+	if !fsetTypeSpecified && !volDirPathSpecified && !isSCAdvanced {
+		fsetTypeSpecified = true
+		fsetType = independentFileset
 	}
 
 	if uidSpecified && uid == "" {
@@ -214,6 +245,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isparentFilesetSpecified && parentFileset == "" {
 		isparentFilesetSpecified = false
 	}
+
 	if clusterIDSpecified && clusterID != "" {
 		scaleVol.ClusterId = clusterID
 	}
@@ -223,7 +255,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if volDirPathSpecified {
-		if fsTypeSpecified {
+		if fsetTypeSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and volDirBasePath must not be specified together in storageClass")
 		}
 		if isparentFilesetSpecified {
@@ -234,12 +266,12 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 
-	if fsTypeSpecified {
-		if fsType == dependentFileset {
+	if fsetTypeSpecified {
+		if fsetType == dependentFileset {
 			if inodeLimSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and filesetType=dependent must not be specified together in storageClass")
 			}
-		} else if fsType == independentFileset {
+		} else if fsetType == independentFileset {
 			if isparentFilesetSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and filesetType=independent(Default) must not be specified together in storageClass")
 			}
@@ -248,7 +280,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 
-	if fsTypeSpecified && inodeLimSpecified {
+	if fsetTypeSpecified && inodeLimSpecified {
 		inodelimit, err := strconv.Atoi(inodeLim)
 		if err != nil {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Invalid value specified for inodeLimit in storageClass")
@@ -265,7 +297,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		scaleVol.IsFilesetBased = false
 	}
 
-	if isSCAdvanced && fsTypeSpecified {
+	if isSCAdvanced && fsetTypeSpecified {
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && isparentFilesetSpecified {
@@ -275,7 +307,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+scversion2+" must not be specified together in storageClass")
 	}
 
-	if fsTypeSpecified || isSCAdvanced {
+	if fsetTypeSpecified || isSCAdvanced {
 		scaleVol.IsFilesetBased = true
 	}
 
@@ -343,8 +375,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if scaleVol.IsFilesetBased {
-		if fsTypeSpecified {
-			scaleVol.FilesetType = fsType
+		if fsetTypeSpecified {
+			scaleVol.FilesetType = fsetType
 		}
 		if isparentFilesetSpecified {
 			scaleVol.ParentFileset = parentFileset
@@ -388,6 +420,48 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isTierSpecified && tier != "" {
 		scaleVol.Tier = tier
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
+	}
+
+	if volumeTypeSpecified {
+		if isSCTypeSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"version\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		if isUserInputFsetType {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"filesetType\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		if isparentFilesetSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"parentFileset\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		if volDirPathSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"volDirBasePath\" and \"volumeType\" in storage class are mutually exclusive")
+		}
+
+		volumeType = strings.ToLower(volumeType)
+		if volumeType == cacheVolume {
+			scaleVol.StorageClassType = STORAGECLASS_CACHE
+			scaleVol.VolumeType = cacheVolume
+		} else {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s, only allowed value is: %s", volumeType, cacheVolume))
+		}
+	}
+
+	if cacheModeSpecified && scaleVol.VolumeType != cacheVolume {
+		return &scaleVolume{}, status.Errorf(codes.InvalidArgument,
+			"The storage class parameter cacheMode can only be specified with volumeType=\"cache\"")
+	}
+
+	if cacheModeSpecified {
+		cacheMode = strings.ToLower(cacheMode)
+		switch cacheMode {
+		case inputModeIW, inputModeRO, inputModeSW, inputModeLU:
+			scaleVol.CacheMode = inputToAFMMode[cacheMode]
+		default:
+			allowedCacheModes := inputModeRO + ", " + inputModeIW + ", " + inputModeSW + " or " + inputModeLU
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid cache mode is specified: %s, allowed cache modes are: %s", cacheMode, allowedCacheModes))
+		}
 	}
 
 	return scaleVol, nil
@@ -555,7 +629,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 	}
 
 	if len(splitVid) == 7 {
-		/* Volume ID created from 2.5.0 onwards  */
+		/* Volume ID created from CSI 2.5.0 onwards  */
 		/* VolID: <storageclass_type>;<type_of_volume>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path> */
 		vIdMem.StorageClassType = splitVid[0]
 		vIdMem.VolType = splitVid[1]

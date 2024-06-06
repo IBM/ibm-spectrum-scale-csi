@@ -39,6 +39,9 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
+	SetBucketKeys(ctx context.Context, access map[string]string) error
+	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string) error
 	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
@@ -53,7 +56,7 @@ type SpectrumScaleConnector interface {
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error)
 	GetFilesetQuotaDetails(ctx context.Context, filesystemName string, filesetName string) (Quota_v2, error)
-	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error
+	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, hardLimit string, softLimit string) error
 	CheckIfFSQuotaEnabled(ctx context.Context, filesystem string) error
 	CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	//Directory operations
@@ -117,6 +120,8 @@ const (
 	UserSpecifiedShared           string = "shared"
 	AFMModeSecondary              string = "secondary"
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
+	UserSpecifiedCacheMode        string = "cacheMode"
+	UserSpecifiedVolumeType       string = "volumeType"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
