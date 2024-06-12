@@ -189,7 +189,7 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 			{
 				APIGroups: []string{""},
 				Resources: []string{persistentVolumesResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbDelete, verbPatch},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbDelete},
 			},
 			{
 				APIGroups: []string{""},
