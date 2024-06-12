@@ -96,8 +96,8 @@ const (
         LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-attacher:v4.5.1
         CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:9dcd469f02bbb7592ad61b0f848ec242f9ea2102187a0cd8407df33c2d633e9c" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/csi-provisioner:v4.0.1
-        CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-provisioner:v5.0.1
+        CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:405a14e1aa702f7ea133cea459e8395fe40a6125c088c55569e696d48e1bd385" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-snapshotter:v7.0.2
         CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:c4b6b02737bc24906fcce57fe6626d1a36cb2b91baa971af2a5e5a919093c34e" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-resizer:v1.10.1
