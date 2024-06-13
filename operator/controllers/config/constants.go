@@ -101,7 +101,7 @@ const (
         //  registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1
         CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-resizer:v1.11.1
-        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43" // #nosec G101 false positiv
+        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
