@@ -30,9 +30,9 @@ patches:
                   - name: SHORTNAME_NODE_MAPPING
                     value: "yes"
                   - name: CSI_SNAPSHOTTER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:c4b6b02737bc24906fcce57fe6626d1a36cb2b91baa971af2a5e5a919093c34e
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c
                   - name: CSI_ATTACHER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-attacher@sha256:9dcd469f02bbb7592ad61b0f848ec242f9ea2102187a0cd8407df33c2d633e9c
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
                   - name: CSI_PROVISIONER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-provisioner@sha256:405a14e1aa702f7ea133cea459e8395fe40a6125c088c55569e696d48e1bd385
                   - name: CSI_LIVENESSPROBE_IMAGE
@@ -40,7 +40,7 @@ patches:
                   - name: CSI_NODE_REGISTRAR_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac
                   - name: CSI_RESIZER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:4ecda2818f6d88a8f217babd459fdac31588f85581aa95ac7092bb0471ff8541
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43
                   - name: CSI_DRIVER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/ibm-spectrum-scale-csi-driver@sha256:5979a87374e5a5d412fc5e8197c5fb276d0af49a5ba72fea528353805ad6d903
                 image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:b776826735ba99a6a7c94752b42fd4553a76b3c576944e0ed208cf97b54447ec
