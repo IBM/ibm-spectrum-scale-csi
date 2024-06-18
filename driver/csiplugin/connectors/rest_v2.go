@@ -1419,6 +1419,10 @@ func (s *SpectrumRestV2) DeleteDirectory(ctx context.Context, filesystemName str
 
 	err = s.WaitForJobCompletion(ctx, deleteDirResponse.Status.Code, deleteDirResponse.Jobs[0].JobID)
 	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0264C") {
+			klog.V(4).Infof("[%s] Since dirName %v was already deleted, so returning success", loggerId, dirName)
+			return nil
+		}
 		return fmt.Errorf("unable to delete dir %v:%v", dirName, err)
 	}
 
