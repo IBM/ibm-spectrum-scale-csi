@@ -54,6 +54,9 @@ const (
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
 
+	fsetNotFoundErrCode = "EFSSG0072C"
+	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
+
 	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 )
@@ -495,14 +498,15 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				}
 
 				// Create a cache fileset
-				fseterr = scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo)
+				if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo); cacheFsetErr != nil {
+					klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
+					return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
+				}
 
 				// For cache fileset, add a comment as the create COS fileset
 				// interface doesn't allow setting the fileset comment.
-				updateerr := updateComment(ctx, scVol, volName)
-				if updateerr != nil {
-					klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
-					return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
+				if err := handleUpdateComment(ctx, scVol); err != nil {
+					return "", err
 				}
 			} else {
 				// This means fileset is not present, create it
@@ -529,10 +533,8 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment != connectors.FilesetComment {
 			if scVol.VolumeType == cacheVolume {
-				updateerr := updateComment(ctx, scVol, volName)
-				if updateerr != nil {
-					klog.Errorf("[%s] unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
-					return "", status.Error(codes.Internal, fmt.Sprintf("unable to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
+				if err := handleUpdateComment(ctx, scVol); err != nil {
+					return "", err
 				}
 			} else {
 				klog.Errorf("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, volName)
@@ -611,15 +613,41 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	return targetBasePath, nil
 }
 
+func handleUpdateComment(ctx context.Context, scVol *scaleVolume) error {
+	loggerId := utils.GetLoggerId(ctx)
+	volName := scVol.VolName
+
+	if updateerr := updateComment(ctx, scVol); updateerr != nil {
+		if strings.Contains(updateerr.Error(), fsetNotFoundErrCode) ||
+			strings.Contains(updateerr.Error(), fsetNotFoundErrMsg) {
+			// Filset is not found, refresh filesets
+			if err := scVol.Connector.FilesetRefreshTask(ctx); err != nil {
+				klog.Errorf("[%s] failed to refresh fileset. Error: %v", loggerId, err)
+				return status.Error(codes.Internal, fmt.Sprintf("failed to refresh fileset. Error: %v", err))
+			}
+
+			// Try update again after fileset refresh
+			if updateerr := updateComment(ctx, scVol); updateerr != nil {
+				klog.Errorf("[%s] failed to update comment for fileset [%s] in filesystem [%s] even after fileset refresh. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
+				return status.Error(codes.Internal, fmt.Sprintf("failed to update comment for fileset [%s] in filesystem [%s] even after fileset refresh. Error: %v", volName, scVol.VolBackendFs, updateerr))
+			}
+		} else {
+			klog.Errorf("[%s] failed to update comment for fileset [%s] in filesystem [%s]. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
+			return status.Error(codes.Internal, fmt.Sprintf("failed to update comment for fileset [%s] in filesystem [%s]. Error: %v", volName, scVol.VolBackendFs, updateerr))
+		}
+	}
+	return nil
+}
+
 func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeRequest) int64 {
 	capacity := req.GetCapacityRange()
 	return capacity.GetRequiredBytes()
 }
 
-func updateComment(ctx context.Context, scVol *scaleVolume, volName string) error {
+func updateComment(ctx context.Context, scVol *scaleVolume) error {
 	updateOpts := make(map[string]interface{})
 	updateOpts[connectors.FilesetComment] = connectors.FilesetComment
-	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, volName, updateOpts)
+	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.VolName, updateOpts)
 }
 
 func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid string) (connectors.SpectrumScaleConnector, error) {
@@ -918,12 +946,21 @@ func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.Crea
 
 	var targetPath string
 
-	// Validate the secret data in case of cache volumes
 	if scaleVol.VolumeType == cacheVolume {
+		// Validate the secret data in case of cache volumes
 		missingKeys := validateCacheSecret(req.Secrets)
 		if len(missingKeys) != 0 {
 			reqParams := req.GetParameters()
 			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret %s/%s-secret does not have required parameter(s): %v", reqParams[pvcNamespaceKey], reqParams[pvcNameKey], missingKeys))
+		}
+
+		// A gateway node is must for cache fileset, return error if no gateway found
+		gatewayPresent, err := scaleVol.Connector.CheckIfGatewayNodePresent(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !gatewayPresent {
+			return nil, status.Error(codes.Aborted, fmt.Sprintf("Failed to the create a cache volume as there in no gateway node in the cluster"))
 		}
 	}
 
@@ -1907,8 +1944,8 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 		snapshotList, err := conn.ListFilesetSnapshots(ctx, FilesystemName, FilesetName)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "EFSSG0072C") ||
-				strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+			if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+				strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
 				klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
 				return true, nil
 			}
@@ -1923,8 +1960,8 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 
 	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
-		if strings.Contains(err.Error(), "EFSSG0072C") ||
-			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+		if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
 			klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
 			return true, nil
 		}
@@ -1954,8 +1991,8 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 
 	filesetDetails, err := conn.ListFileset(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup)
 	if err != nil {
-		if strings.Contains(err.Error(), "EFSSG0072C") ||
-			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+		if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
 			klog.V(4).Infof("[%s] Fileset seems already deleted - %v", loggerId, err)
 			return nil
 		}
@@ -1993,7 +2030,11 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 
 func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] DeleteVolume [%v]", loggerId, req)
+
+	// Mask the secrets from request before logging
+	reqToLog := *req
+	reqToLog.Secrets = nil
+	klog.Infof("[%s] DeleteVolume req: %v", loggerId, &reqToLog)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		klog.Errorf("[%s] Invalid delete volume req: %v", loggerId, req)
@@ -2094,8 +2135,8 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 		if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
 			AFMMode, err := cs.GetAFMMode(ctx, FilesystemName, volumeIdMembers.ConsistencyGroup, conn)
 			if err != nil {
-				if strings.Contains(err.Error(), "EFSSG0072C") ||
-					strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
+				if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+					strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
 					klog.V(4).Infof("[%s] the ConsistencyGroup fileset [%v] is deleted already", loggerId, FilesetName)
 					return &csi.DeleteVolumeResponse{}, nil
 				}

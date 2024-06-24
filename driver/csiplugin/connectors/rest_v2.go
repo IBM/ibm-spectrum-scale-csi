@@ -534,6 +534,25 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 	return nil
 }
 
+func (s *SpectrumRestV2) CheckIfGatewayNodePresent(ctx context.Context) (bool, error) {
+	loggerId := GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfGatewayNodePresent", loggerId)
+
+	getNodesURL := "scalemgmt/v2/nodes?fields=roles.gatewayNode"
+	getNodesResponse := GetNodesResponse_v2{}
+
+	err := s.doHTTP(ctx, getNodesURL, "GET", &getNodesResponse, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to get nodes with gateway role, error: %v", err)
+	}
+	for _, node := range getNodesResponse.Nodes {
+		if node.Roles.GatewayNode == true {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
 	klog.V(4).Infof("[%s] rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 
