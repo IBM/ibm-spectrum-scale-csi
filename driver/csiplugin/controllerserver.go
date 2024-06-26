@@ -19,10 +19,12 @@ package scale
 import (
 	"fmt"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -59,7 +61,12 @@ const (
 
 	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
+
+	defaultS3Port = "443"
 )
+
+var bucketLock = make(map[string]bool)
+var bucketMutex sync.Mutex
 
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
@@ -476,10 +483,28 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
 			var fseterr error
 			if scVol.VolumeType == cacheVolume {
+				endpoint := bucketInfo[connectors.BucketEndpoint]
+				parsedURL, err := url.Parse(endpoint)
+				if err != nil {
+					klog.Errorf("[%s] volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", loggerId, volName, endpoint, err)
+					return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", volName, endpoint, err))
+				}
+				if parsedURL.Port() == "" {
+					endpoint += ":" + string(defaultS3Port)
+				}
+				afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
+
+				lockSuccess := lockBucket(loggerId, volName, afmTarget)
+				if !lockSuccess {
+					klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
+					return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the bucket [%s] is already locked for another volume creation", volName, afmTarget))
+				} else {
+					defer unlockBucket(loggerId, volName, afmTarget)
+				}
+
 				// Before creating a cache fileset, check if there is any other cache
 				// fileset pointing to the same bucket, if such fileset is found then
 				// disallow creation of another cache fileset.
-				afmTarget := bucketInfo[connectors.BucketEndpoint] + "/" + bucketInfo[connectors.BucketName]
 				filesetWitAFMTarget, err := scVol.Connector.CheckFilesetWithAFMTarget(ctx, scVol.VolBackendFs, afmTarget)
 				if err != nil {
 					klog.Errorf("[%s] volume:[%v] - failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", loggerId, volName, afmTarget, scVol.VolBackendFs, err)
@@ -3258,4 +3283,23 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
 	klog.V(4).Infof("[%s] ClusterMap updated: [%s : %s]", loggerId, cID, cName)
 	return cName, true, nil
+}
+
+func lockBucket(loggerId string, volName string, bucket string) bool {
+	bucketMutex.Lock()
+	defer bucketMutex.Unlock()
+	
+	if _, exists := bucketLock[bucket]; exists {
+		return false
+	}
+	bucketLock[bucket] = true
+	klog.V(4).Infof("[%s] The bucket [%s] is locked for creation of a volume: [%s]", loggerId, bucket, volName)
+	return true
+}
+
+func unlockBucket(loggerId string, volName string, bucket string) {
+	bucketMutex.Lock()
+	defer bucketMutex.Unlock()
+	delete(bucketLock, bucket)
+	klog.V(4).Infof("[%s] The bucket [%s] is unlocked for creation of a volume: [%s]", loggerId, bucket, volName)
 }
