@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp.
+ * Copyright 2019, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,13 @@ type SpectrumScaleConnector interface {
 	ListFilesystems(ctx context.Context) ([]string, error)
 	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
+	//Node operations
+	CheckIfGatewayNodePresent(ctx context.Context) (bool, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
+	SetBucketKeys(ctx context.Context, access map[string]string) error
+	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string) error
 	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
@@ -53,7 +58,7 @@ type SpectrumScaleConnector interface {
 	//TODO modify quota from string to Capacity (see kubernetes)
 	ListFilesetQuota(ctx context.Context, filesystemName string, filesetName string) (string, error)
 	GetFilesetQuotaDetails(ctx context.Context, filesystemName string, filesetName string) (Quota_v2, error)
-	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error
+	SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, hardLimit string, softLimit string) error
 	CheckIfFSQuotaEnabled(ctx context.Context, filesystem string) error
 	CheckIfFilesetExist(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	//Directory operations
@@ -115,8 +120,10 @@ const (
 	UserSpecifiedSnapWindow       string = "snapWindow"
 	UserSpecifiedConsistencyGroup string = "consistencyGroup"
 	UserSpecifiedShared           string = "shared"
-
-	FilesetComment string = "Fileset created by IBM Container Storage Interface driver"
+	AFMModeSecondary              string = "secondary"
+	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
+	UserSpecifiedCacheMode        string = "cacheMode"
+	UserSpecifiedVolumeType       string = "volumeType"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {

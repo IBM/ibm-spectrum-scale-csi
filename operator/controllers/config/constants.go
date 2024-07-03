@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 IBM Corp.
+ * Copyright 2022, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,8 +71,8 @@ const (
 	ENVKubeVersion  = "KUBE_VERSION"
 	ENVCGPrefix     = "CSI_CG_PREFIX"
 	ENVSymDirPath   = "SYMLINK_DIR_PATH"
-	DriverVersion   = "2.10.0"
-	OperatorVersion = "2.10.0"
+	DriverVersion   = "2.12.0"
+	OperatorVersion = "2.12.0"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
@@ -88,19 +88,20 @@ const (
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.10.0"
-	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
-	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f6717ce72a2615c7fbc746b4068f788e78579c54c43b8716e5ce650d97af2df1" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/livenessprobe:v2.10.0
-	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:4dc0b87ccd69f9865b89234d8555d3a614ab0a16ed94a3016ffd27f8106132ce" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-attacher:v4.3.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:4eb73137b66381b7b5dfd4d21d460f4b4095347ab6ed4626e0199c29d8d021af" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:d078dc174323407e8cc6f0f9abd4efaac5db27838f1564d0253d5e3233e3f17f" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-snapshotter:v6.2.2
-	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:becc53e25b96573f61f7469923a92fb3e9d3a3781732159954ce0d9da07233a2" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-resizer:v1.8.0
-	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:2e2b44393539d744a55b9370b346e8ebd95a77573064f3f9a8caf18c22f4d0d0" // #nosec G101 false positive
+
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.12.0"
+        //  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.1
+        CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/livenessprobe:v2.12.0
+        LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-attacher:v4.6.1
+        CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-provisioner:v4.0.1
+        CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1
+        CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c" // #nosec G101 false positive
+        //  registry.k8s.io/sig-storage/csi-resizer:v1.11.1
+        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
@@ -144,11 +145,16 @@ const (
 
 	// Optional ConfigMap keys
 	DaemonSetUpgradeMaxUnavailableKey = "DRIVER_UPGRADE_MAXUNAVAILABLE"
+	DriverCPULimits                   = "DRIVER_CPU_LIMITS"
+	DriverMemoryLimits                = "DRIVER_MEMORY_LIMITS"
+	SidecarCPULimits                  = "SIDECAR_CPU_LIMITS"
+	SidecarMemoryLimits               = "SIDECAR_MEMORY_LIMITS"
 	EnvLogLevelKey                    = "LOGLEVEL"
 	EnvPersistentLogKey               = "PERSISTENT_LOG"
 	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
 	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
+	HostNetworkKey                    = "HOST_NETWORK"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -158,19 +164,39 @@ const (
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
 
 	// Optional ConfigMap default values
+	DriverCPULimitsDefaultValue          = "600m"
+	DriverMemoryLimitsDefaultValue       = "600Mi"
+	SidecarCPULimitsDefaultValue         = "300m"
+	SidecarMemoryLimitsDefaultValue      = "800Mi"
 	EnvLogLevelDefaultValue              = "INFO"
 	EnvPersistentLogDefaultValue         = "DISABLED"
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
+	EnvHostNetworkDefaultValue           = "ENABLED"
+
+	// Driver and Sidecar Containers Resources limits
+	PodsCPULimitsLowerValue    = "20m"
+	PodsMemoryLimitsLowerValue = "20Mi"
 )
 
-var CSIOptionalConfigMapKeys = []string{EnvLogLevelKeyPrefixed, EnvPersistentLogKeyPrefixed,
-	EnvNodePublishMethodKeyPrefixed, EnvVolumeStatsCapabilityKeyPrefixed, DaemonSetUpgradeMaxUnavailableKey, EnvDiscoverCGFilesetKeyPrefixed}
+var CSIOptionalConfigMapKeys = []string{
+	EnvLogLevelKeyPrefixed,
+	EnvPersistentLogKeyPrefixed,
+	EnvNodePublishMethodKeyPrefixed,
+	EnvVolumeStatsCapabilityKeyPrefixed,
+	DaemonSetUpgradeMaxUnavailableKey,
+	EnvDiscoverCGFilesetKeyPrefixed,
+	HostNetworkKey,
+	DriverCPULimits,
+	DriverMemoryLimits,
+	SidecarCPULimits,
+	SidecarMemoryLimits}
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
 var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
 var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
+var EnvHostNetworkValues = []string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"

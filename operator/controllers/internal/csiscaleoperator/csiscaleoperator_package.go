@@ -1,5 +1,5 @@
 /*
-Copyright 2022.
+Copyright 2022, 2024 IBM Corp.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ const (
 	securityContextConstraintsResource   string = "securitycontextconstraints"
 	podSecurityPolicyResource            string = "podsecuritypolicies"
 	leaseResource                        string = "leases"
+	secretResource                       string = "secrets"
 	verbGet                              string = "get"
 	verbList                             string = "list"
 	verbWatch                            string = "watch"
@@ -234,6 +235,11 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				APIGroups: []string{coordinationApiGroup},
 				Resources: []string{leaseResource},
 				Verbs:     []string{verbCreate, verbGet, verbList, verbPatch, verbUpdate, verbDelete},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{secretResource},
+				Verbs:     []string{verbGet},
 			},
 		},
 	}

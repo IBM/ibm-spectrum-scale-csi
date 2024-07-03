@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp.
+ * Copyright 2019, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -446,7 +446,10 @@ type FileSystem_v2 struct {
 }
 
 type Pages struct {
-	Next string `json:"next,omitempty"`
+	BaseURL string `json:"baseUrl,omitempty"`
+	Filter  string `json:"filter,omitempty"`
+	LastID  int    `json:"lastId,omitempty"`
+	Next    string `json:"next,omitempty"`
 }
 
 type GetNodesResponse_v2 struct {
@@ -490,14 +493,14 @@ type Network struct {
 }
 
 type NodeRoles struct {
-	SNMPNode         string `json:"snmpNode,omitempty"`
-	ManagerNode      string `json:"managerNode,omitempty"`
-	GatewayNode      string `json:"gatewayNode,omitempty"`
-	CNFSNode         string `json:"cnfsNode,omitempty"`
-	ClientNode       string `json:"clientNode,omitempty"`
-	CESNode          string `json:"cesNode,omitempty"`
-	QuorumNode       string `json:"quorumNode,omitempty"`
-	CloudGatewayNode string `json:"cloudGatewayNode,omitempty"`
+	SNMPNode         bool   `json:"snmpNode,omitempty"`
+	ManagerNode      bool   `json:"managerNode,omitempty"`
+	GatewayNode      bool   `json:"gatewayNode,omitempty"`
+	CNFSNode         bool   `json:"cnfsNode,omitempty"`
+	ClientNode       bool   `json:"clientNode,omitempty"`
+	CESNode          bool   `json:"cesNode,omitempty"`
+	QuorumNode       bool   `json:"quorumNode,omitempty"`
+	CloudGatewayNode bool   `json:"cloudGatewayNode,omitempty"`
 	OtherNodeRoles   string `json:"otherNodeRoles,omitempty"`
 	Designation      string `json:"designation,omitempty"`
 }
@@ -634,6 +637,21 @@ type CreateFilesetRequest struct {
 	AfmPrimaryID                 string `json:"afmPrimaryID,omitempty"`
 	AfmRPO                       int    `json:"afmRPO,omitempty"`
 	AfmShowHomeSnapshots         string `json:"afmShowHomeSnapshots,omitempty"`
+}
+
+type CreateS3CacheFilesetRequest struct {
+	FilesetName string `json:"filesetName"`
+	Mode        string `json:"mode"`
+	Endpoint    string `json:"endpoint"`
+	UseObjectFs bool   `json:"useObjectFs,omitempty"`
+	BucketName  string `json:"bucket,omitempty"`
+}
+
+type SetBucketKeysRequest struct {
+	BucketName string `json:"bucket"`
+	AccessKey  string `json:"accessKey"`
+	SecretKey  string `json:"secretKey"`
+	Server     string `json:"server,omitempty"`
 }
 
 type CreateMakeDirRequest struct {

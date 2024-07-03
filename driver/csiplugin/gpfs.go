@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp.
+ * Copyright 2019, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,11 +46,13 @@ const (
 
 	STORAGECLASS_CLASSIC  = "0"
 	STORAGECLASS_ADVANCED = "1"
+	STORAGECLASS_CACHE    = "2"
 
 	// Volume types
 	FILE_DIRECTORYBASED_VOLUME     = "0"
 	FILE_DEPENDENTFILESET_VOLUME   = "1"
 	FILE_INDEPENDENTFILESET_VOLUME = "2"
+	FILE_SHALLOWCOPY_VOLUME        = "3"
 
 	//	BLOCK_FILESET_VOLUME = 3
 
@@ -287,4 +289,11 @@ func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {
 	s := NewNonBlockingGRPCServer()
 	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
 	s.Wait()
+}
+
+func (driver *ScaleDriver) PrintDriverInit(ctx context.Context) {
+	for i := range driver.cmap.Clusters {
+		driver.cmap.Clusters[i].MgmtPassword = "*******"
+	}
+	klog.Infof("[%s] Scale CSI Driver Initialized: [%+v]", utils.GetLoggerId(ctx), driver)
 }

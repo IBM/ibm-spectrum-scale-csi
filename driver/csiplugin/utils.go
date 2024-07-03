@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp.
+ * Copyright 2019, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,12 @@
 package scale
 
 import (
+	"fmt"
+	"os"
+	"regexp"
 	"strings"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
@@ -61,7 +65,14 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 		klog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
 	}
 
-	klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
+	// Mask the secrets from request before logging
+	logLevel := strings.ToUpper(os.Getenv(settings.LogLevel))
+	if logLevel == settings.DEBUG.String() || logLevel == settings.TRACE.String() {
+		reqString := fmt.Sprintf("%+v", req)
+		regExp := regexp.MustCompile("secrets:.*?>")
+		reqToLog := regExp.ReplaceAllString(reqString, "")
+		klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, reqToLog)
+	}
 
 	startTime := utils.GetExecutionTime()
 	resp, err := handler(newCtx, req)

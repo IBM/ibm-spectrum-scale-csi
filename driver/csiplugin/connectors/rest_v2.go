@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 IBM Corp.
+ * Copyright 2019, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -36,15 +36,24 @@ import (
 
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
+const errContextDeadlineExceeded string = "context deadline exceeded"
+
+// Bucket parameters for a AFM cache volume
+const (
+	BucketEndpoint  = "endpoint"
+	BucketName      = "bucket"
+	bucketAccesskey = "accesskey"
+	bucketSecretkey = "secretkey"
+)
 
 var GetLoggerId = utils.GetLoggerId
 
 type SpectrumRestV2 struct {
-	HTTPclient    *http.Client
-	Endpoint      []string
-	EndPointIndex int
-	User          string
-	Password      string
+	HTTPclient      *http.Client
+	Endpoint        []string
+	EndPointIndex   int
+	ClusterConfig   settings.Clusters
+	RequestCalledBy string // "operator" or none
 }
 
 func (s *SpectrumRestV2) isStatusOK(statusCode int) bool {
@@ -143,8 +152,6 @@ func (s *SpectrumRestV2) AsyncJobCompletion(ctx context.Context, jobURL string) 
 func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (SpectrumScaleConnector, error) {
 	klog.V(4).Infof("[%s] rest_v2 NewSpectrumRestV2.", utils.GetLoggerId(ctx))
 
-	guiUser := scaleConfig.MgmtUsername
-	guiPwd := scaleConfig.MgmtPassword
 	var rest *SpectrumRestV2
 	var tr *http.Transport
 
@@ -166,9 +173,8 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 			Transport: tr,
 			Timeout:   time.Second * 60,
 		},
-		User:          guiUser,
-		Password:      guiPwd,
 		EndPointIndex: 0, //Use first GUI as primary by default
+		ClusterConfig: scaleConfig,
 	}
 
 	for i := range scaleConfig.RestAPI {
@@ -501,6 +507,11 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.MaxNumInodes = inodeLimit.(string)
 		//filesetreq.AllocInodes = "1024"
 	}
+	comment, commentSpecified := opts[FilesetComment]
+	if commentSpecified {
+		filesetreq.Comment = fmt.Sprintf("%v", comment)
+	}
+
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
 	err := s.doHTTP(ctx, updateFilesetURL, "PUT", &updateFilesetResponse, filesetreq)
@@ -521,6 +532,25 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		return err
 	}
 	return nil
+}
+
+func (s *SpectrumRestV2) CheckIfGatewayNodePresent(ctx context.Context) (bool, error) {
+	loggerId := GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CheckIfGatewayNodePresent", loggerId)
+
+	getNodesURL := "scalemgmt/v2/nodes?fields=roles.gatewayNode"
+	getNodesResponse := GetNodesResponse_v2{}
+
+	err := s.doHTTP(ctx, getNodesURL, "GET", &getNodesResponse, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to get nodes with gateway role, error: %v", err)
+	}
+	for _, node := range getNodesResponse.Nodes {
+		if node.Roles.GatewayNode == true {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
@@ -592,6 +622,86 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 			return nil
 		}
 		klog.Errorf("[%s] Unable to create fileset %s: %v", utils.GetLoggerId(ctx), filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[string]string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys", loggerID)
+
+	keyreq := SetBucketKeysRequest{}
+
+	keyreq.BucketName = bucketInfo[BucketName]
+	keyreq.AccessKey = bucketInfo[bucketAccesskey]
+	keyreq.SecretKey = bucketInfo[bucketSecretkey]
+
+	// Extract the hostname without the port
+	parsedURL, err := url.Parse(bucketInfo[BucketEndpoint])
+	if err != nil {
+		return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
+	}
+	hostname := parsedURL.Hostname()
+	keyreq.Server = hostname
+
+	setBucketKeysURL := "scalemgmt/v2/bucket/keys"
+	setBucketKeysResponse := GenericResponse{}
+
+	err = s.doHTTP(ctx, setBucketKeysURL, "PUT", &setBucketKeysResponse, keyreq)
+	if err != nil {
+		klog.Errorf("[%s] Failed to set keys for the bucket %s, error: %v", loggerID, bucketInfo[BucketName], err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, setBucketKeysResponse, setBucketKeysURL)
+	if err != nil {
+		klog.Errorf("[%s] The set keys request is not accepted for processing for the bucket %s, error: %v", loggerID, bucketInfo[BucketName], err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, setBucketKeysResponse.Status.Code, setBucketKeysResponse.Jobs[0].JobID)
+	if err != nil {
+		klog.Errorf("[%s] Failed to set keys for the bucket %s, error: %v", loggerID, bucketInfo[BucketName], err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v", loggerID, filesystemName, filesetName, mode, opts)
+
+	filesetreq := CreateS3CacheFilesetRequest{}
+	filesetreq.FilesetName = filesetName
+	filesetreq.UseObjectFs = true
+	filesetreq.Mode = mode
+
+	filesetreq.Endpoint = bucketInfo[BucketEndpoint]
+	filesetreq.BucketName = bucketInfo[BucketName]
+
+	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/cos", filesystemName)
+	createFilesetResponse := GenericResponse{}
+
+	err := s.doHTTP(ctx, createFilesetURL, "POST", &createFilesetResponse, filesetreq)
+	if err != nil {
+		klog.Errorf("[%s] Failed to create an AFM cache fileset %s, error: %v", loggerID, filesetName, err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, createFilesetResponse, createFilesetURL)
+	if err != nil {
+		klog.Errorf("[%s] The AFM cache fileset creation request for fileset %s is not accepted for processing, error: %v", loggerID, filesetName, err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, createFilesetResponse.Status.Code, createFilesetResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
+			klog.Infof("The cache fileset exists already, error: %v", err)
+			return nil
+		}
+		klog.Errorf("[%s]  Failed to create an AFM cache fileset %s, error: %v", loggerID, filesetName, err)
 		return err
 	}
 	return nil
@@ -705,20 +815,90 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 	return getFilesetResponse.Filesets[0], nil
 }
 
+func (s *SpectrumRestV2) CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error) {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CheckFilesetWithAFMTarget. filesystem: %s, afmTarget: %s", loggerID, filesystemName, afmTarget)
+
+	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=afm&filter=config.isInodeSpaceOwner=true", filesystemName)
+	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, url)
+	getFilesetResponse := GetFilesetResponse_v2{}
+
+	err := s.doHTTP(ctx, url, "GET", &getFilesetResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Error in list fileset request with the field AFM: %v", loggerID, err)
+		return "", err
+	}
+
+	emptyAFM := AFM{}
+	// TODO: Optimize this when GUI has a filter for AFM
+	// Check if cache fileset with the same bucket exists in the first response.
+	for _, fileset := range getFilesetResponse.Filesets {
+		if fileset.AFM != emptyAFM {
+			if fileset.AFM.AFMTarget == afmTarget {
+				return fileset.FilesetName, nil
+			}
+		}
+	}
+
+	emptyPages := Pages{}
+	for getFilesetResponse.Paging != emptyPages {
+		getFilesetURL := strings.TrimPrefix(getFilesetResponse.Paging.Next, "/")
+		getFilesetResponse = GetFilesetResponse_v2{}
+		klog.V(6).Infof("[%s] getFilesetURL with AFM fields [%v] ", loggerID, getFilesetURL)
+		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
+		if err != nil {
+			klog.Errorf("[%s] Error in list fileset request with the field AFM: %v", loggerID, err)
+			return "", err
+		}
+
+		// Check if cache fileset with the same bucket exists one this page.
+		for _, fileset := range getFilesetResponse.Filesets {
+			if fileset.AFM != emptyAFM {
+				if fileset.AFM.AFMTarget == afmTarget {
+					return fileset.FilesetName, nil
+				}
+			}
+		}
+	}
+
+	return "", nil
+}
+
 func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
-	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", loggerID, filesystemName)
 
 	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
-	getFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets?fields=filesetName&filter=config.parentId=0,config.comment=%s", filesystemName, encodedFilesetComment)
+	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
+	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment=%s", encodedFilesetComment)
+	getFilesetURL := url + "?" + filter
+	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, getFilesetURL)
 	getFilesetResponse := GetFilesetResponse_v2{}
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
-		klog.Errorf("[%s] Error in list fileset request: %v", utils.GetLoggerId(ctx), err)
+		klog.Errorf("[%s] Error in list fileset request: %v", loggerID, err)
 		return nil, err
 	}
 
-	return getFilesetResponse.Filesets, nil
+	filesets := getFilesetResponse.Filesets
+
+	emptyPages := Pages{}
+	for getFilesetResponse.Paging != emptyPages {
+		lastID := strconv.Itoa(getFilesetResponse.Paging.LastID)
+
+		getFilesetURL := url + "?lastId=" + lastID + "&" + filter
+		getFilesetResponse = GetFilesetResponse_v2{}
+		klog.V(6).Infof("[%s] getFilesetURL with lastId [%v] ", loggerID, getFilesetURL)
+		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
+		if err != nil {
+			klog.Errorf("[%s] Error in list fileset request with lastId: %v", loggerID, err)
+			return nil, err
+		}
+		filesets = append(filesets, getFilesetResponse.Filesets...)
+	}
+
+	return filesets, nil
 }
 
 func (s *SpectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
@@ -887,15 +1067,15 @@ func (s *SpectrumRestV2) MakeDirectoryV2(ctx context.Context, filesystemName str
 	return nil
 }
 
-func (s *SpectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, quota string) error {
+func (s *SpectrumRestV2) SetFilesetQuota(ctx context.Context, filesystemName string, filesetName string, hardLimit string, softLimit string) error {
 	loggerId := GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, quota: %s", loggerId, filesystemName, filesetName, quota)
+	klog.V(4).Infof("[%s] rest_v2 SetFilesetQuota. filesystem: %s, fileset: %s, hardLimit: %s, softLimit: %s", loggerId, filesystemName, filesetName, hardLimit, softLimit)
 
 	setQuotaURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/quotas", filesystemName)
 	quotaRequest := SetQuotaRequest_v2{}
 
-	quotaRequest.BlockHardLimit = quota
-	quotaRequest.BlockSoftLimit = quota
+	quotaRequest.BlockHardLimit = hardLimit
+	quotaRequest.BlockSoftLimit = softLimit
 	quotaRequest.OperationType = "setQuota"
 	quotaRequest.QuotaType = "fileset"
 	quotaRequest.ObjectName = filesetName
@@ -1014,55 +1194,71 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, param)
 	endpoint := s.Endpoint[s.EndPointIndex]
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
-	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, s.User, s.Password, param)
+	var user, password string
+	if s.RequestCalledBy == "operator" {
+		klog.V(0).Infof("[%s] rest_v2 doHTTP: requested by operator", utils.GetLoggerId(ctx))
+		user = s.ClusterConfig.MgmtUsername
+		password = s.ClusterConfig.MgmtPassword
+	} else {
+		scaleConfigNew := settings.LoadScaleConfigSettings(ctx)
+		for i := range scaleConfigNew.Clusters {
+			if s.ClusterConfig.ID == scaleConfigNew.Clusters[i].ID {
+				user = scaleConfigNew.Clusters[i].MgmtUsername
+				password = scaleConfigNew.Clusters[i].MgmtPassword
+			}
+		}
+	}
+
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), user)
+	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 
 	activeEndpointFound := false
 	if err != nil {
-		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || errors.Is(err, context.DeadlineExceeded) {
+		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded) {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
 			n := len(s.Endpoint)
 			for i := 0; i < n-1; i++ {
 				endpoint = s.getNextEndpoint(ctx)
-				response, err = utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, s.User, s.Password, param)
+				response, err = utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 				if err == nil {
 					activeEndpointFound = true
 					break
 				} else {
-					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || errors.Is(err, context.DeadlineExceeded) {
+					if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded) {
 						klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 					} else {
-						klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
+						klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
 					}
 				}
 			}
 		} else {
-			klog.Errorf("[%s] rest_v2 doHTTP: Error in authentication request on endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return status.Error(codes.Internal, fmt.Sprintf("Error in authentication: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
+			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
+			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, param, response))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, param, response))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, user, param, response))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, user, param, response))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, s.User, param, response, err))
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, user, param, response, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, s.User, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, user, param, response))
 	}
 
 	return nil
@@ -1242,6 +1438,10 @@ func (s *SpectrumRestV2) DeleteDirectory(ctx context.Context, filesystemName str
 
 	err = s.WaitForJobCompletion(ctx, deleteDirResponse.Status.Code, deleteDirResponse.Jobs[0].JobID)
 	if err != nil {
+		if strings.Contains(err.Error(), "EFSSG0264C") {
+			klog.V(4).Infof("[%s] Since dirName %v was already deleted, so returning success", loggerId, dirName)
+			return nil
+		}
 		return fmt.Errorf("unable to delete dir %v:%v", dirName, err)
 	}
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016, 2019 IBM Corp.
+ * Copyright 2016, 2024 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,6 +177,7 @@ func GetEnv(envName string, defaultValue string) string {
 }
 
 func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
+	klog.V(6).Infof("utils FsStatInfo. envName: %s", path)
 	statfs := &unix.Statfs_t{}
 	err := unix.Statfs(path, statfs)
 

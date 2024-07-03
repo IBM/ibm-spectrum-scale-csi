@@ -1,0 +1,18 @@
+# Create a secret with s3 bucket details first.
+# e.g. for a PVC with name 'cache-s3-pvc1' in namespace 'ns1',
+# oc create secret generic cache-s3-pvc1-secret -n ns1 \
+# --from-literal=endpoint=http://9.30.140.224:9000 --from-literal=bucket=bucket1 \
+# --from-literal=accesskey=minioadmin --from-literal=secretkey=minioadmin
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cache-s3-pvc1
+  namespace: ns1
+spec:
+  storageClassName: ibm-scale-cache-s3
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi

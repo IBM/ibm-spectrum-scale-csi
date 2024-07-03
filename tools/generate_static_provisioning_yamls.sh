@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2022 IBM Corp.
+# Copyright 2022, 2024 IBM Corp.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 usage() {
   echo "Usage: $0
                 -f|--filesystem <Name of Volume's Source Filesystem>
-                -l|--path <full Path of Volume in Primary Filesystem>
+                -l|--path <Complete path of volume directory in Openshift/Kubernetes cluster>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
                 -u|--username <Username of IBM Storage Scale GUI user account.>
@@ -34,7 +34,7 @@ usage() {
 fullUsage() {
   echo "Usage: $0
                 -f|--filesystem <Name of Volume's Source Filesystem>
-                -l|--path <full Path of Volume in Primary Filesystem>
+                -l|--path <Complete path of volume directory in Openshift/Kubernetes cluster>
                 -F|--fileset <name of source fileset>
                 -s|--size <size in GB>
                 -u|--username <Username of IBM Storage Scale GUI user account.>
@@ -309,7 +309,7 @@ if [[ $? -ne 0 ]] || [[ -z "$fileSystemID" ]]; then
   exit 2
 fi
 
-# TODO : Add check for kubernetes lable limit for value of VolumeHandle
+# TODO : Add check for kubernetes label limit for value of VolumeHandle
 
 # echo "FSETNAME=${FSETNAME}"
 if [[ -z "${FSETNAME}" ]]; then
