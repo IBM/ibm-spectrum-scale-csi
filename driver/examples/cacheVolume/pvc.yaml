@@ -1,8 +1,8 @@
 # Create a secret with s3 bucket details first.
 # e.g. for a PVC with name 'cache-s3-pvc1' in namespace 'ns1',
 # oc create secret generic cache-s3-pvc1-secret -n ns1 \
-# --from-literal=endpoint=http://9.30.140.224:9000 --from-literal=bucket=bucket1 \
-# --from-literal=accesskey=minioadmin --from-literal=secretkey=minioadmin
+# --from-literal=endpoint=<end_point> --from-literal=bucket=<bucket_name> \
+# --from-literal=accesskey=<access_key> --from-literal=secretkey=<secret_key>
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
