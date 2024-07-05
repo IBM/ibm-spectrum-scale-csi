@@ -192,6 +192,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.V(1).Info("Updated resource status.", "Status", cr.Status)
 	}()
 
+	// all older secrets not to be watched for reconcillation
+	for k := range watchResources[corev1.ResourceSecrets.String()] {
+		watchResources[corev1.ResourceSecrets.String()][k] = false
+	}
+
 	for _, cluster := range instance.Spec.Clusters {
 		if cluster.Cacert != "" {
 			watchResources[corev1.ResourceConfigMaps.String()][cluster.Cacert] = true
@@ -200,7 +205,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			watchResources[corev1.ResourceSecrets.String()][cluster.Secrets] = true
 		}
 	}
-
+	logger.Info("CSI driver watchResources ", "watchResources :", watchResources)
 	watchResources[corev1.ResourceConfigMaps.String()][config.EnvVarConfigMap] = true
 
 	logger.Info("Adding Finalizer")
@@ -851,6 +856,25 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 							logger.Info("Restarting driver and sidecar pods due to deletion of", "Resource", resourceKind, "Name", e.Object.GetName())
 							return true
 						}
+						/*			} else if resourceKind == corev1.ResourceSecrets.String() {
+									// get list of secrets from custom resource
+									secrets := []string{}
+									for _, cluster := range instance.Spec.Clusters {
+										if len(cluster.Secrets) != 0 {
+											secrets = append(secrets, cluster.Secrets)
+										}
+									}
+
+									if len(secrets) != 0 {
+										for _, secret := range secrets {
+											if e.Object.GetName() == secret {
+												r.setRestartedAtValues()
+												logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
+												logger.Info("Restarting driver and sidecar pods due to deletion of", "Resource", resourceKind, "Name", e.Object.GetName())
+												return true
+											}
+										}
+									}*/
 					} else {
 						r.setRestartedAtValues()
 						logger.Info("Restarting driver and sidecar pods due to deletion of", "Resource", resourceKind, "Name", e.Object.GetName())
