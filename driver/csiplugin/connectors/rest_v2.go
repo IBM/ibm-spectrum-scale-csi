@@ -803,6 +803,10 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") { // This means fileset is not present, create it
+			klog.V(6).Infof("[%s] Fileset already  with name %s doesn't exists.", utils.GetLoggerId(ctx), filesetName)
+			return Fileset_v2{}, nil
+		}
 		klog.Errorf("[%s] Error in list fileset request: %v", utils.GetLoggerId(ctx), err)
 		return Fileset_v2{}, err
 	}
