@@ -47,8 +47,8 @@ var (
 
 func main() {
 	klog.InitFlags(nil)
-	if val, ok := os.LookupEnv(settings.LogLevel); ok {
-		klog.Infof("[%s] found in the env : %s", settings.LogLevel, val)
+	if val, ok := os.LookupEnv(utils.LogLevel); ok {
+		klog.Infof("[%s] found in the env : %s", utils.LogLevel, val)
 	}
 	if val, ok := os.LookupEnv(settings.PersistentLog); ok {
 		klog.Infof("[%s] found in the env : %s", settings.PersistentLog, val)
@@ -130,15 +130,15 @@ func setContext() context.Context {
 }
 
 func getLogEnv() (string, string) {
-	level := os.Getenv(settings.LogLevel)
+	level := os.Getenv(utils.LogLevel)
 	persistentLogEnabled := os.Getenv(settings.PersistentLog)
 	return strings.ToUpper(level), strings.ToUpper(persistentLogEnabled)
 }
 
 func getLogLevel(level string) string {
 	var logValue string
-	if level == settings.DEBUG.String() || level == settings.TRACE.String() {
-		logValue = settings.INFO.String()
+	if level == utils.DEBUG.String() || level == utils.TRACE.String() {
+		logValue = utils.INFO.String()
 	} else {
 		logValue = level
 	}
@@ -146,9 +146,9 @@ func getLogLevel(level string) string {
 }
 
 func getVerboseLevel(level string) string {
-	if level == settings.DEBUG.String() {
+	if level == utils.DEBUG.String() {
 		return "4"
-	} else if level == settings.TRACE.String() {
+	} else if level == utils.TRACE.String() {
 		return "6"
 	} else {
 		return "1"

@@ -34,6 +34,38 @@ type loggerKey string
 
 const loggerId loggerKey = "logger_id"
 
+type LoggerLevel int
+
+const LogLevel = "LOGLEVEL"
+
+const (
+	TRACE LoggerLevel = iota
+	DEBUG
+	INFO
+	WARNING
+	ERROR
+	FATAL
+)
+
+func (level LoggerLevel) String() string {
+	switch level {
+	case TRACE:
+		return "TRACE"
+	case DEBUG:
+		return "DEBUG"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	case FATAL:
+		return "FATAL"
+	case INFO:
+		return "INFO"
+	default:
+		return "INFO"
+	}
+}
+
 func ReadFile(path string) ([]byte, error) {
 	klog.V(6).Infof("utils ReadFile. path: %s", path)
 

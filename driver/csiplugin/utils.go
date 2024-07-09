@@ -22,7 +22,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
@@ -66,8 +65,8 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 	}
 
 	// Mask the secrets from request before logging
-	logLevel := strings.ToUpper(os.Getenv(settings.LogLevel))
-	if logLevel == settings.DEBUG.String() || logLevel == settings.TRACE.String() {
+	logLevel := strings.ToUpper(os.Getenv(utils.LogLevel))
+	if logLevel == utils.DEBUG.String() || logLevel == utils.TRACE.String() {
 		reqString := fmt.Sprintf("%+v", req)
 		regExp := regexp.MustCompile("secrets:.*?>")
 		reqToLog := regExp.ReplaceAllString(reqString, "")

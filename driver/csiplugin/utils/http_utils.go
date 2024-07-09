@@ -23,9 +23,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 
 	"k8s.io/klog/v2"
 )
+
+const BucketKeysURL = "scalemgmt/v2/bucket/keys"
 
 /*
 	func ExtractErrorResponse(response *http.Response) error {
@@ -56,7 +60,9 @@ func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}
 
 func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {
 	klog.V(4).Infof("[%s] http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", GetLoggerId(ctx), requestType, requestURL, user)
-	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth. request payload: %v", GetLoggerId(ctx), rawPayload)
+	if !strings.Contains(requestURL, BucketKeysURL) {
+		klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth. request payload: %v", GetLoggerId(ctx), rawPayload)
+	}
 
 	payload, err := json.MarshalIndent(rawPayload, "", " ")
 	if err != nil {
@@ -78,7 +84,13 @@ func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestTy
 	request.Header.Add("Accept", "application/json")
 
 	request.SetBasicAuth(user, password)
-	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), request)
+
+	logLevel := strings.ToUpper(os.Getenv(LogLevel))
+	if strings.Contains(requestURL, BucketKeysURL) && logLevel == TRACE.String() && request != nil {
+		requestToLog := *request
+		requestToLog.Body = nil
+		klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), &requestToLog)
+	}
 
 	return httpClient.Do(request)
 }

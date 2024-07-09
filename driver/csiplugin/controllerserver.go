@@ -494,6 +494,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				}
 				afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
 
+				scheme := parsedURL.Scheme
 				lockSuccess := lockBucket(loggerId, volName, afmTarget)
 				if !lockSuccess {
 					klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
@@ -523,7 +524,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				}
 
 				// Create a cache fileset
-				if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo); cacheFsetErr != nil {
+				if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, scheme); cacheFsetErr != nil {
 					klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
 					return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
 				}
@@ -2205,6 +2206,25 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 						return nil, err
 					}
 				}
+
+				// Delete bucket keys for a cache volume
+				if volumeIdMembers.StorageClassType == STORAGECLASS_CACHE {
+					bucketName := req.Secrets[connectors.BucketName]
+					endpoint := req.Secrets[connectors.BucketEndpoint]
+					parsedURL, err := url.Parse(endpoint)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
+					}
+					server := parsedURL.Hostname()
+
+					err = conn.DeleteBucketKeys(ctx, bucketName+":"+server)
+					if err != nil {
+						volumeName := volumeIdMembers.FsetName
+						klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
+						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete bucket keys for volume %s, error: %v", volumeName, err))
+					}
+				}
+
 				return &csi.DeleteVolumeResponse{}, nil
 			} else {
 				klog.Infof("[%s] pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", loggerId, pvName, FilesetName)
@@ -3288,7 +3308,7 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 func lockBucket(loggerId string, volName string, bucket string) bool {
 	bucketMutex.Lock()
 	defer bucketMutex.Unlock()
-	
+
 	if _, exists := bucketLock[bucket]; exists {
 		return false
 	}
