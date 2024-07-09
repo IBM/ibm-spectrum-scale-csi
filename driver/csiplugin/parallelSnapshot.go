@@ -13,7 +13,7 @@ const (
 	deleteVolume      = "DeleteVolume"
 	deleteSnapshot    = "DeleteSnapshot"
 	retryInterval     = 10
-	retryCount        = 2
+	retryCount        = 7
 	createOpInitCount = 1
 )
 
