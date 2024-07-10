@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -77,14 +78,28 @@ func (s *SpectrumRestV2) checkAsynchronousJob(statusCode int) bool {
 }
 
 func (s *SpectrumRestV2) isRequestAccepted(ctx context.Context, response GenericResponse, url string) error {
-	klog.V(4).Infof("[%s] rest_v2 isRequestAccepted. url: %s, response: %v", utils.GetLoggerId(ctx), url, response)
+	responseToLog := response
+	if url == utils.BucketKeysURL && len(responseToLog.Jobs) != 0 &&
+		!reflect.DeepEqual(responseToLog.Jobs[0].Request, Resprequest{}) && responseToLog.Jobs[0].Request.Data != nil {
+		accessKey := "accessKey"
+		secretKey := "secretKey"
+		if _, exists := responseToLog.Jobs[0].Request.Data[accessKey]; exists {
+			delete(responseToLog.Jobs[0].Request.Data, accessKey)
+		}
+
+		if _, exists := responseToLog.Jobs[0].Request.Data[secretKey]; exists {
+			delete(responseToLog.Jobs[0].Request.Data, secretKey)
+		}
+	}
+
+	klog.V(4).Infof("[%s] rest_v2 isRequestAccepted. url: %s, response: %v", utils.GetLoggerId(ctx), url, responseToLog)
 
 	if !s.isStatusOK(response.Status.Code) {
-		return fmt.Errorf("error %v for url %v", response, url)
+		return fmt.Errorf("error %v for url %v", responseToLog, url)
 	}
 
 	if len(response.Jobs) == 0 {
-		return fmt.Errorf("unable to get Job details for %s request: %v", url, response)
+		return fmt.Errorf("unable to get Job details for %s, response: %v", url, responseToLog)
 	}
 	return nil
 }
@@ -668,14 +683,44 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[strin
 	return nil
 }
 
-func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string) error {
+func (s *SpectrumRestV2) DeleteBucketKeys(ctx context.Context, bucket string) error {
 	loggerID := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v", loggerID, filesystemName, filesetName, mode, opts)
+	klog.V(4).Infof("[%s] rest_v2 DeleteBucketKeys", loggerID)
+
+	deleteBucketKeysURL := "scalemgmt/v2/bucket/keys/" + bucket
+	deleteBucketKeysResponse := GenericResponse{}
+	err := s.doHTTP(ctx, deleteBucketKeysURL, "DELETE", &deleteBucketKeysResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Failed to delete keys for the bucket %s, error: %v", loggerID, bucket, err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, deleteBucketKeysResponse, deleteBucketKeysURL)
+	if err != nil {
+		klog.Errorf("[%s] The delete keys request is not accepted for processing for the bucket %s, error: %v", loggerID, bucket, err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, deleteBucketKeysResponse.Status.Code, deleteBucketKeysResponse.Jobs[0].JobID)
+	if err != nil {
+		klog.Errorf("[%s] Failed to delete keys for the bucket %s, error: %v", loggerID, bucket, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string, scheme string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v, scheme: %s", loggerID, filesystemName, filesetName, mode, opts, scheme)
 
 	filesetreq := CreateS3CacheFilesetRequest{}
 	filesetreq.FilesetName = filesetName
 	filesetreq.UseObjectFs = true
 	filesetreq.Mode = mode
+
+	if scheme == "https" {
+		filesetreq.UseSSLCertVerify = true
+	}
 
 	filesetreq.Endpoint = bucketInfo[BucketEndpoint]
 	filesetreq.BucketName = bucketInfo[BucketName]
@@ -1191,7 +1236,14 @@ func (s *SpectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName st
 }
 
 func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method string, responseObject interface{}, param interface{}) error {
-	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, param)
+	var paramToLog SetBucketKeysRequest
+	if urlSuffix == utils.BucketKeysURL && method == "PUT" && param != nil {
+		paramToLog = param.(SetBucketKeysRequest)
+		paramToLog.AccessKey = ""
+		paramToLog.SecretKey = ""
+	}
+
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, paramToLog)
 	endpoint := s.Endpoint[s.EndPointIndex]
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	var user, password string
@@ -1235,30 +1287,30 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			}
 		} else {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, param, response))
+			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, paramToLog, response))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, paramToLog, response))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, user, param, response))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, user, paramToLog, response))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, user, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, user, paramToLog, response))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, user, param, response, err))
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, user, paramToLog, response, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, user, param, response))
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, user, paramToLog, response))
 	}
 
 	return nil
