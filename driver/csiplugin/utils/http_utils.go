@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -85,12 +84,11 @@ func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestTy
 
 	request.SetBasicAuth(user, password)
 
-	logLevel := strings.ToUpper(os.Getenv(LogLevel))
-	if strings.Contains(requestURL, BucketKeysURL) && logLevel == TRACE.String() && request != nil {
-		requestToLog := *request
+	requestToLog := *request
+	if strings.Contains(requestURL, BucketKeysURL) && request != nil {
 		requestToLog.Body = nil
-		klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), &requestToLog)
 	}
+	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), &requestToLog)
 
 	return httpClient.Do(request)
 }
