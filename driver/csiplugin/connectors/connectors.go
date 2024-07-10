@@ -37,6 +37,8 @@ type SpectrumScaleConnector interface {
 	ListFilesystems(ctx context.Context) ([]string, error)
 	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
+	//Node operations
+	CheckIfGatewayNodePresent(ctx context.Context) (bool, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
