@@ -483,10 +483,10 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	if err != nil {
 		klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
-
 	} else if reflect.ValueOf(filesetInfo).IsZero() {
 		// This means fileset is not present, create it
 		klog.V(4).Infof("[%s] createFilesetVol fileset: %s is not present in the filesystem, creating", utils.GetLoggerId(ctx), volName)
+
 		var fseterr error
 		if scVol.VolumeType == cacheVolume {
 			endpoint := bucketInfo[connectors.BucketEndpoint]
@@ -500,6 +500,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 			afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
 
+			scheme := parsedURL.Scheme
 			lockSuccess := lockBucket(loggerId, volName, afmTarget)
 			if !lockSuccess {
 				klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
@@ -529,7 +530,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 
 			// Create a cache fileset
-			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo); cacheFsetErr != nil {
+			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, scheme); cacheFsetErr != nil {
 				klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
 				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
 			}
@@ -540,7 +541,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				return "", err
 			}
 		} else {
-
+			// This means fileset is not present, create it
 			fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
 		}
 
@@ -556,6 +557,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			klog.Errorf("[%s] volume:[%v] - unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
 		}
+
 	} else {
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment != connectors.FilesetComment {
@@ -1674,18 +1676,18 @@ func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) er
 }
 
 /*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	 // Verify IBM Storage Scale Version is not below 5.1.5-0
+	  // Verify IBM Storage Scale Version is not below 5.1.5-0
 
-	 versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
-	 if err != nil {
-		 return err
-	 }
+	  versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
+	  if err != nil {
+		  return err
+	  }
 
-	 if !versionCheck {
-		 return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
-	 }
-	 return nil
- }*/
+	  if !versionCheck {
+		  return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
+	  }
+	  return nil
+  }*/
 
 func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, assembledScaleversion string) error {
 
@@ -1746,12 +1748,12 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		filesetToCheck = sourcesnapshot.ConsistencyGroup
 	}
 	/*isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcesnapshot.FsName, filesetToCheck)
-	 if err != nil {
-		 return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-	 }
-	 if !isFsetLinked {
-		 return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
-	 }*/
+	  if err != nil {
+		  return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	  }
+	  if !isFsetLinked {
+		  return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+	  }*/
 
 	err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcesnapshot.FsName, filesetToCheck, "source snapshot")
 	if err != nil {
@@ -2207,6 +2209,25 @@ func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.Dele
 						return nil, err
 					}
 				}
+
+				// Delete bucket keys for a cache volume
+				if volumeIdMembers.StorageClassType == STORAGECLASS_CACHE {
+					bucketName := req.Secrets[connectors.BucketName]
+					endpoint := req.Secrets[connectors.BucketEndpoint]
+					parsedURL, err := url.Parse(endpoint)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
+					}
+					server := parsedURL.Hostname()
+
+					err = conn.DeleteBucketKeys(ctx, bucketName+":"+server)
+					if err != nil {
+						volumeName := volumeIdMembers.FsetName
+						klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
+						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete bucket keys for volume %s, error: %v", volumeName, err))
+					}
+				}
+
 				return &csi.DeleteVolumeResponse{}, nil
 			} else {
 				klog.Infof("[%s] pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", loggerId, pvName, FilesetName)

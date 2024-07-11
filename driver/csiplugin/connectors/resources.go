@@ -640,11 +640,12 @@ type CreateFilesetRequest struct {
 }
 
 type CreateS3CacheFilesetRequest struct {
-	FilesetName string `json:"filesetName"`
-	Mode        string `json:"mode"`
-	Endpoint    string `json:"endpoint"`
-	UseObjectFs bool   `json:"useObjectFs,omitempty"`
-	BucketName  string `json:"bucket,omitempty"`
+	FilesetName      string `json:"filesetName"`
+	Mode             string `json:"mode"`
+	Endpoint         string `json:"endpoint"`
+	UseObjectFs      bool   `json:"useObjectFs,omitempty"`
+	BucketName       string `json:"bucket,omitempty"`
+	UseSSLCertVerify bool   `json:"useSslCertVerify,omitempty"`
 }
 
 type SetBucketKeysRequest struct {
