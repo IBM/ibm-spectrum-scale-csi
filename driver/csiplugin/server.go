@@ -32,7 +32,7 @@ import (
 // Defines Non blocking GRPC server interfaces
 type NonBlockingGRPCServer interface {
 	// Start services at the endpoint
-	Start(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer)
+	Start(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer, gcs csi.GroupControllerServer)
 	// Waits for the service to stop
 	Wait()
 	// Stops the service gracefully
@@ -51,10 +51,10 @@ type nonBlockingGRPCServer struct {
 	server *grpc.Server
 }
 
-func (s *nonBlockingGRPCServer) Start(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer) {
+func (s *nonBlockingGRPCServer) Start(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer, gcs csi.GroupControllerServer) {
 	s.wg.Add(1)
 
-	go s.serve(endpoint, ids, cs, ns)
+	go s.serve(endpoint, ids, cs, ns, gcs)
 }
 
 func (s *nonBlockingGRPCServer) Wait() {
@@ -69,7 +69,7 @@ func (s *nonBlockingGRPCServer) ForceStop() {
 	s.server.Stop()
 }
 
-func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer) {
+func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer, gcs csi.GroupControllerServer) {
 
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(logGRPC),
@@ -113,6 +113,11 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	}
 	if ns != nil {
 		csi.RegisterNodeServer(server, ns)
+	}
+
+	if gcs != nil {
+		klog.Infof("Starting RegisterGroupControllerServer on %#v", gcs)
+		csi.RegisterGroupControllerServer(server, gcs)
 	}
 
 	klog.Infof("Started listening on %#v", listener.Addr())

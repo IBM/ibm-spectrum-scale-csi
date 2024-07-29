@@ -72,6 +72,10 @@ type ScaleControllerServer struct {
 	Driver *ScaleDriver
 }
 
+type ScaleGroupControllerServer struct {
+	Driver *ScaleDriver
+}
+
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
 	if volpresent {
@@ -2319,6 +2323,15 @@ func (cs *ScaleControllerServer) ControllerGetCapabilities(ctx context.Context, 
 	}, nil
 }
 
+// GroupControllerGetCapabilities implements the default GRPC callout.
+func (cs *ScaleGroupControllerServer) GroupControllerGetCapabilities(ctx context.Context, req *csi.GroupControllerGetCapabilitiesRequest) (*csi.GroupControllerGetCapabilitiesResponse, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] GroupControllerGetCapabilities called with req: %#v", loggerId, req)
+	return &csi.GroupControllerGetCapabilitiesResponse{
+		Capabilities: cs.Driver.gcscap,
+	}, nil
+}
+
 func (cs *ScaleControllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	volumeID := req.GetVolumeId()
@@ -3322,4 +3335,32 @@ func unlockBucket(loggerId string, volName string, bucket string) {
 	defer bucketMutex.Unlock()
 	delete(bucketLock, bucket)
 	klog.V(4).Infof("[%s] The bucket [%s] is unlocked for creation of a volume: [%s]", loggerId, bucket, volName)
+}
+
+// CreateVolumeGroupSnapshot Create VolumeGroup Snapshot
+func (gcs *ScaleGroupControllerServer) CreateVolumeGroupSnapshot(ctx context.Context, req *csi.CreateVolumeGroupSnapshotRequest) (*csi.CreateVolumeGroupSnapshotResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] CreateVolumeGroupSnapshot - create CreateVolumeGroupSnapshot req: %v", loggerId, req)
+
+	return &csi.CreateVolumeGroupSnapshotResponse{
+		GroupSnapshot: &csi.VolumeGroupSnapshot{},
+	}, nil
+}
+
+// GetVolumeGroupSnapshot Get VolumeGroup Snapshot
+func (gcs *ScaleGroupControllerServer) GetVolumeGroupSnapshot(ctx context.Context, req *csi.GetVolumeGroupSnapshotRequest) (*csi.GetVolumeGroupSnapshotResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] GetVolumeGroupSnapshot -  GetVolumeGroupSnapshot req: %v", loggerId, req)
+
+	return &csi.GetVolumeGroupSnapshotResponse{
+		GroupSnapshot: &csi.VolumeGroupSnapshot{},
+	}, nil
+}
+
+// DeleteVolumeGroupSnapshot Delete VolumeGroup Snapshot
+func (gcs *ScaleGroupControllerServer) DeleteVolumeGroupSnapshot(ctx context.Context, req *csi.DeleteVolumeGroupSnapshotRequest) (*csi.DeleteVolumeGroupSnapshotResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] DeleteVolumeGroupSnapshot -  DeleteVolumeGroupSnapshot req: %v", loggerId, req)
+
+	return &csi.DeleteVolumeGroupSnapshotResponse{}, nil
 }

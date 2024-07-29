@@ -103,6 +103,7 @@ type ScaleDriver struct {
 	ids *ScaleIdentityServer
 	ns  *ScaleNodeServer
 	cs  *ScaleControllerServer
+	gcs *ScaleGroupControllerServer
 
 	connmap map[string]connectors.SpectrumScaleConnector
 	cmap    settings.ScaleSettingsConfigMap
@@ -115,9 +116,10 @@ type ScaleDriver struct {
 	// clusterMap map stores the cluster name as key and cluster details as value.
 	clusterMap sync.Map
 
-	vcap  []*csi.VolumeCapability_AccessMode
-	cscap []*csi.ControllerServiceCapability
-	nscap []*csi.NodeServiceCapability
+	vcap   []*csi.VolumeCapability_AccessMode
+	cscap  []*csi.ControllerServiceCapability
+	nscap  []*csi.NodeServiceCapability
+	gcscap []*csi.GroupControllerServiceCapability
 }
 
 func GetScaleDriver(ctx context.Context) *ScaleDriver {
@@ -146,6 +148,13 @@ func NewControllerServer(ctx context.Context, d *ScaleDriver, connMap map[string
 func NewNodeServer(ctx context.Context, d *ScaleDriver) *ScaleNodeServer {
 	klog.V(4).Infof("[%s] Starting NewNodeServer", utils.GetLoggerId(ctx))
 	return &ScaleNodeServer{
+		Driver: d,
+	}
+}
+
+func NewGroupControllerServer(ctx context.Context, d *ScaleDriver) *ScaleGroupControllerServer {
+	klog.V(4).Infof("[%s] Starting NewGroupControllerServer", utils.GetLoggerId(ctx))
+	return &ScaleGroupControllerServer{
 		Driver: d,
 	}
 }
@@ -180,6 +189,17 @@ func (driver *ScaleDriver) AddNodeServiceCapabilities(ctx context.Context, nl []
 		nsc = append(nsc, NewNodeServiceCapability(n))
 	}
 	driver.nscap = nsc
+	return nil
+}
+
+func (driver *ScaleDriver) AddGroupControllerServiceCapabilities(ctx context.Context, nl []csi.GroupControllerServiceCapability_RPC_Type) error {
+	klog.V(4).Infof("[%s] AddGroupControllerServiceCapabilities", utils.GetLoggerId(ctx))
+	var gcs []*csi.GroupControllerServiceCapability
+	for _, n := range nl {
+		klog.V(4).Infof("[%s] Enabling group controller service capability: %v", utils.GetLoggerId(ctx), n.String())
+		gcs = append(gcs, NewGroupControllerServiceCapability(n))
+	}
+	driver.gcscap = gcs
 	return nil
 }
 
@@ -237,9 +257,15 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	}
 	_ = driver.AddNodeServiceCapabilities(ctx, ns)
 
+	gsc := []csi.GroupControllerServiceCapability_RPC_Type{
+		csi.GroupControllerServiceCapability_RPC_CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT,
+	}
+	_ = driver.AddGroupControllerServiceCapabilities(ctx, gsc)
+
 	driver.ids = NewIdentityServer(ctx, driver)
 	driver.ns = NewNodeServer(ctx, driver)
 	driver.cs = NewControllerServer(ctx, driver, scmap, cmap, primary)
+	driver.gcs = NewGroupControllerServer(ctx, driver)
 	return nil
 }
 
@@ -287,7 +313,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {
 	s := NewNonBlockingGRPCServer()
-	s.Start(endpoint, driver.ids, driver.cs, driver.ns)
+	s.Start(endpoint, driver.ids, driver.cs, driver.ns, driver.gcs)
 	s.Wait()
 }
 
