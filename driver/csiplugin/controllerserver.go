@@ -2324,11 +2324,11 @@ func (cs *ScaleControllerServer) ControllerGetCapabilities(ctx context.Context, 
 }
 
 // GroupControllerGetCapabilities implements the default GRPC callout.
-func (cs *ScaleGroupControllerServer) GroupControllerGetCapabilities(ctx context.Context, req *csi.GroupControllerGetCapabilitiesRequest) (*csi.GroupControllerGetCapabilitiesResponse, error) {
+func (gcs *ScaleGroupControllerServer) GroupControllerGetCapabilities(ctx context.Context, req *csi.GroupControllerGetCapabilitiesRequest) (*csi.GroupControllerGetCapabilitiesResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] GroupControllerGetCapabilities called with req: %#v", loggerId, req)
 	return &csi.GroupControllerGetCapabilitiesResponse{
-		Capabilities: cs.Driver.gcscap,
+		Capabilities: gcs.Driver.gcscap,
 	}, nil
 }
 
