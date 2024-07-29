@@ -56,7 +56,7 @@ spec:
         - name: CSI_NODE_REGISTRAR_IMAGE
           value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac
         - name: CSI_RESIZER_IMAGE
-          vale: registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43
+          value: registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43
         resources:
           limits:
             cpu: 600m
