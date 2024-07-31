@@ -45,6 +45,18 @@ spec:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
           value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:96e3264bc922826d6f3e8e3d3be4d010c67f65cf5b16e2acadd5ae75258e3ef3
+        - name: CSI_SNAPSHOTTER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c
+        - name: CSI_ATTACHER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
+        - name: CSI_PROVISIONER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9
+        - name: CSI_LIVENESSPROBE_IMAGE
+          value: registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987
+        - name: CSI_NODE_REGISTRAR_IMAGE
+          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac
+        - name: CSI_RESIZER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43
         resources:
           limits:
             cpu: 600m
