@@ -374,6 +374,16 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{""},
+				Resources: []string{persistentVolumesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbDelete},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{persistentVolumeClaimsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate},
+			},
+			{
+				APIGroups: []string{""},
 				Resources: []string{eventsResource},
 				Verbs:     []string{verbList, verbWatch, verbCreate, verbUpdate, verbPatch},
 			},
