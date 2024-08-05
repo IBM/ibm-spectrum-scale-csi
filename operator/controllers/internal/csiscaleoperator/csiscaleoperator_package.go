@@ -395,7 +395,7 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 			{
 				APIGroups: []string{snapshotStorageApiGroup},
 				Resources: []string{volumeSnapshotContentsResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate, verbPatch},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate, verbPatch, verbCreate},
 			},
 			{
 				APIGroups: []string{snapshotStorageApiGroup},
@@ -406,6 +406,11 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 				APIGroups: []string{groupsnapshotStorageApiGroup},
 				Resources: []string{volumeGroupSnapshotClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{snapshotStorageApiGroup},
+				Resources: []string{volumeSnapshotsResource},
+				Verbs:     []string{verbGet, verbList, verbCreate},
 			},
 			{
 				APIGroups: []string{groupsnapshotStorageApiGroup},
