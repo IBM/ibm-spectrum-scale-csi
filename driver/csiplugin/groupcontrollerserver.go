@@ -92,6 +92,13 @@ func (gs *ScaleGroupControllerServer) CreateVolumeGroupSnapshot(ctx context.Cont
 	//Snapshots = append(Snapshots, snapshot)
 	for _, sourceVolID := range volIDs {
 		snapshot.SourceVolumeId = sourceVolID
+		snapID := ""
+
+		splitVid := strings.Split(sourceVolID, ";")
+
+		// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName
+		snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s", scaleVolId.StorageClassType, scaleVolId.VolType, scaleVolId.ClusterId, scaleVolId.FsUUID, scaleVolId.ConsistencyGroup, splitVid[5], req.GetName(), req.GetName())
+		snapshot.SnapshotId = snapID
 		Snapshots = append(Snapshots, snapshot)
 	}
 	//}
@@ -120,6 +127,33 @@ func (gs *ScaleGroupControllerServer) DeleteVolumeGroupSnapshot(ctx context.Cont
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] DeleteVolumeGroupSnapshot -  DeleteVolumeGroupSnapshot req: %v", loggerId, req)
 
+	snapIDs := req.GetSnapshotIds()
+	if len(snapIDs) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "CreateVolumeGroupSnapshot - Source Volume IDs is a required field")
+	}
+
+	snapIdMembers, err := gs.GetSnapIdMembers(snapIDs[0])
+	if err != nil {
+		klog.Errorf("[%s] Invalid snapshot IDs %s [%v]", loggerId, snapIDs, err)
+		return nil, err
+	}
+	conn, err := gs.getConnFromClusterID(ctx, snapIdMembers.ClusterId)
+	if err != nil {
+		return nil, err
+	}
+	filesystemName, err := conn.GetFilesystemName(ctx, snapIdMembers.FsUUID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get filesystem Name for Filesystem UID [%v] and clusterId [%v]. Error [%v]", snapIdMembers.FsUUID, snapIdMembers.ClusterId, err))
+	}
+	filesetName := snapIdMembers.ConsistencyGroup
+	klog.Infof("[%s] DeleteVolumeGroupSnapshot - deleting snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
+
+	snaperr := conn.DeleteSnapshot(ctx, filesystemName, filesetName, snapIdMembers.SnapName)
+	if snaperr != nil {
+		klog.Errorf("[%s] DeleteVolumeGroupSnapshot - error deleting snapshot %s: %v", loggerId, snapIdMembers.SnapName, snaperr)
+		return nil, snaperr
+	}
+	klog.Infof("[%s] DeleteVolumeGroupSnapshot - successfully deleted snapshot [%s] from fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, filesetName, filesystemName)
 	return &csi.DeleteVolumeGroupSnapshotResponse{}, nil
 }
 
@@ -512,4 +546,43 @@ func (gs *ScaleGroupControllerServer) getSnapRestoreSize(ctx context.Context, co
 
 	// REST API returns block limit in kb, convert it to bytes and return
 	return int64(quotaResp.BlockLimit * 1024), nil
+}
+
+func (gs *ScaleGroupControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, error) {
+	splitSid := strings.Split(sId, ";")
+	var sIdMem scaleSnapId
+
+	if len(splitSid) < 4 {
+		return scaleSnapId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Snapshot Id : [%v]", sId))
+	}
+
+	if len(splitSid) >= 8 {
+		/* storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;path */
+		sIdMem.StorageClassType = splitSid[0]
+		sIdMem.VolType = splitSid[1]
+		sIdMem.ClusterId = splitSid[2]
+		sIdMem.FsUUID = splitSid[3]
+		sIdMem.ConsistencyGroup = splitSid[4]
+		sIdMem.FsetName = splitSid[5]
+		sIdMem.SnapName = splitSid[6]
+		sIdMem.MetaSnapName = splitSid[7]
+		if len(splitSid) == 9 && splitSid[8] != "" {
+			sIdMem.Path = splitSid[8]
+		} else {
+			sIdMem.Path = "/"
+		}
+	} else {
+		/* clusterId;FSUUID;filesetName;snapshotName;path */
+		sIdMem.ClusterId = splitSid[0]
+		sIdMem.FsUUID = splitSid[1]
+		sIdMem.FsetName = splitSid[2]
+		sIdMem.SnapName = splitSid[3]
+		if len(splitSid) == 5 && splitSid[4] != "" {
+			sIdMem.Path = splitSid[4]
+		} else {
+			sIdMem.Path = "/"
+		}
+		sIdMem.StorageClassType = STORAGECLASS_CLASSIC
+	}
+	return sIdMem, nil
 }
