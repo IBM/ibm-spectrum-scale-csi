@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scale-fset-pvc-1
+  labels:
+    app.kubernetes.io/name: sg-group2
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ibm-spectrum-scale-csi-advance
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scale-fset-pvc-2
+  labels:
+    app.kubernetes.io/name: sg-group2
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ibm-spectrum-scale-csi-advance

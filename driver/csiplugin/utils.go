@@ -53,6 +53,16 @@ func NewNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeS
 	}
 }
 
+func NewGroupControllerServiceCapability(cap csi.GroupControllerServiceCapability_RPC_Type) *csi.GroupControllerServiceCapability {
+	return &csi.GroupControllerServiceCapability{
+		Type: &csi.GroupControllerServiceCapability_Rpc{
+			Rpc: &csi.GroupControllerServiceCapability_RPC{
+				Type: cap,
+			},
+		},
+	}
+}
+
 func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	newCtx := utils.SetLoggerId(ctx)
 	loggerId := utils.GetLoggerId(newCtx)

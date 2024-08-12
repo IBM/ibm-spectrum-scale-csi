@@ -30,39 +30,44 @@ import (
 )
 
 const (
-	snapshotStorageApiGroup              string = "snapshot.storage.k8s.io"
-	securityOpenshiftApiGroup            string = "security.openshift.io"
-	storageApiGroup                      string = "storage.k8s.io"
-	rbacAuthorizationApiGroup            string = "rbac.authorization.k8s.io"
-	coordinationApiGroup                 string = "coordination.k8s.io"
-	podSecurityPolicyApiGroup            string = "extensions"
-	storageClassesResource               string = "storageclasses"
-	persistentVolumesResource            string = "persistentvolumes"
-	persistentVolumeClaimsResource       string = "persistentvolumeclaims"
-	persistentVolumeClaimsStatusResource string = "persistentvolumeclaims/status"
-	podsResource                         string = "pods"
-	volumeAttachmentsResource            string = "volumeattachments"
-	volumeAttachmentsStatusResource      string = "volumeattachments/status"
-	volumeSnapshotClassesResource        string = "volumesnapshotclasses"
-	volumeSnapshotsResource              string = "volumesnapshots"
-	volumeSnapshotContentsResource       string = "volumesnapshotcontents"
-	volumeSnapshotContentsStatusResource string = "volumesnapshotcontents/status"
-	eventsResource                       string = "events"
-	nodesResource                        string = "nodes"
-	csiNodesResource                     string = "csinodes"
-	namespacesResource                   string = "namespaces"
-	securityContextConstraintsResource   string = "securitycontextconstraints"
-	podSecurityPolicyResource            string = "podsecuritypolicies"
-	leaseResource                        string = "leases"
-	secretResource                       string = "secrets"
-	verbGet                              string = "get"
-	verbList                             string = "list"
-	verbWatch                            string = "watch"
-	verbCreate                           string = "create"
-	verbUpdate                           string = "update"
-	verbPatch                            string = "patch"
-	verbDelete                           string = "delete"
-	verbUse                              string = "use"
+	snapshotStorageApiGroup                   string = "snapshot.storage.k8s.io"
+	groupsnapshotStorageApiGroup              string = "groupsnapshot.storage.k8s.io"
+	securityOpenshiftApiGroup                 string = "security.openshift.io"
+	storageApiGroup                           string = "storage.k8s.io"
+	rbacAuthorizationApiGroup                 string = "rbac.authorization.k8s.io"
+	coordinationApiGroup                      string = "coordination.k8s.io"
+	podSecurityPolicyApiGroup                 string = "extensions"
+	storageClassesResource                    string = "storageclasses"
+	persistentVolumesResource                 string = "persistentvolumes"
+	persistentVolumeClaimsResource            string = "persistentvolumeclaims"
+	persistentVolumeClaimsStatusResource      string = "persistentvolumeclaims/status"
+	podsResource                              string = "pods"
+	volumeAttachmentsResource                 string = "volumeattachments"
+	volumeAttachmentsStatusResource           string = "volumeattachments/status"
+	volumeSnapshotClassesResource             string = "volumesnapshotclasses"
+	volumeSnapshotsResource                   string = "volumesnapshots"
+	volumeSnapshotContentsResource            string = "volumesnapshotcontents"
+	volumeSnapshotContentsStatusResource      string = "volumesnapshotcontents/status"
+	volumeGroupSnapshotClassesResource        string = "volumegroupsnapshotclasses"
+	volumeGroupSnapshotsResource              string = "volumegroupsnapshot"
+	volumeGroupSnapshotContentsResource       string = "volumegroupsnapshotcontents"
+	volumeGroupSnapshotContentsStatusResource string = "volumegroupsnapshotcontents/status"
+	eventsResource                            string = "events"
+	nodesResource                             string = "nodes"
+	csiNodesResource                          string = "csinodes"
+	namespacesResource                        string = "namespaces"
+	securityContextConstraintsResource        string = "securitycontextconstraints"
+	podSecurityPolicyResource                 string = "podsecuritypolicies"
+	leaseResource                             string = "leases"
+	secretResource                            string = "secrets"
+	verbGet                                   string = "get"
+	verbList                                  string = "list"
+	verbWatch                                 string = "watch"
+	verbCreate                                string = "create"
+	verbUpdate                                string = "update"
+	verbPatch                                 string = "patch"
+	verbDelete                                string = "delete"
+	verbUse                                   string = "use"
 )
 
 // GenerateCSIDriver returns a non-namespaced CSIDriver object.
@@ -217,6 +222,16 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 				Verbs:     []string{verbGet, verbList},
 			},
 			{
+				APIGroups: []string{groupsnapshotStorageApiGroup},
+				Resources: []string{volumeGroupSnapshotsResource},
+				Verbs:     []string{verbGet, verbList},
+			},
+			{
+				APIGroups: []string{groupsnapshotStorageApiGroup},
+				Resources: []string{volumeGroupSnapshotContentsResource},
+				Verbs:     []string{verbGet, verbList},
+			},
+			{
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{csiNodesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
@@ -359,6 +374,16 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{""},
+				Resources: []string{persistentVolumesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbCreate, verbDelete},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{persistentVolumeClaimsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate},
+			},
+			{
+				APIGroups: []string{""},
 				Resources: []string{eventsResource},
 				Verbs:     []string{verbList, verbWatch, verbCreate, verbUpdate, verbPatch},
 			},
@@ -370,11 +395,31 @@ func (c *CSIScaleOperator) GenerateSnapshotterClusterRole() *rbacv1.ClusterRole 
 			{
 				APIGroups: []string{snapshotStorageApiGroup},
 				Resources: []string{volumeSnapshotContentsResource},
-				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate, verbPatch},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate, verbPatch, verbCreate},
 			},
 			{
 				APIGroups: []string{snapshotStorageApiGroup},
 				Resources: []string{volumeSnapshotContentsStatusResource},
+				Verbs:     []string{verbUpdate, verbPatch},
+			},
+			{
+				APIGroups: []string{groupsnapshotStorageApiGroup},
+				Resources: []string{volumeGroupSnapshotClassesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{snapshotStorageApiGroup},
+				Resources: []string{volumeSnapshotsResource},
+				Verbs:     []string{verbGet, verbList, verbCreate},
+			},
+			{
+				APIGroups: []string{groupsnapshotStorageApiGroup},
+				Resources: []string{volumeGroupSnapshotContentsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate, verbPatch},
+			},
+			{
+				APIGroups: []string{groupsnapshotStorageApiGroup},
+				Resources: []string{volumeGroupSnapshotContentsStatusResource},
 				Verbs:     []string{verbUpdate, verbPatch},
 			},
 			{

@@ -582,6 +582,7 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec(cpuLimits string, 
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
 			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
+			"--enable-volume-group-snapshots=true",
 			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 		cpuLimits, memoryLimits,
 	)

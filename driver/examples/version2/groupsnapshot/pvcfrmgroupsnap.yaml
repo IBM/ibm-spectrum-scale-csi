@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ibm-spectrum-scale-pvc-1-from-groupsnapshot
+spec:
+  storageClassName: ibm-spectrum-scale-csi-advance
+  dataSource:
+    name: snapshot-88f427eafa6a6f8044b66259dd801d5f046063c2f473c54c528bec9e551da98b-2024-08-05-10.16.31
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ibm-spectrum-scale-pvc-2-from-groupsnapshot
+spec:
+  storageClassName: ibm-spectrum-scale-csi-advance
+  dataSource:
+    name: snapshot-88f427eafa6a6f8044b66259dd801d5f046063c2f473c54c528bec9e551da98b-2024-08-05-10.16.32
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi      
