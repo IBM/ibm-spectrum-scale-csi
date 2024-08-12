@@ -3059,6 +3059,8 @@ func (cs *ScaleControllerServer) GetCapacity(ctx context.Context, req *csi.GetCa
 }
 
 func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] ControllerModifyVolume - Volume modify req: %v", loggerId, req)
 	return nil, status.Error(codes.Unimplemented, "")
 }
 

@@ -604,7 +604,8 @@ func (s *csiControllerSyncer) ensureResizerContainersSpec(cpuLimits string, memo
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
 			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
-			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
+			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort),
+			"--feature-gates=VolumeAttributesClass=true"},
 		cpuLimits, memoryLimits,
 	)
 	resizer.ImagePullPolicy = config.CSIResizerImagePullPolicy
