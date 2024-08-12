@@ -90,18 +90,18 @@ const (
 	//  Default images for containers
 
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.12.0"
-        //  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.1
-        CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/livenessprobe:v2.12.0
-        LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/csi-attacher:v4.6.1
-        CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/csi-provisioner:v4.0.1
-        CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1
-        CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/csi-resizer:v1.11.1
-        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.1
+	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f25af73ee708ff9c82595ae99493cdef9295bd96953366cddf36305f82555dac" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/livenessprobe:v2.12.0
+	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:5baeb4a6d7d517434292758928bb33efc6397368cbb48c8a4cf29496abf4e987" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-attacher:v4.6.1
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-provisioner:v4.0.1
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1
+	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-resizer:v1.11.1
+	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:a541e6cc2d8b011bb21b1d4ffec6b090e85270cce6276ee302d86153eec0af43" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
@@ -155,6 +155,7 @@ const (
 	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
+	EnvVolNamePrefixKey               = "VOLUME_NAME_PREFIX"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -162,6 +163,7 @@ const (
 	EnvNodePublishMethodKeyPrefixed     = EnvVarPrefix + EnvNodePublishMethodKey
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
+	EnvVolNamePrefixKeyPrefixed         = EnvVarPrefix + EnvVolNamePrefixKey
 
 	// Optional ConfigMap default values
 	DriverCPULimitsDefaultValue          = "600m"
@@ -173,6 +175,7 @@ const (
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
+	EnvVolNamePrefixDefaultValue         = "pvc"
 
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"
@@ -186,11 +189,13 @@ var CSIOptionalConfigMapKeys = []string{
 	EnvVolumeStatsCapabilityKeyPrefixed,
 	DaemonSetUpgradeMaxUnavailableKey,
 	EnvDiscoverCGFilesetKeyPrefixed,
+	EnvVolNamePrefixKeyPrefixed,
 	HostNetworkKey,
 	DriverCPULimits,
 	DriverMemoryLimits,
 	SidecarCPULimits,
 	SidecarMemoryLimits}
+
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}

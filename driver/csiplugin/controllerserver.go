@@ -699,7 +699,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
 			"version", "tier", "compression", "consistencyGroup", "shared",
-			"volumeType", "cacheMode":
+			"volumeType", "cacheMode", "volNamePrefix":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -1231,10 +1231,11 @@ func (cs *ScaleControllerServer) checkVolTierAndSetFilesystemPolicy(ctx context.
 		return err
 	}
 
-	rule := "RULE 'csi-T%s' SET POOL '%s' WHERE FILESET_NAME LIKE 'pvc-%%-T%scsi%%'"
+	rule := "RULE 'csi-T%s' SET POOL '%s' WHERE FILESET_NAME LIKE '%s-%%-T%scsi%%'"
 	policy := connectors.Policy{}
 
-	policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Tier, scaleVol.Tier)
+	policy.Policy = fmt.Sprintf(rule, scaleVol.Tier, scaleVol.Tier, scaleVol.VolNamePrefix, scaleVol.Tier)
+	klog.Infof("[%s] checkVolTierAndSetFilesystemPolicy: setting policy:[%v]", loggerId, policy.Policy)
 	policy.Priority = -5
 	policy.Partition = fmt.Sprintf("csi-T%s", scaleVol.Tier)
 
