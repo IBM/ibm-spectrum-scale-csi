@@ -121,8 +121,8 @@ function collect_csi_pod_logs()
       fi
       if [[ $previous != "False" ]]
       then
-        echo "Gather data for pod/${opPodName} --previous "
-        $klog pod/"${opPodName}" -c ${containerName} > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}"-previous.log 2>&1 || :
+        echo "Gather data for pod/${opPodName} for container ${containerName} --previous "
+        $klog pod/"${opPodName}" -c ${containerName} --previous > "$csi_pod_logs"/"${opPodName}"/"${containerName}"/"${opPodName}"-"${containerName}"-previous.log 2>&1 || :
       fi
     done
   done
