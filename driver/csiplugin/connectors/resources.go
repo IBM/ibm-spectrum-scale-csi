@@ -493,14 +493,14 @@ type Network struct {
 }
 
 type NodeRoles struct {
-	SNMPNode         string `json:"snmpNode,omitempty"`
-	ManagerNode      string `json:"managerNode,omitempty"`
-	GatewayNode      string `json:"gatewayNode,omitempty"`
-	CNFSNode         string `json:"cnfsNode,omitempty"`
-	ClientNode       string `json:"clientNode,omitempty"`
-	CESNode          string `json:"cesNode,omitempty"`
-	QuorumNode       string `json:"quorumNode,omitempty"`
-	CloudGatewayNode string `json:"cloudGatewayNode,omitempty"`
+	SNMPNode         bool   `json:"snmpNode,omitempty"`
+	ManagerNode      bool   `json:"managerNode,omitempty"`
+	GatewayNode      bool   `json:"gatewayNode,omitempty"`
+	CNFSNode         bool   `json:"cnfsNode,omitempty"`
+	ClientNode       bool   `json:"clientNode,omitempty"`
+	CESNode          bool   `json:"cesNode,omitempty"`
+	QuorumNode       bool   `json:"quorumNode,omitempty"`
+	CloudGatewayNode bool   `json:"cloudGatewayNode,omitempty"`
 	OtherNodeRoles   string `json:"otherNodeRoles,omitempty"`
 	Designation      string `json:"designation,omitempty"`
 }
@@ -640,11 +640,12 @@ type CreateFilesetRequest struct {
 }
 
 type CreateS3CacheFilesetRequest struct {
-	FilesetName string `json:"filesetName"`
-	Mode        string `json:"mode"`
-	Endpoint    string `json:"endpoint"`
-	UseObjectFs bool   `json:"useObjectFs,omitempty"`
-	BucketName  string `json:"bucket,omitempty"`
+	FilesetName      string `json:"filesetName"`
+	Mode             string `json:"mode"`
+	Endpoint         string `json:"endpoint"`
+	UseObjectFs      bool   `json:"useObjectFs,omitempty"`
+	BucketName       string `json:"bucket,omitempty"`
+	UseSSLCertVerify bool   `json:"useSslCertVerify,omitempty"`
 }
 
 type SetBucketKeysRequest struct {

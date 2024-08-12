@@ -17,6 +17,9 @@
 package scale
 
 import (
+	"fmt"
+	"os"
+	"regexp"
 	"strings"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -61,7 +64,14 @@ func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 		klog.Infof("[%s] GRPC call: %s", loggerId, info.FullMethod)
 	}
 
-	klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, req)
+	// Mask the secrets from request before logging
+	logLevel := strings.ToUpper(os.Getenv(utils.LogLevel))
+	if logLevel == utils.DEBUG.String() || logLevel == utils.TRACE.String() {
+		reqString := fmt.Sprintf("%+v", req)
+		regExp := regexp.MustCompile("secrets:.*?>")
+		reqToLog := regExp.ReplaceAllString(reqString, "")
+		klog.V(4).Infof("[%s] GRPC request: %+v", loggerId, reqToLog)
+	}
 
 	startTime := utils.GetExecutionTime()
 	resp, err := handler(newCtx, req)
