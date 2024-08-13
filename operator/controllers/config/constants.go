@@ -92,7 +92,7 @@ const (
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.13.0"
         //  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.11.1
         CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:e9349eed3d686c7bd1b474a6c6623f53ff80930c2e920e98df1927a2fbc58a4a" // #nosec G101 false positive
-        //  registry.k8s.io/sig-storage/livenessprobe:v2.13.0
+        //  registry.k8s.io/sig-storage/livenessprobe:v2.13.1
         LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:65143b461bd7c2e1d61fc1a0f233ee026f9b75c071f8d766bc711b2e01ca34e4" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-attacher:v4.6.1
         CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94" // #nosec G101 false positive
