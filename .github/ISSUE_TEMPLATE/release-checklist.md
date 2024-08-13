@@ -18,7 +18,6 @@ assignees: ''
 - [ ]  Regression Complete 
 - [ ]  Realworld test complete 
 - [ ]  OLM Packages Ready and Tested
-- [ ]  Create case bundle for Cloudpak certification 
 - [ ]  Check images for Vulnerabilities(Driver, Operator, sidecars) 
 - [ ]  IBM Docs Content Verification (1 week before GA) 
 - [ ]  Create git release tag (draft) with release content (1 week before GA)
@@ -32,6 +31,4 @@ assignees: ''
 - [ ]  Publish PR for Community Operator Listing (https://github.com/k8s-operatorhub/community-operators) - (on GA date)
 - [ ]  Update driver listing https://kubernetes-csi.github.io/docs/drivers.html
 - [ ]  Unpause dev checkin. (once OLM is verified for community operator) 
-- [ ]  Cloudpak certification (Content promotion ticket, Release PR, verifiy image digest)
-- [ ]  Publish cloudpak certification 
 - [ ]  Image for ICR push 
