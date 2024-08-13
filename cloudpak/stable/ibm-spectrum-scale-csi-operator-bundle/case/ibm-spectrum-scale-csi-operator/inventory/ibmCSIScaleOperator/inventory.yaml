@@ -1,7 +1,0 @@
-inventory:
-  k8sScope: namespace
-  metadata:
-    displayDescription: "Represents a deployment of the IBM CSI Storage Scale driver."
-    displayName: "IBM CSI Storage Scale Driver"
-    name: "ibmCSIScaleOperator"
-    description: "Represents a deployment of the IBM CSI Storage Scale driver."
