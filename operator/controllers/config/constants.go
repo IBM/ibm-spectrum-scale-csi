@@ -91,9 +91,9 @@ const (
 
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.13.0"
         //  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.11.1
-        CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:e9349eed3d686c7bd1b474a6c6623f53ff80930c2e920e98df1927a2fbc58a4a" // #nosec G101 false positive
+        CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:e01facb9fb9cffaf52d0053bdb979fbd8c505c8e411939a6e026dd061a6b4fbe" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/livenessprobe:v2.13.1
-        LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:65143b461bd7c2e1d61fc1a0f233ee026f9b75c071f8d766bc711b2e01ca34e4" // #nosec G101 false positive
+        LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:d2a9027a4876e039185e9bef7c61a0142c8ea14e7440860285c34ac73fee4ffb" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-attacher:v4.6.1
         CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-provisioner:v5.0.2
@@ -101,7 +101,7 @@ const (
         //  registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1
         CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:2e04046334baf9be425bb0fa1d04c2d1720d770825eedbdbcdb10d430da4ad8c" // #nosec G101 false positive
         //  registry.k8s.io/sig-storage/csi-resizer:v1.11.2
-        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:e7493f4cd6745262bc8beb23176daa907938aa2bc5659ec0dcd60b8d23645d71" // #nosec G101 false positive
+        CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:be6a7de1d43dba90710b61bd3d0d8f568654a6adadaeea9188cf4cd3554cbb87" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
