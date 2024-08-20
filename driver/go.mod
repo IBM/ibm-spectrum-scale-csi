@@ -1,6 +1,6 @@
 module github.com/IBM/ibm-spectrum-scale-csi/driver
 
-go 1.23
+go 1.22.3
 
 require (
 	github.com/container-storage-interface/spec v1.9.0
