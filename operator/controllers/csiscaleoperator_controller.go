@@ -440,6 +440,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Setting resources limit values for sidecars
 	cpuLimits := cmData[config.SidecarCPULimits]
 	memoryLimits := cmData[config.SidecarMemoryLimits]
+
+	// volNamePrefix for provisioner sidecar
+	volNamePrefix := cmData[config.EnvVolNamePrefixKey]
 	// Synchronizing attacher deployment
 	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
@@ -461,7 +464,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, volNamePrefix)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -2314,6 +2317,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvVolNamePrefixKeyPrefixed:
+				validateVolNamePrefix(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
 				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.HostNetworkKey:
@@ -2381,6 +2386,19 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 		data[key] = value
 	} else {
 		logger.Error(err, " Failed to parse the input maxunvaialble value")
+		invalidEnvValue[key] = value
+	}
+}
+
+func validateVolNamePrefix(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.WithName("validateVolNamePrefix")
+	logger.Info("Validating volume name prefix input ", "volNamePrefix", value)
+
+	if len(value) > 2 && len(value) < 6 {
+		logger.Info("validateVolNamePrefix parsed :", "volNamePrefix", value)
+		data[key[11:]] = value
+	} else {
+		logger.Error(fmt.Errorf("the input volume name prefix is not right,the string value must be between [3 to 5] length,  volNamePrefix : %v", value), "Volume Name Prefix Error")
 		invalidEnvValue[key] = value
 	}
 }
@@ -2493,6 +2511,11 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.EnvVolumeStatsCapabilityKey]; !ok {
 		logger.Info("VolumeStatsCapability is empty or incorrect.", "Defaulting VolumeStatsCapability to", config.EnvVolumeStatsCapabilityDefaultValue)
 		envMap[config.EnvVolumeStatsCapabilityKey] = config.EnvVolumeStatsCapabilityDefaultValue
+	}
+	// Set default VolNamePrefix when it is not present in envMap
+	if _, ok := envMap[config.EnvVolNamePrefixKey]; !ok {
+		logger.Info("VolNamePrefix is empty or incorrect.", "Defaulting VolNamePrefix to", config.EnvVolNamePrefixDefaultValue)
+		envMap[config.EnvVolNamePrefixKey] = config.EnvVolNamePrefixDefaultValue
 	}
 	// Make empty DaemonSetUpgradeMaxUnavailable when it is not present in envMap
 	if _, ok := envMap[config.DaemonSetUpgradeMaxUnavailableKey]; !ok {

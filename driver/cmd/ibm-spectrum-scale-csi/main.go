@@ -59,6 +59,10 @@ func main() {
 	if val, ok := os.LookupEnv(settings.VolumeStatsCapability); ok {
 		klog.Infof("[%s] found in the env : %s", settings.VolumeStatsCapability, val)
 	}
+	if val, ok := os.LookupEnv(driver.VolNamePrefixEnvKey); ok {
+		klog.Infof("[%s] found in the env : %s", driver.VolNamePrefixEnvKey, val)
+	}
+
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)
