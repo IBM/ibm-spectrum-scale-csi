@@ -155,6 +155,7 @@ const (
 	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
+	EnvVolNamePrefixKey               = "VOLUME_NAME_PREFIX"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -162,6 +163,7 @@ const (
 	EnvNodePublishMethodKeyPrefixed     = EnvVarPrefix + EnvNodePublishMethodKey
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
+	EnvVolNamePrefixKeyPrefixed         = EnvVarPrefix + EnvVolNamePrefixKey
 
 	// Optional ConfigMap default values
 	DriverCPULimitsDefaultValue          = "600m"
@@ -173,6 +175,7 @@ const (
 	EnvNodePublishMethodDefaultValue     = "BINDMOUNT"
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
+	EnvVolNamePrefixDefaultValue         = "pvc"
 
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"
@@ -186,11 +189,13 @@ var CSIOptionalConfigMapKeys = []string{
 	EnvVolumeStatsCapabilityKeyPrefixed,
 	DaemonSetUpgradeMaxUnavailableKey,
 	EnvDiscoverCGFilesetKeyPrefixed,
+	EnvVolNamePrefixKeyPrefixed,
 	HostNetworkKey,
 	DriverCPULimits,
 	DriverMemoryLimits,
 	SidecarCPULimits,
 	SidecarMemoryLimits}
+
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
