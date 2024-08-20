@@ -579,7 +579,7 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec(cpuLimits string, 
 	snapshotter := s.ensureContainer(snapshotterContainerName,
 		s.getSidecarImage(config.CSISnapshotter),
 		// TODO: make timeout configurable
-		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--worker-threads=1",
+		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--worker-threads=10", "--timeout=2m",
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
 			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",

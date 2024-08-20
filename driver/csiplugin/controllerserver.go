@@ -26,9 +26,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -71,6 +69,7 @@ var bucketMutex sync.Mutex
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
 }
+
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
@@ -208,7 +207,7 @@ func (cs *ScaleControllerServer) createDirectory(ctx context.Context, scVol *sca
 		if scVol.VolPermissions != "" {
 			err = scVol.Connector.MakeDirectoryV2(ctx, scVol.VolBackendFs, targetPath, scVol.VolUid, scVol.VolGid, scVol.VolPermissions)
 			if err != nil {
-				// Directory creation failed, no cleanup will retry in next retry
+				// Directory creation failed, no cleanup will eetry in next retry
 				klog.Errorf("[%s] volume:[%v] - unable to create directory [%v] in filesystem [%v]. Error : %v", utils.GetLoggerId(ctx), volName, targetPath, scVol.VolBackendFs, err)
 				return fmt.Errorf("unable to create directory [%v] in filesystem [%v]. Error : %v", targetPath, scVol.VolBackendFs, err)
 			}
@@ -758,8 +757,9 @@ func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (st
 }
 
 // CreateVolume - Create Volume
-func (cs *ScaleControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(newctx)
+  ctx := utils.SetModuleName(newctx, createVolume)
 
 	// Mask the secrets from request before logging
 	reqToLog := *req
@@ -1813,15 +1813,28 @@ func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, 
 func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, isCGVolume bool) error {
 	loggerId := utils.GetLoggerId(ctx)
 	var snapshotPath string
+
 	if isCGVolume {
-		snapshotPath = fmt.Sprintf("%s/%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName, newvolume.VolName)
+		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName)
 	} else {
-		snapshotPath = fmt.Sprintf("%s/%s/%s", sourcesnapshot.FsetName, sourcesnapshot.SnapName, newvolume.VolName)
+		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.FsetName, sourcesnapshot.SnapName)
 	}
-	mutex.Lock()
-	defer mutex.Unlock()
-	klog.Infof("[%s] createSnapshotDir reference path [%s] for shallow copy volume: [%s]", loggerId, snapshotPath, newvolume.VolName)
-	err := cs.createDirectory(ctx, newvolume, newvolume.VolName, snapshotPath)
+	shallowCopyPath := fmt.Sprintf("%s/%s", snapshotPath, newvolume.VolName)
+
+	if isCGVolume{
+		klog.Infof("[%s] Target path in createSnapshotDir:[%s]", loggerId, snapshotPath)
+		lockSuccess := CgSnapshotLock(ctx, snapshotPath, false)
+		if !lockSuccess {
+			message := fmt.Sprintf("create snapshot failed to acquire the lock as another operation is in progress for the same targetPath: [%s]", snapshotPath)
+			klog.Errorf("[%s] %s", loggerId, message)
+			return status.Error(codes.Internal, message)
+		} else {
+			defer CgSnapshotUnlock(ctx, snapshotPath)
+		}
+	}
+
+	klog.Infof("[%s] createSnapshotDir reference path [%s] for shallow copy volume: [%s]", loggerId, shallowCopyPath, newvolume.VolName)
+	err := cs.createDirectory(ctx, newvolume, newvolume.VolName, shallowCopyPath)
 	if err != nil {
 		klog.Errorf("[%s] Failed to create snapshot reference directory", loggerId)
 		return err
@@ -2055,9 +2068,11 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 	return nil
 }
 
-func (cs *ScaleControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	loggerId := utils.GetLoggerId(ctx)
 
+func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, deleteVolume)
+	
 	// Mask the secrets from request before logging
 	reqToLog := *req
 	reqToLog.Secrets = nil
@@ -2254,8 +2269,17 @@ func (cs *ScaleControllerServer) DeleteShallowCopyRefPath(ctx context.Context, F
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] Deleting shallow copy reference path [%s]", loggerId, ShallowCopyRefPath)
 
-	mutex.Lock()
-	defer mutex.Unlock()
+	if storageClassType == STORAGECLASS_ADVANCED{
+		 klog.Infof("[%s] Target path in DeleteShallowCopyRefPath:[%s]", loggerId, ShallowCopyRefPath)
+		lockSuccess := CgSnapshotLock(ctx, ShallowCopyRefPath, false)
+		if !lockSuccess {
+			message := fmt.Sprintf("Delete shallow copy failed to acquire lock as another operation is in progress for the same targetPath: [%s]", ShallowCopyRefPath)
+			klog.Errorf("[%s] %s", loggerId, message)
+			return status.Error(codes.Internal, message)
+		} else {
+			defer CgSnapshotUnlock(ctx, ShallowCopyRefPath)
+		}
+	}
 	shallowCopyRefCompletePath := fmt.Sprintf("%s/%s", ShallowCopyRefPath, FilesetName)
 
 	isShallowCopyRefPathDeleted := false
@@ -2534,6 +2558,7 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 		return "", err
 	}
 
+	klog.Infof("[%s] latestSnapList[0].SnapshotName:%s", loggerId, latestSnapList[0].SnapshotName)
 	var timestampSecs int64 = timestamp.GetSeconds()
 	lastSnapTime := time.Unix(timestampSecs, 0)
 	passedTime := time.Since(lastSnapTime).Seconds()
@@ -2553,7 +2578,18 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 
 func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) error {
 	loggerId := utils.GetLoggerId(ctx)
-	path := fmt.Sprintf("%s/%s/%s", indepFileset, cgSnapName, metaSnapName)
+	cgpath := fmt.Sprintf("%s/%s", indepFileset, cgSnapName)
+	path := fmt.Sprintf("%s/%s", cgpath, metaSnapName)
+
+	klog.Infof("[%s] Target path in MakeSnapMetadataDir:[%s]", loggerId, cgpath)	
+	lockSuccess := CgSnapshotLock(ctx, cgpath, true)
+	if !lockSuccess {
+		message := fmt.Sprintf("create snapshot failed to acquire the lock as another operation is in progress for the targetPath: [%s]", cgpath)
+		klog.Errorf("[%s] %s", loggerId, message)
+		return status.Error(codes.Internal, message)
+	} else {
+		defer CgSnapshotUnlock(ctx, cgpath)
+	}
 	klog.Infof("[%s] MakeSnapMetadataDir - creating directory [%s] for fileset: [%s:%s]", loggerId, path, filesystemName, filesetName)
 	err := conn.MakeDirectory(ctx, filesystemName, path, "0", "0")
 	if err != nil {
@@ -2565,8 +2601,9 @@ func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn c
 }
 
 // CreateSnapshot Create Snapshot
-func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) { //nolint:gocyclo,funlen
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, createSnapshot)
 	klog.Infof("[%s] CreateSnapshot - create snapshot req: %v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
@@ -2645,6 +2682,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		}
 	}
 
+
 	if volumeIDMembers.StorageClassType != STORAGECLASS_ADVANCED {
 		if filesetResp.Config.ParentId > 0 {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
@@ -2708,47 +2746,19 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get the snapshot details for [%s]. Error [%v]", snapName, err))
 	}
 
-	if !snapExist {
-		/* For new storageClass check last snapshot creation time, if time passed is less than
-		 * snapWindow then return existing snapshot */
-		createNewSnap := true
-		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-			cgSnapName, err := cs.CheckNewSnapRequired(ctx, conn, filesystemName, filesetName, snapWindowInt)
-			if err != nil {
-				klog.Errorf("[%s] CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
-				return nil, err
-			}
-			if cgSnapName != "" {
-				usable, err := cs.isExistingSnapUseableForVol(ctx, conn, filesystemName, filesetName, filesetResp.FilesetName, cgSnapName)
-				if !usable {
-					return nil, err
-				}
-				createNewSnap = false
-				snapName = cgSnapName
-			} else {
-				klog.Infof("[%s] CreateSnapshot - creating new snapshot for consistency group for fileset: [%s:%s]", loggerId, filesystemName, filesetName)
-			}
-		}
+	snapName,createNewSnap,err := cs.CheckIfNewSnapshotIsRequired(ctx, conn, filesystemName, filesetName, filesetResp.FilesetName, snapName, volumeIDMembers.StorageClassType, snapWindowInt, snapExist)
+        if err != nil {
+        	return nil, err
+        } 
 
-		if createNewSnap {
-			snapshotList, err := conn.ListFilesetSnapshots(ctx, filesystemName, filesetName)
-			if err != nil {
-				klog.Errorf("[%s] CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
-			}
-
-			if len(snapshotList) >= 256 {
-				klog.Errorf("[%s] CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", loggerId, snapName, filesystemName, filesetName)
-				return nil, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
-			}
-
-			snaperr := conn.CreateSnapshot(ctx, filesystemName, filesetName, snapName)
-			if snaperr != nil {
-				klog.Errorf("[%s] Snapshot [%s] - Unable to create snapshot. Error [%v]", loggerId, snapName, snaperr)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
-			}
+	if createNewSnap{
+		snapName,err = cs.CreateNewSnapshot(ctx, conn, filesystemName, filesetName, snapName, volumeIDMembers.StorageClassType, snapExist)
+		if err != nil{
+			klog.Errorf("[%s] CreateSnapshot [%s] unable to create new snapshot for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
+			return nil,err
 		}
 	}
+
 
 	snapID := ""
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2796,6 +2806,90 @@ func (cs *ScaleControllerServer) CreateSnapshot(ctx context.Context, req *csi.Cr
 			SizeBytes:      restoreSize,
 		},
 	}, nil
+}
+
+ func (cs *ScaleControllerServer) CheckIfNewSnapshotIsRequired (ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, fsetName, snapName, storageClassType string, snapWindowInt int,snapExist bool) (string, bool, error) {
+
+	loggerId := utils.GetLoggerId(ctx)
+	createNewSnap := false
+
+	if !snapExist {
+		createNewSnap = true
+		if storageClassType == STORAGECLASS_ADVANCED && createNewSnap{
+			lockSuccess := CgSnapshotLock(ctx, filesetName, snapExist)
+                        if !lockSuccess {
+                                cs.retryToCreateNewSnap(ctx, conn, filesystemName, filesetName, snapName)
+                        } else {
+                                defer CgSnapshotUnlock(ctx, filesetName)
+                        }
+                }
+
+		//  For new storageClass check last snapshot creation time, if time passed is less than
+		//  snapWindow then return existing snapshot 
+
+		if storageClassType == STORAGECLASS_ADVANCED {
+			cgSnapName, err := cs.CheckNewSnapRequired(ctx, conn, filesystemName, filesetName, snapWindowInt)
+			if err != nil {
+				klog.Errorf("[%s] CreateSnapshot [%s] - unable to check if snapshot is required for new storageClass for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
+				return snapName,createNewSnap,err
+			}
+			if cgSnapName != "" {
+				usable, err := cs.isExistingSnapUseableForVol(ctx, conn, filesystemName, filesetName, fsetName, cgSnapName)
+				if !usable {
+					return snapName,createNewSnap,err
+				}
+				createNewSnap = false
+				snapName = cgSnapName
+			} else {
+				klog.Infof("[%s] CreateSnapshot - creating new snapshot for consistency group for fileset: [%s:%s]", loggerId, filesystemName, filesetName)
+			}
+		}
+	}
+	return snapName,createNewSnap,nil
+} 
+
+func (cs *ScaleControllerServer) CreateNewSnapshot(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, snapName, storageClassType string, snapExist bool) (string, error){
+	loggerId := utils.GetLoggerId(ctx)
+
+	if storageClassType == STORAGECLASS_ADVANCED{
+		lockSuccess := CgSnapshotLock(ctx, filesetName, snapExist)
+		if !lockSuccess {
+			klog.Errorf("[%s] CreateNewSnapshot [%s]: Failed to acquire the lock", loggerId, snapName)
+			return snapName, status.Error(codes.Internal, fmt.Sprintf("CreateNewSnapshot [%s]: Failed to acquire the lock", snapName))
+		} else {
+			defer CgSnapshotUnlock(ctx, filesetName)
+		}
+	}
+
+	snapshotList, err := conn.ListFilesetSnapshots(ctx, filesystemName, filesetName)
+	if err != nil {
+		klog.Errorf("[%s] CreateSnapshot [%s] - unable to list snapshots for fileset [%s:%s]. Error: [%v]", loggerId, snapName, filesystemName, filesetName, err)
+		return snapName, status.Error(codes.Internal, fmt.Sprintf("unable to list snapshots for fileset [%s:%s]. Error: [%v]", filesystemName, filesetName, err))
+	}
+
+	if len(snapshotList) >= 256 {
+		klog.Errorf("[%s] CreateSnapshot [%s] - max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", loggerId, snapName, filesystemName, filesetName)
+		return snapName, status.Error(codes.OutOfRange, fmt.Sprintf("max limit of snapshots reached for fileset [%s:%s]. No more snapshots can be created for this fileset.", filesystemName, filesetName))
+	}
+
+	snaperr := conn.CreateSnapshot(ctx, filesystemName, filesetName, snapName)
+	if snaperr != nil {
+		klog.Errorf("[%s] Snapshot [%s] - Unable to create snapshot. Error [%v]", loggerId, snapName, snaperr)
+		return snapName, status.Error(codes.Internal, fmt.Sprintf("unable to create snapshot [%s]. Error [%v]", snapName, snaperr))
+	}
+
+	return snapName, nil
+}
+
+
+func (cs *ScaleControllerServer) retryToCreateNewSnap(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, snapName string) {
+
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] retrying to check whether new snapshot is required", loggerId)
+	for i := 0; i < retryCount; i++ {
+		time.Sleep( retryInterval * time.Second)
+	}
+
 }
 
 func (cs *ScaleControllerServer) getSnapshotCreateTimestamp(ctx context.Context, conn connectors.SpectrumScaleConnector, fs string, fset string, snap string) (timestamppb.Timestamp, error) {
@@ -2870,7 +2964,19 @@ func (cs *ScaleControllerServer) isExistingSnapUseableForVol(ctx context.Context
 
 func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	pathDir := fmt.Sprintf("%s/%s/%s", consistencyGroup, cgSnapName, metaSnapName)
+	cgpath := fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	pathDir := fmt.Sprintf("%s/%s", cgpath, metaSnapName)
+
+	klog.Infof("[%s] Target path in DelSnapMetadataDir:[%s]", loggerId, cgpath)
+	lockSuccess := CgSnapshotLock(ctx, cgpath, true)
+	if !lockSuccess {
+		message := fmt.Sprintf("Delete snapshot failed to acquire the lock as another operation is in progress for the targetPath: [%s]", cgpath)
+		klog.Errorf("[%s] %s", loggerId, message)
+		return false, status.Error(codes.Internal, message)
+	} else {
+		defer CgSnapshotUnlock(ctx, cgpath)
+	}
+
 	err := conn.DeleteDirectory(ctx, filesystemName, pathDir, false)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
@@ -2922,8 +3028,9 @@ func parseStatDirInfo(statInfo string) (int, error) {
 }
 
 // DeleteSnapshot - Delete snapshot
-func (cs *ScaleControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
-	loggerId := utils.GetLoggerId(ctx)
+func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+	loggerId := utils.GetLoggerId(newctx)
+	ctx := utils.SetModuleName(newctx, deleteSnapshot)
 	klog.Infof("[%s] DeleteSnapshot - delete snapshot req: %v", loggerId, req)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
