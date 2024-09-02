@@ -655,6 +655,13 @@ type SetBucketKeysRequest struct {
 	Server     string `json:"server,omitempty"`
 }
 
+// TODO after gui fixes the api --no-server-resolution
+type CreateNodeMapAFMCosRequest struct {
+	MapName            string   `json:"mapName"`
+	ExportMap          []string `json:"exportMap"`
+	NoServerResolution bool     `json:"noServerResolution,omitempty"`
+}
+
 type CreateMakeDirRequest struct {
 	UID         string `json:"uid,omitempty"`         //uidnumber
 	GID         string `json:"gid,omitempty"`         //gidnumber

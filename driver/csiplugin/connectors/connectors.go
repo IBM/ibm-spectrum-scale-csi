@@ -18,6 +18,7 @@ package connectors
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -38,13 +39,14 @@ type SpectrumScaleConnector interface {
 	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Node operations
-	CheckIfGatewayNodePresent(ctx context.Context) (bool, error)
+	CheckGatewayNodeDetails(ctx context.Context) (bool, string, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
-	SetBucketKeys(ctx context.Context, access map[string]string) error
+	SetBucketKeys(ctx context.Context, access map[string]string, exportMapName string) error
 	DeleteBucketKeys(ctx context.Context, bucket string) error
-	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string, scheme string) error
+	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string, exportMapName string, parsedURL *url.URL) error
+	CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo map[string]string) error
 	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
