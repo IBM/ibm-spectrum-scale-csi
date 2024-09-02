@@ -108,6 +108,15 @@ type Job struct {
 	Status    string      `json:"status,omitempty"`
 }
 
+type DelExportMapJob struct {
+	Result    Respresult              `json:"result,omitempty"`
+	Request   RespDelExportMaprequest `json:"request,omitempty"`
+	JobID     uint64                  `json:"jobid,omitempty"`
+	Submitted string                  `json:"submitted,omitempty"`
+	Completed string                  `json:"completed,omitempty"`
+	Status    string                  `json:"status,omitempty"`
+}
+
 type Respresult struct {
 	Commands []string `json:"commands,omitempty"`
 	Progress []string `json:"progress,omitempty"`
@@ -120,6 +129,12 @@ type Resprequest struct {
 	Type string                 `json:"type,omitempty"`
 	Url  string                 `json:"url,omitempty"`
 	Data map[string]interface{} `json:"data,omitempty"`
+}
+
+type RespDelExportMaprequest struct {
+	Type string `json:"type,omitempty"`
+	Url  string `json:"url,omitempty"`
+	Data string `json:"data,omitempty"`
 }
 
 type GetNodeHealthStatesResponse_v2 struct {
@@ -282,6 +297,11 @@ type CopySnapshotRequest struct {
 type GenericResponse struct {
 	Status Status `json:"status,omitempty"`
 	Jobs   []Job  `json:"jobs,omitempty"`
+}
+
+type DelExportMappingResponse struct {
+	Status Status            `json:"status,omitempty"`
+	Jobs   []DelExportMapJob `json:"jobs,omitempty"`
 }
 
 type NfsExportRequest struct {

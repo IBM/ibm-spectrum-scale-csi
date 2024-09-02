@@ -2243,12 +2243,18 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 						return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
 					}
 					server := parsedURL.Hostname()
-
+					volumeName := volumeIdMembers.FsetName
 					err = conn.DeleteBucketKeys(ctx, bucketName+":"+server)
 					if err != nil {
-						volumeName := volumeIdMembers.FsetName
+
 						klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
 						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete bucket keys for volume %s, error: %v", volumeName, err))
+					}
+
+					err = conn.DeleteNodeMappingAFMWithCos(ctx, volumeName+"-exportmap")
+					if err != nil {
+						klog.Errorf("[%s] failed to delete node mapping exportMap for volume %s", loggerId, volumeName)
+						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete node mapping exportMap for volume %s, error: %v", volumeName, err))
 					}
 				}
 

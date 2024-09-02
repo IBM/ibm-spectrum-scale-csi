@@ -168,6 +168,64 @@ func (s *SpectrumRestV2) AsyncJobCompletion(ctx context.Context, jobURL string) 
 	}
 }
 
+func (s *SpectrumRestV2) isDelJobRequestAccepted(ctx context.Context, response DelExportMappingResponse, url string) error {
+	klog.V(4).Infof("[%s] rest_v2 isDelJobRequestAccepted. url: %s, response: %v", utils.GetLoggerId(ctx), url, response)
+
+	if !s.isStatusOK(response.Status.Code) {
+		return fmt.Errorf("error %v for url %v", response, url)
+	}
+
+	if len(response.Jobs) == 0 {
+		return fmt.Errorf("unable to get Job details for %s, response: %v", url, response)
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) WaitForDelJobCompletion(ctx context.Context, statusCode int, jobID uint64) error {
+	klog.V(4).Infof("[%s] rest_v2 waitForJobCompletion. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
+
+	if s.checkAsynchronousJob(statusCode) {
+		jobURL := fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID)
+		_, err := s.AsyncDelJobCompletion(ctx, jobURL)
+		if err != nil {
+			klog.Errorf("[%s] error in waiting for job completion %v, %v", utils.GetLoggerId(ctx), jobID, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) AsyncDelJobCompletion(ctx context.Context, jobURL string) (DelExportMappingResponse, error) {
+	klog.V(4).Infof("[%s] rest_v2 AsyncJobCompletion. jobURL: %s", utils.GetLoggerId(ctx), jobURL)
+
+	jobQueryResponse := DelExportMappingResponse{}
+	var waitTime time.Duration = 2
+	for {
+		err := s.doHTTP(ctx, jobURL, "GET", &jobQueryResponse, nil)
+		if err != nil {
+			return DelExportMappingResponse{}, err
+		}
+		if len(jobQueryResponse.Jobs) == 0 {
+			return DelExportMappingResponse{}, fmt.Errorf("unable to get Job details for %s: %v", jobURL, jobQueryResponse)
+		}
+
+		if jobQueryResponse.Jobs[0].Status == "RUNNING" {
+			time.Sleep(waitTime * time.Second)
+			if waitTime < 16 {
+				waitTime = waitTime * 2
+			}
+			continue
+		}
+		break
+	}
+	if jobQueryResponse.Jobs[0].Status == "COMPLETED" || jobQueryResponse.Jobs[0].Status == "UNKNOWN" {
+		return jobQueryResponse, nil
+	} else {
+		klog.Errorf("[%s] Async Job failed: %v", utils.GetLoggerId(ctx), jobQueryResponse)
+		return DelExportMappingResponse{}, fmt.Errorf("%v", jobQueryResponse.Jobs[0].Result.Stderr)
+	}
+}
+
 func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (SpectrumScaleConnector, error) {
 	klog.V(4).Infof("[%s] rest_v2 NewSpectrumRestV2.", utils.GetLoggerId(ctx))
 
@@ -714,6 +772,36 @@ func (s *SpectrumRestV2) DeleteBucketKeys(ctx context.Context, bucket string) er
 	return nil
 }
 
+func (s *SpectrumRestV2) DeleteNodeMappingAFMWithCos(ctx context.Context, exportMapName string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 DeleteNodeMappingAFMWithCos", loggerID)
+
+	deleteExportMapNameURL := "scalemgmt/v2/nodes/afm/mapping/" + exportMapName
+	deleteExportMapNameResponse := DelExportMappingResponse{}
+	err := s.doHTTP(ctx, deleteExportMapNameURL, "DELETE", &deleteExportMapNameResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Failed to delete exportMap for the exportMapName %s, error: %v", loggerID, exportMapName, err)
+		if strings.Contains(deleteExportMapNameResponse.Status.Message, "Invalid value in 'mappingName'") { // error as no exportMap exists
+			klog.V(6).Infof("[%s] exportMap would have been deleted. So returning success %v", utils.GetLoggerId(ctx), err)
+			return nil
+		}
+		return err
+	}
+
+	err = s.isDelJobRequestAccepted(ctx, deleteExportMapNameResponse, deleteExportMapNameURL)
+	if err != nil {
+		klog.Errorf("[%s] The delete exportMap request is not accepted for processing for the exportMapName %s, error: %v", loggerID, exportMapName, err)
+		return err
+	}
+
+	err = s.WaitForDelJobCompletion(ctx, deleteExportMapNameResponse.Status.Code, deleteExportMapNameResponse.Jobs[0].JobID)
+	if err != nil {
+		klog.Errorf("[%s] Failed to delete keys for the exportMap %s, error: %v", loggerID, exportMapName, err)
+		return err
+	}
+	return nil
+}
+
 func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string, exportMapName string, parsedEndpointURL *url.URL) error {
 	loggerID := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v", loggerID, filesystemName, filesetName, mode, opts)
@@ -786,7 +874,7 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 	filesetreq.ExportMap = append(filesetreq.ExportMap, fmt.Sprintf(hostname+"/"+gatewayNodeName))
 
 	// TODO after gui fixes the api --no-server-resolution
-	filesetreq.NoServerResolution = true
+	//filesetreq.NoServerResolution = true
 
 	klog.V(4).Infof("[%s] rest_v2 CreateNodeMappingAFMWithCos. filesetreq: %v :", loggerID, filesetreq)
 
