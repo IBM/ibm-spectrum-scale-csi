@@ -714,13 +714,6 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[strin
 	keyreq.BucketName = bucketInfo[BucketName]
 	keyreq.AccessKey = bucketInfo[bucketAccesskey]
 	keyreq.SecretKey = bucketInfo[bucketSecretkey]
-	/*
-		// Extract the hostname without the port
-		parsedURL, err := url.Parse(bucketInfo[BucketEndpoint])
-		if err != nil {
-			return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
-		}
-		hostname := parsedURL.Hostname()*/
 	keyreq.Server = exportMapName
 
 	setBucketKeysURL := "scalemgmt/v2/bucket/keys"

@@ -675,7 +675,6 @@ type SetBucketKeysRequest struct {
 	Server     string `json:"server,omitempty"`
 }
 
-// TODO after gui fixes the api --no-server-resolution
 type CreateNodeMapAFMCosRequest struct {
 	MapName            string   `json:"mapName"`
 	ExportMap          []string `json:"exportMap"`

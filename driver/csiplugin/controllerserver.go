@@ -60,8 +60,6 @@ const (
 
 	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
-
-	//DefaultS3Port = "443"
 )
 
 var bucketLock = make(map[string]bool)
@@ -488,33 +486,6 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 					klog.Errorf("[%s] volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", loggerId, volName, endpoint, err)
 					return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", volName, endpoint, err))
 				}
-				/*	if parsedURL.Port() == "" {
-					endpoint += ":" + string(defaultS3Port)
-				}*/
-				//afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
-
-				//scheme := parsedURL.Scheme
-				/*				lockSuccess := lockBucket(loggerId, volName, afmTarget)
-								if !lockSuccess {
-									klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
-									return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the bucket [%s] is already locked for another volume creation", volName, afmTarget))
-								} else {
-									defer unlockBucket(loggerId, volName, afmTarget)
-								}*/
-				/*
-					// Before creating a cache fileset, check if there is any other cache
-					// fileset pointing to the same bucket, if such fileset is found then
-					// disallow creation of another cache fileset.
-					filesetWitAFMTarget, err := scVol.Connector.CheckFilesetWithAFMTarget(ctx, scVol.VolBackendFs, afmTarget)
-					if err != nil {
-						klog.Errorf("[%s] volume:[%v] - failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", loggerId, volName, afmTarget, scVol.VolBackendFs, err)
-						return "", status.Error(codes.Internal, fmt.Sprintf("failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", afmTarget, scVol.VolBackendFs, err))
-					}
-					if filesetWitAFMTarget != "" {
-						klog.Errorf("[%s] volume:[%v] - failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", loggerId, volName, volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget)
-						return "", status.Error(codes.Internal, fmt.Sprintf("failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget))
-					}
-				*/
 
 				// Add node mapping for AFM with COS for a cache volume
 				exportMapName := volName + "-exportmap"
