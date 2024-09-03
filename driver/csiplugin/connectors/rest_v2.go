@@ -873,8 +873,7 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 
 	filesetreq.ExportMap = append(filesetreq.ExportMap, fmt.Sprintf(hostname+"/"+gatewayNodeName))
 
-	// TODO after gui fixes the api --no-server-resolution
-	//filesetreq.NoServerResolution = true
+	filesetreq.NoServerResolution = true
 
 	klog.V(4).Infof("[%s] rest_v2 CreateNodeMappingAFMWithCos. filesetreq: %v :", loggerID, filesetreq)
 
