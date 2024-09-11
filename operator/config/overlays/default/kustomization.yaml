@@ -30,3 +30,4 @@ patches:
                   - name: WATCH_NAMESPACE
                   - name: CSI_DRIVER_IMAGE
                     value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:fe72e11647adda33460df7ff9141f7fbd4040ea02da384a89738a9f87b4967e7
+
