@@ -31,8 +31,10 @@ import (
 )
 
 type loggerKey string
+type moduleKey string
 
 const loggerId loggerKey = "logger_id"
+const moduleName moduleKey = "module_name"
 
 type LoggerLevel int
 
@@ -241,3 +243,14 @@ func GetExecutionTime() int64 {
 	timeinMilliSec := int64(time.Nanosecond) * t.UnixNano() / int64(time.Millisecond)
 	return timeinMilliSec
 }
+
+
+func SetModuleName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, moduleName, name)
+}
+
+func GetModuleName(ctx context.Context) string {
+	moduleName, _ := ctx.Value(moduleName).(string)
+	return moduleName
+}
+

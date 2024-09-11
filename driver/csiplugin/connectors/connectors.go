@@ -125,6 +125,7 @@ const (
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
 	UserSpecifiedCacheMode        string = "cacheMode"
 	UserSpecifiedVolumeType       string = "volumeType"
+	UserSpecifiedVolNamePrefix    string = "volNamePrefix"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
