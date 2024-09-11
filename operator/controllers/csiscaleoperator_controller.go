@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	uuid "github.com/google/uuid"
 	configv1 "github.com/openshift/api/config/v1"
@@ -2394,16 +2395,25 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 }
 
 func validateVolNamePrefix(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateVolNamePrefix")
-	logger.Info("Validating volume name prefix input ", "volNamePrefix", value)
+	logger := csiLog.WithName("validateVolumeNamePrefix")
+	logger.Info("Validating volume name prefix input ", "volumeNamePrefix", value)
 
-	if len(value) > 2 && len(value) < 6 && !strings.ContainsAny(value, " ") {
-		logger.Info("validateVolNamePrefix parsed :", "volNamePrefix", value)
+	if len(value) > 2 && len(value) < 6 && isLetter(value) {
+		logger.Info("validateVolNamePrefix parsed :", "volumeNamePrefix", value)
 		data[key[11:]] = value
 	} else {
-		logger.Error(fmt.Errorf("the input volume name prefix is not right,the string value must be between [3 to 5] length and doesn't contains any empty chars,  volNamePrefix : %v", value), "Volume Name Prefix Error")
+		logger.Error(fmt.Errorf("the input volume name prefix is not right,the prefix value must be between [3 to 5] length, doesn't contains any special characters and numbers,  volumeNamePrefix : %v", value), "Volume Name Prefix Error")
 		invalidEnvValue[key] = value
 	}
+}
+
+func isLetter(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func validateHostNetworkValue(inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
