@@ -884,6 +884,7 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicateFuncs(corev1.ResourceConfigMaps.String())),
 		).
 		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.DaemonSet{}).
 		Complete(r)
 }
 
