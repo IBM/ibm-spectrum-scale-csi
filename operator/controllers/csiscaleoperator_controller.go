@@ -2400,7 +2400,7 @@ func validateVolNamePrefix(key string, value string, data map[string]string, inv
 		logger.Info("validateVolNamePrefix parsed :", "volNamePrefix", value)
 		data[key[11:]] = value
 	} else {
-		logger.Error(fmt.Errorf("the input volume name prefix is not right,the string value must be between [3 to 5] length and doesn't contains any empty char,  volNamePrefix : %v", value), "Volume Name Prefix Error")
+		logger.Error(fmt.Errorf("the input volume name prefix is not right,the string value must be between [3 to 5] length and doesn't contains any empty chars,  volNamePrefix : %v", value), "Volume Name Prefix Error")
 		invalidEnvValue[key] = value
 	}
 }
