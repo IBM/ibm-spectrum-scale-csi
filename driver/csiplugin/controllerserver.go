@@ -62,8 +62,6 @@ const (
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 
 	defaultS3Port = "443"
-
-	cacheTempDirName = ".cachevolumetmp"
 )
 
 var bucketLock = make(map[string]bool)
@@ -639,7 +637,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 		if scVol.VolumeType == cacheVolume {
 			// Create cacheTempDirName inside the created fileset
-			err = cs.createDirectory(ctx, scVol, volName, fmt.Sprintf("%s/%s", targetBasePath, cacheTempDirName))
+			err = cs.createDirectory(ctx, scVol, volName, fmt.Sprintf("%s/%s", targetBasePath, connectors.CacheTempDirName))
 			if err != nil {
 				return "", status.Error(codes.Internal, err.Error())
 			}
