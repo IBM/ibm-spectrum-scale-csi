@@ -402,6 +402,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Setting the clusterType and presence of CNSA in the final cmData before driver sync
 	if _, exists := cmData[config.ENVClusterConfigurationType]; !exists {
 		logger.Info("Setting the clusterType and presence of CNSA in final cmData")
+
+		cmData[config.ENVClusterConfigurationType] = clusterTypeData[config.ENVClusterConfigurationType]
 		cmData[config.ENVClusterCNSAPresenceCheck] = clusterTypeData[config.ENVClusterCNSAPresenceCheck]
 	}
 
