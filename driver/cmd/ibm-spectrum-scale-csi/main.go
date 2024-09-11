@@ -42,7 +42,7 @@ var (
 	driverName     = flag.String("drivername", "spectrumscale.csi.ibm.com", "name of the driver")
 	nodeID         = flag.String("nodeid", "", "node id")
 	kubeletRootDir = flag.String("kubeletRootDirPath", "/var/lib/kubelet", "kubelet root directory path")
-	vendorVersion  = "2.12.0"
+	vendorVersion  = "2.13.0"
 )
 
 func main() {
@@ -59,6 +59,10 @@ func main() {
 	if val, ok := os.LookupEnv(settings.VolumeStatsCapability); ok {
 		klog.Infof("[%s] found in the env : %s", settings.VolumeStatsCapability, val)
 	}
+	if val, ok := os.LookupEnv(driver.VolNamePrefixEnvKey); ok {
+		klog.Infof("[%s] found in the env : %s", driver.VolNamePrefixEnvKey, val)
+	}
+
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)
 	value := getVerboseLevel(level)

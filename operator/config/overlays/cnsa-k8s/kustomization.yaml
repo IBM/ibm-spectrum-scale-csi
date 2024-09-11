@@ -9,7 +9,6 @@ bases:
 - ../../manager/
 - ../../rbac/
 - ../../crd/
-- ../../scc/
 
 patches:
   - target:
@@ -34,7 +33,7 @@ patches:
                   - name: CSI_ATTACHER_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
                   - name: CSI_PROVISIONER_IMAGE
-                    value: cp.icr.io/cp/spectrum/scale/csi/csi-provisioner@sha256:7b9cdb5830d01bda96111b4f138dbddcc01eed2f95aa980a404c45a042d60a10
+                    value: cp.icr.io/cp/spectrum/scale/csi/csi-provisioner@sha256:bf5a235b67d8aea00f5b8ec24d384a2480e1017d5458d8a63b361e9eeb1608a9
                   - name: CSI_LIVENESSPROBE_IMAGE
                     value: cp.icr.io/cp/spectrum/scale/csi/livenessprobe@sha256:33692aed26aaf105b4d6e66280cceca9e0463f500c81b5d8c955428a75438f32
                   - name: CSI_NODE_REGISTRAR_IMAGE
