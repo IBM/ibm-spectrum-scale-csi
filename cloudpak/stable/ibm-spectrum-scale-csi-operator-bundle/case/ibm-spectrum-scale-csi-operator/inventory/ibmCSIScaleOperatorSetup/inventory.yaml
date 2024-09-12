@@ -1,7 +1,0 @@
-inventory:
-  k8sScope: cluster
-  metadata:
-    displayDescription: "Represents a deployment of the IBM CSI Storage Scale driver."
-    displayName: "IBM CSI Storage Scale DriverSetup"
-    name: "ibmCSIScaleOperatorSetup"
-    description: "Represents a deployment of the IBM CSI Storage Scale driver."
