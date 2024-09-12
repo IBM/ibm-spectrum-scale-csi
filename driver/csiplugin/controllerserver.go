@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -479,81 +480,83 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 	loggerId := utils.GetLoggerId(ctx)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") {
-			var fseterr error
-			if scVol.VolumeType == cacheVolume {
-				endpoint := bucketInfo[connectors.BucketEndpoint]
-				parsedURL, err := url.Parse(endpoint)
-				if err != nil {
-					klog.Errorf("[%s] volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", loggerId, volName, endpoint, err)
-					return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", volName, endpoint, err))
-				}
-				if parsedURL.Port() == "" {
-					endpoint += ":" + string(defaultS3Port)
-				}
-				afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
+		klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
+		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
+	} else if reflect.ValueOf(filesetInfo).IsZero() {
+		// This means fileset is not present, create it
+		klog.V(4).Infof("[%s] createFilesetVol fileset: %s is not present in the filesystem, creating", utils.GetLoggerId(ctx), volName)
 
-				scheme := parsedURL.Scheme
-				lockSuccess := lockBucket(loggerId, volName, afmTarget)
-				if !lockSuccess {
-					klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
-					return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the bucket [%s] is already locked for another volume creation", volName, afmTarget))
-				} else {
-					defer unlockBucket(loggerId, volName, afmTarget)
-				}
-
-				// Before creating a cache fileset, check if there is any other cache
-				// fileset pointing to the same bucket, if such fileset is found then
-				// disallow creation of another cache fileset.
-				filesetWitAFMTarget, err := scVol.Connector.CheckFilesetWithAFMTarget(ctx, scVol.VolBackendFs, afmTarget)
-				if err != nil {
-					klog.Errorf("[%s] volume:[%v] - failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", loggerId, volName, afmTarget, scVol.VolBackendFs, err)
-					return "", status.Error(codes.Internal, fmt.Sprintf("failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", afmTarget, scVol.VolBackendFs, err))
-				}
-				if filesetWitAFMTarget != "" {
-					klog.Errorf("[%s] volume:[%v] - failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", loggerId, volName, volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget)
-					return "", status.Error(codes.Internal, fmt.Sprintf("failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget))
-				}
-
-				// Set bucket keys for a cache volume
-				keyerr := scVol.Connector.SetBucketKeys(ctx, bucketInfo)
-				if keyerr != nil {
-					klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
-					return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
-				}
-
-				// Create a cache fileset
-				if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, scheme); cacheFsetErr != nil {
-					klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
-					return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
-				}
-
-				// For cache fileset, add a comment as the create COS fileset
-				// interface doesn't allow setting the fileset comment.
-				if err := handleUpdateComment(ctx, scVol); err != nil {
-					return "", err
-				}
-			} else {
-				// This means fileset is not present, create it
-				fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
-			}
-
-			if fseterr != nil {
-				// fileset creation failed return without cleanup
-				klog.Errorf("[%s] volume:[%v] - unable to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, fseterr)
-				return "", status.Error(codes.Internal, fmt.Sprintf("unable to create fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, fseterr))
-			}
-			// list fileset and update filesetInfo
-			filesetInfo, err = scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
+		var fseterr error
+		if scVol.VolumeType == cacheVolume {
+			endpoint := bucketInfo[connectors.BucketEndpoint]
+			parsedURL, err := url.Parse(endpoint)
 			if err != nil {
-				// fileset got created but listing failed, return without cleanup
-				klog.Errorf("[%s] volume:[%v] - unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
-				return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
+				klog.Errorf("[%s] volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", loggerId, volName, endpoint, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", volName, endpoint, err))
+			}
+			if parsedURL.Port() == "" {
+				endpoint += ":" + string(defaultS3Port)
+			}
+			afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
+
+			scheme := parsedURL.Scheme
+			lockSuccess := lockBucket(loggerId, volName, afmTarget)
+			if !lockSuccess {
+				klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the bucket [%s] is already locked for another volume creation", volName, afmTarget))
+			} else {
+				defer unlockBucket(loggerId, volName, afmTarget)
+			}
+
+			// Before creating a cache fileset, check if there is any other cache
+			// fileset pointing to the same bucket, if such fileset is found then
+			// disallow creation of another cache fileset.
+			filesetWitAFMTarget, err := scVol.Connector.CheckFilesetWithAFMTarget(ctx, scVol.VolBackendFs, afmTarget)
+			if err != nil {
+				klog.Errorf("[%s] volume:[%v] - failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", loggerId, volName, afmTarget, scVol.VolBackendFs, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", afmTarget, scVol.VolBackendFs, err))
+			}
+			if filesetWitAFMTarget != "" {
+				klog.Errorf("[%s] volume:[%v] - failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", loggerId, volName, volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget)
+				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget))
+			}
+
+			// Set bucket keys for a cache volume
+			keyerr := scVol.Connector.SetBucketKeys(ctx, bucketInfo)
+			if keyerr != nil {
+				klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
+				return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
+			}
+
+			// Create a cache fileset
+			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, scheme); cacheFsetErr != nil {
+				klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
+				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
+			}
+
+			// For cache fileset, add a comment as the create COS fileset
+			// interface doesn't allow setting the fileset comment.
+			if err := handleUpdateComment(ctx, scVol); err != nil {
+				return "", err
 			}
 		} else {
-			klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
-			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
+			// This means fileset is not present, create it
+			fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
 		}
+
+		if fseterr != nil {
+			// fileset creation failed return without cleanup
+			klog.Errorf("[%s] volume:[%v] - unable to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, fseterr)
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to create fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, fseterr))
+		}
+		// list fileset and update filesetInfo
+		filesetInfo, err = scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
+		if err != nil {
+			// fileset got created but listing failed, return without cleanup
+			klog.Errorf("[%s] volume:[%v] - unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
+		}
+
 	} else {
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment != connectors.FilesetComment {
@@ -1674,18 +1677,18 @@ func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) er
 }
 
 /*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	 // Verify IBM Storage Scale Version is not below 5.1.5-0
+	  // Verify IBM Storage Scale Version is not below 5.1.5-0
 
-	 versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
-	 if err != nil {
-		 return err
-	 }
+	  versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
+	  if err != nil {
+		  return err
+	  }
 
-	 if !versionCheck {
-		 return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
-	 }
-	 return nil
- }*/
+	  if !versionCheck {
+		  return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
+	  }
+	  return nil
+  }*/
 
 func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, assembledScaleversion string) error {
 
@@ -1746,12 +1749,12 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		filesetToCheck = sourcesnapshot.ConsistencyGroup
 	}
 	/*isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcesnapshot.FsName, filesetToCheck)
-	 if err != nil {
-		 return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-	 }
-	 if !isFsetLinked {
-		 return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
-	 }*/
+	  if err != nil {
+		  return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	  }
+	  if !isFsetLinked {
+		  return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+	  }*/
 
 	err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcesnapshot.FsName, filesetToCheck, "source snapshot")
 	if err != nil {
