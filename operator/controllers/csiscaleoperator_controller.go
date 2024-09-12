@@ -192,6 +192,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.V(1).Info("Updated resource status.", "Status", cr.Status)
 	}()
 
+	// all older secrets not to be watched for reconcillation
+	for k := range watchResources[corev1.ResourceSecrets.String()] {
+		watchResources[corev1.ResourceSecrets.String()][k] = false
+	}
+
 	for _, cluster := range instance.Spec.Clusters {
 		if cluster.Cacert != "" {
 			watchResources[corev1.ResourceConfigMaps.String()][cluster.Cacert] = true
@@ -200,7 +205,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			watchResources[corev1.ResourceSecrets.String()][cluster.Secrets] = true
 		}
 	}
-
+	logger.Info("CSI driver watchResources ", "watchResources :", watchResources)
 	watchResources[corev1.ResourceConfigMaps.String()][config.EnvVarConfigMap] = true
 
 	logger.Info("Adding Finalizer")
