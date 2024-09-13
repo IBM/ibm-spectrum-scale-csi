@@ -441,7 +441,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		return filesetPath, nil
 	} else if scVol.VolumeType == cacheVolume {
 		createDataDir := false
-		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s] and gatewayNodeName [%s]", loggerId, scVol.VolName, scVol.VolBackendFs, gatewayNodeName)
+		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s] and gateway for export map [%s]", loggerId, scVol.VolName, scVol.VolBackendFs, gatewayNodeName)
 		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, bucketInfo, gatewayNodeName)
 		if err != nil {
 			klog.Errorf("[%s] failed to create a cache fileset [%s] in filesystem [%s]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
@@ -852,6 +852,12 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
+	if scaleVol.VolumeType == cacheVolume {
+		if err := cs.checkCacheVolumeSupport(assembledScaleversion); err != nil {
+			return nil, err
+		}
+	}
+
 	if isVolSource {
 		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, volFsInfo, assembledScaleversion)
 		if err != nil {
@@ -952,7 +958,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	var targetPath string
 	var gatewayNodeName string
-	var gatewayPresent bool
 
 	if scaleVol.VolumeType == cacheVolume {
 		// Validate the secret data in case of cache volumes
@@ -962,15 +967,16 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret %s/%s-secret does not have required parameter(s): %v", reqParams[pvcNamespaceKey], reqParams[pvcNameKey], missingKeys))
 		}
 
-		// A gateway node is must for cache fileset, return error if no gateway found
-		gatewayPresent, gatewayNodeName, err = scaleVol.Connector.CheckGatewayNodeDetails(ctx)
+		// A gateway node is must for cache fileset
+		gatewayNodeName, err = scaleVol.Connector.GetGatewayNode(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if !gatewayPresent {
+		if gatewayNodeName != "" {
+			klog.Infof("[%s]  IBM Storage Scale gateway NodeName : %s", loggerId, gatewayNodeName)
+		} else {
 			return nil, status.Error(codes.Aborted, "Failed to the create a cache volume as there in no gateway node in the cluster")
 		}
-		klog.Infof("[%s]  IBM Storage Scale gateway NodeName : %s\n", loggerId, gatewayNodeName)
 	}
 
 	if scaleVol.IsFilesetBased {
@@ -1652,6 +1658,15 @@ func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) er
 	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5130")
 	if !versionCheck {
 		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for consistency group support with CSI is 5.1.3-0")
+	}
+	return nil
+}
+
+func (cs *ScaleControllerServer) checkCacheVolumeSupport(assembledScaleversion string) error {
+	/* Verify IBM Storage Scale Version is not below 5.2.2-0 */
+	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5220")
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for cache volume support with CSI is 5.2.2-0")
 	}
 	return nil
 }
@@ -3396,23 +3411,4 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
 	klog.V(4).Infof("[%s] ClusterMap updated: [%s : %s]", loggerId, cID, cName)
 	return cName, true, nil
-}
-
-func lockBucket(loggerId string, volName string, bucket string) bool {
-	bucketMutex.Lock()
-	defer bucketMutex.Unlock()
-
-	if _, exists := bucketLock[bucket]; exists {
-		return false
-	}
-	bucketLock[bucket] = true
-	klog.V(4).Infof("[%s] The bucket [%s] is locked for creation of a volume: [%s]", loggerId, bucket, volName)
-	return true
-}
-
-func unlockBucket(loggerId string, volName string, bucket string) {
-	bucketMutex.Lock()
-	defer bucketMutex.Unlock()
-	delete(bucketLock, bucket)
-	klog.V(4).Infof("[%s] The bucket [%s] is unlocked for creation of a volume: [%s]", loggerId, bucket, volName)
 }
