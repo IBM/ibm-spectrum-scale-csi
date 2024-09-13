@@ -2327,7 +2327,7 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
-				validateVolNamePrefix(keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateVolNamePrefix(keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
 				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.HostNetworkKey:
