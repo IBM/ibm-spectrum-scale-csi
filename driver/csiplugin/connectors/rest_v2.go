@@ -45,6 +45,8 @@ const (
 	BucketName      = "bucket"
 	bucketAccesskey = "accesskey"
 	bucketSecretkey = "secretkey"
+
+	CacheTempDirName = ".cachevolumetmp"
 )
 
 var GetLoggerId = utils.GetLoggerId
@@ -717,6 +719,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.FilesetName = filesetName
 	filesetreq.UseObjectFs = true
 	filesetreq.Mode = mode
+	filesetreq.TempDir = CacheTempDirName
 
 	if scheme == "https" {
 		filesetreq.UseSSLCertVerify = true
