@@ -191,7 +191,7 @@ func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath
 		targetPath = fmt.Sprintf("%s/%s-data", targetPath, volumeName)
 	}
 	targetPath = strings.Trim(targetPath, "!/")
-
+	klog.V(4).Infof("[%s] ControllerServer:getTargetPath volumeName : [%s],fsetLinkPath : [%s],fsMountPoint : [%s],targetPath : [%s]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint, targetPath)
 	return targetPath, nil
 }
 
@@ -636,6 +636,14 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		err = cs.createDirectory(ctx, scVol, volName, targetBasePath)
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
+		}
+
+		if scVol.VolumeType == cacheVolume {
+			// Create cacheTempDirName inside the created fileset
+			err = cs.createDirectory(ctx, scVol, volName, fmt.Sprintf("%s/%s", targetBasePath, connectors.CacheTempDirName))
+			if err != nil {
+				return "", status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
 	return targetBasePath, nil
