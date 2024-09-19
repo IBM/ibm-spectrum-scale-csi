@@ -2175,7 +2175,8 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 			klog.Errorf("[%s]  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, FilesetName, FilesystemName, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", FilesetName, FilesystemName, err))
 		} else if !reflect.ValueOf(filesetInfo).IsZero() && filesetInfo.Config.Comment != connectors.FilesetComment {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Fileset [%v] is not created by IBM Container Storage Interface driver", FilesetName))
+			klog.V(4).Infof("Fileset [%v] is not created by IBM Container Storage Interface driver, skipping the fileset delete", FilesetName)
+			return &csi.DeleteVolumeResponse{}, nil
 		}
 
 		if FilesetName != "" && isPvcFromSnapshot {
@@ -2203,8 +2204,6 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				return &csi.DeleteVolumeResponse{}, nil
 			}
 		}
-
-		klog.Infof("[%s] Delete Volume FilesetName:[%s]", loggerId, FilesetName)
 		if FilesetName != "" {
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(relPath)
