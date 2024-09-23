@@ -2176,12 +2176,24 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 			}
 		}
 
+		// Check if fileset exists and the creator is IBM Storage Scale CSI driver
+		filesetInfo, err := conn.ListFileset(ctx, FilesystemName, FilesetName)
+		loggerId := utils.GetLoggerId(ctx)
+		if err != nil {
+			klog.Errorf("[%s]  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, FilesetName, FilesystemName, err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", FilesetName, FilesystemName, err))
+		} else if !reflect.ValueOf(filesetInfo).IsZero() && filesetInfo.Config.Comment != connectors.FilesetComment {
+			klog.Infof("Fileset [%v] is not created by IBM Container Storage Interface driver, skipping the fileset delete", FilesetName)
+			return &csi.DeleteVolumeResponse{}, nil
+		}
+
 		if FilesetName != "" && isPvcFromSnapshot {
 			err := cs.DeleteShallowCopyRefPath(ctx, FilesystemName, FilesetName, shallowCopyRefPath, volumeIdMembers.StorageClassType, independentFileset, snapshotName, conn)
 			if err != nil {
 				return nil, err
 			}
 		}
+		klog.Infof("[%s] Delete Volume FilesetName:[%s] and creator is IBM Storage Scale CSI driver", loggerId, FilesetName)
 
 		// Additional check for RDR fileset in secondary mode
 		if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2200,8 +2212,6 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				return &csi.DeleteVolumeResponse{}, nil
 			}
 		}
-
-		klog.Infof("[%s] Delete Volume FilesetName:[%s]", loggerId, FilesetName)
 		if FilesetName != "" {
 			/* Confirm it is same fileset which was created for this PV */
 			pvName := filepath.Base(relPath)
