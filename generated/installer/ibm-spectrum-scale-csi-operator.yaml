@@ -44,7 +44,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:0156433e8952759482a1063e46b681373467c2e7123c928a501743d079fe96f3
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:42362c89e762bf44af11f46f3ca245f9b7799dfbcdd78a8d5b41dfd78a8b0d32
         - name: CSI_SNAPSHOTTER_IMAGE
           value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:b3e90b33781670ac050c22c9e88b9e876493dca248966b9da6f7a90cc412ab86
         - name: CSI_ATTACHER_IMAGE
