@@ -765,7 +765,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	afmTarget = afmTarget + ":" + port
 	filesetreq.Endpoint = afmTarget
 	filesetreq.BucketName = bucketInfo[BucketName]
-	filesetreq.VerifyKeyRequired = true
+	filesetreq.VerifyKeys = true
 
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)
 
