@@ -46,7 +46,8 @@ const (
 	bucketAccesskey = "accesskey"
 	bucketSecretkey = "secretkey"
 
-	defaultS3Port = "443"
+	defaultS3Port    = "443"
+	CacheTempDirName = ".cachevolumetmp"
 )
 
 var GetLoggerId = utils.GetLoggerId
@@ -746,6 +747,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.FilesetName = filesetName
 	filesetreq.UseObjectFs = true
 	filesetreq.Mode = mode
+	filesetreq.TempDir = CacheTempDirName
 
 	var afmTarget string
 	scheme := parsedEndpointURL.Scheme
@@ -763,7 +765,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	afmTarget = afmTarget + ":" + port
 	filesetreq.Endpoint = afmTarget
 	filesetreq.BucketName = bucketInfo[BucketName]
-	//filesetreq.VerifyKeyRequired = true // Check after GUI fixes
+	filesetreq.VerifyKeyRequired = true
 
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)
 
