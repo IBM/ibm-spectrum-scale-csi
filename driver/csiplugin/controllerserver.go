@@ -618,8 +618,8 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			return "", status.Error(codes.Internal, err.Error())
 		}
 
-		if scVol.VolumeType == cacheVolume {
-			// Create cacheTempDirName inside the created fileset
+		// Create a cacheTempDir inside the fileset for all the cacheModes except ro mode.
+		if scVol.VolumeType == cacheVolume && scVol.CacheMode != afmModeRO {
 			err = cs.createDirectory(ctx, scVol, volName, fmt.Sprintf("%s/%s", targetBasePath, connectors.CacheTempDirName))
 			if err != nil {
 				return "", status.Error(codes.Internal, err.Error())
