@@ -647,6 +647,7 @@ type CreateS3CacheFilesetRequest struct {
 	BucketName       string `json:"bucket,omitempty"`
 	UseSSLCertVerify bool   `json:"useSslCertVerify,omitempty"`
 	VerifyKeys       bool   `json:"verifyKeys,omitempty"`
+	MakeActive       bool   `json:"makeActive,omitempty"`
 	TempDir          string `json:"tmpDir,omitempty"`
 }
 
