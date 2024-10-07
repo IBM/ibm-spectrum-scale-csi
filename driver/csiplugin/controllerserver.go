@@ -3228,6 +3228,11 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - volume expansion is not supported for shallow copy volume %s", volID))
 	}
 
+	if uint64(capacity) > maximumPVSize {
+		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, uint64(capacity), maximumPVSize)
+		return &csi.ControllerExpandVolumeResponse{NodeExpansionRequired: false}, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", volID, uint64(capacity), maximumPVSize))
+	}
+
 	// For lightweight return volume expanded as no action is required
 	if !volumeIDMembers.IsFilesetBased {
 		return &csi.ControllerExpandVolumeResponse{
