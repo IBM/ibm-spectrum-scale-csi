@@ -50,7 +50,8 @@ const (
 	oneGB                 uint64 = 1024 * 1024 * 1024
 	smallestVolSize       uint64 = oneGB                              // 1GB
 	maximumPVSize         uint64 = 931322 * 1024 * 1024 * 1024 * 1024 // 999999999999999K
-	defaultSnapWindow            = "30"                               // default snapWindow for Consistency Group snapshots is 30 minutes
+	maximumPVSizeForLog          = "953673728GB"
+	defaultSnapWindow            = "30" // default snapWindow for Consistency Group snapshots is 30 minutes
 	cgPrefixLen                  = 37
 	softQuotaPercent             = 70 // This value is % of the hardQuotaLimit e.g. 70%
 
@@ -1085,7 +1086,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 
 	// larger than allowed pv size not allowed
 	if scaleVol.IsFilesetBased && uint64(volSize) > maximumPVSize {
-		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSize)
+		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
 		scaleVol.VolSize = smallestVolSize
@@ -3228,9 +3229,9 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - volume expansion is not supported for shallow copy volume %s", volID))
 	}
 
-	if uint64(capacity) > maximumPVSize {
-		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, uint64(capacity), maximumPVSize)
-		return &csi.ControllerExpandVolumeResponse{NodeExpansionRequired: false}, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", volID, uint64(capacity), maximumPVSize))
+	if capacity > maximumPVSize {
+		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] in Bytes is not allowed beyond max PV size:[%v]", loggerId, volID, capacity, maximumPVSizeForLog)
+		return &csi.ControllerExpandVolumeResponse{NodeExpansionRequired: false}, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] in Bytes is not allowed beyond max PV size:[%v]", volID, capacity, maximumPVSizeForLog))
 	}
 
 	// For lightweight return volume expanded as no action is required
