@@ -3241,11 +3241,6 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		}, nil
 	}
 
-	if uint64(capacity) > maximumPVSize {
-		klog.Errorf("[%s] ControllerExpandVolume - Volume expansion volID:[%v] with requested volSize:[%v] is not allowed beyond max PV size:[%v]", loggerId, volID, uint64(capacity), maximumPVSize)
-		return &csi.ControllerExpandVolumeResponse{NodeExpansionRequired: false}, nil
-	}
-
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
 	if err != nil {
 		return nil, err
