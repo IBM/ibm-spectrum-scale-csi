@@ -50,7 +50,7 @@ const (
 	oneGB                 uint64 = 1024 * 1024 * 1024
 	smallestVolSize       uint64 = oneGB                              // 1GB
 	maximumPVSize         uint64 = 931322 * 1024 * 1024 * 1024 * 1024 // 999999999999999K
-	maximumPVSizeForLog          = "953673728GB"
+	maximumPVSizeForLog          = "953673728GiB"
 	defaultSnapWindow            = "30" // default snapWindow for Consistency Group snapshots is 30 minutes
 	cgPrefixLen                  = 37
 	softQuotaPercent             = 70 // This value is % of the hardQuotaLimit e.g. 70%
