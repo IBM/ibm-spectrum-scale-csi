@@ -1085,7 +1085,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	scaleVol.VolName = volName
 
 	// larger than allowed pv size not allowed
-	if scaleVol.IsFilesetBased && uint64(volSize) > maximumPVSize {
+	if uint64(volSize) > maximumPVSize {
 		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
