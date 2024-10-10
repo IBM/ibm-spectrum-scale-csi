@@ -3131,30 +3131,31 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 					deleteSnapshot = false
 				}
 			} else {
-				dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, shallowCopyRefPath)
+				statInfo, err := conn.StatDirectory(ctx, filesystemName, shallowCopyRefPath)
 				if err != nil {
-					if !(strings.Contains(err.Error(), "EFSSG0264C") ||
+					dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, shallowCopyRefPath)
+					if err != nil {
+						if !(strings.Contains(err.Error(), "EFSSG0264C") ||
 						strings.Contains(err.Error(), "does not exist")) {
-						klog.Errorf("[%s] unable to check if directory path [%s] exists in filesystem [%s]. Error : %v", loggerId, shallowCopyRefPath, filesystemName, err)
+							klog.Errorf("[%s] unable to check if directory path [%s] exists in filesystem [%s]. Error : %v", loggerId, shallowCopyRefPath, filesystemName, err)
+							deleteSnapshot = false
+						}
+					}else{
+						if dirExists{
+							klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, filesystemName, shallowCopyRefPath, err)
+							deleteSnapshot = false
+						}
+					}		
+					
+				} else {
+					nlink, err := parseStatDirInfo(statInfo)
+					if err != nil {
+						klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, filesystemName, shallowCopyRefPath)
 						deleteSnapshot = false
 					}
-				}
-
-				if dirExists {
-					statInfo, err := conn.StatDirectory(ctx, filesystemName, shallowCopyRefPath)
-					if err != nil {
-						klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, filesystemName, shallowCopyRefPath, err)
+					if nlink > 2 {
 						deleteSnapshot = false
-					} else {
-						nlink, err := parseStatDirInfo(statInfo)
-						if err != nil {
-							klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, filesystemName, shallowCopyRefPath)
-							deleteSnapshot = false
-						}
-						if nlink > 2 {
-							deleteSnapshot = false
-							return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to delete snapshot [%s] as there is a reference for shallowcopy volume", snapIdMembers.SnapName))
-						}
+						return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to delete snapshot [%s] as there is a reference for shallowcopy volume", snapIdMembers.SnapName))
 					}
 				}
 			}
