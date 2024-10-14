@@ -2245,13 +2245,11 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				if volumeIdMembers.StorageClassType == STORAGECLASS_CACHE {
 					bucketName := req.Secrets[connectors.BucketName]
 					endpoint := req.Secrets[connectors.BucketEndpoint]
-					parsedURL, err := url.Parse(endpoint)
 					if err != nil {
 						return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
 					}
-					server := parsedURL.Hostname()
 					volumeName := volumeIdMembers.FsetName
-					err = conn.DeleteBucketKeys(ctx, bucketName+":"+server)
+					err = conn.DeleteBucketKeys(ctx, bucketName+":"+volumeName+"-exportmap")
 					if err != nil {
 
 						klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
