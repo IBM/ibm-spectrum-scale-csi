@@ -758,7 +758,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 func (s *SpectrumRestV2) DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error {
 	klog.V(4).Infof("[%s] rest_v2 DeleteFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
-	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
+	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s?safe=True", filesystemName, filesetName)
 	deleteFilesetResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, deleteFilesetURL, "DELETE", &deleteFilesetResponse, nil)
