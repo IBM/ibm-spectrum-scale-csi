@@ -733,7 +733,7 @@ func (s *SpectrumRestV2) DeleteNodeMappingAFMWithCos(ctx context.Context, export
 
 	err = s.WaitForJobCompletion(ctx, deleteExportMapNameResponse.Status.Code, deleteExportMapNameResponse.Jobs[0].JobID)
 	if err != nil {
-		klog.Errorf("[%s] Failed to delete keys for the exportMap %s, error: %v", loggerID, exportMapName, err)
+		klog.Errorf("[%s] Failed to delete exportMap %s, error: %v", loggerID, exportMapName, err)
 		return err
 	}
 	return nil
