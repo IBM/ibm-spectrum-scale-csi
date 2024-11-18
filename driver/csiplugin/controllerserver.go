@@ -3191,7 +3191,16 @@ func (cs *ScaleControllerServer) GetCapacity(ctx context.Context, req *csi.GetCa
 }
 
 func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "")
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] ControllerModifyVolume - Volume modify req: %v", loggerId, req)
+	klog.Infof("[%s] ControllerModifyVolume - Number of param: %v", loggerId, len(req.MutableParameters))
+	if len(req.VolumeId) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Volume ID empty")
+	}
+	if len(req.MutableParameters) == 4 {
+		return nil, status.Error(codes.InvalidArgument, "4 param passed")
+	}
+	return &csi.ControllerModifyVolumeResponse{}, nil
 }
 
 func (cs *ScaleControllerServer) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
