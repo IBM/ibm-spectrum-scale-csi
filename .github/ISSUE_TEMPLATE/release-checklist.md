@@ -23,8 +23,5 @@ assignees: ''
 - [ ]  Push multi arch images to quay (on GA date)
 - [ ]  Publish git tag (on GA date) 
 - [ ]  Verify the images and yaml from release branch are correct - CLI install/Upgrade (on GA date)
-- [ ]  Create PR for Community Operator Listing (https://github.com/k8s-operatorhub/community-operators)
-- [ ]  Publish PR for Redhat Community Operator Listing (https://github.com/redhat-openshift-ecosystem/community-operators-prod) - (on GA date)
 - [ ]  Update driver listing https://kubernetes-csi.github.io/docs/drivers.html
-
 
