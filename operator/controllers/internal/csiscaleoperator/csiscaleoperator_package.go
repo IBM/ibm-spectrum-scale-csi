@@ -17,6 +17,8 @@ limitations under the License.
 package csiscaleoperator
 
 import (
+	"os"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -67,8 +69,11 @@ const (
 
 // GenerateCSIDriver returns a non-namespaced CSIDriver object.
 func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
-	// fileFSGroupPolicy := storagev1.FileFSGroupPolicy
-	return &storagev1.CSIDriver{
+
+	// Openshift Virtualization required fsGroupPolicy=File
+	filefspolicy := storagev1.FileFSGroupPolicy
+
+	csiDriver := &storagev1.CSIDriver{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   config.DriverName,
 			Labels: c.GetLabels(),
@@ -76,9 +81,16 @@ func (c *CSIScaleOperator) GenerateCSIDriver() *storagev1.CSIDriver {
 		Spec: storagev1.CSIDriverSpec{
 			AttachRequired: boolptr.True(),
 			PodInfoOnMount: boolptr.True(),
-			// FSGroupPolicy:  &fileFSGroupPolicy,
 		},
 	}
+
+	policy, found := os.LookupEnv("FSGROUP_POLICY")
+	if found && policy == "File" {
+		csiDriver.Spec.FSGroupPolicy = &filefspolicy
+	}
+
+	return csiDriver
+
 }
 
 /*
