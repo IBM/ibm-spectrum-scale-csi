@@ -71,8 +71,8 @@ const (
 	ENVKubeVersion  = "KUBE_VERSION"
 	ENVCGPrefix     = "CSI_CG_PREFIX"
 	ENVSymDirPath   = "SYMLINK_DIR_PATH"
-	DriverVersion   = "2.10.5"
-	OperatorVersion = "2.10.5"
+	DriverVersion   = "2.10.6"
+	OperatorVersion = "2.10.6"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
