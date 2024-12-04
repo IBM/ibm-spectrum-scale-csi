@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 2.12.0
+VERSION ?= 2.14.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -84,11 +84,6 @@ generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, Dee
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 
-    # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
-	$(KUSTOMIZE) build --reorder none config/overlays/ocp-rhel > ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
-	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
-	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator-ocp-rhel.yaml
-
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	sed -i "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
@@ -101,9 +96,9 @@ fmt: ## Run go fmt against code.
 	go fmt ./...
 	go mod tidy
 
-## TODO: GoLint is deprecated, should look for alternatives. 
+## TODO: GoLint is deprecated, should look for alternatives.
 ## More info: https://github.com/golang/go/issues/38968
-lint: golangci-lint ## Run go lint against code. 
+lint: golangci-lint ## Run go lint against code.
 	@echo "****** LINTING ******"
 	$(GOLANGCI_LINT) run --no-config --disable-all -E golint > ./docs/dev/security/results.golint.txt 2>&1 || true
 

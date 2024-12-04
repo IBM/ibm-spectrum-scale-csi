@@ -45,6 +45,9 @@ const (
 	BucketName      = "bucket"
 	bucketAccesskey = "accesskey"
 	bucketSecretkey = "secretkey"
+
+	defaultS3Port    = "443"
+	CacheTempDirName = ".cachevolumetmp"
 )
 
 var GetLoggerId = utils.GetLoggerId
@@ -83,11 +86,13 @@ func (s *SpectrumRestV2) isRequestAccepted(ctx context.Context, response Generic
 		!reflect.DeepEqual(responseToLog.Jobs[0].Request, Resprequest{}) && responseToLog.Jobs[0].Request.Data != nil {
 		accessKey := "accessKey"
 		secretKey := "secretKey"
-		if _, exists := responseToLog.Jobs[0].Request.Data[accessKey]; exists {
+
+		var exists bool
+		if _, exists = responseToLog.Jobs[0].Request.Data[accessKey]; exists {
 			delete(responseToLog.Jobs[0].Request.Data, accessKey)
 		}
 
-		if _, exists := responseToLog.Jobs[0].Request.Data[secretKey]; exists {
+		if _, exists = responseToLog.Jobs[0].Request.Data[secretKey]; exists {
 			delete(responseToLog.Jobs[0].Request.Data, secretKey)
 		}
 	}
@@ -549,23 +554,25 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 	return nil
 }
 
-func (s *SpectrumRestV2) CheckIfGatewayNodePresent(ctx context.Context) (bool, error) {
+// GetGatewayNode : A gateway node is must for cache fileset,
+// return empty and error if no gateway found
+func (s *SpectrumRestV2) GetGatewayNode(ctx context.Context) (string, error) {
 	loggerId := GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 CheckIfGatewayNodePresent", loggerId)
+	klog.V(4).Infof("[%s] rest_v2 GetGatewayNode", loggerId)
 
 	getNodesURL := "scalemgmt/v2/nodes?fields=roles.gatewayNode"
 	getNodesResponse := GetNodesResponse_v2{}
 
 	err := s.doHTTP(ctx, getNodesURL, "GET", &getNodesResponse, nil)
 	if err != nil {
-		return false, fmt.Errorf("failed to get nodes with gateway role, error: %v", err)
+		return "", fmt.Errorf("failed to get nodes with gateway role, error: %v", err)
 	}
 	for _, node := range getNodesResponse.Nodes {
-		if node.Roles.GatewayNode == true {
-			return true, nil
+		if node.Roles.GatewayNode {
+			return node.AdminNodename, nil
 		}
 	}
-	return false, nil
+	return "", nil
 }
 
 func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
@@ -642,7 +649,7 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	return nil
 }
 
-func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[string]string) error {
+func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[string]string, exportMapName string) error {
 	loggerID := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] rest_v2 SetBucketKeys", loggerID)
 
@@ -651,19 +658,12 @@ func (s *SpectrumRestV2) SetBucketKeys(ctx context.Context, bucketInfo map[strin
 	keyreq.BucketName = bucketInfo[BucketName]
 	keyreq.AccessKey = bucketInfo[bucketAccesskey]
 	keyreq.SecretKey = bucketInfo[bucketSecretkey]
-
-	// Extract the hostname without the port
-	parsedURL, err := url.Parse(bucketInfo[BucketEndpoint])
-	if err != nil {
-		return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
-	}
-	hostname := parsedURL.Hostname()
-	keyreq.Server = hostname
+	keyreq.Server = exportMapName
 
 	setBucketKeysURL := "scalemgmt/v2/bucket/keys"
 	setBucketKeysResponse := GenericResponse{}
 
-	err = s.doHTTP(ctx, setBucketKeysURL, "PUT", &setBucketKeysResponse, keyreq)
+	err := s.doHTTP(ctx, setBucketKeysURL, "PUT", &setBucketKeysResponse, keyreq)
 	if err != nil {
 		klog.Errorf("[%s] Failed to set keys for the bucket %s, error: %v", loggerID, bucketInfo[BucketName], err)
 		return err
@@ -709,21 +709,66 @@ func (s *SpectrumRestV2) DeleteBucketKeys(ctx context.Context, bucket string) er
 	return nil
 }
 
-func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string, scheme string) error {
+func (s *SpectrumRestV2) DeleteNodeMappingAFMWithCos(ctx context.Context, exportMapName string) error {
 	loggerID := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v, scheme: %s", loggerID, filesystemName, filesetName, mode, opts, scheme)
+	klog.V(4).Infof("[%s] rest_v2 DeleteNodeMappingAFMWithCos", loggerID)
+
+	deleteExportMapNameURL := "scalemgmt/v2/nodes/afm/mapping/" + exportMapName
+	deleteExportMapNameResponse := GenericResponse{}
+	err := s.doHTTP(ctx, deleteExportMapNameURL, "DELETE", &deleteExportMapNameResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Failed to delete exportMap %s, error: %v", loggerID, exportMapName, err)
+		if strings.Contains(deleteExportMapNameResponse.Status.Message, "Invalid value in 'mappingName'") { // error as no exportMap exists
+			klog.V(6).Infof("[%s] exportMap would have been deleted. So returning success %v", utils.GetLoggerId(ctx), err)
+			return nil
+		}
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, deleteExportMapNameResponse, deleteExportMapNameURL)
+	if err != nil {
+		klog.Errorf("[%s] The delete exportMap request is not accepted for processing for the exportMapName %s, error: %v", loggerID, exportMapName, err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, deleteExportMapNameResponse.Status.Code, deleteExportMapNameResponse.Jobs[0].JobID)
+	if err != nil {
+		klog.Errorf("[%s] Failed to delete exportMap %s, error: %v", loggerID, exportMapName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, bucketInfo map[string]string, exportMapName string, parsedEndpointURL *url.URL) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesystem: %s, fileset: %s, mode: %s, opts: %v, exportMapName %v, parsedEndpointURL: %v", loggerID, filesystemName, filesetName, mode, opts, exportMapName, parsedEndpointURL)
 
 	filesetreq := CreateS3CacheFilesetRequest{}
 	filesetreq.FilesetName = filesetName
 	filesetreq.UseObjectFs = true
 	filesetreq.Mode = mode
+	filesetreq.TempDir = CacheTempDirName
+
+	var afmTarget string
+	scheme := parsedEndpointURL.Scheme
+	port := parsedEndpointURL.Port()
 
 	if scheme == "https" {
 		filesetreq.UseSSLCertVerify = true
+		afmTarget = scheme + "://" + exportMapName
+	} else {
+		afmTarget = "http://" + exportMapName
 	}
-
-	filesetreq.Endpoint = bucketInfo[BucketEndpoint]
+	if port == "" {
+		port = string(defaultS3Port)
+	}
+	afmTarget = afmTarget + ":" + port
+	filesetreq.Endpoint = afmTarget
 	filesetreq.BucketName = bucketInfo[BucketName]
+	filesetreq.VerifyKeys = true
+	filesetreq.MakeActive = true
+
+	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)
 
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/cos", filesystemName)
 	createFilesetResponse := GenericResponse{}
@@ -747,6 +792,53 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 			return nil
 		}
 		klog.Errorf("[%s]  Failed to create an AFM cache fileset %s, error: %v", loggerID, filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo map[string]string) error {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateNodeMappingAFMWithCos.exportMapName:[%s],gatewayNodeName:[%s]:", loggerID, exportMapName, gatewayNodeName)
+
+	exportMapReq := CreateNodeMapAFMCosRequest{}
+	exportMapReq.MapName = exportMapName
+
+	// Extract the hostname without the port
+	parsedURL, err := url.Parse(bucketInfo[BucketEndpoint])
+	if err != nil {
+		return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
+	}
+	hostname := parsedURL.Hostname()
+
+	exportMapReq.ExportMap = append(exportMapReq.ExportMap, fmt.Sprintf(hostname+"/"+gatewayNodeName))
+
+	exportMapReq.NoServerResolution = true
+
+	klog.V(4).Infof("[%s] rest_v2 CreateNodeMappingAFMWithCos. exportMapReq: %v :", loggerID, exportMapReq)
+
+	createExportMapURL := "scalemgmt/v2/nodes/afm/mapping"
+	createExportMapResponse := GenericResponse{}
+
+	err = s.doHTTP(ctx, createExportMapURL, "POST", &createExportMapResponse, exportMapReq)
+	if err != nil {
+		klog.Errorf("[%s] Failed to create NodeMappingAFMWithCos exportMapName: %s, error: %v", loggerID, exportMapName, err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, createExportMapResponse, createExportMapURL)
+	if err != nil {
+		klog.Errorf("[%s] NodeMappingAFMWithCos request for exportMapName %s is not accepted for processing, error: %v", loggerID, exportMapName, err)
+		return err
+	}
+
+	err = s.WaitForJobCompletion(ctx, createExportMapResponse.Status.Code, createExportMapResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as fileset already exists
+			klog.Infof("The NodeMappingAFMWithCos exists already, error: %v", err)
+			return nil
+		}
+		klog.Errorf("[%s]  Failed to create NodeMappingAFMWithCos exportMapName: %s, error: %v", loggerID, exportMapName, err)
 		return err
 	}
 	return nil
@@ -848,6 +940,10 @@ func (s *SpectrumRestV2) ListFileset(ctx context.Context, filesystemName string,
 
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "Invalid value in 'filesetName'") { // This means fileset is not present, create it
+			klog.V(6).Infof("[%s] Fileset with name [%s] doesn't exists.", utils.GetLoggerId(ctx), filesetName)
+			return Fileset_v2{}, nil
+		}
 		klog.Errorf("[%s] Error in list fileset request: %v", utils.GetLoggerId(ctx), err)
 		return Fileset_v2{}, err
 	}

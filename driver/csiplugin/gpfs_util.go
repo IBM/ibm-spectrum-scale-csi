@@ -19,6 +19,7 @@ package scale
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -31,11 +32,13 @@ import (
 )
 
 const (
-	dependentFileset   = "dependent"
-	independentFileset = "independent"
-	scversion1         = "1"
-	scversion2         = "2"
-	sharedPermissions  = "777"
+	dependentFileset     = "dependent"
+	independentFileset   = "independent"
+	scversion1           = "1"
+	scversion2           = "2"
+	sharedPermissions    = "777"
+	defaultVolNamePrefix = "pvc"
+	VolNamePrefixEnvKey  = "VOLUME_NAME_PREFIX"
 )
 
 // AFM caching constants
@@ -94,6 +97,7 @@ type scaleVolume struct {
 	Shared             bool                              `json:"shared"`
 	VolumeType         string                            `json:"volumeType"`
 	CacheMode          string                            `json:"cacheMode"`
+	VolNamePrefix      string                            `json:"volNamePrefix"`
 }
 
 type scaleVolId struct {
@@ -162,6 +166,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	tier, isTierSpecified := volOptions[connectors.UserSpecifiedTier]
 	cg, isCGSpecified := volOptions[connectors.UserSpecifiedConsistencyGroup]
 	shared, isSharedSpecified := volOptions[connectors.UserSpecifiedShared]
+	volNamePrefix, isVolNamePrefixSpecified := volOptions[connectors.UserSpecifiedVolNamePrefix]
 
 	volumeType, volumeTypeSpecified := volOptions[connectors.UserSpecifiedVolumeType]
 	cacheMode, cacheModeSpecified := volOptions[connectors.UserSpecifiedCacheMode]
@@ -218,6 +223,15 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if volDirPathSpecified && volDirPath == "" {
 		volDirPathSpecified = false
 	}
+	// VolNamePrefix
+	if isVolNamePrefixSpecified {
+		scaleVol.VolNamePrefix = volNamePrefix
+	} else if volNamePrefixEnvVal, valFound := os.LookupEnv(VolNamePrefixEnvKey); valFound {
+		scaleVol.VolNamePrefix = volNamePrefixEnvVal
+	} else {
+		scaleVol.VolNamePrefix = defaultVolNamePrefix
+	}
+	klog.Infof("[%s] getScaleVolumeOptions:  VolNamePrefix assigned: %s", loggerId, scaleVol.VolNamePrefix)
 
 	isUserInputFsetType := fsetTypeSpecified
 	if !fsetTypeSpecified && !volDirPathSpecified && !isSCAdvanced {

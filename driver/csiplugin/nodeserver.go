@@ -50,6 +50,8 @@ const nodePublishMethodSymlink = "SYMLINK"
 const mountPathLength = 6
 
 const ENVClusterCNSAPresenceCheck = "CNSADeployment"
+const ENVClusterConfigurationType = "ClusterConfigurationType"
+const ENVClusterTypeOpenshift     = "OpenShiftPlatform"
 
 // A map for locking/unlocking a target path for NodePublish/NodeUnpublish
 // calls. The key is target path and value is a boolean true in case there
@@ -119,7 +121,8 @@ func getGpfsPaths(ctx context.Context) []string {
 			if len(finalOutput) == mountPathLength {
 				if finalOutput[1] != "" && finalOutput[2] == "gpfs" {
 					cnsaPresence, ok := os.LookupEnv(ENVClusterCNSAPresenceCheck)
-					if ok && cnsaPresence == "True" {
+					clusterType, cok := os.LookupEnv(ENVClusterConfigurationType)
+					if (ok && cnsaPresence == "True") && (cok && clusterType == ENVClusterTypeOpenshift) {
 						before, after, found := strings.Cut(finalOutput[1], "/var")
 						if found && before == hostDir && strings.HasPrefix(after, mountPath) {
 							openShiftMountPath := before + after
