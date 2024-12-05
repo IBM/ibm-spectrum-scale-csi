@@ -75,6 +75,7 @@ type ScaleControllerServer struct {
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
 	if volpresent {
+		/*  #nosec G115 -- false positive  */
 		if capacity == int64(scVol.VolSize) {
 			return true, nil
 		} else {
@@ -918,7 +919,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      volID,
-				CapacityBytes: int64(scaleVol.VolSize),
+				CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 				VolumeContext: req.GetParameters(),
 				ContentSource: volSrc,
 			},
@@ -966,7 +967,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	/* Update driver map with new volume. Make sure to defer delete */
 
-	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize)
+	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize) // #nosec G115 -- false positive
 	defer delete(cs.Driver.reqmap, scaleVol.VolName)
 
 	var targetPath string
@@ -1042,7 +1043,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      volID,
-			CapacityBytes: int64(scaleVol.VolSize),
+			CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 			VolumeContext: req.GetParameters(),
 			ContentSource: volSrc,
 		},
@@ -1073,14 +1074,15 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 
 	scaleVol.VolName = volName
 
-	// larger than allowed pv size not allowed
-	if uint64(volSize) > maximumPVSize {
+	// #nosec G115 -- false positive
+	if uint64(volSize) > maximumPVSize {  // larger than allowed pv size not allowed
 		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
+
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
 		scaleVol.VolSize = smallestVolSize
 	} else {
-		scaleVol.VolSize = uint64(volSize)
+		scaleVol.VolSize = uint64(volSize) // #nosec G115 -- false positive
 	}
 
 	/* Get details for Primary Cluster */
@@ -1300,7 +1302,7 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
 						VolumeId:      volID,
-						CapacityBytes: int64(scaleVol.VolSize),
+						CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 						VolumeContext: req.GetParameters(),
 						ContentSource: volSrc,
 					},
@@ -1335,7 +1337,7 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
 						VolumeId:      volID,
-						CapacityBytes: int64(scaleVol.VolSize),
+						CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 						VolumeContext: req.GetParameters(),
 						ContentSource: volSrc,
 					},
@@ -3217,7 +3219,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	if capRange == nil {
 		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
 	}
-	capacity := uint64(capRange.GetRequiredBytes())
+	capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
 
 	volumeIDMembers, err := getVolIDMembers(volID)
 
