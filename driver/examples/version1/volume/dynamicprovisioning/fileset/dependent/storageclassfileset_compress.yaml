@@ -7,4 +7,5 @@ parameters:
     volBackendFs: "gpfs0"
     filesetType: "dependent"
     parentFileset: "independent-fileset-gpfs0-fset1"
+    compression: "true"
 reclaimPolicy: Delete
