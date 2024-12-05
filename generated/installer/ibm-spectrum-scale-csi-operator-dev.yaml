@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
@@ -9,114 +9,13 @@ metadata:
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-  annotations:
-    productVersion: 2.14.0
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-  template:
-    metadata:
-      labels:
-        name: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-        product: ibm-spectrum-scale-csi
-        release: ibm-spectrum-scale-csi-operator
-      annotations:
-        productID: ibm-spectrum-scale-csi-operator
-        productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.14.0
-    spec:
-      serviceAccountName: ibm-spectrum-scale-csi-operator
-      containers:
-      - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
-        args:
-        - --leaderElection=true
-        env:
-        - name: METRICS_BIND_ADDRESS
-          value: "8383"
-        - name: WATCH_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
-        - name: CSI_SNAPSHOTTER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:b3e90b33781670ac050c22c9e88b9e876493dca248966b9da6f7a90cc412ab86
-        - name: CSI_ATTACHER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
-        - name: CSI_PROVISIONER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:7b9cdb5830d01bda96111b4f138dbddcc01eed2f95aa980a404c45a042d60a10
-        - name: CSI_LIVENESSPROBE_IMAGE
-          value: registry.k8s.io/sig-storage/livenessprobe@sha256:33692aed26aaf105b4d6e66280cceca9e0463f500c81b5d8c955428a75438f32
-        - name: CSI_NODE_REGISTRAR_IMAGE
-          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:e01facb9fb9cffaf52d0053bdb979fbd8c505c8e411939a6e026dd061a6b4fbe
-        - name: CSI_RESIZER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-resizer@sha256:be6a7de1d43dba90710b61bd3d0d8f568654a6adadaeea9188cf4cd3554cbb87
-        resources:
-          limits:
-            cpu: 600m
-            ephemeral-storage: 5Gi
-            memory: 600Mi
-          requests:
-            cpu: 50m
-            ephemeral-storage: 1Gi
-            memory: 50Mi
-        livenessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 3
-          periodSeconds: 1
-        imagePullPolicy: Always
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          privileged: false
-          readOnlyRootFilesystem: true
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values:
-                - amd64
-                - ppc64le
-                - s390x
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/infra
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/control-plane
-        operator: Exists
-      securityContext:
-        runAsGroup: 10001
-        runAsNonRoot: true
-        runAsUser: 10001
+imagePullSecrets:
+- name: ibm-entitlement-key
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: ibm-spectrum-scale-csi-operator
-  creationTimestamp: null
 rules:
 - resources:
   - configmaps
@@ -235,8 +134,8 @@ subjects:
   namespace: ibm-spectrum-scale-csi-driver
   kind: ServiceAccount
 ---
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
@@ -246,8 +145,108 @@ metadata:
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-imagePullSecrets:
-- name: ibm-entitlement-key
+  annotations:
+    productVersion: 2.14.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+  template:
+    metadata:
+      labels:
+        name: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+        product: ibm-spectrum-scale-csi
+        release: ibm-spectrum-scale-csi-operator
+      annotations:
+        productID: ibm-spectrum-scale-csi-operator
+        productName: IBM Spectrum Scale CSI Operator
+        productVersion: 2.14.0
+    spec:
+      serviceAccountName: ibm-spectrum-scale-csi-operator
+      containers:
+      - name: operator
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev
+        args:
+        - --leaderElection=true
+        env:
+        - name: METRICS_BIND_ADDRESS
+          value: "8383"
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CSI_DRIVER_IMAGE
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
+        - name: CSI_SNAPSHOTTER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:b3e90b33781670ac050c22c9e88b9e876493dca248966b9da6f7a90cc412ab86
+        - name: CSI_ATTACHER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
+        - name: CSI_PROVISIONER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:7b9cdb5830d01bda96111b4f138dbddcc01eed2f95aa980a404c45a042d60a10
+        - name: CSI_LIVENESSPROBE_IMAGE
+          value: registry.k8s.io/sig-storage/livenessprobe@sha256:33692aed26aaf105b4d6e66280cceca9e0463f500c81b5d8c955428a75438f32
+        - name: CSI_NODE_REGISTRAR_IMAGE
+          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:e01facb9fb9cffaf52d0053bdb979fbd8c505c8e411939a6e026dd061a6b4fbe
+        - name: CSI_RESIZER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-resizer@sha256:be6a7de1d43dba90710b61bd3d0d8f568654a6adadaeea9188cf4cd3554cbb87
+        resources:
+          limits:
+            cpu: 600m
+            ephemeral-storage: 5Gi
+            memory: 600Mi
+          requests:
+            cpu: 50m
+            ephemeral-storage: 1Gi
+            memory: 50Mi
+        livenessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
