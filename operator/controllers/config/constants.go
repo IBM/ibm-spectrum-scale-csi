@@ -71,8 +71,8 @@ const (
 	ENVKubeVersion  = "KUBE_VERSION"
 	ENVCGPrefix     = "CSI_CG_PREFIX"
 	ENVSymDirPath   = "SYMLINK_DIR_PATH"
-	DriverVersion   = "2.10.5"
-	OperatorVersion = "2.10.5"
+	DriverVersion   = "2.10.6"
+	OperatorVersion = "2.10.6"
 
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
@@ -88,7 +88,7 @@ const (
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.10.5"
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.10.6"
 	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
 	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f6717ce72a2615c7fbc746b4068f788e78579c54c43b8716e5ce650d97af2df1" // #nosec G101 false positive
 	//  registry.k8s.io/sig-storage/livenessprobe:v2.10.0
