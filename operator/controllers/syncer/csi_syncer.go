@@ -225,16 +225,6 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 	replicas := config.ReplicaCount
 	out.Spec.Replicas = &replicas
 
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncAttacherFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	}
-	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
-		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
-
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerAttacher, s.driver.Name))
 	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
@@ -244,7 +234,7 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(secrets, cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(cpuLimits, memoryLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -263,16 +253,6 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name)))
 	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncProvisionerFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	}
-	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
-		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
-
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerProvisioner, s.driver.Name))
 	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
@@ -282,7 +262,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(secrets, cpuLimits, memoryLimits, volNamePrefix), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(cpuLimits, memoryLimits, volNamePrefix), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -301,16 +281,6 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name)))
 	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncSnapshotterFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	}
-	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
-		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
-
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerSnapshotter, s.driver.Name))
 	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
@@ -320,7 +290,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(secrets, cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(cpuLimits, memoryLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -339,16 +309,6 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 	out.Spec.Selector = metav1.SetAsLabelSelector(s.driver.GetCSIControllerSelectorLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name)))
 	out.Spec.Strategy = s.driver.GetDeploymentStrategy()
 
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("SyncResizerFn: Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	}
-	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
-		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
-
 	// ensure template
 	out.Spec.Template.ObjectMeta.Labels = s.driver.GetCSIControllerPodLabels(config.GetNameForResource(config.CSIControllerResizer, s.driver.Name))
 	annotations := s.driver.GetAnnotations(restartedAtKey, restartedAtValue)
@@ -358,7 +318,7 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(secrets, cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(cpuLimits, memoryLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -406,7 +366,7 @@ func (s *csiControllerSyncer) SyncFn() error {
 
 // ensureAttacherPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the attacher pod.
-func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureAttacherPodSpec(cpuLimits string, memoryLimits string) corev1.PodSpec {
 
 	logger := csiLog.WithName("ensureAttacherPodSpec")
 	logger.Info("Generating pod description for the attacher pod.")
@@ -418,7 +378,6 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Attacher.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
-		ImagePullSecrets:   secrets,
 		PriorityClassName:  "system-node-critical",
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
@@ -429,7 +388,7 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(secrets []corev1.LocalObject
 
 // ensureProvisionerPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string, volNamePrefix string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureProvisionerPodSpec(cpuLimits string, memoryLimits string, volNamePrefix string) corev1.PodSpec {
 
 	logger := csiLog.WithName("ensureProvisionerPodSpec")
 	logger.Info("Generating pod description for the provisioner pod.")
@@ -442,7 +401,6 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Provisioner.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
-		ImagePullSecrets:   secrets,
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
@@ -452,7 +410,7 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(secrets []corev1.LocalObj
 
 // ensureSnapshotterPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureSnapshotterPodSpec(cpuLimits string, memoryLimits string) corev1.PodSpec {
 
 	logger := csiLog.WithName("ensureSnapshotterPodSpec")
 	logger.Info("Generating pod description for the snapshotter pod.")
@@ -465,7 +423,6 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Snapshotter.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
-		ImagePullSecrets:   secrets,
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
@@ -475,7 +432,7 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(secrets []corev1.LocalObj
 
 // ensureResizerPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureResizerPodSpec(cpuLimits string, memoryLimits string) corev1.PodSpec {
 
 	logger := csiLog.WithName("ensureResizerPodSpec")
 	logger.Info("Generating pod description for the resizer pod.")
@@ -488,7 +445,6 @@ func (s *csiControllerSyncer) ensureResizerPodSpec(secrets []corev1.LocalObjectR
 		Tolerations:        s.ensurePodTolerations(tolerations),
 		Affinity:           s.driver.GetAffinity(config.Resizer.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
-		ImagePullSecrets:   secrets,
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
 	}
 
