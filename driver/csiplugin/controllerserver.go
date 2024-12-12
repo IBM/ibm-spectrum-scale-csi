@@ -61,6 +61,9 @@ const (
 	fsetNotFoundErrCode = "EFSSG0072C"
 	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
 
+	fsetLinkNotFoundErrCode = "EFSSG0449C"
+	fsetLinkNotFoundErrMsg  = "is not linked"
+
 	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 )
@@ -1075,7 +1078,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	scaleVol.VolName = volName
 
 	// #nosec G115 -- false positive
-	if uint64(volSize) > maximumPVSize {  // larger than allowed pv size not allowed
+	if uint64(volSize) > maximumPVSize { // larger than allowed pv size not allowed
 		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
 
@@ -2016,7 +2019,18 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 		klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
 	}
 
-	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
+	err := conn.UnlinkFileset(ctx, FilesystemName, FilesetName, false)
+	if err != nil {
+		if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset seems to be already unlinked
+			klog.V(4).Infof("[%s] fileset seems to be already unlinked - %v", loggerId, err)
+			//return true, nil
+		} else {
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+		}
+	}
+
+	err = conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
 			strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
