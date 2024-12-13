@@ -33,7 +33,7 @@ RUN CGO_ENABLED=0 go build -ldflags="-X 'main.gitCommit=${REVISION}'" -a -o mana
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-ARG version=2.13.0
+ARG version=2.14.0
 ARG commit
 ARG build_date
 
@@ -59,4 +59,3 @@ COPY --from=builder /workspace/manager .
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
-

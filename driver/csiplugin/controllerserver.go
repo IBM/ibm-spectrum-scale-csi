@@ -61,10 +61,11 @@ const (
 	fsetNotFoundErrCode = "EFSSG0072C"
 	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
 
+	fsetLinkNotFoundErrCode = "EFSSG0449C"
+	fsetLinkNotFoundErrMsg  = "is not linked"
+
 	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
-
-	defaultS3Port = "443"
 )
 
 var bucketLock = make(map[string]bool)
@@ -77,6 +78,7 @@ type ScaleControllerServer struct {
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
 	if volpresent {
+		/*  #nosec G115 -- false positive  */
 		if capacity == int64(scVol.VolSize) {
 			return true, nil
 		} else {
@@ -322,9 +324,9 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol", loggerId, scVol.VolName)
+	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, gatewayNodeName)
 	opt := make(map[string]interface{})
 
 	// fileset can not be created if filesystem is remote.
@@ -412,7 +414,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		}
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil)
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil, "")
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -437,7 +439,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, "")
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -446,8 +448,8 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		return filesetPath, nil
 	} else if scVol.VolumeType == cacheVolume {
 		createDataDir := false
-		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s]", loggerId, scVol.VolName, scVol.VolBackendFs)
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, bucketInfo)
+		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s] and gateway for export map [%s]", loggerId, scVol.VolName, scVol.VolBackendFs, gatewayNodeName)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, bucketInfo, gatewayNodeName)
 		if err != nil {
 			klog.Errorf("[%s] failed to create a cache fileset [%s] in filesystem [%s]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -467,7 +469,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		// Create fileset
 		klog.Infof("[%s] creating fileset for classic storageClass with fileset name: [%v]", loggerId, scVol.VolName)
 		createDataDir := true
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, "")
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -477,7 +479,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	}
 }
 
-func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, bucketInfo map[string]string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, bucketInfo map[string]string, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 	loggerId := utils.GetLoggerId(ctx)
@@ -496,42 +498,24 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				klog.Errorf("[%s] volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", loggerId, volName, endpoint, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", volName, endpoint, err))
 			}
-			if parsedURL.Port() == "" {
-				endpoint += ":" + string(defaultS3Port)
-			}
-			afmTarget := endpoint + "/" + bucketInfo[connectors.BucketName]
 
-			scheme := parsedURL.Scheme
-			lockSuccess := lockBucket(loggerId, volName, afmTarget)
-			if !lockSuccess {
-				klog.Errorf("[%s] volume:[%v] - the bucket [%s] is already locked for another volume creation", loggerId, volName, afmTarget)
-				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the bucket [%s] is already locked for another volume creation", volName, afmTarget))
-			} else {
-				defer unlockBucket(loggerId, volName, afmTarget)
-			}
-
-			// Before creating a cache fileset, check if there is any other cache
-			// fileset pointing to the same bucket, if such fileset is found then
-			// disallow creation of another cache fileset.
-			filesetWitAFMTarget, err := scVol.Connector.CheckFilesetWithAFMTarget(ctx, scVol.VolBackendFs, afmTarget)
-			if err != nil {
-				klog.Errorf("[%s] volume:[%v] - failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", loggerId, volName, afmTarget, scVol.VolBackendFs, err)
-				return "", status.Error(codes.Internal, fmt.Sprintf("failed to get a cache fileset with bucket [%v] in filesystem [%v]. Error: [%v]", afmTarget, scVol.VolBackendFs, err))
-			}
-			if filesetWitAFMTarget != "" {
-				klog.Errorf("[%s] volume:[%v] - failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", loggerId, volName, volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget)
-				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create an AFM cache fileset [%v] in filesystem [%v] as another fileset [%v] with the same bucket [%v] exists already", volName, scVol.VolBackendFs, filesetWitAFMTarget, afmTarget))
+			// Add node mapping for AFM with COS for a cache volume
+			exportMapName := volName + "-exportmap"
+			nodeMappingError := scVol.Connector.CreateNodeMappingAFMWithCos(ctx, exportMapName, gatewayNodeName, bucketInfo)
+			if nodeMappingError != nil {
+				klog.Errorf("[%s] failed in nodeMappingError for volume %s", loggerId, volName)
+				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create NodeMappingAFMWithCos for volume %s, error: %v", volName, nodeMappingError))
 			}
 
 			// Set bucket keys for a cache volume
-			keyerr := scVol.Connector.SetBucketKeys(ctx, bucketInfo)
+			keyerr := scVol.Connector.SetBucketKeys(ctx, bucketInfo, exportMapName)
 			if keyerr != nil {
 				klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
 				return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
 			}
 
 			// Create a cache fileset
-			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, scheme); cacheFsetErr != nil {
+			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, exportMapName, parsedURL); cacheFsetErr != nil {
 				klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
 				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
 			}
@@ -885,6 +869,12 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
+	if scaleVol.VolumeType == cacheVolume {
+		if err := cs.checkCacheVolumeSupport(assembledScaleversion); err != nil {
+			return nil, err
+		}
+	}
+
 	if isVolSource {
 		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, volFsInfo, assembledScaleversion)
 		if err != nil {
@@ -932,7 +922,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      volID,
-				CapacityBytes: int64(scaleVol.VolSize),
+				CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 				VolumeContext: req.GetParameters(),
 				ContentSource: volSrc,
 			},
@@ -980,10 +970,11 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	/* Update driver map with new volume. Make sure to defer delete */
 
-	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize)
+	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize) // #nosec G115 -- false positive
 	defer delete(cs.Driver.reqmap, scaleVol.VolName)
 
 	var targetPath string
+	var gatewayNodeName string
 
 	if scaleVol.VolumeType == cacheVolume {
 		// Validate the secret data in case of cache volumes
@@ -993,18 +984,20 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret %s/%s-secret does not have required parameter(s): %v", reqParams[pvcNamespaceKey], reqParams[pvcNameKey], missingKeys))
 		}
 
-		// A gateway node is must for cache fileset, return error if no gateway found
-		gatewayPresent, err := scaleVol.Connector.CheckIfGatewayNodePresent(ctx)
+		// A gateway node is must for cache fileset
+		gatewayNodeName, err = scaleVol.Connector.GetGatewayNode(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if !gatewayPresent {
-			return nil, status.Error(codes.Aborted, fmt.Sprintf("Failed to the create a cache volume as there in no gateway node in the cluster"))
+		if gatewayNodeName != "" {
+			klog.Infof("[%s]  IBM Storage Scale gateway NodeName : %s", loggerId, gatewayNodeName)
+		} else {
+			return nil, status.Error(codes.Aborted, "Failed to the create a cache volume as there in no gateway node in the cluster")
 		}
 	}
 
 	if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, gatewayNodeName)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}
@@ -1053,7 +1046,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      volID,
-			CapacityBytes: int64(scaleVol.VolSize),
+			CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 			VolumeContext: req.GetParameters(),
 			ContentSource: volSrc,
 		},
@@ -1084,14 +1077,15 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 
 	scaleVol.VolName = volName
 
-	// larger than allowed pv size not allowed
-	if uint64(volSize) > maximumPVSize {
+	// #nosec G115 -- false positive
+	if uint64(volSize) > maximumPVSize { // larger than allowed pv size not allowed
 		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
+
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
 		scaleVol.VolSize = smallestVolSize
 	} else {
-		scaleVol.VolSize = uint64(volSize)
+		scaleVol.VolSize = uint64(volSize) // #nosec G115 -- false positive
 	}
 
 	/* Get details for Primary Cluster */
@@ -1311,7 +1305,7 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
 						VolumeId:      volID,
-						CapacityBytes: int64(scaleVol.VolSize),
+						CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 						VolumeContext: req.GetParameters(),
 						ContentSource: volSrc,
 					},
@@ -1346,7 +1340,7 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 				return &csi.CreateVolumeResponse{
 					Volume: &csi.Volume{
 						VolumeId:      volID,
-						CapacityBytes: int64(scaleVol.VolSize),
+						CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
 						VolumeContext: req.GetParameters(),
 						ContentSource: volSrc,
 					},
@@ -1691,6 +1685,15 @@ func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) er
 	return nil
 }
 
+func (cs *ScaleControllerServer) checkCacheVolumeSupport(assembledScaleversion string) error {
+	/* Verify IBM Storage Scale Version is not below 5.2.2-0 */
+	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5220")
+	if !versionCheck {
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for cache volume support with CSI is 5.2.2-0")
+	}
+	return nil
+}
+
 /*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
 	  // Verify IBM Storage Scale Version is not below 5.1.5-0
 
@@ -2016,7 +2019,18 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 		klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
 	}
 
-	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
+	err := conn.UnlinkFileset(ctx, FilesystemName, FilesetName, false)
+	if err != nil {
+		if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset seems to be already unlinked
+			klog.V(4).Infof("[%s] fileset seems to be already unlinked - %v", loggerId, err)
+			//return true, nil
+		} else {
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+		}
+	}
+
+	err = conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
 			strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
@@ -2254,17 +2268,21 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				if volumeIdMembers.StorageClassType == STORAGECLASS_CACHE {
 					bucketName := req.Secrets[connectors.BucketName]
 					endpoint := req.Secrets[connectors.BucketEndpoint]
-					parsedURL, err := url.Parse(endpoint)
 					if err != nil {
 						return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
 					}
-					server := parsedURL.Hostname()
-
-					err = conn.DeleteBucketKeys(ctx, bucketName+":"+server)
+					volumeName := volumeIdMembers.FsetName
+					err = conn.DeleteBucketKeys(ctx, bucketName+":"+volumeName+"-exportmap")
 					if err != nil {
-						volumeName := volumeIdMembers.FsetName
+
 						klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
 						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete bucket keys for volume %s, error: %v", volumeName, err))
+					}
+
+					err = conn.DeleteNodeMappingAFMWithCos(ctx, volumeName+"-exportmap")
+					if err != nil {
+						klog.Errorf("[%s] failed to delete node mapping exportMap for volume %s", loggerId, volumeName)
+						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete node mapping exportMap for volume %s, error: %v", volumeName, err))
 					}
 				}
 
@@ -3215,7 +3233,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	if capRange == nil {
 		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
 	}
-	capacity := uint64(capRange.GetRequiredBytes())
+	capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
 
 	volumeIDMembers, err := getVolIDMembers(volID)
 
@@ -3440,23 +3458,4 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
 	klog.V(4).Infof("[%s] ClusterMap updated: [%s : %s]", loggerId, cID, cName)
 	return cName, true, nil
-}
-
-func lockBucket(loggerId string, volName string, bucket string) bool {
-	bucketMutex.Lock()
-	defer bucketMutex.Unlock()
-
-	if _, exists := bucketLock[bucket]; exists {
-		return false
-	}
-	bucketLock[bucket] = true
-	klog.V(4).Infof("[%s] The bucket [%s] is locked for creation of a volume: [%s]", loggerId, bucket, volName)
-	return true
-}
-
-func unlockBucket(loggerId string, volName string, bucket string) {
-	bucketMutex.Lock()
-	defer bucketMutex.Unlock()
-	delete(bucketLock, bucket)
-	klog.V(4).Infof("[%s] The bucket [%s] is unlocked for creation of a volume: [%s]", loggerId, bucket, volName)
 }
