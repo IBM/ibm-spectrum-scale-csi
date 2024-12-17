@@ -134,8 +134,7 @@ const (
 	CSIFinalizer              = "finalizer.csiscaleoperators.csi.ibm.com"
 
 	//Default imagePullSecrets
-	ImagePullSecretRegistryKey    = "ibm-spectrum-scale-csi-registrykey" // #nosec G101 false positive
-	ImagePullSecretEntitlementKey = "ibm-entitlement-key"                // #nosec G101 false positive
+	ImagePullSecretEntitlementKey = "ibm-entitlement-key" // #nosec G101 false positive
 
 	DaemonSetUpgradeUpdateStrategyType = "RollingUpdate"
 

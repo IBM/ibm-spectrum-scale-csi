@@ -5,7 +5,7 @@ kind: Kustomization
 # Adds namespace to all resources.
 namespace: ibm-spectrum-scale-csi-driver
 
-bases:
+resources:
 - ../default
 - ../../scc
 
