@@ -147,7 +147,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.14.0
+    productVersion: 2.13.1
 spec:
   replicas: 1
   selector:
