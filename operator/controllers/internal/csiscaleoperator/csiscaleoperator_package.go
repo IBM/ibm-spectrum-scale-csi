@@ -119,6 +119,11 @@ func (c *CSIScaleOperator) GenerateNodeServiceAccount() *corev1.ServiceAccount {
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
 		},
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{
+				Name: config.ImagePullSecretEntitlementKey,
+			},
+		},
 	}
 }
 
@@ -132,6 +137,11 @@ func (c *CSIScaleOperator) GenerateAttacherServiceAccount() *corev1.ServiceAccou
 			Name:      config.GetNameForResource(config.CSIAttacherServiceAccount, c.Name),
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
+		},
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{
+				Name: config.ImagePullSecretEntitlementKey,
+			},
 		},
 	}
 }
@@ -147,6 +157,11 @@ func (c *CSIScaleOperator) GenerateProvisionerServiceAccount() *corev1.ServiceAc
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
 		},
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{
+				Name: config.ImagePullSecretEntitlementKey,
+			},
+		},
 	}
 }
 
@@ -161,6 +176,11 @@ func (c *CSIScaleOperator) GenerateSnapshotterServiceAccount() *corev1.ServiceAc
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
 		},
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{
+				Name: config.ImagePullSecretEntitlementKey,
+			},
+		},
 	}
 }
 
@@ -174,6 +194,11 @@ func (c *CSIScaleOperator) GenerateResizerServiceAccount() *corev1.ServiceAccoun
 			Name:      config.GetNameForResource(config.CSIResizerServiceAccount, c.Name),
 			Namespace: c.Namespace,
 			Labels:    c.GetLabels(),
+		},
+		ImagePullSecrets: []corev1.LocalObjectReference{
+			{
+				Name: config.ImagePullSecretEntitlementKey,
+			},
 		},
 	}
 }
