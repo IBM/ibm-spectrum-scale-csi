@@ -1166,30 +1166,18 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 			// Cannot update the service account of an already created pod.
 			// Reference: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 
-			if !reflect.DeepEqual(found.ImagePullSecrets, sa.ImagePullSecrets) {
-				logger.Info("service-account " + sa.GetName() + " already exists. Updating.")
-				err = r.Client.Update(context.TODO(), sa)
-				if err != nil {
-					message := "Failed to update the service-account: " + sa.GetName()
-					logger.Error(err, message)
-					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-					)
-					return err
-				}
-				logger.Info("ServiceAccount " + sa.GetName() + " has been updated.")
-				if attacherServiceAccountName == sa.Name || provisionerServiceAccountName == sa.Name || snapshotterServiceAccountName == sa.Name || resizerServiceAccountName == sa.Name {
-					updateErr := r.updateCSISideCars(instance, sa.Name)
-					if updateErr != nil {
-						return updateErr
-					}
-				} else if nodeServiceAccountName == sa.Name {
-					updateErr := r.updateCSINodeDaemonSet(instance)
-					if updateErr != nil {
-						return updateErr
-					}
-				}
+			logger.Info("service-account " + sa.GetName() + " already exists. Updating.")
+			err = r.Client.Update(context.TODO(), sa)
+			if err != nil {
+				message := "Failed to update the service-account: " + sa.GetName()
+				logger.Error(err, message)
+				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+					metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+				)
+				return err
 			}
+			logger.Info("ServiceAccount " + sa.GetName() + " has been updated.")
+
 		}
 	}
 	logger.V(1).Info("Reconciliation of all the ServiceAccounts is successful")
