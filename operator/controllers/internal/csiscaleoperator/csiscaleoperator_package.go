@@ -37,6 +37,7 @@ const (
 	coordinationApiGroup                 string = "coordination.k8s.io"
 	podSecurityPolicyApiGroup            string = "extensions"
 	storageClassesResource               string = "storageclasses"
+	volumeAttributeClassesResource       string = "volumeattributesclasses"
 	persistentVolumesResource            string = "persistentvolumes"
 	persistentVolumeClaimsResource       string = "persistentvolumeclaims"
 	persistentVolumeClaimsStatusResource string = "persistentvolumeclaims/status"
@@ -199,6 +200,11 @@ func (c *CSIScaleOperator) GenerateProvisionerClusterRole() *rbacv1.ClusterRole 
 			{
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{storageClassesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
+			{
+				APIGroups: []string{storageApiGroup},
+				Resources: []string{volumeAttributeClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
 			{
@@ -476,6 +482,11 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				Resources: []string{storageClassesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
+			{
+                                APIGroups: []string{storageApiGroup},
+                                Resources: []string{volumeAttributeClassesResource},
+                                Verbs:     []string{verbGet, verbList, verbWatch},
+                        },
 			{
 				APIGroups: []string{coordinationApiGroup},
 				Resources: []string{leaseResource},

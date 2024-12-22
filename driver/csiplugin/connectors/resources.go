@@ -637,6 +637,10 @@ type CreateFilesetRequest struct {
 	AfmPrimaryID                 string `json:"afmPrimaryID,omitempty"`
 	AfmRPO                       int    `json:"afmRPO,omitempty"`
 	AfmShowHomeSnapshots         string `json:"afmShowHomeSnapshots,omitempty"`
+        AfmReadSparseThreshold       string `json:"afmReadSparseThreshold,omitempty"`
+	AfmObjectFastReaddir         string `json:"afmObjectFastReaddir,omitempty"`
+	AfmFileOpenRefreshInterval   int    `json:"afmFileOpenRefreshInterval,omitempty"`
+	AfmNumReadThreads            int    `json:"afmNumReadThreads,omitempty"`
 }
 
 type CreateS3CacheFilesetRequest struct {

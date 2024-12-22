@@ -48,7 +48,7 @@ type SpectrumScaleConnector interface {
 	DeleteNodeMappingAFMWithCos(ctx context.Context, exportMapName string) error
 	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string, exportMapName string, parsedURL *url.URL) error
 	CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo map[string]string) error
-	UpdateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
 	LinkFileset(ctx context.Context, filesystemName string, filesetName string, linkpath string) error
@@ -129,6 +129,21 @@ const (
 	UserSpecifiedCacheMode        string = "cacheMode"
 	UserSpecifiedVolumeType       string = "volumeType"
 	UserSpecifiedVolNamePrefix    string = "volNamePrefix"
+
+	// AFM tuning parameters to modify cache fileset
+	AfmReadSparseThreshold     string = "afmReadSparseThreshold"
+	AfmNumFlushThreads         string = "afmNumFlushThreads"         // default value is 4
+	AfmPrefetchThreshold       string = "afmPrefetchThreshold"       // default value is 0
+	AfmObjectFastReaddir       string = "afmObjectFastReaddir"       // default value is 'no'
+	AfmFileOpenRefreshInterval string = "afmFileOpenRefreshInterval" // default value is 30
+	AfmNumReadThreads          string = "afmNumReadThreads"          // default value is 1
+
+	AfmNumFlushThreadsDefault         = 4
+	AfmPrefetchThresholdDefault       = 0
+	AfmFileOpenRefreshIntervalDefault = 30
+	AfmNumReadThreadsDefault          = 1
+	AfmObjectFastReaddirDefault       = "no"
+	AfmReadSparseThresholdDefault     = "128Mb"
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
