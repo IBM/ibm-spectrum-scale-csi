@@ -5,9 +5,9 @@ kind: Kustomization
 # Adds namespace to all resources.
 namespace: ibm-spectrum-scale-csi-driver
 
-bases:
-- ../../manager/
+resources:
 - ../../rbac/
+- ../../manager/
 - ../../crd/
 
 patches:
@@ -24,9 +24,9 @@ patches:
           spec:
             containers:
               - name: operator
-                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:00e5720a208c8fb5bcef6b78989f2735de33ec2a3ad92f17a5d7009c37ed6b45
+                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:cfc7a58576ccb10e1f7352e7efecaa6d4a66fcaa0982b50854f271064ba3cd1d
                 env:
                   - name: METRICS_BIND_ADDRESS
                   - name: WATCH_NAMESPACE
                   - name: CSI_DRIVER_IMAGE
-                    value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:6118072346213f4b205c5560b8e3f9d05fbce1dc899b9b3aff3066b13a539dd1
+                    value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:8ccbedb08e25978cde770872aee74526f7f03616ca971ced4f6c96af84f1bd46

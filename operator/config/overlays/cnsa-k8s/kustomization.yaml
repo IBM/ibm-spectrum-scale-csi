@@ -5,9 +5,9 @@ kind: Kustomization
 # Adds namespace to all resources.
 namespace: ibm-spectrum-scale-csi
 
-bases:
-- ../../manager/
+resources:
 - ../../rbac/
+- ../../manager/
 - ../../crd/
 
 patches:
@@ -29,17 +29,17 @@ patches:
                   - name: SHORTNAME_NODE_MAPPING
                     value: "yes"
                   - name: CSI_SNAPSHOTTER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:b3e90b33781670ac050c22c9e88b9e876493dca248966b9da6f7a90cc412ab86
+                    value: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:dd788d79cf4c1b8edee6d9b80b8a1ebfc51a38a365c5be656986b129be9ac784
                   - name: CSI_ATTACHER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
+                    value: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:6e54dae32284f60a2de1645c527715e4c934e5ce7899560c0d845bac957118dc
                   - name: CSI_PROVISIONER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:7b9cdb5830d01bda96111b4f138dbddcc01eed2f95aa980a404c45a042d60a10
+                    value: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:672e45d6a55678abc1d102de665b5cbd63848e75dc7896f238c8eaaf3c7d322f
                   - name: CSI_LIVENESSPROBE_IMAGE
                     value: cp.icr.io/cp/gpfs/csi/livenessprobe@sha256:33692aed26aaf105b4d6e66280cceca9e0463f500c81b5d8c955428a75438f32
                   - name: CSI_NODE_REGISTRAR_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:e01facb9fb9cffaf52d0053bdb979fbd8c505c8e411939a6e026dd061a6b4fbe
+                    value: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:0d23a6fd60c421054deec5e6d0405dc3498095a5a597e175236c0692f4adee0f
                   - name: CSI_RESIZER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:be6a7de1d43dba90710b61bd3d0d8f568654a6adadaeea9188cf4cd3554cbb87
+                    value: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:ab774734705a906561e15b67f6a96538f3ad520335d636f793aaafe87a3b5200
                   - name: CSI_DRIVER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:6118072346213f4b205c5560b8e3f9d05fbce1dc899b9b3aff3066b13a539dd1
-                image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:00e5720a208c8fb5bcef6b78989f2735de33ec2a3ad92f17a5d7009c37ed6b45
+                    value: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:8ccbedb08e25978cde770872aee74526f7f03616ca971ced4f6c96af84f1bd46
+                image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:cfc7a58576ccb10e1f7352e7efecaa6d4a66fcaa0982b50854f271064ba3cd1d

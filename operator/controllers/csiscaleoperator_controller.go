@@ -1085,9 +1085,10 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 
 	// controllerServiceAccountName := config.GetNameForResource(config.CSIControllerServiceAccount, instance.Name)
 	nodeServiceAccountName := config.GetNameForResource(config.CSINodeServiceAccount, instance.Name)
-	// attacherServiceAccountName := config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name)
-	// provisionerServiceAccountName := config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name)
-	// snapshotterServiceAccountName := config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name)
+	attacherServiceAccountName := config.GetNameForResource(config.CSIAttacherServiceAccount, instance.Name)
+	provisionerServiceAccountName := config.GetNameForResource(config.CSIProvisionerServiceAccount, instance.Name)
+	snapshotterServiceAccountName := config.GetNameForResource(config.CSISnapshotterServiceAccount, instance.Name)
+	resizerServiceAccountName := config.GetNameForResource(config.CSIResizerServiceAccount, instance.Name)
 
 	for _, sa := range []*corev1.ServiceAccount{
 		// controller,
@@ -1141,33 +1142,16 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 
 			if nodeServiceAccountName == sa.Name {
 
-				nodeDaemonSet, err := r.getNodeDaemonSet(instance)
-				if err != nil && errors.IsNotFound(err) {
-					logger.Info("Daemonset doesn't exist. Restart not required.")
-				} else if err != nil {
-					message := "Failed to get the driver DaemonSet: " + config.GetNameForResource(config.CSINode, instance.Name)
-					logger.Error(err, message)
-					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.GetFailed), message,
-					)
-					return err
-				} else {
-					logger.Info("DaemonSet exists, node rollout requires restart",
-						"DesiredNumberScheduled", nodeDaemonSet.Status.DesiredNumberScheduled,
-						"NumberAvailable", nodeDaemonSet.Status.NumberAvailable)
+				updateErr := r.updateCSINodeDaemonSet(instance)
+				if updateErr != nil {
+					return updateErr
+				}
+				// TODO: Should restart sidecar pods if respective ServiceAccount is created afterwards?
+			} else if attacherServiceAccountName == sa.Name || provisionerServiceAccountName == sa.Name || snapshotterServiceAccountName == sa.Name || resizerServiceAccountName == sa.Name {
 
-					rErr := r.rolloutRestartNode(nodeDaemonSet)
-					if rErr != nil {
-						message := "Failed to rollout restart of node DaemonSet: " + config.GetNameForResource(config.CSINode, instance.Name)
-						logger.Error(rErr, message)
-						SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-							metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
-						)
-						return rErr
-					}
-
-					restartedAtKey, restartedAtValue = r.getRestartedAtAnnotation(nodeDaemonSet.Spec.Template.ObjectMeta.Annotations)
-					logger.Info("Rollout restart of node DaemonSet is successful")
+				updateErr := r.updateCSISideCars(instance, sa.Name)
+				if updateErr != nil {
+					return updateErr
 				}
 				// TODO: Should restart sidecar pods if respective ServiceAccount is created afterwards?
 			}
@@ -1181,7 +1165,19 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 		} else {
 			// Cannot update the service account of an already created pod.
 			// Reference: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
-			logger.Info("ServiceAccount " + sa.GetName() + " already exists.")
+
+			logger.Info("service-account " + sa.GetName() + " already exists. Updating.")
+			err = r.Client.Update(context.TODO(), sa)
+			if err != nil {
+				message := "Failed to update the service-account: " + sa.GetName()
+				logger.Error(err, message)
+				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+					metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+				)
+				return err
+			}
+			logger.Info("ServiceAccount " + sa.GetName() + " has been updated.")
+
 		}
 	}
 	logger.V(1).Info("Reconciliation of all the ServiceAccounts is successful")
@@ -1196,6 +1192,83 @@ func (r *CSIScaleOperatorReconciler) getNodeDaemonSet(instance *csiscaleoperator
 	}, node)
 
 	return node, err
+}
+
+func (r *CSIScaleOperatorReconciler) getDeployment(instance *csiscaleoperator.CSIScaleOperator, name config.ResourceName) (*appsv1.Deployment, error) {
+	deployment := &appsv1.Deployment{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Name:      config.GetNameForResource(name, instance.Name),
+		Namespace: instance.Namespace,
+	}, deployment)
+
+	return deployment, err
+}
+
+func (r *CSIScaleOperatorReconciler) updateCSISideCars(instance *csiscaleoperator.CSIScaleOperator, serviceAccountName string) error {
+	logger := csiLog.WithName("updateCSISideCars")
+	logger.Info("Restarting Sidecars when the ServiceAccount is updated.")
+	sideCarName, err := r.getDeployment(instance, config.ResourceName(serviceAccountName))
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("SideCar doesn't exist. Restart not required.", "SideCar", serviceAccountName)
+	} else if err != nil {
+		message := "Failed to get the SideCar Name: " + serviceAccountName
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.GetFailed), message,
+		)
+		return err
+	} else {
+		logger.Info("SideCar pods exists, deployment rollout requires restart",
+			"DesiredNumberScheduled", sideCarName.Status.Replicas,
+			"NumberAvailable", sideCarName.Status.AvailableReplicas)
+
+		rErr := r.rolloutRestartDeployment(sideCarName)
+		if rErr != nil {
+			message := "Failed to rollout restart of the SideCar: " + serviceAccountName
+			logger.Error(rErr, message)
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+			)
+			return rErr
+		}
+		restartedAtKey, restartedAtValue = r.getRestartedAtAnnotation(sideCarName.Spec.Template.ObjectMeta.Annotations)
+		logger.Info("Rollout restart of the Sidecar is successful", "SideCar", serviceAccountName)
+	}
+	return nil
+}
+
+func (r *CSIScaleOperatorReconciler) updateCSINodeDaemonSet(instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.WithName("updateCSINodeDaemonSet")
+	logger.Info("Restarting NodeDaemonSet when the ServiceAccount is updated.")
+	nodeDaemonSet, err := r.getNodeDaemonSet(instance)
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Daemonset doesn't exist. Restart not required.")
+	} else if err != nil {
+		message := "Failed to get the driver DaemonSet: " + config.GetNameForResource(config.CSINode, instance.Name)
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.GetFailed), message,
+		)
+		return err
+	} else {
+		logger.Info("DaemonSet exists, node rollout requires restart",
+			"DesiredNumberScheduled", nodeDaemonSet.Status.DesiredNumberScheduled,
+			"NumberAvailable", nodeDaemonSet.Status.NumberAvailable)
+
+		rErr := r.rolloutRestartNode(nodeDaemonSet)
+		if rErr != nil {
+			message := "Failed to rollout restart of node DaemonSet: " + config.GetNameForResource(config.CSINode, instance.Name)
+			logger.Error(rErr, message)
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.UpdateFailed), message,
+			)
+			return rErr
+		}
+
+		restartedAtKey, restartedAtValue = r.getRestartedAtAnnotation(nodeDaemonSet.Spec.Template.ObjectMeta.Annotations)
+		logger.Info("Rollout restart of node DaemonSet is successful")
+	}
+	return nil
 }
 
 /*
@@ -1265,6 +1338,13 @@ func (r *CSIScaleOperatorReconciler) getRestartedAtAnnotation(Annotations map[st
 		}
 	}
 	return "", ""
+}
+
+func (r *CSIScaleOperatorReconciler) rolloutRestartDeployment(deploy *appsv1.Deployment) error {
+	restartedAt := fmt.Sprintf("%s/restartedAt", config.APIGroup)
+	timestamp := time.Now().String()
+	deploy.Spec.Template.ObjectMeta.Annotations[restartedAt] = timestamp
+	return r.Client.Update(context.TODO(), deploy)
 }
 
 /*
