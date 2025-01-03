@@ -130,16 +130,6 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 
 	out := s.obj.(*appsv1.DaemonSet)
 
-	secrets := []corev1.LocalObjectReference{}
-	if len(s.driver.Spec.ImagePullSecrets) > 0 {
-		for _, s := range s.driver.Spec.ImagePullSecrets {
-			logger.Info("Got ", "ImagePullSecret:", s)
-			secrets = append(secrets, corev1.LocalObjectReference{Name: s})
-		}
-	}
-	secrets = append(secrets, corev1.LocalObjectReference{Name: config.ImagePullSecretRegistryKey},
-		corev1.LocalObjectReference{Name: config.ImagePullSecretEntitlementKey})
-
 	annotations := s.driver.GetAnnotations(daemonSetRestartedKey, daemonSetRestartedValue)
 	SetScaleAnnotations(out.ObjectMeta.Annotations)
 	annotations["kubectl.kubernetes.io/default-container"] = config.Product
@@ -182,7 +172,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		out.Spec.Template.Spec.HostNetwork = false
 	}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(secrets, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -192,7 +182,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) corev1.PodSpec {
 
 	pod := corev1.PodSpec{
 		Containers:         s.ensureContainersSpec(cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits),
@@ -201,7 +191,6 @@ func (s *csiNodeSyncer) ensurePodSpec(secrets []corev1.LocalObjectReference, cpu
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
 		Tolerations:        s.driver.Spec.Tolerations,
-		ImagePullSecrets:   secrets,
 		Affinity:           s.driver.GetAffinity(config.NodePlugin.String()),
 		PriorityClassName:  "system-node-critical",
 	}
