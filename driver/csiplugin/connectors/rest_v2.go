@@ -35,7 +35,7 @@ import (
 
 const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
-const errContextDeadlineExceeded string = "context deadline exceeded" 
+const errContextDeadlineExceeded string = "context deadline exceeded"
 
 var GetLoggerId = utils.GetLoggerId
 
@@ -657,10 +657,15 @@ func (s *SpectrumRestV2) LinkFileset(ctx context.Context, filesystemName string,
 	return nil
 }
 
-func (s *SpectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName string, filesetName string) error {
+func (s *SpectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName string, filesetName string, force bool) error {
 	klog.V(4).Infof("[%s] rest_v2 UnlinkFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
-	unlinkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
+	var unlinkFilesetURL string
+	if force {
+		unlinkFilesetURL = fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
+	} else {
+		unlinkFilesetURL = fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link", filesystemName, filesetName)
+	}
 	unlinkFilesetResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, unlinkFilesetURL, "DELETE", &unlinkFilesetResponse, nil)
@@ -1039,7 +1044,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 
 	activeEndpointFound := false
 	if err != nil {
-		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded){
+		if strings.Contains(err.Error(), errConnectionRefused) || strings.Contains(err.Error(), errNoSuchHost) || strings.Contains(err.Error(), errContextDeadlineExceeded) {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v, checking next endpoint", utils.GetLoggerId(ctx), endpoint, err)
 			// Out of n endpoints, one has failed already, so loop over the
 			// remaining n-1 endpoints till we get an active GUI endpoint.
