@@ -815,10 +815,16 @@ func (s *SpectrumRestV2) LinkFileset(ctx context.Context, filesystemName string,
 	return nil
 }
 
-func (s *SpectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName string, filesetName string) error {
+func (s *SpectrumRestV2) UnlinkFileset(ctx context.Context, filesystemName string, filesetName string, force bool) error {
 	klog.V(4).Infof("[%s] rest_v2 UnlinkFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
-	unlinkFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
+	var unlinkFilesetURL string
+	if force {
+		unlinkFilesetURL = fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link?force=True", filesystemName, filesetName)
+	} else {
+		unlinkFilesetURL = fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/link", filesystemName, filesetName)
+	}
+
 	unlinkFilesetResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, unlinkFilesetURL, "DELETE", &unlinkFilesetResponse, nil)
