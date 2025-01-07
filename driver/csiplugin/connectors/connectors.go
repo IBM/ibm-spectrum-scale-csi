@@ -43,7 +43,7 @@ type SpectrumScaleConnector interface {
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
 	LinkFileset(ctx context.Context, filesystemName string, filesetName string, linkpath string) error
-	UnlinkFileset(ctx context.Context, filesystemName string, filesetName string) error
+	UnlinkFileset(ctx context.Context, filesystemName string, filesetName string, force bool) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error)
 	ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error)

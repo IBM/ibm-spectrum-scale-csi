@@ -50,6 +50,9 @@ const (
 
 	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
+
+	fsetLinkNotFoundErrCode = "EFSSG0449C"
+	fsetLinkNotFoundErrMsg  = "is not linked"
 )
 
 type ScaleControllerServer struct {
@@ -1648,7 +1651,18 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 		klog.Infof("[%s] there is no snapshot present in the fileset [%v], continue DeleteFilesetVol", loggerId, FilesetName)
 	}
 
-	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
+	err := conn.UnlinkFileset(ctx, FilesystemName, FilesetName, false)
+	if err != nil {
+		if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset seems to be already unlinked
+			klog.V(4).Infof("[%s] fileset seems to be already unlinked - %v", loggerId, err)
+			//return true, nil
+		} else {
+			return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+		}
+	}
+
+	err = conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
 		if strings.Contains(err.Error(), "EFSSG0072C") ||
 			strings.Contains(err.Error(), "400 Invalid value in 'filesetName'") { // fileset is already deleted
