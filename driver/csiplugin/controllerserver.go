@@ -748,7 +748,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 			klog.V(4).Infof("[%s] afmNumFlushThreads configured value is more than max limit. setting to default value", loggerId)
 			afmTuningParams[vacKey] = connectors.AfmNumFlushThreadsDefault	
 		}else{
-			afmTuningParams[vacKey] = afmNumFlushThreadsvalue
+			afmTuningParams[vacKey] = afmNumFlushThreadsValue
 		}
 
 	 case connectors.AfmPrefetchThreshold:
