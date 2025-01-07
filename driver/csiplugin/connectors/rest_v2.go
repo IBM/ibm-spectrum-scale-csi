@@ -520,7 +520,7 @@ func (s *SpectrumRestV2) GetLatestFilesetSnapshots(ctx context.Context, filesyst
 	return getLatestFilesetSnapshotsResponse.Snapshots, nil
 }
 
-func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}) error {
+func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}, setAfmAttributes bool) error {
 	klog.V(4).Infof("[%s] rest_v2 UpdateFileset. filesystem: %s, fileset: %s, volType: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, volType, opts)
 	filesetreq := CreateFilesetRequest{}
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
@@ -533,7 +533,7 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.Comment = fmt.Sprintf("%v", comment)
 	}
 
-	if volType == cachevolume {
+	if volType == cachevolume && setAfmAttributes {
         	afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
                 if afmReadSparseThresholdFound {
                 	filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
@@ -569,12 +569,12 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
                         filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
                 }
 
-               afmNumReadThreadsValue, afmNumReadThreadsFound := opts[AfmNumReadThreads]
-               if afmNumReadThreadsFound {
-                       filesetreq.AfmNumReadThreads = afmNumReadThreadsValue.(int)
-                } else {
-                        filesetreq.AfmNumReadThreads = AfmNumFlushThreadsDefault
-               }
+             //  afmNumReadThreadsValue, afmNumReadThreadsFound := opts[AfmNumReadThreads]
+               //if afmNumReadThreadsFound {
+                 //      filesetreq.AfmNumReadThreads = afmNumReadThreadsValue.(int)
+              //  } else {
+                //        filesetreq.AfmNumReadThreads = AfmNumFlushThreadsDefault
+              // }
 
        }
 

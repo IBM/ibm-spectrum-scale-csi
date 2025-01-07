@@ -483,6 +483,10 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 	loggerId := utils.GetLoggerId(ctx)
+	setAfmAttributes := false
+	if len(afmTuningParams) > 0{
+		setAfmAttributes = true
+	}
 	if err != nil {
 		klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
@@ -522,7 +526,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 			// For cache fileset, add a comment as the create COS fileset
 			// interface doesn't allow setting the fileset comment.
-			if err := handleUpdateComment(ctx, scVol); err != nil {
+			if err := handleUpdateComment(ctx, scVol, setAfmAttributes); err != nil {
 				return "", err
 			}
 		} else {
@@ -543,9 +547,9 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list newly created fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
 		}
 
-		if scVol.VolumeType == cacheVolume{
+		if scVol.VolumeType == cacheVolume && len(afmTuningParams) > 0 {
 			if filesetInfo.FilesetName == scVol.VolName{
-				err = scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, volName, afmTuningParams)
+				err = scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, volName, afmTuningParams, true)
 				if err != nil{
 					klog.Errorf("[%s] volume:[%v] - unable to modify fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 					return "", status.Error(codes.Internal, fmt.Sprintf("unable to modify fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
@@ -557,7 +561,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment != connectors.FilesetComment {
 			if scVol.VolumeType == cacheVolume {
-				if err := handleUpdateComment(ctx, scVol); err != nil {
+				if err := handleUpdateComment(ctx, scVol, setAfmAttributes); err != nil {
 					return "", err
 				}
 			} else {
@@ -645,11 +649,11 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	return targetBasePath, nil
 }
 
-func handleUpdateComment(ctx context.Context, scVol *scaleVolume) error {
+func handleUpdateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool) error {
 	loggerId := utils.GetLoggerId(ctx)
 	volName := scVol.VolName
 
-	if updateerr := updateComment(ctx, scVol); updateerr != nil {
+	if updateerr := updateComment(ctx, scVol, setAfmAttributes); updateerr != nil {
 		if strings.Contains(updateerr.Error(), fsetNotFoundErrCode) ||
 			strings.Contains(updateerr.Error(), fsetNotFoundErrMsg) {
 			// Filset is not found, refresh filesets
@@ -659,7 +663,7 @@ func handleUpdateComment(ctx context.Context, scVol *scaleVolume) error {
 			}
 
 			// Try update again after fileset refresh
-			if updateerr := updateComment(ctx, scVol); updateerr != nil {
+			if updateerr := updateComment(ctx, scVol, setAfmAttributes); updateerr != nil {
 				klog.Errorf("[%s] failed to update comment for fileset [%s] in filesystem [%s] even after fileset refresh. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
 				return status.Error(codes.Internal, fmt.Sprintf("failed to update comment for fileset [%s] in filesystem [%s] even after fileset refresh. Error: %v", volName, scVol.VolBackendFs, updateerr))
 			}
@@ -676,10 +680,10 @@ func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeReque
 	return capacity.GetRequiredBytes()
 }
 
-func updateComment(ctx context.Context, scVol *scaleVolume) error {
+func updateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool) error {
 	updateOpts := make(map[string]interface{})
 	updateOpts[connectors.FilesetComment] = connectors.FilesetComment
-	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, scVol.VolName, updateOpts)
+	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, scVol.VolName, updateOpts, setAfmAttributes)
 }
 
 func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid string) (connectors.SpectrumScaleConnector, error) {
@@ -1107,8 +1111,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
-
-	scaleVolID,_ := getVolIDMembers(volID)
 
 	if isVolSource {
 		if srcVolumeIDMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
@@ -2253,7 +2255,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
 	}
 
-	fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, afmTuningParams)
+	fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, afmTuningParams, true)
 	if fseterr != nil {
 		klog.Errorf("[%s] Volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesetName, filesystemName, fseterr)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
@@ -3383,13 +3385,11 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	}
 
 	volID := req.GetVolumeId()
-	klog.Infof("[%s]vControllerExpandVolume volID:%s", loggerId, volID)
 	if len(volID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "volume ID missing in request")
 	}
 
 	capRange := req.GetCapacityRange()
-	klog.Infof("[%s]vControllerExpandVolume capRange:%d", loggerId, capRange)
 	if capRange == nil {
 		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
 	}
@@ -3403,8 +3403,6 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerExpandVolume - Error in source Volume ID %v: %v", volID, err))
 	}
 
-	
-	klog.Infof("[%s] volumeIDMembers:[%+v], req:[%+v]", loggerId, volumeIDMembers, req)
 
 	if volumeIDMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
 		klog.Errorf("[%s] ControllerExpandVolume - volume expansion is not supported for shallow copy volume", loggerId)
@@ -3487,7 +3485,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 			if numberInSlice(fsetDetails.Config.MaxNumInodes, maxInodesCombination) {
 				opt := make(map[string]interface{})
 				opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
-				fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, opt)
+				fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, opt, false)
 				if fseterr != nil {
 					klog.Errorf("[%s] Volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesetName, filesystemName, fseterr)
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
