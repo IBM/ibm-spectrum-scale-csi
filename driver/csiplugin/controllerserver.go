@@ -734,11 +734,17 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 	 switch vacKey{
 
          case connectors.AfmReadSparseThreshold:
-		afmTuningParams[vacKey] = vacValue	
+		afmReadSparseThresholdValue,_ := strconv.Atoi(vacValue)
+		if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296{
+			klog.V(4).Infof("[%s] afmReadSparseThresholdValue is out of required limit. setting to default value", loggerId)
+			afmTuningParams[vacKey] = connectors.AfmReadSparseThresholdDefault
+		}else{
+			afmTuningParams[vacKey] = afmReadSparseThresholdValue
+		}
 
 	 case connectors.AfmNumFlushThreads:
-		afmNumFlushThreadsvalue,_ :=  strconv.Atoi(vacValue)
-		if afmNumFlushThreadsvalue > 1024{
+		afmNumFlushThreadsValue,_ :=  strconv.Atoi(vacValue)
+		if afmNumFlushThreadsValue > 1024{
 			klog.V(4).Infof("[%s] afmNumFlushThreads configured value is more than max limit. setting to default value", loggerId)
 			afmTuningParams[vacKey] = connectors.AfmNumFlushThreadsDefault	
 		}else{
