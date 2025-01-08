@@ -564,7 +564,7 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 
                 afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
                 if afmFileOpenRefreshIntervalFound {
-                        filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(int)
+			filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
                 } else {
                         filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
                 }
@@ -575,6 +575,7 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
               //  } else {
                 //        filesetreq.AfmNumReadThreads = AfmNumFlushThreadsDefault
               // }
+
 
        }
 

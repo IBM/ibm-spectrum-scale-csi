@@ -639,7 +639,7 @@ type CreateFilesetRequest struct {
 	AfmShowHomeSnapshots         string `json:"afmShowHomeSnapshots,omitempty"`
         AfmReadSparseThreshold       string `json:"afmReadSparseThreshold,omitempty"`
 	AfmObjectFastReaddir         string `json:"afmObjectFastReaddir,omitempty"`
-	AfmFileOpenRefreshInterval   int    `json:"afmFileOpenRefreshInterval,omitempty"`
+	AfmFileOpenRefreshInterval   string    `json:"afmFileOpenRefreshInterval,omitempty"`
 	AfmNumReadThreads            int    `json:"afmNumReadThreads,omitempty"`
 }
 

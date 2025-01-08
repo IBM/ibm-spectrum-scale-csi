@@ -141,7 +141,7 @@ const (
 	// default value for AFM tuning parameters
 	AfmNumFlushThreadsDefault         = 4
 	AfmPrefetchThresholdDefault       = 0
-	AfmFileOpenRefreshIntervalDefault = 30
+	AfmFileOpenRefreshIntervalDefault = "30"
 	AfmNumReadThreadsDefault          = 1
 	AfmObjectFastReaddirDefault       = "no"
 	AfmReadSparseThresholdDefault     = "128"
