@@ -287,7 +287,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if err != nil {
 			message := "Failed to validate IBM Storage Scale CSI configurations." +
 				" Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
-			logger.Error(fmt.Errorf(message), "")
+			logger.Error(fmt.Errorf("%s", message), "")
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
 			)
@@ -669,7 +669,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleope
 	err := json.Unmarshal(configMapDataBytes, &currentCMclusters)
 	if err != nil {
 		message := fmt.Sprintf("Failed to unmarshal data of ConfigMap: %v", config.CSIConfigMap)
-		err := fmt.Errorf(message)
+		err := fmt.Errorf("%s", message)
 		logger.Error(err, "")
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.UnmarshalFailed), message,
@@ -714,7 +714,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleope
 					}
 					message := fmt.Sprintf("Primary stanza is modified for cluster with ID %s. Use the orignal primary %s and try again",
 						crCluster.Id, primaryString)
-					err := fmt.Errorf(message)
+					err := fmt.Errorf("%s", message)
 					logger.Error(err, "")
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.PrimaryClusterStanzaModified), message,
@@ -2036,7 +2036,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 						metav1.ConditionFalse, string(csiv1.ClusterIDMismatch), message,
 					)
-					return requeAfterDelay, fmt.Errorf(message)
+					return requeAfterDelay, fmt.Errorf("%s", message)
 				} else {
 					logger.Info(fmt.Sprintf("The cluster ID %s is validated successfully", cluster.Id))
 				}
@@ -2056,7 +2056,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	primaryReference := r.getPrimaryCluster(instance)
 	if primaryReference == nil {
 		message := fmt.Sprintf("No primary cluster is defined in the IBM Storage Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
-		err := fmt.Errorf(message)
+		err := fmt.Errorf("%s", message)
 		logger.Error(err, "")
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 			metav1.ConditionFalse, string(csiv1.PrimaryClusterUndefined), message,
@@ -2113,7 +2113,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.GetRemoteFileSystemFailed), message,
 			)
-			return requeAfterDelay, fmt.Errorf(message)
+			return requeAfterDelay, fmt.Errorf("%s", message)
 		}
 	}
 
@@ -2353,7 +2353,7 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 
 	if issueFound {
 		message := "one or more issues found while validating driver manifest, check operator logs for details"
-		return fmt.Errorf(message)
+		return fmt.Errorf("%s", message)
 	}
 	return nil
 }
