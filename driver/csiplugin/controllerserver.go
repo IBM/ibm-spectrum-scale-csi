@@ -672,7 +672,6 @@ func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeReque
 }
 
 func updateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool, afmTuningParams map[string]interface{}) error {
-	loggerId := utils.GetLoggerId(ctx)
 	updateOpts := make(map[string]interface{})
 	if setAfmAttributes{
 		updateOpts = afmTuningParams
