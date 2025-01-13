@@ -24,7 +24,7 @@ patches:
           spec:
             containers:
               - name: operator
-                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:4cffa1292565ed746fb5e9e2741df17552a63b855295f24330ceeb9bd7c03517
+                image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:554a686c456d406c02b61e882be9d645e620e344d94648978d4b56d0d7c560f3
                 env:
                   - name: METRICS_BIND_ADDRESS
                   - name: WATCH_NAMESPACE
