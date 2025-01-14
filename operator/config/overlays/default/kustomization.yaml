@@ -29,4 +29,4 @@ patches:
                   - name: METRICS_BIND_ADDRESS
                   - name: WATCH_NAMESPACE
                   - name: CSI_DRIVER_IMAGE
-                    value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:e0d13aba20f82af5d34fac5ebc097c9c6a6686f2c17a9ce9bfd44f4e4237c37f
+                    value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:92c6c50ebe8c8845b202680a5b40f94e52a34433c2e12e0f5747032982e711e7
