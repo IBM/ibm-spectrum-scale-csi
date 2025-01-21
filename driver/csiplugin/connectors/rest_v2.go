@@ -569,14 +569,6 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
                         filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
                 }
 
-             //  afmNumReadThreadsValue, afmNumReadThreadsFound := opts[AfmNumReadThreads]
-               //if afmNumReadThreadsFound {
-                 //      filesetreq.AfmNumReadThreads = afmNumReadThreadsValue.(int)
-              //  } else {
-                //        filesetreq.AfmNumReadThreads = AfmNumFlushThreadsDefault
-              // }
-
-
        }
 
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)

@@ -720,7 +720,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 // As part of initial implementation only 6 parameters are considered for tuning by default
 // afmObjectSyncOpenFiles,afmNumFlushThreads,afmPrefetchThreshold,afmObjectFastReaddir,afmFileOpenRefreshInterval,afmNumReadThreads (Default parameters)
 // Values to the parameters are configured through VAC (volume attributes class). If not then default values are considered for tuning
-func validateVACParams(ctx context.Context, mutableParams map[string]string) map[string]interface{}{
+func validateVACParams(ctx context.Context, mutableParams map[string]string) (map[string]interface{},error){
 	loggerId := utils.GetLoggerId(ctx)
 	afmTuningParams := make(map[string]interface{})
 
@@ -731,7 +731,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 		afmReadSparseThresholdValue,_ := strconv.Atoi(vacValue)
 		if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296{
 			klog.V(4).Infof("[%s] afmReadSparseThresholdValue is out of required limit. setting to default value", loggerId)
-			afmTuningParams[vacKey] = connectors.AfmReadSparseThresholdDefault
+			return nil,status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmReadSparseThreshold))
 		}else{
 			afmTuningParams[vacKey] = vacValue
 		}
@@ -740,7 +740,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 		afmNumFlushThreadsValue,_ :=  strconv.Atoi(vacValue)
 		if afmNumFlushThreadsValue > 1024{
 			klog.V(4).Infof("[%s] afmNumFlushThreads configured value is more than max limit. setting to default value", loggerId)
-			afmTuningParams[vacKey] = connectors.AfmNumFlushThreadsDefault	
+			return nil,status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmNumFlushThreads))
 		}else{
 			afmTuningParams[vacKey] = afmNumFlushThreadsValue
 		}
@@ -749,7 +749,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 		afmPrefetchThresholdValue,_ := strconv.Atoi(vacValue)
 		if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100{
 			klog.V(4).Infof("[%s] afmPrefetchThreshold is out of required limit. setting to default value", loggerId)
-			afmTuningParams[vacKey] = connectors.AfmPrefetchThresholdDefault			
+			return nil,status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmPrefetchThreshold))
 		}else{
 			afmTuningParams[vacKey] = afmPrefetchThresholdValue
 		}
@@ -757,7 +757,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 	 case connectors.AfmObjectFastReaddir:
 		if !(vacValue == "no"  ||  vacValue == "yes") {
 			klog.V(4).Infof("[%s] afmObjectFastReaddir is configured with invalid value. setting to default value", loggerId)
-			afmTuningParams[vacKey] = connectors.AfmObjectFastReaddirDefault
+			return nil,status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmObjectFastReaddir))
 		}else{
 			afmTuningParams[vacKey] = vacValue
 		}
@@ -766,25 +766,17 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) map
 		afmFileOpenRefreshIntervalValue,_ := strconv.Atoi(vacValue)
 		if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647{
 			klog.V(4).Infof("[%s] afmFileOpenRefreshInterval is out of required limit. setting to default value", loggerId)
-			afmTuningParams[vacKey] = connectors.AfmFileOpenRefreshIntervalDefault
+			return nil,status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmFileOpenRefreshInterval))
 		}else{
 			afmTuningParams[vacKey] = vacValue
 		}
 
-	 case connectors.AfmNumReadThreads:
-		afmNumReadThreadsValue,_ := strconv.Atoi(vacValue)
-		if afmNumReadThreadsValue < 1 || afmNumReadThreadsValue > 64{
-			klog.V(4).Infof("[%s] afmNumReadThreads is out of required limit. setting to default value", loggerId)
-			afmTuningParams[vacKey] = connectors.AfmNumReadThreadsDefault
-		}else{
-			afmTuningParams[vacKey] = afmNumReadThreadsValue
-		}
 	 default:
 		klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
 	 }
 	}
 	
-	return afmTuningParams
+	return afmTuningParams, nil
 }
 
 
@@ -902,7 +894,10 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	mutableParams := req.GetMutableParameters()
 	if mutableParams != nil{
 		if scaleVol.VolumeType == cacheVolume{
-			afmTuningParams = validateVACParams(ctx, mutableParams)
+			afmTuningParams,err = validateVACParams(ctx, mutableParams)
+			if err != nil{
+				return nil, err
+			}
 		}else{
 			return nil, status.Error(codes.InvalidArgument, "Creating volume with volume attribute class is not supported")
 		}
@@ -2229,7 +2224,10 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume - Volume Attributes class is not supported for other type of volumes ")
 	}
 	
-	afmTuningParams := validateVACParams(ctx, mutableParams)
+	afmTuningParams,err := validateVACParams(ctx, mutableParams)
+	if err != nil{
+		return nil, err
+	}
 
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
 	if err != nil {
