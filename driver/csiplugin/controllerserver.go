@@ -1686,10 +1686,10 @@ func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) er
 }
 
 func (cs *ScaleControllerServer) checkCacheVolumeSupport(assembledScaleversion string) error {
-	/* Verify IBM Storage Scale Version is not below 5.2.2-0 */
-	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5220")
+	/* Verify IBM Storage Scale Version is not below 5.2.3-0 */
+	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5230")
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for cache volume support with CSI is 5.2.2-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for cache volume support with CSI is 5.2.3-0")
 	}
 	return nil
 }
