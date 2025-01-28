@@ -722,50 +722,51 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 	loggerId := utils.GetLoggerId(ctx)
 	afmTuningParams := make(map[string]interface{})
 
-	for vacKey, vacValue := range mutableParams {
-		switch vacKey {
-		case connectors.AfmReadSparseThreshold:
-			afmReadSparseThresholdValue, _ := strconv.Atoi(vacValue)
-			if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296 {
-				klog.V(4).Infof("[%s] afmReadSparseThresholdValue is out of required limit. setting to default value", loggerId)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmReadSparseThreshold))
-			} else {
-				afmTuningParams[vacKey] = vacValue
-			}
-		case connectors.AfmNumFlushThreads:
-			afmNumFlushThreadsValue, _ := strconv.Atoi(vacValue)
-			if afmNumFlushThreadsValue > 1024 {
-				klog.V(4).Infof("[%s] afmNumFlushThreads configured value is more than max limit. setting to default value", loggerId)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmNumFlushThreads))
-			} else {
-				afmTuningParams[vacKey] = afmNumFlushThreadsValue
-			}
-		case connectors.AfmPrefetchThreshold:
-			afmPrefetchThresholdValue, _ := strconv.Atoi(vacValue)
-			if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100 {
-				klog.V(4).Infof("[%s] afmPrefetchThreshold is out of required limit. setting to default value", loggerId)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmPrefetchThreshold))
-			} else {
-				afmTuningParams[vacKey] = afmPrefetchThresholdValue
-			}
-		case connectors.AfmObjectFastReaddir:
-			if !(vacValue == "no" || vacValue == "yes") {
-				klog.V(4).Infof("[%s] afmObjectFastReaddir is configured with invalid value. setting to default value", loggerId)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmObjectFastReaddir))
-			} else {
-				afmTuningParams[vacKey] = vacValue
-			}
-		case connectors.AfmFileOpenRefreshInterval:
-			afmFileOpenRefreshIntervalValue, _ := strconv.Atoi(vacValue)
-			if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647 {
-				klog.V(4).Infof("[%s] afmFileOpenRefreshInterval is out of required limit. setting to default value", loggerId)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("volume attribute %s is configured with invalid value", connectors.AfmFileOpenRefreshInterval))
-			} else {
-				afmTuningParams[vacKey] = vacValue
-			}
-		default:
-			klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
+	for vacKey,vacValue := range mutableParams{
+	 switch vacKey{
+
+         case connectors.AfmReadSparseThreshold:
+		afmReadSparseThresholdValue,_ := strconv.Atoi(vacValue)
+		if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296{
+			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
+		}else{
+			afmTuningParams[vacKey] = vacValue
 		}
+
+	 case connectors.AfmNumFlushThreads:
+		afmNumFlushThreadsValue,_ :=  strconv.Atoi(vacValue)
+		if afmNumFlushThreadsValue > 1024{
+			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]",  connectors.AfmNumFlushThreads))
+		}else{
+			afmTuningParams[vacKey] = afmNumFlushThreadsValue
+		}
+
+	 case connectors.AfmPrefetchThreshold:
+		afmPrefetchThresholdValue,_ := strconv.Atoi(vacValue)
+		if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100{
+			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
+		}else{
+			afmTuningParams[vacKey] = afmPrefetchThresholdValue
+		}
+
+	 case connectors.AfmObjectFastReaddir:
+		if !(vacValue == "no"  ||  vacValue == "yes") {
+			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
+		}else{
+			afmTuningParams[vacKey] = vacValue
+		}
+
+	 case connectors.AfmFileOpenRefreshInterval:
+		afmFileOpenRefreshIntervalValue,_ := strconv.Atoi(vacValue)
+		if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647{
+			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
+		}else{
+			afmTuningParams[vacKey] = vacValue
+		}
+
+	 default:
+		klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
+	 }
 	}
 	return afmTuningParams, nil
 }
