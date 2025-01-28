@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
@@ -9,108 +9,8 @@ metadata:
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-  annotations:
-    productVersion: 2.13.0
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-  template:
-    metadata:
-      labels:
-        name: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
-        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
-        product: ibm-spectrum-scale-csi
-        release: ibm-spectrum-scale-csi-operator
-      annotations:
-        productID: ibm-spectrum-scale-csi-operator
-        productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.13.0
-    spec:
-      serviceAccountName: ibm-spectrum-scale-csi-operator
-      containers:
-      - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:c292fa07a03f5accac554a5f366b7241c31dbb85fc4617c0fe2428cf103fce56
-        args:
-        - --leaderElection=true
-        env:
-        - name: METRICS_BIND_ADDRESS
-          value: "8383"
-        - name: WATCH_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:6cf6a3818f48c2bcb5460c4902c5d44ad73c415a5f2980a374062a4bb18840ea
-        - name: CSI_SNAPSHOTTER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:b3e90b33781670ac050c22c9e88b9e876493dca248966b9da6f7a90cc412ab86
-        - name: CSI_ATTACHER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-attacher@sha256:b4d611100ece2f9bc980d1cb19c2285b8868da261e3b1ee8f45448ab5512ab94
-        - name: CSI_PROVISIONER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:7b9cdb5830d01bda96111b4f138dbddcc01eed2f95aa980a404c45a042d60a10
-        - name: CSI_LIVENESSPROBE_IMAGE
-          value: registry.k8s.io/sig-storage/livenessprobe@sha256:33692aed26aaf105b4d6e66280cceca9e0463f500c81b5d8c955428a75438f32
-        - name: CSI_NODE_REGISTRAR_IMAGE
-          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:e01facb9fb9cffaf52d0053bdb979fbd8c505c8e411939a6e026dd061a6b4fbe
-        - name: CSI_RESIZER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-resizer@sha256:be6a7de1d43dba90710b61bd3d0d8f568654a6adadaeea9188cf4cd3554cbb87
-        resources:
-          limits:
-            cpu: 600m
-            ephemeral-storage: 5Gi
-            memory: 600Mi
-          requests:
-            cpu: 50m
-            ephemeral-storage: 1Gi
-            memory: 50Mi
-        livenessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          exec:
-            command:
-            - ./health_check.sh
-          initialDelaySeconds: 3
-          periodSeconds: 1
-        imagePullPolicy: IfNotPresent
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          privileged: false
-          readOnlyRootFilesystem: true
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values:
-                - amd64
-                - ppc64le
-                - s390x
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/infra
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/control-plane
-        operator: Exists
-      securityContext:
-        runAsGroup: 10001
-        runAsNonRoot: true
-        runAsUser: 10001
+imagePullSecrets:
+- name: ibm-entitlement-key
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -235,8 +135,8 @@ subjects:
   namespace: ibm-spectrum-scale-csi-driver
   kind: ServiceAccount
 ---
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: ibm-spectrum-scale-csi-operator
   namespace: ibm-spectrum-scale-csi-driver
@@ -246,9 +146,108 @@ metadata:
     app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
-imagePullSecrets:
-- name: ibm-spectrum-scale-csi-registrykey
-- name: ibm-entitlement-key
+  annotations:
+    productVersion: 2.14.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+  template:
+    metadata:
+      labels:
+        name: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
+        app.kubernetes.io/name: ibm-spectrum-scale-csi-operator
+        product: ibm-spectrum-scale-csi
+        release: ibm-spectrum-scale-csi-operator
+      annotations:
+        productID: ibm-spectrum-scale-csi-operator
+        productName: IBM Spectrum Scale CSI Operator
+        productVersion: 2.14.0
+    spec:
+      serviceAccountName: ibm-spectrum-scale-csi-operator
+      containers:
+      - name: operator
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:cfc7a58576ccb10e1f7352e7efecaa6d4a66fcaa0982b50854f271064ba3cd1d
+        args:
+        - --leaderElection=true
+        env:
+        - name: METRICS_BIND_ADDRESS
+          value: "8383"
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CSI_DRIVER_IMAGE
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:8ccbedb08e25978cde770872aee74526f7f03616ca971ced4f6c96af84f1bd46
+        - name: CSI_SNAPSHOTTER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:dd788d79cf4c1b8edee6d9b80b8a1ebfc51a38a365c5be656986b129be9ac784
+        - name: CSI_ATTACHER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-attacher@sha256:6e54dae32284f60a2de1645c527715e4c934e5ce7899560c0d845bac957118dc
+        - name: CSI_PROVISIONER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:672e45d6a55678abc1d102de665b5cbd63848e75dc7896f238c8eaaf3c7d322f
+        - name: CSI_LIVENESSPROBE_IMAGE
+          value: registry.k8s.io/sig-storage/livenessprobe@sha256:2c5f9dc4ea5ac5509d93c664ae7982d4ecdec40ca7b0638c24e5b16243b8360f
+        - name: CSI_NODE_REGISTRAR_IMAGE
+          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:0d23a6fd60c421054deec5e6d0405dc3498095a5a597e175236c0692f4adee0f
+        - name: CSI_RESIZER_IMAGE
+          value: registry.k8s.io/sig-storage/csi-resizer@sha256:ab774734705a906561e15b67f6a96538f3ad520335d636f793aaafe87a3b5200
+        resources:
+          limits:
+            cpu: 600m
+            ephemeral-storage: 5Gi
+            memory: 600Mi
+          requests:
+            cpu: 50m
+            ephemeral-storage: 1Gi
+            memory: 50Mi
+        livenessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - ./health_check.sh
+          initialDelaySeconds: 3
+          periodSeconds: 1
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -442,7 +441,7 @@ spec:
                               properties:
                                 labelSelector:
                                   type: object
-                                  description: A label query over a set of resources, in this case pods.
+                                  description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                   properties:
                                     matchExpressions:
                                       type: array
@@ -470,6 +469,18 @@ spec:
                                       additionalProperties:
                                         type: string
                                       description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                matchLabelKeys:
+                                  type: array
+                                  description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                  items:
+                                    type: string
+                                  x-kubernetes-list-type: atomic
+                                mismatchLabelKeys:
+                                  type: array
+                                  description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                  items:
+                                    type: string
+                                  x-kubernetes-list-type: atomic
                                 namespaceSelector:
                                   type: object
                                   description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
@@ -526,7 +537,7 @@ spec:
                           properties:
                             labelSelector:
                               type: object
-                              description: A label query over a set of resources, in this case pods.
+                              description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                               properties:
                                 matchExpressions:
                                   type: array
@@ -554,6 +565,18 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+                            matchLabelKeys:
+                              type: array
+                              description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                              items:
+                                type: string
+                              x-kubernetes-list-type: atomic
+                            mismatchLabelKeys:
+                              type: array
+                              description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                              items:
+                                type: string
+                              x-kubernetes-list-type: atomic
                             namespaceSelector:
                               type: object
                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
@@ -611,7 +634,7 @@ spec:
                               properties:
                                 labelSelector:
                                   type: object
-                                  description: A label query over a set of resources, in this case pods.
+                                  description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                   properties:
                                     matchExpressions:
                                       type: array
@@ -639,6 +662,18 @@ spec:
                                       additionalProperties:
                                         type: string
                                       description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+                                matchLabelKeys:
+                                  type: array
+                                  description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                  items:
+                                    type: string
+                                  x-kubernetes-list-type: atomic
+                                mismatchLabelKeys:
+                                  type: array
+                                  description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                  items:
+                                    type: string
+                                  x-kubernetes-list-type: atomic
                                 namespaceSelector:
                                   type: object
                                   description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
@@ -695,7 +730,7 @@ spec:
                           properties:
                             labelSelector:
                               type: object
-                              description: A label query over a set of resources, in this case pods.
+                              description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                               properties:
                                 matchExpressions:
                                   type: array
@@ -723,6 +758,18 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+                            matchLabelKeys:
+                              type: array
+                              description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                              items:
+                                type: string
+                              x-kubernetes-list-type: atomic
+                            mismatchLabelKeys:
+                              type: array
+                              description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                              items:
+                                type: string
+                              x-kubernetes-list-type: atomic
                             namespaceSelector:
                               type: object
                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
