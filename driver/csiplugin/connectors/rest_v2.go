@@ -850,7 +850,7 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 	}
 	hostname := parsedURL.Hostname()
 
-	exportMapReq.ExportMap = append(exportMapReq.ExportMap, fmt.Sprintf(hostname+"/"+gatewayNodeName))
+	exportMapReq.ExportMap = append(exportMapReq.ExportMap, hostname+"/"+gatewayNodeName)
 
 	exportMapReq.NoServerResolution = true
 
@@ -861,6 +861,10 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 
 	err = s.doHTTP(ctx, createExportMapURL, "POST", &createExportMapResponse, exportMapReq)
 	if err != nil {
+		if strings.Contains(createExportMapResponse.Status.Message, "Mapping "+exportMapName+" already exists") {
+			klog.V(6).Infof("[%s] Failed to create NodeMappingAFMWithCos exportMapName, exportMap is already exists. So returning success %v", utils.GetLoggerId(ctx), err)
+			return nil
+		}
 		klog.Errorf("[%s] Failed to create NodeMappingAFMWithCos exportMapName: %s, error: %v", loggerID, exportMapName, err)
 		return err
 	}
