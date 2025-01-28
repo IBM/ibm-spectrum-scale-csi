@@ -224,6 +224,7 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
+		csi.ControllerServiceCapability_RPC_MODIFY_VOLUME,
 	}
 	_ = driver.AddControllerServiceCapabilities(ctx, csc)
 

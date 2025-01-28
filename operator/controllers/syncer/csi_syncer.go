@@ -516,7 +516,8 @@ func (s *csiControllerSyncer) ensureProvisionerContainersSpec(cpuLimits string, 
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
 			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
 			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort),
-			"--volume-name-prefix=" + volNamePrefix},
+			"--volume-name-prefix=" + volNamePrefix,
+			"--feature-gates=VolumeAttributesClass=true"},
 		cpuLimits, memoryLimits,
 	)
 	provisioner.ImagePullPolicy = config.CSIProvisionerImagePullPolicy
@@ -561,6 +562,7 @@ func (s *csiControllerSyncer) ensureResizerContainersSpec(cpuLimits string, memo
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
 			"--leader-election-retry-period=$(LEADER_ELECTION_RETRY_PERIOD)",
+			"--feature-gates=VolumeAttributesClass=true",
 			"--http-endpoint=:" + fmt.Sprint(config.LeaderLivenessPort)},
 		cpuLimits, memoryLimits,
 	)
