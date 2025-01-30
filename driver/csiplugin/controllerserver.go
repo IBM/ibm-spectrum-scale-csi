@@ -722,51 +722,51 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 	loggerId := utils.GetLoggerId(ctx)
 	afmTuningParams := make(map[string]interface{})
 
-	for vacKey,vacValue := range mutableParams{
-	 switch vacKey{
+	for vacKey, vacValue := range mutableParams {
+		switch vacKey {
 
-         case connectors.AfmReadSparseThreshold:
-		afmReadSparseThresholdValue,_ := strconv.Atoi(vacValue)
-		if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
-		}else{
-			afmTuningParams[vacKey] = vacValue
+		case connectors.AfmReadSparseThreshold:
+			afmReadSparseThresholdValue, _ := strconv.Atoi(vacValue)
+			if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
+			} else {
+				afmTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmNumFlushThreads:
+			afmNumFlushThreadsValue, _ := strconv.Atoi(vacValue)
+			if afmNumFlushThreadsValue > 1024 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmNumFlushThreads))
+			} else {
+				afmTuningParams[vacKey] = afmNumFlushThreadsValue
+			}
+
+		case connectors.AfmPrefetchThreshold:
+			afmPrefetchThresholdValue, _ := strconv.Atoi(vacValue)
+			if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
+			} else {
+				afmTuningParams[vacKey] = afmPrefetchThresholdValue
+			}
+
+		case connectors.AfmObjectFastReaddir:
+			if !(vacValue == "no" || vacValue == "yes") {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
+			} else {
+				afmTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmFileOpenRefreshInterval:
+			afmFileOpenRefreshIntervalValue, _ := strconv.Atoi(vacValue)
+			if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
+			} else {
+				afmTuningParams[vacKey] = vacValue
+			}
+
+		default:
+			klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
 		}
-
-	 case connectors.AfmNumFlushThreads:
-		afmNumFlushThreadsValue,_ :=  strconv.Atoi(vacValue)
-		if afmNumFlushThreadsValue > 1024{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]",  connectors.AfmNumFlushThreads))
-		}else{
-			afmTuningParams[vacKey] = afmNumFlushThreadsValue
-		}
-
-	 case connectors.AfmPrefetchThreshold:
-		afmPrefetchThresholdValue,_ := strconv.Atoi(vacValue)
-		if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
-		}else{
-			afmTuningParams[vacKey] = afmPrefetchThresholdValue
-		}
-
-	 case connectors.AfmObjectFastReaddir:
-		if !(vacValue == "no"  ||  vacValue == "yes") {
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
-		}else{
-			afmTuningParams[vacKey] = vacValue
-		}
-
-	 case connectors.AfmFileOpenRefreshInterval:
-		afmFileOpenRefreshIntervalValue,_ := strconv.Atoi(vacValue)
-		if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
-		}else{
-			afmTuningParams[vacKey] = vacValue
-		}
-
-	 default:
-		klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
-	 }
 	}
 	return afmTuningParams, nil
 }
@@ -2354,6 +2354,9 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		if err != nil {
 			klog.Errorf("[%s]  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, FilesetName, FilesystemName, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", FilesetName, FilesystemName, err))
+		} else if reflect.ValueOf(filesetInfo).IsZero() {
+			klog.Infof("Fileset [%v] is either already deleted or not present, skipping the fileset delete", FilesetName)
+			return &csi.DeleteVolumeResponse{}, nil
 		} else if !reflect.ValueOf(filesetInfo).IsZero() && filesetInfo.Config.Comment != connectors.FilesetComment {
 			klog.Infof("Fileset [%v] is not created by IBM Container Storage Interface driver, skipping the fileset delete", FilesetName)
 			return &csi.DeleteVolumeResponse{}, nil
