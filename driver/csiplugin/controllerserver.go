@@ -2099,10 +2099,13 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 
 	err := conn.UnlinkFileset(ctx, FilesystemName, FilesetName, false)
 	if err != nil {
-		if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
-			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset seems to be already unlinked
-			klog.V(4).Infof("[%s] fileset seems to be already unlinked - %v", loggerId, err)
-			//return true, nil
+		if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
+			klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
+			return true, nil
+		} else if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset is already unlinked
+			klog.V(4).Infof("[%s] fileset seems already unlinked - %v", loggerId, err)
 		} else {
 			return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 		}
@@ -2354,9 +2357,6 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		if err != nil {
 			klog.Errorf("[%s]  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, FilesetName, FilesystemName, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", FilesetName, FilesystemName, err))
-		} else if reflect.ValueOf(filesetInfo).IsZero() {
-			klog.Infof("Fileset [%v] is either already deleted or not present, skipping the fileset delete", FilesetName)
-			return &csi.DeleteVolumeResponse{}, nil
 		} else if !reflect.ValueOf(filesetInfo).IsZero() && filesetInfo.Config.Comment != connectors.FilesetComment {
 			klog.Infof("Fileset [%v] is not created by IBM Container Storage Interface driver, skipping the fileset delete", FilesetName)
 			return &csi.DeleteVolumeResponse{}, nil
