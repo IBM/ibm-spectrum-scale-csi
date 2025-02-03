@@ -722,51 +722,51 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 	loggerId := utils.GetLoggerId(ctx)
 	afmTuningParams := make(map[string]interface{})
 
-	for vacKey,vacValue := range mutableParams{
-	 switch vacKey{
+	for vacKey, vacValue := range mutableParams {
+		switch vacKey {
 
-         case connectors.AfmReadSparseThreshold:
-		afmReadSparseThresholdValue,_ := strconv.Atoi(vacValue)
-		if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
-		}else{
-			afmTuningParams[vacKey] = vacValue
+		case connectors.AfmReadSparseThreshold:
+			afmReadSparseThresholdValue, _ := strconv.Atoi(vacValue)
+			if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
+			} else {
+				afmTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmNumFlushThreads:
+			afmNumFlushThreadsValue, _ := strconv.Atoi(vacValue)
+			if afmNumFlushThreadsValue > 1024 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmNumFlushThreads))
+			} else {
+				afmTuningParams[vacKey] = afmNumFlushThreadsValue
+			}
+
+		case connectors.AfmPrefetchThreshold:
+			afmPrefetchThresholdValue, _ := strconv.Atoi(vacValue)
+			if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
+			} else {
+				afmTuningParams[vacKey] = afmPrefetchThresholdValue
+			}
+
+		case connectors.AfmObjectFastReaddir:
+			if !(vacValue == "no" || vacValue == "yes") {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
+			} else {
+				afmTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmFileOpenRefreshInterval:
+			afmFileOpenRefreshIntervalValue, _ := strconv.Atoi(vacValue)
+			if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647 {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
+			} else {
+				afmTuningParams[vacKey] = vacValue
+			}
+
+		default:
+			klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
 		}
-
-	 case connectors.AfmNumFlushThreads:
-		afmNumFlushThreadsValue,_ :=  strconv.Atoi(vacValue)
-		if afmNumFlushThreadsValue > 1024{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]",  connectors.AfmNumFlushThreads))
-		}else{
-			afmTuningParams[vacKey] = afmNumFlushThreadsValue
-		}
-
-	 case connectors.AfmPrefetchThreshold:
-		afmPrefetchThresholdValue,_ := strconv.Atoi(vacValue)
-		if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
-		}else{
-			afmTuningParams[vacKey] = afmPrefetchThresholdValue
-		}
-
-	 case connectors.AfmObjectFastReaddir:
-		if !(vacValue == "no"  ||  vacValue == "yes") {
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
-		}else{
-			afmTuningParams[vacKey] = vacValue
-		}
-
-	 case connectors.AfmFileOpenRefreshInterval:
-		afmFileOpenRefreshIntervalValue,_ := strconv.Atoi(vacValue)
-		if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647{
-			return nil,status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
-		}else{
-			afmTuningParams[vacKey] = vacValue
-		}
-
-	 default:
-		klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
-	 }
 	}
 	return afmTuningParams, nil
 }
@@ -3307,22 +3307,33 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 					deleteSnapshot = false
 				}
 			} else {
-				statInfo, err := conn.StatDirectory(ctx, filesystemName, shallowCopyRefPath)
+				dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, shallowCopyRefPath)
 				if err != nil {
-					dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, shallowCopyRefPath)
-					if err != nil {
-						if !(strings.Contains(err.Error(), "EFSSG0264C") ||
+					if !(strings.Contains(err.Error(), "EFSSG0264C") ||
 						strings.Contains(err.Error(), "does not exist")) {
-							klog.Errorf("[%s] unable to check if directory path [%s] exists in filesystem [%s]. Error : %v", loggerId, shallowCopyRefPath, filesystemName, err)
-							deleteSnapshot = false
+						klog.Errorf("[%s] unable to check if directory path [%s] exists in filesystem [%s]. Error : %v", loggerId, shallowCopyRefPath, filesystemName, err)
+						deleteSnapshot = false
+					}
+					if dirExists {
+						statInfo, err := conn.StatDirectory(ctx, filesystemName, shallowCopyRefPath)
+						if err != nil {
+							if !(strings.Contains(err.Error(), "EFSSG0264C") ||
+								strings.Contains(err.Error(), "does not exist")) {
+								klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, filesystemName, shallowCopyRefPath, err)
+								deleteSnapshot = false
+							}
+						} else {
+							nlink, err := parseStatDirInfo(statInfo)
+							if err != nil {
+								klog.Errorf("[%s] invalid number of links [%d] returned in stat output for FS [%s] at path [%s]", loggerId, nlink, filesystemName, shallowCopyRefPath)
+								deleteSnapshot = false
+							}
+							if nlink > 2 {
+								deleteSnapshot = false
+								return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to delete snapshot [%s] as there is a reference for shallowcopy volume", snapIdMembers.SnapName))
+							}
 						}
-					}else{
-						if dirExists{
-							klog.Errorf("[%s] unable to stat directory using FS [%s] at path [%s]. Error [%v]", loggerId, filesystemName, shallowCopyRefPath, err)
-							deleteSnapshot = false
-						}
-					}		
-					
+					}
 				} else {
 					nlink, err := parseStatDirInfo(statInfo)
 					if err != nil {
