@@ -3308,7 +3308,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 				}
 			} else {
 				dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, shallowCopyRefPath)
-				klog.Infof("[%s] dirExists: [%d] for the path [%s] ", loggerId, dirExists, shallowCopyRefPath)
+				klog.Infof("[%s] dirExists for the path [%s] ", loggerId, shallowCopyRefPath)
 				if err != nil {
 					if !(strings.Contains(err.Error(), "EFSSG0264C") ||
 						strings.Contains(err.Error(), "does not exist")) {
