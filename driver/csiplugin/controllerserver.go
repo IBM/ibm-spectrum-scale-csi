@@ -3308,6 +3308,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 				}
 			} else {
 				dirExists, err := conn.CheckIfFileDirPresent(ctx, filesystemName, shallowCopyRefPath)
+				klog.Infof("[%s] dirExists: [%s] for the path [%s] ", loggerId, dirExists, shallowCopyRefPath)
 				if err != nil {
 					if !(strings.Contains(err.Error(), "EFSSG0264C") ||
 						strings.Contains(err.Error(), "does not exist")) {
@@ -3330,10 +3331,12 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 							deleteSnapshot = false
 						}
 						if nlink > 2 {
+							klog.Infof("[%s] files exist inside the given path [%s]", loggerId, shallowCopyRefPath)
 							deleteSnapshot = false
 							return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to delete snapshot [%s] as there is a reference for shallowcopy volume", snapIdMembers.SnapName))
 						}
 					}
+
 				}
 			}
 
