@@ -2099,10 +2099,13 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 
 	err := conn.UnlinkFileset(ctx, FilesystemName, FilesetName, false)
 	if err != nil {
-		if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
-			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset seems to be already unlinked
-			klog.V(4).Infof("[%s] fileset seems to be already unlinked - %v", loggerId, err)
-			//return true, nil
+		if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
+			klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
+			return true, nil
+		} else if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
+			strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset is already unlinked
+			klog.V(4).Infof("[%s] fileset seems already unlinked - %v", loggerId, err)
 		} else {
 			return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
 		}
