@@ -514,6 +514,17 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
 			}
 
+			// Set uid,gid for cache fileset if specified in storageclass
+			if scVol.VolUid != "" {
+				opt[connectors.UserSpecifiedUid] = scVol.VolUid
+			}
+			if scVol.VolGid != "" {
+				opt[connectors.UserSpecifiedGid] = scVol.VolGid
+			}
+			if scVol.Shared{
+				opt[connectors.UserSpecifiedPermissions] = AFMCacheSharedPermission
+			}
+
 			// Create a cache fileset
 			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, exportMapName, parsedURL); cacheFsetErr != nil {
 				klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())

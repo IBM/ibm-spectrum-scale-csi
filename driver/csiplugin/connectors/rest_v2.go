@@ -768,6 +768,18 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.VerifyKeys = true
 	filesetreq.MakeActive = true
 
+	if opts[UserSpecifiedUid] != ""{
+		filesetreq.Uid = opts[UserSpecifiedUid].(string)
+	}
+
+	if opts[UserSpecifiedGid] != ""{
+		filesetreq.Gid = opts[UserSpecifiedGid].(string)
+	}
+
+	if opts[UserSpecifiedPermissions] != ""{
+		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
+	}
+
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)
 
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/cos", filesystemName)
