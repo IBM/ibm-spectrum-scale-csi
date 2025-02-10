@@ -652,6 +652,9 @@ type CreateS3CacheFilesetRequest struct {
 	VerifyKeys       bool   `json:"verifyKeys,omitempty"`
 	MakeActive       bool   `json:"makeActive,omitempty"`
 	TempDir          string `json:"tmpDir,omitempty"`
+	Uid		string  `json:"uid,omitempty"`
+	Gid		string  `json:"gid,omitempty"`
+	Permission	string  `json:"permission,omitempty"`
 }
 
 type SetBucketKeysRequest struct {

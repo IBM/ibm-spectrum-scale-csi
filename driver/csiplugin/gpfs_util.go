@@ -39,6 +39,7 @@ const (
 	sharedPermissions    = "777"
 	defaultVolNamePrefix = "pvc"
 	VolNamePrefixEnvKey  = "VOLUME_NAME_PREFIX"
+	AFMCacheSharedPermission = "0777"
 )
 
 // AFM caching constants
