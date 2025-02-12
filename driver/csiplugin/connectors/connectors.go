@@ -129,14 +129,15 @@ const (
 	UserSpecifiedCacheMode        string = "cacheMode"
 	UserSpecifiedVolumeType       string = "volumeType"
 	UserSpecifiedVolNamePrefix    string = "volNamePrefix"
+	UserSpecifiedExistingData     string = "existingData"
 
 	// AFM tuning parameters to modify cache fileset
 	AfmReadSparseThreshold     string = "afmReadSparseThreshold"
-	AfmNumFlushThreads         string = "afmNumFlushThreads"        
-	AfmPrefetchThreshold       string = "afmPrefetchThreshold"       
-	AfmObjectFastReaddir       string = "afmObjectFastReaddir"       
+	AfmNumFlushThreads         string = "afmNumFlushThreads"
+	AfmPrefetchThreshold       string = "afmPrefetchThreshold"
+	AfmObjectFastReaddir       string = "afmObjectFastReaddir"
 	AfmFileOpenRefreshInterval string = "afmFileOpenRefreshInterval"
-	AfmNumReadThreads          string = "afmNumReadThreads"          
+	AfmNumReadThreads          string = "afmNumReadThreads"
 
 	// default value for AFM tuning parameters
 	AfmNumFlushThreadsDefault         = 4

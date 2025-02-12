@@ -1,0 +1,11 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+   name: ibm-spectrum-scale-csi-static-dependent
+provisioner: spectrumscale.csi.ibm.com
+parameters:
+    volBackendFs: "fs1"
+    existingData: "enabled"
+    filesetType: "dependent"
+    parentFileset: "scale-static-pvc-parent-1"
+reclaimPolicy: Delete
