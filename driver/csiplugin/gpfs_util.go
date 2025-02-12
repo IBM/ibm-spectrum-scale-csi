@@ -32,14 +32,15 @@ import (
 )
 
 const (
-	dependentFileset       = "dependent"
-	independentFileset     = "independent"
-	scversion1             = "1"
-	scversion2             = "2"
-	sharedPermissions      = "777"
-	defaultVolNamePrefix   = "pvc"
-	VolNamePrefixEnvKey    = "VOLUME_NAME_PREFIX"
-	existingDataAllowedVal = "enabled"
+	dependentFileset         = "dependent"
+	independentFileset       = "independent"
+	scversion1               = "1"
+	scversion2               = "2"
+	sharedPermissions        = "777"
+	defaultVolNamePrefix     = "pvc"
+	VolNamePrefixEnvKey      = "VOLUME_NAME_PREFIX"
+	existingDataAllowedVal   = "enabled"
+	AFMCacheSharedPermission = "0777"
 )
 
 // AFM caching constants
