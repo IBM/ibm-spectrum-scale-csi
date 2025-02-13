@@ -807,15 +807,15 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.VerifyKeys = true
 	filesetreq.MakeActive = true
 
-	if opts[UserSpecifiedUid] != ""{
+	if opts[UserSpecifiedUid] != nil{
 		filesetreq.Uid = opts[UserSpecifiedUid].(string)
 	}
 
-	if opts[UserSpecifiedGid] != ""{
+	if opts[UserSpecifiedGid] != nil{
 		filesetreq.Gid = opts[UserSpecifiedGid].(string)
 	}
 
-	if opts[UserSpecifiedPermissions] != ""{
+	if opts[UserSpecifiedPermissions] != nil{
 		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
 	}
 
