@@ -547,7 +547,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			if scVol.VolGid != "" {
 				opt[connectors.UserSpecifiedGid] = scVol.VolGid
 			}
-			if scVol.Shared{
+			if scVol.Shared {
 				opt[connectors.UserSpecifiedPermissions] = AFMCacheSharedPermission
 			}
 
@@ -918,6 +918,10 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	if isStaticPV {
 		klog.Infof("[%s] Requested pvc is a static volume", loggerId)
+	}
+
+	if isVolSource && (isSnapSource || isVolSource) {
+		return nil, status.Error(codes.InvalidArgument, "Creating a static volume from another volume or snapshot is not supported")
 	}
 
 	// Block creating a cache volume from another volume (clone) or
