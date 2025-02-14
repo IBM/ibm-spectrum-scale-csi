@@ -78,7 +78,7 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	u, err := url.Parse(endpoint)
 
 	if err != nil {
-		klog.Fatalf(err.Error())
+		klog.Fatalf("%v", err.Error())
 	}
 
 	var addr string

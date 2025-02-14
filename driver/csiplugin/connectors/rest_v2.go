@@ -128,7 +128,6 @@ func (s *SpectrumRestV2) WaitForJobCompletionWithResp(ctx context.Context, statu
 	klog.V(4).Infof("[%s] rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
-		response := GenericResponse{}
 		jobURL := fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID)
 		response, err := s.AsyncJobCompletion(ctx, jobURL)
 		if err != nil {
@@ -534,42 +533,42 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 	}
 
 	if volType == cachevolume && setAfmAttributes {
-        	afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
-                if afmReadSparseThresholdFound {
-                	filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
-                } else {
-                        filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
-                }
+		afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
+		if afmReadSparseThresholdFound {
+			filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
+		} else {
+			filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
+		}
 
-                afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
-                if afmNumFlushThreadsFound {
-                        filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
-                } else {
-                        filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
-                }
+		afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
+		if afmNumFlushThreadsFound {
+			filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
+		} else {
+			filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
+		}
 
-                afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
-                if afmPrefetchThresholdFound {
-                        filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
-                } else {
-                        filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
-                }
+		afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
+		if afmPrefetchThresholdFound {
+			filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
+		} else {
+			filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
+		}
 
-                afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
-                if afmObjectFastReaddirFound {
-                        filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
-                } else {
-                        filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
-                }
+		afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
+		if afmObjectFastReaddirFound {
+			filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
+		} else {
+			filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
+		}
 
-                afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
-                if afmFileOpenRefreshIntervalFound {
+		afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
+		if afmFileOpenRefreshIntervalFound {
 			filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
-                } else {
-                        filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
-                }
+		} else {
+			filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
+		}
 
-       }
+	}
 
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
@@ -807,15 +806,15 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.VerifyKeys = true
 	filesetreq.MakeActive = true
 
-	if opts[UserSpecifiedUid] != nil{
+	if opts[UserSpecifiedUid] != nil {
 		filesetreq.Uid = opts[UserSpecifiedUid].(string)
 	}
 
-	if opts[UserSpecifiedGid] != nil{
+	if opts[UserSpecifiedGid] != nil {
 		filesetreq.Gid = opts[UserSpecifiedGid].(string)
 	}
 
-	if opts[UserSpecifiedPermissions] != nil{
+	if opts[UserSpecifiedPermissions] != nil {
 		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
 	}
 
@@ -1778,7 +1777,7 @@ func (s *SpectrumRestV2) GetSnapshotCreateTimestamp(ctx context.Context, filesys
 		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
-	return fmt.Sprintf(getSnapshotResponse.Snapshots[0].Created), nil
+	return fmt.Sprintf("%v", getSnapshotResponse.Snapshots[0].Created), nil
 }
 
 //nolint:dupl
