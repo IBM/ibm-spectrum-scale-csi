@@ -181,8 +181,6 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if existingDataSpecified && existingData == "enabled" {
 		scaleVol.ExistingData = existingData
 		isStaticPV = true
-		//scaleVol.ConsistencyGroup = fmt.Sprintf("%s-%s", cgPrefix, volOptions["csi.storage.k8s.io/pvc/namespace"])
-		//scaleVol.VolName = volOptions["csi.storage.k8s.io/pvc/name"]
 	}
 
 	// Handling empty values
