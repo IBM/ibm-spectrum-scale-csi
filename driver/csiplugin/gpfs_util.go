@@ -101,6 +101,7 @@ type scaleVolume struct {
 	CacheMode          string                            `json:"cacheMode"`
 	VolNamePrefix      string                            `json:"volNamePrefix"`
 	ExistingData       string                            `json:"existingData"`
+	IsStaticPVBased    bool                              `json:"isStaticPV"`
 }
 
 type scaleVolId struct {
@@ -176,11 +177,10 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	cacheMode, cacheModeSpecified := volOptions[connectors.UserSpecifiedCacheMode]
 
 	// for static pv
-	isStaticPV := false
+	scaleVol.IsStaticPVBased = false
 	existingData, existingDataSpecified := volOptions[connectors.UserSpecifiedExistingData]
 	if existingDataSpecified && existingData == "enabled" {
-		scaleVol.ExistingData = existingData
-		isStaticPV = true
+		scaleVol.IsStaticPVBased = true
 	}
 
 	// Handling empty values
@@ -203,7 +203,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
 				"\""+scversion1+"\" or \""+scversion2+"\"")
 		}
-		if storageClassType == scversion2 && isStaticPV {
+		if storageClassType == scversion2 && scaleVol.IsStaticPVBased {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"existingData\" is not allowed for version "+""+scversion2+"\"")
 		} else if storageClassType == scversion2 {
 			isSCAdvanced = true
@@ -359,7 +359,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 
-	if isStaticPV {
+	if scaleVol.IsStaticPVBased {
 		if uidSpecified || gidSpecified || isSharedSpecified || inodeLimSpecified || isPermissionsSpecified || isNodeClassSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"uid\" , \"gid\" , \"inodeLimit\" , \"shared\" , \"nodeClass\" and \"permissions\" are not allowed in storageClass for static volumes i.e. with \"existingData\"")
 		}
@@ -431,7 +431,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		scaleVol.NodeClass = nodeClass
 	}
 
-	if isStaticPV {
+	if scaleVol.IsStaticPVBased {
 		cgPrefix := utils.GetEnv("CSI_CG_PREFIX", notFound)
 		if cgPrefix == notFound {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Failed to extract the consistencyGroup prefix")

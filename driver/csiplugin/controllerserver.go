@@ -118,7 +118,7 @@ func (cs *ScaleControllerServer) createLWVol(ctx context.Context, scVol *scaleVo
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
 // <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
-func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, isStaticPV bool, targetPath string, filesetNameStatic string) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:generateVolId", loggerId, scVol.VolName)
 	var volID string
@@ -130,7 +130,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 	path := ""
 
 	if !isShallowCopyVolume {
-		if isCGVolume || scVol.VolumeType == cacheVolume || isStaticPV {
+		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased {
 			primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 			if !isprimaryConnPresent {
 				klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
@@ -175,7 +175,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 		volumeType = FILE_SHALLOWCOPY_VOLUME
 	}
 
-	if isStaticPV {
+	if scVol.IsStaticPVBased {
 		storageClassType = STORAGECLASS_CLASSIC
 		consistencyGroup = scVol.ConsistencyGroup
 		filesetName = filesetNameStatic
@@ -890,14 +890,9 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
-	isStaticPV := false
 	filesetName := ""
-	if len(scaleVol.ExistingData) > 0 {
-		isStaticPV = true
+	if scaleVol.IsStaticPVBased {
 		filesetName = req.GetParameters()["csi.storage.k8s.io/pvc/name"]
-	}
-
-	if isStaticPV {
 		klog.Infof("[%s] Requested pvc is a static volume", loggerId)
 	}
 
@@ -1022,7 +1017,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
 		}
 
-		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, isStaticPV, shallowCopyTargetPath, scaleVol.VolName)
+		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName)
 		if volIDErr != nil {
 			return nil, volIDErr
 		}
@@ -1104,7 +1099,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
-	if isStaticPV {
+	if scaleVol.IsStaticPVBased {
 		klog.Infof("[%s] CreateVolume staticPV true %v", loggerId, scaleVol)
 		// will add checks here
 
@@ -1124,7 +1119,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
-	if !isCGVolume && scaleVol.VolumeType != cacheVolume && !isStaticPV {
+	if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
 		// Create symbolic link if not present
 		err = cs.createSoftlink(ctx, scaleVol, targetPath)
 		if err != nil {
@@ -1132,7 +1127,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, isStaticPV, targetPath, filesetName)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
@@ -1145,7 +1140,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 				return nil, err
 			}
 		} else {
-			err = cs.copyVolumeContent(ctx, scaleVol, srcVolumeIDMembers, volFsInfo, isStaticPV, targetPath, volID)
+			err = cs.copyVolumeContent(ctx, scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID)
 			if err != nil {
 				klog.Errorf("[%s] CreateVolume [%s]: [%v]", loggerId, volName, err)
 				return nil, err
@@ -1175,7 +1170,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol *scaleVolume, filesetName string, capacity uint64) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createStaticBasedVol , filesetName:[%s]", loggerId, scVol.VolName, filesetName)
-	//opt := make(map[string]interface{})
 
 	// fileset can not be created if filesystem is remote.
 	klog.Infof("[%s] check if volumes filesystem [%v] is remote or local for cluster [%v]", loggerId, scVol.VolBackendFs, scVol.ClusterId)
@@ -1213,11 +1207,7 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, filesetName)
-	//loggerId := utils.GetLoggerId(ctx)
-	//setAfmAttributes := false
-	//if len(afmTuningParams) > 0 {
-	//	setAfmAttributes = true
-	//}
+
 	if err != nil {
 		klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, filesetName, scVol.VolBackendFs, err)
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", filesetName, scVol.VolBackendFs, err))
@@ -1738,7 +1728,7 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
 
 }
 
-func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, isStaticPV bool, targetPath string, volID string) error {
+func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", loggerId, sourcevolume, newvolume, newvolume.VolName)
 	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId)
@@ -1768,7 +1758,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 	response := connectors.GenericResponse{}
 	if newvolume.IsFilesetBased {
 		path := ""
-		if sourcevolume.StorageClassType == STORAGECLASS_ADVANCED || isStaticPV {
+		if sourcevolume.StorageClassType == STORAGECLASS_ADVANCED || newvolume.IsStaticPVBased {
 			path = "/"
 		} else {
 			path = fmt.Sprintf("%s%s", sourcevolume.FsetName, "-data")

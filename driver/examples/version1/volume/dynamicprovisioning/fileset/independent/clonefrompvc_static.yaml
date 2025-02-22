@@ -8,7 +8,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: ibm-spectrum-scale-csi-static
+  storageClassName: ibm-spectrum-scale-csi-fileset
   dataSource:
     name: scale-static-pvc
     kind: PersistentVolumeClaim
