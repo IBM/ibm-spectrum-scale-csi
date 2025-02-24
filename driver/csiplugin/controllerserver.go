@@ -73,6 +73,7 @@ var bucketMutex sync.Mutex
 
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
+	csi.UnimplementedControllerServer
 }
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
@@ -525,7 +526,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			if scVol.VolGid != "" {
 				opt[connectors.UserSpecifiedGid] = scVol.VolGid
 			}
-			if scVol.Shared{
+			if scVol.Shared {
 				opt[connectors.UserSpecifiedPermissions] = AFMCacheSharedPermission
 			}
 
