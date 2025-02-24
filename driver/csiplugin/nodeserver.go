@@ -38,6 +38,7 @@ type ScaleNodeServer struct {
 	Driver *ScaleDriver
 	// TODO: Only lock mutually exclusive calls and make locking more fine grained
 	//mux sync.Mutex
+	csi.UnimplementedNodeServer
 }
 
 const hostDir = "/host"
@@ -51,7 +52,7 @@ const mountPathLength = 6
 
 const ENVClusterCNSAPresenceCheck = "CNSADeployment"
 const ENVClusterConfigurationType = "ClusterConfigurationType"
-const ENVClusterTypeOpenshift     = "OpenShiftPlatform"
+const ENVClusterTypeOpenshift = "OpenShiftPlatform"
 
 // A map for locking/unlocking a target path for NodePublish/NodeUnpublish
 // calls. The key is target path and value is a boolean true in case there

@@ -69,6 +69,7 @@ const (
 
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
+	csi.UnimplementedControllerServer
 }
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {

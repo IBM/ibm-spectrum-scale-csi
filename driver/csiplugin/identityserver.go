@@ -29,6 +29,7 @@ import (
 
 type ScaleIdentityServer struct {
 	Driver *ScaleDriver
+	csi.UnimplementedIdentityServer
 }
 
 func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
