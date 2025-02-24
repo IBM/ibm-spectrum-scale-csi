@@ -1084,8 +1084,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		// Validate the secret data in case of cache volumes
 		missingKeys := validateCacheSecret(req.Secrets)
 		if len(missingKeys) != 0 {
-			reqParams := req.GetParameters()
-			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret %s/%s-secret does not have required parameter(s): %v", reqParams[pvcNamespaceKey], reqParams[pvcNameKey], missingKeys))
+			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret for cache volume %s does not have required parameter(s): %v", scaleVol.VolName, missingKeys))
 		}
 
 		// A gateway node is must for cache fileset
