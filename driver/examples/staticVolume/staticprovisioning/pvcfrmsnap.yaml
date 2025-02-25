@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ibm-spectrum-scale-pvc-from-snapshot
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ibm-spectrum-scale-storageclass
+  dataSource:
+    name: ibm-spectrum-scale-snapshot
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
