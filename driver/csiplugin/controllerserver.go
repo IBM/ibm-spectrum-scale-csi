@@ -2854,13 +2854,21 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	klog.Infof("[%s] ControllerPublishVolume : Mount Status Primaryfs [ %t ], Sourcefs [ %t ]", loggerId, ispFsMounted, isFsMounted)
 
 	if isFsMounted && ispFsMounted {
-		klog.V(4).Infof("[%s] ControllerPublishVolume : %s and %s are mounted on %s so returning success", loggerId, fsName, primaryfsName, scalenodeID)
+		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s so returning success", loggerId, fsName, scalenodeID)
+		if fsName != primaryfsName {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s so returning success", loggerId, primaryfsName, scalenodeID)
+		}
 		return &csi.ControllerPublishVolumeResponse{}, nil
 	}
 
-	if skipMountUnmount == "yes" && (!isFsMounted || !ispFsMounted) {
-		klog.Errorf("[%s] ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s", loggerId, primaryfsName, fsName, scalenodeID)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : SKIP_MOUNT_UNMOUNT == yes and either %s or %s is not mounted on node %s.", primaryfsName, fsName, scalenodeID))
+	if skipMountUnmount == "yes" && (!isFsMounted) {
+		klog.Errorf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, fsName, scalenodeID)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : filesystem %s is not mounted on node %s.", fsName, scalenodeID))
+	}
+
+	if skipMountUnmount == "yes" && (!ispFsMounted) {
+		klog.Errorf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, primaryfsName, scalenodeID)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : filesystem %s is not mounted on node %s.", primaryfsName, scalenodeID))
 	}
 
 	//mount the primary filesystem if not mounted
