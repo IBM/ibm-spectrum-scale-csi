@@ -8,7 +8,7 @@ require (
 	github.com/imdario/mergo v0.3.16
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift/api v0.0.0-20240508125607-95e22923d553
+	github.com/openshift/api v0.0.0-20250225181102-cb44c196e68f
 	github.com/presslabs/controller-util v0.13.0
 	go.uber.org/zap v1.27.0
 	k8s.io/api v0.31.6
