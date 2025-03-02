@@ -32,13 +32,13 @@ import (
 )
 
 const (
-	dependentFileset     = "dependent"
-	independentFileset   = "independent"
-	scversion1           = "1"
-	scversion2           = "2"
-	sharedPermissions    = "777"
-	defaultVolNamePrefix = "pvc"
-	VolNamePrefixEnvKey  = "VOLUME_NAME_PREFIX"
+	dependentFileset         = "dependent"
+	independentFileset       = "independent"
+	scversion1               = "1"
+	scversion2               = "2"
+	sharedPermissions        = "777"
+	defaultVolNamePrefix     = "pvc"
+	VolNamePrefixEnvKey      = "VOLUME_NAME_PREFIX"
 	AFMCacheSharedPermission = "0777"
 )
 
@@ -99,6 +99,8 @@ type scaleVolume struct {
 	VolumeType         string                            `json:"volumeType"`
 	CacheMode          string                            `json:"cacheMode"`
 	VolNamePrefix      string                            `json:"volNamePrefix"`
+	PVCName            string                            `json:"pvcName"`
+	Namespace          string                            `json:"namespace"`
 }
 
 type scaleVolId struct {
@@ -182,10 +184,18 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	scaleVol.StorageClassType = ""
 	scaleVol.Compression = ""
 	scaleVol.Tier = ""
+	scaleVol.PVCName = ""
 
 	if isSCTypeSpecified && storageClassType == "" {
 		isSCTypeSpecified = false
 	}
+	if volOptions["csi.storage.k8s.io/pvc/name"] != "" {
+		scaleVol.PVCName = volOptions["csi.storage.k8s.io/pvc/name"]
+	}
+	if volOptions["csi.storage.k8s.io/pvc/namespace"] != "" {
+		scaleVol.Namespace = volOptions["csi.storage.k8s.io/pvc/namespace"]
+	}
+
 	isSCAdvanced := false
 	if isSCTypeSpecified {
 		if storageClassType != scversion1 && storageClassType != scversion2 {

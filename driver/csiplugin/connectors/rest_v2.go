@@ -528,48 +528,48 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.MaxNumInodes = inodeLimit.(string)
 		//filesetreq.AllocInodes = "1024"
 	}
-	comment, commentSpecified := opts[FilesetComment]
+	comment, commentSpecified := opts[FilesetCommentKey]
 	if commentSpecified {
 		filesetreq.Comment = fmt.Sprintf("%v", comment)
 	}
 
 	if volType == cachevolume && setAfmAttributes {
-        	afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
-                if afmReadSparseThresholdFound {
-                	filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
-                } else {
-                        filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
-                }
+		afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
+		if afmReadSparseThresholdFound {
+			filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
+		} else {
+			filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
+		}
 
-                afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
-                if afmNumFlushThreadsFound {
-                        filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
-                } else {
-                        filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
-                }
+		afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
+		if afmNumFlushThreadsFound {
+			filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
+		} else {
+			filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
+		}
 
-                afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
-                if afmPrefetchThresholdFound {
-                        filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
-                } else {
-                        filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
-                }
+		afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
+		if afmPrefetchThresholdFound {
+			filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
+		} else {
+			filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
+		}
 
-                afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
-                if afmObjectFastReaddirFound {
-                        filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
-                } else {
-                        filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
-                }
+		afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
+		if afmObjectFastReaddirFound {
+			filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
+		} else {
+			filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
+		}
 
-                afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
-                if afmFileOpenRefreshIntervalFound {
+		afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
+		if afmFileOpenRefreshIntervalFound {
 			filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
-                } else {
-                        filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
-                }
+		} else {
+			filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
+		}
 
-       }
+	}
 
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
@@ -619,7 +619,13 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 
 	filesetreq := CreateFilesetRequest{}
 	filesetreq.FilesetName = filesetName
-	filesetreq.Comment = FilesetComment
+
+	comment, commentSpecified := opts[FilesetCommentKey]
+	if commentSpecified {
+		filesetreq.Comment = fmt.Sprintf("%v", comment)
+	} else {
+		filesetreq.Comment = FilesetComment
+	}
 
 	filesetType, filesetTypeSpecified := opts[UserSpecifiedFilesetType]
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
@@ -807,15 +813,15 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.VerifyKeys = true
 	filesetreq.MakeActive = true
 
-	if opts[UserSpecifiedUid] != nil{
+	if opts[UserSpecifiedUid] != nil {
 		filesetreq.Uid = opts[UserSpecifiedUid].(string)
 	}
 
-	if opts[UserSpecifiedGid] != nil{
+	if opts[UserSpecifiedGid] != nil {
 		filesetreq.Gid = opts[UserSpecifiedGid].(string)
 	}
 
-	if opts[UserSpecifiedPermissions] != nil{
+	if opts[UserSpecifiedPermissions] != nil {
 		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
 	}
 
@@ -1066,11 +1072,12 @@ func (s *SpectrumRestV2) CheckFilesetWithAFMTarget(ctx context.Context, filesyst
 	return "", nil
 }
 
-func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
+func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string, pvcName string, namespace string) ([]Fileset_v2, error) {
 	loggerID := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", loggerID, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s . pvcName %s, namespace %s", loggerID, filesystemName, pvcName, namespace)
+	filesetComment := fmt.Sprintf(FilesetCommentValue, pvcName, namespace)
 
-	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
+	encodedFilesetComment := strings.ReplaceAll(filesetComment, " ", "%20")
 	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
 	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment=%s", encodedFilesetComment)
 	getFilesetURL := url + "?" + filter
