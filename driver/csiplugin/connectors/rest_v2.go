@@ -534,42 +534,42 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 	}
 
 	if volType == cachevolume && setAfmAttributes {
-        	afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
-                if afmReadSparseThresholdFound {
-                	filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
-                } else {
-                        filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
-                }
+		afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
+		if afmReadSparseThresholdFound {
+			filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
+		} else {
+			filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
+		}
 
-                afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
-                if afmNumFlushThreadsFound {
-                        filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
-                } else {
-                        filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
-                }
+		afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
+		if afmNumFlushThreadsFound {
+			filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
+		} else {
+			filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
+		}
 
-                afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
-                if afmPrefetchThresholdFound {
-                        filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
-                } else {
-                        filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
-                }
+		afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
+		if afmPrefetchThresholdFound {
+			filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
+		} else {
+			filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
+		}
 
-                afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
-                if afmObjectFastReaddirFound {
-                        filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
-                } else {
-                        filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
-                }
+		afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
+		if afmObjectFastReaddirFound {
+			filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
+		} else {
+			filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
+		}
 
-                afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
-                if afmFileOpenRefreshIntervalFound {
+		afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
+		if afmFileOpenRefreshIntervalFound {
 			filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
-                } else {
-                        filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
-                }
+		} else {
+			filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
+		}
 
-       }
+	}
 
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
 	updateFilesetResponse := GenericResponse{}
@@ -651,6 +651,7 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	uid, uidSpecified := opts[UserSpecifiedUID]
 	gid, gidSpecified := opts[UserSpecifiedGID]
 	permissions, permissionsSpecified := opts[UserSpecifiedPermissions]
+	volDirBasePath, volDirBasePathSpecified := opts[UserSpecifiedVolDirPath]
 
 	if uidSpecified && gidSpecified {
 		filesetreq.Owner = fmt.Sprintf("%s:%s", uid, gid)
@@ -659,6 +660,9 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 	}
 	if permissionsSpecified {
 		filesetreq.Permissions = fmt.Sprintf("%s", permissions)
+	}
+	if volDirBasePathSpecified {
+		filesetreq.Path = fmt.Sprintf("%s", volDirBasePath)
 	}
 
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
@@ -807,16 +811,17 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	filesetreq.VerifyKeys = true
 	filesetreq.MakeActive = true
 
-	if opts[UserSpecifiedUid] != nil{
+	if opts[UserSpecifiedUid] != nil {
 		filesetreq.Uid = opts[UserSpecifiedUid].(string)
 	}
-
-	if opts[UserSpecifiedGid] != nil{
+	if opts[UserSpecifiedGid] != nil {
 		filesetreq.Gid = opts[UserSpecifiedGid].(string)
 	}
-
-	if opts[UserSpecifiedPermissions] != nil{
+	if opts[UserSpecifiedPermissions] != nil {
 		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
+	}
+	if opts[UserSpecifiedVolDirPath] != nil{
+		filesetreq.Dir = opts[UserSpecifiedVolDirPath].(string)
 	}
 
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)

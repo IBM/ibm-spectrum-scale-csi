@@ -413,6 +413,11 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 			opt[connectors.UserSpecifiedInodeLimit] = "1M"
 			// Assumption: On an average a consistency group contains 10 volumes
 		}
+
+		if scVol.VolDirBasePath != "" {
+			opt[connectors.UserSpecifiedVolDirPath] = scVol.VolDirBasePath
+		}
+
 		scVol.ParentFileset = ""
 		createDataDir := false
 		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil, nil, "")
