@@ -356,12 +356,15 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		klog.V(4).Infof("[%s] volume:[%v] - mount point of volume filesystem [%v] on owning cluster is %v", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.MountPoint)
 	}
 
-	// check if quota is enabled on volume filesystem
-	klog.Infof("[%s] check if quota is enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
+	// check if quota and filesetdfEnabled are enabled on filesystem
+	klog.Infof("[%s] check if quota and filesetdfEnabled are enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
 	if scVol.VolSize != 0 {
-		klog.Infof("[%s] quota status on filesystem [%v] is [%t]", loggerId, scVol.VolBackendFs, fsDetails.Quota.FilesetdfEnabled)
+		klog.Infof("[%s] quota status=%v and filesetdfEnabled=%v status on filesystem [%v]", loggerId, fsDetails.Quota.QuotasEnforced, fsDetails.Quota.FilesetdfEnabled, scVol.VolBackendFs)
+		if fsDetails.Quota.QuotasEnforced == "none" {
+			return "", status.Error(codes.Internal, fmt.Sprintf("quota is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+		}
 		if !fsDetails.Quota.FilesetdfEnabled {
-			return "", status.Error(codes.Internal, fmt.Sprintf("quota not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+			return "", status.Error(codes.Internal, fmt.Sprintf("filesetdf is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
 		}
 	}
 
