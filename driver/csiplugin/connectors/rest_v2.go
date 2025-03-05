@@ -662,7 +662,7 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 		filesetreq.Permissions = fmt.Sprintf("%s", permissions)
 	}
 	if volDirBasePathSpecified {
-		filesetreq.Path = fmt.Sprintf("%s", volDirBasePath)
+		filesetreq.Path = fmt.Sprintf("%s/%s", volDirBasePath, filesetName)
 	}
 
 	createFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
@@ -821,7 +821,7 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
 	}
 	if opts[UserSpecifiedVolDirPath] != nil{
-		filesetreq.Dir = opts[UserSpecifiedVolDirPath].(string)
+		filesetreq.Dir = fmt.Sprintf("%s/%s",opts[UserSpecifiedVolDirPath],filesetName)
 	}
 
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)
