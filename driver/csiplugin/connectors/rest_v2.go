@@ -908,7 +908,7 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 func (s *SpectrumRestV2) DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error {
 	klog.V(4).Infof("[%s] rest_v2 DeleteFileset. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
-	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
+	deleteFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s?force_unlink=false", filesystemName, filesetName)
 	deleteFilesetResponse := GenericResponse{}
 
 	err := s.doHTTP(ctx, deleteFilesetURL, "DELETE", &deleteFilesetResponse, nil)
