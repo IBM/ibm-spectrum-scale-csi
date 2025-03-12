@@ -44,7 +44,7 @@ env:
       )
     - BUILD_DIR_OPERATOR="${TRAVIS_BUILD_DIR}/operator"
     - BUILD_DIR_DRIVER="${TRAVIS_BUILD_DIR}/driver"
-    - BUILD_PLATFORMS="linux/ppc64le,linux/s390x,linux/amd64"
+    - BUILD_PLATFORMS="linux/ppc64le,linux/s390x,linux/amd64,linux/arm64"
 
     # For the quay app
     - BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
