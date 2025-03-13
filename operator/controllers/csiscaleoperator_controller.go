@@ -2209,6 +2209,13 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 	// create primary fileset if not already created
 	fsetResponse, err := sc.ListFileset(context.TODO(), fsNameOnOwningCluster, filesetName)
 	if err != nil {
+		message := fmt.Sprintf("Failed to list fileset in filesystem %s", fsNameOnOwningCluster)
+		logger.Error(err, message)
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+                                        metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
+                )
+                return "", err
+	} else if reflect.ValueOf(fsetResponse).IsZero(){
 		logger.Info("Primary fileset not found, so creating it", "fileseName", filesetName)
 		opts := make(map[string]interface{})
 		if inodeLimit != "" {
