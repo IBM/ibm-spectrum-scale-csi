@@ -325,7 +325,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName, mountPoint string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, gatewayNodeName)
 	opt := make(map[string]interface{})
@@ -387,7 +387,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	}
 
 	if scVol.VolDirBasePath != "" {
-		opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s", mountPoint, scVol.VolDirBasePath)
+		opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath)
 	}
 
 	if isCGVolume {
@@ -1104,7 +1104,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName, volFsInfo.Mount.MountPoint)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}
