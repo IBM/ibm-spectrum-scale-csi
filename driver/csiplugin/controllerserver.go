@@ -325,7 +325,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName, mountPoint string) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, gatewayNodeName)
 	opt := make(map[string]interface{})
@@ -386,6 +386,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(inodeLimit, 10)
 	}
 
+	if scVol.VolDirBasePath != "" {
+		opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s", mountPoint, scVol.VolDirBasePath)
+	}
+
 	if isCGVolume {
 		// For new storageClass first create independent fileset if not present
 
@@ -417,10 +421,6 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 			// Assumption: On an average a consistency group contains 10 volumes
 		}
 
-		if scVol.VolDirBasePath != "" {
-			opt[connectors.UserSpecifiedVolDirPath] = scVol.VolDirBasePath
-		}
-
 		scVol.ParentFileset = ""
 		createDataDir := false
 		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil, nil, "")
@@ -448,6 +448,9 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
+		if scVol.VolDirBasePath != "" {
+			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s/%s", mountPoint, scVol.VolDirBasePath, indepFilesetName)
+		}
 		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, nil, "")
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
@@ -599,6 +602,10 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		var junctionPath string
 		junctionPath = fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, volName)
 
+		if scVol.VolDirBasePath != "" {
+			junctionPath = fmt.Sprintf("%s/%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath, volName)
+		}
+
 		if scVol.ParentFileset != "" {
 			parentfilesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, scVol.ParentFileset)
 			if err != nil {
@@ -610,6 +617,9 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - parent fileset [%v] is not linked", volName, scVol.ParentFileset))
 			}
 			junctionPath = fmt.Sprintf("%s/%s", parentfilesetInfo.Config.Path, volName)
+			if scVol.VolDirBasePath != "" {
+				junctionPath = fmt.Sprintf("%s/%s/%s", parentfilesetInfo.Config.Path, scVol.VolDirBasePath, volName)
+			}
 		}
 
 		err := scVol.Connector.LinkFileset(ctx, scVol.VolBackendFs, volName, junctionPath)
@@ -747,7 +757,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 
 		case connectors.AfmReadSparseThreshold:
 			afmReadSparseThresholdValue, _ := strconv.Atoi(vacValue)
-			if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296 {
+			if afmReadSparseThresholdValue < 0 || afmReadSparseThresholdValue > 4294967296 {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
 			} else {
 				afmTuningParams[vacKey] = vacValue
@@ -1094,7 +1104,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName, volFsInfo.Mount.MountPoint)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}

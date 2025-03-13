@@ -280,9 +280,6 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 			if isparentFilesetSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and volDirBasePath must not be specified together in storageClass")
 			}
-			if inodeLimSpecified {
-				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and volDirBasePath must not be specified together in storageClass")
-			}
 			scaleVol.IsFilesetBased = false
 		}
 		scaleVol.VolDirBasePath = volDirPath
@@ -459,8 +456,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		if volumeType == cacheVolume {
 			scaleVol.StorageClassType = STORAGECLASS_CACHE
 			scaleVol.VolumeType = cacheVolume
-			if volDirPathSpecified{
+			if volDirPathSpecified {
 				scaleVol.VolDirBasePath = volDirPath
+				scaleVol.IsFilesetBased = true
 			}
 		} else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s, only allowed value is: %s", volumeType, cacheVolume))
