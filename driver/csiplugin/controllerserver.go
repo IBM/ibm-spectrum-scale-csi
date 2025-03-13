@@ -449,7 +449,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		scVol.ParentFileset = indepFilesetName
 		createDataDir = true
 		if scVol.VolDirBasePath != "" {
-			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s/%s", mountPoint, scVol.VolDirBasePath, indepFilesetName)
+			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath, indepFilesetName)
 		}
 		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, nil, "")
 		if err != nil {
