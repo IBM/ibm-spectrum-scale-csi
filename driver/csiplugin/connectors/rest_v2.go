@@ -614,6 +614,28 @@ func (s *SpectrumRestV2) GetGatewayNode(ctx context.Context) (string, error) {
 	return "", nil
 }
 
+// ListGatewayNodes : List all the gateway nodes,
+// return empty if no gateway found
+func (s *SpectrumRestV2) ListGatewayNodes(ctx context.Context) ([]string, error) {
+	loggerId := GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 ListGatewayNodes", loggerId)
+	var gatewayNodes []string
+	getNodesURL := "scalemgmt/v2/nodes?fields=roles.gatewayNode"
+	getNodesResponse := GetNodesResponse_v2{}
+
+	err := s.doHTTP(ctx, getNodesURL, "GET", &getNodesResponse, nil)
+	if err != nil {
+		return gatewayNodes, fmt.Errorf("failed to get nodes with gateway role, error: %v", err)
+	}
+	for _, node := range getNodesResponse.Nodes {
+		if node.Roles.GatewayNode {
+			gatewayNodes = append(gatewayNodes, node.AdminNodename)
+		}
+	}
+	//klog.V(4).Infof("[%s] rest_v2 ListGatewayNodes  result gatewayNodes[ %v ]", loggerId, gatewayNodes)
+	return gatewayNodes, nil
+}
+
 func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
 	klog.V(4).Infof("[%s] rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 
@@ -1478,11 +1500,13 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 	return nil
 }
 
-func (s *SpectrumRestV2) MountFilesystem(ctx context.Context, filesystemName string, nodeName string) error { //nolint:dupl
-	klog.V(4).Infof("[%s] rest_v2 MountFilesystem. filesystem: %s, node: %s", utils.GetLoggerId(ctx), filesystemName, nodeName)
+func (s *SpectrumRestV2) MountFilesystem(ctx context.Context, filesystemName string, nodesNameList []string) error { //nolint:dupl
+	klog.V(4).Infof("[%s] rest_v2 MountFilesystem. filesystem: %s, nodes: %v", utils.GetLoggerId(ctx), filesystemName, nodesNameList)
 
 	mountreq := MountFilesystemRequest{}
-	mountreq.Nodes = append(mountreq.Nodes, nodeName)
+	mountreq.Nodes = nodesNameList
+	/*	mountreq := MountFilesystemRequest{}
+		mountreq.Nodes = append(mountreq.Nodes, nodeName)*/
 
 	mountFilesystemURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/mount", filesystemName)
 	mountFilesystemResponse := GenericResponse{}
@@ -1501,7 +1525,7 @@ func (s *SpectrumRestV2) MountFilesystem(ctx context.Context, filesystemName str
 
 	err = s.WaitForJobCompletion(ctx, mountFilesystemResponse.Status.Code, mountFilesystemResponse.Jobs[0].JobID)
 	if err != nil {
-		klog.Errorf("[%s] Unable to Mount filesystem %s on node %s: %v", utils.GetLoggerId(ctx), filesystemName, nodeName, err)
+		klog.Errorf("[%s] Unable to Mount filesystem %s on nodes %v: %v", utils.GetLoggerId(ctx), filesystemName, nodesNameList, err)
 		return err
 	}
 	return nil
