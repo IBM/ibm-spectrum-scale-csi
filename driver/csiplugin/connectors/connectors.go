@@ -40,6 +40,7 @@ type SpectrumScaleConnector interface {
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Node operations
 	GetGatewayNode(ctx context.Context) (string, error)
+	ListGatewayNodes(ctx context.Context) ([]string, error)
 	//Fileset operations
 	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
 	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
@@ -68,7 +69,7 @@ type SpectrumScaleConnector interface {
 	//Directory operations
 	MakeDirectory(ctx context.Context, filesystemName string, relativePath string, uid string, gid string) error
 	MakeDirectoryV2(ctx context.Context, filesystemName string, relativePath string, uid string, gid string, permissions string) error
-	MountFilesystem(ctx context.Context, filesystemName string, nodeName string) error
+	MountFilesystem(ctx context.Context, filesystemName string, nodesNameList []string) error
 	UnmountFilesystem(ctx context.Context, filesystemName string, nodeName string) error
 	GetFilesystemName(ctx context.Context, filesystemUUID string) (string, error)
 	CheckIfFileDirPresent(ctx context.Context, filesystemName string, relPath string) (bool, error)

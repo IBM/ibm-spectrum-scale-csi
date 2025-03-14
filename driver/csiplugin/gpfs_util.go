@@ -678,3 +678,16 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 
 	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 }
+
+func isSubset(subset []string, superset []string) bool {
+	checkset := make(map[string]bool)
+	for _, element := range subset {
+		checkset[element] = true
+	}
+	for _, value := range superset {
+		if checkset[value] {
+			delete(checkset, value)
+		}
+	}
+	return len(checkset) == 0 //this implies that set is subset of superset
+}
