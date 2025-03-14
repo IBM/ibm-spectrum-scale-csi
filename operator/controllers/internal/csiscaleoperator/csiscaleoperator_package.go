@@ -784,6 +784,7 @@ func (c *CSIScaleOperator) GetNodeSelectorTerms(resource string) []corev1.NodeSe
 						config.AMD64,
 						config.PPC,
 						config.IBMSystem390,
+						config.ARM64,
 					},
 				},
 			},
