@@ -2721,43 +2721,50 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 	klog.Infof("[%s] ControllerPublishVolume : Mount Status Primaryfs [ %t ], Sourcefs [ %t ]", loggerId, ispFsMounted, isFsMounted)
 
-	// To check all of the gateway nodes are having filesystem mounted
-	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
-	if err != nil {
-		return nil, err
-	}
-
-	gatewayNodeNames, err := conn.ListGatewayNodes(ctx)
-	if err != nil {
-		return nil, err
-	}
-	klog.Infof("[%s] ControllerPublishVolume : gatewayNodes present in the Storage Scale are : %v", loggerId, gatewayNodeNames)
-
-	// getting the remote FS name is case of remote filesystem. It will be same in case of local FS
+	var isFsMountedOnGateway bool
+	var gatewayNodeNames []string
+	var conn connectors.SpectrumScaleConnector
 	var fsNameRemote string
-	if primaryfsName != fsName {
-		fsNameRemote = getRemoteFsName(fsMount.RemoteDeviceName)
-	} else {
-		fsNameRemote = getRemoteFsName(pfsMount.RemoteDeviceName)
+	if volumeIDMembers.VolType == cacheVolume {
+		// To check all of the gateway nodes are having filesystem mounted
+		conn, err = cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
+		if err != nil {
+			return nil, err
+		}
+
+		gatewayNodeNames, err = conn.ListGatewayNodes(ctx)
+		if err != nil {
+			return nil, err
+		}
+		klog.Infof("[%s] ControllerPublishVolume : gatewayNodes present in the Storage Scale are : %v", loggerId, gatewayNodeNames)
+
+		// getting the remote FS name is case of remote filesystem. It will be same in case of local FS
+
+		if primaryfsName != fsName {
+			fsNameRemote = getRemoteFsName(fsMount.RemoteDeviceName)
+		} else {
+			fsNameRemote = getRemoteFsName(pfsMount.RemoteDeviceName)
+		}
+		fsRemoteMountDetails, err := conn.GetFilesystemMountDetails(ctx, fsNameRemote)
+		if err != nil {
+			klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem remote mount details for %s. Error [%v]", fsName, err))
+		}
+
+		if fsName != fsNameRemote {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a remote mount with remoteFS:[%s]", loggerId, fsName, fsNameRemote)
+		} else {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a local mount", loggerId, fsName)
+		}
+
+		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
+
+		// check whether FS is mounted on all the gateway nodes or not
+		isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
 	}
-	fsRemoteMountDetails, err := conn.GetFilesystemMountDetails(ctx, fsNameRemote)
-	if err != nil {
-		klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem remote mount details for %s. Error [%v]", fsName, err))
-	}
 
-	if fsName != fsNameRemote {
-		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a remote mount with remoteFS:[%s]", loggerId, fsName, fsNameRemote)
-	} else {
-		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a local mount", loggerId, fsName)
-	}
-
-	klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
-
-	// check whether FS is mounted on all the gateway nodes or not
-	isFsMountedOnGateway := isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
-
-	if isFsMounted && ispFsMounted && isFsMountedOnGateway {
+	//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
+	if isFsMounted && ispFsMounted && isFsMountedOnGateway && volumeIDMembers.VolType == cacheVolume {
 		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, fsName, scalenodeID, gatewayNodeNames)
 		if fsName != primaryfsName {
 			klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, primaryfsName, scalenodeID, gatewayNodeNames)
@@ -2765,8 +2772,17 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		return &csi.ControllerPublishVolumeResponse{}, nil
 	}
 
+	if isFsMounted && ispFsMounted {
+		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s so returning success", loggerId, fsName, scalenodeID)
+		if fsName != primaryfsName {
+			klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s so returning success", loggerId, primaryfsName, scalenodeID)
+		}
+		return &csi.ControllerPublishVolumeResponse{}, nil
+	}
+
 	if skipMountUnmount == "yes" {
-		if !isFsMountedOnGateway {
+		//error when FS is not mounted on all the gatewayNodes for "cache" volume
+		if !isFsMountedOnGateway && volumeIDMembers.VolType == cacheVolume {
 			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
 			klog.Errorf(message)
 			return nil, status.Error(codes.Internal, message)
@@ -2783,8 +2799,8 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		}
 	}
 
-	//mount the  filesystem on the gateway node if not mounted
-	if !(isFsMountedOnGateway) && skipMountUnmount == no {
+	//mount the  filesystem on the gateway node if not mounted for "cache" volume
+	if !(isFsMountedOnGateway) && skipMountUnmount == no && volumeIDMembers.VolType == cacheVolume {
 		klog.V(4).Infof("[%s] ControllerPublishVolume : mounting remote Filesystem %s on the gatewayNode %v", loggerId, fsNameRemote, gatewayNodeNames)
 
 		err = conn.MountFilesystem(ctx, fsNameRemote, gatewayNodeNames)
