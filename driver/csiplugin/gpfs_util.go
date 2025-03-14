@@ -32,13 +32,13 @@ import (
 )
 
 const (
-	dependentFileset     = "dependent"
-	independentFileset   = "independent"
-	scversion1           = "1"
-	scversion2           = "2"
-	sharedPermissions    = "777"
-	defaultVolNamePrefix = "pvc"
-	VolNamePrefixEnvKey  = "VOLUME_NAME_PREFIX"
+	dependentFileset         = "dependent"
+	independentFileset       = "independent"
+	scversion1               = "1"
+	scversion2               = "2"
+	sharedPermissions        = "777"
+	defaultVolNamePrefix     = "pvc"
+	VolNamePrefixEnvKey      = "VOLUME_NAME_PREFIX"
 	AFMCacheSharedPermission = "0777"
 )
 
@@ -667,4 +667,17 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 	}
 
 	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
+}
+
+func isSubset(subset []string, superset []string) bool {
+	checkset := make(map[string]bool)
+	for _, element := range subset {
+		checkset[element] = true
+	}
+	for _, value := range superset {
+		if checkset[value] {
+			delete(checkset, value)
+		}
+	}
+	return len(checkset) == 0 //this implies that set is subset of superset
 }
