@@ -387,7 +387,11 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	}
 
 	if scVol.VolDirBasePath != "" {
-		opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath)
+		if scVol.ParentFileset != "" && !isCGVolume {
+			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath, scVol.ParentFileset)
+		} else {
+			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath)
+		}
 	}
 
 	if isCGVolume {
@@ -617,9 +621,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - parent fileset [%v] is not linked", volName, scVol.ParentFileset))
 			}
 			junctionPath = fmt.Sprintf("%s/%s", parentfilesetInfo.Config.Path, volName)
-			if scVol.VolDirBasePath != "" {
-				junctionPath = fmt.Sprintf("%s/%s/%s", parentfilesetInfo.Config.Path, scVol.VolDirBasePath, volName)
-			}
+
 		}
 
 		err := scVol.Connector.LinkFileset(ctx, scVol.VolBackendFs, volName, junctionPath)
