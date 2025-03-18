@@ -2181,32 +2181,31 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		}
 	}
 
-	// check for staticPV that -data directory is present or not. If not present, then it would be a static volume
-	filesetInfo, err := conn.ListFileset(ctx, sourcevolume.FsName, sourcevolume.FsetName)
+	if sourcevolume.StorageClassType == STORAGECLASS_CLASSIC {
+		// check for staticPV that -data directory is present or not. If not present, then it would be a static volume
+		filesetInfo, err := conn.ListFileset(ctx, sourcevolume.FsName, sourcevolume.FsetName)
 
-	if err != nil {
-		klog.Errorf("[%s] unable to list source fileset [%v] in source filesystem [%v]. Error: %v", loggerId, sourcevolume.FsetName, sourcevolume.FsName, err)
-		return status.Error(codes.Internal, fmt.Sprintf("unable to list source fileset [%v] in source filesystem [%v]. Error: %v", sourcevolume.FsetName, sourcevolume.FsName, err))
-	} else if reflect.ValueOf(filesetInfo).IsZero() {
-		// This means fileset is not present
-		return status.Error(codes.Internal, fmt.Sprintf("source fileset [%v] in source filesystem [%v] doesn't present", sourcevolume.FsetName, sourcevolume.FsName))
-	} else {
-		klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
-		if filesetInfo.Config.Comment != connectors.FilesetComment {
+		if err != nil {
+			klog.Errorf("[%s] unable to list source fileset [%v] in source filesystem [%v]. Error: %v", loggerId, sourcevolume.FsetName, sourcevolume.FsName, err)
+			return status.Error(codes.Internal, fmt.Sprintf("unable to list source fileset [%v] in source filesystem [%v]. Error: %v", sourcevolume.FsetName, sourcevolume.FsName, err))
+		} else if !reflect.ValueOf(filesetInfo).IsZero() { // the listfileset response will be zero when shallow being created from dynamic based snapshot
+			klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
+			if filesetInfo.Config.Comment != connectors.FilesetComment {
 
-			klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, sourcevolume.FsetName)
+				klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, sourcevolume.FsetName)
 
-			// check for staticPV that -data directory is present or not. If not present, then it would be a static volume
-			pathDir := fmt.Sprintf("%s/%s-data", sourcevolume.FsetName, sourcevolume.FsetName) // directory does not exist
+				// check for staticPV that -data directory is present or not. If not present, then it would be a static volume
+				pathDir := fmt.Sprintf("%s/%s-data", sourcevolume.FsetName, sourcevolume.FsetName) // directory does not exist
 
-			_, err = conn.StatDirectory(ctx, sourcevolume.FsName, pathDir)
-			if err != nil {
-				if strings.Contains(err.Error(), "EFSSG0264C") ||
-					strings.Contains(err.Error(), "does not exist") { // directory does not exist
-					sourcevolume.IsStaticPVBased = true
-				} else {
-					klog.Errorf("[%s] failed to validate whether source volume path %s exists or not from volume. Error: [%v]", loggerId, pathDir, err)
-					return status.Error(codes.Internal, fmt.Sprintf("failed to validate whether source volume path %s exists or not from volume. Error: [%v]", pathDir, err))
+				_, err = conn.StatDirectory(ctx, sourcevolume.FsName, pathDir)
+				if err != nil {
+					if strings.Contains(err.Error(), "EFSSG0264C") ||
+						strings.Contains(err.Error(), "does not exist") { // directory does not exist
+						sourcevolume.IsStaticPVBased = true
+					} else {
+						klog.Errorf("[%s] failed to validate whether source volume path %s exists or not from volume. Error: [%v]", loggerId, pathDir, err)
+						return status.Error(codes.Internal, fmt.Sprintf("failed to validate whether source volume path %s exists or not from volume. Error: [%v]", pathDir, err))
+					}
 				}
 			}
 		}
