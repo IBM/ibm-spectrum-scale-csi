@@ -361,14 +361,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	}
 
 	// check if quota and filesetdfEnabled are enabled on filesystem
-	klog.Infof("[%s] check if quota and filesetdfEnabled are enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
 	if scVol.VolSize != 0 {
-		klog.Infof("[%s] quota status=%v and filesetdfEnabled=%v status on filesystem [%v]", loggerId, fsDetails.Quota.QuotasEnforced, fsDetails.Quota.FilesetdfEnabled, scVol.VolBackendFs)
-		if fsDetails.Quota.QuotasEnforced == "none" {
-			return "", status.Error(codes.Internal, fmt.Sprintf("quota is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
-		}
-		if !fsDetails.Quota.FilesetdfEnabled {
-			return "", status.Error(codes.Internal, fmt.Sprintf("filesetdf is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+		err = checkFSQuotasEnforcedAndFilesetdfEnabled(ctx, scVol, fsDetails)
+		if err != nil {
+			return "", err
 		}
 	}
 
@@ -497,6 +493,22 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		klog.Infof("[%s] finished creation of fileset for classic storageClass with fileset name: [%v]", loggerId, scVol.VolName)
 		return filesetPath, nil
 	}
+}
+
+func checkFSQuotasEnforcedAndFilesetdfEnabled(ctx context.Context, scVol *scaleVolume, fsDetails connectors.FileSystem_v2) error {
+	loggerId := utils.GetLoggerId(ctx)
+	// check if quota and filesetdfEnabled are enabled on filesystem
+	klog.Infof("[%s] checkFSQuotasEnforcedAndFilesetdfEnabled: check if quota and filesetdfEnabled are enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
+
+	klog.Infof("[%s] checkFSQuotasEnforcedAndFilesetdfEnabled: quota status=%v and filesetdfEnabled=%v status on filesystem [%v]", loggerId, fsDetails.Quota.QuotasEnforced, fsDetails.Quota.FilesetdfEnabled, scVol.VolBackendFs)
+	if fsDetails.Quota.QuotasEnforced == "none" {
+		return status.Error(codes.Internal, fmt.Sprintf("quota is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+	}
+	if !fsDetails.Quota.FilesetdfEnabled {
+		return status.Error(codes.Internal, fmt.Sprintf("filesetdf is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+	}
+
+	return nil
 }
 
 func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
@@ -1189,97 +1201,96 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 // createStaticBasedVol: Create volume based on static  - return relative path of volume created
 func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol *scaleVolume, filesetName string, capacity uint64) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] volume: [%v] - ControllerServer:createStaticBasedVol , filesetName:[%s]", loggerId, scVol.VolName, filesetName)
+	klog.Infof("[%s] createStaticBasedVol: volume: [%v] - ControllerServer:createStaticBasedVol , filesetName:[%s]", loggerId, scVol.VolName, filesetName)
 
-	// fileset can not be created if filesystem is remote.
-	klog.Infof("[%s] check if volumes filesystem [%v] is remote or local for cluster [%v]", loggerId, scVol.VolBackendFs, scVol.ClusterId)
+	// volume and fileset can not be created if filesystem is remote. must be local for accessing cluster
+	klog.Infof("[%s] createStaticBasedVol: check if volumes filesystem [%v] is remote or local for cluster [%v]", loggerId, scVol.VolBackendFs, scVol.ClusterId)
 	fsDetails, err := scVol.Connector.GetFilesystemDetails(ctx, scVol.VolBackendFs)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid value in filesystemName") {
-			klog.Errorf("[%s] volume:[%v] - filesystem %s in not known to cluster %v. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
+			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - filesystem %s in not known to cluster %v. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %s in not known to cluster %v. Error: %v", scVol.VolBackendFs, scVol.ClusterId, err))
 		}
-		klog.Errorf("[%s] volume:[%v] - unable to check type of filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
+		klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - unable to check type of filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to check type of filesystem [%v]. Error: %v", scVol.VolBackendFs, err))
 	}
 
 	if fsDetails.Type == filesystemTypeRemote {
-		klog.Errorf("[%s] volume:[%v] - filesystem [%v] is not local to cluster [%v]", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId)
+		klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - filesystem [%v] is not local to cluster [%v]", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId)
 		return "", status.Error(codes.Internal, fmt.Sprintf("filesystem [%v] is not local to cluster [%v]", scVol.VolBackendFs, scVol.ClusterId))
 	}
 
 	// if filesystem is remote, check it is mounted on remote GUI node.
 	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
 		if fsDetails.Mount.Status != filesystemMounted {
-			klog.Errorf("[%s] volume:[%v] -  filesystem [%v] is [%v] on remote GUI of cluster [%v]", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
+			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] -  filesystem [%v] is [%v] on remote GUI of cluster [%v]", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
 			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
 		}
-		klog.V(4).Infof("[%s] volume:[%v] - mount point of volume filesystem [%v] on owning cluster is %v", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.MountPoint)
+		klog.V(4).Infof("[%s] createStaticBasedVol: volume:[%v] - mount point of volume filesystem [%v] on owning cluster is %v", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.MountPoint)
 	}
 
-	// check if quota is enabled on volume filesystem
+	// check if quota and filesetdfEnabled are enabled on filesystem
 	if scVol.VolSize != 0 {
-		klog.Infof("[%s] quota status on filesystem [%v] is [%t]", loggerId, scVol.VolBackendFs, fsDetails.Quota.FilesetdfEnabled)
-		if !fsDetails.Quota.FilesetdfEnabled {
-			return "", status.Error(codes.Internal, fmt.Sprintf("quota not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+		err = checkFSQuotasEnforcedAndFilesetdfEnabled(ctx, scVol, fsDetails)
+		if err != nil {
+			return "", err
 		}
 	}
-
-	// Check if fileset exist
+	// Check if fileset exists
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, filesetName)
-
 	if err != nil {
-		klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, filesetName, scVol.VolBackendFs, err)
+		klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, filesetName, scVol.VolBackendFs, err)
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", filesetName, scVol.VolBackendFs, err))
 	} else if reflect.ValueOf(filesetInfo).IsZero() {
-		// This means fileset is not present, create it
+		// This means fileset is not present, return the call
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to find fileset [%v] in filesystem [%v]. Create a fileset with the same pvc name to create a static volume based pvc", filesetName, scVol.VolBackendFs))
 	} else {
 
 		// check fileset type is matching with the requested volume type indepedendent or dependent
 
-		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
+		// fileset is present. Confirm if creator shouldn't be IBM Storage Scale CSI driver and fileset type is correct.
 		if filesetInfo.Config.Comment == connectors.FilesetComment {
 
-			klog.Errorf("[%s] volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, filesetName)
+			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, filesetName)
 			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", filesetName))
 		}
-		// fileset is present/created. Confirm if fileset is linked
+		// fileset is available. Confirm whether fileset is linked
 		if (filesetInfo.Config.Path == "") || (filesetInfo.Config.Path == filesetUnlinkedPath) {
-			klog.Errorf("[%s] volume:[%v] -  is not linked", loggerId, filesetName)
+			klog.Errorf("[%s] createStaticBasedVol: fileset:[%v] -  is not linked", loggerId, filesetName)
 			return "", status.Error(codes.Internal, fmt.Sprintf("fileset : [%v] is not linked", filesetName))
 		}
 		if scVol.ParentFileset != "" {
-			klog.V(4).Infof("[%s] createStaticBasedVol list parent fset check: [%+v]", utils.GetLoggerId(ctx), scVol.ParentFileset)
+			klog.V(4).Infof("[%s] createStaticBasedVol: list parent fset check: [%+v]", utils.GetLoggerId(ctx), scVol.ParentFileset)
 			parentfilesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, scVol.ParentFileset)
 			if err != nil {
-				klog.Errorf("[%s] volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, scVol.ParentFileset, scVol.VolBackendFs, err)
+				klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, scVol.ParentFileset, scVol.VolBackendFs, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", filesetName, scVol.ParentFileset, scVol.VolBackendFs, err))
 			}
 			if (parentfilesetInfo.Config.Path == "") || (parentfilesetInfo.Config.Path == filesetUnlinkedPath) {
-				klog.Errorf("[%s] volume:[%v] - parent fileset [%v] is not linked", loggerId, filesetName, scVol.ParentFileset)
+				klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - parent fileset [%v] is not linked", loggerId, filesetName, scVol.ParentFileset)
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - parent fileset [%v] is not linked", filesetName, scVol.ParentFileset))
 			}
 
 			if filesetInfo.Config.IsInodeSpaceOwner {
-				klog.Errorf("[%s] volume:[%v] - is an independent fileset doesn't have parent fileset [%v] which is incorrect", loggerId, filesetName, scVol.ParentFileset)
+				klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - is an independent fileset doesn't have parent fileset [%v] which is incorrect", loggerId, filesetName, scVol.ParentFileset)
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - is an independent fileset doesn't have parent fileset [%v] which is incorrect", filesetName, scVol.ParentFileset))
 			}
 		}
-		klog.V(4).Infof("[%s] createStaticBasedVol list quota for filesetName: [%+v]", utils.GetLoggerId(ctx), filesetName)
+
 		// check the fileset quota should be enough for the requested volume
+		klog.V(4).Infof("[%s] createStaticBasedVol: list quota for filesetName: [%+v]", utils.GetLoggerId(ctx), filesetName)
 		quota, err := scVol.Connector.ListFilesetQuota(ctx, scVol.VolBackendFs, filesetName)
 		if err != nil {
-			klog.Errorf("[%s] unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
+			klog.Errorf("[%s] createStaticBasedVol: unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, scVol.VolBackendFs, err))
 		}
 		filesetQuotaBytes, err := ConvertToBytes(quota)
 		if err != nil {
-			klog.Errorf("[%s] unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
+			klog.Errorf("[%s] createStaticBasedVol: unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to convert quota for fileset [%v] in filesystem [%v] or Check whether quota is set properly for the fileset. Error [%v]", filesetName, scVol.VolBackendFs, err))
 		}
 		if filesetQuotaBytes < capacity {
-			klog.Errorf("[%s] requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", loggerId, capacity, filesetName, quota)
+			klog.Errorf("[%s] createStaticBasedVol: requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", loggerId, capacity, filesetName, quota)
 			return "", status.Error(codes.Internal, fmt.Sprintf("requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", capacity, filesetName, quota))
 		}
 
@@ -1289,7 +1300,7 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
 		}
-		klog.V(4).Infof("[%s] createStaticBasedVol : volumeName : [%s], targetPath : [%s]", utils.GetLoggerId(ctx), filesetName, targetBasePath)
+		klog.V(4).Infof("[%s] createStaticBasedVol: volumeName : [%s], targetPath : [%s]", utils.GetLoggerId(ctx), filesetName, targetBasePath)
 
 		return targetBasePath, nil
 	}
