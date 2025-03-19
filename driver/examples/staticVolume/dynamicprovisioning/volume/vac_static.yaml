@@ -1,0 +1,7 @@
+apiVersion: storage.k8s.io/v1beta1
+kind: VolumeAttributesClass
+metadata:
+  name: scale-static-pvc-vac
+driverName: spectrumscale.csi.ibm.com
+parameters:
+  filesetName: "scale-static-pvc"
