@@ -2199,7 +2199,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 	}
 
 	if sourcevolume.StorageClassType == STORAGECLASS_CLASSIC {
-		// check for staticPV that -data directory is present or not. If not present, then it would be a static volume
+		// additional check for staticPV that -data directory is present or not. If not present, then it would be a static volume
 		filesetInfo, err := conn.ListFileset(ctx, sourcevolume.FsName, sourcevolume.FsetName)
 
 		if err != nil {
