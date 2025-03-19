@@ -947,6 +947,13 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			if err != nil {
 				return nil, err
 			}
+		} else if scaleVol.IsStaticPVBased {
+			fsetNameFrmVac := mutableParams["filesetName"]
+			if fsetNameFrmVac != "" {
+				filesetName = fsetNameFrmVac
+				klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create filesetName has been provided from VolumeAttributeClass filesetName:[ %s ]\n", loggerId, scaleVol.VolName, filesetName)
+			}
+
 		} else {
 			return nil, status.Error(codes.InvalidArgument, "Creating volume with volume attribute class is not supported")
 		}
@@ -1132,8 +1139,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	if scaleVol.IsStaticPVBased {
-		klog.Infof("[%s] CreateVolume staticPV true %v", loggerId, scaleVol)
-		// will add checks here
+		klog.Infof("[%s] CreateVolume staticPV true  with scaleVol:[ %v ], filesetName:[ %s ]", loggerId, scaleVol, filesetName)
 
 		capRange := req.GetCapacityRange()
 		if capRange == nil {
