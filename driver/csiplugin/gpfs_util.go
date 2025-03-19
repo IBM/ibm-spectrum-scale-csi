@@ -269,16 +269,20 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		isPermissionsSpecified = false
 	}
 
+	/* Check if either fileset based or LW volume. */
 	if volDirPathSpecified {
-		if fsetTypeSpecified {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and volDirBasePath must not be specified together in storageClass")
+		if fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset) {
+			scaleVol.IsFilesetBased = true
+		} else {
+			if inodeLimSpecified {
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and volDirBasePath must not be specified together in storageClass")
+			}
+			if isparentFilesetSpecified {
+				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and volDirBasePath must not be specified together in storageClass")
+			}
+			scaleVol.IsFilesetBased = false
 		}
-		if isparentFilesetSpecified {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and volDirBasePath must not be specified together in storageClass")
-		}
-		if inodeLimSpecified {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and volDirBasePath must not be specified together in storageClass")
-		}
+		scaleVol.VolDirBasePath = volDirPath
 	}
 
 	if fsetTypeSpecified {
@@ -305,13 +309,6 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		}
 	}
 
-	/* Check if either fileset based or LW volume. */
-
-	if volDirPathSpecified {
-		scaleVol.VolDirBasePath = volDirPath
-		scaleVol.IsFilesetBased = false
-	}
-
 	if isSCAdvanced && fsetTypeSpecified {
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "filesetType and version="+scversion2+" must not be specified together in storageClass")
 	}
@@ -319,7 +316,8 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and version="+scversion2+" must not be specified together in storageClass")
 	}
 	if isSCAdvanced && volDirPathSpecified {
-		return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+scversion2+" must not be specified together in storageClass")
+		//return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath and version="+scversion2+" must not be specified together in storageClass")
+		scaleVol.VolDirBasePath = volDirPath
 	}
 
 	if fsetTypeSpecified || isSCAdvanced {
@@ -450,14 +448,18 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"parentFileset\" and \"volumeType\" in storage class are mutually exclusive")
 		}
 
-		if volDirPathSpecified {
+		/*if volDirPathSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"volDirBasePath\" and \"volumeType\" in storage class are mutually exclusive")
-		}
+		}*/
 
 		volumeType = strings.ToLower(volumeType)
 		if volumeType == cacheVolume {
 			scaleVol.StorageClassType = STORAGECLASS_CACHE
 			scaleVol.VolumeType = cacheVolume
+			if volDirPathSpecified {
+				scaleVol.VolDirBasePath = volDirPath
+				scaleVol.IsFilesetBased = true
+			}
 		} else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s, only allowed value is: %s", volumeType, cacheVolume))
 		}
