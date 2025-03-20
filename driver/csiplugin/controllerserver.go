@@ -932,6 +932,15 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	if scaleVol.IsStaticPVBased && (isSnapSource || isVolSource) {
 		return nil, status.Error(codes.InvalidArgument, "Creating a static volume from another volume or snapshot is not supported")
 	}
+	klog.Infof("[%s] Requested pvc is a isSnapSource %t, isVolSource %t", loggerId, isSnapSource, isVolSource)
+
+	if isSnapSource || isVolSource {
+		klog.Infof("[%s] validating for static pv or not", loggerId)
+		err := cs.isSourceVolORSnapSourceVolStatic(ctx, isSnapSource, isVolSource, &srcVolumeIDMembers, &snapIdMembers)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Block creating a cache volume from another volume (clone) or
 	// from a snapshot (restore)
@@ -962,7 +971,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	isShallowCopyVolume := false
 	for _, reqCap := range reqCapabilities {
 		if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
-			if isSnapSource {
+			if isSnapSource && !snapIdMembers.IsStaticPVBased { // Blocking the shallowcopy a staticVolume Source. Can we enabled on demand. remove " && !snapIdMembers.IsStaticPVBased "
 				klog.Infof("[%s] Requested pvc is a shallow copy volume", loggerId)
 				isShallowCopyVolume = true
 			} else if scaleVol.VolumeType == cacheVolume {
@@ -2215,7 +2224,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		}
 	}
 
-	if sourcevolume.StorageClassType == STORAGECLASS_CLASSIC {
+	/*	if sourcevolume.StorageClassType == STORAGECLASS_CLASSIC {
 		// additional check for staticPV that -data directory is present or not. If not present, then it would be a static volume
 		filesetInfo, err := conn.ListFileset(ctx, sourcevolume.FsName, sourcevolume.FsetName)
 
@@ -2243,8 +2252,59 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 				}
 			}
 		}
+	}*/
+
+	return nil
+}
+
+func (cs *ScaleControllerServer) isSourceVolORSnapSourceVolStatic(ctx context.Context, isSnapSource bool, isVolSource bool, sourcevolume *scaleVolId, sourcesnapshot *scaleSnapId) error {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] isSourceVolORSnapSourceVolStatic: isSnapSource:[%v], isVolSource:[%v] , sourcevolume:[%v] , sourcesnapshot:[%v]", loggerId, isSnapSource, isVolSource, sourcevolume, sourcesnapshot)
+
+	clusterID := ""
+	fsUUID := ""
+	storageClassType := ""
+	isSourceStaticPVBased := false
+	fsetName := ""
+	if isVolSource {
+		clusterID = sourcevolume.ClusterId
+		fsUUID = sourcevolume.FsUUID
+		storageClassType = sourcevolume.StorageClassType
+		fsetName = sourcevolume.FsetName
+	} else if isSnapSource {
+		clusterID = sourcesnapshot.ClusterId
+		fsUUID = sourcesnapshot.FsUUID
+		storageClassType = sourcesnapshot.StorageClassType
+		fsetName = sourcesnapshot.FsetName
 	}
 
+	if storageClassType == STORAGECLASS_CLASSIC {
+		conn, err := cs.getConnFromClusterID(ctx, clusterID)
+		if err != nil {
+			return err
+		}
+		fsName, err := conn.GetFilesystemName(ctx, fsUUID)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", fsUUID, clusterID, err))
+		}
+		// additional check to determine source pv or sourcesnap as staticPV
+		filesetInfo, err := conn.ListFileset(ctx, fsName, fsetName)
+		if err != nil {
+			klog.Errorf("[%s] unable to list source/snapshotsource fileset [%v] in source filesystem [%v]. Error: %v", loggerId, fsetName, fsName, err)
+			return status.Error(codes.Internal, fmt.Sprintf("unable to list source/snapshotsource fileset [%v] in source filesystem [%v]. Error: %v", fsetName, fsName, err))
+		} else if !reflect.ValueOf(filesetInfo).IsZero() { // the listfileset response will be zero when shallow being created from dynamic based snapshot
+			klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
+			if filesetInfo.Config.Comment != connectors.FilesetComment {
+				klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, fsetName)
+				isSourceStaticPVBased = true
+			}
+		}
+		if isVolSource {
+			sourcevolume.IsStaticPVBased = isSourceStaticPVBased
+		} else if isSnapSource {
+			sourcesnapshot.IsStaticPVBased = isSourceStaticPVBased
+		}
+	}
 	return nil
 }
 

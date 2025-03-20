@@ -130,6 +130,7 @@ type scaleSnapId struct {
 	StorageClassType string
 	ConsistencyGroup string
 	VolType          string
+	IsStaticPVBased  bool
 }
 
 func IsValidCompressionAlgorithm(input string) bool {
