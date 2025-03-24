@@ -297,6 +297,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 		return "", err
 	}
 
+	klog.V(4).Infof("[%s] Validate CG response fsetlist [%v]", loggerId, fsetlist)
 	var flist []string
 	pvcns := scVol.ConsistencyGroup[cgPrefixLen:]
 
@@ -577,7 +578,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 	} else {
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
-		if strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
+		if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 			if scVol.VolumeType == cacheVolume {
 				if err := handleUpdateComment(ctx, scVol, setAfmAttributes, afmTuningParams); err != nil {
 					return "", err
