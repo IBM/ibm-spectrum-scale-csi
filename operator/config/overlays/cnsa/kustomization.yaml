@@ -30,17 +30,17 @@ patches:
                   - name: SHORTNAME_NODE_MAPPING
                     value: "yes"
                   - name: CSI_SNAPSHOTTER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:dd788d79cf4c1b8edee6d9b80b8a1ebfc51a38a365c5be656986b129be9ac784
+                    value: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:5f4bb469fec51147ce157329dab598c758da1b018bad6dad26f0ff469326d769
                   - name: CSI_ATTACHER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:6e54dae32284f60a2de1645c527715e4c934e5ce7899560c0d845bac957118dc
+                    value: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:69888dba58159c8bc0d7c092b9fb97900c9ca8710d088b0b7ea7bd9052df86f6
                   - name: CSI_PROVISIONER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:672e45d6a55678abc1d102de665b5cbd63848e75dc7896f238c8eaaf3c7d322f
+                    value: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:d5e46da8aff7d73d6f00c761dae94472bcda6e78f4f17b3802dc89d44de0111b
                   - name: CSI_LIVENESSPROBE_IMAGE
                     value: cp.icr.io/cp/gpfs/csi/livenessprobe@sha256:2c5f9dc4ea5ac5509d93c664ae7982d4ecdec40ca7b0638c24e5b16243b8360f
                   - name: CSI_NODE_REGISTRAR_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:0d23a6fd60c421054deec5e6d0405dc3498095a5a597e175236c0692f4adee0f
+                    value: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:d7138bcc3aa5f267403d45ad4292c95397e421ea17a0035888850f424c7de25d
                   - name: CSI_RESIZER_IMAGE
-                    value: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:ab774734705a906561e15b67f6a96538f3ad520335d636f793aaafe87a3b5200
+                    value: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:8ddd178ba5d08973f1607f9b84619b58320948de494b31c9d7cd5375b316d6d4
                   - name: CSI_DRIVER_IMAGE
                     value: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:be8f21db131aa2fc99da812347801fdaf04b7156b5fb1c90d6e50379ec3fc819
                 image: icr.io/cpopen/ibm-spectrum-scale-csi-operator@sha256:4edc63b7ddc88bd499e52f591fd34fb492243b37397732da5da1d6a0dad573dc
