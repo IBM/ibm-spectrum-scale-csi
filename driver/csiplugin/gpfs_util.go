@@ -102,6 +102,8 @@ type scaleVolume struct {
 	VolNamePrefix      string                            `json:"volNamePrefix"`
 	ExistingData       string                            `json:"existingData"`
 	IsStaticPVBased    bool                              `json:"isStaticPV"`
+	PVCName            string                            `json:"pvcName"`
+	Namespace          string                            `json:"namespace"`
 }
 
 type scaleVolId struct {
@@ -194,10 +196,18 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	scaleVol.StorageClassType = ""
 	scaleVol.Compression = ""
 	scaleVol.Tier = ""
+	scaleVol.PVCName = ""
 
 	if isSCTypeSpecified && storageClassType == "" {
 		isSCTypeSpecified = false
 	}
+	if volOptions["csi.storage.k8s.io/pvc/name"] != "" {
+		scaleVol.PVCName = volOptions["csi.storage.k8s.io/pvc/name"]
+	}
+	if volOptions["csi.storage.k8s.io/pvc/namespace"] != "" {
+		scaleVol.Namespace = volOptions["csi.storage.k8s.io/pvc/namespace"]
+	}
+
 	isSCAdvanced := false
 	if isSCTypeSpecified {
 		if storageClassType != scversion1 && storageClassType != scversion2 {
