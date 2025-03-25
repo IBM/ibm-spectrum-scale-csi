@@ -1266,7 +1266,7 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 		// check fileset type is matching with the requested volume type indepedendent or dependent
 
 		// fileset is present. Confirm if creator shouldn't be IBM Storage Scale CSI driver and fileset type is correct.
-		if filesetInfo.Config.Comment == connectors.FilesetComment {
+		if strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 
 			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, filesetName)
 			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", filesetName))
@@ -2235,7 +2235,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 			return status.Error(codes.Internal, fmt.Sprintf("unable to list source fileset [%v] in source filesystem [%v]. Error: %v", sourcevolume.FsetName, sourcevolume.FsName, err))
 		} else if !reflect.ValueOf(filesetInfo).IsZero() { // the listfileset response will be zero when shallow being created from dynamic based snapshot
 			klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
-			if filesetInfo.Config.Comment != connectors.FilesetComment {
+			if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 
 				klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, sourcevolume.FsetName)
 
@@ -2296,7 +2296,7 @@ func (cs *ScaleControllerServer) isSourceVolORSnapSourceVolStatic(ctx context.Co
 			return status.Error(codes.Internal, fmt.Sprintf("unable to list source/snapshotsource fileset [%v] in source filesystem [%v]. Error: %v", fsetName, fsName, err))
 		} else if !reflect.ValueOf(filesetInfo).IsZero() { // the listfileset response will be zero when shallow being created from dynamic based snapshot
 			klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
-			if filesetInfo.Config.Comment != connectors.FilesetComment {
+			if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 				klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, fsetName)
 				isSourceStaticPVBased = true
 			}
