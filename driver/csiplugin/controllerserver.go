@@ -292,11 +292,12 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Validate CG for volume [%v]", loggerId, scVol)
 
-	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs)
+	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs, scVol.PVCName, scVol.Namespace)
 	if err != nil {
 		return "", err
 	}
 
+	klog.V(4).Infof("[%s] Validate CG response fsetlist [%v]", loggerId, fsetlist)
 	var flist []string
 	pvcns := scVol.ConsistencyGroup[cgPrefixLen:]
 
@@ -558,6 +559,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 		} else {
 			// This means fileset is not present, create it
+			opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
 			fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
 		}
 
@@ -576,7 +578,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 	} else {
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
-		if filesetInfo.Config.Comment != connectors.FilesetComment {
+		if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 			if scVol.VolumeType == cacheVolume {
 				if err := handleUpdateComment(ctx, scVol, setAfmAttributes, afmTuningParams); err != nil {
 					return "", err
@@ -707,7 +709,7 @@ func updateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes boo
 	if setAfmAttributes {
 		updateOpts = afmTuningParams
 	}
-	updateOpts[connectors.FilesetComment] = connectors.FilesetComment
+	updateOpts[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
 	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, scVol.VolName, updateOpts, setAfmAttributes)
 }
 
@@ -2184,7 +2186,7 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 	}
 
 	// Check if fileset was created by IBM Storage Scale CSI Driver
-	if filesetDetails.Config.Comment == connectors.FilesetComment {
+	if strings.Contains(filesetDetails.Config.Comment, connectors.FilesetComment) {
 		// before deletion of fileset get its inodeSpace.
 		// this will help to identify if there are one or more dependent filesets for same inodeSpace
 		// which is shared with independent fileset
@@ -2388,7 +2390,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		if err != nil {
 			klog.Errorf("[%s]  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, FilesetName, FilesystemName, err)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", FilesetName, FilesystemName, err))
-		} else if !reflect.ValueOf(filesetInfo).IsZero() && filesetInfo.Config.Comment != connectors.FilesetComment {
+		} else if !reflect.ValueOf(filesetInfo).IsZero() && !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 			klog.Infof("Fileset [%v] is not created by IBM Container Storage Interface driver, skipping the fileset delete", FilesetName)
 			return &csi.DeleteVolumeResponse{}, nil
 		}
@@ -3077,7 +3079,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName
 		snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, filesetResp.FilesetName, snapName, req.GetName())
 	} else {
-		if filesetResp.Config.Comment == connectors.FilesetComment &&
+		if strings.Contains(filesetResp.Config.Comment, connectors.FilesetComment) &&
 			(cs.Driver.primary.PrimaryFset != filesetName || cs.Driver.primary.PrimaryFs != filesystemName) {
 			// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
 			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName;path
