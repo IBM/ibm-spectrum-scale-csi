@@ -2212,10 +2212,10 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 		message := fmt.Sprintf("Failed to list fileset in filesystem %s", fsNameOnOwningCluster)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-                                        metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
-                )
-                return "", err
-	} else if reflect.ValueOf(fsetResponse).IsZero(){
+			metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
+		)
+		return "", err
+	} else if reflect.ValueOf(fsetResponse).IsZero() {
 		logger.Info("Primary fileset not found, so creating it", "fileseName", filesetName)
 		opts := make(map[string]interface{})
 		if inodeLimit != "" {
@@ -2232,24 +2232,39 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 			return "", err
 		}
 		logger.Info("Primary fileset is created successfully", "filesetName", filesetName)
-	} else {
-		linkPath := fsetResponse.Config.Path
-		if linkPath == "" || linkPath == "--" {
-			logger.Info("Primary fileset not linked. Linking it", "filesetName", filesetName)
-			err = sc.LinkFileset(context.TODO(), fsNameOnOwningCluster, filesetName, newLinkPath)
-			if err != nil {
-				message := fmt.Sprintf("Failed to link the primary fileset %s to the linkpath %s on the filesystem %s", filesetName, newLinkPath, fsNameOnOwningCluster)
-				logger.Error(err, message)
-				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.LinkFilesetFailed), message,
-				)
-				return "", err
-			} else {
-				logger.Info("Linked primary fileset", "filesetName", filesetName, "linkpath", newLinkPath)
-			}
-		} else {
-			logger.Info("Primary fileset exists and linked", "filesetName", filesetName, "linkpath", linkPath)
+
+		fsetResponse, err = sc.ListFileset(context.TODO(), fsNameOnOwningCluster, filesetName)
+		if err != nil {
+			// fileset got created but listing failed, return without cleanup
+			message := fmt.Sprintf("unable to list newly created primary fileset [%v] in filesystem [%v]. Error: %v", filesetName, fsNameOnOwningCluster, err)
+			logger.Error(err, message)
+			return "", err
 		}
+	} else {
+		if !strings.Contains(fsetResponse.Config.Comment, connectors.FilesetComment) {
+			message := fmt.Sprintf("Primary fileset [%s] is not created by IBM Storage Scale CSI driver. Cannot use it.", filesetName)
+			err := fmt.Errorf("%s", message)
+			logger.Error(err, "")
+			return "", err
+		}
+	}
+
+	linkPath := fsetResponse.Config.Path
+	if linkPath == "" || linkPath == "--" {
+		logger.Info("Primary fileset not linked. Linking it", "filesetName", filesetName)
+		err = sc.LinkFileset(context.TODO(), fsNameOnOwningCluster, filesetName, newLinkPath)
+		if err != nil {
+			message := fmt.Sprintf("Failed to link the primary fileset %s to the linkpath %s on the filesystem %s", filesetName, newLinkPath, fsNameOnOwningCluster)
+			logger.Error(err, message)
+			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				metav1.ConditionFalse, string(csiv1.LinkFilesetFailed), message,
+			)
+			return "", err
+		} else {
+			logger.Info("Linked primary fileset", "filesetName", filesetName, "linkpath", newLinkPath)
+		}
+	} else {
+		logger.Info("Primary fileset exists and linked", "filesetName", filesetName, "linkpath", linkPath)
 	}
 	return newLinkPath, nil
 }
