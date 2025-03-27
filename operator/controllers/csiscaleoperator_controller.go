@@ -2241,7 +2241,7 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 			return "", err
 		}
 	} else {
-		if fsetResponse.Config.Comment != connectors.FilesetComment {
+		if !strings.Contains(fsetResponse.Config.Comment, connectors.FilesetComment) {
 			message := fmt.Sprintf("Primary fileset [%s] is not created by IBM Storage Scale CSI driver. Cannot use it.", filesetName)
 			err := fmt.Errorf("%s", message)
 			logger.Error(err, "")
