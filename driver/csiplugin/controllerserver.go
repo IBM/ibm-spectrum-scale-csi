@@ -2494,7 +2494,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 				return &csi.ControllerModifyVolumeResponse{}, nil
 			}
 		} else if volumeIDMembers.StorageClassType != STORAGECLASS_CACHE {
-			return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume: - Volume Attributes class is not supported for cache and staticVolumes")
+			return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume: - Volume Attributes class is only supported for cacheVolumes and staticVolumes")
 		}
 	}
 	afmTuningParams, err := validateVACParams(ctx, mutableParams)
