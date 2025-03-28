@@ -2231,36 +2231,6 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		}
 	}
 
-	/*	if sourcevolume.StorageClassType == STORAGECLASS_CLASSIC {
-		// additional check for staticPV that -data directory is present or not. If not present, then it would be a static volume
-		filesetInfo, err := conn.ListFileset(ctx, sourcevolume.FsName, sourcevolume.FsetName)
-
-		if err != nil {
-			klog.Errorf("[%s] unable to list source fileset [%v] in source filesystem [%v]. Error: %v", loggerId, sourcevolume.FsetName, sourcevolume.FsName, err)
-			return status.Error(codes.Internal, fmt.Sprintf("unable to list source fileset [%v] in source filesystem [%v]. Error: %v", sourcevolume.FsetName, sourcevolume.FsName, err))
-		} else if !reflect.ValueOf(filesetInfo).IsZero() { // the listfileset response will be zero when shallow being created from dynamic based snapshot
-			klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
-			if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
-
-				klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, sourcevolume.FsetName)
-
-				// check for staticPV that -data directory is present or not. If not present, then it would be a static volume
-				pathDir := fmt.Sprintf("%s/%s-data", sourcevolume.FsetName, sourcevolume.FsetName) // directory does not exist
-
-				_, err = conn.StatDirectory(ctx, sourcevolume.FsName, pathDir)
-				if err != nil {
-					if strings.Contains(err.Error(), "EFSSG0264C") ||
-						strings.Contains(err.Error(), "does not exist") { // directory does not exist
-						sourcevolume.IsStaticPVBased = true
-					} else {
-						klog.Errorf("[%s] failed to validate whether source volume path %s exists or not from volume. Error: [%v]", loggerId, pathDir, err)
-						return status.Error(codes.Internal, fmt.Sprintf("failed to validate whether source volume path %s exists or not from volume. Error: [%v]", pathDir, err))
-					}
-				}
-			}
-		}
-	}*/
-
 	return nil
 }
 
@@ -2491,15 +2461,6 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerModifyVolume - Error in source Volume ID %v: %v", volumeId, err))
 	}
 
-	if volumeIDMembers.StorageClassType != STORAGECLASS_CACHE && len(mutableParams) > 0 {
-		return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume - Volume Attributes class is not supported for other type of volumes ")
-	}
-
-	afmTuningParams, err := validateVACParams(ctx, mutableParams)
-	if err != nil {
-		return nil, err
-	}
-
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
 	if err != nil {
 		return nil, err
@@ -2513,16 +2474,35 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 
 	filesetName := volumeIDMembers.FsetName
 
-	fsetExist, err := conn.CheckIfFilesetExist(ctx, filesystemName, filesetName)
+	isStaticPVBased := false
+	// Check if fileset exists and the creator is not IBM Storage Scale CSI driver for static volumes
+	filesetInfo, err := conn.ListFileset(ctx, filesystemName, filesetName)
 	if err != nil {
-		klog.Errorf("[%s] unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
+		klog.Errorf("[%s] ControllerModifyVolume:  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, err))
+	} else if reflect.ValueOf(filesetInfo).IsZero() {
+		klog.Errorf("[%s]ControllerModifyVolume:  unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+	} else if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
+		klog.Infof("ControllerModifyVolume: Fileset [%v] is not created by IBM Container Storage Interface driver, means staticVolume", filesetName)
+		isStaticPVBased = true
+	}
+	if len(mutableParams) > 0 {
+		if isStaticPVBased {
+			if _, ok := mutableParams["filesetName"]; ok {
+				klog.Infof("[%s] ControllerModifyVolume: Modify filesetName:[ %s ] using VolumeAttributeClass is not allowed, so returning success \n", loggerId, filesetName)
+				return &csi.ControllerModifyVolumeResponse{}, nil
+			}
+		} else if volumeIDMembers.StorageClassType != STORAGECLASS_CACHE {
+			return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume: - Volume Attributes class is not supported for cache and staticVolumes")
+		}
+	}
+	afmTuningParams, err := validateVACParams(ctx, mutableParams)
+	if err != nil {
+		return nil, err
 	}
 
-	if !fsetExist {
-		klog.Errorf("[%s] Fileset [%v] does not exist in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
-	}
+	klog.Infof("Fileset [%v] is created by IBM Container Storage Interface driver, moving ahead with modify fileset", filesetName)
 
 	fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, afmTuningParams, true)
 	if fseterr != nil {
