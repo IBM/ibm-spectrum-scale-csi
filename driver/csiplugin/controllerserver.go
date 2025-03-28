@@ -2490,7 +2490,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 	if len(mutableParams) > 0 {
 		if isStaticPVBased {
 			if _, ok := mutableParams["filesetName"]; ok {
-				klog.Infof("[%s] ControllerModifyVolume: Modify filesetName:[ %s ] using VolumeAttributeClass is not allowed, so returning success \n", loggerId, filesetName)
+				klog.Infof("[%s] ControllerModifyVolume: Modify filesetName:[ %s ] using VolumeAttributeClass is not allowed to update static volumes, so returning success \n", loggerId, filesetName)
 				return &csi.ControllerModifyVolumeResponse{}, nil
 			}
 		} else if volumeIDMembers.StorageClassType != STORAGECLASS_CACHE {
