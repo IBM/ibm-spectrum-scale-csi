@@ -127,9 +127,12 @@ const (
 	UserSpecifiedShared           string = "shared"
 	AFMModeSecondary              string = "secondary"
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
+	FilesetCommentKey             string = "FilesetComment"
+	FilesetCommentValue           string = FilesetComment + " for PVC [ %s ] in the namespace [ %s ]"
 	UserSpecifiedCacheMode        string = "cacheMode"
 	UserSpecifiedVolumeType       string = "volumeType"
 	UserSpecifiedVolNamePrefix    string = "volNamePrefix"
+	UserSpecifiedExistingData     string = "existingData"
 
 	// AFM tuning parameters to modify cache fileset
 	AfmReadSparseThreshold     string = "afmReadSparseThreshold"

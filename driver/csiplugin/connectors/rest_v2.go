@@ -128,7 +128,6 @@ func (s *SpectrumRestV2) WaitForJobCompletionWithResp(ctx context.Context, statu
 	klog.V(4).Infof("[%s] rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
-		response := GenericResponse{}
 		jobURL := fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID)
 		response, err := s.AsyncJobCompletion(ctx, jobURL)
 		if err != nil {
@@ -528,7 +527,7 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.MaxNumInodes = inodeLimit.(string)
 		//filesetreq.AllocInodes = "1024"
 	}
-	comment, commentSpecified := opts[FilesetComment]
+	comment, commentSpecified := opts[FilesetCommentKey]
 	if commentSpecified {
 		filesetreq.Comment = fmt.Sprintf("%v", comment)
 	}
@@ -641,7 +640,13 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 
 	filesetreq := CreateFilesetRequest{}
 	filesetreq.FilesetName = filesetName
-	filesetreq.Comment = FilesetComment
+
+	comment, commentSpecified := opts[FilesetCommentKey]
+	if commentSpecified {
+		filesetreq.Comment = fmt.Sprintf("%v", comment)
+	} else {
+		filesetreq.Comment = FilesetComment
+	}
 
 	filesetType, filesetTypeSpecified := opts[UserSpecifiedFilesetType]
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
@@ -842,8 +847,8 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	if opts[UserSpecifiedPermissions] != nil {
 		filesetreq.Permission = opts[UserSpecifiedPermissions].(string)
 	}
-	if opts[UserSpecifiedVolDirPath] != nil{
-		filesetreq.Dir = fmt.Sprintf("%s/%s",opts[UserSpecifiedVolDirPath],filesetName)
+	if opts[UserSpecifiedVolDirPath] != nil {
+		filesetreq.Dir = fmt.Sprintf("%s/%s", opts[UserSpecifiedVolDirPath], filesetName)
 	}
 
 	klog.V(4).Infof("[%s] rest_v2 CreateS3CacheFileset. filesetreq: %v", loggerID, filesetreq)
@@ -1095,11 +1100,11 @@ func (s *SpectrumRestV2) CheckFilesetWithAFMTarget(ctx context.Context, filesyst
 
 func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
 	loggerID := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s", loggerID, filesystemName)
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s .", loggerID, filesystemName)
 
 	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
 	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
-	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment=%s", encodedFilesetComment)
+	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment='''%s.*'''", encodedFilesetComment)
 	getFilesetURL := url + "?" + filter
 	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, getFilesetURL)
 	getFilesetResponse := GetFilesetResponse_v2{}
@@ -1807,7 +1812,7 @@ func (s *SpectrumRestV2) GetSnapshotCreateTimestamp(ctx context.Context, filesys
 		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
-	return fmt.Sprintf(getSnapshotResponse.Snapshots[0].Created), nil
+	return fmt.Sprintf("%v", getSnapshotResponse.Snapshots[0].Created), nil
 }
 
 //nolint:dupl
