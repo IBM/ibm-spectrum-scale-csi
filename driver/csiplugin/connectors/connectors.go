@@ -56,7 +56,7 @@ type SpectrumScaleConnector interface {
 	UnlinkFileset(ctx context.Context, filesystemName string, filesetName string, force bool) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error)
-	ListCSIIndependentFilesets(ctx context.Context, filesystemName string, pvcName string, namespace string) ([]Fileset_v2, error)
+	ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error)
 	GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error)
 	IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	FilesetRefreshTask(ctx context.Context) error

@@ -296,7 +296,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Validate CG for volume [%v]", loggerId, scVol)
 
-	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs, scVol.PVCName, scVol.Namespace)
+	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs)
 	if err != nil {
 		return "", err
 	}
@@ -575,7 +575,12 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 		} else {
 			// This means fileset is not present, create it
-			opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
+			if isCGIndependentFset {
+				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, volName, scVol.Namespace)
+			} else {
+				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
+			}
+
 			fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
 		}
 

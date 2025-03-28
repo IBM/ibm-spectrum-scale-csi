@@ -1098,9 +1098,9 @@ func (s *SpectrumRestV2) CheckFilesetWithAFMTarget(ctx context.Context, filesyst
 	return "", nil
 }
 
-func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string, pvcName string, namespace string) ([]Fileset_v2, error) {
+func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
 	loggerID := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s . pvcName %s, namespace %s", loggerID, filesystemName, pvcName, namespace)
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s .", loggerID, filesystemName)
 
 	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
 	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
