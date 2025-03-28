@@ -440,13 +440,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		scaleVol.NodeClass = nodeClass
 	}
 
-	if scaleVol.IsStaticPVBased {
-		cgPrefix := utils.GetEnv("CSI_CG_PREFIX", notFound)
-		if cgPrefix == notFound {
-			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Failed to extract the consistencyGroup prefix")
-		}
-		scaleVol.ConsistencyGroup = fmt.Sprintf("%s-%s", cgPrefix, volOptions["csi.storage.k8s.io/pvc/namespace"])
-	} else if isCGSpecified {
+	if isCGSpecified {
 		scaleVol.ConsistencyGroup = cg
 	} else {
 		cgPrefix := utils.GetEnv("CSI_CG_PREFIX", notFound)
