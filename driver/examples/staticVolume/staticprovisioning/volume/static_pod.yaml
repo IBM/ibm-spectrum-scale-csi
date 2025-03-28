@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: csi-scale-fsetdemo-pod
+  name: csi-scale-staticdemo-pod
   labels:
     app: nginx
 spec:
@@ -16,6 +16,6 @@ spec:
   volumes:
    - name: mypvc
      persistentVolumeClaim:
-       claimName: scale-fset-pvc
+       claimName: scale-static-pvc
        readOnly: false
 

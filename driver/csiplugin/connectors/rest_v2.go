@@ -128,7 +128,6 @@ func (s *SpectrumRestV2) WaitForJobCompletionWithResp(ctx context.Context, statu
 	klog.V(4).Infof("[%s] rest_v2 WaitForJobCompletionWithResp. jobID: %d, statusCode: %d", utils.GetLoggerId(ctx), jobID, statusCode)
 
 	if s.checkAsynchronousJob(statusCode) {
-		response := GenericResponse{}
 		jobURL := fmt.Sprintf("scalemgmt/v2/jobs/%d?fields=:all:", jobID)
 		response, err := s.AsyncJobCompletion(ctx, jobURL)
 		if err != nil {
@@ -1813,7 +1812,7 @@ func (s *SpectrumRestV2) GetSnapshotCreateTimestamp(ctx context.Context, filesys
 		return "", fmt.Errorf("unable to list snapshot %v", snapName)
 	}
 
-	return fmt.Sprintf(getSnapshotResponse.Snapshots[0].Created), nil
+	return fmt.Sprintf("%v", getSnapshotResponse.Snapshots[0].Created), nil
 }
 
 //nolint:dupl

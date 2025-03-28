@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
@@ -67,9 +66,6 @@ const (
 	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 )
-
-var bucketLock = make(map[string]bool)
-var bucketMutex sync.Mutex
 
 type ScaleControllerServer struct {
 	Driver *ScaleDriver
@@ -123,7 +119,7 @@ func (cs *ScaleControllerServer) createLWVol(ctx context.Context, scVol *scaleVo
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
 // <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
-func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:generateVolId", loggerId, scVol.VolName)
 	var volID string
@@ -135,7 +131,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 	path := ""
 
 	if !isShallowCopyVolume {
-		if isCGVolume || scVol.VolumeType == cacheVolume {
+		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased {
 			primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 			if !isprimaryConnPresent {
 				klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
@@ -180,12 +176,20 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 		volumeType = FILE_SHALLOWCOPY_VOLUME
 	}
 
+	if scVol.IsStaticPVBased {
+		storageClassType = STORAGECLASS_CLASSIC
+		consistencyGroup = scVol.ConsistencyGroup
+		filesetName = filesetNameStatic
+	}
+
 	volID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s", storageClassType, volumeType, scVol.ClusterId, uid, consistencyGroup, filesetName, path)
+	klog.V(4).Infof("[%s] ControllerServer:generateVolId: volID [%v] ", loggerId, volID)
 	return volID, nil
 }
 
-// getTargetPath: retrun relative volume path from filesystem mount point
+// getTargetPath: return relative volume path from filesystem mount point
 func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isCGVolume bool, isCacheVolume bool) (string, error) {
+
 	if fsetLinkPath == "" || fsMountPoint == "" {
 		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
@@ -358,14 +362,10 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	}
 
 	// check if quota and filesetdfEnabled are enabled on filesystem
-	klog.Infof("[%s] check if quota and filesetdfEnabled are enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
 	if scVol.VolSize != 0 {
-		klog.Infof("[%s] quota status=%v and filesetdfEnabled=%v status on filesystem [%v]", loggerId, fsDetails.Quota.QuotasEnforced, fsDetails.Quota.FilesetdfEnabled, scVol.VolBackendFs)
-		if fsDetails.Quota.QuotasEnforced == "none" {
-			return "", status.Error(codes.Internal, fmt.Sprintf("quota is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
-		}
-		if !fsDetails.Quota.FilesetdfEnabled {
-			return "", status.Error(codes.Internal, fmt.Sprintf("filesetdf is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+		err = checkFSQuotasEnforcedAndFilesetdfEnabled(ctx, scVol, fsDetails)
+		if err != nil {
+			return "", err
 		}
 	}
 
@@ -494,6 +494,22 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		klog.Infof("[%s] finished creation of fileset for classic storageClass with fileset name: [%v]", loggerId, scVol.VolName)
 		return filesetPath, nil
 	}
+}
+
+func checkFSQuotasEnforcedAndFilesetdfEnabled(ctx context.Context, scVol *scaleVolume, fsDetails connectors.FileSystem_v2) error {
+	loggerId := utils.GetLoggerId(ctx)
+	// check if quota and filesetdfEnabled are enabled on filesystem
+	klog.Infof("[%s] checkFSQuotasEnforcedAndFilesetdfEnabled: check if quota and filesetdfEnabled are enabled on filesystem [%v] ", loggerId, scVol.VolBackendFs)
+
+	klog.Infof("[%s] checkFSQuotasEnforcedAndFilesetdfEnabled: quota status=%v and filesetdfEnabled=%v status on filesystem [%v]", loggerId, fsDetails.Quota.QuotasEnforced, fsDetails.Quota.FilesetdfEnabled, scVol.VolBackendFs)
+	if fsDetails.Quota.QuotasEnforced == "none" {
+		return status.Error(codes.Internal, fmt.Sprintf("quota is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+	}
+	if !fsDetails.Quota.FilesetdfEnabled {
+		return status.Error(codes.Internal, fmt.Sprintf("filesetdf is not enabled for filesystem %v of cluster %v", scVol.VolBackendFs, scVol.ClusterId))
+	}
+
+	return nil
 }
 
 func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
@@ -741,7 +757,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
 			"version", "tier", "compression", "consistencyGroup", "shared",
-			"volumeType", "cacheMode", "volNamePrefix":
+			"volumeType", "cacheMode", "volNamePrefix", "existingData":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -914,6 +930,25 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
+	filesetName := ""
+	if scaleVol.IsStaticPVBased {
+		filesetName = req.GetParameters()["csi.storage.k8s.io/pvc/name"]
+		klog.Infof("[%s] Requested pvc is a static volume", loggerId)
+	}
+
+	if scaleVol.IsStaticPVBased && (isSnapSource || isVolSource) {
+		return nil, status.Error(codes.InvalidArgument, "Creating a static volume from another volume or snapshot is not supported")
+	}
+	klog.Infof("[%s] Requested pvc is a isSnapSource %t, isVolSource %t", loggerId, isSnapSource, isVolSource)
+
+	if isSnapSource || isVolSource {
+		klog.Infof("[%s] validating for static pv or not", loggerId)
+		err := cs.isSourceVolORSnapSourceVolStatic(ctx, isSnapSource, isVolSource, &srcVolumeIDMembers, &snapIdMembers)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Block creating a cache volume from another volume (clone) or
 	// from a snapshot (restore)
 	if scaleVol.VolumeType == cacheVolume && (isSnapSource || isVolSource) {
@@ -928,6 +963,13 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			if err != nil {
 				return nil, err
 			}
+		} else if scaleVol.IsStaticPVBased {
+			fsetNameFrmVac := mutableParams["filesetName"]
+			if fsetNameFrmVac != "" {
+				filesetName = fsetNameFrmVac
+				klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create filesetName has been provided from VolumeAttributeClass filesetName:[ %s ]\n", loggerId, scaleVol.VolName, filesetName)
+			}
+
 		} else {
 			return nil, status.Error(codes.InvalidArgument, "Creating volume with volume attribute class is not supported")
 		}
@@ -936,7 +978,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	isShallowCopyVolume := false
 	for _, reqCap := range reqCapabilities {
 		if reqCap.GetAccessMode().GetMode() == csi.VolumeCapability_AccessMode_MULTI_NODE_READER_ONLY {
-			if isSnapSource {
+			if isSnapSource && !snapIdMembers.IsStaticPVBased { // Blocking the shallowcopy a staticVolume Source. Can we enabled on demand. remove " && !snapIdMembers.IsStaticPVBased "
 				klog.Infof("[%s] Requested pvc is a shallow copy volume", loggerId)
 				isShallowCopyVolume = true
 			} else if scaleVol.VolumeType == cacheVolume {
@@ -1031,7 +1073,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
 		}
 
-		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath)
+		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName)
 		if volIDErr != nil {
 			return nil, volIDErr
 		}
@@ -1112,7 +1154,16 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
-	if scaleVol.IsFilesetBased {
+	if scaleVol.IsStaticPVBased {
+		klog.Infof("[%s] CreateVolume staticPV true  with scaleVol:[ %v ], filesetName:[ %s ]", loggerId, scaleVol, filesetName)
+
+		capRange := req.GetCapacityRange()
+		if capRange == nil {
+			return nil, status.Error(codes.InvalidArgument, "volume range is not provided")
+		}
+		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
+		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
+	} else if scaleVol.IsFilesetBased {
 		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
@@ -1122,7 +1173,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
-	if !isCGVolume && scaleVol.VolumeType != cacheVolume {
+	if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
 		// Create symbolic link if not present
 		err = cs.createSoftlink(ctx, scaleVol, targetPath)
 		if err != nil {
@@ -1130,7 +1181,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
@@ -1169,6 +1220,114 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}, nil
 }
 
+// createStaticBasedVol: Create volume based on static  - return relative path of volume created
+func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol *scaleVolume, filesetName string, capacity uint64) (string, error) { //nolint:gocyclo,funlen
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] createStaticBasedVol: volume: [%v] - ControllerServer:createStaticBasedVol , filesetName:[%s]", loggerId, scVol.VolName, filesetName)
+
+	// volume and fileset can not be created if filesystem is remote. must be local for accessing cluster
+	klog.Infof("[%s] createStaticBasedVol: check if volumes filesystem [%v] is remote or local for cluster [%v]", loggerId, scVol.VolBackendFs, scVol.ClusterId)
+	fsDetails, err := scVol.Connector.GetFilesystemDetails(ctx, scVol.VolBackendFs)
+	if err != nil {
+		if strings.Contains(err.Error(), "Invalid value in filesystemName") {
+			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - filesystem %s in not known to cluster %v. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %s in not known to cluster %v. Error: %v", scVol.VolBackendFs, scVol.ClusterId, err))
+		}
+		klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - unable to check type of filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
+		return "", status.Error(codes.Internal, fmt.Sprintf("unable to check type of filesystem [%v]. Error: %v", scVol.VolBackendFs, err))
+	}
+
+	if fsDetails.Type == filesystemTypeRemote {
+		klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - filesystem [%v] is not local to cluster [%v]", loggerId, scVol.VolName, scVol.VolBackendFs, scVol.ClusterId)
+		return "", status.Error(codes.Internal, fmt.Sprintf("filesystem [%v] is not local to cluster [%v]", scVol.VolBackendFs, scVol.ClusterId))
+	}
+
+	// if filesystem is remote, check it is mounted on remote GUI node.
+	if cs.Driver.primary.PrimaryCid != scVol.ClusterId {
+		if fsDetails.Mount.Status != filesystemMounted {
+			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] -  filesystem [%v] is [%v] on remote GUI of cluster [%v]", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.Status, scVol.ClusterId)
+			return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %v in cluster %v is not mounted", scVol.VolBackendFs, scVol.ClusterId))
+		}
+		klog.V(4).Infof("[%s] createStaticBasedVol: volume:[%v] - mount point of volume filesystem [%v] on owning cluster is %v", loggerId, scVol.VolName, scVol.VolBackendFs, fsDetails.Mount.MountPoint)
+	}
+
+	// check if quota and filesetdfEnabled are enabled on filesystem
+	if scVol.VolSize != 0 {
+		err = checkFSQuotasEnforcedAndFilesetdfEnabled(ctx, scVol, fsDetails)
+		if err != nil {
+			return "", err
+		}
+	}
+	// Check if fileset exists
+	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, filesetName)
+	if err != nil {
+		klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, filesetName, scVol.VolBackendFs, err)
+		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", filesetName, scVol.VolBackendFs, err))
+	} else if reflect.ValueOf(filesetInfo).IsZero() {
+		// This means fileset is not present, return the call
+		return "", status.Error(codes.Internal, fmt.Sprintf("unable to find fileset [%v] in filesystem [%v]. Create a fileset with the same pvc name to create a static volume based pvc", filesetName, scVol.VolBackendFs))
+	} else {
+
+		// check fileset type is matching with the requested volume type indepedendent or dependent
+
+		// fileset is present. Confirm if creator shouldn't be IBM Storage Scale CSI driver and fileset type is correct.
+		if strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
+
+			klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", loggerId, filesetName)
+			return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - the fileset is created by IBM Storage Scale CSI driver. Cannot use it.", filesetName))
+		}
+		// fileset is available. Confirm whether fileset is linked
+		if (filesetInfo.Config.Path == "") || (filesetInfo.Config.Path == filesetUnlinkedPath) {
+			klog.Errorf("[%s] createStaticBasedVol: fileset:[%v] -  is not linked", loggerId, filesetName)
+			return "", status.Error(codes.Internal, fmt.Sprintf("fileset : [%v] is not linked", filesetName))
+		}
+		if scVol.ParentFileset != "" {
+			klog.V(4).Infof("[%s] createStaticBasedVol: list parent fset check: [%+v]", utils.GetLoggerId(ctx), scVol.ParentFileset)
+			parentfilesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, scVol.ParentFileset)
+			if err != nil {
+				klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, scVol.ParentFileset, scVol.VolBackendFs, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - unable to get details of parent fileset [%v] in filesystem [%v]. Error: %v", filesetName, scVol.ParentFileset, scVol.VolBackendFs, err))
+			}
+			if (parentfilesetInfo.Config.Path == "") || (parentfilesetInfo.Config.Path == filesetUnlinkedPath) {
+				klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - parent fileset [%v] is not linked", loggerId, filesetName, scVol.ParentFileset)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - parent fileset [%v] is not linked", filesetName, scVol.ParentFileset))
+			}
+
+			if filesetInfo.Config.IsInodeSpaceOwner {
+				klog.Errorf("[%s] createStaticBasedVol: volume:[%v] - is an independent fileset doesn't have parent fileset [%v] which is incorrect", loggerId, filesetName, scVol.ParentFileset)
+				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - is an independent fileset doesn't have parent fileset [%v] which is incorrect", filesetName, scVol.ParentFileset))
+			}
+		}
+
+		// check the fileset quota should be enough for the requested volume
+		klog.V(4).Infof("[%s] createStaticBasedVol: list quota for filesetName: [%+v]", utils.GetLoggerId(ctx), filesetName)
+		quota, err := scVol.Connector.ListFilesetQuota(ctx, scVol.VolBackendFs, filesetName)
+		if err != nil {
+			klog.Errorf("[%s] createStaticBasedVol: unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", filesetName, scVol.VolBackendFs, err))
+		}
+		filesetQuotaBytes, err := ConvertToBytes(quota)
+		if err != nil {
+			klog.Errorf("[%s] createStaticBasedVol: unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to convert quota for fileset [%v] in filesystem [%v] or Check whether quota is set properly for the fileset. Error [%v]", filesetName, scVol.VolBackendFs, err))
+		}
+		if filesetQuotaBytes < capacity {
+			klog.Errorf("[%s] createStaticBasedVol: requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", loggerId, capacity, filesetName, quota)
+			return "", status.Error(codes.Internal, fmt.Sprintf("requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", capacity, filesetName, quota))
+		}
+
+		targetBasePath := ""
+
+		targetBasePath, err = cs.getTargetPath(ctx, filesetInfo.Config.Path, fsDetails.Mount.MountPoint, filesetName, false, false, false)
+		if err != nil {
+			return "", status.Error(codes.Internal, err.Error())
+		}
+		klog.V(4).Infof("[%s] createStaticBasedVol: volumeName : [%s], targetPath : [%s]", utils.GetLoggerId(ctx), filesetName, targetBasePath)
+
+		return targetBasePath, nil
+	}
+}
+
 func validateCacheSecret(secretData map[string]string) []string {
 	requiredKeys := []string{"endpoint", "bucket", "accesskey", "secretkey"}
 	missingKeys := []string{}
@@ -1190,7 +1349,6 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	if scaleVol.StorageClassType == STORAGECLASS_ADVANCED {
 		isCGVolume = true
 	}
-
 	scaleVol.VolName = volName
 
 	// #nosec G115 -- false positive
@@ -1257,7 +1415,7 @@ func (cs *ScaleControllerServer) getVolORSnapMembers(ctx context.Context, req *c
 func (cs *ScaleControllerServer) checkFileSetLink(ctx context.Context, connector connectors.SpectrumScaleConnector, scaleVol *scaleVolume, filesystem string, fileset string, primaryOrSource string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	// Check if Primary Fileset is linked
-	//primaryFileset := cs.Driver.primary.PrimaryFset
+
 	klog.Infof("[%s] volume:[%v] - check if %s fileset [%v] is linked", loggerId, scaleVol.VolName, primaryOrSource, fileset)
 	isFilesetLinked, err := connector.IsFilesetLinked(ctx, filesystem, fileset)
 	if err != nil {
@@ -1652,8 +1810,10 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 	jobDetails := VolCopyJobDetails{VOLCOPY_JOB_NOT_STARTED, volID}
 	response := connectors.GenericResponse{}
 	if newvolume.IsFilesetBased {
+
 		path := ""
-		if sourcevolume.StorageClassType == STORAGECLASS_ADVANCED {
+		// sourcevolume.IsStaticPVBased has been set in the validateCloneRequest() function
+		if sourcevolume.StorageClassType == STORAGECLASS_ADVANCED || sourcevolume.IsStaticPVBased {
 			path = "/"
 		} else {
 			path = fmt.Sprintf("%s%s", sourcevolume.FsetName, "-data")
@@ -2074,6 +2234,57 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 	return nil
 }
 
+func (cs *ScaleControllerServer) isSourceVolORSnapSourceVolStatic(ctx context.Context, isSnapSource bool, isVolSource bool, sourcevolume *scaleVolId, sourcesnapshot *scaleSnapId) error {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] isSourceVolORSnapSourceVolStatic: isSnapSource:[%v], isVolSource:[%v] , sourcevolume:[%v] , sourcesnapshot:[%v]", loggerId, isSnapSource, isVolSource, sourcevolume, sourcesnapshot)
+
+	clusterID := ""
+	fsUUID := ""
+	storageClassType := ""
+	isSourceStaticPVBased := false
+	fsetName := ""
+	if isVolSource {
+		clusterID = sourcevolume.ClusterId
+		fsUUID = sourcevolume.FsUUID
+		storageClassType = sourcevolume.StorageClassType
+		fsetName = sourcevolume.FsetName
+	} else if isSnapSource {
+		clusterID = sourcesnapshot.ClusterId
+		fsUUID = sourcesnapshot.FsUUID
+		storageClassType = sourcesnapshot.StorageClassType
+		fsetName = sourcesnapshot.FsetName
+	}
+
+	if storageClassType == STORAGECLASS_CLASSIC {
+		conn, err := cs.getConnFromClusterID(ctx, clusterID)
+		if err != nil {
+			return err
+		}
+		fsName, err := conn.GetFilesystemName(ctx, fsUUID)
+		if err != nil {
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", fsUUID, clusterID, err))
+		}
+		// additional check to determine source pv or sourcesnap as staticPV
+		filesetInfo, err := conn.ListFileset(ctx, fsName, fsetName)
+		if err != nil {
+			klog.Errorf("[%s] unable to list source/snapshotsource fileset [%v] in source filesystem [%v]. Error: %v", loggerId, fsetName, fsName, err)
+			return status.Error(codes.Internal, fmt.Sprintf("unable to list source/snapshotsource fileset [%v] in source filesystem [%v]. Error: %v", fsetName, fsName, err))
+		} else if !reflect.ValueOf(filesetInfo).IsZero() { // the listfileset response will be zero when shallow being created from dynamic based snapshot
+			klog.V(4).Infof("[%s] filesetInfo:[%v] - the fileset details ", loggerId, filesetInfo)
+			if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
+				klog.V(4).Infof("[%s] volume:[%v] - the fileset is not created by IBM Storage Scale CSI driver. Static PV", loggerId, fsetName)
+				isSourceStaticPVBased = true
+			}
+		}
+		if isVolSource {
+			sourcevolume.IsStaticPVBased = isSourceStaticPVBased
+		} else if isSnapSource {
+			sourcesnapshot.IsStaticPVBased = isSourceStaticPVBased
+		}
+	}
+	return nil
+}
+
 func (cs *ScaleControllerServer) GetSnapIdMembers(sId string) (scaleSnapId, error) {
 	splitSid := strings.Split(sId, ";")
 	var sIdMem scaleSnapId
@@ -2240,7 +2451,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 	}
 
 	mutableParams := req.GetMutableParameters()
-	if mutableParams == nil || len(mutableParams) == 0 {
+	if len(mutableParams) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "No parameters passed to modify volume")
 	}
 
@@ -2248,15 +2459,6 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 	if err != nil {
 		klog.Errorf("[%s] ControllerModifyVolume - Error in source Volume ID %v: %v", loggerId, volumeId, err)
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerModifyVolume - Error in source Volume ID %v: %v", volumeId, err))
-	}
-
-	if volumeIDMembers.StorageClassType != STORAGECLASS_CACHE && len(mutableParams) > 0 {
-		return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume - Volume Attributes class is not supported for other type of volumes ")
-	}
-
-	afmTuningParams, err := validateVACParams(ctx, mutableParams)
-	if err != nil {
-		return nil, err
 	}
 
 	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
@@ -2272,16 +2474,35 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 
 	filesetName := volumeIDMembers.FsetName
 
-	fsetExist, err := conn.CheckIfFilesetExist(ctx, filesystemName, filesetName)
+	isStaticPVBased := false
+	// Check if fileset exists and the creator is not IBM Storage Scale CSI driver for static volumes
+	filesetInfo, err := conn.ListFileset(ctx, filesystemName, filesetName)
 	if err != nil {
-		klog.Errorf("[%s] unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
+		klog.Errorf("[%s] ControllerModifyVolume:  unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, err))
+	} else if reflect.ValueOf(filesetInfo).IsZero() {
+		klog.Errorf("[%s]ControllerModifyVolume:  unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
+	} else if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
+		klog.Infof("ControllerModifyVolume: Fileset [%v] is not created by IBM Container Storage Interface driver, means staticVolume", filesetName)
+		isStaticPVBased = true
+	}
+	if len(mutableParams) > 0 {
+		if isStaticPVBased {
+			if _, ok := mutableParams["filesetName"]; ok {
+				klog.Infof("[%s] ControllerModifyVolume: Modify filesetName:[ %s ] using VolumeAttributeClass is not allowed to update static volumes, so returning success \n", loggerId, filesetName)
+				return &csi.ControllerModifyVolumeResponse{}, nil
+			}
+		} else if volumeIDMembers.StorageClassType != STORAGECLASS_CACHE {
+			return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume: - Volume Attributes class is only supported for cacheVolumes and staticVolumes")
+		}
+	}
+	afmTuningParams, err := validateVACParams(ctx, mutableParams)
+	if err != nil {
+		return nil, err
 	}
 
-	if !fsetExist {
-		klog.Errorf("[%s] Fileset [%v] does not exist in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
-	}
+	klog.Infof("Fileset [%v] is created by IBM Container Storage Interface driver, moving ahead with modify fileset", filesetName)
 
 	fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, afmTuningParams, true)
 	if fseterr != nil {
@@ -2319,6 +2540,10 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	}
 
 	klog.V(4).Infof("[%s] Volume Id Members [%v]", loggerId, volumeIdMembers)
+
+	if volumeIdMembers.IsFilesetBased {
+		klog.V(4).Infof("[%s] Volume is IsFilesetBased [%v]", loggerId, volumeIdMembers.IsFilesetBased)
+	}
 
 	conn, err := cs.getConnFromClusterID(ctx, volumeIdMembers.ClusterId)
 	if err != nil {
@@ -2940,7 +3165,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	if volID == "" {
 		return nil, status.Error(codes.InvalidArgument, "CreateSnapshot - Source Volume ID is a required field")
 	}
-
 	volumeIDMembers, err := getVolIDMembers(volID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - Error in source Volume ID %v: %v", volID, err))
@@ -2996,11 +3220,13 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get Fileset response for Fileset [%v] FS [%v] ClusterId [%v]", volumeIDMembers.FsetName, filesystemName, volumeIDMembers.ClusterId))
 		}
+
 	} else {
 		filesetResp, err = conn.GetFileSetResponseFromId(ctx, filesystemName, volumeIDMembers.FsetId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get Fileset response for Fileset Id [%v] FS [%v] ClusterId [%v]", volumeIDMembers.FsetId, filesystemName, volumeIDMembers.ClusterId))
 		}
+
 	}
 
 	if volumeIDMembers.StorageClassType != STORAGECLASS_ADVANCED {
@@ -3023,7 +3249,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		relPath = strings.Replace(volumeIDMembers.Path, primaryFSMountPoint, "", 1)
 	}
 	relPath = strings.Trim(relPath, "!/")
-
 	/* Confirm it is same fileset which was created for this PV */
 	pvName := filepath.Base(relPath)
 	if pvName != filesetName {
@@ -3065,12 +3290,10 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		klog.Errorf("[%s] CreateSnapshot [%s] - Unable to get the snapshot details. Error [%v]", loggerId, snapName, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Unable to get the snapshot details for [%s]. Error [%v]", snapName, err))
 	}
-
 	snapName, createNewSnap, err := cs.CheckIfNewSnapshotIsRequired(ctx, conn, filesystemName, filesetName, filesetResp.FilesetName, snapName, volumeIDMembers.StorageClassType, snapWindowInt, snapExist)
 	if err != nil {
 		return nil, err
 	}
-
 	if createNewSnap {
 		snapName, err = cs.CreateNewSnapshot(ctx, conn, filesystemName, filesetName, snapName, volumeIDMembers.StorageClassType, snapExist)
 		if err != nil {
@@ -3093,6 +3316,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 			// This is statically created PVC from an independent fileset, here path is the root of fileset
 			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName;/
 			snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s;/", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, "", filesetName, snapName, "")
+			klog.Infof("[%s] CreateSnapshot - create snapshot  snapID, [%v]", loggerId, snapID)
 		}
 	}
 
@@ -3101,13 +3325,11 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		klog.Errorf("[%s] Error getting create timestamp for snapshot %s:%s:%s", loggerId, filesystemName, filesetName, snapName)
 		return nil, err
 	}
-
 	restoreSize, err := cs.getSnapRestoreSize(ctx, conn, filesystemName, filesetResp.FilesetName)
 	if err != nil {
 		klog.Errorf("[%s] Error getting the snapshot restore size for snapshot %s:%s:%s", loggerId, filesystemName, filesetResp.FilesetName, snapName)
 		return nil, err
 	}
-
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
 		err := cs.MakeSnapMetadataDir(ctx, conn, filesystemName, filesetResp.FilesetName, filesetName, snapName, req.GetName())
 		if err != nil {
@@ -3137,7 +3359,7 @@ func (cs *ScaleControllerServer) CheckIfNewSnapshotIsRequired(ctx context.Contex
 		if storageClassType == STORAGECLASS_ADVANCED && createNewSnap {
 			lockSuccess := CgSnapshotLock(ctx, filesetName, snapExist)
 			if !lockSuccess {
-				cs.retryToCreateNewSnap(ctx, conn, filesystemName, filesetName, snapName)
+				cs.retryToCreateNewSnap(ctx)
 			} else {
 				defer CgSnapshotUnlock(ctx, filesetName)
 			}
@@ -3200,7 +3422,7 @@ func (cs *ScaleControllerServer) CreateNewSnapshot(ctx context.Context, conn con
 	return snapName, nil
 }
 
-func (cs *ScaleControllerServer) retryToCreateNewSnap(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName, filesetName, snapName string) {
+func (cs *ScaleControllerServer) retryToCreateNewSnap(ctx context.Context) {
 
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] retrying to check whether new snapshot is required", loggerId)
@@ -3550,6 +3772,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	filesetName := volumeIDMembers.FsetName
 
+	// Check if fileset exists
 	fsetExist, err := conn.CheckIfFilesetExist(ctx, filesystemName, filesetName)
 	if err != nil {
 		klog.Errorf("[%s] unable to check fileset [%v] existance in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
@@ -3592,6 +3815,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get the fileset details. Error [%v]", err))
 	}
+
 	//check if fileset is dependent of independent\
 	maxInodesCombination := []int{100096, 100352, 102400, 106496, 114688, 131072}
 

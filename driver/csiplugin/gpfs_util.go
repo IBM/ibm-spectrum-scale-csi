@@ -39,6 +39,7 @@ const (
 	sharedPermissions        = "777"
 	defaultVolNamePrefix     = "pvc"
 	VolNamePrefixEnvKey      = "VOLUME_NAME_PREFIX"
+	existingDataAllowedVal   = "enabled"
 	AFMCacheSharedPermission = "0777"
 )
 
@@ -99,6 +100,8 @@ type scaleVolume struct {
 	VolumeType         string                            `json:"volumeType"`
 	CacheMode          string                            `json:"cacheMode"`
 	VolNamePrefix      string                            `json:"volNamePrefix"`
+	ExistingData       string                            `json:"existingData"`
+	IsStaticPVBased    bool                              `json:"isStaticPV"`
 	PVCName            string                            `json:"pvcName"`
 	Namespace          string                            `json:"namespace"`
 }
@@ -115,6 +118,7 @@ type scaleVolId struct {
 	StorageClassType string
 	ConsistencyGroup string
 	VolType          string
+	IsStaticPVBased  bool
 }
 
 type scaleSnapId struct {
@@ -128,6 +132,7 @@ type scaleSnapId struct {
 	StorageClassType string
 	ConsistencyGroup string
 	VolType          string
+	IsStaticPVBased  bool
 }
 
 func IsValidCompressionAlgorithm(input string) bool {
@@ -174,6 +179,13 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	volumeType, volumeTypeSpecified := volOptions[connectors.UserSpecifiedVolumeType]
 	cacheMode, cacheModeSpecified := volOptions[connectors.UserSpecifiedCacheMode]
 
+	// for static pv
+	scaleVol.IsStaticPVBased = false
+	existingData, existingDataSpecified := volOptions[connectors.UserSpecifiedExistingData]
+	if existingDataSpecified && existingData == "enabled" {
+		scaleVol.IsStaticPVBased = true
+	}
+
 	// Handling empty values
 	scaleVol.VolDirBasePath = ""
 	scaleVol.InodeLimit = ""
@@ -202,10 +214,13 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"version\" can have values only "+
 				"\""+scversion1+"\" or \""+scversion2+"\"")
 		}
-		if storageClassType == scversion2 {
+		if storageClassType == scversion2 && scaleVol.IsStaticPVBased {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameter \"existingData\" is not allowed for version "+""+scversion2+"\"")
+		} else if storageClassType == scversion2 {
 			isSCAdvanced = true
 			scaleVol.StorageClassType = STORAGECLASS_ADVANCED
 		}
+
 		if storageClassType == scversion1 {
 			scaleVol.StorageClassType = STORAGECLASS_CLASSIC
 		}
@@ -350,6 +365,18 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	} else {
 		if isCompressionSpecified || isTierSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"compression\" and \"tier\" are not supported in storageClass for lightweight volumes")
+		}
+	}
+
+	if scaleVol.IsStaticPVBased {
+		if uidSpecified || gidSpecified || isSharedSpecified || inodeLimSpecified || isPermissionsSpecified || isNodeClassSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"uid\" , \"gid\" , \"inodeLimit\" , \"shared\" , \"nodeClass\" and \"permissions\" are not allowed in storageClass for static volumes i.e. with \"existingData\"")
+		}
+		if volDirPathSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "volDirBasePath is not allowed in storageClass for static volumes i.e. with \"existingData\"")
+		}
+		if isCompressionSpecified || isTierSpecified {
+			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"compression\" and \"tier\" are not supported in storageClass for static volumes i.e. with \"existingData\"")
 		}
 	}
 
@@ -670,6 +697,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 			} else {
 				vIdMem.IsFilesetBased = true
 			}
+
 		} else {
 			vIdMem.IsFilesetBased = true
 		}
