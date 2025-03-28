@@ -766,7 +766,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 
 		case connectors.AfmReadSparseThreshold:
 			afmReadSparseThresholdValue, _ := strconv.Atoi(vacValue)
-			if afmReadSparseThresholdValue < 0 && afmReadSparseThresholdValue > 4294967296 {
+			if afmReadSparseThresholdValue < 0 || afmReadSparseThresholdValue > 2147483647 {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
 			} else {
 				afmTuningParams[vacKey] = vacValue
@@ -774,7 +774,7 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 
 		case connectors.AfmNumFlushThreads:
 			afmNumFlushThreadsValue, _ := strconv.Atoi(vacValue)
-			if afmNumFlushThreadsValue > 1024 {
+			if afmNumFlushThreadsValue < 1 || afmNumFlushThreadsValue > 1024 {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmNumFlushThreads))
 			} else {
 				afmTuningParams[vacKey] = afmNumFlushThreadsValue
