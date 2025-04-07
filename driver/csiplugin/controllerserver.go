@@ -576,7 +576,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		} else {
 			// This means fileset is not present, create it
 			if isCGIndependentFset {
-				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, volName, scVol.Namespace)
+				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetComment)
 			} else {
 				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
 			}
