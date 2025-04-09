@@ -2139,8 +2139,8 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
 	if primary.RemoteCluster != "" {
-		_, err := scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
-		if err != nil {
+		filesetInfo, err := scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
+		if err != nil || reflect.ValueOf(filesetInfo).IsZero() {
 			logger.Info("Primary fileset is not visible on primary cluster. Running fileset refresh task", "fileset name", primary.PrimaryFset)
 			err = scaleConnMap[config.Primary].FilesetRefreshTask(context.TODO())
 			if err != nil {
@@ -2154,8 +2154,8 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 			// retry listing fileset again after some time after refresh
 			time.Sleep(8 * time.Second)
-			_, err = scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
-			if err != nil {
+			filesetInfo, err = scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
+			if err != nil || reflect.ValueOf(filesetInfo).IsZero() {
 				message := fmt.Sprintf("Primary fileset %s is not visible on primary cluster even after running fileset refresh task", primary.PrimaryFset)
 				logger.Error(err, message)
 				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
