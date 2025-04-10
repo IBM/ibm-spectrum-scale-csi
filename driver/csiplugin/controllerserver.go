@@ -2670,8 +2670,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		}
 		if FilesetName != "" {
 			var pvName string
-			if isDisablePrimary {
-				/* Confirm it is same fileset which was created for this PV */
+			if strings.Contains(filepath.Base(relPath), "-data") {
 				pvName = strings.Replace(filepath.Base(relPath), "-data", "", 1)
 			} else {
 				/* Confirm it is same fileset which was created for this PV */
@@ -3280,7 +3279,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	}
 	klog.Infof("[%s] isDisablePrimary is : %t", loggerId, isDisablePrimary)
 	var pvName string
-	if isDisablePrimary {
+	if strings.Contains(filepath.Base(relPath), "-data") {
 		/* Confirm it is same fileset which was created for this PV */
 		pvName = strings.Replace(filepath.Base(relPath), "-data", "", 1)
 	} else {
