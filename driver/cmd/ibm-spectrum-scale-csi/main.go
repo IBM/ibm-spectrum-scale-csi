@@ -62,6 +62,12 @@ func main() {
 	if val, ok := os.LookupEnv(driver.VolNamePrefixEnvKey); ok {
 		klog.Infof("[%s] found in the env : %s", driver.VolNamePrefixEnvKey, val)
 	}
+	if val, ok := os.LookupEnv(settings.DiscoverCGFileset); ok {
+		klog.Infof("[%s] found in the env : %s", settings.DiscoverCGFileset, val)
+	}
+	if val, ok := os.LookupEnv(settings.DisablePrimaryKey); ok {
+		klog.Infof("[%s] found in the env : %s", settings.DisablePrimaryKey, val)
+	}
 
 	level, persistentLogEnabled := getLogEnv()
 	logValue := getLogLevel(level)

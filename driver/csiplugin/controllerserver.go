@@ -54,7 +54,6 @@ const (
 	cgPrefixLen                  = 37
 	softQuotaPercent             = 70 // This value is % of the hardQuotaLimit e.g. 70%
 
-	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
 
 	fsetNotFoundErrCode = "EFSSG0072C"
@@ -119,9 +118,10 @@ func (cs *ScaleControllerServer) createLWVol(ctx context.Context, scVol *scaleVo
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
 // <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
-func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string, isDisablePrimary bool) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:generateVolId", loggerId, scVol.VolName)
+	klog.V(4).Infof("[%s] scVol: [%+v] - ControllerServer:generateVolId targetPath:[%v]", loggerId, scVol, targetPath)
 	var volID string
 	var storageClassType string
 	var volumeType string
@@ -131,7 +131,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 	path := ""
 
 	if !isShallowCopyVolume {
-		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased {
+		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased || isDisablePrimary {
 			primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 			if !isprimaryConnPresent {
 				klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
@@ -189,18 +189,22 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 
 // getTargetPath: return relative volume path from filesystem mount point
 func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isCGVolume bool, isCacheVolume bool) (string, error) {
-
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] ControllerServer getTargetPath: fsetLinkPath:[%v], fsMountPoint:[%v], volumeName:[%v] , createDataDir :[%v], isCGVolume :[%v], isCacheVolume:[%v] ", loggerId, fsetLinkPath, fsMountPoint, volumeName, createDataDir, isCGVolume, isCacheVolume)
 	if fsetLinkPath == "" || fsMountPoint == "" {
-		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint)
+		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", loggerId, volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
 	}
-	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:getTargetPath", utils.GetLoggerId(ctx), volumeName)
-	targetPath := strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
+	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:getTargetPath", loggerId, volumeName)
+	var targetPath string
+
+	targetPath = strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
+
 	if createDataDir && !isCGVolume && !isCacheVolume {
 		targetPath = fmt.Sprintf("%s/%s-data", targetPath, volumeName)
 	}
 	targetPath = strings.Trim(targetPath, "!/")
-	klog.V(4).Infof("[%s] ControllerServer:getTargetPath volumeName : [%s],fsetLinkPath : [%s],fsMountPoint : [%s],targetPath : [%s]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint, targetPath)
+	klog.V(4).Infof("[%s] ControllerServer:getTargetPath volumeName : [%s],fsetLinkPath : [%s],fsMountPoint : [%s],targetPath : [%s]", loggerId, volumeName, fsetLinkPath, fsMountPoint, targetPath)
 	return targetPath, nil
 }
 
@@ -398,7 +402,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	if isCGVolume {
 		// For new storageClass first create independent fileset if not present
 
-		discoverCGFileset := strings.ToUpper(os.Getenv(discoverCGFileset))
+		discoverCGFileset := strings.ToUpper(os.Getenv(settings.DiscoverCGFileset))
 		klog.Infof("[%s] discoverCGFileset is : %s", loggerId, discoverCGFileset)
 
 		if discoverCGFileset != discoverCGFilesetDisabled && len(scVol.ConsistencyGroup) > cgPrefixLen {
@@ -930,6 +934,12 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
+	isDisablePrimary := false
+	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+		isDisablePrimary = true
+	}
+	klog.Infof("[%s] isDisablePrimary is : %t", loggerId, isDisablePrimary)
+
 	filesetName := ""
 	if scaleVol.IsStaticPVBased {
 		filesetName = req.GetParameters()["csi.storage.k8s.io/pvc/name"]
@@ -1073,7 +1083,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
 		}
 
-		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName)
+		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName, isDisablePrimary)
 		if volIDErr != nil {
 			return nil, volIDErr
 		}
@@ -1173,15 +1183,18 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
-	if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
-		// Create symbolic link if not present
-		err = cs.createSoftlink(ctx, scaleVol, targetPath)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+	// skip symbolic link creation when DISABLE_PRIMARY is set true as env
+
+	if !isDisablePrimary {
+		if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
+			// Create symbolic link if not present
+			err = cs.createSoftlink(ctx, scaleVol, targetPath)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
-
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName, isDisablePrimary)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
@@ -2544,6 +2557,11 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	if volumeIdMembers.IsFilesetBased {
 		klog.V(4).Infof("[%s] Volume is IsFilesetBased [%v]", loggerId, volumeIdMembers.IsFilesetBased)
 	}
+	isDisablePrimary := false
+	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+		isDisablePrimary = true
+	}
+	klog.Infof("[%s] isDisablePrimary is : %t", loggerId, isDisablePrimary)
 
 	conn, err := cs.getConnFromClusterID(ctx, volumeIdMembers.ClusterId)
 	if err != nil {
@@ -2651,8 +2669,14 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 			}
 		}
 		if FilesetName != "" {
-			/* Confirm it is same fileset which was created for this PV */
-			pvName := filepath.Base(relPath)
+			var pvName string
+			if isDisablePrimary {
+				/* Confirm it is same fileset which was created for this PV */
+				pvName = strings.Replace(filepath.Base(relPath), "-data", "", 1)
+			} else {
+				/* Confirm it is same fileset which was created for this PV */
+				pvName = filepath.Base(relPath)
+			}
 
 			if pvName == FilesetName {
 				checkForSnapshots := false
@@ -2665,7 +2689,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				}
 
 				// Delete fileset related symlink
-				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC {
+				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && !isDisablePrimary {
 					err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
 					if err != nil {
 						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
@@ -3249,8 +3273,20 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		relPath = strings.Replace(volumeIDMembers.Path, primaryFSMountPoint, "", 1)
 	}
 	relPath = strings.Trim(relPath, "!/")
-	/* Confirm it is same fileset which was created for this PV */
-	pvName := filepath.Base(relPath)
+
+	isDisablePrimary := false
+	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+		isDisablePrimary = true
+	}
+	klog.Infof("[%s] isDisablePrimary is : %t", loggerId, isDisablePrimary)
+	var pvName string
+	if isDisablePrimary {
+		/* Confirm it is same fileset which was created for this PV */
+		pvName = strings.Replace(filepath.Base(relPath), "-data", "", 1)
+	} else {
+		/* Confirm it is same fileset which was created for this PV */
+		pvName = filepath.Base(relPath)
+	}
 	if pvName != filesetName {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - PV name from path [%v] does not match with filesetName [%v].", pvName, filesetName))
 	}

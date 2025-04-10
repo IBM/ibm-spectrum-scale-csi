@@ -157,6 +157,7 @@ const (
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
 	EnvVolNamePrefixKey               = "VOLUME_NAME_PREFIX"
+	EnvDisablePrimaryKey              = "DISABLE_PRIMARY"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -165,8 +166,9 @@ const (
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
 	EnvVolNamePrefixKeyPrefixed         = EnvVarPrefix + EnvVolNamePrefixKey
+	EnvDisablePrimaryKeyPrefixed        = EnvVarPrefix + EnvDisablePrimaryKey
 
-	// Optional ConfigMap default values
+	// Optional ConfigMap default values if not provided in the cm
 	DriverCPULimitsDefaultValue          = "600m"
 	DriverMemoryLimitsDefaultValue       = "600Mi"
 	SidecarCPULimitsDefaultValue         = "300m"
@@ -177,12 +179,14 @@ const (
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
 	EnvVolNamePrefixDefaultValue         = "pvc"
+	EnvDisablePrimaryDefaultValue        = "FALSE"
 
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"
 	PodsMemoryLimitsLowerValue = "20Mi"
 )
 
+// allowed keys of the optional cm variables
 var CSIOptionalConfigMapKeys = []string{
 	EnvLogLevelKeyPrefixed,
 	EnvPersistentLogKeyPrefixed,
@@ -195,14 +199,17 @@ var CSIOptionalConfigMapKeys = []string{
 	DriverCPULimits,
 	DriverMemoryLimits,
 	SidecarCPULimits,
-	SidecarMemoryLimits}
+	SidecarMemoryLimits,
+	EnvDisablePrimaryKeyPrefixed}
 
+// allowed values of the optional cm variables
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
 var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
 var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
 var EnvHostNetworkValues = []string{"ENABLED", "DISABLED"}
+var EnvDisablePrimaryValues = []string{"TRUE", "FALSE"}
 
 const (
 	StatusConditionReady   = "Ready"

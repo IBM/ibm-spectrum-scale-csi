@@ -2428,6 +2428,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvDisablePrimaryKeyPrefixed:
+				validateEnvVarValue(config.EnvDisablePrimaryValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
 				validateVolNamePrefix(keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
@@ -2674,6 +2676,11 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.SidecarMemoryLimits]; !ok {
 		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
 		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
+	}
+	// set default EnvDisablePrimaryKey when it is not present in envMap
+	if _, ok := envMap[config.EnvDisablePrimaryKey]; !ok {
+		logger.Info("DISABLE_PRIMARY is empty or incorrect.", "Defaulting DISABLE_PRIMARY to", config.EnvDisablePrimaryDefaultValue)
+		envMap[config.EnvDisablePrimaryKey] = config.EnvDisablePrimaryDefaultValue
 	}
 }
 

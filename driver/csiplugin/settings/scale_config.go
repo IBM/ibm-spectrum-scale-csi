@@ -59,6 +59,8 @@ const (
 	VolumeStatsCapability = "VOLUME_STATS_CAPABILITY"
 	HostPath              = "/host/var/adm/ras/"
 	RotateSize            = 1024
+	DiscoverCGFileset     = "DISCOVER_CG_FILESET"
+	DisablePrimaryKey     = "DISABLE_PRIMARY"
 )
 
 /*
