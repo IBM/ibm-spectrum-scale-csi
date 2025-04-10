@@ -5,7 +5,7 @@ metadata:
 provisioner: spectrumscale.csi.ibm.com
 parameters:
     volBackendFs: "fs1"
-    existingData: "enabled"
+    existingVolume: "enabled"
     filesetType: "dependent"
     parentFileset: "scale-static-pvc-parent-1"
 reclaimPolicy: Delete
