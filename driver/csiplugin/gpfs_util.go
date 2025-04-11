@@ -39,7 +39,7 @@ const (
 	sharedPermissions        = "777"
 	defaultVolNamePrefix     = "pvc"
 	VolNamePrefixEnvKey      = "VOLUME_NAME_PREFIX"
-	existingVolumeAllowedVal = "enabled"
+	existingVolumeAllowedVal = "yes"
 	AFMCacheSharedPermission = "0777"
 )
 
@@ -182,7 +182,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	// for static pv
 	scaleVol.IsStaticPVBased = false
 	existingVolume, existingVolumeSpecified := volOptions[connectors.UserSpecifiedExistingVolume]
-	if existingVolumeSpecified && existingVolume == "enabled" {
+	if existingVolumeSpecified && existingVolume == existingVolumeAllowedVal {
 		scaleVol.IsStaticPVBased = true
 	}
 
