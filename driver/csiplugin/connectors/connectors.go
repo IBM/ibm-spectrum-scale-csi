@@ -132,7 +132,7 @@ const (
 	UserSpecifiedCacheMode        string = "cacheMode"
 	UserSpecifiedVolumeType       string = "volumeType"
 	UserSpecifiedVolNamePrefix    string = "volNamePrefix"
-	UserSpecifiedExistingData     string = "existingData"
+	UserSpecifiedExistingVolume   string = "existingVolume"
 
 	// AFM tuning parameters to modify cache fileset
 	AfmReadSparseThreshold     string = "afmReadSparseThreshold"
