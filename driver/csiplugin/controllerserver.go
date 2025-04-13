@@ -576,7 +576,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		} else {
 			// This means fileset is not present, create it
 			if isCGIndependentFset {
-				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, volName, scVol.Namespace)
+				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetComment)
 			} else {
 				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
 			}
@@ -757,7 +757,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
 			"version", "tier", "compression", "consistencyGroup", "shared",
-			"volumeType", "cacheMode", "volNamePrefix", "existingData":
+			"volumeType", "cacheMode", "volNamePrefix", "existingVolume":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -1356,6 +1356,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
 
+	// #nosec G115 -- false positive
 	if scaleVol.IsFilesetBased && uint64(volSize) < smallestVolSize {
 		scaleVol.VolSize = smallestVolSize
 	} else {
