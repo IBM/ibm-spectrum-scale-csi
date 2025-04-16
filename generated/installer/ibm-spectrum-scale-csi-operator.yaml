@@ -234,6 +234,7 @@ spec:
                 - amd64
                 - ppc64le
                 - s390x
+                - arm64
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master

@@ -40,6 +40,7 @@ spec:
                     - amd64
                     - ppc64le
                     - s390x
+                    - arm64
       securityContext:
         runAsGroup: 10001
         runAsNonRoot: true

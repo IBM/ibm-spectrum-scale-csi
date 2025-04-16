@@ -86,6 +86,8 @@ const (
 	PPC = "ppc64le"
 	// IBM zSystems machine architecture supported by IBM Storage Scale CSI.
 	IBMSystem390 = "s390x"
+	// 64-Bit ARM architecture supported by IBM Storage Scale CSI.
+	ARM64 = "arm64"
 
 	//  Default images for containers
 
