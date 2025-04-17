@@ -147,7 +147,7 @@ metadata:
     product: ibm-spectrum-scale-csi
     release: ibm-spectrum-scale-csi-operator
   annotations:
-    productVersion: 2.13.1
+    productVersion: 2.13.2
 spec:
   replicas: 1
   selector:
@@ -165,7 +165,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.13.1
+        productVersion: 2.13.2
     spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
@@ -234,6 +234,7 @@ spec:
                 - amd64
                 - ppc64le
                 - s390x
+                - arm64
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master

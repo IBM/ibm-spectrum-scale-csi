@@ -20,7 +20,7 @@ spec:
       annotations:
         productID: ibm-spectrum-scale-csi-operator
         productName: IBM Spectrum Scale CSI Operator
-        productVersion: 2.13.1
+        productVersion: 2.13.2
       labels:
         app.kubernetes.io/instance: ibm-spectrum-scale-csi-operator
         app.kubernetes.io/managed-by: ibm-spectrum-scale-csi-operator
@@ -40,6 +40,7 @@ spec:
                     - amd64
                     - ppc64le
                     - s390x
+                    - arm64
       securityContext:
         runAsGroup: 10001
         runAsNonRoot: true
