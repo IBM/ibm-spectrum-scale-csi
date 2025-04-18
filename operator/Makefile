@@ -29,7 +29,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # ibm.com/ibm-spectrum-scale-csi-bundle:$VERSION and ibm.com/ibm-spectrum-scale-csi-catalog:$VERSION.
-IMAGE_TAG_BASE ?= quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator
+IMAGE_TAG_BASE ?= quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)

@@ -6,7 +6,7 @@ metadata:
     capabilities: Basic Install
     categories: Storage
     certified: "false"
-    containerImage: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator
+    containerImage: quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-operator
     createdAt: Thu May 5 04:42:15 IST 2022
     description: An operator for deploying and managing the IBM Storage Scale CSI
       Driver.
