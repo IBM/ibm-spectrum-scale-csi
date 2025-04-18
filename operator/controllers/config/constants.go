@@ -88,7 +88,7 @@ const (
 	IBMSystem390 = "s390x"
 
 	//  Default images for containers
-	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale-dev/dev/ibm-spectrum-scale-csi-driver:v2.10.8"
+	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:v2.10.8"
 	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
 	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f6717ce72a2615c7fbc746b4068f788e78579c54c43b8716e5ce650d97af2df1" // #nosec G101 false positive
 	//  registry.k8s.io/sig-storage/livenessprobe:v2.10.0
