@@ -1212,7 +1212,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 				return nil, err
 			}
 		} else {
-			err = cs.copyVolumeContent(ctx, scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID)
+			err = cs.copyVolumeContent(ctx, scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID, ifPrimaryDisable)
 			if err != nil {
 				klog.Errorf("[%s] CreateVolume [%s]: [%v]", loggerId, volName, err)
 				return nil, err
@@ -1800,7 +1800,7 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
 
 }
 
-func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
+func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string, ifPrimaryDisable bool) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", loggerId, sourcevolume, newvolume, newvolume.VolName)
 	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId)
@@ -1849,12 +1849,22 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		response, err = conn.WaitForJobCompletionWithResp(ctx, jobStatus, jobID)
 	} else {
 
-		// Need to check when this will be meet , when new volume is not fileset based
-		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
-		if err != nil {
-			return err
+		var sLinkRelPath string
+		if ifPrimaryDisable {
+			klog.Infof("[%s] copyVolContent when PrimaryDisable,  sourcevolume.Path=[%v], fsMntPt=[%v]", loggerId, sourcevolume.Path, fsMntPt)
+			sLinkRelPath = strings.Replace(sourcevolume.Path, fsMntPt, "", 1)
+		} else {
+			klog.Infof("[%s] copyVolContent when with Primary, sourcevolume.Path=[%v]", loggerId, sourcevolume.Path)
+			// Need to check when this will be meet , when new volume is not fileset based
+			primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
+			if err != nil {
+				return err
+			}
+			klog.Infof("[%s] copyVolContent sourcevolume.Path=[%v], primaryFSMountPoint=[%v]", loggerId, sourcevolume.Path, primaryFSMountPoint)
+			sLinkRelPath = strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
+
 		}
-		sLinkRelPath := strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
+		klog.Infof("[%s] copyVolContent sourcevolume.Path=[%v], sourcevolume.FsName=[%v], sLinkRelPath=[%v], targetPath=[%v]", loggerId, sourcevolume.Path, sourcevolume.FsName, sLinkRelPath, targetPath)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(ctx, sourcevolume.FsName, sLinkRelPath, targetPath, newvolume.NodeClass)
