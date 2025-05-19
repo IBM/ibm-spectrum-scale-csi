@@ -3394,7 +3394,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	var primaryConn, scaleConn connectors.SpectrumScaleConnector
 	isprimaryConnPresent := false
 	if !ifPrimaryDisable {
-		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+		primaryConn, isprimaryConnPresent = cs.Driver.connmap["primary"]
 		if !isprimaryConnPresent {
 			klog.Errorf("[%s] CreateSnapshot - unable to get connector for primary cluster", loggerId)
 			return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
