@@ -245,7 +245,8 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 }
 
 func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error) { //nolint:funlen
-	klog.Infof("[%s] Initialize IBM Storage Scale CSI driver", utils.GetLoggerId(ctx))
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] Initialize IBM Storage Scale CSI driver", loggerId)
 	scaleConfig := settings.LoadScaleConfigSettings(ctx)
 
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
@@ -256,7 +257,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 		sc, err := connectors.GetSpectrumScaleConnector(ctx, cluster)
 		if err != nil {
-			klog.Errorf("[%s] Unable to initialize IBM Storage Scale connector for cluster %s", utils.GetLoggerId(ctx), cluster.ID)
+			klog.Errorf("[%s] Unable to initialize IBM Storage Scale connector for cluster %s", loggerId, cluster.ID)
 			return nil, scaleConfig, primaryInfo, err
 		}
 
@@ -267,16 +268,22 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 			// Check if GUI is reachable - only for primary cluster
 			clusterId, err := sc.GetClusterId(ctx)
 			if err != nil {
-				klog.Errorf("[%s] Error getting cluster ID: %v", utils.GetLoggerId(ctx), err)
+				klog.Errorf("[%s] Error getting cluster ID: %v", loggerId, err)
 				return nil, scaleConfig, primaryInfo, err
 			}
 
 			scaleConnMap["primary"] = sc
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
-
-			//If primary fileset value is not specified then use the default one
-			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
-				scaleConfig.Clusters[i].Primary.PrimaryFset = defaultPrimaryFileset
+			ifPrimaryDisable := false
+			if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+				ifPrimaryDisable = true
+			}
+			klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
+			if !ifPrimaryDisable {
+				//If primary fileset value is not specified then use the default one
+				if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
+					scaleConfig.Clusters[i].Primary.PrimaryFset = defaultPrimaryFileset
+				}
 			}
 			primaryInfo = scaleConfig.Clusters[i].Primary
 		}

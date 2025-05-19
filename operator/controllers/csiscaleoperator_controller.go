@@ -310,18 +310,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	//For first pass handle primary FS and fileset
-	if !cmExists {
-		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
-		if err != nil {
-			if requeAfterDelay == 0 {
-				return ctrl.Result{}, err
-			} else {
-				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
-			}
-		}
-	}
-
 	logger.Info("Create resources")
 	// create the resources which never change if not exist
 	for _, rec := range []reconciler{
@@ -414,6 +402,24 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
+
+	ifPrimaryDisable := false
+	if strings.ToUpper(cmData["DISABLE_PRIMARY"]) == "TRUE" {
+		ifPrimaryDisable = true
+	}
+	logger.Info("PrimaryDisable", " is ", ifPrimaryDisable)
+
+	//For first pass handle primary FS and fileset
+	if !cmExists && !ifPrimaryDisable {
+		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
+		if err != nil {
+			if requeAfterDelay == 0 {
+				return ctrl.Result{}, err
+			} else {
+				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
+			}
+		}
+	}
 
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
