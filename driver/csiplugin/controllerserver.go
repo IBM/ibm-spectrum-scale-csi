@@ -3386,18 +3386,30 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, chkSnapshotErr
 	}
 
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
-		klog.Errorf("[%s] CreateSnapshot - unable to get connector for primary cluster", loggerId)
-		return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+	ifPrimaryDisable := false
+	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+		ifPrimaryDisable = true
 	}
 
-	filesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
+	var primaryConn, scaleConn connectors.SpectrumScaleConnector
+	isprimaryConnPresent := false
+	if !ifPrimaryDisable {
+		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+		if !isprimaryConnPresent {
+			klog.Errorf("[%s] CreateSnapshot - unable to get connector for primary cluster", loggerId)
+			return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+		}
+		scaleConn = primaryConn
+	} else {
+		scaleConn = conn
+	}
+
+	filesystemName, err := scaleConn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
-	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
+	mountInfo, err := scaleConn.GetFilesystemMountDetails(ctx, filesystemName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
 	}
@@ -3409,7 +3421,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get Fileset response for Fileset [%v] FS [%v] ClusterId [%v]", volumeIDMembers.FsetName, filesystemName, volumeIDMembers.ClusterId))
 		}
-
 	} else {
 		filesetResp, err = conn.GetFileSetResponseFromId(ctx, filesystemName, volumeIDMembers.FsetId)
 		if err != nil {
@@ -3439,11 +3450,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	}
 	relPath = strings.Trim(relPath, "!/")
 
-	ifPrimaryDisable := false
-	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
-		ifPrimaryDisable = true
-	}
-	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
 	var pvName string
 	if strings.Contains(filepath.Base(relPath), "-data") {
 		/* Confirm it is same fileset which was created for this PV */
