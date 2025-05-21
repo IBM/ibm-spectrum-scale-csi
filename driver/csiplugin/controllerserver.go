@@ -2607,6 +2607,11 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
 	}
 
+	symlinkExists := false
+	if ifPrimaryDisable && strings.Contains(volumeIdMembers.Path, ".volumes") {
+		symlinkExists = true
+	}
+
 	relPath := ""
 	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME || ifPrimaryDisable {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
@@ -2709,7 +2714,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				}
 
 				// Delete fileset related symlink
-				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && !ifPrimaryDisable {
+				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && symlinkExists {
 					err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
 					if err != nil {
 						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
@@ -3160,6 +3165,24 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		if err != nil {
 			klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
+		}
+
+		volScalePathInContainer := hostDir + volumePath
+		f, err := os.Lstat(volScalePathInContainer)
+		if err != nil {
+			klog.Errorf("[%s] ControllerPublishVolume - lstat [%s] failed with error [%v]", loggerId, volScalePathInContainer, err)
+			return nil, fmt.Errorf("ControllerPublishVolume - lstat [%s] failed with error [%v]", volScalePathInContainer, err)
+		}
+		if f.Mode()&os.ModeSymlink != 0 {
+			symlinkTarget, readlinkErr := os.Readlink(volScalePathInContainer)
+			if readlinkErr != nil {
+				klog.Errorf("[%s] ControllerPublishVolume - readlink [%s] failed with error [%v]", loggerId, volScalePathInContainer, readlinkErr)
+				return nil, fmt.Errorf("ControllerPublishVolume - readlink [%s] failed with error [%v]", volScalePathInContainer, readlinkErr)
+			}
+			volScalePathInContainer = hostDir + symlinkTarget
+			volumePath = symlinkTarget
+			klog.V(4).Infof("[%s] ControllerPublishVolume - symlink targetPath in container is [%s]", loggerId, volScalePathInContainer)
+			klog.V(4).Infof("[%s] ControllerPublishVolume - symlink targetPath is [%s]", loggerId, volumePath)
 		}
 
 		if !strings.HasPrefix(volumePath, fsMount.MountPoint) {
