@@ -296,7 +296,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 
 	/* Check if either fileset based or LW volume. */
 	if volDirPathSpecified {
-		if fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset) {
+		if (fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset)) || isSCAdvanced {
 			scaleVol.IsFilesetBased = true
 		} else {
 			if inodeLimSpecified {
