@@ -3010,7 +3010,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
 
 		// check whether FS is mounted on all the gateway nodes or not
-		isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
+		isFsMountedOnGateway = isSubset(fsRemoteMountDetails.NodesMounted, gatewayNodeNames)
 
 		//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
 		if isFsMounted && ispFsMounted && isFsMountedOnGateway {
@@ -3032,7 +3032,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	if skipMountUnmount == "yes" {
 		//error when FS is not mounted on all the gatewayNodes for "cache" volume
 		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !isFsMountedOnGateway {
-			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
+			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on atleast one of the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
 			klog.Errorf(message)
 			return nil, status.Error(codes.Internal, message)
 		}
