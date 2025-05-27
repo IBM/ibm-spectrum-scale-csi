@@ -275,10 +275,10 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 			scaleConnMap["primary"] = sc
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
 			ifPrimaryDisable := false
-			if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+			if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
 				ifPrimaryDisable = true
 			}
-			klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
+			klog.V(4).Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
 			if !ifPrimaryDisable {
 				//If primary fileset value is not specified then use the default one
 				if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {

@@ -404,10 +404,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
 	ifPrimaryDisable := false
-	if strings.ToUpper(cmData["DISABLE_PRIMARY"]) == "TRUE" {
+	if strings.ToUpper(cmData["PRIMARY_FILESYSTEM"]) == "DISABLED" {
 		ifPrimaryDisable = true
 	}
-	logger.Info("PrimaryDisable", " is ", ifPrimaryDisable)
+	logger.Info("PRIMARY_FILESYSTEM is", " DISABLED ", ifPrimaryDisable)
 
 	//For first pass handle primary FS and fileset
 	if !cmExists && !ifPrimaryDisable {
@@ -2434,8 +2434,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-			case config.EnvDisablePrimaryKeyPrefixed:
-				validateEnvVarValue(config.EnvDisablePrimaryValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvPrimaryFilesystemKeyPrefixed:
+				validateEnvVarValue(config.EnvPrimaryFilesystemValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
 				validateVolNamePrefix(keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
@@ -2683,10 +2683,10 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
 		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
 	}
-	// set default EnvDisablePrimaryKey when it is not present in envMap
-	if _, ok := envMap[config.EnvDisablePrimaryKey]; !ok {
-		logger.Info("DISABLE_PRIMARY is empty or incorrect.", "Defaulting DISABLE_PRIMARY to", config.EnvDisablePrimaryDefaultValue)
-		envMap[config.EnvDisablePrimaryKey] = config.EnvDisablePrimaryDefaultValue
+	// set default EnvPrimaryFilesystemKey when it is not present in envMap
+	if _, ok := envMap[config.EnvPrimaryFilesystemKey]; !ok {
+		logger.Info("PRIMARY_FILESYSTEM is empty or incorrect.", "Defaulting PRIMARY_FILESYSTEM to", config.EnvPrimaryFilesystemDefaultValue)
+		envMap[config.EnvPrimaryFilesystemKey] = config.EnvPrimaryFilesystemDefaultValue
 	}
 }
 

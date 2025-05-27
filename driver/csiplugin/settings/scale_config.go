@@ -52,15 +52,16 @@ const (
 	cacertFileSuffix = "-cacert"
 )
 const (
-	DirPath               = "scalecsilogs"
-	LogFile               = "ibm-spectrum-scale-csi.logs"
-	PersistentLog         = "PERSISTENT_LOG"
-	NodePublishMethod     = "NODEPUBLISH_METHOD"
-	VolumeStatsCapability = "VOLUME_STATS_CAPABILITY"
-	HostPath              = "/host/var/adm/ras/"
-	RotateSize            = 1024
-	DiscoverCGFileset     = "DISCOVER_CG_FILESET"
-	DisablePrimaryKey     = "DISABLE_PRIMARY"
+	DirPath                = "scalecsilogs"
+	LogFile                = "ibm-spectrum-scale-csi.logs"
+	PersistentLog          = "PERSISTENT_LOG"
+	NodePublishMethod      = "NODEPUBLISH_METHOD"
+	VolumeStatsCapability  = "VOLUME_STATS_CAPABILITY"
+	HostPath               = "/host/var/adm/ras/"
+	RotateSize             = 1024
+	DiscoverCGFileset      = "DISCOVER_CG_FILESET"
+	PrimaryFilesystemKey   = "PRIMARY_FILESYSTEM"
+	PrimaryFilesystemValue = "DISABLED"
 )
 
 /*

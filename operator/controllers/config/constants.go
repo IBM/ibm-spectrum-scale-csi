@@ -157,7 +157,7 @@ const (
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
 	EnvVolNamePrefixKey               = "VOLUME_NAME_PREFIX"
-	EnvDisablePrimaryKey              = "DISABLE_PRIMARY"
+	EnvPrimaryFilesystemKey           = "PRIMARY_FILESYSTEM"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -166,7 +166,7 @@ const (
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
 	EnvVolNamePrefixKeyPrefixed         = EnvVarPrefix + EnvVolNamePrefixKey
-	EnvDisablePrimaryKeyPrefixed        = EnvVarPrefix + EnvDisablePrimaryKey
+	EnvPrimaryFilesystemKeyPrefixed     = EnvVarPrefix + EnvPrimaryFilesystemKey
 
 	// Optional ConfigMap default values if not provided in the cm
 	DriverCPULimitsDefaultValue          = "600m"
@@ -179,7 +179,7 @@ const (
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
 	EnvVolNamePrefixDefaultValue         = "pvc"
-	EnvDisablePrimaryDefaultValue        = "FALSE"
+	EnvPrimaryFilesystemDefaultValue     = "ENABLED"
 
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"
@@ -200,7 +200,7 @@ var CSIOptionalConfigMapKeys = []string{
 	DriverMemoryLimits,
 	SidecarCPULimits,
 	SidecarMemoryLimits,
-	EnvDisablePrimaryKeyPrefixed}
+	EnvPrimaryFilesystemKeyPrefixed}
 
 // allowed values of the optional cm variables
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
@@ -209,7 +209,7 @@ var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
 var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
 var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
 var EnvHostNetworkValues = []string{"ENABLED", "DISABLED"}
-var EnvDisablePrimaryValues = []string{"TRUE", "FALSE"}
+var EnvPrimaryFilesystemValues = []string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"

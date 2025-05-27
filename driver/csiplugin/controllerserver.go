@@ -834,7 +834,7 @@ func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context, i
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] getPrimaryClusterDetails with ifPrimaryDisable: %t", loggerId, ifPrimaryDisable)
 
-	klog.Infof("[%s] getPrimaryClusterDetails : cs.Driver.primary: [ %v ]", loggerId, cs.Driver.primary)
+	klog.V(4).Infof("[%s] getPrimaryClusterDetails : cs.Driver.primary: [ %v ]", loggerId, cs.Driver.primary)
 
 	primaryConn := cs.Driver.connmap["primary"]
 	var primaryFS, primaryFset, primaryFSMount, symlinkDirRelativePath, symlinkDirAbsolutePath string = "", "", "", "", ""
@@ -858,7 +858,7 @@ func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context, i
 
 		symlinkDirRelativePath = primaryFset + "/" + symlinkDir
 		symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
-		klog.Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
+		klog.V(4).Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
 	}
 	return primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, cs.Driver.primary.PrimaryCid, err
 }
@@ -927,7 +927,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	ifPrimaryDisable := false
-	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
 		ifPrimaryDisable = true
 	}
 	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
@@ -1851,20 +1851,19 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 
 		var sLinkRelPath string
 		if ifPrimaryDisable {
-			klog.Infof("[%s] copyVolContent when PrimaryDisable,  sourcevolume.Path=[%v], fsMntPt=[%v]", loggerId, sourcevolume.Path, fsMntPt)
+			klog.V(4).Infof("[%s] copyVolContent when PrimaryDisable,  sourcevolume.Path=[%v], fsMntPt=[%v]", loggerId, sourcevolume.Path, fsMntPt)
 			sLinkRelPath = strings.Replace(sourcevolume.Path, fsMntPt, "", 1)
 		} else {
-			klog.Infof("[%s] copyVolContent when with Primary, sourcevolume.Path=[%v]", loggerId, sourcevolume.Path)
-			// Need to check when this will be meet , when new volume is not fileset based
+			klog.V(4).Infof("[%s] copyVolContent when with Primary, sourcevolume.Path=[%v]", loggerId, sourcevolume.Path)
 			primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
 			if err != nil {
 				return err
 			}
-			klog.Infof("[%s] copyVolContent sourcevolume.Path=[%v], primaryFSMountPoint=[%v]", loggerId, sourcevolume.Path, primaryFSMountPoint)
+			klog.V(4).Infof("[%s] copyVolContent sourcevolume.Path=[%v], primaryFSMountPoint=[%v]", loggerId, sourcevolume.Path, primaryFSMountPoint)
 			sLinkRelPath = strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
 
 		}
-		klog.Infof("[%s] copyVolContent sourcevolume.Path=[%v], sourcevolume.FsName=[%v], sLinkRelPath=[%v], targetPath=[%v]", loggerId, sourcevolume.Path, sourcevolume.FsName, sLinkRelPath, targetPath)
+		klog.V(4).Infof("[%s] copyVolContent sourcevolume.Path=[%v], sourcevolume.FsName=[%v], sLinkRelPath=[%v], targetPath=[%v]", loggerId, sourcevolume.Path, sourcevolume.FsName, sLinkRelPath, targetPath)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(ctx, sourcevolume.FsName, sLinkRelPath, targetPath, newvolume.NodeClass)
@@ -2554,7 +2553,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	klog.Infof("[%s] DeleteVolume req: %v", loggerId, &reqToLog)
 
 	ifPrimaryDisable := false
-	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
 		ifPrimaryDisable = true
 	}
 	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
@@ -2624,7 +2623,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	}
 	relPath = strings.Trim(relPath, "!/")
 
-	klog.Infof("[%s] DeleteVolume : relPath %v", loggerId, relPath)
+	klog.V(4).Infof("[%s] DeleteVolume : relPath %v", loggerId, relPath)
 	isPvcFromSnapshot := false
 	var shallowCopyRefPath string
 	var snapshotName string
@@ -2762,12 +2761,12 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		var filesystemName string
 		if ifPrimaryDisable {
 			filesystemName = FilesystemName
-			klog.Infof("[%s] DeleteVolume with PrimaryDisable: filesystemName %v", loggerId, filesystemName)
+			klog.V(4).Infof("[%s] DeleteVolume with PrimaryDisable: filesystemName %v", loggerId, filesystemName)
 		} else {
 			filesystemName = cs.Driver.primary.GetPrimaryFs()
-			klog.Infof("[%s] DeleteVolume with Primary: filesystemName %v", loggerId, filesystemName)
+			klog.V(4).Infof("[%s] DeleteVolume with Primary: filesystemName %v", loggerId, filesystemName)
 		}
-		klog.Infof("[%s] DeleteVolume : filesystemName [%v], relPath [%v]", loggerId, filesystemName, relPath)
+		klog.V(4).Infof("[%s] DeleteVolume : filesystemName [%v], relPath [%v]", loggerId, filesystemName, relPath)
 		err = primaryConn.DeleteDirectory(ctx, filesystemName, relPath, false)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] Relative Path [%v]. Error [%v]", filesystemName, relPath, err))
@@ -2949,7 +2948,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	volumePath := volumeIDMembers.Path
 
 	ifPrimaryDisable := false
-	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
 		ifPrimaryDisable = true
 	}
 	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
@@ -3410,7 +3409,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	}
 
 	ifPrimaryDisable := false
-	if strings.ToUpper(os.Getenv(settings.DisablePrimaryKey)) == "TRUE" {
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
 		ifPrimaryDisable = true
 	}
 
