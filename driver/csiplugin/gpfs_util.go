@@ -709,21 +709,9 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 }
 
-// checking the fs is mounted on any 1 gateway node
+// checking the fs is mounted on any 1 gateway node or not
 func isSubset(subset []string, superset []string) bool {
-	// checkset := make(map[string]bool)
-	//
-	//	for _, element := range subset {
-	//		checkset[element] = true
-	//	}
-	//
-	//	for _, value := range superset {
-	//		if checkset[value] {
-	//			delete(checkset, value)
-	//		}
-	//	}
-	//
-	// return len(checkset) == 0 //this implies that set is subset of superset
+
 	for _, element := range subset {
 		for _, value := range superset {
 			if element == value {
