@@ -17,7 +17,7 @@ ARG commit
 
 ENV REVISION $commit
 
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
+RUN CGO_ENABLED=0 GOOS="linux" GOARCH="amd64" go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi9-minimal:9.5-1742914212
