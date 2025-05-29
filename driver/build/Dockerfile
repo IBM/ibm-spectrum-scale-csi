@@ -17,7 +17,6 @@ ARG commit
 
 ENV REVISION $commit
 
-
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
