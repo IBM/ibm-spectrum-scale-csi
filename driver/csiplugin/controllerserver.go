@@ -2607,12 +2607,24 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	}
 
 	symlinkExists := false
-	if ifPrimaryDisable && strings.Contains(volumeIdMembers.Path, ".volumes") {
+	if strings.Contains(volumeIdMembers.Path, ".volumes") {
 		symlinkExists = true
+		klog.Infof("[%s] DeleteVolume : symlink exists for volume path : [%t]", loggerId, symlinkExists)
 	}
+	pfsName := ""
+	// getting the primary filesystem name from the path when primary fs is not provided in the cr and pvc is older
+	/*	if symlinkExists && ifPrimaryDisable {
+		parts := strings.Split(volumeIdMembers.Path, "/")
+		for i, part := range parts {
+			if part == ".volumes" && i >= 2 {
+				pfsName = parts[i-2]
+				klog.Infof("[%s] DeleteVolume :primary fs from path is [%v]", loggerId, pfsName)
+			}
+		}
+	}*/
 
 	relPath := ""
-	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME || ifPrimaryDisable {
+	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME || !symlinkExists {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
@@ -2620,6 +2632,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 			return nil, err
 		}
 		relPath = strings.Replace(volumeIdMembers.Path, primaryFSMountPoint, "", 1)
+		klog.V(4).Infof("[%s] DeleteVolume : relPath %v volumeIdMembers.Path [%v], primaryFSMountPoint [%v]", loggerId, relPath, volumeIdMembers.Path, primaryFSMountPoint)
 	}
 	relPath = strings.Trim(relPath, "!/")
 
@@ -2714,10 +2727,18 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 
 				// Delete fileset related symlink
 				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && symlinkExists {
-					err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
-					if err != nil {
-						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
+					if ifPrimaryDisable && pfsName != "" {
+						err = primaryConn.DeleteSymLnk(ctx, pfsName, relPath)
+						if err != nil {
+							return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", pfsName, relPath, err))
+						}
+					} else {
+						err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
+						if err != nil {
+							return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
+						}
 					}
+
 				}
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2759,7 +2780,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	} else {
 		/* Delete Dir for Lw volume */
 		var filesystemName string
-		if ifPrimaryDisable {
+		if !symlinkExists {
 			filesystemName = FilesystemName
 			klog.V(4).Infof("[%s] DeleteVolume with PrimaryDisable: filesystemName %v", loggerId, filesystemName)
 		} else {
@@ -2774,7 +2795,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 
 	}
 
-	if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && !isPvcFromSnapshot && !ifPrimaryDisable {
+	if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && !isPvcFromSnapshot && symlinkExists {
 		err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
 
 		if err != nil {
