@@ -1062,7 +1062,14 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	var shallowCopyTargetPath string
 	if isShallowCopyVolume {
-		err = cs.createSnapshotDir(ctx, &snapIdMembers, scaleVol, isCGVolume)
+		var customPath string
+		if scaleVol.VolDirBasePath != "" {
+			customPath, err = cs.checkCustomPathforSrcVolume(ctx, &snapIdMembers, scaleVol, isCGVolume)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("validation of checkCustomPathforSrcVolume failed: %v", err))
+			}
+		}
+		err = cs.createSnapshotDir(ctx, &snapIdMembers, scaleVol, isCGVolume, customPath)
 		if err != nil {
 			return nil, err
 		}
@@ -2108,16 +2115,55 @@ func (cs *ScaleControllerServer) validateShallowCopyVolume(ctx context.Context, 
 	return nil
 }
 
-func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, isCGVolume bool) error {
+func (cs *ScaleControllerServer) checkCustomPathforSrcVolume(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, isCGVolume bool) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	var snapshotPath string
+	var volName string
+	if isCGVolume {
+		volName = sourcesnapshot.ConsistencyGroup
+	} else {
+		volName = sourcesnapshot.FsetName
+	}
+	filesetInfo, err := newvolume.Connector.ListFileset(ctx, newvolume.VolBackendFs, volName)
+	if err != nil {
+		klog.Errorf("[%s] checkCustomPathforSrcVolume:[%v] - unable to list source fileset [%v] in filesystem [%v]. Error: %v", loggerId, newvolume.VolName, volName, newvolume.VolBackendFs, err)
+		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, newvolume.VolBackendFs, err))
+	} else {
+		fsDetails, err := newvolume.Connector.GetFilesystemDetails(ctx, newvolume.VolBackendFs)
+		if err != nil {
+			if strings.Contains(err.Error(), "Invalid value in filesystemName") {
+				klog.Errorf("[%s] checkCustomPathforSrcVolume: volume:[%v] - filesystem %s in not known to cluster %v. Error: %v", loggerId, newvolume.VolName, newvolume.VolBackendFs, newvolume.ClusterId, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("Filesystem %s in not known to cluster %v. Error: %v", newvolume.VolBackendFs, newvolume.ClusterId, err))
+			}
+			klog.Errorf("[%s] checkCustomPathforSrcVolume: volume:[%v] - unable to check type of filesystem [%v]. Error: %v", loggerId, newvolume.VolName, newvolume.VolBackendFs, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to check type of filesystem [%v]. Error: %v", newvolume.VolBackendFs, err))
+		}
+		path := filesetInfo.Config.Path
+		newPath := strings.Replace(path, fsDetails.Mount.MountPoint, "", 1)
+		custPath := strings.Replace(newPath, volName, "", 1)
+		if strings.Contains(custPath, newvolume.VolDirBasePath) {
+			return newvolume.VolDirBasePath, nil
+		} else {
+			klog.Errorf("[%s] checkCustomPathforSrcVolume:[%v] - source volume is not available in custom path [%s] in filesystem [%v]. Error: %v", loggerId, volName, newvolume.VolDirBasePath, newvolume.VolBackendFs, err)
+			return "", status.Error(codes.Internal, fmt.Sprintf("source volume is not available in custom path [%s] in filesystem [%v]. Error: %v", volName, newvolume.VolBackendFs, err))
+		}
+	}
+}
+
+func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, isCGVolume bool, customPath string) error {
+	loggerId := utils.GetLoggerId(ctx)
+	var snapshotPath, shallowCopyPath string
 
 	if isCGVolume {
 		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.ConsistencyGroup, sourcesnapshot.SnapName)
 	} else {
 		snapshotPath = fmt.Sprintf("%s/%s", sourcesnapshot.FsetName, sourcesnapshot.SnapName)
 	}
-	shallowCopyPath := fmt.Sprintf("%s/%s", snapshotPath, newvolume.VolName)
+
+	if customPath != "" {
+		shallowCopyPath = fmt.Sprintf("%s/%s/%s", newvolume.VolDirBasePath, snapshotPath, newvolume.VolName)
+	} else {
+		shallowCopyPath = fmt.Sprintf("%s/%s", snapshotPath, newvolume.VolName)
+	}
 
 	if isCGVolume {
 		klog.Infof("[%s] Target path in createSnapshotDir:[%s]", loggerId, snapshotPath)
@@ -3123,10 +3169,16 @@ func (cs *ScaleControllerServer) CheckNewSnapRequired(ctx context.Context, conn 
 	return "", nil
 }
 
-func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string) error {
+func (cs *ScaleControllerServer) MakeSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, filesetName string, indepFileset string, cgSnapName string, metaSnapName string, finalcustomPath string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	cgpath := fmt.Sprintf("%s/%s", indepFileset, cgSnapName)
-	path := fmt.Sprintf("%s/%s", cgpath, metaSnapName)
+
+	var path string
+	if finalcustomPath != "" {
+		path = fmt.Sprintf("%s/%s/%s", finalcustomPath, cgpath, metaSnapName)
+	} else {
+		path = fmt.Sprintf("%s/%s", cgpath, metaSnapName)
+	}
 
 	klog.Infof("[%s] Target path in MakeSnapMetadataDir:[%s]", loggerId, cgpath)
 	lockSuccess := CgSnapshotLock(ctx, cgpath, true)
@@ -3332,7 +3384,10 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, err
 	}
 	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-		err := cs.MakeSnapMetadataDir(ctx, conn, filesystemName, filesetResp.FilesetName, filesetName, snapName, req.GetName())
+		newPath := strings.Replace(relPath, filesetName, "", 1)
+		customPath := strings.Replace(newPath, pvName, "", 1)
+		finalcustomPath := strings.Trim(customPath, "/")
+		err := cs.MakeSnapMetadataDir(ctx, conn, filesystemName, filesetResp.FilesetName, filesetName, snapName, req.GetName(), finalcustomPath)
 		if err != nil {
 			klog.Errorf("[%s] Error in creating directory for storing metadata information for advanced storageClass. Error: [%v]", loggerId, err)
 			return nil, err
