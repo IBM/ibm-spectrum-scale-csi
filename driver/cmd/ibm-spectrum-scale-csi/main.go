@@ -47,20 +47,11 @@ var (
 
 func main() {
 	klog.InitFlags(nil)
-	if val, ok := os.LookupEnv(utils.LogLevel); ok {
-		klog.Infof("[%s] found in the env : %s", utils.LogLevel, val)
-	}
-	if val, ok := os.LookupEnv(settings.PersistentLog); ok {
-		klog.Infof("[%s] found in the env : %s", settings.PersistentLog, val)
-	}
-	if val, ok := os.LookupEnv(settings.NodePublishMethod); ok {
-		klog.Infof("[%s] found in the env : %s", settings.NodePublishMethod, val)
-	}
-	if val, ok := os.LookupEnv(settings.VolumeStatsCapability); ok {
-		klog.Infof("[%s] found in the env : %s", settings.VolumeStatsCapability, val)
-	}
-	if val, ok := os.LookupEnv(driver.VolNamePrefixEnvKey); ok {
-		klog.Infof("[%s] found in the env : %s", driver.VolNamePrefixEnvKey, val)
+
+	for _, key := range []string{utils.LogLevel, settings.PersistentLog, settings.NodePublishMethod, settings.VolumeStatsCapability, driver.VolNamePrefixEnvKey, settings.DiscoverCGFileset, settings.PrimaryFilesystemKey} {
+		if val, ok := os.LookupEnv(key); ok {
+			klog.Infof("[%s] found in the env : %s", key, val)
+		}
 	}
 
 	level, persistentLogEnabled := getLogEnv()
