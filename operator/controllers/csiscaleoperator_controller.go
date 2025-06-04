@@ -310,18 +310,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	//For first pass handle primary FS and fileset
-	if !cmExists {
-		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
-		if err != nil {
-			if requeAfterDelay == 0 {
-				return ctrl.Result{}, err
-			} else {
-				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
-			}
-		}
-	}
-
 	logger.Info("Create resources")
 	// create the resources which never change if not exist
 	for _, rec := range []reconciler{
@@ -414,6 +402,24 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
+
+	ifPrimaryDisable := false
+	if strings.ToUpper(cmData["PRIMARY_FILESYSTEM"]) == "DISABLED" {
+		ifPrimaryDisable = true
+	}
+	logger.Info("PRIMARY_FILESYSTEM is", " DISABLED ", ifPrimaryDisable)
+
+	//For first pass handle primary FS and fileset
+	if !cmExists && !ifPrimaryDisable {
+		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
+		if err != nil {
+			if requeAfterDelay == 0 {
+				return ctrl.Result{}, err
+			} else {
+				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
+			}
+		}
+	}
 
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
@@ -2428,6 +2434,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvPrimaryFilesystemKeyPrefixed:
+				validateEnvVarValue(config.EnvPrimaryFilesystemValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
 				validateVolNamePrefix(keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
@@ -2674,6 +2682,11 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.SidecarMemoryLimits]; !ok {
 		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
 		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
+	}
+	// set default EnvPrimaryFilesystemKey when it is not present in envMap
+	if _, ok := envMap[config.EnvPrimaryFilesystemKey]; !ok {
+		logger.Info("PRIMARY_FILESYSTEM is empty or incorrect.", "Defaulting PRIMARY_FILESYSTEM to", config.EnvPrimaryFilesystemDefaultValue)
+		envMap[config.EnvPrimaryFilesystemKey] = config.EnvPrimaryFilesystemDefaultValue
 	}
 }
 

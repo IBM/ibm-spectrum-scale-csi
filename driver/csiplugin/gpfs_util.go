@@ -296,7 +296,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 
 	/* Check if either fileset based or LW volume. */
 	if volDirPathSpecified {
-		if fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset) {
+		if (fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset)) || isSCAdvanced {
 			scaleVol.IsFilesetBased = true
 		} else {
 			if inodeLimSpecified {
@@ -709,15 +709,15 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 	return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 }
 
+// checking the fs is mounted on any 1 gateway node or not
 func isSubset(subset []string, superset []string) bool {
-	checkset := make(map[string]bool)
+
 	for _, element := range subset {
-		checkset[element] = true
-	}
-	for _, value := range superset {
-		if checkset[value] {
-			delete(checkset, value)
+		for _, value := range superset {
+			if element == value {
+				return true
+			}
 		}
 	}
-	return len(checkset) == 0 //this implies that set is subset of superset
+	return false
 }
