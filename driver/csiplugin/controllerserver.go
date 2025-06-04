@@ -3140,14 +3140,14 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
 
-			// check whether FS is mounted on all the gateway nodes or not
+			// check whether FS is mounted on any one  gateway nodes or not
 			isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
 
-			//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
+			//sucess when FS is mounted primary , volumeFS and on any one gatewayNode for "cache" volume
 			if isFsMounted && ispFsMounted && isFsMountedOnGateway {
-				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, fsName, scalenodeID, gatewayNodeNames)
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s and on gatewayNode %v so returning success", loggerId, fsName, scalenodeID, gatewayNodeNames)
 				if fsName != primaryfsName {
-					klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, primaryfsName, scalenodeID, gatewayNodeNames)
+					klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s and on gatewayNode %v so returning success", loggerId, primaryfsName, scalenodeID, gatewayNodeNames)
 				}
 				return &csi.ControllerPublishVolumeResponse{}, nil
 			}
@@ -3161,9 +3161,9 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		}
 
 		if skipMountUnmount == "yes" {
-			//error when FS is not mounted on all the gatewayNodes for "cache" volume
+			//error when FS is not mounted on any one  the gatewayNode for "cache" volume
 			if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !isFsMountedOnGateway {
-				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
+				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on any of the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
 				klog.Errorf(message)
 				return nil, status.Error(codes.Internal, message)
 			}
