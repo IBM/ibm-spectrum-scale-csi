@@ -54,7 +54,6 @@ const (
 	cgPrefixLen                  = 37
 	softQuotaPercent             = 70 // This value is % of the hardQuotaLimit e.g. 70%
 
-	discoverCGFileset         = "DISCOVER_CG_FILESET"
 	discoverCGFilesetDisabled = "DISABLED"
 
 	fsetNotFoundErrCode = "EFSSG0072C"
@@ -119,9 +118,10 @@ func (cs *ScaleControllerServer) createLWVol(ctx context.Context, scVol *scaleVo
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
 // <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
-func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string, ifPrimaryDisable bool) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:generateVolId", loggerId, scVol.VolName)
+	klog.V(4).Infof("[%s] scVol: [%+v] - ControllerServer:generateVolId targetPath:[%v]", loggerId, scVol, targetPath)
 	var volID string
 	var storageClassType string
 	var volumeType string
@@ -131,7 +131,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 	path := ""
 
 	if !isShallowCopyVolume {
-		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased {
+		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased || ifPrimaryDisable {
 			primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 			if !isprimaryConnPresent {
 				klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
@@ -189,18 +189,22 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 
 // getTargetPath: return relative volume path from filesystem mount point
 func (cs *ScaleControllerServer) getTargetPath(ctx context.Context, fsetLinkPath, fsMountPoint, volumeName string, createDataDir bool, isCGVolume bool, isCacheVolume bool) (string, error) {
-
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] ControllerServer getTargetPath: fsetLinkPath:[%v], fsMountPoint:[%v], volumeName:[%v] , createDataDir :[%v], isCGVolume :[%v], isCacheVolume:[%v] ", loggerId, fsetLinkPath, fsMountPoint, volumeName, createDataDir, isCGVolume, isCacheVolume)
 	if fsetLinkPath == "" || fsMountPoint == "" {
-		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint)
+		klog.Errorf("[%s] volume:[%v] - missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", loggerId, volumeName, fsetLinkPath, fsMountPoint)
 		return "", fmt.Errorf("missing details to generate target path fileset junctionpath: [%v], filesystem mount point: [%v]", fsetLinkPath, fsMountPoint)
 	}
-	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:getTargetPath", utils.GetLoggerId(ctx), volumeName)
-	targetPath := strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
+	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:getTargetPath", loggerId, volumeName)
+	var targetPath string
+
+	targetPath = strings.Replace(fsetLinkPath, fsMountPoint, "", 1)
+
 	if createDataDir && !isCGVolume && !isCacheVolume {
 		targetPath = fmt.Sprintf("%s/%s-data", targetPath, volumeName)
 	}
 	targetPath = strings.Trim(targetPath, "!/")
-	klog.V(4).Infof("[%s] ControllerServer:getTargetPath volumeName : [%s],fsetLinkPath : [%s],fsMountPoint : [%s],targetPath : [%s]", utils.GetLoggerId(ctx), volumeName, fsetLinkPath, fsMountPoint, targetPath)
+	klog.V(4).Infof("[%s] ControllerServer:getTargetPath volumeName : [%s],fsetLinkPath : [%s],fsMountPoint : [%s],targetPath : [%s]", loggerId, volumeName, fsetLinkPath, fsMountPoint, targetPath)
 	return targetPath, nil
 }
 
@@ -398,7 +402,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	if isCGVolume {
 		// For new storageClass first create independent fileset if not present
 
-		discoverCGFileset := strings.ToUpper(os.Getenv(discoverCGFileset))
+		discoverCGFileset := strings.ToUpper(os.Getenv(settings.DiscoverCGFileset))
 		klog.Infof("[%s] discoverCGFileset is : %s", loggerId, discoverCGFileset)
 
 		if discoverCGFileset != discoverCGFilesetDisabled && len(scVol.ConsistencyGroup) > cgPrefixLen {
@@ -826,34 +830,36 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 	return afmTuningParams, nil
 }
 
-func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (connectors.SpectrumScaleConnector, string, string, string, string, string, error) {
+func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context, ifPrimaryDisable bool) (connectors.SpectrumScaleConnector, string, string, string, string, string, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] getPrimaryClusterDetails", loggerId)
+	klog.Infof("[%s] getPrimaryClusterDetails with ifPrimaryDisable: %t", loggerId, ifPrimaryDisable)
 
-	symlinkDirAbsolutePath := ""
-	symlinkDirRelativePath := ""
+	klog.V(4).Infof("[%s] getPrimaryClusterDetails : cs.Driver.primary: [ %v ]", loggerId, cs.Driver.primary)
 
 	primaryConn := cs.Driver.connmap["primary"]
-	primaryFS := cs.Driver.primary.GetPrimaryFs()
-	primaryFset := cs.Driver.primary.PrimaryFset
+	var primaryFS, primaryFset, primaryFSMount, symlinkDirRelativePath, symlinkDirAbsolutePath string = "", "", "", "", ""
+	var err error
+	if !ifPrimaryDisable {
+		primaryFS = cs.Driver.primary.GetPrimaryFs()
+		primaryFset = cs.Driver.primary.PrimaryFset
 
-	// check if primary filesystem exists
-	fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
-	if err != nil {
-		klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
-		return nil, "", "", "", "", "", err
+		// check if primary filesystem exists
+		fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
+		if err != nil {
+			klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
+			return nil, "", "", "", "", "", err
+		}
+
+		primaryFSMount = fsMountInfo.MountPoint
+		// If primary fset is not specified, then use default
+		if primaryFset == "" {
+			primaryFset = defaultPrimaryFileset
+		}
+
+		symlinkDirRelativePath = primaryFset + "/" + symlinkDir
+		symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
+		klog.V(4).Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
 	}
-
-	primaryFSMount := fsMountInfo.MountPoint
-	// If primary fset is not specified, then use default
-	if primaryFset == "" {
-		primaryFset = defaultPrimaryFileset
-	}
-
-	symlinkDirRelativePath = primaryFset + "/" + symlinkDir
-	symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
-	klog.Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
-
 	return primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, cs.Driver.primary.PrimaryCid, err
 }
 
@@ -920,7 +926,13 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, status.Error(codes.InvalidArgument, "The Parameter(s) not supported in storageClass: "+invalidParams)
 	}
 
-	scaleVol, isCGVolume, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize)
+	ifPrimaryDisable := false
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
+		ifPrimaryDisable = true
+	}
+	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
+
+	scaleVol, isCGVolume, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize, ifPrimaryDisable)
 	if err != nil {
 		return nil, err
 	}
@@ -1003,13 +1015,16 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
-	if srcVolumeIDMembers.VolType != FILE_SHALLOWCOPY_VOLUME {
-		err = cs.checkFileSetLink(ctx, scaleVol.PrimaryConnector, scaleVol, scaleVol.PrimaryFS, cs.Driver.primary.PrimaryFset, "primary")
-		if err != nil {
-			return nil, err
+	// skip primaryfset linking check when DISABLE_PRIMARY is set true as env
+
+	if !ifPrimaryDisable {
+		if srcVolumeIDMembers.VolType != FILE_SHALLOWCOPY_VOLUME {
+			err = cs.checkFileSetLink(ctx, scaleVol.PrimaryConnector, scaleVol, scaleVol.PrimaryFS, cs.Driver.primary.PrimaryFset, "primary")
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-
 	volFsInfo, err := checkVolumeFilesystemMountOnPrimary(ctx, scaleVol)
 	if err != nil {
 		return nil, err
@@ -1080,7 +1095,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
 		}
 
-		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName)
+		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName, ifPrimaryDisable)
 		if volIDErr != nil {
 			return nil, volIDErr
 		}
@@ -1180,15 +1195,18 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
-	if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
-		// Create symbolic link if not present
-		err = cs.createSoftlink(ctx, scaleVol, targetPath)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+	// skip symbolic link creation when DISABLE_PRIMARY is set true as env
+
+	if !ifPrimaryDisable {
+		if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
+			// Create symbolic link if not present
+			err = cs.createSoftlink(ctx, scaleVol, targetPath)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 	}
-
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName, ifPrimaryDisable)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
@@ -1201,7 +1219,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 				return nil, err
 			}
 		} else {
-			err = cs.copyVolumeContent(ctx, scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID)
+			err = cs.copyVolumeContent(ctx, scaleVol, srcVolumeIDMembers, volFsInfo, targetPath, volID, ifPrimaryDisable)
 			if err != nil {
 				klog.Errorf("[%s] CreateVolume [%s]: [%v]", loggerId, volName, err)
 				return nil, err
@@ -1346,7 +1364,7 @@ func validateCacheSecret(secretData map[string]string) []string {
 	return missingKeys
 }
 
-func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64) (*scaleVolume, bool, string, error) {
+func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64, ifPrimaryDisable bool) (*scaleVolume, bool, string, error) {
 	scaleVol, err := getScaleVolumeOptions(ctx, req.GetParameters())
 	if err != nil {
 		return nil, false, "", err
@@ -1371,7 +1389,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	}
 
 	/* Get details for Primary Cluster */
-	primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
+	primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx, ifPrimaryDisable)
 	if err != nil {
 		return nil, isCGVolume, "", err
 	}
@@ -1789,7 +1807,7 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
 
 }
 
-func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
+func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string, ifPrimaryDisable bool) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", loggerId, sourcevolume, newvolume, newvolume.VolName)
 	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId)
@@ -1837,11 +1855,22 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		cs.Driver.volcopyjobstatusmap.Store(newvolume.VolName, jobDetails)
 		response, err = conn.WaitForJobCompletionWithResp(ctx, jobStatus, jobID)
 	} else {
-		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
-		if err != nil {
-			return err
+
+		var sLinkRelPath string
+		if ifPrimaryDisable {
+			klog.V(4).Infof("[%s] copyVolContent when PrimaryDisable,  sourcevolume.Path=[%v], fsMntPt=[%v]", loggerId, sourcevolume.Path, fsMntPt)
+			sLinkRelPath = strings.Replace(sourcevolume.Path, fsMntPt, "", 1)
+		} else {
+			klog.V(4).Infof("[%s] copyVolContent when with Primary, sourcevolume.Path=[%v]", loggerId, sourcevolume.Path)
+			primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
+			if err != nil {
+				return err
+			}
+			klog.V(4).Infof("[%s] copyVolContent sourcevolume.Path=[%v], primaryFSMountPoint=[%v]", loggerId, sourcevolume.Path, primaryFSMountPoint)
+			sLinkRelPath = strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
+
 		}
-		sLinkRelPath := strings.Replace(sourcevolume.Path, primaryFSMountPoint, "", 1)
+		klog.V(4).Infof("[%s] copyVolContent sourcevolume.Path=[%v], sourcevolume.FsName=[%v], sLinkRelPath=[%v], targetPath=[%v]", loggerId, sourcevolume.Path, sourcevolume.FsName, sLinkRelPath, targetPath)
 		sLinkRelPath = strings.Trim(sLinkRelPath, "!/")
 
 		jobStatus, jobID, jobErr := conn.CopyDirectoryPath(ctx, sourcevolume.FsName, sLinkRelPath, targetPath, newvolume.NodeClass)
@@ -2569,6 +2598,12 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	reqToLog.Secrets = nil
 	klog.Infof("[%s] DeleteVolume req: %v", loggerId, &reqToLog)
 
+	ifPrimaryDisable := false
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
+		ifPrimaryDisable = true
+	}
+	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
+
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		klog.Errorf("[%s] Invalid delete volume req: %v", loggerId, req)
 		return nil, status.Error(codes.InvalidArgument,
@@ -2617,8 +2652,25 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
 	}
 
+	symlinkExists := false
+	if strings.Contains(volumeIdMembers.Path, ".volumes") {
+		symlinkExists = true
+		klog.Infof("[%s] DeleteVolume : symlink exists for volume path : [%t]", loggerId, symlinkExists)
+	}
+	pfsName := ""
+	// getting the primary filesystem name from the path when primary fs is not provided in the cr and pvc is older
+	/*	if symlinkExists && ifPrimaryDisable {
+		parts := strings.Split(volumeIdMembers.Path, "/")
+		for i, part := range parts {
+			if part == ".volumes" && i >= 2 {
+				pfsName = parts[i-2]
+				klog.Infof("[%s] DeleteVolume :primary fs from path is [%v]", loggerId, pfsName)
+			}
+		}
+	}*/
+
 	relPath := ""
-	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
+	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME || !symlinkExists {
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
@@ -2626,8 +2678,11 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 			return nil, err
 		}
 		relPath = strings.Replace(volumeIdMembers.Path, primaryFSMountPoint, "", 1)
+		klog.V(4).Infof("[%s] DeleteVolume : relPath %v volumeIdMembers.Path [%v], primaryFSMountPoint [%v]", loggerId, relPath, volumeIdMembers.Path, primaryFSMountPoint)
 	}
 	relPath = strings.Trim(relPath, "!/")
+
+	klog.V(4).Infof("[%s] DeleteVolume : relPath %v", loggerId, relPath)
 	isPvcFromSnapshot := false
 	var shallowCopyRefPath string
 	var snapshotName string
@@ -2698,8 +2753,13 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 			}
 		}
 		if FilesetName != "" {
-			/* Confirm it is same fileset which was created for this PV */
-			pvName := filepath.Base(relPath)
+			var pvName string
+			if strings.Contains(filepath.Base(relPath), "-data") {
+				pvName = strings.Replace(filepath.Base(relPath), "-data", "", 1)
+			} else {
+				/* Confirm it is same fileset which was created for this PV */
+				pvName = filepath.Base(relPath)
+			}
 
 			if pvName == FilesetName {
 				checkForSnapshots := false
@@ -2712,11 +2772,19 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				}
 
 				// Delete fileset related symlink
-				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC {
-					err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
-					if err != nil {
-						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
+				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && symlinkExists {
+					if ifPrimaryDisable && pfsName != "" {
+						err = primaryConn.DeleteSymLnk(ctx, pfsName, relPath)
+						if err != nil {
+							return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", pfsName, relPath, err))
+						}
+					} else {
+						err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
+						if err != nil {
+							return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", cs.Driver.primary.GetPrimaryFs(), relPath, err))
+						}
 					}
+
 				}
 
 				if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2757,13 +2825,23 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		}
 	} else {
 		/* Delete Dir for Lw volume */
-		err = primaryConn.DeleteDirectory(ctx, cs.Driver.primary.GetPrimaryFs(), relPath, false)
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] Relative SymLink [%v]. Error [%v]", FilesystemName, relPath, err))
+		var filesystemName string
+		if !symlinkExists {
+			filesystemName = FilesystemName
+			klog.V(4).Infof("[%s] DeleteVolume with PrimaryDisable: filesystemName %v", loggerId, filesystemName)
+		} else {
+			filesystemName = cs.Driver.primary.GetPrimaryFs()
+			klog.V(4).Infof("[%s] DeleteVolume with Primary: filesystemName %v", loggerId, filesystemName)
 		}
+		klog.V(4).Infof("[%s] DeleteVolume : filesystemName [%v], relPath [%v]", loggerId, filesystemName, relPath)
+		err = primaryConn.DeleteDirectory(ctx, filesystemName, relPath, false)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to Delete Dir using FS [%v] Relative Path [%v]. Error [%v]", filesystemName, relPath, err))
+		}
+
 	}
 
-	if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && !isPvcFromSnapshot {
+	if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && !isPvcFromSnapshot && symlinkExists {
 		err = primaryConn.DeleteSymLnk(ctx, cs.Driver.primary.GetPrimaryFs(), relPath)
 
 		if err != nil {
@@ -2936,6 +3014,12 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	filesystemID := volumeIDMembers.FsUUID
 	volumePath := volumeIDMembers.Path
 
+	ifPrimaryDisable := false
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
+		ifPrimaryDisable = true
+	}
+	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
+
 	// if SKIP_MOUNT_UNMOUNT == "yes" then mount/unmount will not be invoked
 	skipMountUnmount := utils.GetEnv(SKIP_MOUNT_UNMOUNT, yes)
 	klog.Infof("[%s] ControllerPublishVolume : SKIP_MOUNT_UNMOUNT is set to %s", loggerId, skipMountUnmount)
@@ -2947,38 +3031,201 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem Name for filesystem ID of %s. Error [%v]", filesystemID, err))
 	}
 
-	//Check if primary filesystem is mounted.
-	primaryfsName := cs.Driver.primary.GetPrimaryFs()
-	pfsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(ctx, primaryfsName)
-	if err != nil {
-		klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, primaryfsName)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", primaryfsName, err))
-	}
+	if !ifPrimaryDisable {
+		//Check if primary filesystem is mounted.
+		primaryfsName := cs.Driver.primary.GetPrimaryFs()
+		pfsMount, err := cs.Driver.connmap["primary"].GetFilesystemMountDetails(ctx, primaryfsName)
+		if err != nil {
+			klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, primaryfsName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", primaryfsName, err))
+		}
+		// Node mapping check
+		scalenodeID := getNodeMapping(nodeID)
+		klog.Infof("[%s] ControllerPublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, nodeID)
 
-	// Node mapping check
-	scalenodeID := getNodeMapping(nodeID)
-	klog.Infof("[%s] ControllerPublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, nodeID)
+		shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
+		if shortnameNodeMapping == yes {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : SHORTNAME_NODE_MAPPING is set to %s", loggerId, shortnameNodeMapping)
+		}
 
-	shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
-	if shortnameNodeMapping == yes {
-		klog.V(4).Infof("[%s] ControllerPublishVolume : SHORTNAME_NODE_MAPPING is set to %s", loggerId, shortnameNodeMapping)
-	}
+		var fsMount connectors.MountInfo
+		var ispFsMounted bool
+		// NodesMounted has admin node names
+		// This means node mapping must be to admin names.
+		// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
+		if shortnameNodeMapping == yes {
+			ispFsMounted = shortnameInSlice(scalenodeID, pfsMount.NodesMounted)
+		} else {
+			ispFsMounted = utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
+		}
 
-	var ispFsMounted bool
-	// NodesMounted has admin node names
-	// This means node mapping must be to admin names.
-	// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
-	if shortnameNodeMapping == yes {
-		ispFsMounted = shortnameInSlice(scalenodeID, pfsMount.NodesMounted)
+		klog.Infof("[%s] ControllerPublishVolume : Primary FS is mounted on %v", loggerId, pfsMount.NodesMounted)
+		klog.V(4).Infof("[%s] ControllerPublishVolume : Primary Fileystem is %s and Volume is from Filesystem %s", loggerId, primaryfsName, fsName)
+
+		// Skip if primary filesystem and volume filesystem is same
+		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED || primaryfsName != fsName {
+			//Check if filesystem is mounted
+			fsMount, err = cs.Driver.connmap["primary"].GetFilesystemMountDetails(ctx, fsName)
+			if err != nil {
+				klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
+			}
+
+			if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED &&
+				!strings.HasPrefix(volumePath, fsMount.MountPoint) {
+				klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s", loggerId, volumePath, fsName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, fsName))
+			} else if !strings.HasPrefix(volumePath, fsMount.MountPoint) &&
+				!strings.HasPrefix(volumePath, pfsMount.MountPoint) {
+				klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", loggerId, volumePath, primaryfsName, fsName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", volumePath, primaryfsName, fsName))
+			}
+
+			// NodesMounted has admin node names
+			// This means node mapping must be to admin names.
+			// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
+			if shortnameNodeMapping == yes {
+				isFsMounted = shortnameInSlice(scalenodeID, pfsMount.NodesMounted)
+			} else {
+				isFsMounted = utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
+			}
+
+			klog.Infof("[%s] ControllerPublishVolume : Volume Source FS is mounted on %v", loggerId, fsMount.NodesMounted)
+		} else {
+			if !strings.HasPrefix(volumePath, pfsMount.MountPoint) {
+				klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s", loggerId, volumePath, primaryfsName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, primaryfsName))
+			}
+
+			isFsMounted = ispFsMounted
+		}
+
+		klog.Infof("[%s] ControllerPublishVolume : Mount Status Primaryfs [ %t ], Sourcefs [ %t ]", loggerId, ispFsMounted, isFsMounted)
+
+		var isFsMountedOnGateway bool
+		var gatewayNodeNames []string
+		var conn connectors.SpectrumScaleConnector
+		var fsNameRemote string
+		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
+			// To check all of the gateway nodes are having filesystem mounted
+			conn, err = cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
+			if err != nil {
+				return nil, err
+			}
+
+			gatewayNodeNames, err = conn.ListGatewayNodes(ctx)
+			if err != nil {
+				return nil, err
+			}
+			klog.Infof("[%s] ControllerPublishVolume : gatewayNodes present in the Storage Scale are : %v", loggerId, gatewayNodeNames)
+
+			// getting the remote FS name is case of remote filesystem. It will be same in case of local FS
+
+			if primaryfsName != fsName {
+				fsNameRemote = getRemoteFsName(fsMount.RemoteDeviceName)
+			} else {
+				fsNameRemote = getRemoteFsName(pfsMount.RemoteDeviceName)
+			}
+			fsRemoteMountDetails, err := conn.GetFilesystemMountDetails(ctx, fsNameRemote)
+			if err != nil {
+				klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem remote mount details for %s. Error [%v]", fsName, err))
+			}
+
+			if fsName != fsNameRemote {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a remote mount with remoteFS:[%s]", loggerId, fsName, fsNameRemote)
+			} else {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a local mount", loggerId, fsName)
+			}
+
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
+
+			// check whether FS is mounted on all the gateway nodes or not
+			isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
+
+			//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
+			if isFsMounted && ispFsMounted && isFsMountedOnGateway {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, fsName, scalenodeID, gatewayNodeNames)
+				if fsName != primaryfsName {
+					klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, primaryfsName, scalenodeID, gatewayNodeNames)
+				}
+				return &csi.ControllerPublishVolumeResponse{}, nil
+			}
+
+		} else if isFsMounted && ispFsMounted {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s so returning success", loggerId, fsName, scalenodeID)
+			if fsName != primaryfsName {
+				klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s so returning success", loggerId, primaryfsName, scalenodeID)
+			}
+			return &csi.ControllerPublishVolumeResponse{}, nil
+		}
+
+		if skipMountUnmount == "yes" {
+			//error when FS is not mounted on all the gatewayNodes for "cache" volume
+			if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !isFsMountedOnGateway {
+				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
+				klog.Errorf(message)
+				return nil, status.Error(codes.Internal, message)
+			}
+			if !isFsMounted {
+				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, fsName, scalenodeID)
+				klog.Errorf(message)
+				return nil, status.Error(codes.Internal, message)
+			}
+			if !ispFsMounted {
+				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, primaryfsName, scalenodeID)
+				klog.Errorf(message)
+				return nil, status.Error(codes.Internal, message)
+			}
+		}
+
+		if skipMountUnmount == no {
+			//mount the  filesystem on the gateway node if not mounted for "cache" volume
+			if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !(isFsMountedOnGateway) {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : mounting remote Filesystem %s on the gatewayNode %v", loggerId, fsNameRemote, gatewayNodeNames)
+
+				err = conn.MountFilesystem(ctx, fsNameRemote, gatewayNodeNames)
+				if err != nil {
+					klog.Errorf("[%s] ControllerPublishVolume : Error in mounting remote filesystem %s on the gateway nodes %v", loggerId, primaryfsName, gatewayNodeNames)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting remote filesystem %s if any on the gateway nodes %v. Error [%v]", fsNameRemote, gatewayNodeNames, err))
+				}
+			}
+
+			//mount the primary filesystem if not mounted
+			if !(ispFsMounted) {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : mounting Filesystem %s on %s", loggerId, primaryfsName, scalenodeID)
+				nodesNameList := []string{scalenodeID}
+				err = cs.Driver.connmap["primary"].MountFilesystem(ctx, primaryfsName, nodesNameList)
+				if err != nil {
+					klog.Errorf("[%s] ControllerPublishVolume : Error in mounting filesystem %s on node %s", loggerId, primaryfsName, scalenodeID)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting filesystem %s on node %s. Error [%v]", primaryfsName, scalenodeID, err))
+				}
+			}
+
+			//mount the volume filesystem if mounted
+			if !(isFsMounted) && primaryfsName != fsName {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : mounting %s on %s", loggerId, fsName, scalenodeID)
+				nodesNameList := []string{scalenodeID}
+				err = cs.Driver.connmap["primary"].MountFilesystem(ctx, fsName, nodesNameList)
+				if err != nil {
+					klog.Errorf("[%s] ControllerPublishVolume : Error in mounting filesystem %s on node %s", loggerId, fsName, scalenodeID)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in mounting filesystem %s on node %s. Error [%v]", fsName, scalenodeID, err))
+				}
+			}
+		}
 	} else {
-		ispFsMounted = utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
-	}
 
-	klog.Infof("[%s] ControllerPublishVolume : Primary FS is mounted on %v", loggerId, pfsMount.NodesMounted)
-	klog.V(4).Infof("[%s] ControllerPublishVolume : Primary Fileystem is %s and Volume is from Filesystem %s", loggerId, primaryfsName, fsName)
-	var fsMount connectors.MountInfo
-	// Skip if primary filesystem and volume filesystem is same
-	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED || primaryfsName != fsName {
+		// Node mapping check
+		scalenodeID := getNodeMapping(nodeID)
+		klog.Infof("[%s] ControllerPublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, nodeID)
+
+		shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
+		if shortnameNodeMapping == yes {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : SHORTNAME_NODE_MAPPING is set to %s", loggerId, shortnameNodeMapping)
+		}
+
+		var fsMount connectors.MountInfo
+
 		//Check if filesystem is mounted
 		fsMount, err = cs.Driver.connmap["primary"].GetFilesystemMountDetails(ctx, fsName)
 		if err != nil {
@@ -2986,145 +3233,129 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem mount details for %s. Error [%v]", fsName, err))
 		}
 
-		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED &&
-			!strings.HasPrefix(volumePath, fsMount.MountPoint) {
-			klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s", loggerId, volumePath, fsName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, fsName))
-		} else if !strings.HasPrefix(volumePath, fsMount.MountPoint) &&
-			!strings.HasPrefix(volumePath, pfsMount.MountPoint) {
-			klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", loggerId, volumePath, primaryfsName, fsName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s or %s", volumePath, primaryfsName, fsName))
+		volScalePathInContainer := hostDir + volumePath
+		f, err := os.Lstat(volScalePathInContainer)
+		if err != nil {
+			klog.Errorf("[%s] ControllerPublishVolume - lstat [%s] failed with error [%v]", loggerId, volScalePathInContainer, err)
+			return nil, fmt.Errorf("ControllerPublishVolume - lstat [%s] failed with error [%v]", volScalePathInContainer, err)
+		}
+		if f.Mode()&os.ModeSymlink != 0 {
+			symlinkTarget, readlinkErr := os.Readlink(volScalePathInContainer)
+			if readlinkErr != nil {
+				klog.Errorf("[%s] ControllerPublishVolume - readlink [%s] failed with error [%v]", loggerId, volScalePathInContainer, readlinkErr)
+				return nil, fmt.Errorf("ControllerPublishVolume - readlink [%s] failed with error [%v]", volScalePathInContainer, readlinkErr)
+			}
+			volScalePathInContainer = hostDir + symlinkTarget
+			volumePath = symlinkTarget
+			klog.V(4).Infof("[%s] ControllerPublishVolume - symlink targetPath in container is [%s]", loggerId, volScalePathInContainer)
+			klog.V(4).Infof("[%s] ControllerPublishVolume - symlink targetPath is [%s]", loggerId, volumePath)
+		}
+
+		if !strings.HasPrefix(volumePath, fsMount.MountPoint) {
+			klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s ", loggerId, volumePath, fsName)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem  %s", volumePath, fsName))
 		}
 
 		// NodesMounted has admin node names
 		// This means node mapping must be to admin names.
 		// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
 		if shortnameNodeMapping == yes {
-			isFsMounted = shortnameInSlice(scalenodeID, pfsMount.NodesMounted)
+			isFsMounted = shortnameInSlice(scalenodeID, fsMount.NodesMounted)
 		} else {
-			isFsMounted = utils.StringInSlice(scalenodeID, pfsMount.NodesMounted)
+			isFsMounted = utils.StringInSlice(scalenodeID, fsMount.NodesMounted)
 		}
 
 		klog.Infof("[%s] ControllerPublishVolume : Volume Source FS is mounted on %v", loggerId, fsMount.NodesMounted)
-	} else {
-		if !strings.HasPrefix(volumePath, pfsMount.MountPoint) {
-			klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the filesystem %s", loggerId, volumePath, primaryfsName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Volume path %s is not part of the filesystem %s", volumePath, primaryfsName))
-		}
 
-		isFsMounted = ispFsMounted
-	}
+		klog.Infof("[%s] ControllerPublishVolume : Mount Status  Sourcefs [ %t ]", loggerId, isFsMounted)
 
-	klog.Infof("[%s] ControllerPublishVolume : Mount Status Primaryfs [ %t ], Sourcefs [ %t ]", loggerId, ispFsMounted, isFsMounted)
-
-	var isFsMountedOnGateway bool
-	var gatewayNodeNames []string
-	var conn connectors.SpectrumScaleConnector
-	var fsNameRemote string
-	if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
-		// To check all of the gateway nodes are having filesystem mounted
-		conn, err = cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
-		if err != nil {
-			return nil, err
-		}
-
-		gatewayNodeNames, err = conn.ListGatewayNodes(ctx)
-		if err != nil {
-			return nil, err
-		}
-		klog.Infof("[%s] ControllerPublishVolume : gatewayNodes present in the Storage Scale are : %v", loggerId, gatewayNodeNames)
-
-		// getting the remote FS name is case of remote filesystem. It will be same in case of local FS
-
-		if primaryfsName != fsName {
-			fsNameRemote = getRemoteFsName(fsMount.RemoteDeviceName)
-		} else {
-			fsNameRemote = getRemoteFsName(pfsMount.RemoteDeviceName)
-		}
-		fsRemoteMountDetails, err := conn.GetFilesystemMountDetails(ctx, fsNameRemote)
-		if err != nil {
-			klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem remote mount details for %s. Error [%v]", fsName, err))
-		}
-
-		if fsName != fsNameRemote {
-			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a remote mount with remoteFS:[%s]", loggerId, fsName, fsNameRemote)
-		} else {
-			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a local mount", loggerId, fsName)
-		}
-
-		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
-
-		// check whether FS is mounted on all the gateway nodes or not
-		isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
-
-		//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
-		if isFsMounted && ispFsMounted && isFsMountedOnGateway {
-			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, fsName, scalenodeID, gatewayNodeNames)
-			if fsName != primaryfsName {
-				klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, primaryfsName, scalenodeID, gatewayNodeNames)
+		var isFsMountedOnGateway bool
+		var gatewayNodeNames []string
+		var conn connectors.SpectrumScaleConnector
+		var fsNameRemote string
+		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
+			// To check all of the gateway nodes are having filesystem mounted
+			conn, err = cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId)
+			if err != nil {
+				return nil, err
 			}
+
+			gatewayNodeNames, err = conn.ListGatewayNodes(ctx)
+			if err != nil {
+				return nil, err
+			}
+			klog.Infof("[%s] ControllerPublishVolume : gatewayNodes present in the Storage Scale are : %v", loggerId, gatewayNodeNames)
+
+			// getting the remote FS name is case of remote filesystem. It will be same in case of local FS
+
+			fsNameRemote = getRemoteFsName(fsMount.RemoteDeviceName)
+
+			fsRemoteMountDetails, err := conn.GetFilesystemMountDetails(ctx, fsNameRemote)
+			if err != nil {
+				klog.Errorf("[%s] ControllerPublishVolume : Error in getting filesystem mount details for %s", loggerId, fsName)
+				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in getting filesystem remote mount details for %s. Error [%v]", fsName, err))
+			}
+
+			if fsName != fsNameRemote {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a remote mount with remoteFS:[%s]", loggerId, fsName, fsNameRemote)
+			} else {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a local mount", loggerId, fsName)
+			}
+
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
+
+			// check whether FS is mounted on all the gateway nodes or not
+			isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
+
+			//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
+			if isFsMounted && isFsMountedOnGateway {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s and on gatewayNodes %v so returning success", loggerId, fsName, scalenodeID, gatewayNodeNames)
+
+				return &csi.ControllerPublishVolumeResponse{}, nil
+			}
+
+		} else if isFsMounted {
+			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s so returning success", loggerId, fsName, scalenodeID)
+
 			return &csi.ControllerPublishVolumeResponse{}, nil
 		}
 
-	} else if isFsMounted && ispFsMounted {
-		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem %s is mounted on %s so returning success", loggerId, fsName, scalenodeID)
-		if fsName != primaryfsName {
-			klog.V(4).Infof("[%s] ControllerPublishVolume when not a primaryfs : filesystem %s is mounted on %s so returning success", loggerId, primaryfsName, scalenodeID)
-		}
-		return &csi.ControllerPublishVolumeResponse{}, nil
-	}
-
-	if skipMountUnmount == "yes" {
-		//error when FS is not mounted on all the gatewayNodes for "cache" volume
-		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !isFsMountedOnGateway {
-			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
-			klog.Errorf(message)
-			return nil, status.Error(codes.Internal, message)
-		}
-		if !isFsMounted {
-			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, fsName, scalenodeID)
-			klog.Errorf(message)
-			return nil, status.Error(codes.Internal, message)
-		}
-		if !ispFsMounted {
-			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, primaryfsName, scalenodeID)
-			klog.Errorf(message)
-			return nil, status.Error(codes.Internal, message)
-		}
-	}
-
-	if skipMountUnmount == no {
-		//mount the  filesystem on the gateway node if not mounted for "cache" volume
-		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !(isFsMountedOnGateway) {
-			klog.V(4).Infof("[%s] ControllerPublishVolume : mounting remote Filesystem %s on the gatewayNode %v", loggerId, fsNameRemote, gatewayNodeNames)
-
-			err = conn.MountFilesystem(ctx, fsNameRemote, gatewayNodeNames)
-			if err != nil {
-				klog.Errorf("[%s] ControllerPublishVolume : Error in mounting remote filesystem %s on the gateway nodes %v", loggerId, primaryfsName, gatewayNodeNames)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting remote filesystem %s if any on the gateway nodes %v. Error [%v]", fsNameRemote, gatewayNodeNames, err))
+		if skipMountUnmount == "yes" {
+			//error when FS is not mounted on all the gatewayNodes for "cache" volume
+			if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !isFsMountedOnGateway {
+				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
+				klog.Errorf(message)
+				return nil, status.Error(codes.Internal, message)
 			}
-		}
-
-		//mount the primary filesystem if not mounted
-		if !(ispFsMounted) {
-			klog.V(4).Infof("[%s] ControllerPublishVolume : mounting Filesystem %s on %s", loggerId, primaryfsName, scalenodeID)
-			nodesNameList := []string{scalenodeID}
-			err = cs.Driver.connmap["primary"].MountFilesystem(ctx, primaryfsName, nodesNameList)
-			if err != nil {
-				klog.Errorf("[%s] ControllerPublishVolume : Error in mounting filesystem %s on node %s", loggerId, primaryfsName, scalenodeID)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting filesystem %s on node %s. Error [%v]", primaryfsName, scalenodeID, err))
+			if !isFsMounted {
+				message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, fsName, scalenodeID)
+				klog.Errorf(message)
+				return nil, status.Error(codes.Internal, message)
 			}
+
 		}
 
-		//mount the volume filesystem if mounted
-		if !(isFsMounted) && primaryfsName != fsName {
-			klog.V(4).Infof("[%s] ControllerPublishVolume : mounting %s on %s", loggerId, fsName, scalenodeID)
-			nodesNameList := []string{scalenodeID}
-			err = cs.Driver.connmap["primary"].MountFilesystem(ctx, fsName, nodesNameList)
-			if err != nil {
-				klog.Errorf("[%s] ControllerPublishVolume : Error in mounting filesystem %s on node %s", loggerId, fsName, scalenodeID)
-				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in mounting filesystem %s on node %s. Error [%v]", fsName, scalenodeID, err))
+		if skipMountUnmount == no {
+			//mount the  filesystem on the gateway node if not mounted for "cache" volume
+			if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !(isFsMountedOnGateway) {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : mounting remote Filesystem %s on the gatewayNode %v", loggerId, fsNameRemote, gatewayNodeNames)
+
+				err = conn.MountFilesystem(ctx, fsNameRemote, gatewayNodeNames)
+				if err != nil {
+					klog.Errorf("[%s] ControllerPublishVolume : Error in mounting remote filesystem %s on the gateway nodes %v", loggerId, fsNameRemote, gatewayNodeNames)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting remote filesystem %s if any on the gateway nodes %v. Error [%v]", fsNameRemote, gatewayNodeNames, err))
+				}
+			}
+
+			//mount the volume filesystem if mounted
+			if !(isFsMounted) {
+				klog.V(4).Infof("[%s] ControllerPublishVolume : mounting %s on %s", loggerId, fsName, scalenodeID)
+				nodesNameList := []string{scalenodeID}
+				err = cs.Driver.connmap["primary"].MountFilesystem(ctx, fsName, nodesNameList)
+				if err != nil {
+					klog.Errorf("[%s] ControllerPublishVolume : Error in mounting filesystem %s on node %s", loggerId, fsName, scalenodeID)
+					return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume : Error in mounting filesystem %s on node %s. Error [%v]", fsName, scalenodeID, err))
+				}
 			}
 		}
 	}
@@ -3250,18 +3481,30 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, chkSnapshotErr
 	}
 
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
-		klog.Errorf("[%s] CreateSnapshot - unable to get connector for primary cluster", loggerId)
-		return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+	ifPrimaryDisable := false
+	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
+		ifPrimaryDisable = true
 	}
 
-	filesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
+	var primaryConn, scaleConn connectors.SpectrumScaleConnector
+	isprimaryConnPresent := false
+	if !ifPrimaryDisable {
+		primaryConn, isprimaryConnPresent = cs.Driver.connmap["primary"]
+		if !isprimaryConnPresent {
+			klog.Errorf("[%s] CreateSnapshot - unable to get connector for primary cluster", loggerId)
+			return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+		}
+		scaleConn = primaryConn
+	} else {
+		scaleConn = conn
+	}
+
+	filesystemName, err := scaleConn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
-	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
+	mountInfo, err := scaleConn.GetFilesystemMountDetails(ctx, filesystemName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
 	}
@@ -3273,7 +3516,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get Fileset response for Fileset [%v] FS [%v] ClusterId [%v]", volumeIDMembers.FsetName, filesystemName, volumeIDMembers.ClusterId))
 		}
-
 	} else {
 		filesetResp, err = conn.GetFileSetResponseFromId(ctx, filesystemName, volumeIDMembers.FsetId)
 		if err != nil {
@@ -3302,8 +3544,15 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		relPath = strings.Replace(volumeIDMembers.Path, primaryFSMountPoint, "", 1)
 	}
 	relPath = strings.Trim(relPath, "!/")
-	/* Confirm it is same fileset which was created for this PV */
-	pvName := filepath.Base(relPath)
+
+	var pvName string
+	if strings.Contains(filepath.Base(relPath), "-data") {
+		/* Confirm it is same fileset which was created for this PV */
+		pvName = strings.Replace(filepath.Base(relPath), "-data", "", 1)
+	} else {
+		/* Confirm it is same fileset which was created for this PV */
+		pvName = filepath.Base(relPath)
+	}
 	if pvName != filesetName {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - PV name from path [%v] does not match with filesetName [%v].", pvName, filesetName))
 	}
