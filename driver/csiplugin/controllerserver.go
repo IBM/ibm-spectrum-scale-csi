@@ -2168,19 +2168,36 @@ func (cs *ScaleControllerServer) checkCustomPathforSrcVolume(ctx context.Context
 		newPath := strings.Replace(path, fsDetails.Mount.MountPoint, "", 1)
 		custPath := strings.Replace(newPath, volName, "", 1)
 		custPath = strings.Trim(custPath, "/")
-		if custPath != "" {
-			if strings.Contains(custPath, newvolume.VolDirBasePath) && newvolume.VolDirBasePath != "" {
-				return newvolume.VolDirBasePath, nil
-			} else {
-				klog.Errorf("[%s] checkCustomPathforSrcVolume:[%v] - source volume is not available in custom path [%s] in filesystem [%v]. Error: %v", loggerId, volName, newvolume.VolDirBasePath, newvolume.VolBackendFs, err)
-				return "", status.Error(codes.Internal, fmt.Sprintf("source volume is not available in custom path [%s] in filesystem [%v]. Error: %v", volName, newvolume.VolBackendFs, err))
-			}
-		} else {
-			if newvolume.VolDirBasePath != "" {
+
+		if !isCGVolume {
+			if custPath != "" && newvolume.VolDirBasePath != "" {
+				if strings.Contains(custPath, newvolume.VolDirBasePath) {
+					return newvolume.VolDirBasePath, nil
+				} else {
+					klog.Errorf("[%s] checkCustomPathforSrcVolume:[%v] - source volume is not available in custom path [%s] in filesystem [%v]. Error: %v", loggerId, volName, newvolume.VolDirBasePath, newvolume.VolBackendFs, err)
+					return "", status.Error(codes.Internal, fmt.Sprintf("source volume is not available in custom path [%s] in filesystem [%v]. Error: %v", volName, newvolume.VolBackendFs, err))
+				}
+			} else if custPath != "" && newvolume.VolDirBasePath == "" {
+				klog.Errorf("[%s] checkCustomPathforSrcVolume:[%v] - custom path is not provided for shallowcopy volume [%s] in filesystem [%v]. Error: %v", loggerId, newvolume.VolName, newvolume.VolDirBasePath, newvolume.VolBackendFs, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("custom path is not provided for shallowcopy volume [%s] in filesystem [%v]. Error: %v", newvolume.VolName, newvolume.VolBackendFs, err))
+			} else if custPath == "" && newvolume.VolDirBasePath != "" {
 				klog.Errorf("[%s] checkCustomPathforSrcVolume:[%v] - custom path is not provided for source volume [%s] in filesystem [%v]. Error: %v", loggerId, volName, newvolume.VolDirBasePath, newvolume.VolBackendFs, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("custom path is not provided for source volume [%s] in filesystem [%v]. Error: %v", volName, newvolume.VolBackendFs, err))
+			} else {
+				return "", nil
+			}
+		} else {
+			if custPath != "" {
+				if strings.Contains(custPath, newvolume.VolDirBasePath) && newvolume.VolDirBasePath != "" {
+					return newvolume.VolDirBasePath, nil
+				} else {
+					return custPath, nil
+				}
+			} else {
+				return "", nil
 			}
 		}
+
 	}
 }
 
@@ -2195,7 +2212,7 @@ func (cs *ScaleControllerServer) createSnapshotDir(ctx context.Context, sourcesn
 	}
 
 	if customPath != "" {
-		shallowCopyPath = fmt.Sprintf("%s/%s/%s", newvolume.VolDirBasePath, snapshotPath, newvolume.VolName)
+		shallowCopyPath = fmt.Sprintf("%s/%s/%s", customPath, snapshotPath, newvolume.VolName)
 	} else {
 		shallowCopyPath = fmt.Sprintf("%s/%s", snapshotPath, newvolume.VolName)
 	}
