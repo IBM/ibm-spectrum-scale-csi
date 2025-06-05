@@ -1077,6 +1077,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	var shallowCopyTargetPath string
 	if isShallowCopyVolume {
+		var customPath string
 		customPath, err = cs.checkCustomPathforSrcVolume(ctx, &snapIdMembers, scaleVol, isCGVolume)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("validation of checkCustomPathforSrcVolume failed: %v", err))
