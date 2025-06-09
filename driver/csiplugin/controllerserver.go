@@ -73,9 +73,10 @@ type ScaleControllerServer struct {
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
+
 	if volpresent {
 		/*  #nosec G115 -- false positive  */
-		if capacity == int64(scVol.VolSize) {
+		if int64(scVol.VolSize) == capacity {
 			return true, nil
 		} else {
 			return false, status.Error(codes.Internal, fmt.Sprintf("Volume %v present in map but requested size %v does not match with size %v in map", scVol.VolName, scVol.VolSize, capacity))
@@ -269,6 +270,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	}
 
 	filesetQuotaBytes, err := ConvertToBytes(quota)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid number specified") {
 			// Invalid number specified means quota is not set
@@ -279,16 +281,16 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	}
 
 	// changing volsize here for pvc size in decimal units to align with scale block size
-	filesystemname := scVol.VolBackendFs
-	klog.Info("Filesystemname", filesystemname)
-	filesystemdetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemname)
-	if err != nil {
-		klog.Errorf("Unable to get the filesystemdetails")
-	}
-	klog.Info("filesystem details", filesystemdetails)
-	blockinfo := filesystemdetails.Block.BlockSize
-	roundedblock := uint64(math.Floor(float64(scVol.VolSize) / float64(blockinfo)))
-	scVol.VolSize = roundedblock * uint64(blockinfo)
+	// filesystemName := scVol.VolBackendFs
+	// klog.Info("Filesystemname", filesystemName)
+	// filesystemDetails, err := scVol.Connector.GetFilesystemDetails(ctx, filesystemName)
+	// if err != nil {
+	// 	klog.Errorf("Unable to get the filesystemdetails")
+	// }
+	// klog.Info("filesystem details", filesystemDetails)
+	// blockInfo := filesystemDetails.Block.BlockSize
+	// roundedBlock := uint64(math.Floor(float64(scVol.VolSize) / float64(blockInfo)))
+	// scVol.VolSize = roundedBlock * uint64(blockInfo)
 
 	if filesetQuotaBytes != scVol.VolSize {
 		var hardLimit, softLimit string
@@ -676,6 +678,8 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 	}
 	targetBasePath := ""
+	// changing the quota
+
 	if !isCGIndependentFset {
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
@@ -738,7 +742,8 @@ func handleUpdateComment(ctx context.Context, scVol *scaleVolume, setAfmAttribut
 
 func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeRequest) int64 {
 	capacity := req.GetCapacityRange()
-	return capacity.GetRequiredBytes()
+	requiredBytes := capacity.GetRequiredBytes()
+	return requiredBytes
 }
 
 func updateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool, afmTuningParams map[string]interface{}) error {
@@ -917,7 +922,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	/* Get volume size in bytes */
 	volSize := cs.getVolumeSizeInBytes(req)
-
 	reqCapabilities := req.GetVolumeCapabilities()
 	if reqCapabilities == nil {
 		return nil, status.Error(codes.InvalidArgument, "Volume Capabilities is a required field")
@@ -1109,7 +1113,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			Volume: &csi.Volume{
 				VolumeId: volID,
 				//CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
-				CapacityBytes: req.GetCapacityRange().GetRequiredBytes(),
+				CapacityBytes: req.GetCapacityRange().GetRequiredBytes(), // #nosec G115 -- false positive
 				VolumeContext: req.GetParameters(),
 				ContentSource: volSrc,
 			},
@@ -1189,19 +1193,19 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		if capRange == nil {
 			return nil, status.Error(codes.InvalidArgument, "volume range is not provided")
 		}
-		// #nosec G115 -- false positive
+
 		// changing capacity here for pvc size in decimal units to align with scale block size
-		capacity := uint64(capRange.GetRequiredBytes())
-		filesystemname := scaleVol.VolBackendFs
-		filesystemDetails, err := scaleVol.Connector.GetFilesystemDetails(ctx, filesystemname)
-		if err != nil {
-			klog.Errorf("[%s] Create Volume - unable to get filesystem details ", err)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume - unable to get filesystem details for Filesystem", err))
-		}
-		blockinfo := filesystemDetails.Block.BlockSize
-		roundedblock := uint64(math.Floor(float64(capacity) / float64(blockinfo)))
-		capacity = roundedblock * uint64(blockinfo)
-		klog.Info("new capacity", capacity)
+		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
+		// filesystemName := scaleVol.VolBackendFs
+		// filesystemDetails, err := scaleVol.Connector.GetFilesystemDetails(ctx, filesystemName)
+		// if err != nil {
+		// 	klog.Errorf("[%s] Create Volume - unable to get filesystem details ", err)
+		// 	return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume - unable to get filesystem details for Filesystem", err))
+		// }
+		// blockinfo := filesystemDetails.Block.BlockSize
+		// roundedblock := uint64(math.Floor(float64(capacity) / float64(blockinfo)))
+		// capacity = roundedblock * uint64(blockinfo)
+		// klog.Info("new capacity", capacity)
 
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
@@ -1258,7 +1262,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		Volume: &csi.Volume{
 			VolumeId: volID,
 			//CapacityBytes: int64(scaleVol.VolSize) // #nosec G115 -- false positive
-			CapacityBytes: req.GetCapacityRange().GetRequiredBytes(),
+			CapacityBytes: req.GetCapacityRange().GetRequiredBytes(), // #nosec G115 -- false positive
 			VolumeContext: req.GetParameters(),
 			ContentSource: volSrc,
 		},
@@ -1397,16 +1401,17 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	scaleVol.VolName = volName
 	// changing capacity here for pvc size in decimal units to align with scale block size
 	//getting the filesystemname
-	filesystemname := scaleVol.VolBackendFs
-	klog.Info("Filesystemname", filesystemname)
-	filesystemdetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemname)
+	filesystemName := scaleVol.VolBackendFs
+	klog.Info("Filesystemname", filesystemName)
+	filesystemDetails, err := scaleVol.Connector.GetFilesystemDetails(ctx, filesystemName)
 	if err != nil {
 		klog.Errorf("Unable to get the filesystemdetails")
+		return nil, false, "", status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem details for Filesystem %s. Error: %v", filesystemName, err))
 	}
-	klog.Info("filesystem details", filesystemdetails)
-	blockinfo := filesystemdetails.Block.BlockSize
-	roundedblock := int64(math.Floor(float64(volSize) / float64(blockinfo)))
-	volSize = roundedblock * int64(blockinfo)
+	klog.V(4).Infof("[%s] filesystemDetails: %+v", utils.GetLoggerId(ctx), filesystemDetails)
+	blockInfo := filesystemDetails.Block.BlockSize
+	roundedBlock := int64(math.Floor(float64(volSize) / float64(blockInfo)))
+	volSize = roundedBlock * int64(blockInfo)
 
 	// #nosec G115 -- false positive
 	if uint64(volSize) > maximumPVSize { // larger than allowed pv size not allowed
@@ -1418,6 +1423,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 		scaleVol.VolSize = smallestVolSize
 	} else {
 		scaleVol.VolSize = uint64(volSize) // #nosec G115 -- false positive
+
 	}
 
 	/* Get details for Primary Cluster */
@@ -2040,18 +2046,18 @@ func (cs *ScaleControllerServer) checkCacheVolumeSupport(assembledScaleversion s
 }
 
 /*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	  // Verify IBM Storage Scale Version is not below 5.1.5-0
+	   // Verify IBM Storage Scale Version is not below 5.1.5-0
 
-	  versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
-	  if err != nil {
-		  return err
-	  }
+	   versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
+	   if err != nil {
+		   return err
+	   }
 
-	  if !versionCheck {
-		  return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
-	  }
-	  return nil
-  }*/
+	   if !versionCheck {
+		   return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
+	   }
+	   return nil
+   }*/
 
 func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, assembledScaleversion string) error {
 
@@ -2112,12 +2118,12 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		filesetToCheck = sourcesnapshot.ConsistencyGroup
 	}
 	/*isFsetLinked, err := conn.IsFilesetLinked(ctx, sourcesnapshot.FsName, filesetToCheck)
-	  if err != nil {
-		  return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
-	  }
-	  if !isFsetLinked {
-		  return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
-	  }*/
+	   if err != nil {
+		   return status.Error(codes.Internal, fmt.Sprintf("unable to get fileset link information for [%v]", filesetToCheck))
+	   }
+	   if !isFsetLinked {
+		   return status.Error(codes.Internal, fmt.Sprintf("fileset [%v] of source snapshot is not linked", filesetToCheck))
+	   }*/
 
 	err = cs.checkFileSetLink(ctx, conn, scaleVol, sourcesnapshot.FsName, filesetToCheck, "source snapshot")
 	if err != nil {
@@ -2416,18 +2422,18 @@ func (cs *ScaleControllerServer) DeleteFilesetVol(ctx context.Context, Filesyste
 	}
 
 	/*	err := conn.UnlinkFileset(ctx, FilesystemName, FilesetName, false)
-		if err != nil {
-			if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
-				strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
-				klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
-				return true, nil
-			} else if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
-				strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset is already unlinked
-				klog.V(4).Infof("[%s] fileset seems already unlinked - %v", loggerId, err)
-			} else {
-				return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
-			}
-		}*/
+		 if err != nil {
+			 if strings.Contains(err.Error(), fsetNotFoundErrCode) ||
+				 strings.Contains(err.Error(), fsetNotFoundErrMsg) { // fileset is already deleted
+				 klog.V(4).Infof("[%s] fileset seems already deleted - %v", loggerId, err)
+				 return true, nil
+			 } else if strings.Contains(err.Error(), fsetLinkNotFoundErrCode) ||
+				 strings.Contains(err.Error(), fsetLinkNotFoundErrMsg) { // fileset is already unlinked
+				 klog.V(4).Infof("[%s] fileset seems already unlinked - %v", loggerId, err)
+			 } else {
+				 return false, status.Error(codes.Internal, fmt.Sprintf("unable to unlink Fileset [%v] for FS [%v] and clusterId [%v].Error : [%v]", FilesetName, FilesystemName, volumeIdMembers.ClusterId, err))
+			 }
+		 }*/
 
 	err := conn.DeleteFileset(ctx, FilesystemName, FilesetName)
 	if err != nil {
@@ -2653,14 +2659,14 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	pfsName := ""
 	// getting the primary filesystem name from the path when primary fs is not provided in the cr and pvc is older
 	/*	if symlinkExists && ifPrimaryDisable {
-		parts := strings.Split(volumeIdMembers.Path, "/")
-		for i, part := range parts {
-			if part == ".volumes" && i >= 2 {
-				pfsName = parts[i-2]
-				klog.Infof("[%s] DeleteVolume :primary fs from path is [%v]", loggerId, pfsName)
-			}
-		}
-	}*/
+		 parts := strings.Split(volumeIdMembers.Path, "/")
+		 for i, part := range parts {
+			 if part == ".volumes" && i >= 2 {
+				 pfsName = parts[i-2]
+				 klog.Infof("[%s] DeleteVolume :primary fs from path is [%v]", loggerId, pfsName)
+			 }
+		 }
+	 }*/
 
 	relPath := ""
 	if volumeIdMembers.StorageClassType != STORAGECLASS_CLASSIC || volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME || !symlinkExists {
@@ -3926,7 +3932,6 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, "capacity range not provided")
 	}
 	capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
-
 	volumeIDMembers, err := getVolIDMembers(volID)
 
 	if err != nil {
@@ -3963,14 +3968,14 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 	// changing capacity here for pvc size in decimal units to align with scale block size
-	filesystemdetails, err := conn.GetFilesystemDetails(ctx, filesystemName)
+	filesystemDetails, err := conn.GetFilesystemDetails(ctx, filesystemName)
 	if err != nil {
 		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem details for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem details for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
-	blockinfo := filesystemdetails.Block.BlockSize
-	roundedblock := uint64(math.Floor(float64(capacity) / float64(blockinfo)))
-	capacity = roundedblock * uint64(blockinfo)
+	blockInfo := filesystemDetails.Block.BlockSize
+	roundedBlock := uint64(math.Floor(float64(capacity) / float64(blockInfo)))
+	capacity = roundedBlock * uint64(blockInfo)
 
 	filesetName := volumeIDMembers.FsetName
 
