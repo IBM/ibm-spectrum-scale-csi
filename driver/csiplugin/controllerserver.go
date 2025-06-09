@@ -278,6 +278,18 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 		}
 	}
 
+	// changing volsize here for pvc size in decimal units to align with scale block size
+	filesystemname := scVol.VolBackendFs
+	klog.Info("Filesystemname", filesystemname)
+	filesystemdetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemname)
+	if err != nil {
+		klog.Errorf("Unable to get the filesystemdetails")
+	}
+	klog.Info("filesystem details", filesystemdetails)
+	blockinfo := filesystemdetails.Block.BlockSize
+	roundedblock := uint64(math.Floor(float64(scVol.VolSize) / float64(blockinfo)))
+	scVol.VolSize = roundedblock * uint64(blockinfo)
+
 	if filesetQuotaBytes != scVol.VolSize {
 		var hardLimit, softLimit string
 		hardLimit = strconv.FormatUint(scVol.VolSize, 10)
@@ -1095,8 +1107,9 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
-				VolumeId:      volID,
-				CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
+				VolumeId: volID,
+				//CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
+				CapacityBytes: req.GetCapacityRange().GetRequiredBytes(),
 				VolumeContext: req.GetParameters(),
 				ContentSource: volSrc,
 			},
@@ -1176,7 +1189,20 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		if capRange == nil {
 			return nil, status.Error(codes.InvalidArgument, "volume range is not provided")
 		}
-		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
+		// #nosec G115 -- false positive
+		// changing capacity here for pvc size in decimal units to align with scale block size
+		capacity := uint64(capRange.GetRequiredBytes())
+		filesystemname := scaleVol.VolBackendFs
+		filesystemDetails, err := scaleVol.Connector.GetFilesystemDetails(ctx, filesystemname)
+		if err != nil {
+			klog.Errorf("[%s] Create Volume - unable to get filesystem details ", err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume - unable to get filesystem details for Filesystem", err))
+		}
+		blockinfo := filesystemDetails.Block.BlockSize
+		roundedblock := uint64(math.Floor(float64(capacity) / float64(blockinfo)))
+		capacity = roundedblock * uint64(blockinfo)
+		klog.Info("new capacity", capacity)
+
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
 		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName)
@@ -1230,8 +1256,9 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			VolumeId:      volID,
-			CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
+			VolumeId: volID,
+			//CapacityBytes: int64(scaleVol.VolSize) // #nosec G115 -- false positive
+			CapacityBytes: req.GetCapacityRange().GetRequiredBytes(),
 			VolumeContext: req.GetParameters(),
 			ContentSource: volSrc,
 		},
@@ -1368,6 +1395,18 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 		isCGVolume = true
 	}
 	scaleVol.VolName = volName
+	// changing capacity here for pvc size in decimal units to align with scale block size
+	//getting the filesystemname
+	filesystemname := scaleVol.VolBackendFs
+	klog.Info("Filesystemname", filesystemname)
+	filesystemdetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemname)
+	if err != nil {
+		klog.Errorf("Unable to get the filesystemdetails")
+	}
+	klog.Info("filesystem details", filesystemdetails)
+	blockinfo := filesystemdetails.Block.BlockSize
+	roundedblock := int64(math.Floor(float64(volSize) / float64(blockinfo)))
+	volSize = roundedblock * int64(blockinfo)
 
 	// #nosec G115 -- false positive
 	if uint64(volSize) > maximumPVSize { // larger than allowed pv size not allowed
@@ -3923,6 +3962,15 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
+	// changing capacity here for pvc size in decimal units to align with scale block size
+	filesystemdetails, err := conn.GetFilesystemDetails(ctx, filesystemName)
+	if err != nil {
+		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem details for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem details for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+	}
+	blockinfo := filesystemdetails.Block.BlockSize
+	roundedblock := uint64(math.Floor(float64(capacity) / float64(blockinfo)))
+	capacity = roundedblock * uint64(blockinfo)
 
 	filesetName := volumeIDMembers.FsetName
 
