@@ -73,7 +73,6 @@ type ScaleControllerServer struct {
 
 func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
-
 	if volpresent {
 		/*  #nosec G115 -- false positive  */
 		if capacity == int64(scVol.VolSize) {
@@ -906,6 +905,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	/* Get volume size in bytes */
 	volSize := cs.getVolumeSizeInBytes(req)
+
 	reqCapabilities := req.GetVolumeCapabilities()
 	if reqCapabilities == nil {
 		return nil, status.Error(codes.InvalidArgument, "Volume Capabilities is a required field")
@@ -1176,9 +1176,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		if capRange == nil {
 			return nil, status.Error(codes.InvalidArgument, "volume range is not provided")
 		}
-
 		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
-
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
 		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName)
@@ -1394,7 +1392,6 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 		scaleVol.VolSize = smallestVolSize
 	} else {
 		scaleVol.VolSize = uint64(volSize) // #nosec G115 -- false positive
-
 	}
 
 	/* Get details for Primary Cluster */
