@@ -76,7 +76,7 @@ func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool
 
 	if volpresent {
 		/*  #nosec G115 -- false positive  */
-		if int64(scVol.VolSize) == capacity {
+		if capacity == int64(scVol.VolSize) {
 			return true, nil
 		} else {
 			return false, status.Error(codes.Internal, fmt.Sprintf("Volume %v present in map but requested size %v does not match with size %v in map", scVol.VolName, scVol.VolSize, capacity))
@@ -270,7 +270,6 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	}
 
 	filesetQuotaBytes, err := ConvertToBytes(quota)
-
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid number specified") {
 			// Invalid number specified means quota is not set
@@ -279,18 +278,6 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 			return fmt.Errorf("unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", volName, scVol.VolBackendFs, err)
 		}
 	}
-
-	// changing volsize here for pvc size in decimal units to align with scale block size
-	// filesystemName := scVol.VolBackendFs
-	// klog.Info("Filesystemname", filesystemName)
-	// filesystemDetails, err := scVol.Connector.GetFilesystemDetails(ctx, filesystemName)
-	// if err != nil {
-	// 	klog.Errorf("Unable to get the filesystemdetails")
-	// }
-	// klog.Info("filesystem details", filesystemDetails)
-	// blockInfo := filesystemDetails.Block.BlockSize
-	// roundedBlock := uint64(math.Floor(float64(scVol.VolSize) / float64(blockInfo)))
-	// scVol.VolSize = roundedBlock * uint64(blockInfo)
 
 	if filesetQuotaBytes != scVol.VolSize {
 		var hardLimit, softLimit string
@@ -678,8 +665,6 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 	}
 	targetBasePath := ""
-	// changing the quota
-
 	if !isCGIndependentFset {
 		if scVol.VolSize != 0 {
 			err = cs.setQuota(ctx, scVol, volName)
@@ -742,8 +727,7 @@ func handleUpdateComment(ctx context.Context, scVol *scaleVolume, setAfmAttribut
 
 func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeRequest) int64 {
 	capacity := req.GetCapacityRange()
-	requiredBytes := capacity.GetRequiredBytes()
-	return requiredBytes
+	return capacity.GetRequiredBytes()
 }
 
 func updateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool, afmTuningParams map[string]interface{}) error {
@@ -1111,8 +1095,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 		return &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
-				VolumeId: volID,
-				//CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
+				VolumeId:      volID,
 				CapacityBytes: req.GetCapacityRange().GetRequiredBytes(), // #nosec G115 -- false positive
 				VolumeContext: req.GetParameters(),
 				ContentSource: volSrc,
@@ -1194,18 +1177,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			return nil, status.Error(codes.InvalidArgument, "volume range is not provided")
 		}
 
-		// changing capacity here for pvc size in decimal units to align with scale block size
 		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
-		// filesystemName := scaleVol.VolBackendFs
-		// filesystemDetails, err := scaleVol.Connector.GetFilesystemDetails(ctx, filesystemName)
-		// if err != nil {
-		// 	klog.Errorf("[%s] Create Volume - unable to get filesystem details ", err)
-		// 	return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume - unable to get filesystem details for Filesystem", err))
-		// }
-		// blockinfo := filesystemDetails.Block.BlockSize
-		// roundedblock := uint64(math.Floor(float64(capacity) / float64(blockinfo)))
-		// capacity = roundedblock * uint64(blockinfo)
-		// klog.Info("new capacity", capacity)
 
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
@@ -1260,8 +1232,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			VolumeId: volID,
-			//CapacityBytes: int64(scaleVol.VolSize) // #nosec G115 -- false positive
+			VolumeId:      volID,
 			CapacityBytes: req.GetCapacityRange().GetRequiredBytes(), // #nosec G115 -- false positive
 			VolumeContext: req.GetParameters(),
 			ContentSource: volSrc,
