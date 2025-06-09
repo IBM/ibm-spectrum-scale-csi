@@ -1088,10 +1088,18 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			return nil, err
 		}
 
-		if isCGVolume {
-			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName, snapIdMembers.FsetName)
+		if customPath != "" {
+			if isCGVolume {
+				shallowCopyTargetPath = fmt.Sprintf("%s/%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, customPath, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName, snapIdMembers.FsetName)
+			} else {
+				shallowCopyTargetPath = fmt.Sprintf("%s/%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, customPath, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
+			}
 		} else {
-			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
+			if isCGVolume {
+				shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName, snapIdMembers.FsetName)
+			} else {
+				shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
+			}
 		}
 
 		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName, ifPrimaryDisable)
@@ -2713,13 +2721,21 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	var independentFileset string
 	if volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
 		if relPath != "" && strings.Contains(relPath, ".snapshots") {
-			volPath := strings.Split(relPath, "/")
-			if len(volPath) > 2 {
-				if volPath[1] == ".snapshots" {
+			before, after, found := strings.Cut(relPath, ".snapshots")
+			if found {
+				volPath := strings.Split(after, "/")
+				if len(volPath) > 2 {
 					isPvcFromSnapshot = true
-					snapshotName = volPath[2]
-					independentFileset = volPath[0]
-					shallowCopyRefPath = fmt.Sprintf("%s/%s", volPath[0], volPath[2])
+					snapshotName = volPath[1]
+					fileset := volPath[2]
+					independentFileset = strings.Replace(fileset, "-data", "", 1)
+					customPath := strings.Replace(before, independentFileset, "", 1)
+					shallowCopyCustomPath := strings.Trim(customPath, "!/")
+					if shallowCopyCustomPath != "" {
+						shallowCopyRefPath = fmt.Sprintf("%s/%s/%s", shallowCopyCustomPath, independentFileset, snapshotName)
+					} else {
+						shallowCopyRefPath = fmt.Sprintf("%s/%s", independentFileset, snapshotName)
+					}
 				}
 			} else {
 				klog.Errorf("[%s] Invalid volume path to delete shallow copy volume reference", loggerId)
