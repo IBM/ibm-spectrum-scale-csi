@@ -1372,7 +1372,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	//getting the filesystemname
 	filesystemName := scaleVol.VolBackendFs
 	klog.Info("Filesystemname", filesystemName)
-	filesystemDetails, err := scaleVol.Connector.GetFilesystemDetails(ctx, filesystemName)
+	filesystemDetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemName)
 	if err != nil {
 		klog.Errorf("Unable to get the filesystemdetails")
 		return nil, false, "", status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem details for Filesystem %s. Error: %v", filesystemName, err))
@@ -3939,7 +3939,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	filesystemDetails, err := conn.GetFilesystemDetails(ctx, filesystemName)
 	if err != nil {
 		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem details for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem details for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem details for Filesystem [%v] Error [%v]", filesystemName, err))
 	}
 	blockInfo := filesystemDetails.Block.BlockSize
 	roundedBlock := uint64(math.Floor(float64(capacity) / float64(blockInfo)))
