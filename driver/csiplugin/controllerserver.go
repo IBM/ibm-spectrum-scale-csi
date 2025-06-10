@@ -3851,9 +3851,15 @@ func (cs *ScaleControllerServer) isExistingSnapUseableForVol(ctx context.Context
 	return true, nil
 }
 
-func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string) (bool, error) {
+func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string, metaSnapName string, customPath string) (bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	cgpath := fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+
+	var cgpath string
+	if customPath != "" {
+		cgpath = fmt.Sprintf("%s/%s/%s", customPath, consistencyGroup, cgSnapName)
+	} else {
+		cgpath = fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	}
 	pathDir := fmt.Sprintf("%s/%s", cgpath, metaSnapName)
 
 	klog.Infof("[%s] Target path in DelSnapMetadataDir:[%s]", loggerId, cgpath)
@@ -3875,7 +3881,12 @@ func (cs *ScaleControllerServer) DelSnapMetadataDir(ctx context.Context, conn co
 	}
 
 	// Now check if consistency group snapshot metadata directory can be deleted
-	pathDir = fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	if customPath != "" {
+		pathDir = fmt.Sprintf("%s/%s/%s", customPath, consistencyGroup, cgSnapName)
+	} else {
+		pathDir = fmt.Sprintf("%s/%s", consistencyGroup, cgSnapName)
+	}
+
 	statInfo, err := conn.StatDirectory(ctx, filesystemName, pathDir)
 	if err != nil {
 		if !(strings.Contains(err.Error(), "EFSSG0264C") ||
@@ -3962,11 +3973,13 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get the fileset %s details details. Error [%v]", snapIdMembers.FsetName, err))
 	}
 
-	var shallowCopyRefPath string
+	var shallowCopyRefPath, customPath string
 	//skip delete if snapshot not exist, return success
 	if filesetExist {
 		snapExist := false
+		var fsetName string
 		if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+			fsetName = snapIdMembers.ConsistencyGroup
 			klog.V(4).Infof("[%s] DeleteSnapshot - for advanced storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, snapIdMembers.ConsistencyGroup, filesystemName)
 			chkSnapExist, err := conn.CheckIfSnapshotExist(ctx, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.SnapName)
 			if err != nil {
@@ -3974,6 +3987,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 			}
 			snapExist = chkSnapExist
 		} else {
+			fsetName = snapIdMembers.FsetName
 			klog.V(4).Infof("[%s] DeleteSnapshot - for classic storageClass check if snapshot [%s] exist in fileset [%s] under filesystem [%s]", loggerId, snapIdMembers.SnapName, snapIdMembers.FsetName, filesystemName)
 			chkSnapExist, err := conn.CheckIfSnapshotExist(ctx, filesystemName, snapIdMembers.FsetName, snapIdMembers.SnapName)
 			if err != nil {
@@ -3982,16 +3996,38 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 			snapExist = chkSnapExist
 		}
 
+		if fsetName != "" {
+			fsMountPoint, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
+			if err != nil {
+				return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", filesystemName))
+			}
+			filesetInfo, err = conn.ListFileset(ctx, filesystemName, fsetName)
+			if err != nil {
+				klog.Errorf("[%s] DeleteSnapshot - unable to list fileset [%v] in filesystem [%v] Error: %v", loggerId, fsetName, filesystemName, err)
+				return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v] Error: %v", fsetName, filesystemName, err))
+			} else {
+				path := filesetInfo.Config.Path
+				newPath := strings.Replace(path, fsMountPoint.MountPoint, "", 1)
+				finalPath := strings.Replace(newPath, fsetName, "", 1)
+				customPath = strings.Trim(finalPath, "!/")
+				klog.Infof("[%s] DeleteSnapshot fsetName:%s, customPath:%s, path:%s", loggerId, fsetName, customPath, path)
+			}
+		}
+
 		// skip delete snapshot if not exist, return success
 		if snapExist {
 			if snapIdMembers.StorageClassType == STORAGECLASS_CLASSIC {
-				shallowCopyRefPath = fmt.Sprintf("%s/%s", snapIdMembers.FsetName, snapIdMembers.SnapName)
+				if customPath != "" {
+					shallowCopyRefPath = fmt.Sprintf("%s/%s/%s", customPath, snapIdMembers.FsetName, snapIdMembers.SnapName)
+				} else {
+					shallowCopyRefPath = fmt.Sprintf("%s/%s", snapIdMembers.FsetName, snapIdMembers.SnapName)
+				}
 			}
 
 			deleteSnapshot := true
 			filesetName := snapIdMembers.FsetName
 			if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-				delSnap, snaperr := cs.DelSnapMetadataDir(ctx, conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName)
+				delSnap, snaperr := cs.DelSnapMetadataDir(ctx, conn, filesystemName, snapIdMembers.ConsistencyGroup, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.MetaSnapName, customPath)
 				if snaperr != nil {
 					klog.Errorf("[%s] DeleteSnapshot - error while deleting snapshot %s: Error: %v", loggerId, snapIdMembers.SnapName, snaperr)
 					return nil, snaperr
