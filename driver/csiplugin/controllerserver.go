@@ -1374,7 +1374,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	klog.Info("Filesystemname", filesystemName)
 	filesystemDetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemName)
 	if err != nil {
-		klog.Errorf("Unable to get the filesystemdetails")
+		klog.Errorf("%s Unable to get the filesystemdetails for Filesystem %s. Error: %v", utils.GetLoggerId(ctx), filesystemName, err)
 		return nil, false, "", status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem details for Filesystem %s. Error: %v", filesystemName, err))
 	}
 	klog.V(4).Infof("[%s] filesystemDetails: %+v", utils.GetLoggerId(ctx), filesystemDetails)
