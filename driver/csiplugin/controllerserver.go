@@ -1368,7 +1368,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 		isCGVolume = true
 	}
 	scaleVol.VolName = volName
-	// changing capacity here for pvc size in decimal units to align with scale block size
+	// changing capacity here for pvc size in decimal units to align with scale block size of filesystem
 	//getting the filesystemname
 	filesystemName := scaleVol.VolBackendFs
 	klog.Info("Filesystemname", filesystemName)
