@@ -2727,8 +2727,12 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				if len(volPath) > 2 {
 					isPvcFromSnapshot = true
 					snapshotName = volPath[1]
-					fileset := volPath[2]
-					independentFileset = strings.Replace(fileset, "-data", "", 1)
+					if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
+						independentFileset = volumeIdMembers.ConsistencyGroup
+					} else {
+						fileset := volPath[2]
+						independentFileset = strings.Replace(fileset, "-data", "", 1)
+					}
 					customPath := strings.Replace(before, independentFileset, "", 1)
 					shallowCopyCustomPath := strings.Trim(customPath, "!/")
 					if shallowCopyCustomPath != "" {
