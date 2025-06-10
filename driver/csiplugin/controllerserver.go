@@ -3997,14 +3997,14 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 		}
 
 		if fsetName != "" {
-			fsMountPoint, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
+			fsMountPoint, err := conn.GetFilesystemMountDetails(ctx, filesystemName)
 			if err != nil {
-				return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", filesystemName))
+				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", filesystemName))
 			}
-			filesetInfo, err = conn.ListFileset(ctx, filesystemName, fsetName)
+			filesetInfo, err := conn.ListFileset(ctx, filesystemName, fsetName)
 			if err != nil {
 				klog.Errorf("[%s] DeleteSnapshot - unable to list fileset [%v] in filesystem [%v] Error: %v", loggerId, fsetName, filesystemName, err)
-				return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v] Error: %v", fsetName, filesystemName, err))
+				return nil, status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v] Error: %v", fsetName, filesystemName, err))
 			} else {
 				path := filesetInfo.Config.Path
 				newPath := strings.Replace(path, fsMountPoint.MountPoint, "", 1)
