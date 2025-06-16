@@ -71,11 +71,11 @@ type ScaleControllerServer struct {
 	csi.UnimplementedControllerServer
 }
 
-func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume) (bool, error) {
+func (cs *ScaleControllerServer) IfSameVolReqInProcess(scVol *scaleVolume, requestedSize int64) (bool, error) {
 	capacity, volpresent := cs.Driver.reqmap[scVol.VolName]
 	if volpresent {
 		/*  #nosec G115 -- false positive  */
-		if capacity == int64(scVol.VolSize) {
+		if capacity == requestedSize {
 			return true, nil
 		} else {
 			return false, status.Error(codes.Internal, fmt.Sprintf("Volume %v present in map but requested size %v does not match with size %v in map", scVol.VolName, scVol.VolSize, capacity))
@@ -1117,8 +1117,20 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 
 	}
-
-	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol)
+	filesystemName := scaleVol.VolBackendFs
+	klog.Info("Filesystemname", filesystemName)
+	filesystemDetails, err := cs.Driver.connmap["primary"].GetFilesystemDetails(ctx, filesystemName)
+	if err != nil {
+		klog.Errorf("%s Unable to get the filesystemdetails for Filesystem %s. Error: %v", utils.GetLoggerId(ctx), filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem details for Filesystem %s. Error: %v", filesystemName, err))
+	}
+	klog.V(4).Infof("[%s] filesystemDetails: %+v", utils.GetLoggerId(ctx), filesystemDetails)
+	blockInfo := filesystemDetails.Block.BlockSize
+	if blockInfo == 0 {
+		klog.Errorf("[%s] volume:[%v] - unable to get block size for filesystem %s", loggerId, scaleVol.VolName, filesystemName)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get block size for filesystem %s", filesystemName))
+	}
+	volReqInProcess, err := cs.IfSameVolReqInProcess(scaleVol, int64(blockInfo))
 	if err != nil {
 		return nil, err
 	}
@@ -1127,6 +1139,9 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		klog.Errorf("[%s] volume:[%v] - volume creation already in process ", loggerId, scaleVol.VolName)
 		return nil, status.Error(codes.Aborted, fmt.Sprintf("volume creation already in process : %v", scaleVol.VolName))
 	}
+	// Add sleep time after the IfSameVolReqInProcess function call
+	klog.Infof("[%s] Sleeping for 4 minutes after checking IfSameVolReqInProcess", loggerId)
+	time.Sleep(4 * time.Minute)
 
 	volResponse, err := cs.getCopyJobStatus(ctx, req, volSrc, scaleVol, isVolSource, isSnapSource, snapIdMembers)
 	if err != nil {
@@ -1379,6 +1394,10 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	}
 	klog.V(4).Infof("[%s] filesystemDetails: %+v", utils.GetLoggerId(ctx), filesystemDetails)
 	blockInfo := filesystemDetails.Block.BlockSize
+	if blockInfo == 0 {
+		klog.Errorf("[%s] volume:[%v] - unable to get block size for filesystem %s", utils.GetLoggerId(ctx), scaleVol.VolName, filesystemName)
+		return nil, false, "", status.Error(codes.Internal, fmt.Sprintf("unable to get block size for filesystem %s", filesystemName))
+	}
 	roundedBlock := int64(math.Floor(float64(volSize) / float64(blockInfo)))
 	volSize = roundedBlock * int64(blockInfo)
 
@@ -3946,7 +3965,6 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 	capacity = roundedBlock * uint64(blockInfo)
 
 	filesetName := volumeIDMembers.FsetName
-
 	// Check if fileset exists
 	fsetExist, err := conn.CheckIfFilesetExist(ctx, filesystemName, filesetName)
 	if err != nil {
