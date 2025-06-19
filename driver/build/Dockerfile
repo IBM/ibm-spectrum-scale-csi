@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'ma
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi9-minimal:9.5-1742914212
-ARG version=2.10.8
+ARG version=2.10.9
 ARG commit
 ARG build_date
 
