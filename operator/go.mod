@@ -1,9 +1,9 @@
 module github.com/IBM/ibm-spectrum-scale-csi/operator
 
-go 1.22.12
+go 1.22.0
 
 require (
-	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20250325063409-0b2b91be5630
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20250618121823-ad038bf4e64d
 	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/onsi/ginkgo v1.16.5
