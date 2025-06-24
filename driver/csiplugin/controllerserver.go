@@ -334,9 +334,9 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, afmTuningParams map[string]interface{}, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, gatewayNodeName)
+	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, cacheVolId.GateWayNode)
 	opt := make(map[string]interface{})
 
 	// fileset can not be created if filesystem is remote.
@@ -432,7 +432,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil, nil, "")
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil, nil)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -460,7 +460,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		if scVol.VolDirBasePath != "" {
 			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath, indepFilesetName)
 		}
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, nil, "")
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, cacheVolId)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -469,8 +469,8 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		return filesetPath, nil
 	} else if scVol.VolumeType == cacheVolume {
 		createDataDir := false
-		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s] and gateway for export map [%s]", loggerId, scVol.VolName, scVol.VolBackendFs, gatewayNodeName)
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, bucketInfo, afmTuningParams, gatewayNodeName)
+		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s] and gateway for export map [%s]", loggerId, scVol.VolName, scVol.VolBackendFs, cacheVolId.GateWayNode)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, afmTuningParams, cacheVolId)
 		if err != nil {
 			klog.Errorf("[%s] failed to create a cache fileset [%s] in filesystem [%s]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -490,7 +490,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		// Create fileset
 		klog.Infof("[%s] creating fileset for classic storageClass with fileset name: [%v]", loggerId, scVol.VolName)
 		createDataDir := true
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, nil, "")
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, cacheVolId)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -516,7 +516,7 @@ func checkFSQuotasEnforcedAndFilesetdfEnabled(ctx context.Context, scVol *scaleV
 	return nil
 }
 
-func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, bucketInfo map[string]string, afmTuningParams map[string]interface{}, gatewayNodeName string) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, afmTuningParams map[string]interface{}, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 	loggerId := utils.GetLoggerId(ctx)
@@ -533,26 +533,17 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 		var fseterr error
 		if scVol.VolumeType == cacheVolume {
-			endpoint := bucketInfo[connectors.BucketEndpoint]
+
+			endpoint := cacheVolId.BucketInfo[connectors.BucketEndpoint]
 			parsedURL, err := url.Parse(endpoint)
 			if err != nil {
 				klog.Errorf("[%s] volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", loggerId, volName, endpoint, err)
 				return "", status.Error(codes.Internal, fmt.Sprintf("volume:[%v] - failed to parse the endpoint URL [%s]. Error: [%v]", volName, endpoint, err))
 			}
-
-			// Add node mapping for AFM with COS for a cache volume
-			exportMapName := volName + "-exportmap"
-			nodeMappingError := scVol.Connector.CreateNodeMappingAFMWithCos(ctx, exportMapName, gatewayNodeName, bucketInfo)
-			if nodeMappingError != nil {
-				klog.Errorf("[%s] failed in nodeMappingError for volume %s", loggerId, volName)
-				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create NodeMappingAFMWithCos for volume %s, error: %v", volName, nodeMappingError))
-			}
-
-			// Set bucket keys for a cache volume
-			keyerr := scVol.Connector.SetBucketKeys(ctx, bucketInfo, exportMapName)
-			if keyerr != nil {
-				klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
-				return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
+			exportMapName, err := createExportMap(ctx, scVol, volName, cacheVolId)
+			if err != nil {
+				klog.Errorf("[%s] failed to create exportmap for volume [%s]", loggerId, volName)
+				return "", status.Error(codes.Internal, err.Error())
 			}
 
 			// Set uid,gid for cache fileset if specified in storageclass
@@ -567,9 +558,13 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 			}
 
 			// Create a cache fileset
-			if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, bucketInfo, exportMapName, parsedURL); cacheFsetErr != nil {
-				klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
-				return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
+			if !cacheVolId.IsNfsSupported {
+				if cacheFsetErr := scVol.Connector.CreateS3CacheFileset(ctx, scVol.VolBackendFs, volName, scVol.CacheMode, opt, cacheVolId.BucketInfo, exportMapName, parsedURL); cacheFsetErr != nil {
+					klog.Errorf("[%s] volume:[%v] - failed to create cache fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, cacheFsetErr.Error())
+					return "", status.Error(codes.Internal, fmt.Sprintf("failed to create cache fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, cacheFsetErr.Error()))
+				}
+			} else {
+				fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, scVol.VolumeType, volName, opt, scVol.CacheMode, exportMapName, cacheVolId.NfsInfo)
 			}
 
 			// For cache fileset, add a comment as the create COS fileset
@@ -585,7 +580,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 				opt[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
 			}
 
-			fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, volName, opt)
+			fseterr = scVol.Connector.CreateFileset(ctx, scVol.VolBackendFs, scVol.VolumeType, volName, opt, "", "", nil)
 		}
 
 		if fseterr != nil {
@@ -696,6 +691,26 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		}
 	}
 	return targetBasePath, nil
+}
+
+func createExportMap(ctx context.Context, scVol *scaleVolume, volName string, cacheVolId *cacheVolumeId) (string, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	// Add node mapping for AFM with COS for a cache volume
+	exportMapName := volName + "-exportmap"
+	nodeMappingError := scVol.Connector.CreateNodeMappingAFMWithCos(ctx, exportMapName, cacheVolId.GateWayNode, cacheVolId.BucketInfo, cacheVolId.NfsInfo, cacheVolId.IsNfsSupported)
+	if nodeMappingError != nil {
+		klog.Errorf("[%s] failed in nodeMappingError for volume %s", loggerId, volName)
+		return "", status.Error(codes.Internal, fmt.Sprintf("failed to create NodeMappingAFMWithCos for volume %s, error: %v", volName, nodeMappingError))
+	}
+
+	// Set bucket keys for a cache volume
+	keyerr := scVol.Connector.SetBucketKeys(ctx, cacheVolId.BucketInfo, exportMapName)
+	if keyerr != nil {
+		klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
+		return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
+	}
+	return exportMapName, nil
+
 }
 
 func handleUpdateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool, afmTuningParams map[string]interface{}) error {
@@ -1148,21 +1163,28 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	defer delete(cs.Driver.reqmap, scaleVol.VolName)
 
 	var targetPath string
-	var gatewayNodeName string
-
+	cacheVolId := &cacheVolumeId{}
 	if scaleVol.VolumeType == cacheVolume {
 		// Validate the secret data in case of cache volumes
-		missingKeys := validateCacheSecret(req.Secrets)
-		if len(missingKeys) != 0 {
+		missingKeys, isNfsSupported, err := validateCacheSecret(req.Secrets)
+		if len(missingKeys) != 0 || err != nil {
 			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret for cache volume %s does not have required parameter(s): %v", scaleVol.VolName, missingKeys))
 		}
 
+		if isNfsSupported {
+			cacheVolId.IsNfsSupported = isNfsSupported
+			cacheVolId.NfsInfo = req.Secrets
+		} else {
+			cacheVolId.BucketInfo = req.Secrets
+		}
+
 		// A gateway node is must for cache fileset
-		gatewayNodeName, err = scaleVol.Connector.GetGatewayNode(ctx)
+		gatewayNodeName, err := scaleVol.Connector.GetGatewayNode(ctx)
 		if err != nil {
 			return nil, err
 		}
 		if gatewayNodeName != "" {
+			cacheVolId.GateWayNode = gatewayNodeName
 			klog.Infof("[%s]  IBM Storage Scale gateway NodeName : %s", loggerId, gatewayNodeName)
 		} else {
 			return nil, status.Error(codes.Aborted, "Failed to the create a cache volume as there in no gateway node in the cluster")
@@ -1179,7 +1201,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, req.Secrets, afmTuningParams, gatewayNodeName)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, afmTuningParams, cacheVolId)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}
@@ -1346,15 +1368,36 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 	}
 }
 
-func validateCacheSecret(secretData map[string]string) []string {
-	requiredKeys := []string{"endpoint", "bucket", "accesskey", "secretkey"}
+func validateCacheSecret(ctx context.Context, secretData map[string]string) ([]string, bool, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	keysForCloud := []string{"endpoint", "bucket", "accesskey", "secretkey"}
+	KeysForNfs := []string{"nfsServers", "nfsPath"}
 	missingKeys := []string{}
-	for _, key := range requiredKeys {
-		if _, exists := secretData[key]; !exists {
-			missingKeys = append(missingKeys, key)
+	isNfsSupported := false
+
+	if len(secretData) == 0 {
+		klog.Errorf("[%s] secret in the req doesn't have any parameters", loggerId)
+		return nil, false, status.Error(codes.Internal, fmt.Sprintf("secret in the req doesn't have any parameters"))
+	}
+
+	if _, exists := secretData[KeysForNfs[0]]; !exists {
+		isNfsSupported = true
+	}
+
+	if !isNfsSupported {
+		for _, key := range keysForCloud {
+			if _, exists := secretData[key]; !exists {
+				missingKeys = append(missingKeys, key)
+			}
+		}
+	} else {
+		for _, key := range KeysForNfs {
+			if _, exists := secretData[key]; !exists {
+				missingKeys = append(missingKeys, key)
+			}
 		}
 	}
-	return missingKeys
+	return missingKeys, isNfsSupported, nil
 }
 
 func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64, ifPrimaryDisable bool) (*scaleVolume, bool, string, error) {

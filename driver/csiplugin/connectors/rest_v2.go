@@ -39,12 +39,16 @@ const errConnectionRefused string = "connection refused"
 const errNoSuchHost string = "no such host"
 const errContextDeadlineExceeded string = "context deadline exceeded"
 
-// Bucket parameters for a AFM cache volume
 const (
+	// Bucket parameters for a AFM cache volume
 	BucketEndpoint  = "endpoint"
 	BucketName      = "bucket"
 	bucketAccesskey = "accesskey"
 	bucketSecretkey = "secretkey"
+
+	// NFS parameters for a AFM cache volume
+	NfsServer = "nfsServers"
+	NfsPath   = "nfsPath"
 
 	defaultS3Port    = "443"
 	cachevolume      = "2"
@@ -635,7 +639,7 @@ func (s *SpectrumRestV2) ListGatewayNodes(ctx context.Context) ([]string, error)
 	return gatewayNodes, nil
 }
 
-func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error {
+func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName string, volumeType string, filesetName string, opts map[string]interface{}, mode string, exportMapName string, nfsInfo map[string]string) error {
 	klog.V(4).Infof("[%s] rest_v2 CreateFileset. filesystem: %s, fileset: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, opts)
 
 	filesetreq := CreateFilesetRequest{}
@@ -673,6 +677,12 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 			filesetreq.MaxNumInodes = inodeLimit.(string)
 			filesetreq.AllocInodes = "1024"
 		}
+	}
+
+	if volumeType == cachevolume {
+		filesetreq.AfmMode = mode
+		nfsTarget := fmt.Sprintf("nfs://%s/%s", exportMapName, nfsInfo[NfsPath])
+		filesetreq.AfmTarget = nfsTarget
 	}
 
 	uid, uidSpecified := opts[UserSpecifiedUID]
@@ -880,7 +890,8 @@ func (s *SpectrumRestV2) CreateS3CacheFileset(ctx context.Context, filesystemNam
 	return nil
 }
 
-func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo map[string]string) error {
+// create export map with cloud/NFS and Gateway node
+func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo, nfsInfo map[string]string, isNfsSupported bool) error {
 	loggerID := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] rest_v2 CreateNodeMappingAFMWithCos.exportMapName:[%s],gatewayNodeName:[%s]:", loggerID, exportMapName, gatewayNodeName)
 
@@ -888,7 +899,14 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 	exportMapReq.MapName = exportMapName
 
 	// Extract the hostname without the port
-	parsedURL, err := url.Parse(bucketInfo[BucketEndpoint])
+	var endpoint string
+	if isNfsSupported {
+		endpoint = nfsInfo[NfsServer]
+	} else {
+		endpoint = bucketInfo[BucketEndpoint]
+	}
+
+	parsedURL, err := url.Parse(endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
 	}
