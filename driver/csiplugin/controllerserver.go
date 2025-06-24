@@ -1166,7 +1166,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	cacheVolId := &cacheVolumeId{}
 	if scaleVol.VolumeType == cacheVolume {
 		// Validate the secret data in case of cache volumes
-		missingKeys, isNfsSupported, err := validateCacheSecret(req.Secrets)
+		missingKeys, isNfsSupported, err := validateCacheSecret(ctx, req.Secrets)
 		if len(missingKeys) != 0 || err != nil {
 			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret for cache volume %s does not have required parameter(s): %v", scaleVol.VolName, missingKeys))
 		}
