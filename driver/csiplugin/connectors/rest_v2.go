@@ -930,7 +930,7 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 	createExportMapURL := "scalemgmt/v2/nodes/afm/mapping"
 	createExportMapResponse := GenericResponse{}
 
-	err = s.doHTTP(ctx, createExportMapURL, "POST", &createExportMapResponse, exportMapReq)
+	err := s.doHTTP(ctx, createExportMapURL, "POST", &createExportMapResponse, exportMapReq)
 	if err != nil {
 		if strings.Contains(createExportMapResponse.Status.Message, "Mapping "+exportMapName+" already exists") {
 			klog.V(6).Infof("[%s] Failed to create NodeMappingAFMWithCos exportMapName, exportMap is already exists. So returning success %v", utils.GetLoggerId(ctx), err)

@@ -1382,7 +1382,7 @@ func validateCacheSecret(ctx context.Context, secretData map[string]string) ([]s
 		return nil, false, status.Error(codes.Internal, fmt.Sprintf("secret in the req doesn't have any parameters"))
 	}
 
-	if _, exists := secretData[KeysForNfs[0]]; !exists {
+	if _, exists := secretData[KeysForNfs[0]]; exists {
 		isNfsSupported = true
 	}
 
@@ -2797,7 +2797,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 
 				// Delete bucket keys for a cache volume
 				if volumeIdMembers.StorageClassType == STORAGECLASS_CACHE {
-					_, isNfsSupported, err := validateCacheSecret(req.Secrets)
+					_, isNfsSupported, err := validateCacheSecret(ctx, req.Secrets)
 					if err != nil {
 						return nil, fmt.Errorf("failed to validate secret, error %v", err)
 					}
