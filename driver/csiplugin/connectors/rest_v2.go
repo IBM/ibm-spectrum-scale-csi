@@ -51,8 +51,9 @@ const (
 	NfsPath   = "nfsPath"
 
 	defaultS3Port    = "443"
-	cachevolume      = "2"
+	cacheVolumeType  = "2"
 	CacheTempDirName = ".cachevolumetmp"
+	cacheVolume      = "cache"
 )
 
 var GetLoggerId = utils.GetLoggerId
@@ -536,7 +537,7 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.Comment = fmt.Sprintf("%v", comment)
 	}
 
-	if volType == cachevolume && setAfmAttributes {
+	if volType == cacheVolumeType && setAfmAttributes {
 		afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
 		if afmReadSparseThresholdFound {
 			filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
@@ -679,7 +680,7 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 		}
 	}
 
-	if volumeType == cachevolume {
+	if volumeType == cacheVolume {
 		filesetreq.AfmMode = mode
 		nfsTarget := fmt.Sprintf("nfs://%s/%s", exportMapName, nfsInfo[NfsPath])
 		filesetreq.AfmTarget = nfsTarget
@@ -899,20 +900,28 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 	exportMapReq.MapName = exportMapName
 
 	// Extract the hostname without the port
-	var endpoint string
+	var endpoint, hostname string
 	if isNfsSupported {
 		endpoint = nfsInfo[NfsServer]
 	} else {
 		endpoint = bucketInfo[BucketEndpoint]
 	}
 
-	parsedURL, err := url.Parse(endpoint)
-	if err != nil {
-		return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
+	if !isNfsSupported {
+		parsedURL, err := url.Parse(endpoint)
+		if err != nil {
+			return fmt.Errorf("failed to parse endpoint URL %s, error %v", bucketInfo[BucketEndpoint], err)
+		}
+		hostname = parsedURL.Hostname()
+		exportMapReq.ExportMap = append(exportMapReq.ExportMap, hostname+"/"+gatewayNodeName)
+	} else {
+		servername := strings.Split(endpoint, ",")
+		for _, servname := range servername {
+			if servname != "" {
+				exportMapReq.ExportMap = append(exportMapReq.ExportMap, servname+"/"+gatewayNodeName)
+			}
+		}
 	}
-	hostname := parsedURL.Hostname()
-
-	exportMapReq.ExportMap = append(exportMapReq.ExportMap, hostname+"/"+gatewayNodeName)
 
 	exportMapReq.NoServerResolution = true
 

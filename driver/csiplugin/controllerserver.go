@@ -704,10 +704,12 @@ func createExportMap(ctx context.Context, scVol *scaleVolume, volName string, ca
 	}
 
 	// Set bucket keys for a cache volume
-	keyerr := scVol.Connector.SetBucketKeys(ctx, cacheVolId.BucketInfo, exportMapName)
-	if keyerr != nil {
-		klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
-		return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
+	if !cacheVolId.IsNfsSupported {
+		keyerr := scVol.Connector.SetBucketKeys(ctx, cacheVolId.BucketInfo, exportMapName)
+		if keyerr != nil {
+			klog.Errorf("[%s] failed to set bucket keys for volume %s", loggerId, volName)
+			return "", status.Error(codes.Internal, fmt.Sprintf("failed to set bucket keys for volume %s, error: %v", volName, keyerr))
+		}
 	}
 	return exportMapName, nil
 
@@ -2795,26 +2797,30 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 
 				// Delete bucket keys for a cache volume
 				if volumeIdMembers.StorageClassType == STORAGECLASS_CACHE {
-					bucketName := req.Secrets[connectors.BucketName]
-					endpoint := req.Secrets[connectors.BucketEndpoint]
+					_, isNfsSupported, err := validateCacheSecret(req.Secrets)
 					if err != nil {
-						return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
+						return nil, fmt.Errorf("failed to validate secret, error %v", err)
 					}
+
 					volumeName := volumeIdMembers.FsetName
-					err = conn.DeleteBucketKeys(ctx, bucketName+":"+volumeName+"-exportmap")
-					if err != nil {
-
-						klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
-						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete bucket keys for volume %s, error: %v", volumeName, err))
+					if !isNfsSupported {
+						bucketName := req.Secrets[connectors.BucketName]
+						endpoint := req.Secrets[connectors.BucketEndpoint]
+						if err != nil {
+							return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
+						}
+						err = conn.DeleteBucketKeys(ctx, bucketName+":"+volumeName+"-exportmap")
+						if err != nil {
+							klog.Errorf("[%s] failed to delete bucket keys for volume %s", loggerId, volumeName)
+							return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete bucket keys for volume %s, error: %v", volumeName, err))
+						}
 					}
-
 					err = conn.DeleteNodeMappingAFMWithCos(ctx, volumeName+"-exportmap")
 					if err != nil {
 						klog.Errorf("[%s] failed to delete node mapping exportMap for volume %s", loggerId, volumeName)
 						return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete node mapping exportMap for volume %s, error: %v", volumeName, err))
 					}
 				}
-
 				return &csi.DeleteVolumeResponse{}, nil
 			} else {
 				klog.Infof("[%s] pv name from path [%v] does not match with filesetName [%v]. Skipping delete of fileset", loggerId, pvName, FilesetName)
