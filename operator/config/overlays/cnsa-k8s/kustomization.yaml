@@ -6,8 +6,8 @@ kind: Kustomization
 namespace: ibm-spectrum-scale-csi
 
 resources:
-- ../../rbac/
-- ../../manager/
+#- ../../rbac/
+#- ../../manager/
 - ../../crd/
 
 patches:

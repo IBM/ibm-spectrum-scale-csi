@@ -41,6 +41,7 @@ import (
 
 	csiv1 "github.com/IBM/ibm-spectrum-scale-csi/operator/api/v1"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers"
+	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 
 	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -161,9 +162,9 @@ func main() {
 	if err = (&controllers.CSIScaleOperatorReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("CSIScaleOperator"),
+		Recorder: mgr.GetEventRecorderFor(config.CSIScaleOperatorControllerName),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CSIScaleOperator")
+		setupLog.Error(err, "unable to create controller", "controller", config.CSIScaleOperatorControllerName)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
