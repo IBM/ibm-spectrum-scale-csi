@@ -239,4 +239,5 @@ const (
 	ENVClusterCNSAPresenceCheck = "CNSADeployment"
 	CNSAOperatorNamespace       = "ibm-spectrum-scale-operator"
 	CNSAOperatorDeploymentName  = "ibm-spectrum-scale-controller-manager"
+	CNSAScaleNamespace          = "ibm-spectrum-scale"
 )
