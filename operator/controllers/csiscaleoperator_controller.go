@@ -350,7 +350,13 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
 		logger.Info("Checking the clusterType and presence of CNSA")
-		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace, req.Namespace)
+		var cnsaOperatorNamespace string
+		if req.Namespace == config.CNSAScaleNamespace {
+			cnsaOperatorNamespace = req.Namespace
+		} else {
+			cnsaOperatorNamespace = config.CNSAOperatorNamespace
+		}
+		err := getClusterTypeAndCNSAOperatorPresence(cnsaOperatorNamespace)
 		if err != nil {
 			logger.Error(err, "Failed to check cluster platform and cnsa presence")
 			return ctrl.Result{}, err
@@ -2733,10 +2739,11 @@ func isGUIUnauthorized(err error) bool {
 
 // getClusterTypeAndCNSAOperatorPresence fetches CNSA operator deployment from the cluster
 // and sets two parameters in the clusterTypeData map which is being set later in environment of the driver
-func getClusterTypeAndCNSAOperatorPresence(CNSAOperatorNamespace string, CNSAScaleNamespace string) (err error) {
+func getClusterTypeAndCNSAOperatorPresence(namespace string) (err error) {
 
 	// Checking the presence of CNSA operator into the cluster
 	logger := csiLog.WithName("getClusterTypeAndCNSAOperatorPresence")
+	logger.Info("Reading resources from the cluster in the", "Namespace", namespace)
 
 	// Default env/cluster type setup
 	clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeKubernetes
@@ -2753,23 +2760,12 @@ func getClusterTypeAndCNSAOperatorPresence(CNSAOperatorNamespace string, CNSASca
 		logger.Error(err, "Failed to set clientset with config")
 		return err
 	}
-	var deployments *appsv1.DeploymentList
-	if CNSAScaleNamespace == config.CNSAScaleNamespace {
-		logger.Info("Reading resources from the cluster in the", "Namespace", CNSAScaleNamespace)
-		// get deployments in a ibm-spectrum-scale namespace
-		deployments, err = clientset.AppsV1().Deployments(CNSAScaleNamespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			logger.Error(err, "Failed to list of all deployments from the ibm-spectrum-scale-operator namespace")
-			return err
-		}
-	} else {
-		logger.Info("Reading resources from the cluster in the", "Namespace", CNSAOperatorNamespace)
-		// get deployments in a ibm-spectrum-scale-operator namespace
-		deployments, err = clientset.AppsV1().Deployments(CNSAOperatorNamespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			logger.Error(err, "Failed to list of all deployments from the ibm-spectrum-scale-operator namespace")
-			return err
-		}
+
+	// get deployments in a ibm-spectrum-scale-operator namespace
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		logger.Error(err, "Failed to list of all deployments from the ibm-spectrum-scale-operator namespace")
+		return err
 	}
 
 	for _, deployment := range deployments.Items {
