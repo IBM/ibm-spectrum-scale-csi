@@ -350,7 +350,13 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
 		logger.Info("Checking the clusterType and presence of CNSA")
-		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
+		var cnsaOperatorNamespace string
+		if req.Namespace == config.CNSAScaleNamespace {
+			cnsaOperatorNamespace = req.Namespace
+		} else {
+			cnsaOperatorNamespace = config.CNSAOperatorNamespace
+		}
+		err := getClusterTypeAndCNSAOperatorPresence(cnsaOperatorNamespace)
 		if err != nil {
 			logger.Error(err, "Failed to check cluster platform and cnsa presence")
 			return ctrl.Result{}, err
