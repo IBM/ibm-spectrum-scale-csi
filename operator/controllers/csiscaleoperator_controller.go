@@ -352,13 +352,18 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
 	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
 	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
-
 	// If the setup is a cnsa dev setup, then we are not going to set any clusterTypeData as cnsa operator is not present in the cluster and platform is also local.
 	inClusterScaleGui := os.Getenv("incluster_gui_host")
 	if inClusterScaleGui == "" {
 		if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
 			logger.Info("Checking the clusterType and presence of CNSA")
-			err := getClusterTypeAndCNSAOperatorPresence(ctx, config.CNSAOperatorNamespace)
+			var cnsaOperatorNamespace string
+			if req.Namespace == config.CNSAScaleNamespace {
+				cnsaOperatorNamespace = req.Namespace
+			} else {
+				cnsaOperatorNamespace = config.CNSAOperatorNamespace
+			}
+			err := getClusterTypeAndCNSAOperatorPresence(ctx, cnsaOperatorNamespace)
 			if err != nil {
 				logger.Error(err, "Failed to check cluster platform and cnsa presence")
 				return ctrl.Result{}, err
