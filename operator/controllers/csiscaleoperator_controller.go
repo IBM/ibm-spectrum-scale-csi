@@ -2303,7 +2303,6 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 	}
 
 	primaryClusterFound, issueFound := false, false
-	remoteClusterID := ""
 	var nonPrimaryClusters = make(map[string]bool)
 
 	for i := 0; i < len(instance.Spec.Clusters); i++ {

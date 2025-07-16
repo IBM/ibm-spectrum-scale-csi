@@ -197,8 +197,7 @@ var CSIOptionalConfigMapKeys = []string{
 	DriverCPULimits,
 	DriverMemoryLimits,
 	SidecarCPULimits,
-	SidecarMemoryLimits,
-	EnvPrimaryFilesystemKeyPrefixed}
+	SidecarMemoryLimits}
 
 // allowed values of the optional cm variables
 var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"}
@@ -207,7 +206,6 @@ var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
 var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
 var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
 var EnvHostNetworkValues = []string{"ENABLED", "DISABLED"}
-var EnvPrimaryFilesystemValues = []string{"ENABLED", "DISABLED"}
 
 const (
 	StatusConditionReady   = "Ready"
