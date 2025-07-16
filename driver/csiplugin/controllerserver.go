@@ -118,7 +118,7 @@ func (cs *ScaleControllerServer) createLWVol(ctx context.Context, scVol *scaleVo
 //VolID format for all newly created volumes (from 2.5.0 onwards):
 
 // <storageclass_type>;<volume_type>;<cluster_id>;<filesystem_uuid>;<consistency_group>;<fileset_name>;<path>
-func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string, ifPrimaryDisable bool) (string, error) {
+func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scaleVolume, uid string, isCGVolume, isShallowCopyVolume bool, targetPath string, filesetNameStatic string) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:generateVolId", loggerId, scVol.VolName)
 	klog.V(4).Infof("[%s] scVol: [%+v] - ControllerServer:generateVolId targetPath:[%v]", loggerId, scVol, targetPath)
@@ -131,7 +131,7 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 	path := ""
 
 	if !isShallowCopyVolume {
-		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased || ifPrimaryDisable {
+		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased {
 			primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
 			if !isprimaryConnPresent {
 				klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
@@ -830,37 +830,15 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string) (ma
 	return afmTuningParams, nil
 }
 
-func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context, ifPrimaryDisable bool) (connectors.SpectrumScaleConnector, string, string, string, string, string, error) {
+func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (connectors.SpectrumScaleConnector, string, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] getPrimaryClusterDetails with ifPrimaryDisable: %t", loggerId, ifPrimaryDisable)
 
 	klog.V(4).Infof("[%s] getPrimaryClusterDetails : cs.Driver.primary: [ %v ]", loggerId, cs.Driver.primary)
 
 	primaryConn := cs.Driver.connmap["primary"]
-	var primaryFS, primaryFset, primaryFSMount, symlinkDirRelativePath, symlinkDirAbsolutePath string = "", "", "", "", ""
 	var err error
-	if !ifPrimaryDisable {
-		primaryFS = cs.Driver.primary.GetPrimaryFs()
-		primaryFset = cs.Driver.primary.PrimaryFset
 
-		// check if primary filesystem exists
-		fsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, primaryFS)
-		if err != nil {
-			klog.Errorf("[%s] Failed to get details of primary filesystem %s", loggerId, primaryFS)
-			return nil, "", "", "", "", "", err
-		}
-
-		primaryFSMount = fsMountInfo.MountPoint
-		// If primary fset is not specified, then use default
-		if primaryFset == "" {
-			primaryFset = defaultPrimaryFileset
-		}
-
-		symlinkDirRelativePath = primaryFset + "/" + symlinkDir
-		symlinkDirAbsolutePath = fsMountInfo.MountPoint + "/" + symlinkDirRelativePath
-		klog.V(4).Infof("[%s] symlinkDirPath [%s], symlinkDirRelPath [%s]", loggerId, symlinkDirAbsolutePath, symlinkDirRelativePath)
-	}
-	return primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, cs.Driver.primary.PrimaryCid, err
+	return primaryConn, cs.Driver.primary.PrimaryCid, err
 }
 
 func (cs *ScaleControllerServer) getPrimaryFSMountPoint(ctx context.Context) (string, error) {
@@ -926,13 +904,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, status.Error(codes.InvalidArgument, "The Parameter(s) not supported in storageClass: "+invalidParams)
 	}
 
-	ifPrimaryDisable := false
-	if strings.ToUpper(os.Getenv(settings.PrimaryFilesystemKey)) == settings.PrimaryFilesystemValue {
-		ifPrimaryDisable = true
-	}
-	klog.Infof("[%s] ifPrimaryDisable : %t", loggerId, ifPrimaryDisable)
-
-	scaleVol, isCGVolume, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize, ifPrimaryDisable)
+	scaleVol, isCGVolume, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1015,16 +987,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}
 	}
 
-	// skip primaryfset linking check when DISABLE_PRIMARY is set true as env
-
-	if !ifPrimaryDisable {
-		if srcVolumeIDMembers.VolType != FILE_SHALLOWCOPY_VOLUME {
-			err = cs.checkFileSetLink(ctx, scaleVol.PrimaryConnector, scaleVol, scaleVol.PrimaryFS, cs.Driver.primary.PrimaryFset, "primary")
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 	volFsInfo, err := checkVolumeFilesystemMountOnPrimary(ctx, scaleVol)
 	if err != nil {
 		return nil, err
@@ -1088,7 +1050,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			shallowCopyTargetPath = fmt.Sprintf("%s/%s/.snapshots/%s/%s", volFsInfo.Mount.MountPoint, snapIdMembers.FsetName, snapIdMembers.SnapName, snapIdMembers.Path)
 		}
 
-		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName, ifPrimaryDisable)
+		volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, shallowCopyTargetPath, scaleVol.VolName)
 		if volIDErr != nil {
 			return nil, volIDErr
 		}
@@ -1188,18 +1150,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, err
 	}
 
-	// skip symbolic link creation when DISABLE_PRIMARY is set true as env
-
-	if !ifPrimaryDisable {
-		if !isCGVolume && scaleVol.VolumeType != cacheVolume && !scaleVol.IsStaticPVBased {
-			// Create symbolic link if not present
-			err = cs.createSoftlink(ctx, scaleVol, targetPath)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		}
-	}
-	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName, ifPrimaryDisable)
+	volID, volIDErr := cs.generateVolID(ctx, scaleVol, volFsInfo.UUID, isCGVolume, isShallowCopyVolume, targetPath, filesetName)
 	if volIDErr != nil {
 		return nil, volIDErr
 	}
@@ -1357,7 +1308,7 @@ func validateCacheSecret(secretData map[string]string) []string {
 	return missingKeys
 }
 
-func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64, ifPrimaryDisable bool) (*scaleVolume, bool, string, error) {
+func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64) (*scaleVolume, bool, string, error) {
 	scaleVol, err := getScaleVolumeOptions(ctx, req.GetParameters())
 	if err != nil {
 		return nil, false, "", err
@@ -1382,16 +1333,16 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	}
 
 	/* Get details for Primary Cluster */
-	primaryConn, symlinkDirRelativePath, primaryFS, primaryFSMount, symlinkDirAbsolutePath, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx, ifPrimaryDisable)
+	primaryConn, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
 	if err != nil {
 		return nil, isCGVolume, "", err
 	}
 
 	scaleVol.PrimaryConnector = primaryConn
-	scaleVol.PrimarySLnkRelPath = symlinkDirRelativePath
-	scaleVol.PrimaryFS = primaryFS
-	scaleVol.PrimaryFSMount = primaryFSMount
-	scaleVol.PrimarySLnkPath = symlinkDirAbsolutePath
+	//scaleVol.PrimarySLnkRelPath = symlinkDirRelativePath
+	//scaleVol.PrimaryFS = primaryFS
+	//scaleVol.PrimaryFSMount = primaryFSMount
+	//scaleVol.PrimarySLnkPath = symlinkDirAbsolutePath
 	return scaleVol, isCGVolume, primaryClusterID, nil
 }
 

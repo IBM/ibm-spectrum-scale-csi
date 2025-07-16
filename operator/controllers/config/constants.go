@@ -157,7 +157,6 @@ const (
 	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
 	EnvVolNamePrefixKey               = "VOLUME_NAME_PREFIX"
-	EnvPrimaryFilesystemKey           = "PRIMARY_FILESYSTEM"
 
 	// Optional ConfigMap keys with prefix
 	EnvLogLevelKeyPrefixed              = EnvVarPrefix + EnvLogLevelKey
@@ -166,7 +165,6 @@ const (
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
 	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
 	EnvVolNamePrefixKeyPrefixed         = EnvVarPrefix + EnvVolNamePrefixKey
-	EnvPrimaryFilesystemKeyPrefixed     = EnvVarPrefix + EnvPrimaryFilesystemKey
 
 	// Optional ConfigMap default values if not provided in the cm
 	DriverCPULimitsDefaultValue          = "600m"

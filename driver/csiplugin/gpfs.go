@@ -263,6 +263,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 		scaleConnMap[cluster.ID] = sc
 
+		klog.Infof("[%s] cluster.Primary:[%+v], settings.Primary:[%+v]", loggerId, cluster.Primary, settings.Primary{})
 		if cluster.Primary != (settings.Primary{}) {
 
 			// Check if GUI is reachable - only for primary cluster
@@ -276,13 +277,14 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 			scaleConfig.Clusters[i].Primary.PrimaryCid = clusterId
 
 			//If primary fileset value is not specified then use the default one
-			if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
-				scaleConfig.Clusters[i].Primary.PrimaryFset = defaultPrimaryFileset
-			}
+			//if scaleConfig.Clusters[i].Primary.PrimaryFset == "" {
+			//	scaleConfig.Clusters[i].Primary.PrimaryFset = defaultPrimaryFileset
+			//}
 			primaryInfo = scaleConfig.Clusters[i].Primary
 		}
 	}
 
+	klog.Infof("[%s] scaleConfig:[%+v], primaryInfo:[%+v],  scaleConnMap:[%+v]", utils.GetLoggerId(ctx), scaleConfig, primaryInfo, scaleConnMap)
 	klog.Infof("[%s] IBM Storage Scale CSI driver initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
 }

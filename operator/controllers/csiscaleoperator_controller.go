@@ -403,24 +403,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
-	ifPrimaryDisable := false
-	if strings.ToUpper(cmData["PRIMARY_FILESYSTEM"]) == "DISABLED" {
-		ifPrimaryDisable = true
-	}
-	logger.Info("PRIMARY_FILESYSTEM is", " DISABLED ", ifPrimaryDisable)
-
-	//For first pass handle primary FS and fileset
-	if !cmExists && !ifPrimaryDisable {
-		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
-		if err != nil {
-			if requeAfterDelay == 0 {
-				return ctrl.Result{}, err
-			} else {
-				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
-			}
-		}
-	}
-
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(instance)
 
@@ -710,23 +692,23 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleope
 				//Check if the primary stanza from current configmap is changed
 				//and return err if it is changed, as we don't want to change
 				//the primary after first successful iteration.
-				if oldCMCluster.Primary != nil && !reflect.DeepEqual(oldCMCluster.Primary, crCluster.Primary) {
-					primaryString := fmt.Sprintf("{filesystem:%v, fileset:%v",
-						oldCMCluster.Primary.PrimaryFs, oldCMCluster.Primary.PrimaryFset)
-					if oldCMCluster.Primary.RemoteCluster != "" {
-						primaryString += fmt.Sprintf(", remote cluster: %v}", oldCMCluster.Primary.RemoteCluster)
-					} else {
-						primaryString += "}"
-					}
-					message := fmt.Sprintf("Primary stanza is modified for cluster with ID %s. Use the orignal primary %s and try again",
-						crCluster.Id, primaryString)
-					err := fmt.Errorf("%s", message)
-					logger.Error(err, "")
-					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.PrimaryClusterStanzaModified), message,
-					)
-					return err
-				}
+				//if oldCMCluster.Primary != nil && !reflect.DeepEqual(oldCMCluster.Primary, crCluster.Primary) {
+				//primaryString := fmt.Sprintf("{filesystem:%v, fileset:%v",
+				//	oldCMCluster.Primary.PrimaryFs, oldCMCluster.Primary.PrimaryFset)
+				//	if oldCMCluster.Primary.RemoteCluster != "" {
+				//	primaryString += fmt.Sprintf(", remote cluster: %v}", oldCMCluster.Primary.RemoteCluster)
+				// } else {
+				//	primaryString += "}"
+				// }
+				//message := fmt.Sprintf("Primary stanza is modified for cluster with ID %s. Use the orignal primary %s and try again",
+				//	crCluster.Id, primaryString)
+				//err := fmt.Errorf("%s", message)
+				//logger.Error(err, "")
+				//SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				//	metav1.ConditionFalse, string(csiv1.PrimaryClusterStanzaModified), message,
+				//)
+				//return err
+				//}
 			}
 		}
 	}
@@ -1998,7 +1980,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 			//1. Check if GUI is reachable for the 1st pass.
 			// For pass no. 2+ if clusterstanza modified, check for only changed cluster
 			if !cmExists || (clustersStanzaModified && isClusterChanged) {
-				if operatorRestarted && !isPrimaryCluster {
+				if operatorRestarted {
 					//if operator is restarted and this is not a primary cluster,
 					//no need to check if GUI is reachable or clusterID is valid.
 					continue
@@ -2347,12 +2329,12 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 			}
 
 			primaryClusterFound = true
-			if cluster.Primary.PrimaryFs == "" {
-				issueFound = true
-				logger.Error(fmt.Errorf("mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.Id), "")
-			}
+			//if cluster.Primary.PrimaryFs == "" {
+			//	issueFound = true
+			//	logger.Error(fmt.Errorf("mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.Id), "")
+			//}
 
-			remoteClusterID = cluster.Primary.RemoteCluster
+			//remoteClusterID = cluster.Primary.RemoteCluster
 		} else {
 			//when its a not primary cluster
 			nonPrimaryClusters[cluster.Id] = true
@@ -2373,11 +2355,11 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 		issueFound = true
 		logger.Error(fmt.Errorf("no primary clusters specified"), "")
 	}
-	_, nonPrimaryClusterExists := nonPrimaryClusters[remoteClusterID]
-	if remoteClusterID != "" && !nonPrimaryClusterExists {
-		issueFound = true
-		logger.Error(fmt.Errorf("remote cluster specified for primary filesystem: %s, but no entry found for it in driver manifest", remoteClusterID), "")
-	}
+	//_, nonPrimaryClusterExists := nonPrimaryClusters[remoteClusterID]
+	//if remoteClusterID != "" && !nonPrimaryClusterExists {
+	//	issueFound = true
+	//	logger.Error(fmt.Errorf("remote cluster specified for primary filesystem: %s, but no entry found for it in driver manifest", remoteClusterID), "")
+	//}
 
 	if issueFound {
 		message := "one or more issues found while validating driver manifest, check operator logs for details"
@@ -2434,8 +2416,6 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-			case config.EnvPrimaryFilesystemKeyPrefixed:
-				validateEnvVarValue(config.EnvPrimaryFilesystemValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
 				validateVolNamePrefix(keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
@@ -2682,11 +2662,6 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.SidecarMemoryLimits]; !ok {
 		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
 		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
-	}
-	// set default EnvPrimaryFilesystemKey when it is not present in envMap
-	if _, ok := envMap[config.EnvPrimaryFilesystemKey]; !ok {
-		logger.Info("PRIMARY_FILESYSTEM is empty or incorrect.", "Defaulting PRIMARY_FILESYSTEM to", config.EnvPrimaryFilesystemDefaultValue)
-		envMap[config.EnvPrimaryFilesystemKey] = config.EnvPrimaryFilesystemDefaultValue
 	}
 }
 
