@@ -73,7 +73,6 @@ const (
 	ENVSymDirPath   = "SYMLINK_DIR_PATH"
 	DriverVersion   = "3.0.0"
 	OperatorVersion = "3.0.0"
-
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
 	// Tolerations seconds for the CSI Sidecar deployment
@@ -184,6 +183,13 @@ const (
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"
 	PodsMemoryLimitsLowerValue = "20Mi"
+
+	// // For CNSA Dev setup, if the GUI host is set to localroute env
+	// To run local in cnsa dev env
+	IBMSpectrumScaleGUI string = "ibm-spectrum-scale-gui"
+	ScaleProduct        string = "ibm-spectrum-scale"
+	ScaleGUIRoute       string = IBMSpectrumScaleGUI
+	ScaleGUIService     string = IBMSpectrumScaleGUI
 )
 
 // allowed keys of the optional cm variables
