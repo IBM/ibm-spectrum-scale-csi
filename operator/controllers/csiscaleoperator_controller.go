@@ -80,7 +80,7 @@ type CSIScaleOperatorReconciler struct {
 
 const MinControllerReplicas = 1
 const (
-	CSIScaleOperatorControllerName = config.CSIScaleOperatorControllerName
+	CSIScaleOperatorControllerName = "CSIScaleOperator"
 )
 
 var restartedAtKey = ""

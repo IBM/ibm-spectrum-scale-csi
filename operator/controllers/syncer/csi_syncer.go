@@ -40,7 +40,6 @@ import (
 )
 
 const (
-	CSIScaleOperatorControllerName       = config.CSIScaleOperatorControllerName
 	socketVolumeName                     = "socket-dir"
 	controllerContainerName              = "ibm-spectrum-scale-csi-operator"
 	provisionerContainerName             = "ibm-spectrum-scale-csi-provisioner"

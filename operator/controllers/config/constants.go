@@ -73,8 +73,6 @@ const (
 	ENVSymDirPath   = "SYMLINK_DIR_PATH"
 	DriverVersion   = "3.0.0"
 	OperatorVersion = "3.0.0"
-	// CSIScaleOperatorControllerName is the name of the controller for CSIScaleOperator
-	CSIScaleOperatorControllerName = "CSIScaleOperator"
 	// Number of replica pods for CSI Sidecar deployment
 	ReplicaCount = int32(2)
 	// Tolerations seconds for the CSI Sidecar deployment
