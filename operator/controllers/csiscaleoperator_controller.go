@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"reflect"
 	"strconv"
@@ -50,7 +51,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	csiLog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -74,16 +75,20 @@ type CSIScaleOperatorReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	//serverVersion string
+	CSIEnvConfig clustersyncer.CSIEnvConfigs
 }
 
 const MinControllerReplicas = 1
+const (
+	CSIScaleOperatorControllerName = "CSIScaleOperator"
+)
 
 var restartedAtKey = ""
 var restartedAtValue = ""
 
-var csiLog = log.Log.WithName("csiscaleoperator_controller")
+//var csiLog = log.Log.WithName("csiscaleoperator_controller")
 
-type reconciler func(instance *csiscaleoperator.CSIScaleOperator) error
+type reconciler func(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error
 
 var crStatus = csiv1.CSIScaleOperatorStatus{}
 
@@ -135,9 +140,9 @@ var watchResources = map[string]map[string]bool{corev1.ResourceConfigMaps.String
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	//_ = log.FromContext(ctx)
 
-	logger := csiLog.WithName("Reconcile")
+	logger := csiLog.FromContext(ctx).WithName("Reconcile")
 	logger.Info("CSI setup started.")
 
 	//setENVIsOpenShift(r)
@@ -182,7 +187,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				Namespace: req.Namespace,
 			},
 		}
-		if err := r.SetStatus(instance); err != nil {
+		if err := r.SetStatus(ctx, instance); err != nil {
 			logger.Error(err, "Assigning values to status sub-resource object failed.")
 		}
 		cr.Status = crStatus
@@ -210,7 +215,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	watchResources[corev1.ResourceConfigMaps.String()][config.EnvVarConfigMap] = true
 
 	logger.Info("Adding Finalizer")
-	if err := r.addFinalizerIfNotPresent(instance); err != nil {
+	if err := r.addFinalizerIfNotPresent(ctx, instance); err != nil {
 		message := fmt.Sprintf("Failed to add the finalizer %s to the CSISCaleOperator instance %s", config.CSIFinalizer, instance.Name)
 		logger.Error(err, message)
 		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -223,7 +228,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if !instance.GetDeletionTimestamp().IsZero() {
 
 		logger.Info("Attempting cleanup of CSI driver")
-		isFinalizerExists, err := r.hasFinalizer(instance)
+		isFinalizerExists, err := r.hasFinalizer(ctx, instance)
 		if err != nil {
 			message := fmt.Sprintf("Failed to get the finalizer %s for the CSISCaleOperator instance %s", config.CSIFinalizer, instance.Name)
 			logger.Error(err, message)
@@ -238,7 +243,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, nil
 		}
 
-		if err := r.deleteClusterRolesAndBindings(instance); err != nil {
+		if err := r.deleteClusterRolesAndBindings(ctx, instance); err != nil {
 			message := fmt.Sprintf("Failed to delete the ClusterRoles and ClusterRoleBindings for the CSISCaleOperator instance %s."+
 				" To get the list of the ClusterRoles and ClusterRoleBindings, use the selector as --selector='product=%s'", instance.Name, config.Product,
 			)
@@ -249,7 +254,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		if err := r.deleteCSIDriver(instance); err != nil {
+		if err := r.deleteCSIDriver(ctx, instance); err != nil {
 			message := fmt.Sprintf("Failed to delete the CSIDriver %s for the CSISCaleOperator instance %s", config.DriverName, instance.Name)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -258,7 +263,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 
-		if err := r.removeFinalizer(instance); err != nil {
+		if err := r.removeFinalizer(ctx, instance); err != nil {
 			message := fmt.Sprintf("Failed to remove the finalizer %s for the CSISCaleOperator instance %s", config.CSIFinalizer, instance.Name)
 			logger.Error(err, message)
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
@@ -270,20 +275,20 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	if pass, err := r.checkPrerequisite(instance); !pass {
+	if pass, err := r.checkPrerequisite(ctx, instance); !pass {
 		logger.Error(err, "Pre-requisite check failed.")
 		return ctrl.Result{}, err
 	} else {
 		logger.Info("Pre-requisite check passed.")
 	}
 
-	cmExists, clustersStanzaModified, err := r.isClusterStanzaModified(req.Namespace, instance)
+	cmExists, clustersStanzaModified, err := r.isClusterStanzaModified(ctx, req.Namespace, instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	if !cmExists || clustersStanzaModified {
-		err = ValidateCRParams(instance)
+		err = ValidateCRParams(ctx, instance)
 		if err != nil {
 			message := "Failed to validate IBM Storage Scale CSI configurations." +
 				" Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
@@ -297,7 +302,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	if len(instance.Spec.Clusters) != 0 {
-		requeAfterDelay, err := r.handleSpectrumScaleConnectors(instance, cmExists, clustersStanzaModified)
+		requeAfterDelay, err := r.handleSpectrumScaleConnectors(ctx, instance, cmExists, clustersStanzaModified)
 		if err != nil {
 			message := "Error in getting connectors"
 			logger.Error(err, message)
@@ -318,7 +323,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		r.reconcileClusterRole,
 		r.reconcileClusterRoleBinding,
 	} {
-		if err = rec(instance); err != nil {
+		if err = rec(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -329,7 +334,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// manifest file is applied.
 	if cmExists && clustersStanzaModified {
 		logger.Info("Some of the cluster fields of CSIScaleOperator instance are changed, so restarting node plugin pods")
-		err = r.handleDriverRestart(instance)
+		err = r.handleDriverRestart(ctx, instance)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -347,18 +352,30 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
 	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
 	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
-
-	if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
-		logger.Info("Checking the clusterType and presence of CNSA")
-		err := getClusterTypeAndCNSAOperatorPresence(config.CNSAOperatorNamespace)
-		if err != nil {
-			logger.Error(err, "Failed to check cluster platform and cnsa presence")
-			return ctrl.Result{}, err
+	// If the setup is a cnsa dev setup, then we are not going to set any clusterTypeData as cnsa operator is not present in the cluster and platform is also local.
+	inClusterScaleGui := os.Getenv("incluster_gui_host")
+	if inClusterScaleGui == "" {
+		if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
+			logger.Info("Checking the clusterType and presence of CNSA")
+			var cnsaOperatorNamespace string
+			if req.Namespace == config.CNSAScaleNamespace {
+				cnsaOperatorNamespace = req.Namespace
+			} else {
+				cnsaOperatorNamespace = config.CNSAOperatorNamespace
+			}
+			err := getClusterTypeAndCNSAOperatorPresence(ctx, cnsaOperatorNamespace)
+			if err != nil {
+				logger.Error(err, "Failed to check cluster platform and cnsa presence")
+				return ctrl.Result{}, err
+			}
 		}
 	}
-
+	logger.Info("CSI environment variables are found successfully", "CSIConfig", r.CSIEnvConfig)
+	/*	// Get CSI env images from the ClusterManagerConfig for cnsa
+		r.GetCSIConfig(ctx)
+	*/
 	// Synchronizing optional configMap
-	cm, err := r.getConfigMap(instance, config.EnvVarConfigMap)
+	cm, err := r.getConfigMap(ctx, instance, config.EnvVarConfigMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
@@ -368,7 +385,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		//this means cm is deleted, so set defaults
 		logger.Info("Optional ConfigMap is not found", "ConfigMap", config.EnvVarConfigMap)
 		// setting default values if values are empty
-		setDefaultDriverEnvValues(cmData)
+		setDefaultDriverEnvValues(ctx, cmData)
 		logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
 	} else {
 		isValidationNeeded := false
@@ -380,14 +397,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		if isValidationNeeded {
 			if err == nil && len(cm.Data) != 0 {
-				cmData = r.parseConfigMap(instance, cm)
+				cmData = r.parseConfigMap(ctx, instance, cm)
 				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
 
 			} else {
 				cmData = map[string]string{}
 				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.EnvVarConfigMap)
 				// setting default values if values are empty
-				setDefaultDriverEnvValues(cmData)
+				setDefaultDriverEnvValues(ctx, cmData)
 				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
 			}
 		}
@@ -411,7 +428,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	//For first pass handle primary FS and fileset
 	if !cmExists && !ifPrimaryDisable {
-		requeAfterDelay, err := r.handlePrimaryFSandFileset(instance)
+		requeAfterDelay, err := r.handlePrimaryFSandFileset(ctx, instance)
 		if err != nil {
 			if requeAfterDelay == 0 {
 				return ctrl.Result{}, err
@@ -422,7 +439,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Synchronizing node/driver daemonset
-	CGPrefix := r.GetConsistencyGroupPrefix(instance)
+	CGPrefix := r.GetConsistencyGroupPrefix(ctx, instance)
 
 	if instance.Spec.CGPrefix == "" {
 		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
@@ -440,7 +457,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	}
 
-	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData)
+	csiNodeSyncer := clustersyncer.GetCSIDaemonsetSyncer(ctx, r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, CGPrefix, cmData, r.CSIEnvConfig)
 	if err := syncer.Sync(context.TODO(), csiNodeSyncer, nil); err != nil {
 		message := "Synchronization of node/driver " + config.GetNameForResource(config.CSINode, instance.Name) + " DaemonSet failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -458,11 +475,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// volNamePrefix for provisioner sidecar
 	volNamePrefix := cmData[config.EnvVolNamePrefixKey]
 	// Synchronizing attacher deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
+	if err := r.removeDeprecatedStatefulset(ctx, instance, config.GetNameForResource(config.CSIControllerAttacher, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	csiControllerSyncer := clustersyncer.GetAttacherSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	csiControllerSyncer := clustersyncer.GetAttacherSyncer(ctx, r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, r.CSIEnvConfig)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerAttacher, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -474,11 +491,11 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerAttacher, instance.Name)))
 
 	// Synchronizing provisioner deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
+	if err := r.removeDeprecatedStatefulset(ctx, instance, config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, volNamePrefix)
+	csiControllerSyncerProvisioner := clustersyncer.GetProvisionerSyncer(ctx, r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, volNamePrefix, r.CSIEnvConfig)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerProvisioner, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerProvisioner, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -490,10 +507,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerProvisioner, instance.Name)))
 
 	// Synchronizing snapshotter deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
+	if err := r.removeDeprecatedStatefulset(ctx, instance, config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	csiControllerSyncerSnapshotter := clustersyncer.GetSnapshotterSyncer(ctx, r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, r.CSIEnvConfig)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerSnapshotter, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -505,10 +522,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerSnapshotter, instance.Name)))
 
 	// Synchronizing resizer deployment
-	if err := r.removeDeprecatedStatefulset(instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
+	if err := r.removeDeprecatedStatefulset(ctx, instance, config.GetNameForResource(config.CSIControllerResizer, instance.Name)); err != nil {
 		return ctrl.Result{}, err
 	}
-	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+	csiControllerSyncerResizer := clustersyncer.GetResizerSyncer(ctx, r.Client, r.Scheme, instance, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, r.CSIEnvConfig)
 	if err := syncer.Sync(context.TODO(), csiControllerSyncerResizer, nil); err != nil {
 		message := "Synchronization of " + config.GetNameForResource(config.CSIControllerResizer, instance.Name) + " Deployment failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -520,7 +537,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info(fmt.Sprintf("Synchronization of %s Deployment is successful", config.GetNameForResource(config.CSIControllerResizer, instance.Name)))
 
 	// Synchronizing cluster configMap
-	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(r.Client, r.Scheme, instance)
+	csiConfigmapSyncer := clustersyncer.CSIConfigmapSyncer(ctx, r.Client, r.Scheme, instance)
 	if err := syncer.Sync(context.TODO(), csiConfigmapSyncer, nil); err != nil {
 		message := "Synchronization of " + config.CSIConfigMap + " ConfigMap failed for the CSISCaleOperator instance " + instance.Name
 		logger.Error(err, message)
@@ -543,7 +560,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if len(instance.Spec.Clusters) != 0 {
 		logger.Info("Checking GUI password expiry")
 		// For validating gui password expires in every 24hours.
-		passwordExipredClusters := r.listGUIPasswdExpiredClusters(instance, instance.Spec.Clusters)
+		passwordExipredClusters := r.listGUIPasswdExpiredClusters(ctx, instance, instance.Spec.Clusters)
 		if len(passwordExipredClusters) > 0 {
 			message := fmt.Sprintf("Either the username/password is incorrect or the password has been expired for the Scale GUI clusterIds: %v", passwordExipredClusters)
 			logger.Info(message)
@@ -560,8 +577,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 // handleDriverRestart gets a driver daemonset from the cluster and
 // restarts driver pods, returns error if there is any.
-func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("handleDriverRestart")
+func (r *CSIScaleOperatorReconciler) handleDriverRestart(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("handleDriverRestart")
 	var err error
 	var daemonSet *appsv1.DaemonSet
 	daemonSet, err = r.getNodeDaemonSet(instance)
@@ -600,8 +617,8 @@ func (r *CSIScaleOperatorReconciler) handleDriverRestart(instance *csiscaleopera
 // It returns 1st value (cmExists) which indicates if clusters configmap exists,
 // 2nd value (clustersStanzaModified) which idicates whether clusters stanza is
 // modified in case the configmap exists, and 3rd value as an error if any.
-func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, instance *csiscaleoperator.CSIScaleOperator) (bool, bool, error) {
-	logger := csiLog.WithName("isClusterStanzaModified")
+func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(ctx context.Context, namespace string, instance *csiscaleoperator.CSIScaleOperator) (bool, bool, error) {
+	logger := csiLog.FromContext(ctx).WithName("isClusterStanzaModified")
 	cmExists := false
 	clustersStanzaModified := false
 	currentCMDataString := ""
@@ -649,7 +666,7 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 		if clustersStanzaModified {
 			logger.Info("The clusters stanza is modified ")
 			changedClusters = make(map[string]bool)
-			err := r.updateChangedClusters(instance, currentCMDataString, instance.Spec.Clusters)
+			err := r.updateChangedClusters(ctx, instance, currentCMDataString, instance.Spec.Clusters)
 			if err != nil {
 				return cmExists, clustersStanzaModified, err
 			}
@@ -662,9 +679,8 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(namespace string, i
 // error if primary stanza of the primary cluster is also modified.
 // It also deletes unnecessary cluster entries from connector map, for
 // which clusterID is present in current configmap data but not in new CR data.
-func (r *CSIScaleOperatorReconciler) updateChangedClusters(instance *csiscaleoperator.CSIScaleOperator, currentCMcmString string, newCRClusters []csiv1.CSICluster) error {
-	logger := csiLog.WithName("updateChangedClusters")
-
+func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, currentCMcmString string, newCRClusters []csiv1.CSICluster) error {
+	logger := csiLog.FromContext(ctx).WithName("updateChangedClusters")
 	currentCMclusters := []csiv1.CSICluster{}
 	prefix := "{\"" + config.CSIConfigMap + ".json\":\"{\"clusters\":"
 	postfix := "}\"}"
@@ -757,8 +773,7 @@ func (r *CSIScaleOperatorReconciler) getClusterByID(id string, clusters []csiv1.
 // SetupWithManager sets up the controller with the Manager.
 func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	logger := csiLog.WithName("SetupWithManager")
-
+	logger := csiLog.Log.WithName("SetupWithManager")
 	logger.Info("Running IBM Storage Scale CSI operator", "version", config.OperatorVersion)
 	logger.Info("Setting up the controller with the manager.")
 
@@ -822,7 +837,8 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	predicateFuncs := func(resourceKind string) predicate.Funcs {
-		logger := csiLog.WithName("predicateFuncs")
+		logger := csiLog.Log.WithName("predicateFuncs")
+
 		return predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if isCSIResource(e.Object.GetName(), resourceKind) {
@@ -911,11 +927,10 @@ func Contains(list []string, s string) bool {
 	return false
 }
 
-func (r *CSIScaleOperatorReconciler) hasFinalizer(instance *csiscaleoperator.CSIScaleOperator) (bool, error) {
+func (r *CSIScaleOperatorReconciler) hasFinalizer(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) (bool, error) {
 
-	logger := csiLog.WithName("hasFinalizer")
-
-	accessor, finalizerName, err := r.getAccessorAndFinalizerName(instance)
+	logger := csiLog.FromContext(ctx).WithName("hasFinalizer")
+	accessor, finalizerName, err := r.getAccessorAndFinalizerName(ctx, instance)
 	if err != nil {
 		logger.Error(err, "No finalizer found")
 		return false, err
@@ -936,10 +951,9 @@ func removeListEntry(list []string, s string) []string {
 	return newList
 }
 
-func (r *CSIScaleOperatorReconciler) removeFinalizer(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("removeFinalizer")
-
-	accessor, finalizerName, err := r.getAccessorAndFinalizerName(instance)
+func (r *CSIScaleOperatorReconciler) removeFinalizer(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("removeFinalizer")
+	accessor, finalizerName, err := r.getAccessorAndFinalizerName(ctx, instance)
 	if err != nil {
 		logger.Error(err, "Couldn't get finalizer")
 		return err
@@ -955,10 +969,9 @@ func (r *CSIScaleOperatorReconciler) removeFinalizer(instance *csiscaleoperator.
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) addFinalizerIfNotPresent(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("addFinalizerIfNotPresent")
-
-	accessor, finalizerName, err := r.getAccessorAndFinalizerName(instance)
+func (r *CSIScaleOperatorReconciler) addFinalizerIfNotPresent(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("addFinalizerIfNotPresent")
+	accessor, finalizerName, err := r.getAccessorAndFinalizerName(ctx, instance)
 	if err != nil {
 		logger.Error(err, "Failed to get finalizer name")
 		return err
@@ -977,9 +990,8 @@ func (r *CSIScaleOperatorReconciler) addFinalizerIfNotPresent(instance *csiscale
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) getAccessorAndFinalizerName(instance *csiscaleoperator.CSIScaleOperator) (metav1.Object, string, error) {
-	logger := csiLog.WithName("getAccessorAndFinalizerName")
-
+func (r *CSIScaleOperatorReconciler) getAccessorAndFinalizerName(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) (metav1.Object, string, error) {
+	logger := csiLog.FromContext(ctx).WithName("getAccessorAndFinalizerName")
 	finalizerName := config.CSIFinalizer
 
 	accessor, err := meta.Accessor(instance)
@@ -992,17 +1004,16 @@ func (r *CSIScaleOperatorReconciler) getAccessorAndFinalizerName(instance *csisc
 	return accessor, finalizerName, nil
 }
 
-func (r *CSIScaleOperatorReconciler) deleteClusterRolesAndBindings(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("deleteClusterRolesAndBindings")
-
+func (r *CSIScaleOperatorReconciler) deleteClusterRolesAndBindings(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("deleteClusterRolesAndBindings")
 	logger.Info("Calling deleteClusterRoleBindings()")
-	if err := r.deleteClusterRoleBindings(instance); err != nil {
+	if err := r.deleteClusterRoleBindings(ctx, instance); err != nil {
 		logger.Error(err, "Deletion of ClusterRoleBindings failed")
 		return err
 	}
 
 	logger.Info("Calling deleteClusterRoles()")
-	if err := r.deleteClusterRoles(instance); err != nil {
+	if err := r.deleteClusterRoles(ctx, instance); err != nil {
 		logger.Error(err, "Deletion of ClusterRoles failed")
 		return err
 	}
@@ -1011,8 +1022,8 @@ func (r *CSIScaleOperatorReconciler) deleteClusterRolesAndBindings(instance *csi
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) deleteClusterRoles(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("deleteClusterRoles")
+func (r *CSIScaleOperatorReconciler) deleteClusterRoles(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("deleteClusterRoles")
 
 	logger.Info("Deleting ClusterRoles")
 	clusterRoles := r.getClusterRoles(instance)
@@ -1043,8 +1054,8 @@ func (r *CSIScaleOperatorReconciler) deleteClusterRoles(instance *csiscaleoperat
 
 // reconcileCSIDriver creates a new CSIDriver object in the cluster.
 // It returns nil if CSIDriver object is created successfully or it already exists.
-func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("reconcileCSIDriver").WithValues("Name", config.DriverName)
+func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("reconcileCSIDriver").WithValues("Name", config.DriverName)
 	logger.Info("Creating a new CSIDriver resource.")
 
 	cd := instance.GenerateCSIDriver()
@@ -1078,8 +1089,8 @@ func (r *CSIScaleOperatorReconciler) reconcileCSIDriver(instance *csiscaleoperat
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("reconcileServiceAccount")
+func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("reconcileServiceAccount")
 	logger.Info("Creating the required ServiceAccount resources.")
 
 	// controller := instance.GenerateControllerServiceAccount()
@@ -1148,14 +1159,14 @@ func (r *CSIScaleOperatorReconciler) reconcileServiceAccount(instance *csiscaleo
 
 			if nodeServiceAccountName == sa.Name {
 
-				updateErr := r.updateCSINodeDaemonSet(instance)
+				updateErr := r.updateCSINodeDaemonSet(ctx, instance)
 				if updateErr != nil {
 					return updateErr
 				}
 				// TODO: Should restart sidecar pods if respective ServiceAccount is created afterwards?
 			} else if attacherServiceAccountName == sa.Name || provisionerServiceAccountName == sa.Name || snapshotterServiceAccountName == sa.Name || resizerServiceAccountName == sa.Name {
 
-				updateErr := r.updateCSISideCars(instance, sa.Name)
+				updateErr := r.updateCSISideCars(ctx, instance, sa.Name)
 				if updateErr != nil {
 					return updateErr
 				}
@@ -1210,8 +1221,8 @@ func (r *CSIScaleOperatorReconciler) getDeployment(instance *csiscaleoperator.CS
 	return deployment, err
 }
 
-func (r *CSIScaleOperatorReconciler) updateCSISideCars(instance *csiscaleoperator.CSIScaleOperator, serviceAccountName string) error {
-	logger := csiLog.WithName("updateCSISideCars")
+func (r *CSIScaleOperatorReconciler) updateCSISideCars(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, serviceAccountName string) error {
+	logger := csiLog.FromContext(ctx).WithName("updateCSISideCars")
 	logger.Info("Restarting Sidecars when the ServiceAccount is updated.")
 	sideCarName, err := r.getDeployment(instance, config.ResourceName(serviceAccountName))
 	if err != nil && errors.IsNotFound(err) {
@@ -1243,8 +1254,8 @@ func (r *CSIScaleOperatorReconciler) updateCSISideCars(instance *csiscaleoperato
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) updateCSINodeDaemonSet(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("updateCSINodeDaemonSet")
+func (r *CSIScaleOperatorReconciler) updateCSINodeDaemonSet(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("updateCSINodeDaemonSet")
 	logger.Info("Restarting NodeDaemonSet when the ServiceAccount is updated.")
 	nodeDaemonSet, err := r.getNodeDaemonSet(instance)
 	if err != nil && errors.IsNotFound(err) {
@@ -1365,8 +1376,8 @@ func (r *CSIScaleOperatorReconciler) getControllerDeployment(instance *csiscaleo
 }
 */
 
-func (r *CSIScaleOperatorReconciler) reconcileClusterRole(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("reconcileClusterRole")
+func (r *CSIScaleOperatorReconciler) reconcileClusterRole(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("reconcileClusterRole")
 	logger.Info("Creating the required ClusterRole resources.")
 
 	clusterRoles := r.getClusterRoles(instance)
@@ -1452,8 +1463,8 @@ func (r *CSIScaleOperatorReconciler) getClusterRoleBindings(instance *csiscaleop
 	}
 }
 
-func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("reconcileClusterRoleBinding")
+func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("reconcileClusterRoleBinding")
 	logger.Info("Creating the required ClusterRoleBinding resources.")
 
 	clusterRoleBindings := r.getClusterRoleBindings(instance)
@@ -1501,8 +1512,8 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRoleBinding(instance *csisc
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("deleteClusterRoleBindings")
+func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("deleteClusterRoleBindings")
 
 	logger.Info("Deleting ClusterRoleBindings")
 	clusterRoleBindings := r.getClusterRoleBindings(instance)
@@ -1537,9 +1548,9 @@ func (r *CSIScaleOperatorReconciler) deleteClusterRoleBindings(instance *csiscal
 // ControllerReady: True/False
 // NodeReady: True/False
 // Version: Driver version picked from ibm-spectrum-scale-csi\controllers\config\constants.go
-func (r *CSIScaleOperatorReconciler) SetStatus(instance *csiscaleoperator.CSIScaleOperator) error {
+func (r *CSIScaleOperatorReconciler) SetStatus(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
 
-	logger := csiLog.WithName("SetStatus")
+	logger := csiLog.FromContext(ctx).WithName("SetStatus")
 	logger.Info("Assigning values to status sub-resource object.")
 
 	/*
@@ -1594,7 +1605,7 @@ func (r *CSIScaleOperatorReconciler) SetStatus(instance *csiscaleoperator.CSISca
 
 /*
 func (r *CSIScaleOperatorReconciler) isControllerReady(controller *appsv1.Deployment) bool {
-	logger := csiLog.WithName("isControllerReady")
+	logger := csiLog.FromContext(ctx).WithName("isControllerReady")
 	logMessage := "Controller status"
 	logKey := "ReadyReplicas == MinControllerReplicas"
 	logValueTrue := "True"
@@ -1618,7 +1629,7 @@ func (r *CSIScaleOperatorReconciler) isNodeReady(node *appsv1.DaemonSet) bool {
 /*
 func (r *CSIScaleOperatorReconciler) areAllPodImagesSynced(controllerDeployment *appsv1.Deployment, controllerPod *corev1.Pod) bool {
 
-	logger := csiLog.WithName("areAllPodImagesSynced")
+	logger := csiLog.FromContext(ctx).WithName("areAllPodImagesSynced")
 	statefulSetContainers := controllerDeployment.Spec.Template.Spec.Containers
 	podContainers := controllerPod.Spec.Containers
 	if len(statefulSetContainers) != len(podContainers) {
@@ -1649,8 +1660,8 @@ func (r *CSIScaleOperatorReconciler) areAllPodImagesSynced(controllerDeployment 
 	return false
 }*/
 
-func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("deleteCSIDriver")
+func (r *CSIScaleOperatorReconciler) deleteCSIDriver(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("deleteCSIDriver")
 
 	logger.Info("Deleting CSIDriver")
 	csiDriver := instance.GenerateCSIDriver()
@@ -1681,7 +1692,7 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.
 // OpenShift cluster, an environment variable is set, which is later
 // used to reconcile resources needed only for OpenShift.
 /*func setENVIsOpenShift(r *CSIScaleOperatorReconciler) {
-	logger := csiLog.WithName("setENVIsOpenShift")
+	logger := csiLog.FromContext(ctx).WithName("setENVIsOpenShift")
 	_, isOpenShift := os.LookupEnv(config.ENVIsOpenShift)
 	if !isOpenShift {
 		service := &corev1.Service{}
@@ -1702,9 +1713,8 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(instance *csiscaleoperator.
 // GetConsistencyGroupPrefix returns a universal unique ideintiier(UUID) of string format.
 // For Redhat Openshift Cluster Platform, Cluster ID as string is returned.
 // For Vanilla kubernetes cluster, generated UUID is returned.
-func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscaleoperator.CSIScaleOperator) string {
-	logger := csiLog.WithName("GetConsistencyGroupPrefix")
-
+func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) string {
+	logger := csiLog.FromContext(ctx).WithName("GetConsistencyGroupPrefix")
 	logger.Info("Checking if consistency group prefix is passed in CSIScaleOperator specs.")
 	if instance.Spec.CGPrefix != "" {
 		logger.Info("Consistency group prefix found in CSIScaleOperator specs.")
@@ -1716,7 +1726,7 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscal
 
 	if clusterTypeData[config.ENVClusterConfigurationType] != config.ENVClusterTypeOpenshift {
 		logger.Info("Cluster is a Kubernetes Platform.")
-		UUID := r.GenerateUUID()
+		UUID := r.GenerateUUID(ctx)
 		return UUID.String()
 	}
 
@@ -1728,7 +1738,7 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscal
 	}, CV)
 	if err != nil {
 		logger.Info("Unable to fetch the cluster scoped resource.")
-		UUID := r.GenerateUUID()
+		UUID := r.GenerateUUID(ctx)
 		return UUID.String()
 	}
 	UUID := string(CV.Spec.ClusterID)
@@ -1737,15 +1747,15 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(instance *csiscal
 }
 
 // GenerateUUID returns a new random UUID.
-func (r *CSIScaleOperatorReconciler) GenerateUUID() uuid.UUID {
-	logger := csiLog.WithName("GenerateUUID")
+func (r *CSIScaleOperatorReconciler) GenerateUUID(ctx context.Context) uuid.UUID {
+	logger := csiLog.FromContext(ctx).WithName("GenerateUUID")
 	logger.Info("Generating a unique cluster ID.")
 	UUID := uuid.New()
 	return UUID
 }
 
-func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csiscaleoperator.CSIScaleOperator, name string) error {
-	logger := csiLog.WithName("removeDeprecatedStatefulset").WithValues("Name", name)
+func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, name string) error {
+	logger := csiLog.FromContext(ctx).WithName("removeDeprecatedStatefulset").WithValues("Name", name)
 	logger.Info("Removing deprecated statefulset resource from the cluster.")
 
 	STS := &appsv1.StatefulSet{}
@@ -1777,9 +1787,9 @@ func (r *CSIScaleOperatorReconciler) removeDeprecatedStatefulset(instance *csisc
 	return nil
 }
 
-func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperator.CSIScaleOperator) (bool, error) {
+func (r *CSIScaleOperatorReconciler) checkPrerequisite(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) (bool, error) {
 
-	logger := csiLog.WithName("checkPrerequisite")
+	logger := csiLog.FromContext(ctx).WithName("checkPrerequisite")
 	logger.Info("Checking pre-requisites.")
 
 	// get list of secrets from custom resource
@@ -1800,7 +1810,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 
 	if len(secrets) != 0 {
 		for _, secret := range secrets {
-			if exists, err := r.resourceExists(instance, secret, string(config.Secret)); !exists {
+			if exists, err := r.resourceExists(ctx, instance, secret, string(config.Secret)); !exists {
 				return false, err
 			}
 			logger.Info(fmt.Sprintf("Secret resource %s found.", secret))
@@ -1809,7 +1819,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 
 	if len(configMaps) != 0 {
 		for _, configMap := range configMaps {
-			if exists, err := r.resourceExists(instance, configMap, string(config.ConfigMap)); !exists {
+			if exists, err := r.resourceExists(ctx, instance, configMap, string(config.ConfigMap)); !exists {
 				return false, err
 			}
 			logger.Info(fmt.Sprintf("ConfigMap resource %s found.", configMap))
@@ -1819,9 +1829,8 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 	return true, nil
 }
 
-func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.CSIScaleOperator, name string, kind string) (bool, error) {
-
-	logger := csiLog.WithName("resourceExists").WithValues("Kind", kind, "Name", name)
+func (r *CSIScaleOperatorReconciler) resourceExists(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, name string, kind string) (bool, error) {
+	logger := csiLog.FromContext(ctx).WithName("resourceExists").WithValues("Kind", kind, "Name", name)
 	logger.Info("Checking resource exists")
 
 	var err error
@@ -1861,9 +1870,9 @@ func (r *CSIScaleOperatorReconciler) resourceExists(instance *csiscaleoperator.C
 }
 
 // newConnector creates and return a new connector to make REST calls for the passed cluster
-func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSIScaleOperator,
+func (r *CSIScaleOperatorReconciler) newConnector(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator,
 	cluster csiv1.CSICluster) (connectors.SpectrumScaleConnector, error) {
-	logger := csiLog.WithName("newConnector")
+	logger := csiLog.FromContext(ctx).WithName("newConnector")
 	logger.Info("Creating new IBM Storage Scale Connector for cluster with", "ID", cluster.Id)
 
 	var rest *connectors.SpectrumRestV2
@@ -1951,17 +1960,38 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 		if guiPort == 0 {
 			guiPort = settings.DefaultGuiPort
 		}
+		// For CNSA Dev setup, if the GUI host is set to localroute env
+		// use exposed route
+		inClusterScaleGui := os.Getenv("incluster_gui_host")
+		if inClusterScaleGui != "" && isLocalGUIHost(guiHost) {
+			guiHost = inClusterScaleGui
+			guiPort = 443
+		}
+		//
+
 		endpoint := fmt.Sprintf("%s://%s:%d/", settings.GuiProtocol, guiHost, guiPort)
 		rest.Endpoint = append(rest.Endpoint, endpoint)
 	}
 	return rest, nil
 }
 
+// isLocalGUIHost returns true if the host is a GUI host of a local cluster
+// and returns false if the host is a GUI host of a remote cluster.
+func isLocalGUIHost(host string) bool {
+	var guiRoutePrefix = config.ScaleGUIRoute + "-" + config.ScaleProduct
+	// the GUI service
+	var guiService = config.ScaleGUIService
+	if strings.HasPrefix(host, guiRoutePrefix) || strings.HasPrefix(host, guiService) {
+		return true
+	}
+	return false
+}
+
 // handleSpectrumScaleConnectors gets the connectors for all the clusters in driver
 // manifest and sets those in scaleConnMap also checks if GUI is reachable and
 // cluster ID is valid.
-func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) (time.Duration, error) {
-	logger := csiLog.WithName("handleSpectrumScaleConnectors")
+func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, cmExists bool, clustersStanzaModified bool) (time.Duration, error) {
+	logger := csiLog.FromContext(ctx).WithName("handleSpectrumScaleConnectors")
 	logger.Info("Checking IBM Storage Scale connectors")
 
 	//scaleGuiSecretChanged := false
@@ -1984,7 +2014,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 			//if it exists but cluster stanza is modified and this cluster
 			//data is changed
 			if !connectorExists || (clustersStanzaModified && isClusterChanged) {
-				connector, err := r.newConnector(instance, cluster)
+				connector, err := r.newConnector(ctx, instance, cluster)
 				if err != nil {
 					return requeAfterDelay, err
 				}
@@ -2056,8 +2086,8 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(instance *csi
 // If primary fileset does not exist, it is created and also if a directory
 // to store symlinks is created if it does not exist. It returns the absolute path of symlink
 // directory and error if there is any.
-func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscaleoperator.CSIScaleOperator) (time.Duration, error) {
-	logger := csiLog.WithName("handlePrimaryFSandFileset")
+func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) (time.Duration, error) {
+	logger := csiLog.FromContext(ctx).WithName("handlePrimaryFSandFileset")
 	requeAfterDelay := time.Duration(0)
 	primaryReference := r.getPrimaryCluster(instance)
 	if primaryReference == nil {
@@ -2136,7 +2166,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 
 	fsMountPoint := fsMountInfo.MountPoint
 
-	fsetLinkPath, err := r.createPrimaryFileset(instance, sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit)
+	fsetLinkPath, err := r.createPrimaryFileset(ctx, instance, sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit)
 	if err != nil {
 		message := fmt.Sprintf("Failed to create the primary fileset %s on the primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2178,7 +2208,7 @@ func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(instance *csiscal
 	}
 
 	// Create directory where volume symlinks will reside
-	symlinkDirPath, _, err := r.createSymlinksDir(instance, scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
+	symlinkDirPath, _, err := r.createSymlinksDir(ctx, instance, scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
 	if err != nil {
 		message := fmt.Sprintf("Failed to create the directory %s on the primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
 		logger.Error(err, message)
@@ -2203,10 +2233,9 @@ func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperato
 // where it is linked. If primary fileset exists and is already linked,
 // the link path is returned. If primary fileset already exists and not linked,
 // it is linked and link path is returned.
-func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
+func (r *CSIScaleOperatorReconciler) createPrimaryFileset(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
 	fsMountPoint string, filesetName string, inodeLimit string) (string, error) {
-
-	logger := csiLog.WithName("createPrimaryFileset")
+	logger := csiLog.FromContext(ctx).WithName("createPrimaryFileset")
 	logger.Info("Creating primary fileset", " primaryFS", fsNameOnOwningCluster,
 		"mount point", fsMountPoint, "filesetName", filesetName)
 
@@ -2277,10 +2306,9 @@ func (r *CSIScaleOperatorReconciler) createPrimaryFileset(instance *csiscaleoper
 
 // createSymlinksDir creates a .volumes directory on the fileset path fsetLinkPath,
 // and returns absolute, relative paths and error if there is any.
-func (r *CSIScaleOperatorReconciler) createSymlinksDir(instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fs string, fsMountPath string,
+func (r *CSIScaleOperatorReconciler) createSymlinksDir(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fs string, fsMountPath string,
 	fsetLinkPath string) (string, string, error) {
-
-	logger := csiLog.WithName("createSymlinkPath")
+	logger := csiLog.FromContext(ctx).WithName("createSymlinkPath")
 	logger.Info("Creating a directory for symlinks", "directory", config.SymlinkDir,
 		"filesystem", fs, "fsMountPath", fsMountPath, "filesetlinkpath", fsetLinkPath)
 
@@ -2312,8 +2340,8 @@ func getSymlinkDirPath(fsetLinkPath string, fsMountPath string) (string, string)
 }
 
 // ValidateCRParams validates driver configuration parameters and returns error if any validation fails
-func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
-	logger := csiLog.WithName("ValidateCRParams")
+func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) error {
+	logger := csiLog.FromContext(ctx).WithName("ValidateCRParams")
 	logger.Info(fmt.Sprintf("Validating the IBM Storage Scale CSI configurations of the resource %s/%s", instance.Kind, instance.Name))
 
 	if len(instance.Spec.Clusters) == 0 {
@@ -2388,9 +2416,8 @@ func ValidateCRParams(instance *csiscaleoperator.CSIScaleOperator) error {
 
 // getConfigMap fetches data from the "ibm-spectrum-scale-csi-config" configmap from the cluster
 // and returns a configmap reference.
-func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
-
-	logger := csiLog.WithName("getConfigMap").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
+func (r *CSIScaleOperatorReconciler) getConfigMap(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, name string) (*corev1.ConfigMap, error) {
+	logger := csiLog.FromContext(ctx).WithName("getConfigMap").WithValues("Kind", corev1.ResourceConfigMaps, "Name", name)
 	logger.Info("Reading optional CSI configmap resource from the cluster.")
 
 	cm := &corev1.ConfigMap{}
@@ -2412,9 +2439,8 @@ func (r *CSIScaleOperatorReconciler) getConfigMap(instance *csiscaleoperator.CSI
 }
 
 // parseConfigMap parses the data in the configMap in the desired format(VAR_DRIVER_ENV_NAME: VALUE to ENV_NAME: VALUE).
-func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) map[string]string {
-
-	logger := csiLog.WithName("parseConfigMap").WithValues("Name", config.EnvVarConfigMap)
+func (r *CSIScaleOperatorReconciler) parseConfigMap(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, cm *corev1.ConfigMap) map[string]string {
+	logger := csiLog.FromContext(ctx).WithName("parseConfigMap").WithValues("Name", config.EnvVarConfigMap)
 	logger.Info("Parsing the data from the optional configmap.", "configmap", config.EnvVarConfigMap)
 
 	validEnvMap := map[string]string{}
@@ -2437,26 +2463,26 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 			case config.EnvPrimaryFilesystemKeyPrefixed:
 				validateEnvVarValue(config.EnvPrimaryFilesystemValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
-				validateVolNamePrefix(keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
+				validateVolNamePrefix(ctx, keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
-				validateMaxUnavailableValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateMaxUnavailableValue(ctx, keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.HostNetworkKey:
-				validateHostNetworkValue(config.EnvHostNetworkValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateHostNetworkValue(ctx, config.EnvHostNetworkValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.DriverCPULimits:
-				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateCPULimitsValue(ctx, keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.DriverMemoryLimits:
-				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateMemoryLimitsValue(ctx, keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.SidecarCPULimits:
-				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateCPULimitsValue(ctx, keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.SidecarMemoryLimits:
-				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+				validateMemoryLimitsValue(ctx, keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
 			invalidEnvKeys = append(invalidEnvKeys, key)
 		}
 	}
 	// setting default values if values are empty/wrong
-	setDefaultDriverEnvValues(validEnvMap)
+	setDefaultDriverEnvValues(ctx, validEnvMap)
 	logger.Info("Final accepted value ", "from the optional configmap", validEnvMap)
 	var message string = ""
 	if len(invalidEnvKeys) > 0 && len(invalidEnvValueMap) > 0 {
@@ -2496,8 +2522,8 @@ func RaiseCSOEvent(instance runtime.Object, rec record.EventRecorder,
 	rec.Event(instance, eventType, reason, msg)
 }
 
-func validateMaxUnavailableValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateMaxUnavailableValue")
+func validateMaxUnavailableValue(ctx context.Context, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.FromContext(ctx).WithName("validateMaxUnavailableValue")
 	logger.Info("Validating daemonset maxunavailable input ", "inputMaxunavailable", value)
 	input := strings.TrimSuffix(value, "%")
 	if s, err := strconv.Atoi(input); err == nil && (s > 0 && s < 100) && strings.HasSuffix(value, "%") {
@@ -2509,8 +2535,8 @@ func validateMaxUnavailableValue(key string, value string, data map[string]strin
 	}
 }
 
-func validateVolNamePrefix(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateVolumeNamePrefix")
+func validateVolNamePrefix(ctx context.Context, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.FromContext(ctx).WithName("validateVolumeNamePrefix")
 	logger.Info("Validating volume name prefix input ", "volumeNamePrefix", value)
 
 	if len(value) > 2 && len(value) < 6 && isLetter(value) {
@@ -2531,8 +2557,8 @@ func isLetter(s string) bool {
 	return true
 }
 
-func validateHostNetworkValue(inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateHostNetworkValue")
+func validateHostNetworkValue(ctx context.Context, inputSlice []string, key, value string, envMap, invalidEnvValue map[string]string) {
+	logger := csiLog.FromContext(ctx).WithName("validateHostNetworkValue")
 	logger.Info("Validating host network input", "inputHostNetwork", value)
 
 	if containsStringInSlice(inputSlice, strings.ToUpper(value)) {
@@ -2543,11 +2569,11 @@ func validateHostNetworkValue(inputSlice []string, key, value string, envMap, in
 }
 
 // validateCPULimitsValue: To set only accepted CPU limit from configMap
-func validateCPULimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateCPULimitsValue")
+func validateCPULimitsValue(ctx context.Context, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.FromContext(ctx).WithName("validateCPULimitsValue")
 	logger.Info("Validating CPU limits Value input ", "cpuLimits", value)
 
-	isResourceRequestValid, err := checkMinResourceRequirement(value, config.PodsCPULimitsLowerValue)
+	isResourceRequestValid, err := checkMinResourceRequirement(ctx, value, config.PodsCPULimitsLowerValue)
 	if isResourceRequestValid {
 		logger.Info("Validation of CPU limits Value successful ", "cpuLimits", value)
 		data[key] = value
@@ -2558,11 +2584,11 @@ func validateCPULimitsValue(key string, value string, data map[string]string, in
 }
 
 // validateMemoryLimitsValue: To set only accepted memory limit from configMap
-func validateMemoryLimitsValue(key string, value string, data map[string]string, invalidEnvValue map[string]string) {
-	logger := csiLog.WithName("validateMemoryLimitsValue")
+func validateMemoryLimitsValue(ctx context.Context, key string, value string, data map[string]string, invalidEnvValue map[string]string) {
+	logger := csiLog.FromContext(ctx).WithName("validateMemoryLimitsValue")
 	logger.Info("Validating memory limits Value input ", "memoryLimits", value)
 
-	isResourceRequestValid, err := checkMinResourceRequirement(value, config.PodsMemoryLimitsLowerValue)
+	isResourceRequestValid, err := checkMinResourceRequirement(ctx, value, config.PodsMemoryLimitsLowerValue)
 	if isResourceRequestValid {
 		logger.Info("Validation of memomry limits Value successful ", "memoryLimits", value)
 		data[key] = value
@@ -2574,8 +2600,8 @@ func validateMemoryLimitsValue(key string, value string, data map[string]string,
 
 // checkMinResourceRequirement: Requested resource must be greater or equal to it's lower limit.
 // Return true when requestedresource is greater than min required resource
-func checkMinResourceRequirement(resourceRequested string, minResourceRequired string) (bool, error) {
-	logger := csiLog.WithName("checkMinResourceRequirement")
+func checkMinResourceRequirement(ctx context.Context, resourceRequested string, minResourceRequired string) (bool, error) {
+	logger := csiLog.FromContext(ctx).WithName("checkMinResourceRequirement")
 	logger.Info("Validating resource limit requirement ", "resourceRequested", resourceRequested, "minResourceRequired", minResourceRequired)
 	var minResourceSizeMilli, resourceRequestedMilliValue int64
 	minResourceSize, err := resource.ParseQuantity(minResourceRequired)
@@ -2618,8 +2644,8 @@ func validateEnvVarValue(inputSlice []string, key string, value string, validEnv
 	}
 }
 
-func setDefaultDriverEnvValues(envMap map[string]string) {
-	logger := csiLog.WithName("setDefaultDriverEnvValues")
+func setDefaultDriverEnvValues(ctx context.Context, envMap map[string]string) {
+	logger := csiLog.FromContext(ctx).WithName("setDefaultDriverEnvValues")
 	// Set default LogLevel when it is not present in envMap
 	if _, ok := envMap[config.EnvLogLevelKey]; !ok {
 		logger.Info("logger level is empty or incorrect.", "Defaulting logLevel to", config.EnvLogLevelDefaultValue)
@@ -2652,7 +2678,7 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	}
 	// Set default DiscoverCGFileset when it is not present in envMap
 	if _, ok := envMap[config.EnvDiscoverCGFilesetKey]; !ok {
-		envDiscoverCGFilesetDefaultValue := getDiscoverCGFilesetDefaultValue()
+		envDiscoverCGFilesetDefaultValue := getDiscoverCGFilesetDefaultValue(ctx)
 		logger.Info("DiscoverCGFileset is empty or incorrect.", "Defaulting DiscoverCGFileset to", envDiscoverCGFilesetDefaultValue)
 		envMap[config.EnvDiscoverCGFilesetKey] = envDiscoverCGFilesetDefaultValue
 	}
@@ -2691,8 +2717,8 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 }
 
 // getDiscoverCGFilesetDefaultValue returns default value for CG fileset discovery
-func getDiscoverCGFilesetDefaultValue() string {
-	logger := csiLog.WithName("getDiscoverCGFilesetDefaultValue")
+func getDiscoverCGFilesetDefaultValue(ctx context.Context) string {
+	logger := csiLog.FromContext(ctx).WithName("getDiscoverCGFilesetDefaultValue")
 	logger.Info("Getting DISCOVER_CG_FILESET default value")
 
 	if CNSAClusterPresence, ok := clusterTypeData[config.ENVClusterCNSAPresenceCheck]; ok {
@@ -2707,14 +2733,14 @@ func getDiscoverCGFilesetDefaultValue() string {
 }
 
 // listGUIPasswdExpiredClusters returns a list having clusterIds whose password is expired
-func (r *CSIScaleOperatorReconciler) listGUIPasswdExpiredClusters(instance *csiscaleoperator.CSIScaleOperator, clusters []csiv1.CSICluster) []string {
-	logger := csiLog.WithName("listPasswdExpiredClusters")
+func (r *CSIScaleOperatorReconciler) listGUIPasswdExpiredClusters(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, clusters []csiv1.CSICluster) []string {
+	logger := csiLog.FromContext(ctx).WithName("listPasswdExpiredClusters")
 	logger.Info("Checking each cluster if its GUI password expired")
 
 	expiredGui := []string{}
 	for _, cls := range clusters {
 		logger.Info("Checking each cluster ", "cluster", cls)
-		connector, err := r.newConnector(instance, cls)
+		connector, err := r.newConnector(ctx, instance, cls)
 		if err != nil {
 			logger.Error(err, "Failed to create scale connector")
 		} else {
@@ -2733,10 +2759,10 @@ func isGUIUnauthorized(err error) bool {
 
 // getClusterTypeAndCNSAOperatorPresence fetches CNSA operator deployment from the cluster
 // and sets two parameters in the clusterTypeData map which is being set later in environment of the driver
-func getClusterTypeAndCNSAOperatorPresence(namespace string) (err error) {
+func getClusterTypeAndCNSAOperatorPresence(ctx context.Context, namespace string) (err error) {
 
 	// Checking the presence of CNSA operator into the cluster
-	logger := csiLog.WithName("getClusterTypeAndCNSAOperatorPresence")
+	logger := csiLog.FromContext(ctx).WithName("getClusterTypeAndCNSAOperatorPresence")
 	logger.Info("Reading resources from the cluster in the", "Namespace", namespace)
 
 	// Default env/cluster type setup
