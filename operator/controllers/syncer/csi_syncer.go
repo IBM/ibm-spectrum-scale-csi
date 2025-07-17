@@ -17,6 +17,7 @@
 package syncer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -35,7 +36,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	csiLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -53,7 +54,7 @@ const (
 	EnvVarForCSIResizerImage     = "CSI_RESIZER_IMAGE"
 )
 
-var csiLog = log.Log.WithName("csiscaleoperator_syncer")
+// var csiLog = log.Log.WithName("csiscaleoperator_syncer")
 
 type csiControllerSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
@@ -61,9 +62,9 @@ type csiControllerSyncer struct {
 }
 
 // CSIConfigmapSyncer returns a new kubernetes.Object syncer for k8s configmap object.
-func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
+func CSIConfigmapSyncer(ctx context.Context, c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator) syncer.Interface {
 
-	logger := csiLog.WithName("CSIConfigmapSyncer")
+	logger := csiLog.FromContext(ctx).WithName("CSIConfigmapSyncer")
 	logger.Info("Creating a syncer object for the configMap.")
 
 	obj := &corev1.ConfigMap{
@@ -83,15 +84,15 @@ func CSIConfigmapSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscal
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncConfigMapFn()
+		return sync.SyncConfigMapFn(ctx)
 	})
 }
 
 // GetAttacherSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI attacher service.
-func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
+func GetAttacherSyncer(ctx context.Context, c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) syncer.Interface {
 
-	logger := csiLog.WithName("GetAttacherSyncer")
+	logger := csiLog.FromContext(ctx).WithName("GetAttacherSyncer")
 	logger.Info("Creating a syncer object for the attacher deployment.")
 
 	obj := &appsv1.Deployment{
@@ -109,15 +110,15 @@ func GetAttacherSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscale
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncAttacherFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+		return sync.SyncAttacherFn(ctx, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, CSIEnvConfig)
 	})
 }
 
 // GetProvisionerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI provisioner service.
-func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, volNamePrefix string) syncer.Interface {
+func GetProvisionerSyncer(ctx context.Context, c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, volNamePrefix string, CSIEnvConfig CSIEnvConfigs) syncer.Interface {
 
-	logger := csiLog.WithName("GetProvisionerSyncer")
+	logger := csiLog.FromContext(ctx).WithName("GetProvisionerSyncer")
 	logger.Info("Creating a syncer object for the provisioner deployment.")
 
 	obj := &appsv1.Deployment{
@@ -135,15 +136,15 @@ func GetProvisionerSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncProvisionerFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, volNamePrefix)
+		return sync.SyncProvisionerFn(ctx, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, volNamePrefix, CSIEnvConfig)
 	})
 }
 
 // GetSnapshotterSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI snapshotter service.
-func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
+func GetSnapshotterSyncer(ctx context.Context, c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) syncer.Interface {
 
-	logger := csiLog.WithName("GetSnapshotterSyncer")
+	logger := csiLog.FromContext(ctx).WithName("GetSnapshotterSyncer")
 	logger.Info("Creating a syncer object for the snapshotter deployment.")
 
 	obj := &appsv1.Deployment{
@@ -161,15 +162,15 @@ func GetSnapshotterSyncer(c client.Client, scheme *runtime.Scheme, driver *csisc
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncSnapshotterFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+		return sync.SyncSnapshotterFn(ctx, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, CSIEnvConfig)
 	})
 }
 
 // GetResizerSyncer returns a new kubernetes.Object syncer for k8s deployment object for CSI resizer service.
-func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) syncer.Interface {
+func GetResizerSyncer(ctx context.Context, c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) syncer.Interface {
 
-	logger := csiLog.WithName("GetResizerSyncer")
+	logger := csiLog.FromContext(ctx).WithName("GetResizerSyncer")
 	logger.Info("Creating a syncer object for the resizer deployment.")
 
 	obj := &appsv1.Deployment{
@@ -187,14 +188,14 @@ func GetResizerSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleo
 	}
 
 	return syncer.NewObjectSyncer(config.CSIController.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncResizerFn(restartedAtKey, restartedAtValue, cpuLimits, memoryLimits)
+		return sync.SyncResizerFn(ctx, restartedAtKey, restartedAtValue, cpuLimits, memoryLimits, CSIEnvConfig)
 	})
 }
 
 // SyncConfigMapFn is a function which mutates the existing configMap object into it's desired state.
-func (s *csiControllerSyncer) SyncConfigMapFn() error {
+func (s *csiControllerSyncer) SyncConfigMapFn(ctx context.Context) error {
 
-	logger := csiLog.WithName("SyncConfigMapFn")
+	logger := csiLog.FromContext(ctx).WithName("SyncConfigMapFn")
 	logger.Info("Mutating the configMap object into it's desired state.")
 
 	out := s.obj.(*corev1.ConfigMap)
@@ -213,9 +214,9 @@ func (s *csiControllerSyncer) SyncConfigMapFn() error {
 }
 
 // SyncAttacherFn is a function which mutates the existing attacher deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) error {
+func (s *csiControllerSyncer) SyncAttacherFn(ctx context.Context, restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) error {
 
-	logger := csiLog.WithName("SyncAttacherFn")
+	logger := csiLog.FromContext(ctx).WithName("SyncAttacherFn")
 	logger.Info("Mutating the attacher deployment object into it's desired state.")
 
 	out := s.obj.(*appsv1.Deployment)
@@ -234,7 +235,7 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureAttacherPodSpec(ctx, cpuLimits, memoryLimits, CSIEnvConfig), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -243,9 +244,9 @@ func (s *csiControllerSyncer) SyncAttacherFn(restartedAtKey string, restartedAtV
 }
 
 // SyncProvisionerFn is a function which mutates the existing provisioner deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, volNamePrefix string) error {
+func (s *csiControllerSyncer) SyncProvisionerFn(ctx context.Context, restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, volNamePrefix string, CSIEnvConfig CSIEnvConfigs) error {
 
-	logger := csiLog.WithName("SyncProvisionerFn")
+	logger := csiLog.FromContext(ctx).WithName("SyncProvisionerFn")
 	logger.Info("Mutating the provisioner deployment object into it's desired state.")
 
 	out := s.obj.(*appsv1.Deployment)
@@ -262,7 +263,7 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(cpuLimits, memoryLimits, volNamePrefix), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureProvisionerPodSpec(ctx, cpuLimits, memoryLimits, volNamePrefix, CSIEnvConfig), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -271,9 +272,9 @@ func (s *csiControllerSyncer) SyncProvisionerFn(restartedAtKey string, restarted
 }
 
 // SyncSnapshotterFn is a function which mutates the existing snapshotter deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) error {
+func (s *csiControllerSyncer) SyncSnapshotterFn(ctx context.Context, restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) error {
 
-	logger := csiLog.WithName("SyncSnapshotterFn")
+	logger := csiLog.FromContext(ctx).WithName("SyncSnapshotterFn")
 	logger.Info("Mutating the snapshotter deployment object into it's desired state.")
 
 	out := s.obj.(*appsv1.Deployment)
@@ -290,7 +291,7 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureSnapshotterPodSpec(ctx, cpuLimits, memoryLimits, CSIEnvConfig), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -299,9 +300,9 @@ func (s *csiControllerSyncer) SyncSnapshotterFn(restartedAtKey string, restarted
 }
 
 // SyncResizerFn is a function which mutates the existing resizer deployment object into it's desired state.
-func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string) error {
+func (s *csiControllerSyncer) SyncResizerFn(ctx context.Context, restartedAtKey string, restartedAtValue string, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) error {
 
-	logger := csiLog.WithName("SyncResizerFn")
+	logger := csiLog.FromContext(ctx).WithName("SyncResizerFn")
 	logger.Info("Mutating the resizer deployment object into it's desired state.")
 
 	out := s.obj.(*appsv1.Deployment)
@@ -318,7 +319,7 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 	out.Spec.Template.Spec.Tolerations = []corev1.Toleration{}
 	out.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(cpuLimits, memoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensureResizerPodSpec(ctx, cpuLimits, memoryLimits, CSIEnvConfig), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -329,7 +330,7 @@ func (s *csiControllerSyncer) SyncResizerFn(restartedAtKey string, restartedAtVa
 /*
 TODO: Unused code. Remove if not required.
 func (s *csiControllerSyncer) SyncFn() error {
-	logger := csiLog.WithName("SyncFn")
+	logger := csiLog.FromContext(ctx).WithName("SyncFn")
 	logger.Info("in SyncFn")
 
 	out := s.obj.(*appsv1.Deployment)
@@ -366,16 +367,16 @@ func (s *csiControllerSyncer) SyncFn() error {
 
 // ensureAttacherPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the attacher pod.
-func (s *csiControllerSyncer) ensureAttacherPodSpec(cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureAttacherPodSpec(ctx context.Context, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) corev1.PodSpec {
 
-	logger := csiLog.WithName("ensureAttacherPodSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureAttacherPodSpec")
 	logger.Info("Generating pod description for the attacher pod.")
 
 	tolerations := s.driver.Spec.Tolerations
 	pod := corev1.PodSpec{
-		Containers:         s.ensureAttacherContainersSpec(cpuLimits, memoryLimits),
+		Containers:         s.ensureAttacherContainersSpec(ctx, cpuLimits, memoryLimits, CSIEnvConfig),
 		Volumes:            s.ensureVolumes(),
-		Tolerations:        s.ensurePodTolerations(tolerations),
+		Tolerations:        s.ensurePodTolerations(ctx, tolerations),
 		Affinity:           s.driver.GetAffinity(config.Attacher.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIAttacherServiceAccount, s.driver.Name),
 		PriorityClassName:  "system-node-critical",
@@ -388,17 +389,17 @@ func (s *csiControllerSyncer) ensureAttacherPodSpec(cpuLimits string, memoryLimi
 
 // ensureProvisionerPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureProvisionerPodSpec(cpuLimits string, memoryLimits string, volNamePrefix string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureProvisionerPodSpec(ctx context.Context, cpuLimits string, memoryLimits string, volNamePrefix string, CSIEnvConfig CSIEnvConfigs) corev1.PodSpec {
 
-	logger := csiLog.WithName("ensureProvisionerPodSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureProvisionerPodSpec")
 	logger.Info("Generating pod description for the provisioner pod.")
 
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers:         s.ensureProvisionerContainersSpec(cpuLimits, memoryLimits, volNamePrefix),
+		Containers:         s.ensureProvisionerContainersSpec(ctx, cpuLimits, memoryLimits, volNamePrefix, CSIEnvConfig),
 		Volumes:            s.ensureVolumes(),
-		Tolerations:        s.ensurePodTolerations(tolerations),
+		Tolerations:        s.ensurePodTolerations(ctx, tolerations),
 		Affinity:           s.driver.GetAffinity(config.Provisioner.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIProvisionerServiceAccount, s.driver.Name),
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
@@ -410,17 +411,17 @@ func (s *csiControllerSyncer) ensureProvisionerPodSpec(cpuLimits string, memoryL
 
 // ensureSnapshotterPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureSnapshotterPodSpec(cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureSnapshotterPodSpec(ctx context.Context, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) corev1.PodSpec {
 
-	logger := csiLog.WithName("ensureSnapshotterPodSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureSnapshotterPodSpec")
 	logger.Info("Generating pod description for the snapshotter pod.")
 
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers:         s.ensureSnapshotterContainersSpec(cpuLimits, memoryLimits),
+		Containers:         s.ensureSnapshotterContainersSpec(ctx, cpuLimits, memoryLimits, CSIEnvConfig),
 		Volumes:            s.ensureVolumes(),
-		Tolerations:        s.ensurePodTolerations(tolerations),
+		Tolerations:        s.ensurePodTolerations(ctx, tolerations),
 		Affinity:           s.driver.GetAffinity(config.Snapshotter.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSISnapshotterServiceAccount, s.driver.Name),
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
@@ -432,17 +433,17 @@ func (s *csiControllerSyncer) ensureSnapshotterPodSpec(cpuLimits string, memoryL
 
 // ensureResizerPodSpec returns an object of type corev1.PodSpec.
 // PodSpec contains description of the provisioner pod.
-func (s *csiControllerSyncer) ensureResizerPodSpec(cpuLimits string, memoryLimits string) corev1.PodSpec {
+func (s *csiControllerSyncer) ensureResizerPodSpec(ctx context.Context, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) corev1.PodSpec {
 
-	logger := csiLog.WithName("ensureResizerPodSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureResizerPodSpec")
 	logger.Info("Generating pod description for the resizer pod.")
 
 	tolerations := s.driver.Spec.Tolerations
 	// fsGroup := config.ControllerUserID
 	pod := corev1.PodSpec{
-		Containers:         s.ensureResizerContainersSpec(cpuLimits, memoryLimits),
+		Containers:         s.ensureResizerContainersSpec(ctx, cpuLimits, memoryLimits, CSIEnvConfig),
 		Volumes:            s.ensureVolumes(),
-		Tolerations:        s.ensurePodTolerations(tolerations),
+		Tolerations:        s.ensurePodTolerations(ctx, tolerations),
 		Affinity:           s.driver.GetAffinity(config.Resizer.String()),
 		ServiceAccountName: config.GetNameForResource(config.CSIResizerServiceAccount, s.driver.Name),
 		//SecurityContext:    ensurePodSecurityContext(config.RunAsUser, config.RunAsGroup, true),
@@ -458,7 +459,7 @@ TODO: Unused code. Remove if not required.
 // PodSpec contains description of the CSI node pod.
 func (s *csiControllerSyncer) ensurePodSpec() corev1.PodSpec {
 
-	logger := csiLog.WithName("ensurePodSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensurePodSpec")
 	logger.Info("in ensurePodSpec")
 
 	// fsGroup := config.ControllerUserID
@@ -478,13 +479,13 @@ func (s *csiControllerSyncer) ensurePodSpec() corev1.PodSpec {
 
 // ensureAttacherContainersSpec returns an object of type corev1.Container.
 // Container object contains description for the container within the attacher pod.
-func (s *csiControllerSyncer) ensureAttacherContainersSpec(cpuLimits string, memoryLimits string) []corev1.Container {
+func (s *csiControllerSyncer) ensureAttacherContainersSpec(ctx context.Context, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) []corev1.Container {
 
-	logger := csiLog.WithName("ensureAttacherContainersSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureAttacherContainersSpec")
 	logger.Info("Generating container description for the attacher pod.", "attacherContainerName", attacherContainerName)
 
-	attacher := s.ensureContainer(attacherContainerName,
-		s.getSidecarImage(config.CSIAttacher),
+	attacher := s.ensureContainer(ctx, attacherContainerName,
+		s.getSidecarImage(ctx, config.CSIAttacher, CSIEnvConfig),
 		// TODO: make timeout configurable
 		[]string{"--v=5", "--csi-address=$(ADDRESS)", "--resync=10m", "--timeout=2m", "--default-fstype=gpfs",
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
@@ -502,13 +503,13 @@ func (s *csiControllerSyncer) ensureAttacherContainersSpec(cpuLimits string, mem
 
 // ensureProvisionerContainersSpec returns an object of type corev1.Container.
 // Container object contains description for the container within the provisioner pod.
-func (s *csiControllerSyncer) ensureProvisionerContainersSpec(cpuLimits string, memoryLimits string, volNamePrefix string) []corev1.Container {
+func (s *csiControllerSyncer) ensureProvisionerContainersSpec(ctx context.Context, cpuLimits string, memoryLimits string, volNamePrefix string, CSIEnvConfig CSIEnvConfigs) []corev1.Container {
 
-	logger := csiLog.WithName("ensureProvisionerContainersSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureProvisionerContainersSpec")
 	logger.Info("Generating container description for the provisioner pod.", "provisionerContainerName", provisionerContainerName)
 
-	provisioner := s.ensureContainer(provisionerContainerName,
-		s.getSidecarImage(config.CSIProvisioner),
+	provisioner := s.ensureContainer(ctx, provisionerContainerName,
+		s.getSidecarImage(ctx, config.CSIProvisioner, CSIEnvConfig),
 		// TODO: make timeout configurable
 		[]string{"--csi-address=$(ADDRESS)", "--timeout=3m", "--worker-threads=10",
 			"--extra-create-metadata", "--v=5", "--default-fstype=gpfs",
@@ -528,13 +529,13 @@ func (s *csiControllerSyncer) ensureProvisionerContainersSpec(cpuLimits string, 
 
 // ensureSnapshotterContainersSpec returns an object of type corev1.Container.
 // Container object contains description for the container within the snapshotter pod.
-func (s *csiControllerSyncer) ensureSnapshotterContainersSpec(cpuLimits string, memoryLimits string) []corev1.Container {
+func (s *csiControllerSyncer) ensureSnapshotterContainersSpec(ctx context.Context, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) []corev1.Container {
 
-	logger := csiLog.WithName("ensureSnapshotterContainersSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureSnapshotterContainersSpec")
 	logger.Info("Generating container description for the snapshotter pod.", "snapshotterContainerName", snapshotterContainerName)
 
-	snapshotter := s.ensureContainer(snapshotterContainerName,
-		s.getSidecarImage(config.CSISnapshotter),
+	snapshotter := s.ensureContainer(ctx, snapshotterContainerName,
+		s.getSidecarImage(ctx, config.CSISnapshotter, CSIEnvConfig),
 		// TODO: make timeout configurable
 		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--worker-threads=10", "--timeout=2m",
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
@@ -551,13 +552,13 @@ func (s *csiControllerSyncer) ensureSnapshotterContainersSpec(cpuLimits string, 
 
 // ensureResizerContainersSpec returns an object of type corev1.Container.
 // Container object contains description for the container within the resizer pod.
-func (s *csiControllerSyncer) ensureResizerContainersSpec(cpuLimits string, memoryLimits string) []corev1.Container {
+func (s *csiControllerSyncer) ensureResizerContainersSpec(ctx context.Context, cpuLimits string, memoryLimits string, CSIEnvConfig CSIEnvConfigs) []corev1.Container {
 
-	logger := csiLog.WithName("ensureResizerContainersSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureResizerContainersSpec")
 	logger.Info("Generating container description for the resizer pod.", "resizerContainerName", resizerContainerName)
 
-	resizer := s.ensureContainer(resizerContainerName,
-		s.getSidecarImage(config.CSIResizer),
+	resizer := s.ensureContainer(ctx, resizerContainerName,
+		s.getSidecarImage(ctx, config.CSIResizer, CSIEnvConfig),
 		[]string{"--csi-address=$(ADDRESS)", "--v=5", "--timeout=2m", "--handle-volume-inuse-error=false", "--workers=10",
 			"--leader-election=true", "--leader-election-lease-duration=$(LEADER_ELECTION_LEASE_DURATION)",
 			"--leader-election-renew-deadline=$(LEADER_ELECTION_RENEW_DEADLINE)",
@@ -576,7 +577,7 @@ func (s *csiControllerSyncer) ensureResizerContainersSpec(cpuLimits string, memo
 TODO: Unused code. Remove if not required.
 func (s *csiControllerSyncer) ensureContainersSpec() []corev1.Container {
 
-	logger := csiLog.WithName("ensureContainersSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureContainersSpec")
 	logger.Info("in ensureContainersSpec", "controllerContainerName", controllerContainerName)
 
 	// csi provisioner sidecar
@@ -671,9 +672,9 @@ func ensureNodeAffinity() *corev1.NodeAffinity {
 */
 
 // ensureContainer generates k8s container object.
-func (s *csiControllerSyncer) ensureContainer(name, image string, args []string, cpuLimits string, memoryLimits string) corev1.Container {
+func (s *csiControllerSyncer) ensureContainer(ctx context.Context, name, image string, args []string, cpuLimits string, memoryLimits string) corev1.Container {
 
-	logger := csiLog.WithName("ensureContainer")
+	logger := csiLog.FromContext(ctx).WithName("ensureContainer")
 	logger.Info("Container information: ", "Name", name, "Image", image)
 
 	container := corev1.Container{
@@ -770,8 +771,8 @@ func (s *csiControllerSyncer) ensureVolumes() []corev1.Volume {
 
 // getSidecarImage gets and returns the images for sidecars from CR
 // if defined in CR, otherwise returns the default images.
-func (s *csiControllerSyncer) getSidecarImage(name string) string {
-	logger := csiLog.WithName("getSidecarImage")
+func (s *csiControllerSyncer) getSidecarImage(ctx context.Context, name string, CSIEnvConfig CSIEnvConfigs) string {
+	logger := csiLog.FromContext(ctx).WithName("getSidecarImage")
 	logger.Info("Fetching image for sidecar container.", "ContainerName", name)
 
 	image := ""
@@ -782,6 +783,8 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 			image = s.driver.Spec.Provisioner
 		} else if found {
 			image = envImage
+		} else if CSIEnvConfig.CsiProvisioner != "" {
+			image = CSIEnvConfig.CsiProvisioner
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
@@ -792,6 +795,8 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 			image = s.driver.Spec.Attacher
 		} else if found {
 			image = envImage
+		} else if CSIEnvConfig.CsiAttacher != "" {
+			image = CSIEnvConfig.CsiAttacher
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
@@ -802,6 +807,8 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 			image = s.driver.Spec.Snapshotter
 		} else if found {
 			image = envImage
+		} else if CSIEnvConfig.CsiSnapshotter != "" {
+			image = CSIEnvConfig.CsiSnapshotter
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
@@ -812,6 +819,8 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 			image = s.driver.Spec.Resizer
 		} else if found {
 			image = envImage
+		} else if CSIEnvConfig.CsiResizer != "" {
+			image = CSIEnvConfig.CsiResizer
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
@@ -822,8 +831,8 @@ func (s *csiControllerSyncer) getSidecarImage(name string) string {
 
 // ensurePodTolerations method adds  the `masterNode` & `infraNode` toleration and  removes the `NoExecute` & `NoSchedule` toleration for all taints
 // with  existing list of tolerations.
-func (s *csiControllerSyncer) ensurePodTolerations(tolerations []corev1.Toleration) []corev1.Toleration {
-	logger := csiLog.WithName("ensurePodTolerations")
+func (s *csiControllerSyncer) ensurePodTolerations(ctx context.Context, tolerations []corev1.Toleration) []corev1.Toleration {
+	logger := csiLog.FromContext(ctx).WithName("ensurePodTolerations")
 	logger.Info("Fetching tolerations for sidecar controller pods.")
 
 	podTolerations := []corev1.Toleration{}

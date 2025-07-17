@@ -17,6 +17,7 @@
 package syncer
 
 import (
+	"context"
 	"errors"
 	"os"
 	"sort"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	csiLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/config"
 	"github.com/IBM/ibm-spectrum-scale-csi/operator/controllers/internal/csiscaleoperator"
@@ -72,14 +74,25 @@ var (
 	cmEnvVars               []corev1.EnvVar
 )
 
+type CSIEnvConfigs struct {
+	CsiSnapshotter       string
+	CsiAttacher          string
+	CsiProvisioner       string
+	CsiLivenessprobe     string
+	CsiNodeRegistrar     string
+	CsiResizer           string
+	CsiDriver            string
+	ShortNameNodeMapping string
+}
+
 type csiNodeSyncer struct {
 	driver *csiscaleoperator.CSIScaleOperator
 	obj    runtime.Object
 }
 
 // GetCSIDaemonsetSyncer creates and returns a syncer for CSI driver daemonset.
-func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
-	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string) syncer.Interface {
+func GetCSIDaemonsetSyncer(ctx context.Context, c client.Client, scheme *runtime.Scheme, driver *csiscaleoperator.CSIScaleOperator,
+	daemonSetRestartedKey string, daemonSetRestartedValue string, CGPrefix string, envVars map[string]string, CSIEnvConfig CSIEnvConfigs) syncer.Interface {
 	obj := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        config.GetNameForResource(config.CSINode, driver.Name),
@@ -120,13 +133,13 @@ func GetCSIDaemonsetSyncer(c client.Client, scheme *runtime.Scheme, driver *csis
 	}
 
 	return syncer.NewObjectSyncer(config.CSINode.String(), driver.Unwrap(), obj, c, func() error {
-		return sync.SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits)
+		return sync.SyncCSIDaemonsetFn(ctx, daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits, CSIEnvConfig)
 	})
 }
 
 // SyncCSIDaemonsetFn handles reconciliation of CSI driver daemonset.
-func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) error {
-	logger := csiLog.WithName("SyncCSIDaemonsetFn")
+func (s *csiNodeSyncer) SyncCSIDaemonsetFn(ctx context.Context, daemonSetRestartedKey, daemonSetRestartedValue, maxUnavailable, hostNetwork, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string, CSIEnvConfig CSIEnvConfigs) error {
+	logger := csiLog.FromContext(ctx).WithName("SyncCSIDaemonsetFn")
 
 	out := s.obj.(*appsv1.DaemonSet)
 
@@ -172,7 +185,7 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 		out.Spec.Template.Spec.HostNetwork = false
 	}
 
-	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits), mergo.WithOverride)
+	err := mergo.Merge(&out.Spec.Template.Spec, s.ensurePodSpec(ctx, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits, CSIEnvConfig), mergo.WithOverride)
 	if err != nil {
 		return err
 	}
@@ -182,11 +195,11 @@ func (s *csiNodeSyncer) SyncCSIDaemonsetFn(daemonSetRestartedKey, daemonSetResta
 }
 
 // ensurePodSpec creates and returns pod specs for CSI driver pod.
-func (s *csiNodeSyncer) ensurePodSpec(cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) corev1.PodSpec {
+func (s *csiNodeSyncer) ensurePodSpec(ctx context.Context, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string, CSIEnvConfig CSIEnvConfigs) corev1.PodSpec {
 
 	pod := corev1.PodSpec{
-		Containers:         s.ensureContainersSpec(cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits),
-		Volumes:            s.ensureVolumes(),
+		Containers:         s.ensureContainersSpec(ctx, cpuLimits, memoryLimits, sidecarCPULimits, sidecarMemoryLimits, CSIEnvConfig),
+		Volumes:            s.ensureVolumes(ctx),
 		HostIPC:            false,
 		DNSPolicy:          config.ClusterFirstWithHostNet,
 		ServiceAccountName: config.GetNameForResource(config.CSINodeServiceAccount, s.driver.Name),
@@ -200,18 +213,19 @@ func (s *csiNodeSyncer) ensurePodSpec(cpuLimits string, memoryLimits string, sid
 // ensureContainersSpec returns array of containers which has the desired
 // fields for all 3 containers driver plugin, driver registrar and
 // liveness probe.
-func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string) []corev1.Container {
+func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits string, memoryLimits string, sidecarCPULimits string, sidecarMemoryLimits string, CSIEnvConfig CSIEnvConfigs) []corev1.Container {
 
-	logger := csiLog.WithName("ensureContainersSpec")
+	logger := csiLog.FromContext(ctx).WithName("ensureContainersSpec")
 
 	// node plugin container
 	nodePlugin := s.ensureContainer(nodeContainerName,
-		s.getImage(config.GetNameForResource(config.CSINode, s.driver.Name)),
+		s.getImage(ctx, config.GetNameForResource(config.CSINode, s.driver.Name), CSIEnvConfig),
 		[]string{
 			"--nodeid=$(NODE_ID)",
 			"--endpoint=$(CSI_ENDPOINT)",
 			"--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)",
 		},
+		CSIEnvConfig,
 	)
 
 	nodePlugin.Resources = ensureDriverResources(cpuLimits, memoryLimits)
@@ -257,12 +271,13 @@ func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits stri
 
 	// node driver registrar sidecar
 	registrar := s.ensureContainer(nodeDriverRegistrarContainerName,
-		s.getImage(config.CSINodeDriverRegistrar),
+		s.getImage(ctx, config.CSINodeDriverRegistrar, CSIEnvConfig),
 		[]string{
 			"--csi-address=$(ADDRESS)",
 			"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)",
 			"--v=5",
 		},
+		CSIEnvConfig,
 	)
 
 	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
@@ -272,13 +287,14 @@ func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits stri
 
 	// liveness probe sidecar
 	livenessProbe := s.ensureContainer(nodeLivenessProbeContainerName,
-		s.getImage(config.LivenessProbe),
+		s.getImage(ctx, config.LivenessProbe, CSIEnvConfig),
 		[]string{
 			"--health-port=" + healthPort.String(),
 			"--csi-address=$(ADDRESS)",
 			"--v=5",
 			"--probe-timeout=20s",
 		},
+		CSIEnvConfig,
 	)
 	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
@@ -294,12 +310,12 @@ func (s *csiNodeSyncer) ensureContainersSpec(cpuLimits string, memoryLimits stri
 
 // ensureContainer returns a container with given name, image and
 // some other fields.
-func (s *csiNodeSyncer) ensureContainer(name, image string, args []string) corev1.Container {
+func (s *csiNodeSyncer) ensureContainer(name, image string, args []string, CSIEnvConfig CSIEnvConfigs) corev1.Container {
 	return corev1.Container{
 		Name:         name,
 		Image:        image,
 		Args:         args,
-		Env:          s.getEnvFor(name),
+		Env:          s.getEnvFor(name, CSIEnvConfig),
 		VolumeMounts: s.getVolumeMountsFor(name),
 	}
 }
@@ -320,7 +336,7 @@ func envVarFromField(name, fieldPath string) corev1.EnvVar {
 }
 
 // getEnvFor returns list of environment variables for given container name.
-func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
+func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []corev1.EnvVar {
 
 	switch name {
 	case nodeContainerName:
@@ -340,6 +356,8 @@ func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 		shortNodeNameMapping, found := os.LookupEnv(EnvVarForShortNodeNameMapping)
 		if found {
 			shortNodeNameMappingObj.Value = shortNodeNameMapping
+		} else if CSIEnvConfig.ShortNameNodeMapping != "" {
+			shortNodeNameMappingObj.Value = CSIEnvConfig.ShortNameNodeMapping
 		}
 		EnvVars = append(EnvVars, shortNodeNameMappingObj)
 
@@ -473,8 +491,8 @@ func (s *csiNodeSyncer) getVolumeMountsFor(name string) []corev1.VolumeMount {
 }
 
 // ensureVolumes returns volumes for CSI driver pods.
-func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
-	logger := csiLog.WithName("ensureVolumes")
+func (s *csiNodeSyncer) ensureVolumes(ctx context.Context) []corev1.Volume {
+	logger := csiLog.FromContext(ctx).WithName("ensureVolumes")
 	volumes := []corev1.Volume{
 		k8sutil.EnsureVolume(pluginDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetSocketDir(), "DirectoryOrCreate")),
 		k8sutil.EnsureVolume(registrationDir, k8sutil.EnsureHostPathVolumeSource(s.driver.GetKubeletRootDirPath()+config.PluginsRegistry, "Directory")),
@@ -512,8 +530,8 @@ func (s *csiNodeSyncer) ensureVolumes() []corev1.Volume {
 
 // getImage gets and returns the images for CSI driver from CR
 // if defined in CR, otherwise returns the default images.
-func (s *csiNodeSyncer) getImage(name string) string {
-	logger := csiLog.WithName("getImage")
+func (s *csiNodeSyncer) getImage(ctx context.Context, name string, CSIEnvConfig CSIEnvConfigs) string {
+	logger := csiLog.FromContext(ctx).WithName("getImage")
 	logger.Info("Getting image for: ", "name", name)
 
 	image := ""
@@ -525,6 +543,8 @@ func (s *csiNodeSyncer) getImage(name string) string {
 			image = s.driver.Spec.DriverRegistrar
 		} else if found {
 			image = nodeRegistrarImage
+		} else if CSIEnvConfig.CsiNodeRegistrar != "" {
+			image = CSIEnvConfig.CsiNodeRegistrar
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
@@ -535,6 +555,8 @@ func (s *csiNodeSyncer) getImage(name string) string {
 			image = s.driver.Spec.SpectrumScale
 		} else if found {
 			image = driverImage
+		} else if CSIEnvConfig.CsiDriver != "" {
+			image = CSIEnvConfig.CsiDriver
 		} else {
 			image = s.driver.GetDefaultImage(config.CSINodeDriverPlugin)
 		}
@@ -545,6 +567,8 @@ func (s *csiNodeSyncer) getImage(name string) string {
 			image = s.driver.Spec.LivenessProbe
 		} else if found {
 			image = livenessProbeImage
+		} else if CSIEnvConfig.CsiLivenessprobe != "" {
+			image = CSIEnvConfig.CsiLivenessprobe
 		} else {
 			image = s.driver.GetDefaultImage(name)
 		}
