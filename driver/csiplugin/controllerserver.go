@@ -131,20 +131,16 @@ func (cs *ScaleControllerServer) generateVolID(ctx context.Context, scVol *scale
 	path := ""
 
 	if !isShallowCopyVolume {
-		if isCGVolume || scVol.VolumeType == cacheVolume || scVol.IsStaticPVBased {
-			primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-			if !isprimaryConnPresent {
-				klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
-				return "", status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
-			}
-			fsMountPoint, err := primaryConn.GetFilesystemMountDetails(ctx, scVol.LocalFS)
-			if err != nil {
-				return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.LocalFS))
-			}
-			path = fmt.Sprintf("%s/%s", fsMountPoint.MountPoint, targetPath)
-		} else {
-			path = fmt.Sprintf("%s/%s", scVol.PrimarySLnkPath, scVol.VolName)
+		primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+		if !isprimaryConnPresent {
+			klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
+			return "", status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
 		}
+		fsMountPoint, err := primaryConn.GetFilesystemMountDetails(ctx, scVol.LocalFS)
+		if err != nil {
+			return "", status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in cluster", scVol.LocalFS))
+		}
+		path = fmt.Sprintf("%s/%s", fsMountPoint.MountPoint, targetPath)
 	} else {
 		path = targetPath
 	}
@@ -3181,17 +3177,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 
 	filesetName := filesetResp.FilesetName
 	relPath := ""
-	if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED {
-		klog.V(4).Infof("[%s] CreateSnapshot - creating snapshot for advanced storageClass", loggerId)
-		relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
-	} else {
-		klog.V(4).Infof("[%s] CreateSnapshot - creating snapshot for classic storageClass", loggerId)
-		primaryFSMountPoint, err := cs.getPrimaryFSMountPoint(ctx)
-		if err != nil {
-			return nil, err
-		}
-		relPath = strings.Replace(volumeIDMembers.Path, primaryFSMountPoint, "", 1)
-	}
+	relPath = strings.Replace(volumeIDMembers.Path, mountInfo.MountPoint, "", 1)
 	relPath = strings.Trim(relPath, "!/")
 
 	var pvName string
@@ -3258,8 +3244,7 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName
 		snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, filesetName, filesetResp.FilesetName, snapName, req.GetName())
 	} else {
-		if strings.Contains(filesetResp.Config.Comment, connectors.FilesetComment) &&
-			(cs.Driver.primary.PrimaryFset != filesetName || cs.Driver.primary.PrimaryFs != filesystemName) {
+		if strings.Contains(filesetResp.Config.Comment, connectors.FilesetComment) {
 			// Dynamically created PVC, here path is the xxx-data directory within the fileset where all volume data resides
 			// storageclass_type;volumeType;clusterId;FSUUID;consistency_group;filesetName;snapshotName;metaSnapshotName;path
 			snapID = fmt.Sprintf("%s;%s;%s;%s;%s;%s;%s;%s;%s-data", volumeIDMembers.StorageClassType, volumeIDMembers.VolType, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID, "", filesetName, snapName, "", filesetName)
