@@ -59,11 +59,11 @@ const (
 	fsetNotFoundErrCode = "EFSSG0072C"
 	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
 
-	fsetLinkNotFoundErrCode = "EFSSG0449C"
-	fsetLinkNotFoundErrMsg  = "is not linked"
+	//fsetLinkNotFoundErrCode = "EFSSG0449C"
+	//fsetLinkNotFoundErrMsg  = "is not linked"
 
-	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
-	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
+	//pvcNameKey      = "csi.storage.k8s.io/pvc/name"
+	//pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 )
 
 type ScaleControllerServer struct {
@@ -900,7 +900,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, status.Error(codes.InvalidArgument, "The Parameter(s) not supported in storageClass: "+invalidParams)
 	}
 
-	scaleVol, isCGVolume, primaryClusterID, err := cs.setScaleVolume(ctx, req, volName, volSize)
+	scaleVol, isCGVolume, err := cs.setScaleVolume(ctx, req, volName, volSize)
 	if err != nil {
 		return nil, err
 	}
@@ -987,7 +987,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	if err != nil {
 		return nil, err
 	}
-	err = cs.setScaleVolumeWithRemoteCluster(ctx, scaleVol, volFsInfo, primaryClusterID)
+	err = cs.setScaleVolumeWithRemoteCluster(ctx, scaleVol, volFsInfo, scaleVol.PrimaryClusterId)
 	if err != nil {
 		return nil, err
 	}
@@ -1069,7 +1069,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	if scaleVol.IsFilesetBased && scaleVol.Tier != "" {
-		err = cs.checkVolTierAndSetFilesystemPolicy(ctx, scaleVol, volFsInfo, primaryClusterID)
+		err = cs.checkVolTierAndSetFilesystemPolicy(ctx, scaleVol, volFsInfo, scaleVol.PrimaryClusterId)
 		if err != nil {
 			return nil, err
 		}
@@ -1304,10 +1304,10 @@ func validateCacheSecret(secretData map[string]string) []string {
 	return missingKeys
 }
 
-func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64) (*scaleVolume, bool, string, error) {
+func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.CreateVolumeRequest, volName string, volSize int64) (*scaleVolume, bool, error) {
 	scaleVol, err := getScaleVolumeOptions(ctx, req.GetParameters())
 	if err != nil {
-		return nil, false, "", err
+		return nil, false, err
 	}
 
 	isCGVolume := false
@@ -1318,7 +1318,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 
 	// #nosec G115 -- false positive
 	if uint64(volSize) > maximumPVSize { // larger than allowed pv size not allowed
-		return nil, false, "", fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
+		return nil, false, fmt.Errorf("failed to create volume, request volume size: [%v] in Bytes is greater than the allowed PV max size: [%v]", uint64(volSize), maximumPVSizeForLog)
 	}
 
 	// #nosec G115 -- false positive
@@ -1331,7 +1331,7 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	/* Get details for Primary Cluster */
 	primaryConn, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
 	if err != nil {
-		return nil, isCGVolume, "", err
+		return nil, isCGVolume, err
 	}
 
 	scaleVol.PrimaryConnector = primaryConn
@@ -1339,7 +1339,8 @@ func (cs *ScaleControllerServer) setScaleVolume(ctx context.Context, req *csi.Cr
 	//scaleVol.PrimaryFS = primaryFS
 	//scaleVol.PrimaryFSMount = primaryFSMount
 	//scaleVol.PrimarySLnkPath = symlinkDirAbsolutePath
-	return scaleVol, isCGVolume, primaryClusterID, nil
+	scaleVol.PrimaryClusterId = primaryClusterID
+	return scaleVol, isCGVolume, nil
 }
 
 func (cs *ScaleControllerServer) getVolORSnapMembers(ctx context.Context, req *csi.CreateVolumeRequest, volName string) (bool, bool, *csi.VolumeContentSource, scaleSnapId, scaleVolId, error) {
@@ -1797,7 +1798,7 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 	} else {
 
 		var sLinkRelPath string
-		klog.V(4).Infof("[%s] copyVolContent when PrimaryDisable,  sourcevolume.Path=[%v], fsMntPt=[%v]", loggerId, sourcevolume.Path, fsMntPt)
+		klog.V(4).Infof("[%s] copyVolContent with sourcevolume.Path=[%v], fsMntPt=[%v]", loggerId, sourcevolume.Path, fsMntPt)
 		sLinkRelPath = strings.Replace(sourcevolume.Path, fsMntPt, "", 1)
 
 		//klog.V(4).Infof("[%s] copyVolContent when with Primary, sourcevolume.Path=[%v]", loggerId, sourcevolume.Path)
@@ -2526,22 +2527,16 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	if err != nil {
 		return nil, err
 	}
-
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
-		klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
-		return nil, status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
-	}
-
+	c
 	/* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
 	from Primary cluster */
-	FilesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIdMembers.FsUUID)
+	FilesystemName, err := conn.GetFilesystemName(ctx, volumeIdMembers.FsUUID)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
 	}
 
-	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, FilesystemName)
+	mountInfo, err := conn.GetFilesystemMountDetails(ctx, FilesystemName)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
@@ -3012,7 +3007,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 			err = conn.MountFilesystem(ctx, fsNameRemote, gatewayNodeNames)
 			if err != nil {
-				klog.Errorf("[%s] ControllerPublishVolume : Error in mounting remote filesystem %s on the gateway nodes %v", loggerId, primaryfsName, gatewayNodeNames)
+				klog.Errorf("[%s] ControllerPublishVolume : Error in mounting remote filesystem %s on the gateway nodes %v", loggerId, fsNameRemote, gatewayNodeNames)
 				return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerPublishVolume :  Error in mounting remote filesystem %s if any on the gateway nodes %v. Error [%v]", fsNameRemote, gatewayNodeNames, err))
 			}
 		}

@@ -85,7 +85,8 @@ type scaleVolume struct {
 	PrimarySLnkRelPath string                            `json:"primarySLnkRelPath"` //Deprecated from 3.0.0
 	PrimarySLnkPath    string                            `json:"primarySLnkPath"`    //Deprecated from 3.0.0
 	PrimaryFS          string                            `json:"primaryFS"`          //Deprecated from 3.0.0
-	PrimaryFSMount     string                            `json:"primaryFSMount"`
+	PrimaryFSMount     string                            `json:"primaryFSMount"`     //Deprecated from 3.0.0
+	PrimaryClusterId   string                            `json:"primaryClusterId"`
 	ParentFileset      string                            `json:"parentFileset"`
 	LocalFS            string                            `json:"localFS"`
 	TargetPath         string                            `json:"targetPath"`
