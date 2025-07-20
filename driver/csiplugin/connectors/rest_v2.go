@@ -915,8 +915,8 @@ func (s *SpectrumRestV2) CreateNodeMappingAFMWithCos(ctx context.Context, export
 		hostname = parsedURL.Hostname()
 		exportMapReq.ExportMap = append(exportMapReq.ExportMap, hostname+"/"+gatewayNodeName)
 	} else {
-		servername := strings.Split(endpoint, ",")
-		for _, servname := range servername {
+		servernames := strings.Split(endpoint, ",")
+		for _, servname := range servernames {
 			if servname != "" {
 				exportMapReq.ExportMap = append(exportMapReq.ExportMap, servname+"/"+gatewayNodeName)
 			}

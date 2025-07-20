@@ -1,0 +1,17 @@
+# Create a secret with nfs server details first.
+# e.g. for a PVC with name 'cache-nfs-pvc1' in namespace 'ns1',
+# oc create secret generic cache-nfs-pvc1-secret -n ns1 \
+# --from-literal=nfsServers --from-literal=nfsPath= \
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cache-nfs-pvc1
+  namespace: ns1
+spec:
+  storageClassName: ibm-scale-cache
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
