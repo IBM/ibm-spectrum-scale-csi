@@ -42,13 +42,13 @@ type SpectrumScaleConnector interface {
 	GetGatewayNode(ctx context.Context) (string, error)
 	ListGatewayNodes(ctx context.Context) ([]string, error)
 	//Fileset operations
-	CreateFileset(ctx context.Context, filesystemName string, filesetName string, opts map[string]interface{}) error
+	CreateFileset(ctx context.Context, filesystemName string, volumeType string, filesetName string, opts map[string]interface{}, mode string, exportMapName string, nfsInfo map[string]string) error
 	CheckFilesetWithAFMTarget(ctx context.Context, filesystemName string, afmTarget string) (string, error)
 	SetBucketKeys(ctx context.Context, access map[string]string, exportMapName string) error
 	DeleteBucketKeys(ctx context.Context, bucket string) error
 	DeleteNodeMappingAFMWithCos(ctx context.Context, exportMapName string) error
 	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string, exportMapName string, parsedURL *url.URL) error
-	CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo map[string]string) error
+	CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo, nfsInfo map[string]string, isNfsSupported bool) error
 	UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}, setAfmAttributes bool) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
