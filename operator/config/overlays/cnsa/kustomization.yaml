@@ -7,4 +7,3 @@ namespace: ibm-spectrum-scale-csi
 
 resources:
 - ../../crd/
-- ../../scc/
