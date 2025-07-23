@@ -2644,7 +2644,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 				}
 
 				// Delete fileset related symlink
-				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC {
+				if volumeIdMembers.StorageClassType == STORAGECLASS_CLASSIC && symlinkExists {
 					err = primaryConn.DeleteSymLnk(ctx, pfsName, relPath)
 					if err != nil {
 						return nil, status.Error(codes.Internal, fmt.Sprintf("unable to delete symlnk [%v:%v] Error [%v]", pfsName, relPath, err))
