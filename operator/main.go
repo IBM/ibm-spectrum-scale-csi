@@ -161,9 +161,9 @@ func main() {
 	if err = (&controllers.CSIScaleOperatorReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("CSIScaleOperator"),
+		Recorder: mgr.GetEventRecorderFor(controllers.CSIScaleOperatorControllerName),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CSIScaleOperator")
+		setupLog.Error(err, "unable to create controller", "controller", controllers.CSIScaleOperatorControllerName)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

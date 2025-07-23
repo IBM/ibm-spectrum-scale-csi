@@ -10,7 +10,7 @@ metadata:
   name: cache-s3-pvc1
   namespace: ns1
 spec:
-  storageClassName: ibm-scale-cache-s3
+  storageClassName: ibm-scale-cache
   accessModes:
     - ReadWriteMany
   resources:

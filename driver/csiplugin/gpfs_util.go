@@ -107,6 +107,13 @@ type scaleVolume struct {
 	Namespace          string                            `json:"namespace"`
 }
 
+type cacheVolumeId struct {
+	BucketInfo     map[string]string
+	NfsInfo        map[string]string
+	IsNfsSupported bool
+	GateWayNode    string
+}
+
 type scaleVolId struct {
 	ClusterId        string
 	FsUUID           string
