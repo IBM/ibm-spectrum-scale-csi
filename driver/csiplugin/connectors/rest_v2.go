@@ -336,6 +336,29 @@ func (s *SpectrumRestV2) ListFilesystems(ctx context.Context) ([]string, error) 
 	return filesystems, nil
 }
 
+func (s *SpectrumRestV2) ListFilesystemsMountpoint(ctx context.Context) (map[string]string, error) {
+	klog.V(4).Infof("[%s] rest_v2 ListFilesystems", utils.GetLoggerId(ctx))
+
+	listFilesystemsURL := "scalemgmt/v2/filesystems"
+	getFilesystemResponse := GetFilesystemResponse_v2{}
+
+	err := s.doHTTP(ctx, listFilesystemsURL, "GET", &getFilesystemResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Error in listing filesystems: %v", utils.GetLoggerId(ctx), err)
+		return nil, err
+	}
+	fsNumber := len(getFilesystemResponse.FileSystems)
+	filesystemsMountpoint := make(map[string]string, fsNumber)
+	if len(getFilesystemResponse.FileSystems) > 0 {
+		for i := 0; i < fsNumber; i++ {
+			filesystemsMountpoint[getFilesystemResponse.FileSystems[i].Name] = getFilesystemResponse.FileSystems[i].Mount.MountPoint
+		}
+		return filesystemsMountpoint, nil
+	} else {
+		return nil, fmt.Errorf("unable to fetch mount point as there is no filesystem listed")
+	}
+}
+
 func (s *SpectrumRestV2) GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error) {
 	klog.V(4).Infof("[%s] rest_v2 GetFilesystemMountpoint. filesystemName: %s", utils.GetLoggerId(ctx), filesystemName)
 
