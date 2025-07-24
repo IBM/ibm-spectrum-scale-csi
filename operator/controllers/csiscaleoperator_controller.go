@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -2072,7 +2073,6 @@ func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperato
 	}
 	return primary
 }
-
 
 // createSymlinksDir creates a .volumes directory on the fileset path fsetLinkPath,
 // and returns absolute, relative paths and error if there is any.
