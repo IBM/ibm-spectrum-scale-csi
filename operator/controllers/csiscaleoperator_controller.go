@@ -2144,12 +2144,6 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 			}
 
 			primaryClusterFound = true
-			//if cluster.Primary.PrimaryFs == "" {
-			//	issueFound = true
-			//	logger.Error(fmt.Errorf("mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.Id), "")
-			//}
-
-			//remoteClusterID = cluster.Primary.RemoteCluster
 		} else {
 			//when its a not primary cluster
 			nonPrimaryClusters[cluster.Id] = true

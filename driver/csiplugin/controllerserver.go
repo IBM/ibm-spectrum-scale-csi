@@ -2622,16 +2622,20 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		return nil, err
 	}
 
+	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isprimaryConnPresent {
+		klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
+		return nil, status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
+	}
+
 	/* FsUUID in volumeIdMembers will be of Primary cluster. So lets get Name of it
 	from Primary cluster */
-	FilesystemName, err := conn.GetFilesystemName(ctx, volumeIdMembers.FsUUID)
-
+	FilesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIdMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
 	}
 
-	mountInfo, err := conn.GetFilesystemMountDetails(ctx, FilesystemName)
-
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, FilesystemName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
 	}
@@ -2675,12 +2679,6 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	var shallowCopyRefPath string
 	var snapshotName string
 	var independentFileset string
-
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
-		klog.Errorf("[%s] unable to get connector for primary cluster", loggerId)
-		return nil, status.Error(codes.Internal, "unable to find primary cluster details in custom resource")
-	}
 
 	if volumeIdMembers.VolType == FILE_SHALLOWCOPY_VOLUME {
 		if relPath != "" && strings.Contains(relPath, ".snapshots") {
