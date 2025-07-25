@@ -3037,7 +3037,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		klog.V(4).Infof("[%s] ControllerPublishVolume : SHORTNAME_NODE_MAPPING is set to %s", loggerId, shortnameNodeMapping)
 	}
 
-	klog.Infof("[%s] fsName:%s, fsMount:%s, scalenodeID:%s", loggerId, fsName, fsMount, scalenodeID)
+	klog.Infof("[%s] fsName:%s, fsMount:%+v, scalenodeID:%s", loggerId, fsName, fsMount, scalenodeID)
 	klog.Infof("[%s] ControllerPublishVolume : FS is mounted on %v", loggerId, fsMount.NodesMounted)
 	klog.V(4).Infof("[%s] ControllerPublishVolume : Volume is from Filesystem %s", loggerId, fsName)
 
