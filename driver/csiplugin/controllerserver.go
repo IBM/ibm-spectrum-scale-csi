@@ -3283,12 +3283,18 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, chkSnapshotErr
 	}
 
-	filesystemName, err := conn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
+	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isprimaryConnPresent {
+		klog.Errorf("[%s] CreateSnapshot - unable to get connector for primary cluster", loggerId)
+		return nil, status.Error(codes.Internal, "CreateSnapshot - unable to find primary cluster details in custom resource")
+	}
+
+	filesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - Unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
 
-	mountInfo, err := conn.GetFilesystemMountDetails(ctx, filesystemName)
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get mount info for FS [%v] in primary cluster", filesystemName))
 	}
