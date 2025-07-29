@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./pv_migration_csi_to cnsa.bash /var/mnt/remote-sample
+# Usage: ./pv_migration_csi_to_cnsa.bash /var/mnt
 
 # Migrates Spectrum Scale CSI PVs to updated volumeHandle paths
 
@@ -12,7 +12,7 @@ help() {
   echo "Usage: $0 <NEW_PATH_PREFIX>"
   echo ""
   echo "Example:"
-  echo "  $0 /var/mnt/remote-sample"
+  echo "  $0 /var/mnt"
   echo ""
   echo "Description:"
   echo "  This script migrates Storage Scale CSI PVs to use the new path prefix based on the new volumeHandle."
@@ -98,7 +98,7 @@ migrate_each() {
   STORAGE_CLASS=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.storageClassName}')
   VOLUME_MODE=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.volumeMode}')
   ATTRS=$(kubectl get pv "$PV" -o json | jq '.spec.csi.volumeAttributes')
-
+  VOL_BACKEND_FS=$(kubectl get pv "$PV" -o json | jq -r '.spec.csi.volumeAttributes.volBackendFs')
 
   DRIVER=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.driver}')
   FSTYPE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.fsType}')
@@ -106,7 +106,7 @@ migrate_each() {
   # Construct new volumeHandle with updated path
   OLD_PATH=$(echo "$VOLUME_HANDLE" | awk -F';' '{print $NF}')
   # NEW_PATH=$(echo "$OLD_PATH" | sed "s|$OLD_PATH_PREFIX|$NEW_PATH_PREFIX|")
-  NEW_PATH="$NEW_PATH_PREFIX/$PV/$PV-data"
+  NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
   NEW_VOLUME_HANDLE=$(echo "$VOLUME_HANDLE" | sed "s|$OLD_PATH|$NEW_PATH|")
 
   echo "Updating volumeHandle to: $NEW_VOLUME_HANDLE"
