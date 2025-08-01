@@ -263,8 +263,7 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 
 		scaleConnMap[cluster.ID] = sc
 
-		klog.Infof("[%s] cluster.Primary:[%+v], settings.Primary:[%+v]", loggerId, cluster.Primary, settings.Primary{})
-		if cluster.Primary != (settings.Primary{}) {
+		if (scaleConfig.LocalScaleCluster != "" && scaleConfig.LocalScaleCluster == cluster.ID) || cluster.Primary != (settings.Primary{}) {
 
 			// Check if GUI is reachable - only for primary cluster
 			clusterId, err := sc.GetClusterId(ctx)

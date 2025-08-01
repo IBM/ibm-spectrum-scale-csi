@@ -59,9 +59,6 @@ const (
 	fsetNotFoundErrCode = "EFSSG0072C"
 	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
 
-	//fsetLinkNotFoundErrCode = "EFSSG0449C"
-	//fsetLinkNotFoundErrMsg  = "is not linked"
-
 	//pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	//pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 )
@@ -3043,7 +3040,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 
 	if !strings.HasPrefix(volumePath, fsMount.MountPoint) {
 		klog.Errorf("[%s] ControllerPublishVolume : Volume path %s is not part of the given filesystem %s", loggerId, volumePath, fsName)
-		fsMountpoints, err := cs.Driver.connmap["primary"].ListFilesystemsMountpoint(ctx)
+		fsMountpoints, err := cs.Driver.connmap["primary"].ListFilesystems(ctx)
 		mountPointFound := false
 		var volumePathfs string
 		if err != nil {

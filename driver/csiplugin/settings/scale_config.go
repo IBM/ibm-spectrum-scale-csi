@@ -29,17 +29,18 @@ import (
 )
 
 type ScaleSettingsConfigMap struct {
+	LocalScaleCluster string `json:"localScaleCluster"` 
 	Clusters []Clusters
 }
 
 type Primary struct {
 	PrimaryFSDep  string `json:"primaryFS"` // Deprecated
-	PrimaryFs     string `json:"primaryFs"`
-	PrimaryFset   string `json:"primaryFset"`
+	PrimaryFs     string `json:"primaryFs"` //Deprecated
+	PrimaryFset   string `json:"primaryFset"` //Deprecated
 	PrimaryCid    string `json:"primaryCid"`
 	InodeLimitDep string `json:"inode-limit"` // Deprecated
-	InodeLimits   string `json:"inodeLimit"`
-	RemoteCluster string `json:"remoteCluster"`
+	InodeLimits   string `json:"inodeLimit"` //Deprecated
+	RemoteCluster string `json:"remoteCluster"` //Deprecated
 
 	PrimaryFSMount      string
 	PrimaryFsetLink     string
@@ -74,6 +75,7 @@ type Clusters struct {
 	Cacert        string    `json:"cacert"`
 	Secrets       string    `json:"secrets"`
 	RestAPI       []RestAPI `json:"restApi"`
+	PrimaryCluster string    `json:"primaryCluster"`
 
 	MgmtUsername string
 	MgmtPassword string

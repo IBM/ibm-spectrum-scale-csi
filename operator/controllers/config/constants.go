@@ -176,7 +176,6 @@ const (
 	EnvVolumeStatsCapabilityDefaultValue = "ENABLED"
 	EnvHostNetworkDefaultValue           = "ENABLED"
 	EnvVolNamePrefixDefaultValue         = "pvc"
-	EnvPrimaryFilesystemDefaultValue     = "ENABLED"
 
 	// Driver and Sidecar Containers Resources limits
 	PodsCPULimitsLowerValue    = "20m"

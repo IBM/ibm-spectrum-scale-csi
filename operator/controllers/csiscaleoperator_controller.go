@@ -1978,8 +1978,11 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(ctx context.C
 	//scaleGuiSecretChanged := false
 	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
+	isPrimaryCluster := false
 	for _, cluster := range instance.Spec.Clusters {
-		isPrimaryCluster := cluster.Primary != nil
+		if instance.Spec.LocalScaleCluster == cluster.Id || cluster.Primary != nil {
+			isPrimaryCluster = true
+		}
 		if !cmExists || clustersStanzaModified || operatorRestarted {
 			//These are the prerequisite checks and preprocessing done at
 			//multiple passes of operator/driver:
@@ -2137,12 +2140,13 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 			logger.Error(fmt.Errorf("mandatory parameter 'guiHost' is not specified for cluster %v", cluster.Id), "")
 		}
 
-		if cluster.Primary != nil && *cluster.Primary != (csiv1.CSIFilesystem{}) {
+		if instance.Spec.LocalScaleCluster != "" && instance.Spec.LocalScaleCluster == cluster.Id {
+			primaryClusterFound = true
+		} else if cluster.Primary != nil && *cluster.Primary != (csiv1.CSIFilesystem{}) {
 			if primaryClusterFound {
 				issueFound = true
 				logger.Error(fmt.Errorf("more than one primary clusters specified"), "")
 			}
-
 			primaryClusterFound = true
 		} else {
 			//when its a not primary cluster
