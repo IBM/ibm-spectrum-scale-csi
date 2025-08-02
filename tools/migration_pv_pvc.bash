@@ -1,0 +1,305 @@
+#!/bin/bash
+
+# Usage: ./migration_pv_pvc.bash --new_path_prefix /var/mnt
+# Migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle.
+
+set -euo pipefail
+
+# --- Help Function ---
+help() {
+  echo ""
+  echo "Usage: $0 --new_path_prefix <path> "
+  echo ""
+  echo "Example:"
+  echo "  $0 --new_path_prefix /var/mnt"
+  echo ""
+  echo "Description:"
+  echo "  This script migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle."
+  echo "  It supports parallel migration (max 10 at a time)."
+  echo ""
+  exit 1
+}
+
+# --- Argument Parsing ---
+NEW_PATH_PREFIX=""
+PARALLELISM=1
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --new_path_prefix)
+      shift
+      NEW_PATH_PREFIX="$1"
+      ;;
+    -h|--help)
+      help
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      help
+      ;;
+  esac
+  shift
+done
+
+if [[ -z "$NEW_PATH_PREFIX" ]]; then
+  echo "Missing required argument: --new_path_prefix"
+  help
+fi
+
+
+# --- Initialize Counters and Lists ---
+success_list=()
+fail_list=()
+skip_list=()
+
+success_count=0
+fail_count=0
+skip_count=0
+
+main() {
+  echo "Using new path prefix: $NEW_PATH_PREFIX"
+  init
+  get_pv_list
+  TOTAL_PVS=$(echo "$ALL_PVS" | wc -l | xargs)
+  COUNT=1
+  for PV in $ALL_PVS; do
+    echo ""
+    echo "[$COUNT/$TOTAL_PVS]  --------------------------------------------------------------------------------"
+    echo "Processing PV: $PV    "
+    migrate_each "$PV"
+    COUNT=$((COUNT + 1))
+  done
+  final_summary
+}
+
+init() {
+  RUN_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+  BACKUP_PARENT_DIR="csi_migration_data"
+  mkdir -p "$BACKUP_PARENT_DIR"
+
+  BACKUP_BASE_DIR="$BACKUP_PARENT_DIR/$RUN_TIMESTAMP"
+  mkdir -p "$BACKUP_BASE_DIR"
+
+  LOG_FILE="$BACKUP_BASE_DIR/migration.log"
+  exec > >(tee "$LOG_FILE") 2>&1
+
+  echo "Logging to $LOG_FILE"
+  echo "Starting migration at: $(date)"
+  echo ""
+}
+
+get_pv_list() {
+  ALL_PVS=$(kubectl get pv -o json | jq -r '.items[] | select(.spec.csi.driver == "spectrumscale.csi.ibm.com") | .metadata.name')
+  echo "Found $(echo "$ALL_PVS" | wc -l) PVs using spectrumscale.csi.ibm.com driver"
+}
+
+migrate_each() {
+  PV="$1"
+  # echo "--------------------------------------------------------------------------------"
+  # echo "Processing PV: $PV"
+
+  VOLUME_HANDLE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.volumeHandle}') || {
+    echo "Failed to get volumeHandle for PV: $PV"; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  echo "Current volumeHandle: $VOLUME_HANDLE"
+
+  PVC_NAME=$(kubectl get pv "$PV" -o jsonpath='{.spec.claimRef.name}') || {
+    echo "Failed to get PVC name for PV: $PV"; ((fail_count++)); fail_list+=("|$PV"); return;
+  }
+  PVC_NAMESPACE=$(kubectl get pv "$PV" -o jsonpath='{.spec.claimRef.namespace}') || {
+    echo "Failed to get PVC namespace for PV: $PV"; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+
+  echo "Preparing to migrate PVC: $PVC_NAME in namespace $PVC_NAMESPACE"
+
+  if ! kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" >/dev/null 2>&1; then
+    echo "PVC $PVC_NAME not found in namespace $PVC_NAMESPACE, skipping."
+    fail_list+=("$PVC_NAME|$PV")
+    ((fail_count++))
+    return
+  fi
+
+  ACCESS_MODES=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o json | jq '.spec.accessModes') || {
+    echo "Failed to get access modes."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  STORAGE=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o json | jq -r '.spec.resources.requests.storage') || {
+    echo "Failed to get storage size."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  STORAGE_CLASS=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.storageClassName}') || {
+    echo "Failed to get storage class."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  VOLUME_MODE=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.volumeMode}') || {
+    echo "Failed to get volume mode."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  ATTRS=$(kubectl get pv "$PV" -o json | jq '.spec.csi.volumeAttributes') || {
+    echo "Failed to get volumeAttributes."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  VOL_BACKEND_FS=$(kubectl get pv "$PV" -o json | jq -r '.spec.csi.volumeAttributes.volBackendFs') || {
+    echo "Failed to get volBackendFs."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+
+  DRIVER=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.driver}') || {
+    echo "Failed to get driver."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+  FSTYPE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.fsType}') || {
+    echo "Failed to get fsType."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+
+  OLD_PATH=$(echo "$VOLUME_HANDLE" | awk -F';' '{print $NF}')
+  IFS=';' read -ra parts <<< "$VOLUME_HANDLE"
+
+  if [[ "${parts[0]}" == "0" && "${parts[1]}" == "0" ]]; then
+    echo "Detected volumeHandle type: 0;0 (volDirBasePath) : Lightweight volume"
+    VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath"')
+    NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
+
+  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "1" ]]; then
+    echo "Detected volumeHandle type: 0;1 (parentFileset) : Fileset volume and dependent fileset"
+    PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset"')
+    NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
+
+  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2" ]]; then
+    echo "Detected volumeHandle type: 0;2 (fileset) : Fileset volume and independent fileset"
+    NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
+
+  elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "1" ]]; then
+    echo "Detected volumeHandle type: 1;1 (version2) : Consistency group fileset"
+    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#/ibm/}"
+
+  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "3" ]]; then
+    echo "Detected volumeHandle type: 0;3 (version2) : Shallow copy fileset"
+    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#/ibm/}"
+
+  else
+    echo "Unknown volumeHandle type: ${parts[0]};${parts[1]} — skipping migration for PV: $PV"
+    fail_list+=("$PVC_NAME|$PV")
+    ((fail_count++))
+    return
+  fi
+
+  NEW_VOLUME_HANDLE=$(echo "$VOLUME_HANDLE" | sed "s|$OLD_PATH|$NEW_PATH|")
+
+  if [[ "$VOLUME_HANDLE" == "$NEW_VOLUME_HANDLE" ]]; then
+    echo "Already migrated (volumeHandle matches target). Skipping $PV"
+    ((skip_count++))
+    skip_list+=("$PVC_NAME|$PV")
+    return
+  fi
+
+  echo "Updated volumeHandle: $NEW_VOLUME_HANDLE"
+
+  echo "Setting reclaim policy to Retain for PV: $PV"
+  if ! kubectl patch pv "$PV" --type=merge -p '{"spec": {"persistentVolumeReclaimPolicy": "Retain"}}'; then
+    echo "Failed to patch reclaim policy for PV: $PV"
+    ((fail_count++))
+    fail_list+=("$PVC_NAME|$PV")
+    return
+  fi
+
+  BACKUP_DIR="$BACKUP_BASE_DIR/${PVC_NAME}"
+  mkdir -p "$BACKUP_DIR"
+
+  echo "Backing up PV and PVC..."
+  kubectl get pv "$PV" -o yaml > "$BACKUP_DIR/pv.yaml"
+  kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o yaml > "$BACKUP_DIR/pvc.yaml"
+
+  RECLAIM_POLICY=$(kubectl get pv "$PV" -o jsonpath='{.spec.persistentVolumeReclaimPolicy}')
+  if [[ "$RECLAIM_POLICY" != "Retain" ]]; then
+    echo "Reclaim policy is not Retain (got: $RECLAIM_POLICY), skipping."
+    ((fail_count++))
+    fail_list+=("$PVC_NAME|$PV")
+    return
+  fi
+
+  echo "Deleting PVC and PV..."
+  kubectl delete pvc "$PVC_NAME" -n "$PVC_NAMESPACE"
+  kubectl delete pv "$PV"
+
+  echo "Recreating PV and PVC..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: $PV
+spec:
+  capacity:
+    storage: $STORAGE
+  accessModes: $(echo "$ACCESS_MODES" | jq '.')
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: $STORAGE_CLASS
+  csi:
+    driver: $DRIVER
+    fsType: $FSTYPE
+    volumeHandle: "$NEW_VOLUME_HANDLE"
+    volumeAttributes: $(echo "$ATTRS" | jq '.')
+  volumeMode: $VOLUME_MODE
+EOF
+
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: $PVC_NAME
+  namespace: $PVC_NAMESPACE
+spec:
+  accessModes: $(echo "$ACCESS_MODES" | jq '.')
+  storageClassName: $STORAGE_CLASS
+  volumeMode: $VOLUME_MODE
+  resources:
+    requests:
+      storage: $STORAGE
+  volumeName: $PV
+EOF
+
+  echo "Migration successful for PV: $PV and PVC: $PVC_NAME"
+  echo "--------------------------------------------------------------------------------"
+  ((success_count++))
+  success_list+=("$PVC_NAME|$PV")
+}
+
+final_summary() {
+  echo ""
+  echo "Migration Summary:"
+  echo "----------------------------"
+
+  if (( ${#success_list[@]} > 0 )); then
+    echo "Successful PVs: ${#success_list[@]}"
+    printf "   %-80s | %s\n" "PVC Name" "PV Name"
+    printf "   %s\n" "--------------------------------------------------------------------------"
+    for entry in "${success_list[@]}"; do
+      IFS='|' read -r pvc pv <<< "$entry"
+      printf "   %-80s | %s\n" "$pvc" "$pv"
+    done
+    echo ""
+  fi
+
+  if (( ${#fail_list[@]} > 0 )); then
+    echo "Failed PVs: ${#fail_list[@]}"
+    printf "   %-80s | %s\n" "PVC Name" "PV Name"
+    printf "   %s\n" "--------------------------------------------------------------------------"
+    for entry in "${fail_list[@]}"; do
+      IFS='|' read -r pvc pv <<< "$entry"
+      printf "   %-80s | %s\n" "$pvc" "$pv"
+    done
+    echo ""
+  fi
+
+  if (( ${#skip_list[@]} > 0 )); then
+    echo "Skipped PVs (already migrated): ${#skip_list[@]}"
+    printf "   %-80s | %s\n" "PVC Name" "PV Name"
+    printf "   %s\n" "--------------------------------------------------------------------------"
+    for entry in "${skip_list[@]}"; do
+      IFS='|' read -r pvc pv <<< "$entry"
+      printf "   %-80s | %s\n" "$pvc" "$pv"
+    done
+    echo ""
+  fi
+
+  echo "Completed migration at: $(date)"
+}
+
+
+main
+
+exit 0
