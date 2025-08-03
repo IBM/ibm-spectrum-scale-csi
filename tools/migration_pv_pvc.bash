@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./migration_pv_pvc.bash --new_path_prefix /var/mnt
+# Usage: ./pv_migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
 # Migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle.
 
 set -euo pipefail
@@ -13,16 +13,16 @@ help() {
   echo "Example:"
   echo "  $0 --new_path_prefix /var/mnt"
   echo ""
+  echo "  These must match the base mount point of Spectrum Scale on your nodes."
+  echo ""
   echo "Description:"
   echo "  This script migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle."
-  echo "  It supports parallel migration (max 10 at a time)."
   echo ""
   exit 1
 }
 
 # --- Argument Parsing ---
 NEW_PATH_PREFIX=""
-PARALLELISM=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -46,6 +46,13 @@ if [[ -z "$NEW_PATH_PREFIX" ]]; then
   help
 fi
 
+# TODO: Uncomment the following lines to enforce allowed path prefixes
+# # Enforce allowed path prefixes
+# if [[ "$NEW_PATH_PREFIX" != "/ibm" && "$NEW_PATH_PREFIX" != "/var/mnt" && "$NEW_PATH_PREFIX" != "/mnt" ]]; then
+#   echo "Error: Unsupported --new_path_prefix value: '$NEW_PATH_PREFIX'"
+#   echo "Allowed values are: /ibm, /var/mnt, /mnt"
+#   exit 1
+# fi
 
 # --- Initialize Counters and Lists ---
 success_list=()
@@ -57,7 +64,14 @@ fail_count=0
 skip_count=0
 
 main() {
-  echo "Using new path prefix: $NEW_PATH_PREFIX"
+  echo "Using the new path prefix: $NEW_PATH_PREFIX"
+  echo "The new volume handle volumePath will be: $NEW_PATH_PREFIX/<RemoteFS>/..."
+  echo ""
+  read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
+  if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+    echo "Aborting migration."
+    exit 0
+  fi
   init
   get_pv_list
   TOTAL_PVS=$(echo "$ALL_PVS" | wc -l | xargs)
@@ -96,8 +110,6 @@ get_pv_list() {
 
 migrate_each() {
   PV="$1"
-  # echo "--------------------------------------------------------------------------------"
-  # echo "Processing PV: $PV"
 
   VOLUME_HANDLE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.volumeHandle}') || {
     echo "Failed to get volumeHandle for PV: $PV"; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
@@ -165,11 +177,13 @@ migrate_each() {
 
   elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 1;1 (version2) : Consistency group fileset"
-    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#/ibm/}"
+    CURRENT_PREFIX="${OLD_PATH%%/$VOL_BACKEND_FS/*}"
+    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#$CURRENT_PREFIX/}"
 
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "3" ]]; then
     echo "Detected volumeHandle type: 0;3 (version2) : Shallow copy fileset"
-    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#/ibm/}"
+    CURRENT_PREFIX="${OLD_PATH%%/$VOL_BACKEND_FS/*}"
+    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#$CURRENT_PREFIX/}"
 
   else
     echo "Unknown volumeHandle type: ${parts[0]};${parts[1]} — skipping migration for PV: $PV"
@@ -253,7 +267,7 @@ spec:
 EOF
 
   echo "Migration successful for PV: $PV and PVC: $PVC_NAME"
-  echo "--------------------------------------------------------------------------------"
+  echo "----------------------------------------------------------------------------------------"
   ((success_count++))
   success_list+=("$PVC_NAME|$PV")
 }
@@ -261,12 +275,12 @@ EOF
 final_summary() {
   echo ""
   echo "Migration Summary:"
-  echo "----------------------------"
+  echo "----------------------------------------------------------------------------------------------------------------------------"
 
   if (( ${#success_list[@]} > 0 )); then
     echo "Successful PVs: ${#success_list[@]}"
     printf "   %-80s | %s\n" "PVC Name" "PV Name"
-    printf "   %s\n" "--------------------------------------------------------------------------"
+    printf "   %s\n" "----------------------------------------------------------------------------------------------------------------------------"
     for entry in "${success_list[@]}"; do
       IFS='|' read -r pvc pv <<< "$entry"
       printf "   %-80s | %s\n" "$pvc" "$pv"
@@ -277,7 +291,7 @@ final_summary() {
   if (( ${#fail_list[@]} > 0 )); then
     echo "Failed PVs: ${#fail_list[@]}"
     printf "   %-80s | %s\n" "PVC Name" "PV Name"
-    printf "   %s\n" "--------------------------------------------------------------------------"
+    printf "   %s\n" "----------------------------------------------------------------------------------------------------------------------------"
     for entry in "${fail_list[@]}"; do
       IFS='|' read -r pvc pv <<< "$entry"
       printf "   %-80s | %s\n" "$pvc" "$pv"
@@ -288,7 +302,7 @@ final_summary() {
   if (( ${#skip_list[@]} > 0 )); then
     echo "Skipped PVs (already migrated): ${#skip_list[@]}"
     printf "   %-80s | %s\n" "PVC Name" "PV Name"
-    printf "   %s\n" "--------------------------------------------------------------------------"
+    printf "   %s\n" "----------------------------------------------------------------------------------------------------------------------------"
     for entry in "${skip_list[@]}"; do
       IFS='|' read -r pvc pv <<< "$entry"
       printf "   %-80s | %s\n" "$pvc" "$pv"
@@ -298,7 +312,6 @@ final_summary() {
 
   echo "Completed migration at: $(date)"
 }
-
 
 main
 
