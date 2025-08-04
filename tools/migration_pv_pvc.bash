@@ -171,9 +171,25 @@ migrate_each() {
     PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset"')
     NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
 
+    # Check if existingVolume is set to yes for static fileset volumes
+    existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+    if [[ "$existingVolume" == "yes" ]]; then
+      echo "Static Fileset volume and dependent fileset"
+      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
+    fi
+
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2" ]]; then
     echo "Detected volumeHandle type: 0;2 (fileset) : Fileset volume and independent fileset"
+
+    # Default path of dynamic fileset
     NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
+
+    # Check if existingVolume is set to yes for static fileset volumes
+    existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+    if [[ "$existingVolume" == "yes" ]]; then
+      echo "Static Fileset volume and independent fileset"
+      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+    fi
 
   elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 1;1 (version2) : Consistency group fileset"
