@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -420,24 +419,6 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
-	ifPrimaryDisable := false
-	if strings.ToUpper(cmData["PRIMARY_FILESYSTEM"]) == "DISABLED" {
-		ifPrimaryDisable = true
-	}
-	logger.Info("PRIMARY_FILESYSTEM is", " DISABLED ", ifPrimaryDisable)
-
-	//For first pass handle primary FS and fileset
-	if !cmExists && !ifPrimaryDisable {
-		requeAfterDelay, err := r.handlePrimaryFSandFileset(ctx, instance)
-		if err != nil {
-			if requeAfterDelay == 0 {
-				return ctrl.Result{}, err
-			} else {
-				return ctrl.Result{RequeueAfter: requeAfterDelay}, nil
-			}
-		}
-	}
-
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(ctx, instance)
 
@@ -726,23 +707,23 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 				//Check if the primary stanza from current configmap is changed
 				//and return err if it is changed, as we don't want to change
 				//the primary after first successful iteration.
-				if oldCMCluster.Primary != nil && !reflect.DeepEqual(oldCMCluster.Primary, crCluster.Primary) {
-					primaryString := fmt.Sprintf("{filesystem:%v, fileset:%v",
-						oldCMCluster.Primary.PrimaryFs, oldCMCluster.Primary.PrimaryFset)
-					if oldCMCluster.Primary.RemoteCluster != "" {
-						primaryString += fmt.Sprintf(", remote cluster: %v}", oldCMCluster.Primary.RemoteCluster)
-					} else {
-						primaryString += "}"
-					}
-					message := fmt.Sprintf("Primary stanza is modified for cluster with ID %s. Use the orignal primary %s and try again",
-						crCluster.Id, primaryString)
-					err := fmt.Errorf("%s", message)
-					logger.Error(err, "")
-					SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-						metav1.ConditionFalse, string(csiv1.PrimaryClusterStanzaModified), message,
-					)
-					return err
-				}
+				//if oldCMCluster.Primary != nil && !reflect.DeepEqual(oldCMCluster.Primary, crCluster.Primary) {
+				//primaryString := fmt.Sprintf("{filesystem:%v, fileset:%v",
+				//	oldCMCluster.Primary.PrimaryFs, oldCMCluster.Primary.PrimaryFset)
+				//	if oldCMCluster.Primary.RemoteCluster != "" {
+				//	primaryString += fmt.Sprintf(", remote cluster: %v}", oldCMCluster.Primary.RemoteCluster)
+				// } else {
+				//	primaryString += "}"
+				// }
+				//message := fmt.Sprintf("Primary stanza is modified for cluster with ID %s. Use the orignal primary %s and try again",
+				//	crCluster.Id, primaryString)
+				//err := fmt.Errorf("%s", message)
+				//logger.Error(err, "")
+				//SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+				//	metav1.ConditionFalse, string(csiv1.PrimaryClusterStanzaModified), message,
+				//)
+				//return err
+				//}
 			}
 		}
 	}
@@ -1997,8 +1978,11 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(ctx context.C
 	//scaleGuiSecretChanged := false
 	requeAfterDelay := time.Duration(0)
 	operatorRestarted := (len(scaleConnMap) == 0) && cmExists
+	isPrimaryCluster := false
 	for _, cluster := range instance.Spec.Clusters {
-		isPrimaryCluster := cluster.Primary != nil
+		if instance.Spec.LocalScaleCluster == cluster.Id || cluster.Primary != nil {
+			isPrimaryCluster = true
+		}
 		if !cmExists || clustersStanzaModified || operatorRestarted {
 			//These are the prerequisite checks and preprocessing done at
 			//multiple passes of operator/driver:
@@ -2028,7 +2012,7 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(ctx context.C
 			//1. Check if GUI is reachable for the 1st pass.
 			// For pass no. 2+ if clusterstanza modified, check for only changed cluster
 			if !cmExists || (clustersStanzaModified && isClusterChanged) {
-				if operatorRestarted && !isPrimaryCluster {
+				if operatorRestarted {
 					//if operator is restarted and this is not a primary cluster,
 					//no need to check if GUI is reachable or clusterID is valid.
 					continue
@@ -2082,142 +2066,6 @@ func (r *CSIScaleOperatorReconciler) handleSpectrumScaleConnectors(ctx context.C
 	return requeAfterDelay, nil
 }
 
-// handlePrimaryFSandFileset checks if primary FS exists, also checkes if primary fileset exists.
-// If primary fileset does not exist, it is created and also if a directory
-// to store symlinks is created if it does not exist. It returns the absolute path of symlink
-// directory and error if there is any.
-func (r *CSIScaleOperatorReconciler) handlePrimaryFSandFileset(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) (time.Duration, error) {
-	logger := csiLog.FromContext(ctx).WithName("handlePrimaryFSandFileset")
-	requeAfterDelay := time.Duration(0)
-	primaryReference := r.getPrimaryCluster(instance)
-	if primaryReference == nil {
-		message := fmt.Sprintf("No primary cluster is defined in the IBM Storage Scale CSI configurations under Spec.Clusters section in the CSISCaleOperator instance %s/%s", instance.Kind, instance.Name)
-		err := fmt.Errorf("%s", message)
-		logger.Error(err, "")
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.PrimaryClusterUndefined), message,
-		)
-		return requeAfterDelay, err
-	}
-
-	primary := *primaryReference
-	sc := scaleConnMap[config.Primary]
-
-	// check if primary filesystem exists
-	fsMountInfo, err := sc.GetFilesystemMountDetails(context.TODO(), primary.PrimaryFs)
-	if err != nil {
-		requeAfterDelay = 2 * time.Minute
-		message := fmt.Sprintf("Failed to get the details of the primary filesystem: %s, retrying after 2 minutes", primary.PrimaryFs)
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.GetFileSystemFailed), message,
-		)
-		return requeAfterDelay, err
-	}
-
-	// In case primary fset value is not specified in configuation then use default
-	if primary.PrimaryFset == "" {
-		primary.PrimaryFset = config.DefaultPrimaryFileset
-		logger.Info("Primary fileset is not specified", "using default primary fileset %s", config.DefaultPrimaryFileset)
-	}
-
-	primaryFSMount := fsMountInfo.MountPoint
-
-	// Get FS name on owning cluster
-	// Examples of remoteDeviceName:
-	// 1. Local FS fs2 -
-	//		"remoteDeviceName" : "<scale local cluster name>:fs2"
-	// 2. Remote FS fs1 which can be mounted locally with a different name
-	//		"remoteDeviceName" : "<scale remote cluster name>:fs1"
-	remoteDeviceName := strings.Split(fsMountInfo.RemoteDeviceName, ":")
-	fsNameOnOwningCluster := remoteDeviceName[len(remoteDeviceName)-1]
-
-	// //check if multiple GUIs are passed
-	// if len(cluster.RestAPI) > 1 {
-	// 	err := driver.cs.checkGuiHASupport(sc)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// }
-
-	if primary.RemoteCluster != "" {
-		//if remote cluster is present, use connector of remote cluster
-		sc = scaleConnMap[primary.RemoteCluster]
-		if fsNameOnOwningCluster == "" {
-			message := "failed to get the name of the remote filesystem from the cluster"
-			logger.Error(err, message)
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.GetRemoteFileSystemFailed), message,
-			)
-			return requeAfterDelay, fmt.Errorf("%s", message)
-		}
-	}
-
-	//check if primary filesystem exists on remote cluster and mounted on atleast one node
-	fsMountInfo, err = sc.GetFilesystemMountDetails(context.TODO(), fsNameOnOwningCluster)
-	if err != nil {
-		message := fmt.Sprintf("Failed to the get details of the filesystem: %s", fsNameOnOwningCluster)
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.GetFileSystemFailed), message,
-		)
-		return requeAfterDelay, err
-	}
-
-	fsMountPoint := fsMountInfo.MountPoint
-
-	fsetLinkPath, err := r.createPrimaryFileset(ctx, instance, sc, fsNameOnOwningCluster, fsMountPoint, primary.PrimaryFset, primary.InodeLimit)
-	if err != nil {
-		message := fmt.Sprintf("Failed to create the primary fileset %s on the primary filesystem %s", primary.PrimaryFset, primary.PrimaryFs)
-		logger.Error(err, message)
-		return requeAfterDelay, err
-	}
-
-	// In case primary FS is remotely mounted, run fileset refresh task on primary cluster
-	if primary.RemoteCluster != "" {
-		filesetInfo, err := scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
-		if err != nil || reflect.ValueOf(filesetInfo).IsZero() {
-			logger.Info("Primary fileset is not visible on primary cluster. Running fileset refresh task", "fileset name", primary.PrimaryFset)
-			err = scaleConnMap[config.Primary].FilesetRefreshTask(context.TODO())
-			if err != nil {
-				message := "error in fileset refresh task"
-				logger.Error(err, message)
-				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.FilesetRefreshFailed), message,
-				)
-				return requeAfterDelay, err
-			}
-
-			// retry listing fileset again after some time after refresh
-			time.Sleep(8 * time.Second)
-			filesetInfo, err = scaleConnMap[config.Primary].ListFileset(context.TODO(), primary.PrimaryFs, primary.PrimaryFset)
-			if err != nil || reflect.ValueOf(filesetInfo).IsZero() {
-				message := fmt.Sprintf("Primary fileset %s is not visible on primary cluster even after running fileset refresh task", primary.PrimaryFset)
-				logger.Error(err, message)
-				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-					metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
-				)
-				return requeAfterDelay, err
-			}
-		}
-	}
-
-	//A directory can be created from accessing cluster, so get the path on accessing cluster
-	if fsMountPoint != primaryFSMount {
-		fsetLinkPath = strings.Replace(fsetLinkPath, fsMountPoint, primaryFSMount, 1)
-	}
-
-	// Create directory where volume symlinks will reside
-	symlinkDirPath, _, err := r.createSymlinksDir(ctx, instance, scaleConnMap[config.Primary], primary.PrimaryFs, primaryFSMount, fsetLinkPath)
-	if err != nil {
-		message := fmt.Sprintf("Failed to create the directory %s on the primary filesystem %s", config.SymlinkDir, primary.PrimaryFs)
-		logger.Error(err, message)
-		return requeAfterDelay, err
-	}
-	logger.Info("The symlinks directory path is:", "symlinkDirPath", symlinkDirPath)
-	return requeAfterDelay, nil
-}
-
 // getPrimaryCluster returns primary cluster of the passed instance.
 func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperator.CSIScaleOperator) *csiv1.CSIFilesystem {
 	var primary *csiv1.CSIFilesystem
@@ -2227,81 +2075,6 @@ func (r *CSIScaleOperatorReconciler) getPrimaryCluster(instance *csiscaleoperato
 		}
 	}
 	return primary
-}
-
-// createPrimaryFileset creates a primary fileset and returns it's path
-// where it is linked. If primary fileset exists and is already linked,
-// the link path is returned. If primary fileset already exists and not linked,
-// it is linked and link path is returned.
-func (r *CSIScaleOperatorReconciler) createPrimaryFileset(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, sc connectors.SpectrumScaleConnector, fsNameOnOwningCluster string,
-	fsMountPoint string, filesetName string, inodeLimit string) (string, error) {
-	logger := csiLog.FromContext(ctx).WithName("createPrimaryFileset")
-	logger.Info("Creating primary fileset", " primaryFS", fsNameOnOwningCluster,
-		"mount point", fsMountPoint, "filesetName", filesetName)
-
-	newLinkPath := path.Join(fsMountPoint, filesetName) //Link path to set if the fileset is not linked
-
-	// create primary fileset if not already created
-	fsetResponse, err := sc.ListFileset(context.TODO(), fsNameOnOwningCluster, filesetName)
-	if err != nil {
-		message := fmt.Sprintf("Failed to list fileset in filesystem %s", fsNameOnOwningCluster)
-		logger.Error(err, message)
-		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-			metav1.ConditionFalse, string(csiv1.GetFilesetFailed), message,
-		)
-		return "", err
-	} else if reflect.ValueOf(fsetResponse).IsZero() {
-		logger.Info("Primary fileset not found, so creating it", "fileseName", filesetName)
-		opts := make(map[string]interface{})
-		if inodeLimit != "" {
-			opts[connectors.UserSpecifiedInodeLimit] = inodeLimit
-		}
-
-		err = sc.CreateFileset(context.TODO(), fsNameOnOwningCluster, filesetName, opts)
-		if err != nil {
-			message := fmt.Sprintf("Failed to create the primary fileset %s on the filesystem %s", filesetName, fsNameOnOwningCluster)
-			logger.Error(err, message)
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.CreateFilesetFailed), message,
-			)
-			return "", err
-		}
-		logger.Info("Primary fileset is created successfully", "filesetName", filesetName)
-
-		fsetResponse, err = sc.ListFileset(context.TODO(), fsNameOnOwningCluster, filesetName)
-		if err != nil {
-			// fileset got created but listing failed, return without cleanup
-			message := fmt.Sprintf("unable to list newly created primary fileset [%v] in filesystem [%v]. Error: %v", filesetName, fsNameOnOwningCluster, err)
-			logger.Error(err, message)
-			return "", err
-		}
-	} else {
-		if !strings.Contains(fsetResponse.Config.Comment, connectors.FilesetComment) {
-			message := fmt.Sprintf("Primary fileset [%s] is not created by IBM Storage Scale CSI driver. Cannot use it.", filesetName)
-			err := fmt.Errorf("%s", message)
-			logger.Error(err, "")
-			return "", err
-		}
-	}
-
-	linkPath := fsetResponse.Config.Path
-	if linkPath == "" || linkPath == "--" {
-		logger.Info("Primary fileset not linked. Linking it", "filesetName", filesetName)
-		err = sc.LinkFileset(context.TODO(), fsNameOnOwningCluster, filesetName, newLinkPath)
-		if err != nil {
-			message := fmt.Sprintf("Failed to link the primary fileset %s to the linkpath %s on the filesystem %s", filesetName, newLinkPath, fsNameOnOwningCluster)
-			logger.Error(err, message)
-			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-				metav1.ConditionFalse, string(csiv1.LinkFilesetFailed), message,
-			)
-			return "", err
-		} else {
-			logger.Info("Linked primary fileset", "filesetName", filesetName, "linkpath", newLinkPath)
-		}
-	} else {
-		logger.Info("Primary fileset exists and linked", "filesetName", filesetName, "linkpath", linkPath)
-	}
-	return newLinkPath, nil
 }
 
 // createSymlinksDir creates a .volumes directory on the fileset path fsetLinkPath,
@@ -2349,7 +2122,6 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 	}
 
 	primaryClusterFound, issueFound := false, false
-	remoteClusterID := ""
 	var nonPrimaryClusters = make(map[string]bool)
 
 	for i := 0; i < len(instance.Spec.Clusters); i++ {
@@ -2368,19 +2140,14 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 			logger.Error(fmt.Errorf("mandatory parameter 'guiHost' is not specified for cluster %v", cluster.Id), "")
 		}
 
-		if cluster.Primary != nil && *cluster.Primary != (csiv1.CSIFilesystem{}) {
+		if instance.Spec.LocalScaleCluster != "" && instance.Spec.LocalScaleCluster == cluster.Id {
+			primaryClusterFound = true
+		} else if cluster.Primary != nil && *cluster.Primary != (csiv1.CSIFilesystem{}) {
 			if primaryClusterFound {
 				issueFound = true
 				logger.Error(fmt.Errorf("more than one primary clusters specified"), "")
 			}
-
 			primaryClusterFound = true
-			if cluster.Primary.PrimaryFs == "" {
-				issueFound = true
-				logger.Error(fmt.Errorf("mandatory parameter 'primaryFs' is not specified for primary cluster %v", cluster.Id), "")
-			}
-
-			remoteClusterID = cluster.Primary.RemoteCluster
 		} else {
 			//when its a not primary cluster
 			nonPrimaryClusters[cluster.Id] = true
@@ -2401,11 +2168,11 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 		issueFound = true
 		logger.Error(fmt.Errorf("no primary clusters specified"), "")
 	}
-	_, nonPrimaryClusterExists := nonPrimaryClusters[remoteClusterID]
-	if remoteClusterID != "" && !nonPrimaryClusterExists {
-		issueFound = true
-		logger.Error(fmt.Errorf("remote cluster specified for primary filesystem: %s, but no entry found for it in driver manifest", remoteClusterID), "")
-	}
+	//_, nonPrimaryClusterExists := nonPrimaryClusters[remoteClusterID]
+	//if remoteClusterID != "" && !nonPrimaryClusterExists {
+	//	issueFound = true
+	//	logger.Error(fmt.Errorf("remote cluster specified for primary filesystem: %s, but no entry found for it in driver manifest", remoteClusterID), "")
+	//}
 
 	if issueFound {
 		message := "one or more issues found while validating driver manifest, check operator logs for details"
@@ -2460,8 +2227,6 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(ctx context.Context, instanc
 				validateEnvVarValue(config.EnvVolumeStatsCapabilityValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvDiscoverCGFilesetKeyPrefixed:
 				validateEnvVarValue(config.EnvDiscoverCGFilesetValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
-			case config.EnvPrimaryFilesystemKeyPrefixed:
-				validateEnvVarValue(config.EnvPrimaryFilesystemValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.EnvVolNamePrefixKeyPrefixed:
 				validateVolNamePrefix(ctx, keyUpper, strings.ToLower(value), validEnvMap, invalidEnvValueMap)
 			case config.DaemonSetUpgradeMaxUnavailableKey:
@@ -2708,11 +2473,6 @@ func setDefaultDriverEnvValues(ctx context.Context, envMap map[string]string) {
 	if _, ok := envMap[config.SidecarMemoryLimits]; !ok {
 		logger.Info("Sidecars Memory limits is empty or incorrect.", "Defaulting Memory limits to", config.SidecarMemoryLimitsDefaultValue)
 		envMap[config.SidecarMemoryLimits] = config.SidecarMemoryLimitsDefaultValue
-	}
-	// set default EnvPrimaryFilesystemKey when it is not present in envMap
-	if _, ok := envMap[config.EnvPrimaryFilesystemKey]; !ok {
-		logger.Info("PRIMARY_FILESYSTEM is empty or incorrect.", "Defaulting PRIMARY_FILESYSTEM to", config.EnvPrimaryFilesystemDefaultValue)
-		envMap[config.EnvPrimaryFilesystemKey] = config.EnvPrimaryFilesystemDefaultValue
 	}
 }
 
