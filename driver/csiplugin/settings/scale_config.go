@@ -29,17 +29,18 @@ import (
 )
 
 type ScaleSettingsConfigMap struct {
+	LocalScaleCluster string `json:"localScaleCluster"` 
 	Clusters []Clusters
 }
 
 type Primary struct {
 	PrimaryFSDep  string `json:"primaryFS"` // Deprecated
-	PrimaryFs     string `json:"primaryFs"`
-	PrimaryFset   string `json:"primaryFset"`
+	PrimaryFs     string `json:"primaryFs"` //Deprecated
+	PrimaryFset   string `json:"primaryFset"` //Deprecated
 	PrimaryCid    string `json:"primaryCid"`
 	InodeLimitDep string `json:"inode-limit"` // Deprecated
-	InodeLimits   string `json:"inodeLimit"`
-	RemoteCluster string `json:"remoteCluster"`
+	InodeLimits   string `json:"inodeLimit"` //Deprecated
+	RemoteCluster string `json:"remoteCluster"` //Deprecated
 
 	PrimaryFSMount      string
 	PrimaryFsetLink     string
@@ -52,41 +53,15 @@ const (
 	cacertFileSuffix = "-cacert"
 )
 const (
-	DirPath                = "scalecsilogs"
-	LogFile                = "ibm-spectrum-scale-csi.logs"
-	PersistentLog          = "PERSISTENT_LOG"
-	NodePublishMethod      = "NODEPUBLISH_METHOD"
-	VolumeStatsCapability  = "VOLUME_STATS_CAPABILITY"
-	HostPath               = "/host/var/adm/ras/"
-	RotateSize             = 1024
-	DiscoverCGFileset      = "DISCOVER_CG_FILESET"
-	PrimaryFilesystemKey   = "PRIMARY_FILESYSTEM"
-	PrimaryFilesystemValue = "DISABLED"
+	DirPath               = "scalecsilogs"
+	LogFile               = "ibm-spectrum-scale-csi.logs"
+	PersistentLog         = "PERSISTENT_LOG"
+	NodePublishMethod     = "NODEPUBLISH_METHOD"
+	VolumeStatsCapability = "VOLUME_STATS_CAPABILITY"
+	HostPath              = "/host/var/adm/ras/"
+	RotateSize            = 1024
+	DiscoverCGFileset     = "DISCOVER_CG_FILESET"
 )
-
-/*
-To support backwards compatibility if the PrimaryFs field is not defined then
-
-	use the previous version of the field.
-*/
-func (primary Primary) GetPrimaryFs() string {
-	if primary.PrimaryFs == "" {
-		return primary.PrimaryFSDep
-	}
-	return primary.PrimaryFs
-}
-
-/*
-To support backwards compatibility if the InodeLimit field is not defined then
-
-	use the previous version of the field.
-*/
-func (primary Primary) GetInodeLimit() string {
-	if primary.InodeLimits == "" {
-		return primary.InodeLimitDep
-	}
-	return primary.InodeLimits
-}
 
 type RestAPI struct {
 	GuiHost string `json:"guiHost"`
@@ -100,6 +75,7 @@ type Clusters struct {
 	Cacert        string    `json:"cacert"`
 	Secrets       string    `json:"secrets"`
 	RestAPI       []RestAPI `json:"restApi"`
+	PrimaryCluster string    `json:"primaryCluster"`
 
 	MgmtUsername string
 	MgmtPassword string

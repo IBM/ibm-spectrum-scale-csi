@@ -35,7 +35,7 @@ type SpectrumScaleConnector interface {
 	//Filesystem operations
 	GetFilesystemMountDetails(ctx context.Context, filesystemName string) (MountInfo, error)
 	IsFilesystemMountedOnGUINode(ctx context.Context, filesystemName string) (bool, error)
-	ListFilesystems(ctx context.Context) ([]string, error)
+	ListFilesystems(ctx context.Context) (map[string]string, error)
 	GetFilesystemDetails(ctx context.Context, filesystemName string) (FileSystem_v2, error)
 	GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error)
 	//Node operations

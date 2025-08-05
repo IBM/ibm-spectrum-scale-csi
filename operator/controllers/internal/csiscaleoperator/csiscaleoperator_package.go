@@ -508,10 +508,10 @@ func (c *CSIScaleOperator) GenerateResizerClusterRole() *rbacv1.ClusterRole {
 				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
 			{
-                                APIGroups: []string{storageApiGroup},
-                                Resources: []string{volumeAttributeClassesResource},
-                                Verbs:     []string{verbGet, verbList, verbWatch},
-                        },
+				APIGroups: []string{storageApiGroup},
+				Resources: []string{volumeAttributeClassesResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
 			{
 				APIGroups: []string{coordinationApiGroup},
 				Resources: []string{leaseResource},

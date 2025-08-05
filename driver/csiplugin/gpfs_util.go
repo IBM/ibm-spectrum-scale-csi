@@ -82,10 +82,11 @@ type scaleVolume struct {
 	InodeLimit         string                            `json:"inodeLimit"`
 	Connector          connectors.SpectrumScaleConnector `json:"connector"`
 	PrimaryConnector   connectors.SpectrumScaleConnector `json:"primaryConnector"`
-	PrimarySLnkRelPath string                            `json:"primarySLnkRelPath"`
-	PrimarySLnkPath    string                            `json:"primarySLnkPath"`
-	PrimaryFS          string                            `json:"primaryFS"`
-	PrimaryFSMount     string                            `json:"primaryFSMount"`
+	PrimarySLnkRelPath string                            `json:"primarySLnkRelPath"` //Deprecated from 3.0.0
+	PrimarySLnkPath    string                            `json:"primarySLnkPath"`    //Deprecated from 3.0.0
+	PrimaryFS          string                            `json:"primaryFS"`          //Deprecated from 3.0.0
+	PrimaryFSMount     string                            `json:"primaryFSMount"`     //Deprecated from 3.0.0
+	PrimaryClusterId   string                            `json:"primaryClusterId"`
 	ParentFileset      string                            `json:"parentFileset"`
 	LocalFS            string                            `json:"localFS"`
 	TargetPath         string                            `json:"targetPath"`

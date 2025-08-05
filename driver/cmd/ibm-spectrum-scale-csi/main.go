@@ -48,7 +48,7 @@ var (
 func main() {
 	klog.InitFlags(nil)
 
-	for _, key := range []string{utils.LogLevel, settings.PersistentLog, settings.NodePublishMethod, settings.VolumeStatsCapability, driver.VolNamePrefixEnvKey, settings.DiscoverCGFileset, settings.PrimaryFilesystemKey} {
+	for _, key := range []string{utils.LogLevel, settings.PersistentLog, settings.NodePublishMethod, settings.VolumeStatsCapability, driver.VolNamePrefixEnvKey, settings.DiscoverCGFileset} {
 		if val, ok := os.LookupEnv(key); ok {
 			klog.Infof("[%s] found in the env : %s", key, val)
 		}
