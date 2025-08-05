@@ -2140,9 +2140,12 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 			logger.Error(fmt.Errorf("mandatory parameter 'guiHost' is not specified for cluster %v", cluster.Id), "")
 		}
 
+		logger.Info(fmt.Sprintf("instance.Spec:[%+v], instance.Spec.LocalScaleCluster:%s", instance.Spec, instance.Spec.LocalScaleCluster))
 		if instance.Spec.LocalScaleCluster != "" && instance.Spec.LocalScaleCluster == cluster.Id {
+			logger.Info(fmt.Sprintf("Inside localScale condition, instance.Spec.LocalScaleCluster:%s, cluster.Id: %s", instance.Spec.LocalScaleCluster, cluster.Id))
 			primaryClusterFound = true
 		} else if cluster.Primary != nil && *cluster.Primary != (csiv1.CSIFilesystem{}) {
+			logger.Info(fmt.Sprintf("Inside cluster primary, cluster.Id: %s", cluster.Id))
 			if primaryClusterFound {
 				issueFound = true
 				logger.Error(fmt.Errorf("more than one primary clusters specified"), "")
@@ -2164,6 +2167,7 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 		}
 	}
 
+	logger.Info(fmt.Sprintf("primaryClusterFound:%t, issueFound:%t", primaryClusterFound, issueFound))
 	if !primaryClusterFound {
 		issueFound = true
 		logger.Error(fmt.Errorf("no primary clusters specified"), "")
