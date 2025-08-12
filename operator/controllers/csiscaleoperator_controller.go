@@ -665,28 +665,6 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 	currentCMSpec := csiv1.CSIScaleOperatorSpec{}
 	logger.Info(fmt.Sprintf("currentCMcmString:%s,instance.Spec:[%+v]", currentCMcmString, instance.Spec))
 
-	//configMapDataBytes := []byte(currentCMcmString)
-	//err := json.Unmarshal(configMapDataBytes, &cmMap)
-	//csiConfigMap := config.CSIConfigMap + ".json"
-	//configMapParseIssue := false
-	//if err != nil {
-	//	configMapParseIssue = true
-	//}
-	//logger.Info(fmt.Sprintf("cmMap:[%+v], configMapParseIssue:%t", cmMap, configMapParseIssue))
-
-	/*modfiedSpec, ok := cmMap[csiConfigMap]
-	logger.Info(fmt.Sprintf("modfiedSpec:[%+v], ok:%t", modfiedSpec, ok))
-	if !ok || configMapParseIssue {
-		message := fmt.Sprintf("Failed to unmarshal ConfigMap: %v", config.CSIConfigMap)
-                err := fmt.Errorf("%s", message)
-                logger.Error(err, "")
-                SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
-                        metav1.ConditionFalse, string(csiv1.UnmarshalFailed), message,
-                )
-                return err
-	}*/
-
-	//currentCMclusters := []csiv1.CSICluster{}
 	prefix := "{\"" + config.CSIConfigMap + ".json\":\""
 	postfix := "}\"}"
 	currentCMcmString = strings.Replace(currentCMcmString, prefix, "", 1)
