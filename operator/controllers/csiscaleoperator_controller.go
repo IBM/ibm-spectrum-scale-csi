@@ -662,14 +662,41 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(ctx context.Context
 // which clusterID is present in current configmap data but not in new CR data.
 func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, currentCMcmString string, newCRClusters []csiv1.CSICluster) error {
 	logger := csiLog.FromContext(ctx).WithName("updateChangedClusters")
-	currentCMclusters := []csiv1.CSICluster{}
-	prefix := "{\"" + config.CSIConfigMap + ".json\":\"{\"clusters\":"
+	currentCMSpec := csiv1.CSIScaleOperatorSpec{}
+	logger.Info(fmt.Sprintf("currentCMcmString:%s,instance.Spec:[%+v]", currentCMcmString, instance.Spec))
+
+	//configMapDataBytes := []byte(currentCMcmString)
+	//err := json.Unmarshal(configMapDataBytes, &cmMap)
+	//csiConfigMap := config.CSIConfigMap + ".json"
+	//configMapParseIssue := false
+	//if err != nil {
+	//	configMapParseIssue = true
+	//}
+	//logger.Info(fmt.Sprintf("cmMap:[%+v], configMapParseIssue:%t", cmMap, configMapParseIssue))
+
+	/*modfiedSpec, ok := cmMap[csiConfigMap]
+	logger.Info(fmt.Sprintf("modfiedSpec:[%+v], ok:%t", modfiedSpec, ok))
+	if !ok || configMapParseIssue {
+		message := fmt.Sprintf("Failed to unmarshal ConfigMap: %v", config.CSIConfigMap)
+                err := fmt.Errorf("%s", message)
+                logger.Error(err, "")
+                SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+                        metav1.ConditionFalse, string(csiv1.UnmarshalFailed), message,
+                )
+                return err
+	}*/
+
+	//currentCMclusters := []csiv1.CSICluster{}
+	prefix := "{\"" + config.CSIConfigMap + ".json\":\""
 	postfix := "}\"}"
 	currentCMcmString = strings.Replace(currentCMcmString, prefix, "", 1)
+	logger.Info(fmt.Sprintf("prefix:%s, currentCMcmString1:[%+v]\n", prefix,currentCMcmString))
 	currentCMcmString = strings.Replace(currentCMcmString, postfix, "", 1)
-
+	logger.Info(fmt.Sprintf("postfix:%s, currentCMcmString2:[%+v]\n", postfix,currentCMcmString))
+	currentCMcmString = currentCMcmString + "}"
+	logger.Info(fmt.Sprintf("currentCMcmString3:[%+v]\n",currentCMcmString))
 	configMapDataBytes := []byte(currentCMcmString)
-	err := json.Unmarshal(configMapDataBytes, &currentCMclusters)
+	err := json.Unmarshal(configMapDataBytes, &currentCMSpec)
 	if err != nil {
 		message := fmt.Sprintf("Failed to unmarshal data of ConfigMap: %v", config.CSIConfigMap)
 		err := fmt.Errorf("%s", message)
@@ -680,6 +707,8 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 		return err
 	}
 
+	logger.Info(fmt.Sprintf("currentCMSpec:[%+v], clusters:[%+v]", currentCMSpec, currentCMSpec.Clusters))
+
 	//This is a map to track which clusters from current configmap are also
 	//present in new CR, so that the connectors for the ones which are not
 	//present in new CR but are present in current configmap can be deleted.
@@ -688,7 +717,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 	for _, crCluster := range newCRClusters {
 		//For the cluster ID of each clusters of updated CR, get the clusters
 		//data of the current configmap and compare that with new CR data
-		oldCMCluster := r.getClusterByID(crCluster.Id, currentCMclusters)
+		oldCMCluster := r.getClusterByID(crCluster.Id, currentCMSpec.Clusters)
 		if reflect.DeepEqual(oldCMCluster, csiv1.CSICluster{}) {
 			//case 1: new cluster is added in CR
 			//no matching cluster is found, that means it is a new
@@ -731,7 +760,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 	//case 3: clusters data in current configmap and new CR mataches, nothing to be done here.
 	//case 4: delete - current configmap has an entry, which is not there in new CR --> delete
 	//the connector for that cluster as we no longer need it.
-	for _, cluster := range currentCMclusters {
+	for _, cluster := range currentCMSpec.Clusters {
 		if _, processed := currentCMProcessedClusters[cluster.Id]; !processed {
 			delete(scaleConnMap, cluster.Id)
 		}
