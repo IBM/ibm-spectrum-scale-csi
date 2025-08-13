@@ -46,13 +46,13 @@ if [[ -z "$NEW_PATH_PREFIX" ]]; then
   help
 fi
 
-# TODO: Uncomment the following lines to enforce allowed path prefixes
-# # Enforce allowed path prefixes
-# if [[ "$NEW_PATH_PREFIX" != "/ibm" && "$NEW_PATH_PREFIX" != "/var/mnt" && "$NEW_PATH_PREFIX" != "/mnt" ]]; then
-#   echo "Error: Unsupported --new_path_prefix value: '$NEW_PATH_PREFIX'"
-#   echo "Allowed values are: /ibm, /var/mnt, /mnt"
-#   exit 1
-# fi
+#TODO: Uncomment the following lines to enforce allowed path prefixes
+# Enforce allowed path prefixes
+if [[ "$NEW_PATH_PREFIX" != "/ibm" && "$NEW_PATH_PREFIX" != "/var/mnt" && "$NEW_PATH_PREFIX" != "/mnt" ]]; then
+  echo "Error: Unsupported --new_path_prefix value: '$NEW_PATH_PREFIX'"
+  echo "Allowed values are: /ibm, /var/mnt, /mnt"
+  exit 1
+fi
 
 # --- Initialize Counters and Lists ---
 success_list=()
