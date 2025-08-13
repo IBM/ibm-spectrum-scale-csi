@@ -203,6 +203,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	for _, cluster := range instance.Spec.Clusters {
+		logger.Info(fmt.Sprintf("watch cluster resources:[%+v]", cluster))
 		if cluster.Cacert != "" {
 			watchResources[corev1.ResourceConfigMaps.String()][cluster.Cacert] = true
 		}
@@ -696,12 +697,14 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 		//For the cluster ID of each clusters of updated CR, get the clusters
 		//data of the current configmap and compare that with new CR data
 		oldCMCluster := r.getClusterByID(crCluster.Id, currentCMSpec.Clusters)
+		logger.Info(fmt.Sprintf("oldCMCluster:[%+v]", oldCMCluster))
 		if reflect.DeepEqual(oldCMCluster, csiv1.CSICluster{}) {
 			//case 1: new cluster is added in CR
 			//no matching cluster is found, that means it is a new
 			//cluster added in CR --> add entry in changedClusters,
 			//so that the new clusters data can be validated later.
 			changedClusters[crCluster.Id] = true
+			logger.Info("Inside new added cluster")
 		} else {
 			//exisiting cluster in current configmap
 			if !reflect.DeepEqual(crCluster, oldCMCluster) {
@@ -735,6 +738,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 		}
 	}
 
+	logger.Info(fmt.Sprintf("changedClusters:%+v, currentCMProcessedClusters:%+v", changedClusters, currentCMProcessedClusters))
 	//case 3: clusters data in current configmap and new CR mataches, nothing to be done here.
 	//case 4: delete - current configmap has an entry, which is not there in new CR --> delete
 	//the connector for that cluster as we no longer need it.
