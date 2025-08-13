@@ -112,15 +112,15 @@ migrate_each() {
   PV="$1"
 
   VOLUME_HANDLE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.volumeHandle}') || {
-    echo "Failed to get volumeHandle for PV: $PV"; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get volumeHandle for PV: $PV"; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   echo "Current volumeHandle: $VOLUME_HANDLE"
 
   PVC_NAME=$(kubectl get pv "$PV" -o jsonpath='{.spec.claimRef.name}') || {
-    echo "Failed to get PVC name for PV: $PV"; ((fail_count++)); fail_list+=("|$PV"); return;
+    echo "Failed to get PVC name for PV: $PV"; fail_count=$(expr $fail_count + 1); fail_list+=("|$PV"); return;
   }
   PVC_NAMESPACE=$(kubectl get pv "$PV" -o jsonpath='{.spec.claimRef.namespace}') || {
-    echo "Failed to get PVC namespace for PV: $PV"; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get PVC namespace for PV: $PV"; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
 
   echo "Preparing to migrate PVC: $PVC_NAME in namespace $PVC_NAMESPACE"
@@ -128,34 +128,34 @@ migrate_each() {
   if ! kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" >/dev/null 2>&1; then
     echo "PVC $PVC_NAME not found in namespace $PVC_NAMESPACE, skipping."
     fail_list+=("$PVC_NAME|$PV")
-    ((fail_count++))
+    fail_count=$(expr $fail_count + 1)
     return
   fi
 
   ACCESS_MODES=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o json | jq '.spec.accessModes') || {
-    echo "Failed to get access modes."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get access modes."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   STORAGE=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o json | jq -r '.spec.resources.requests.storage') || {
-    echo "Failed to get storage size."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get storage size."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   STORAGE_CLASS=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.storageClassName}') || {
-    echo "Failed to get storage class."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get storage class."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   VOLUME_MODE=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.volumeMode}') || {
-    echo "Failed to get volume mode."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get volume mode."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   ATTRS=$(kubectl get pv "$PV" -o json | jq '.spec.csi.volumeAttributes') || {
-    echo "Failed to get volumeAttributes."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get volumeAttributes."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   VOL_BACKEND_FS=$(kubectl get pv "$PV" -o json | jq -r '.spec.csi.volumeAttributes.volBackendFs') || {
-    echo "Failed to get volBackendFs."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get volBackendFs."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
 
   DRIVER=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.driver}') || {
-    echo "Failed to get driver."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get driver."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   FSTYPE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.fsType}') || {
-    echo "Failed to get fsType."; ((fail_count++)); fail_list+=("$PVC_NAME|$PV"); return;
+    echo "Failed to get fsType."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
 
   OLD_PATH=$(echo "$VOLUME_HANDLE" | awk -F';' '{print $NF}')
@@ -204,7 +204,7 @@ migrate_each() {
   else
     echo "Unknown volumeHandle type: ${parts[0]};${parts[1]} — skipping migration for PV: $PV"
     fail_list+=("$PVC_NAME|$PV")
-    ((fail_count++))
+    fail_count=$(expr $fail_count + 1)
     return
   fi
 
@@ -212,7 +212,7 @@ migrate_each() {
 
   if [[ "$VOLUME_HANDLE" == "$NEW_VOLUME_HANDLE" ]]; then
     echo "Already migrated (volumeHandle matches target). Skipping $PV"
-    ((skip_count++))
+    skip_count=$(expr $skip_count + 1)
     skip_list+=("$PVC_NAME|$PV")
     return
   fi
@@ -222,7 +222,7 @@ migrate_each() {
   echo "Setting reclaim policy to Retain for PV: $PV"
   if ! kubectl patch pv "$PV" --type=merge -p '{"spec": {"persistentVolumeReclaimPolicy": "Retain"}}'; then
     echo "Failed to patch reclaim policy for PV: $PV"
-    ((fail_count++))
+    fail_count=$(expr $fail_count + 1)
     fail_list+=("$PVC_NAME|$PV")
     return
   fi
@@ -237,7 +237,7 @@ migrate_each() {
   RECLAIM_POLICY=$(kubectl get pv "$PV" -o jsonpath='{.spec.persistentVolumeReclaimPolicy}')
   if [[ "$RECLAIM_POLICY" != "Retain" ]]; then
     echo "Reclaim policy is not Retain (got: $RECLAIM_POLICY), skipping."
-    ((fail_count++))
+    fail_count=$(expr $fail_count + 1)
     fail_list+=("$PVC_NAME|$PV")
     return
   fi
@@ -284,7 +284,7 @@ EOF
 
   echo "Migration successful for PV: $PV and PVC: $PVC_NAME"
   echo "----------------------------------------------------------------------------------------"
-  ((success_count++))
+  success_count=$(expr $success_count + 1)
   success_list+=("$PVC_NAME|$PV")
 }
 
