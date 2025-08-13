@@ -282,6 +282,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Pre-requisite check passed.")
 	}
 
+	logger.Info(fmt.Sprintf("Before clustersStanzaModified instance.Spec:[%+v]",instance.Spec))
 	cmExists, clustersStanzaModified, err := r.isClusterStanzaModified(ctx, req.Namespace, instance)
 	if err != nil {
 		return reconcile.Result{}, err
