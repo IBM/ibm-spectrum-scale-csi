@@ -662,14 +662,15 @@ func (r *CSIScaleOperatorReconciler) isClusterStanzaModified(ctx context.Context
 // which clusterID is present in current configmap data but not in new CR data.
 func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator, currentCMcmString string, newCRClusters []csiv1.CSICluster) error {
 	logger := csiLog.FromContext(ctx).WithName("updateChangedClusters")
-	currentCMclusters := []csiv1.CSICluster{}
-	prefix := "{\"" + config.CSIConfigMap + ".json\":\"{\"clusters\":"
+	currentCMSpec := csiv1.CSIScaleOperatorSpec{}
+
+	prefix := "{\"" + config.CSIConfigMap + ".json\":\""
 	postfix := "}\"}"
 	currentCMcmString = strings.Replace(currentCMcmString, prefix, "", 1)
 	currentCMcmString = strings.Replace(currentCMcmString, postfix, "", 1)
-
+	currentCMcmString = currentCMcmString + "}"
 	configMapDataBytes := []byte(currentCMcmString)
-	err := json.Unmarshal(configMapDataBytes, &currentCMclusters)
+	err := json.Unmarshal(configMapDataBytes, &currentCMSpec)
 	if err != nil {
 		message := fmt.Sprintf("Failed to unmarshal data of ConfigMap: %v", config.CSIConfigMap)
 		err := fmt.Errorf("%s", message)
@@ -688,7 +689,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 	for _, crCluster := range newCRClusters {
 		//For the cluster ID of each clusters of updated CR, get the clusters
 		//data of the current configmap and compare that with new CR data
-		oldCMCluster := r.getClusterByID(crCluster.Id, currentCMclusters)
+		oldCMCluster := r.getClusterByID(crCluster.Id, currentCMSpec.Clusters)
 		if reflect.DeepEqual(oldCMCluster, csiv1.CSICluster{}) {
 			//case 1: new cluster is added in CR
 			//no matching cluster is found, that means it is a new
@@ -731,7 +732,7 @@ func (r *CSIScaleOperatorReconciler) updateChangedClusters(ctx context.Context, 
 	//case 3: clusters data in current configmap and new CR mataches, nothing to be done here.
 	//case 4: delete - current configmap has an entry, which is not there in new CR --> delete
 	//the connector for that cluster as we no longer need it.
-	for _, cluster := range currentCMclusters {
+	for _, cluster := range currentCMSpec.Clusters {
 		if _, processed := currentCMProcessedClusters[cluster.Id]; !processed {
 			delete(scaleConnMap, cluster.Id)
 		}
@@ -2168,11 +2169,6 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 		issueFound = true
 		logger.Error(fmt.Errorf("no primary clusters specified"), "")
 	}
-	//_, nonPrimaryClusterExists := nonPrimaryClusters[remoteClusterID]
-	//if remoteClusterID != "" && !nonPrimaryClusterExists {
-	//	issueFound = true
-	//	logger.Error(fmt.Errorf("remote cluster specified for primary filesystem: %s, but no entry found for it in driver manifest", remoteClusterID), "")
-	//}
 
 	if issueFound {
 		message := "one or more issues found while validating driver manifest, check operator logs for details"
