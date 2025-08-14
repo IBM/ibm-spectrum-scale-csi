@@ -28,11 +28,6 @@ spec:
     - id: "<Primary Cluster ID>"
       secrets: "secret1"
       secureSslMode: false
-#      primary:
-#        primaryFs: "< Primary Filesystem >"
-#        primaryFset: "< Fileset in Primary Filesystem >"   # Optional - default:spectrum-scale-csi-volume-store
-#        inodeLimit: "< inode limit for Primary Fileset >" # Optional
-#        remoteCluster: "< Remote ClusterID >"            # Optional - This is only required if primaryFs is remote cluster's filesystem and this ID should have separate entry in Clusters map too.
 #      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
       restApi:
         - guiHost: "< IP/Hostname of a GUI node of primary cluster >"
