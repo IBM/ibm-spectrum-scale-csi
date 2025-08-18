@@ -73,7 +73,7 @@ A helper script is provided to automate PV migration:
 
 ```bash
 # Usage
-./pv_migration_csi_primary_removed.bash
+./migration_csi_primary_removal.bash
 ```
 
 - No arguments are required.

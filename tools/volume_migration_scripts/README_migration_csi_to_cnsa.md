@@ -95,12 +95,11 @@ A helper script is provided to automate PV migration:
 
 ```bash
 # Usage
-./pv_migration_csi_to_cnsa.bash <migration_name> --new_path_prefix /var/mnt
+./migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
 ```
 
 Where:
 
-- `<migration_name>` is a user-defined identifier for this migration run.
 - `--new_path_prefix` specifies the **base mount point** of IBM Storage Scale filesystems on CNSA worker nodes.
   Allowed values: `/ibm`, `/mnt`, `/var/mnt`
 
