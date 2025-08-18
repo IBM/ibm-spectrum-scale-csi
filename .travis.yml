@@ -2,7 +2,7 @@ services: docker
 dist: focal
 language: go
 go:
-  - 1.22.x
+  - 1.23.x
 
 env:
   global:
@@ -20,12 +20,12 @@ env:
     - IMAGE_REPO_OPERATOR=quay.io/${IMAGE_REPO_OWNER}/${REPO_NAME_OPERATOR}
 
     # Add image tag
-    - IMAGE_TAG=$( 
-        if [[ $TRAVIS_EVENT_TYPE == 'cron' ]]; 
-        then 
-            echo "nightly-${TRAVIS_BUILD_ID}-`date -u +%F`"; 
+    - IMAGE_TAG=$(
+        if [[ $TRAVIS_EVENT_TYPE == 'cron' ]];
+        then
+            echo "nightly-${TRAVIS_BUILD_ID}-`date -u +%F`";
         else
-            echo $TRAVIS_BRANCH; 
+            echo $TRAVIS_BRANCH;
         fi
       )
     # Add image repo and tag
