@@ -75,6 +75,19 @@ volumeHandle: 0;2;13009550825755318848;9A7B0B0A:68891B40;;pvc-26946b2b-b18a-4c0d
 The exact path suffix (e.g., `pvc-uuid-data`) may vary based on how the volume was originally created.
 The script automatically detects and applies the correct mapping without user intervention.
 
+## Prerequisites
+
+Before running the migration script, ensure the following tools are installed and available in your `$PATH`:
+
+- **kubectl** – to interact with the Kubernetes cluster and fetch/update PV/PVC objects
+- **jq** – for JSON parsing and manipulation of Kubernetes API responses
+
+You can verify installation with:
+
+```bash
+kubectl version --client
+jq --version
+```
 
 ## Migration Script Usage
 

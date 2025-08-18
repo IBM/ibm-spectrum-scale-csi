@@ -64,6 +64,7 @@ fail_count=0
 skip_count=0
 
 main() {
+  check_prerequisites
   echo "Using the new path prefix: $NEW_PATH_PREFIX"
   echo "The new volume handle volumePath will be: $NEW_PATH_PREFIX/<RemoteFS>/..."
   echo ""
@@ -84,6 +85,17 @@ main() {
     COUNT=$((COUNT + 1))
   done
   final_summary
+}
+
+check_prerequisites() {
+  echo "Checking prerequisites..."
+  for cmd in kubectl jq; do
+    if ! command -v $cmd &>/dev/null; then
+        echo "Error: '$cmd' is required but not installed or not in PATH." >&2
+        exit 1
+    fi
+  done
+  echo "All prerequisites met."
 }
 
 init() {

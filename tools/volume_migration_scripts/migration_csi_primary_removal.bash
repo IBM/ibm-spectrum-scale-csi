@@ -40,6 +40,7 @@ fail_count=0
 skip_count=0
 
 main() {
+  check_prerequisites
   echo "Starting migration of IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal"
   echo ""
   read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
@@ -59,6 +60,17 @@ main() {
     COUNT=$((COUNT + 1))
   done
   final_summary
+}
+
+check_prerequisites() {
+  echo "Checking prerequisites..."
+  for cmd in kubectl jq; do
+    if ! command -v $cmd &>/dev/null; then
+        echo "Error: '$cmd' is required but not installed or not in PATH." >&2
+        exit 1
+    fi
+  done
+  echo "All prerequisites met."
 }
 
 init() {
