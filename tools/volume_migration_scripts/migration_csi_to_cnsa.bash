@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Usage: ./pv_migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
-# Migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle.
+# Usage: ./migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
+# Migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix.
 
 set -euo pipefail
 
@@ -13,10 +13,10 @@ help() {
   echo "Example:"
   echo "  $0 --new_path_prefix /var/mnt"
   echo ""
-  echo "  These must match the base mount point of Spectrum Scale on your nodes."
+  echo "  These must match the base mount point of IBM Storage Scale on your nodes."
   echo ""
   echo "Description:"
-  echo "  This script migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle."
+  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix"
   echo ""
   exit 1
 }
