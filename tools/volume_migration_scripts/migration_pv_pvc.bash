@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Usage: ./pv_migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
-# Migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle.
+# Usage: ./migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
+# Migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix.
 
 set -euo pipefail
 
@@ -13,10 +13,10 @@ help() {
   echo "Example:"
   echo "  $0 --new_path_prefix /var/mnt"
   echo ""
-  echo "  These must match the base mount point of Spectrum Scale on your nodes."
+  echo "  These must match the base mount point of IBM Storage Scale on your nodes."
   echo ""
   echo "Description:"
-  echo "  This script migrates Storage Scale CSI PVs to use the new path prefix in the volumeHandle."
+  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix"
   echo ""
   exit 1
 }
@@ -150,13 +150,16 @@ migrate_each() {
   VOL_BACKEND_FS=$(kubectl get pv "$PV" -o json | jq -r '.spec.csi.volumeAttributes.volBackendFs') || {
     echo "Failed to get volBackendFs."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
-
   DRIVER=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.driver}') || {
     echo "Failed to get driver."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
   FSTYPE=$(kubectl get pv "$PV" -o jsonpath='{.spec.csi.fsType}') || {
     echo "Failed to get fsType."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
+  RECLAIM_POLICY_ORIGINAL=$(kubectl get pv "$PV" -o jsonpath='{.spec.persistentVolumeReclaimPolicy}') || {
+    echo "Failed to get reclaimPolicy for PV $PV."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
+  }
+
 
   OLD_PATH=$(echo "$VOLUME_HANDLE" | awk -F';' '{print $NF}')
   IFS=';' read -ra parts <<< "$VOLUME_HANDLE"
@@ -227,7 +230,7 @@ migrate_each() {
     return
   fi
 
-  BACKUP_DIR="$BACKUP_BASE_DIR/${PVC_NAME}"
+  BACKUP_DIR="$BACKUP_BASE_DIR/${PVC_NAMESPACE}/${PVC_NAME}"
   mkdir -p "$BACKUP_DIR"
 
   echo "Backing up PV and PVC..."
@@ -256,7 +259,7 @@ spec:
   capacity:
     storage: $STORAGE
   accessModes: $(echo "$ACCESS_MODES" | jq '.')
-  persistentVolumeReclaimPolicy: Delete
+  persistentVolumeReclaimPolicy: $RECLAIM_POLICY_ORIGINAL
   storageClassName: $STORAGE_CLASS
   csi:
     driver: $DRIVER
