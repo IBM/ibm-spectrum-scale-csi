@@ -1,35 +1,24 @@
 #!/bin/bash
 
-# Usage: ./migration_csi_to_cnsa.bash --new_path_prefix /var/mnt
-# Migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix.
+# Usage: ./migration_csi_primary_removal.bash
+# Migrates IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal.
 
 set -euo pipefail
 
 # --- Help Function ---
 help() {
   echo ""
-  echo "Usage: $0 --new_path_prefix <path> "
-  echo ""
-  echo "Example:"
-  echo "  $0 --new_path_prefix /var/mnt"
-  echo ""
-  echo "  These must match the base mount point of IBM Storage Scale on your nodes."
+  echo "Usage: $0"
   echo ""
   echo "Description:"
-  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix"
+  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal."
   echo ""
   exit 1
 }
 
 # --- Argument Parsing ---
-NEW_PATH_PREFIX=""
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --new_path_prefix)
-      shift
-      NEW_PATH_PREFIX="$1"
-      ;;
     -h|--help)
       help
       ;;
@@ -41,19 +30,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ -z "$NEW_PATH_PREFIX" ]]; then
-  echo "Missing required argument: --new_path_prefix"
-  help
-fi
-
-#TODO: Uncomment the following lines to enforce allowed path prefixes
-# Enforce allowed path prefixes
-if [[ "$NEW_PATH_PREFIX" != "/ibm" && "$NEW_PATH_PREFIX" != "/var/mnt" && "$NEW_PATH_PREFIX" != "/mnt" ]]; then
-  echo "Error: Unsupported --new_path_prefix value: '$NEW_PATH_PREFIX'"
-  echo "Allowed values are: /ibm, /var/mnt, /mnt"
-  exit 1
-fi
-
 # --- Initialize Counters and Lists ---
 success_list=()
 fail_list=()
@@ -64,8 +40,7 @@ fail_count=0
 skip_count=0
 
 main() {
-  echo "Using the new path prefix: $NEW_PATH_PREFIX"
-  echo "The new volume handle volumePath will be: $NEW_PATH_PREFIX/<RemoteFS>/..."
+  echo "Starting migration of IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal"
   echo ""
   read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
   if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
@@ -162,47 +137,79 @@ migrate_each() {
 
 
   OLD_PATH=$(echo "$VOLUME_HANDLE" | awk -F';' '{print $NF}')
+  CURRENT_PREFIX="${OLD_PATH%%/$VOL_BACKEND_FS/*}"
   IFS=';' read -ra parts <<< "$VOLUME_HANDLE"
 
   if [[ "${parts[0]}" == "0" && "${parts[1]}" == "0" ]]; then
     echo "Detected volumeHandle type: 0;0 (volDirBasePath) : Lightweight volume"
-    VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath"')
-    NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
-
+    if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
+      VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath"')
+      NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
+    fi
+    else
+      echo "For this volume primary migration is not required. Skipping $PV"
+      skip_count=$(expr $skip_count + 1)
+      skip_list+=("$PVC_NAME|$PV")
+      return
+    fi
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 0;1 (parentFileset) : Fileset volume and dependent fileset"
-    PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset"')
-    NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
+    if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
+      PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset"')
+      NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
 
-    # Check if existingVolume is set to yes for static fileset volumes
-    existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
-    if [[ "$existingVolume" == "yes" ]]; then
-      echo "Static Fileset volume and dependent fileset"
-      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
+      # Check if existingVolume is set to yes for static fileset volumes
+      existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+      if [[ "$existingVolume" == "yes" ]]; then
+        echo "Static Fileset volume and dependent fileset"
+        NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
+      fi
     fi
-
-  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2" ]]; then
+    else
+      echo "For this volume primary migration is not required. Skipping $PV"
+      skip_count=$(expr $skip_count + 1)
+      skip_list+=("$PVC_NAME|$PV")
+      return
+    fi
+  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2"  && "${parts[-1]}" == *"/.volumes/"* ]]; then
     echo "Detected volumeHandle type: 0;2 (fileset) : Fileset volume and independent fileset"
+    if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
+      # Default path of dynamic fileset
+      NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
 
-    # Default path of dynamic fileset
-    NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
-
-    # Check if existingVolume is set to yes for static fileset volumes
-    existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
-    if [[ "$existingVolume" == "yes" ]]; then
-      echo "Static Fileset volume and independent fileset"
-      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+      # Check if existingVolume is set to yes for static fileset volumes
+      existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+      if [[ "$existingVolume" == "yes" ]]; then
+        echo "Static Fileset volume and independent fileset"
+        NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+      fi
     fi
-
+    else
+      echo "For this volume primary migration is not required. Skipping $PV"
+      skip_count=$(expr $skip_count + 1)
+      skip_list+=("$PVC_NAME|$PV")
+      return
+    fi
   elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 1;1 (version2) : Consistency group fileset"
-    CURRENT_PREFIX="${OLD_PATH%%/$VOL_BACKEND_FS/*}"
-    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#$CURRENT_PREFIX/}"
+    echo "For Consistency group fileset migration is not required. Skipping $PV"
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
+    return
 
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "3" ]]; then
-    echo "Detected volumeHandle type: 0;3 (version2) : Shallow copy fileset"
-    CURRENT_PREFIX="${OLD_PATH%%/$VOL_BACKEND_FS/*}"
-    NEW_PATH="$NEW_PATH_PREFIX/${OLD_PATH#$CURRENT_PREFIX/}"
+    echo "Detected volumeHandle type: 0;3 : Shallow copy fileset"
+    echo "For Shallow copy fileset migration is not required. Skipping $PV"
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
+    return
+
+  elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "3" ]]; then
+    echo "Detected volumeHandle type: 1;3 version-2: Shallow copy fileset"
+    echo "For Shallow copy fileset migration is not required. Skipping $PV"
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
+    return
 
   else
     echo "Unknown volumeHandle type: ${parts[0]};${parts[1]} — skipping migration for PV: $PV"

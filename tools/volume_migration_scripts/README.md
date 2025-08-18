@@ -7,8 +7,11 @@ This provides scripts to migrate existing IBM Storage Scale CSI PersistentVolume
 - [`migration_csi_to_cnsa.bash`](README_migration_csi_to_cnsa.md)
   Migrates IBM Storage Scale CSI PersistentVolumes to the CNSA format by updating the volumeHandle path with the specified prefix.
 
+- [`migration_csi_primary_removal.bash`](README_migration_csi_primary_removal.md)
+  Migrates IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal.
+
 - [`migration_cnsa_primary_removal.bash`](README_migration_cnsa_primary_removal.md)
-  Migrates IBM Storage Scale PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix after primary removal
+  Migrates IBM Storage Scale PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix after primary removal.
 
 ---
 
