@@ -52,6 +52,10 @@ env:
     - QUAY_NAMESPACE=${IMAGE_REPO_OWNER}
     - PACKAGE_NAME=${REPO_NAME}-${BRANCH}
 
+    # Build tool versions
+    - KUSTOMIZE_VERSION=4.5.2
+    - GOLANGCI_LINT_VERSION=v1.59.0
+
 # Operator ENV
     - OCTOKIT_API_ENDPOINT="https://github.ibm.com/api/v3/"
     - PATH=/opt/python/3.6.7/bin:$PATH
@@ -97,7 +101,7 @@ jobs:
       before_install:
         - >-
           curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
-          sh -s -- -b $(go env GOPATH)/bin v1.54.2 # pinned
+          sh -s -- -b $(go env GOPATH)/bin $GOLANGCI_LINT_VERSION # pinned
       before_script:
         - cd ${BUILD_DIR_DRIVER}
       script:
@@ -109,12 +113,12 @@ jobs:
       before_install:
         - >-
           curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh |
-          sh -s -- -b $(go env GOPATH)/bin v1.54.2 # pinned
+          sh -s -- -b $(go env GOPATH)/bin $GOLANGCI_LINT_VERSION # pinned
       before_script:
         - cd ${BUILD_DIR_OPERATOR}
       script:
         - pip3 install ansible
-        - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- 4.5.7 ${HOME}/bin
+        - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- $KUSTOMIZE_VERSION ${HOME}/bin
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
         - golangci-lint run --no-config --disable-all -E gosec --out-format json,colored-line-number --timeout 3m0s
