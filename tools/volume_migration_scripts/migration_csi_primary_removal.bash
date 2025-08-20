@@ -167,14 +167,26 @@ migrate_each() {
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 0;1 (parentFileset) : Fileset volume and dependent fileset"
     if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
-      PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset"')
-      NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
 
-      # Check if existingVolume is set to yes for static fileset volumes
-      existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+      PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset" // empty')
+      existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume" // empty')
+
       if [[ "$existingVolume" == "yes" ]]; then
         echo "Static Fileset volume and dependent fileset"
-        NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
+        if [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" ]]; then
+          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
+        else
+          echo "parentFileset is empty or 'root', using default path"
+          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+        fi
+      else
+        echo "Dynamic Fileset volume and dependent fileset"
+        if [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" ]]; then
+          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
+        else
+          echo "parentFileset is empty or 'root', using default path"
+          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
+        fi
       fi
     fi
     else
