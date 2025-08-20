@@ -57,6 +57,8 @@ The script automatically detects and applies the correct mapping for each filese
 
 Ensure the following tools are installed and available in your `$PATH`:
 
+- **Existing workloads or application pods must be deleted in the existing cluster before installation of new CNSA**
+- The script should be run in the context of the cluster where Spectrum Scale CSI is deployed
 - **kubectl** – to interact with the CNSA Kubernetes cluster and fetch/update PV/PVC objects
 - **jq** – for JSON parsing and manipulation of Kubernetes API responses
 

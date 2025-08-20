@@ -79,6 +79,8 @@ The script automatically detects and applies the correct mapping without user in
 
 Before running the migration script, ensure the following tools are installed and available in your `$PATH`:
 
+- **Existing workloads or application pods must be deleted in the existing CSI cluster before installation of CNSA**
+- The script should be run in the context of the cluster where Spectrum Scale CSI is deployed
 - **kubectl** – to interact with the Kubernetes cluster and fetch/update PV/PVC objects
 - **jq** – for JSON parsing and manipulation of Kubernetes API responses
 

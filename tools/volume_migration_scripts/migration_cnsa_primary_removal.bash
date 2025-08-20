@@ -296,6 +296,14 @@ migrate_each() {
 
   echo "Deleting PVC and PV..."
   kubectl delete pvc "$PVC_NAME" -n "$PVC_NAMESPACE"
+
+  finalizer="external-attacher/spectrumscale-csi-ibm-com"
+
+  # Check if PV has Spectrum Scale external-attacher finalizer
+  if kubectl get pv "${PV}" -o json | jq -e ".metadata.finalizers | index(\"${finalizer}\")" >/dev/null; then
+      echo "Removing ${finalizer} finalizer from PV ${PV} before deletion..."
+      kubectl patch pv "${PV}" -p '{"metadata":{"finalizers":["kubernetes.io/pv-protection"]}}'
+  fi
   kubectl delete pv "$PV"
 
   echo "Recreating PV and PVC..."
