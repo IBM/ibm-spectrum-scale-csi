@@ -1,9 +1,9 @@
 version: 3.0.0
 images:
-  csiSnapshotter: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:bc7be893ecc3ad524194aa6573b2f5c06cd469bdf21a500ab6c99c2ba1c4d64db
-  csiAttacher: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:5aaefc24f315b182233c8b6146077f8c32e274d864cb03c632206e78bd0302dag
-  csiProvisioner: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:bb057f866177d5f4139a1527e594499cbe0feeb67b63aaca8679dfdf0a6016f9d
-  csiLivenessprobe: cp.icr.io/cp/gpfs/csi/livenessprobe@sha256:88092d100909918ae0a768956cf78c88bc59cd7232720f7cdbdfb5d2e235001ef
-  csiNodeRegistrar: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:5244abbe87e01b35adeb8bb13882a74785df0c0619f8325c9e950395c3f72a97e
-  csiResizer: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:5e7cbb63fd497fa913caa21fee1a69f727c220c6fa83c5f8bb0995e2ad73a474c
-  csiDriver: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:5f7cf8c7abbc1576f64880d4ec3878485c1cd6e8da026a09e270f49ba27b9955aa
+  csiSnapshotter: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:bc7be893ecc3ad524194aa6573b2f5c06cd469bdf21a500ab6c99c2ba1c4d64d
+  csiAttacher: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:5aaefc24f315b182233c8b6146077f8c32e274d864cb03c632206e78bd0302da
+  csiProvisioner: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:bb057f866177d5f4139a1527e594499cbe0feeb67b63aaca8679dfdf0a6016f9
+  csiLivenessprobe: cp.icr.io/cp/gpfs/csi/livenessprobe@sha256:88092d100909918ae0a768956cf78c88bc59cd7232720f7cdbdfb5d2e235001e
+  csiNodeRegistrar: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:5244abbe87e01b35adeb8bb13882a74785df0c0619f8325c9e950395c3f72a97
+  csiResizer: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:5e7cbb63fd497fa913caa21fee1a69f727c220c6fa83c5f8bb0995e2ad73a474
+  csiDriver: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:5f7cf8c7abbc1576f64880d4ec3878485c1cd6e8da026a09e270f49ba27b9955
