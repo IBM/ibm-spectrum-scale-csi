@@ -244,7 +244,7 @@ migrate_each() {
     return
   fi
 
-  echo "Updated volumeHandle: $NEW_VOLUME_HANDLE"
+  echo "Updated volumeHandle for $PV: $NEW_VOLUME_HANDLE"
 
   echo "Setting reclaim policy to Retain for PV: $PV"
   if ! kubectl patch pv "$PV" --type=merge -p '{"spec": {"persistentVolumeReclaimPolicy": "Retain"}}'; then

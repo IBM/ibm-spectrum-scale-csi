@@ -157,7 +157,6 @@ migrate_each() {
     if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
       VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath"')
       NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
-    fi
     else
       echo "For this volume primary migration is not required. Skipping $PV"
       skip_count=$(expr $skip_count + 1)
@@ -188,26 +187,24 @@ migrate_each() {
           NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
         fi
       fi
-    fi
     else
       echo "For this volume primary migration is not required. Skipping $PV"
       skip_count=$(expr $skip_count + 1)
       skip_list+=("$PVC_NAME|$PV")
       return
     fi
-  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2"  && "${parts[-1]}" == *"/.volumes/"* ]]; then
+  elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2" ]]; then
     echo "Detected volumeHandle type: 0;2 (fileset) : Fileset volume and independent fileset"
     if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
       # Default path of dynamic fileset
       NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
 
       # Check if existingVolume is set to yes for static fileset volumes
-      existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+      existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume" // empty')
       if [[ "$existingVolume" == "yes" ]]; then
         echo "Static Fileset volume and independent fileset"
         NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
       fi
-    fi
     else
       echo "For this volume primary migration is not required. Skipping $PV"
       skip_count=$(expr $skip_count + 1)
@@ -251,7 +248,7 @@ migrate_each() {
     return
   fi
 
-  echo "Updated volumeHandle: $NEW_VOLUME_HANDLE"
+  echo "Updated volumeHandle for $PV: $NEW_VOLUME_HANDLE"
 
   echo "Setting reclaim policy to Retain for PV: $PV"
   if ! kubectl patch pv "$PV" --type=merge -p '{"spec": {"persistentVolumeReclaimPolicy": "Retain"}}'; then
