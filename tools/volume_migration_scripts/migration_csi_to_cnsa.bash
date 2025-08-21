@@ -178,7 +178,7 @@ migrate_each() {
 
   if [[ "${parts[0]}" == "0" && "${parts[1]}" == "0" ]]; then
     echo "Detected volumeHandle type: 0;0 (volDirBasePath) : Lightweight volume"
-    VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath"')
+    VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath" // empty')
     NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
 
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "1" ]]; then
@@ -186,6 +186,7 @@ migrate_each() {
 
     PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset" // empty')
     existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume" // empty')
+    VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath" // empty')
 
     if [[ "$existingVolume" == "yes" ]]; then
       echo "Static Fileset volume and dependent fileset"
@@ -197,7 +198,11 @@ migrate_each() {
       fi
     else
       echo "Dynamic Fileset volume and dependent fileset"
-      if [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" ]]; then
+      if [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" && -n "$VOL_DIR_BASE_PATH" ]]; then
+        echo "Using parentFileset with volDirBasePath"
+        NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PARENT_FILESET/$PV/$PV-data"
+      elif [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" ]]; then
+        echo "Using parentFileset without volDirBasePath"
         NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
       else
         echo "parentFileset is empty or 'root', using default path"
@@ -211,11 +216,15 @@ migrate_each() {
     # Default path of dynamic fileset
     NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
 
+    VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath" // empty')
     # Check if existingVolume is set to yes for static fileset volumes
-    existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume"')
+    existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume" // empty')
     if [[ "$existingVolume" == "yes" ]]; then
       echo "Static Fileset volume and independent fileset"
       NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+    elif [[ -n "$VOL_DIR_BASE_PATH" ]]; then
+      echo "Dynamic Fileset volume with volDirBasePath and independent fileset"
+      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV/$PV-data"
     fi
 
   elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "1" ]]; then
@@ -272,12 +281,15 @@ migrate_each() {
   echo "Deleting PVC and PV..."
   kubectl delete pvc "$PVC_NAME" -n "$PVC_NAMESPACE"
 
+# Remove external-attacher finalizer from PV if it exists
   finalizer="external-attacher/spectrumscale-csi-ibm-com"
+  index=$(kubectl get pv "${PV}" -o json | jq -r \
+  ".metadata.finalizers | to_entries | map(select(.value==\"${finalizer}\")) | .[0].key")
 
-  # Check if PV has Spectrum Scale external-attacher finalizer
-  if kubectl get pv "${PV}" -o json | jq -e ".metadata.finalizers | index(\"${finalizer}\")" >/dev/null; then
-      echo "Removing ${finalizer} finalizer from PV ${PV} before deletion..."
-      kubectl patch pv "${PV}" -p '{"metadata":{"finalizers":["kubernetes.io/pv-protection"]}}'
+  if [[ -n "$index" && "$index" != "null" ]]; then
+    echo "Removing ${finalizer} finalizer from PV ${PV}..."
+    kubectl patch pv "${PV}" --type=json \
+      -p="[ { \"op\": \"remove\", \"path\": \"/metadata/finalizers/${index}\" } ]"
   fi
   kubectl delete pv "$PV"
 

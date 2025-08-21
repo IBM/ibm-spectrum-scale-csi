@@ -28,6 +28,24 @@ Now that **primary is removed**, these paths are invalid:
 
 This script updates PV definitions to point to the correct fileset paths while **preserving all other PV properties**.
 
+## Prerequisites
+
+- **Delete any existing workloads or application pods attached to the PVCs that will be migrated** from the existing CSI cluster **before installing CNSA.**
+
+Before running the migration script, ensure the following tools are installed and available in your `$PATH`:
+
+- The script should be run in the context of the cluster where Spectrum Scale CSI is deployed
+- **kubectl** – to interact with the Kubernetes cluster and fetch/update PV/PVC objects
+- **jq** – for JSON parsing and manipulation of Kubernetes API responses
+
+You can verify installation with:
+
+```bash
+kubectl version --client
+jq --version
+```
+
+
 ## Example Transformation
 
 ### Before (PV created with **primary** enabled):
@@ -53,21 +71,6 @@ volumeHandle: 0;2;13009550825755318848;A3D56F10:9BC12E30;;pvc-3b1a-49d3-89e1-51f
 The exact path suffix (e.g., `pvc-uuid-data`) may vary depending on how the volume was originally created.
 The script automatically detects and applies the correct mapping without user intervention.
 
-## Prerequisites
-
-Before running the migration script, ensure the following tools are installed and available in your `$PATH`:
-
-- **Existing workloads or application pods must be deleted in the existing CSI cluster before the new installation**
-- The script should be run in the context of the cluster where Spectrum Scale CSI is deployed
-- **kubectl** – to interact with the Kubernetes cluster and fetch/update PV/PVC objects
-- **jq** – for JSON parsing and manipulation of Kubernetes API responses
-
-You can verify installation with:
-
-```bash
-kubectl version --client
-jq --version
-```
 
 ## Migration Script Usage
 
