@@ -64,6 +64,7 @@ fail_count=0
 skip_count=0
 
 main() {
+  init
   check_prerequisites
   echo "Using the new path prefix: $NEW_PATH_PREFIX"
   echo "The new volume handle volumePath will be: $NEW_PATH_PREFIX/<RemoteFS>/..."
@@ -73,7 +74,6 @@ main() {
     echo "Aborting migration."
     exit 0
   fi
-  init
   get_pv_list
   TOTAL_PVS=$(echo "$ALL_PVS" | wc -l | xargs)
   COUNT=1
