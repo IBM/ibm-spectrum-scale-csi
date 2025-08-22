@@ -40,7 +40,10 @@ fail_count=0
 skip_count=0
 
 main() {
+  init
+  print_start_banner
   check_prerequisites
+  collect_fs_prefixes
   echo "Starting migration of IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal"
   echo ""
   read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
@@ -48,7 +51,6 @@ main() {
     echo "Aborting migration."
     exit 0
   fi
-  init
   get_pv_list
   TOTAL_PVS=$(echo "$ALL_PVS" | wc -l | xargs)
   COUNT=1
@@ -62,6 +64,23 @@ main() {
   final_summary
 }
 
+print_start_banner() {
+  echo "======================================================================================================"
+  echo "Starting Storage Scale CSI --> PV Migration Script to remove primary filesystem and fileset references"
+  echo "======================================================================================================"
+  echo ""
+  echo "This script will:"
+  echo "  • Collect all PersistentVolumes (PVs) with Storage Scale CSI"
+  echo "  • Identify unique backend filesystems (backendFs)"
+  echo "  • Ask you for NEW_PATH_PREFIX for each backend FS"
+  echo "  • Rewrite volumeHandle paths accordingly"
+  echo ""
+  echo "Please ensure you have 'kubectl' and 'jq' installed and"
+  echo "that you are logged into the correct Kubernetes cluster."
+  echo "======================================================================================================"
+  echo ""
+}
+
 check_prerequisites() {
   echo "Checking prerequisites..."
   for cmd in kubectl jq; do
@@ -71,6 +90,64 @@ check_prerequisites() {
     fi
   done
   echo "All prerequisites met."
+}
+
+collect_fs_prefixes() {
+  while true; do
+    VOL_BACKEND_FS_LIST=()
+    VOL_BACKEND_PREFIX_LIST=()
+
+    echo "Collecting all unique backend filesystems from PVs..."
+    ALL_FS=$(kubectl get pv -o json \
+      | jq -r '.items[]
+              | select(.spec.csi.driver == "spectrumscale.csi.ibm.com")
+              | .spec.csi.volumeAttributes.volBackendFs // empty' \
+      | grep -v '^$' | sort -u)
+
+    for fs in $ALL_FS; do
+      echo ""
+      echo "Backend FS: $fs"
+      # Show all PVs belonging to this FS
+      kubectl get pv -o json | jq -r --arg FS "$fs" \
+        '.items[] | select(.spec.csi.volumeAttributes.backendFs==$FS)
+         | "  PV: \(.metadata.name)\tPVC: \(.spec.claimRef.name)"'
+
+      echo ""
+      read -rp "Enter NEW_PATH_PREFIX for backend FS '$fs': " prefix
+      VOL_BACKEND_FS_LIST+=("$fs")
+      VOL_BACKEND_PREFIX_LIST+=("$prefix")
+    done
+
+    echo ""
+    echo "Collected FS prefix mappings:"
+    for i in "${!VOL_BACKEND_FS_LIST[@]}"; do
+      echo "  ${VOL_BACKEND_FS_LIST[$i]} => ${VOL_BACKEND_PREFIX_LIST[$i]}"
+    done
+    echo ""
+
+    read -rp "Are these mappings of volumeBackendFS and it's NEW_PATH_PREFIX correct? (y/n): " confirm
+    case "$confirm" in
+      y|Y|yes|YES)
+        echo "Prefix mappings confirmed."
+        break
+        ;;
+      *)
+        echo "Let's try again..."
+        ;;
+    esac
+  done
+}
+
+# Helper to retrieve prefix for given FS
+get_prefix_for_fs() {
+  local search_fs=$1
+  for i in "${!VOL_BACKEND_FS_LIST[@]}"; do
+    if [[ "${VOL_BACKEND_FS_LIST[$i]}" == "$search_fs" ]]; then
+      echo "${VOL_BACKEND_PREFIX_LIST[$i]}"
+      return
+    fi
+  done
+  echo ""  # fallback if not found
 }
 
 init() {
@@ -147,25 +224,42 @@ migrate_each() {
     echo "Failed to get reclaimPolicy for PV $PV."; fail_count=$(expr $fail_count + 1); fail_list+=("$PVC_NAME|$PV"); return;
   }
 
+  # Get prefix from stored list for volume backend FS
+  NEW_PATH_PREFIX=$(get_prefix_for_fs "$VOL_BACKEND_FS")
+
+
+
+  if [[ -z "$NEW_PATH_PREFIX" ]]; then
+    echo "No prefix defined for $VOL_BACKEND_FS, skipping migration"
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
+    return
+  else
+    # Remove trailing slash if present
+    NEW_PATH_PREFIX="${NEW_PATH_PREFIX%/}"
+    echo "Using prefix for $VOL_BACKEND_FS --> $NEW_PATH_PREFIX"
+  fi
 
   OLD_PATH=$(echo "$VOLUME_HANDLE" | awk -F';' '{print $NF}')
-  CURRENT_PREFIX="${OLD_PATH%%/$VOL_BACKEND_FS/*}"
-  IFS=';' read -ra parts <<< "$VOLUME_HANDLE"
 
+  IFS=';' read -ra parts <<< "$VOLUME_HANDLE"
+  last_index=$(( ${#parts[@]} - 1 ))
+  # Determine volume type based on volumeHandle format and frame NEW_PATH
   if [[ "${parts[0]}" == "0" && "${parts[1]}" == "0" ]]; then
     echo "Detected volumeHandle type: 0;0 (volDirBasePath) : Lightweight volume"
-    if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
+    if [[ "${parts[$last_index]}" == *"/.volumes/"* ]]; then
       VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath" // empty')
-      NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
+      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV"
     else
       echo "For this volume primary migration is not required. Skipping $PV"
       skip_count=$(expr $skip_count + 1)
       skip_list+=("$PVC_NAME|$PV")
       return
     fi
+
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 0;1 (parentFileset) : Fileset volume and dependent fileset"
-    if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
+    if [[ "${parts[$last_index]}" == *"/.volumes/"* ]]; then
 
       PARENT_FILESET=$(echo "$ATTRS" | jq -r '."parentFileset" // empty')
       existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume" // empty')
@@ -174,21 +268,21 @@ migrate_each() {
       if [[ "$existingVolume" == "yes" ]]; then
         echo "Static Fileset volume and dependent fileset"
         if [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" ]]; then
-          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
+          NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PVC_NAME"
         else
           echo "parentFileset is empty or 'root', using default path"
-          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+          NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
         fi
       else
         echo "Dynamic Fileset volume and dependent fileset"
         if [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" && -n "$VOL_DIR_BASE_PATH" ]]; then
           echo "Using parentFileset with volDirBasePath"
-          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PARENT_FILESET/$PV/$PV-data"
+          NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PARENT_FILESET/$PV/$PV-data"
         elif [[ -n "$PARENT_FILESET" && "$PARENT_FILESET" != "root" ]]; then
-          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
+          NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PARENT_FILESET/$PV/$PV-data"
         else
           echo "parentFileset is empty or 'root', using default path"
-          NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
+          NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
         fi
       fi
     else
@@ -197,11 +291,12 @@ migrate_each() {
       skip_list+=("$PVC_NAME|$PV")
       return
     fi
+
   elif [[ "${parts[0]}" == "0" && "${parts[1]}" == "2" ]]; then
     echo "Detected volumeHandle type: 0;2 (fileset) : Fileset volume and independent fileset"
-    if [[ "${parts[-1]}" == *"/.volumes/"* ]]; then
+    if [[ "${parts[$last_index]}" == *"/.volumes/"* ]]; then
       # Default path of dynamic fileset
-      NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
+      NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PV/$PV-data"
 
       VOL_DIR_BASE_PATH=$(echo "$ATTRS" | jq -r '."volDirBasePath" // empty')
 
@@ -209,10 +304,10 @@ migrate_each() {
       existingVolume=$(echo "$ATTRS" | jq -r '."existingVolume" // empty')
       if [[ "$existingVolume" == "yes" ]]; then
         echo "Static Fileset volume and independent fileset"
-        NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
+        NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$PVC_NAME"
       elif [[ -n "$VOL_DIR_BASE_PATH" ]]; then
         echo "Dynamic Fileset volume with volDirBasePath and independent fileset"
-        NEW_PATH="$CURRENT_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV/$PV-data"
+        NEW_PATH="$NEW_PATH_PREFIX/$VOL_BACKEND_FS/$VOL_DIR_BASE_PATH/$PV/$PV-data"
       fi
     else
       echo "For this volume primary migration is not required. Skipping $PV"
@@ -220,6 +315,7 @@ migrate_each() {
       skip_list+=("$PVC_NAME|$PV")
       return
     fi
+
   elif [[ "${parts[0]}" == "1" && "${parts[1]}" == "1" ]]; then
     echo "Detected volumeHandle type: 1;1 (version2) : Consistency group fileset"
     echo "For Consistency group fileset migration is not required. Skipping $PV"
