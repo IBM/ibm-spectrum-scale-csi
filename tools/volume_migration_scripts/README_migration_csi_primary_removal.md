@@ -1,7 +1,7 @@
 
-# PV Migration Script – CSI (Primary → Actual Fileset Mount)
+# PV Migration Script – CSI (Primary Filesystem → Actual Fileset Mount)
 
-This script helps migrate existing Kubernetes **PersistentVolumes (PVs)** that were originally created when the **primary fs and fileset** was enabled, to a format that uses the **actual fileset mount path** after the **primary has been removed**.
+This script helps migrate existing Kubernetes **PersistentVolumes (PVs)** that were originally created when the **primary filesystem and fileset** was enabled, to a format that uses the **actual fileset mount path** after the **primary filesystem has been removed**.
 It ensures that workloads continue to access their data seamlessly after migration.
 
 ## Key Features
@@ -20,8 +20,8 @@ It ensures that workloads continue to access their data seamlessly after migrati
 
 ## Why Migration is Required
 
-When the **primary fs and fileset** was enabled, PVs were created under paths tied to the **primary fs and fileset hierarchy**.
-Now that **primary is removed**, these paths are invalid:
+When the **primary filesystem and fileset** was enabled, PVs were created under paths tied to the **primary filesystem and fileset hierarchy**.
+Now that **primary filesystem has been removed**, these paths are invalid:
 
 - PVs must be mounted at the **actual fileset mount path** in the Storage Scale filesystem.
 - Without migration, existing workloads would **not be able to mount or access their data**.
@@ -48,7 +48,7 @@ jq --version
 
 ## Example Transformation
 
-### Before (PV created with **primary** enabled):
+### Before (PV created with **primary filesystem** enabled):
 ```text
 volumeHandle: 0;2;13009550825755318848;A3D56F10:9BC12E30;;pvc-3b1a-49d3-89e1-51f607b91234;/ibm/remotefs1/primary-remotefs1-123456789/.volumes/pvc-3b1a-49d3-89e1-51f607b91234
 ```
@@ -126,6 +126,6 @@ The following fields are preserved:
 
 ## Notes and Limitations
 
-- The **filesystem names** (e.g., `remotefs1`) must remain identical between pre-primary and post-primary removal deployments.
+- The **filesystem names** (e.g., `remotefs1`) must remain identical between pre-primary-filesystem and post-primary-filesystem removal deployments.
 - The script does **not delete or recreate volumes** on IBM Storage Scale; it only updates Kubernetes PV metadata.
 - Existing workloads must be restarted to pick up new PV mount paths after migration.

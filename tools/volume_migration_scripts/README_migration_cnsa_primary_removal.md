@@ -1,8 +1,8 @@
 
-# PV Migration Script – CNSA (Primary → Actual Fileset Mount)
+# PV Migration Script – CNSA (Primary filesystem → Actual Fileset Mount)
 
-This script helps migrate existing Kubernetes **PersistentVolumes (PVs)** in a **CNSA environment** that were originally created when the **primary fileset option** was enabled.
-It updates PVs to use the **actual fileset mount path** on CNSA worker nodes after the primary has been removed, ensuring workloads continue to access their data seamlessly.
+This script helps migrate existing Kubernetes **PersistentVolumes (PVs)** in a **CNSA environment** that were originally created when the **primary filesystem & fileset option** was enabled.
+It updates PVs to use the **actual fileset mount path** on CNSA worker nodes after the primary filesystem has been removed, ensuring workloads continue to access their data seamlessly.
 
 ## Key Features
 
@@ -20,8 +20,8 @@ It updates PVs to use the **actual fileset mount path** on CNSA worker nodes aft
 
 ## Why Migration is Required
 
-When the **primary fileset** was enabled, PVs were created under paths tied to the **primary fileset hierarchy**.
-Now that **primary is removed**, these paths are invalid:
+When the **primary filesystem and fileset** was enabled, PVs were created under paths tied to the **primary fileset hierarchy**.
+Now that **primary filesystem has been removed**, these paths are invalid:
 
 - PVs must be mounted at the **actual fileset mount path** on CNSA worker nodes.
 - Without migration, workloads would **not be able to mount or access their data**.
@@ -47,7 +47,7 @@ jq --version
 
 ## Example Transformation
 
-### Before (PV created with primary enabled):
+### Before (PV created with primary filesystem enabled):
 ```text
 volumeHandle: 0;2;13009550825755318848;9A7B0B0A:68891B40;;pvc-26946b2b-b18a-4c0d-9f77-606a444094c1;/ibm/remotefs1/primary-fileset-remotefs1-475592072879187/.volumes/pvc-26946b2b-b18a-4c0d-9f77-606a444094c1
 ```
@@ -125,7 +125,7 @@ The script ensures that **all original PV configurations** are retained after mi
 
 ## Notes and Limitations
 
-- The **filesystem names** (e.g., `remotefs1`) must remain identical between pre-primary and post-primary removal deployments.
+- The **filesystem names** (e.g., `remotefs1`) must remain identical between pre-primary-filesystem and post-primary-filesystem removal deployments.
 - The provided `--new_path_prefix` must reflect the **actual base mount point** of IBM Storage Scale on all CNSA worker nodes.
 - The script does **not delete or recreate volumes** on IBM Storage Scale; it only updates Kubernetes PV metadata.
 - Existing workloads must be restarted to pick up new PV mount paths after migration.
