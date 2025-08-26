@@ -29,17 +29,17 @@ import (
 )
 
 type ScaleSettingsConfigMap struct {
-	LocalScaleCluster string `json:"localScaleCluster"` 
-	Clusters []Clusters
+	LocalScaleCluster string `json:"localScaleCluster"`
+	Clusters          []Clusters
 }
 
 type Primary struct {
-	PrimaryFSDep  string `json:"primaryFS"` // Deprecated
-	PrimaryFs     string `json:"primaryFs"` //Deprecated
+	PrimaryFSDep  string `json:"primaryFS"`   // Deprecated
+	PrimaryFs     string `json:"primaryFs"`   //Deprecated
 	PrimaryFset   string `json:"primaryFset"` //Deprecated
 	PrimaryCid    string `json:"primaryCid"`
-	InodeLimitDep string `json:"inode-limit"` // Deprecated
-	InodeLimits   string `json:"inodeLimit"` //Deprecated
+	InodeLimitDep string `json:"inode-limit"`   // Deprecated
+	InodeLimits   string `json:"inodeLimit"`    //Deprecated
 	RemoteCluster string `json:"remoteCluster"` //Deprecated
 
 	PrimaryFSMount      string
@@ -69,12 +69,12 @@ type RestAPI struct {
 }
 
 type Clusters struct {
-	ID            string    `json:"id"`
-	Primary       Primary   `json:"primary,omitempty"`
-	SecureSslMode bool      `json:"secureSslMode"`
-	Cacert        string    `json:"cacert"`
-	Secrets       string    `json:"secrets"`
-	RestAPI       []RestAPI `json:"restApi"`
+	ID             string    `json:"id"`
+	Primary        Primary   `json:"primary,omitempty"`
+	SecureSslMode  bool      `json:"secureSslMode"`
+	Cacert         string    `json:"cacert"`
+	Secrets        string    `json:"secrets"`
+	RestAPI        []RestAPI `json:"restApi"`
 	PrimaryCluster string    `json:"primaryCluster"`
 
 	MgmtUsername string
@@ -141,7 +141,18 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
 			certPath := path.Join(CertificatePath, cmap.Clusters[i].ID+cacertFileSuffix)
-			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
+			certFile, err := os.ReadDir(certPath)
+			if err != nil {
+				return fmt.Errorf("failed to read the IBM Storage Scale secret: %v", err)
+			}
+
+			// the certificate directory i.e. cacert configMap should contain exactly one cert file with the dynamic name
+			if len(certFile) != 1 {
+				return fmt.Errorf("no cert files found in secret mount path or multiple cert files found in the same cert cm: %v", certFile)
+			}
+			// only one data file should present in the cert cm, above check
+			certPath = path.Join(certPath, certFile[0].Name())
+			// certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
 			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
 			if e != nil {
 				return fmt.Errorf("the IBM Storage Scale CA certificate not found: %v", e)
