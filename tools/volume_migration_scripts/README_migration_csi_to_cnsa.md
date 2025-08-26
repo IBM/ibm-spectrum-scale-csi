@@ -23,7 +23,8 @@ In the standalone **CSI driver** setup, PVs are created with a `volumeHandle` fo
 
 However, in a **CNSA setup**, this format becomes incompatible because:
 
-- The **primary fileset path** is no longer available.
+- The **primary fileset path** is no longer available for the volumes, after the upgrade to CNSA 5.2.3.x
+- Also, the **primary fileset path** concept has been removed from CNSA 6.0.0.x
 - CNSA expects a **different mount path hierarchy** for PV data.
 - PVs must reference a **common base mount point** where all IBM Storage Scale remote filesystems are mounted across CNSA Kubernetes worker nodes.
 
