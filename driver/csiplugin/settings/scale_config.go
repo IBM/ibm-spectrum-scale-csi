@@ -148,7 +148,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 
 			// the certificate directory i.e. cacert configMap should contain exactly one cert file with the dynamic name
 			if len(certFile) != 1 {
-				return fmt.Errorf("no cert files found in secret mount path or multiple cert files found in the same cert cm: %v", certFile)
+				return fmt.Errorf("Failed to get the cert data or multiple cert data found in the same cert ConfigMap: %v", certFile)
 			}
 			// only one data file should present in the cert cm, above check
 			certPath = path.Join(certPath, certFile[0].Name())
