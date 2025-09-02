@@ -1909,18 +1909,12 @@ func (r *CSIScaleOperatorReconciler) newConnector(ctx context.Context, instance 
 			)
 			return nil, err
 		}
-		// Check the cert data in the ConfigMap, should contain exactly one cert data cert ConfigMap
-		if len(configMap.Data) != 1 {
-			return nil, fmt.Errorf("Failed to get the cert data in the ConfigMap or multiple cert data found in the same cert ConfigMap: %v", cluster.Cacert)
-		}
-		var cacertValue []byte
-		for _, v := range configMap.Data {
-			cacertValue = []byte(v)
-		}
-		// cacertValue := []byte(configMap.Data[cluster.Cacert])
+
 		caCertPool := x509.NewCertPool()
-		if ok := caCertPool.AppendCertsFromPEM(cacertValue); !ok {
-			return nil, fmt.Errorf("parsing CA cert %v failed", cluster.Cacert)
+		for k, v := range configMap.Data {
+			if ok := caCertPool.AppendCertsFromPEM([]byte(v)); !ok {
+				return nil, fmt.Errorf("parsing CA cert %v failed for CertName %v", cluster.Cacert, k)
+			}
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		logger.Info("Created IBM Storage Scale connector with SSL mode for guiHost(s)")

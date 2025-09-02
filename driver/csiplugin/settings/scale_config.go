@@ -18,10 +18,13 @@ package settings
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -79,7 +82,7 @@ type Clusters struct {
 
 	MgmtUsername string
 	MgmtPassword string
-	CacertValue  []byte
+	CacertValue  *x509.CertPool
 }
 
 const (
@@ -115,7 +118,7 @@ func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
 }
 
 func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) error {
-	klog.V(6).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].ID+secretFileSuffix, "username")
@@ -141,23 +144,36 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
 			certPath := path.Join(CertificatePath, cmap.Clusters[i].ID+cacertFileSuffix)
-			certFile, err := os.ReadDir(certPath)
+			caCertPool := x509.NewCertPool()
+
+			// loop through directory and load all files as PEM certs
+			err := filepath.WalkDir(certPath, func(path string, d fs.DirEntry, walkErr error) error {
+				if walkErr != nil {
+					return fmt.Errorf("failed to iterate through the IBM Storage Scale CA certificate directory - error: %v", walkErr)
+				}
+				// Skip directories and symlinks
+				if d.IsDir() || d.Type()&os.ModeSymlink != 0 {
+					return nil
+				}
+
+				// Read file contents
+				data, err := os.ReadFile(path)
+				if err != nil {
+					return fmt.Errorf("failed to read the IBM Storage Scale CA certificate directory:%s - error: %v", path, err)
+				}
+
+				// append as PEM from the crt files
+				if ok := caCertPool.AppendCertsFromPEM(data); !ok {
+					// Not a valid cert, skip instead of failing
+					return nil
+				}
+				return nil
+			})
 			if err != nil {
-				return fmt.Errorf("failed to read the IBM Storage Scale secret: %v", err)
+				return fmt.Errorf("failed to iterate through the IBM Storage Scale CA certificate directory and get certificates - error: %v", err)
 			}
 
-			// the certificate directory i.e. cacert configMap should contain exactly one cert file with the dynamic name
-			if len(certFile) != 1 {
-				return fmt.Errorf("Failed to get the cert data or multiple cert data found in the same cert ConfigMap: %v", certFile)
-			}
-			// only one data file should present in the cert cm, above check
-			certPath = path.Join(certPath, certFile[0].Name())
-			// certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
-			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
-			if e != nil {
-				return fmt.Errorf("the IBM Storage Scale CA certificate not found: %v", e)
-			}
-			cmap.Clusters[i].CacertValue = file
+			cmap.Clusters[i].CacertValue = caCertPool
 		}
 	}
 	return nil
