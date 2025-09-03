@@ -1785,7 +1785,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(ctx context.Context, inst
 	// get list of configMaps from custom resource
 	configMaps := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		if len(cluster.Cacert) != 0 {
+		if cluster.SecureSslMode && len(cluster.Cacert) != 0 {
 			configMaps = append(configMaps, cluster.Cacert)
 		}
 	}
