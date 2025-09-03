@@ -19,7 +19,6 @@ package connectors
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -181,11 +180,7 @@ func NewSpectrumRestV2(ctx context.Context, scaleConfig settings.Clusters) (Spec
 	var tr *http.Transport
 
 	if scaleConfig.SecureSslMode {
-		caCertPool := x509.NewCertPool()
-		if ok := caCertPool.AppendCertsFromPEM(scaleConfig.CacertValue); !ok {
-			return &SpectrumRestV2{}, fmt.Errorf("parsing CA cert %v failed", scaleConfig.Cacert)
-		}
-		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
+		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: scaleConfig.CacertValue, MinVersion: tls.VersionTLS12}}
 		klog.V(4).Infof("[%s] created IBM Storage Scale connector with SSL mode for guiHost(s)", utils.GetLoggerId(ctx))
 	} else {
 		//#nosec G402 InsecureSkipVerify was requested by user.
@@ -335,14 +330,14 @@ func (s *SpectrumRestV2) ListFilesystems(ctx context.Context) (map[string]string
 	}
 	fsNumber := len(getFilesystemResponse.FileSystems)
 	filesystemsMountpoint := make(map[string]string, fsNumber)
-        if len(getFilesystemResponse.FileSystems) > 0 {
-                for i := 0; i < fsNumber; i++ {
-                        filesystemsMountpoint[getFilesystemResponse.FileSystems[i].Name] = getFilesystemResponse.FileSystems[i].Mount.MountPoint
-                }
-                return filesystemsMountpoint, nil
-        } else {
-                return nil, fmt.Errorf("unable to fetch mount point as there is no filesystem listed")
-        }
+	if len(getFilesystemResponse.FileSystems) > 0 {
+		for i := 0; i < fsNumber; i++ {
+			filesystemsMountpoint[getFilesystemResponse.FileSystems[i].Name] = getFilesystemResponse.FileSystems[i].Mount.MountPoint
+		}
+		return filesystemsMountpoint, nil
+	} else {
+		return nil, fmt.Errorf("unable to fetch mount point as there is no filesystem listed")
+	}
 }
 
 func (s *SpectrumRestV2) GetFilesystemMountpoint(ctx context.Context, filesystemName string) (string, error) {

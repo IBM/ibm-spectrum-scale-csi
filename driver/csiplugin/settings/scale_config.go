@@ -18,10 +18,13 @@ package settings
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -29,17 +32,17 @@ import (
 )
 
 type ScaleSettingsConfigMap struct {
-	LocalScaleCluster string `json:"localScaleCluster"` 
-	Clusters []Clusters
+	LocalScaleCluster string `json:"localScaleCluster"`
+	Clusters          []Clusters
 }
 
 type Primary struct {
-	PrimaryFSDep  string `json:"primaryFS"` // Deprecated
-	PrimaryFs     string `json:"primaryFs"` //Deprecated
+	PrimaryFSDep  string `json:"primaryFS"`   // Deprecated
+	PrimaryFs     string `json:"primaryFs"`   //Deprecated
 	PrimaryFset   string `json:"primaryFset"` //Deprecated
 	PrimaryCid    string `json:"primaryCid"`
-	InodeLimitDep string `json:"inode-limit"` // Deprecated
-	InodeLimits   string `json:"inodeLimit"` //Deprecated
+	InodeLimitDep string `json:"inode-limit"`   // Deprecated
+	InodeLimits   string `json:"inodeLimit"`    //Deprecated
 	RemoteCluster string `json:"remoteCluster"` //Deprecated
 
 	PrimaryFSMount      string
@@ -69,17 +72,17 @@ type RestAPI struct {
 }
 
 type Clusters struct {
-	ID            string    `json:"id"`
-	Primary       Primary   `json:"primary,omitempty"`
-	SecureSslMode bool      `json:"secureSslMode"`
-	Cacert        string    `json:"cacert"`
-	Secrets       string    `json:"secrets"`
-	RestAPI       []RestAPI `json:"restApi"`
+	ID             string    `json:"id"`
+	Primary        Primary   `json:"primary,omitempty"`
+	SecureSslMode  bool      `json:"secureSslMode"`
+	Cacert         string    `json:"cacert"`
+	Secrets        string    `json:"secrets"`
+	RestAPI        []RestAPI `json:"restApi"`
 	PrimaryCluster string    `json:"primaryCluster"`
 
 	MgmtUsername string
 	MgmtPassword string
-	CacertValue  []byte
+	CacertValue  *x509.CertPool
 }
 
 const (
@@ -115,7 +118,7 @@ func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
 }
 
 func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) error {
-	klog.V(6).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
+	klog.V(4).Infof("[%s] scale_config HandleSecrets", utils.GetLoggerId(ctx))
 	for i := 0; i < len(cmap.Clusters); i++ {
 		if cmap.Clusters[i].Secrets != "" {
 			unamePath := path.Join(SecretBasePath, cmap.Clusters[i].ID+secretFileSuffix, "username")
@@ -141,12 +144,36 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 
 		if cmap.Clusters[i].SecureSslMode && cmap.Clusters[i].Cacert != "" {
 			certPath := path.Join(CertificatePath, cmap.Clusters[i].ID+cacertFileSuffix)
-			certPath = path.Join(certPath, cmap.Clusters[i].Cacert)
-			file, e := os.ReadFile(certPath) // #nosec G304 Valid Path is generated internally
-			if e != nil {
-				return fmt.Errorf("the IBM Storage Scale CA certificate not found: %v", e)
+			caCertPool := x509.NewCertPool()
+
+			// loop through directory and load all files as PEM certs
+			err := filepath.WalkDir(certPath, func(path string, d fs.DirEntry, walkErr error) error {
+				if walkErr != nil {
+					return fmt.Errorf("failed to iterate through the IBM Storage Scale CA certificate directory - error: %v", walkErr)
+				}
+				// Skip directories and symlinks
+				if d.IsDir() || d.Type()&os.ModeSymlink != 0 {
+					return nil
+				}
+
+				// Read file contents
+				data, err := os.ReadFile(path)
+				if err != nil {
+					return fmt.Errorf("failed to read the IBM Storage Scale CA certificate directory:%s - error: %v", path, err)
+				}
+
+				// append as PEM from the crt files
+				if ok := caCertPool.AppendCertsFromPEM(data); !ok {
+					// Not a valid cert, skip instead of failing
+					return nil
+				}
+				return nil
+			})
+			if err != nil {
+				return fmt.Errorf("failed to iterate through the IBM Storage Scale CA certificate directory and get certificates - error: %v", err)
 			}
-			cmap.Clusters[i].CacertValue = file
+
+			cmap.Clusters[i].CacertValue = caCertPool
 		}
 	}
 	return nil

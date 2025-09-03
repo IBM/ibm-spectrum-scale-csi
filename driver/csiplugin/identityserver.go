@@ -49,12 +49,16 @@ func (is *ScaleIdentityServer) GetPluginCapabilities(ctx context.Context, req *c
 func (is *ScaleIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Probe called with args: %#v", loggerId, req)
-
 	// Node mapping check
 	scalenodeID := getNodeMapping(is.Driver.nodeID)
-	klog.V(6).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
+	klog.V(4).Infof("[%s] Probe: scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, is.Driver.nodeID)
 	// IsNodeComponentHealthy accepts nodeName as admin node name, daemon node name, etc.
-	ghealthy, err := is.Driver.connmap["primary"].IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
+	conn, ok := is.Driver.connmap["primary"]
+	if !ok || conn == nil {
+		klog.Errorf("[%s] Probe: primary connection not available", loggerId)
+		return &csi.ProbeResponse{Ready: &wrapperspb.BoolValue{Value: true}}, nil
+	}
+	ghealthy, err := conn.IsNodeComponentHealthy(ctx, scalenodeID, "GPFS")
 	if !ghealthy {
 		// Even gpfs health is unhealthy, success is return because restarting csi driver is not going help fix the issue
 		klog.Errorf("[%s] Probe: IBM Storage Scale on node %v is unhealthy. Error: %v", loggerId, scalenodeID, err)

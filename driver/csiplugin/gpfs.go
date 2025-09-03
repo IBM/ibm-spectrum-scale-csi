@@ -248,7 +248,6 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] Initialize IBM Storage Scale CSI driver", loggerId)
 	scaleConfig := settings.LoadScaleConfigSettings(ctx)
-
 	scaleConnMap := make(map[string]connectors.SpectrumScaleConnector)
 	primaryInfo := settings.Primary{}
 
@@ -278,7 +277,6 @@ func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]con
 		}
 	}
 
-	klog.Infof("[%s] scaleConfig:[%+v], primaryInfo:[%+v],  scaleConnMap:[%+v]", utils.GetLoggerId(ctx), scaleConfig, primaryInfo, scaleConnMap)
 	klog.Infof("[%s] IBM Storage Scale CSI driver initialized", utils.GetLoggerId(ctx))
 	return scaleConnMap, scaleConfig, primaryInfo, nil
 }
