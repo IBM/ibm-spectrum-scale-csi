@@ -56,7 +56,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: CSI_DRIVER_IMAGE
-            value: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:5f7cf8c7abbc1576f64880d4ec3878485c1cd6e8da026a09e270f49ba27b9955
+            value: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:2c92ecc6d30a35a06b92bece7e3c6b3122892da54119a9fd4f042c5af8424622
           - name: CSI_SNAPSHOTTER_IMAGE
             value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:bc7be893ecc3ad524194aa6573b2f5c06cd469bdf21a500ab6c99c2ba1c4d64d
           - name: CSI_ATTACHER_IMAGE
@@ -69,7 +69,7 @@ spec:
             value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:5244abbe87e01b35adeb8bb13882a74785df0c0619f8325c9e950395c3f72a97
           - name: CSI_RESIZER_IMAGE
             value: registry.k8s.io/sig-storage/csi-resizer@sha256:5e7cbb63fd497fa913caa21fee1a69f727c220c6fa83c5f8bb0995e2ad73a474
-          image: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-operator@sha256:4ca644174a948a70dfd77c705ab00c1d93eeff845a744613dadf47792d3a7a1e
+          image: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-operator@sha256:0ec4206a117c727e2650f34c942ad7bb3455f383d74ed2c2827bc936683f3045
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
