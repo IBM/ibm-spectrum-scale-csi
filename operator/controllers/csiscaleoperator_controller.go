@@ -1785,7 +1785,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 	// get list of secrets from custom resource
 	secrets := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		if cluster.SecureSslMode && len(cluster.Cacert) != 0 {
+		if len(cluster.Cacert) != 0 {
 			secrets = append(secrets, cluster.Secrets)
 		}
 	}
@@ -1793,7 +1793,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 	// get list of configMaps from custom resource
 	configMaps := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		if len(cluster.Cacert) != 0 {
+		if cluster.SecureSslMode && len(cluster.Cacert) != 0 {
 			configMaps = append(configMaps, cluster.Cacert)
 		}
 	}
