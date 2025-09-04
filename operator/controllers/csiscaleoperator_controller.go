@@ -1785,7 +1785,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 	// get list of secrets from custom resource
 	secrets := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		if len(cluster.Secrets) != 0 {
+		if cluster.SecureSslMode && len(cluster.Cacert) != 0 {
 			secrets = append(secrets, cluster.Secrets)
 		}
 	}
@@ -1918,10 +1918,11 @@ func (r *CSIScaleOperatorReconciler) newConnector(instance *csiscaleoperator.CSI
 			)
 			return nil, err
 		}
-		cacertValue := []byte(configMap.Data[cluster.Cacert])
 		caCertPool := x509.NewCertPool()
-		if ok := caCertPool.AppendCertsFromPEM(cacertValue); !ok {
-			return nil, fmt.Errorf("parsing CA cert %v failed", cluster.Cacert)
+		for k, v := range configMap.Data {
+			if ok := caCertPool.AppendCertsFromPEM([]byte(v)); !ok {
+				return nil, fmt.Errorf("parsing CA cert %v failed for CertName %v", cluster.Cacert, k)
+			}
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
 		logger.Info("Created IBM Storage Scale connector with SSL mode for guiHost(s)")
