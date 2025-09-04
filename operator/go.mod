@@ -3,7 +3,7 @@ module github.com/IBM/ibm-spectrum-scale-csi/operator
 go 1.23.0
 
 require (
-	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20250825084007-4b7e5ad409db
+	github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20250903185856-2c16e4c901d3
 	github.com/google/uuid v1.6.0
 	github.com/imdario/mergo v0.3.16
 	github.com/onsi/ginkgo v1.16.5
