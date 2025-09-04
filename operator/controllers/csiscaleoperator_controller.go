@@ -1785,7 +1785,7 @@ func (r *CSIScaleOperatorReconciler) checkPrerequisite(instance *csiscaleoperato
 	// get list of secrets from custom resource
 	secrets := []string{}
 	for _, cluster := range instance.Spec.Clusters {
-		if len(cluster.Cacert) != 0 {
+		if len(cluster.Secrets) != 0 {
 			secrets = append(secrets, cluster.Secrets)
 		}
 	}
