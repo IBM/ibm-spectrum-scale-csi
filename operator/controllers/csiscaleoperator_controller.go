@@ -1911,9 +1911,15 @@ func (r *CSIScaleOperatorReconciler) newConnector(ctx context.Context, instance 
 		}
 
 		caCertPool := x509.NewCertPool()
-		for k, v := range configMap.Data {
+		for _, v := range configMap.Data {
 			if ok := caCertPool.AppendCertsFromPEM([]byte(v)); !ok {
-				return nil, fmt.Errorf("parsing CA cert %v failed for CertName %v", cluster.Cacert, k)
+				message := fmt.Sprintf("Failed to parse the GUI CA certificates from the ConfigMap %s", cluster.Cacert)
+				parseErr := fmt.Errorf(message)
+				logger.Error(parseErr, message)
+				SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+					metav1.ConditionFalse, string(csiv1.GetFailed), message,
+				)
+				return nil, parseErr
 			}
 		}
 		tr = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: caCertPool, MinVersion: tls.VersionTLS12}}
