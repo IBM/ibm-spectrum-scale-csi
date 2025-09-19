@@ -40,7 +40,6 @@ type CSIScaleOperatorSpec struct {
 	AttacherNodeSelector []CSINodeSelector `json:"attacherNodeSelector,omitempty"`
 
 	// localScaleCluster is the cluster ID where kubernetes is installed
-	// +kubebuilder:validation:Optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Local Scale Cluster",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	LocalScaleCluster string `json:"localScaleCluster,omitempty"`
 
@@ -321,6 +320,7 @@ type CSICluster struct {
 	Id string `json:"id"` // TODO: Rename to ID or id
 
 	// primary is the primary file system for the IBM Storage Scale cluster.
+	// +kubebuilder:validation:Optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Primary",xDescriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	Primary *CSIFilesystem `json:"primary,omitempty"`
 

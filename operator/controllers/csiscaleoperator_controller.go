@@ -2127,10 +2127,10 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 	primaryClusterFound, issueFound := false, false
 	var nonPrimaryClusters = make(map[string]bool)
 
-	if instance.Spec.LocalScaleCluster == ""{
-        	issueFound = true
-        	logger.Error(fmt.Errorf("mandatory parameter 'localScaleCluster' is not specified"), "")
-         }
+	if instance.Spec.LocalScaleCluster == "" {
+		issueFound = true
+		logger.Error(fmt.Errorf("mandatory parameter 'localScaleCluster' is not specified"), "")
+	}
 
 	for i := 0; i < len(instance.Spec.Clusters); i++ {
 		cluster := instance.Spec.Clusters[i]

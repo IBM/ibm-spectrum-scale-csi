@@ -254,7 +254,7 @@ kind: CustomResourceDefinition
 metadata:
   name: csiscaleoperators.csi.ibm.com
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.5
+    controller-gen.kubebuilder.io/version: v0.17.3
 spec:
   group: csi.ibm.com
   names:
