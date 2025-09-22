@@ -42,7 +42,7 @@ type CSIScaleOperatorSpec struct {
 	// localScaleCluster is the cluster ID where kubernetes is installed
 	// +kubebuilder:validation:Required
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Local Scale Cluster",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
-	LocalScaleCluster string `json:"localScaleCluster,omitempty"`
+	LocalScaleCluster string `json:"localScaleCluster"`
 
 	// clusters is a collection of IBM Storage Scale cluster properties for the CSI driver to mount.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Clusters"
