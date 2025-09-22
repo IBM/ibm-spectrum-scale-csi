@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.5
+    controller-gen.kubebuilder.io/version: v0.17.3
   name: csiscaleoperators.csi.ibm.com
 spec:
   group: csi.ibm.com
@@ -1253,6 +1253,7 @@ spec:
                 type: array
             required:
             - clusters
+            - localScaleCluster
             type: object
           status:
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
