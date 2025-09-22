@@ -290,7 +290,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		err = ValidateCRParams(ctx, instance)
 		if err != nil {
 			message := "Failed to validate IBM Storage Scale CSI configurations." +
-				" Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance " + instance.Name
+				" Please check the cluster stanza under the Spec.Clusters section in the CSISCaleOperator instance or spec section if localScaleCluster is not provided" + instance.Name
 			logger.Error(fmt.Errorf("%s", message), "")
 			SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
 				metav1.ConditionFalse, string(csiv1.ValidationFailed), message,
@@ -2133,6 +2133,11 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 	primaryClusterFound, issueFound := false, false
 	var nonPrimaryClusters = make(map[string]bool)
 
+	if instance.Spec.LocalScaleCluster == "" {
+		issueFound = true
+		logger.Error(fmt.Errorf("mandatory parameter 'localScaleCluster' is not specified"), "")
+	}
+
 	for i := 0; i < len(instance.Spec.Clusters); i++ {
 		cluster := instance.Spec.Clusters[i]
 
@@ -2150,12 +2155,6 @@ func ValidateCRParams(ctx context.Context, instance *csiscaleoperator.CSIScaleOp
 		}
 
 		if instance.Spec.LocalScaleCluster != "" && instance.Spec.LocalScaleCluster == cluster.Id {
-			primaryClusterFound = true
-		} else if cluster.Primary != nil && *cluster.Primary != (csiv1.CSIFilesystem{}) {
-			if primaryClusterFound {
-				issueFound = true
-				logger.Error(fmt.Errorf("more than one primary clusters specified"), "")
-			}
 			primaryClusterFound = true
 		} else {
 			//when its a not primary cluster
