@@ -40,6 +40,7 @@ type CSIScaleOperatorSpec struct {
 	AttacherNodeSelector []CSINodeSelector `json:"attacherNodeSelector,omitempty"`
 
 	// localScaleCluster is the cluster ID where kubernetes is installed
+	// +kubebuilder:validation:Required
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Local Scale Cluster",xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced"
 	LocalScaleCluster string `json:"localScaleCluster,omitempty"`
 

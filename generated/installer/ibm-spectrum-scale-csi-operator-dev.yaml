@@ -1442,6 +1442,7 @@ spec:
                 description: spectrumScale is the image name for the IBM Storage Scale CSI node driver plugin container.
             required:
             - clusters
+            - localScaleCluster
           status:
             type: object
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator

@@ -1253,6 +1253,7 @@ spec:
                 type: array
             required:
             - clusters
+            - localScaleCluster
             type: object
           status:
             description: CSIScaleOperatorStatus defines the observed state of CSIScaleOperator
