@@ -2660,7 +2660,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		relPath = strings.Replace(volumeIdMembers.Path, mountInfo.MountPoint, "", 1)
 	} else {
 
-		pfsMountInfo, err := conn.GetFilesystemMountDetails(ctx, pfsName)
+		pfsMountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, pfsName)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get mount info for FS [%v] in primary cluster", FilesystemName))
 		}
