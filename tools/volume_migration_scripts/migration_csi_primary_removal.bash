@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./migration_csi_primary_removal.bash
-# Migrates IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal.
+# Migrate existing Kubernetes PersistentVolumes (PVs) that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem has been removed.
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ help() {
   echo "Usage: $0"
   echo ""
   echo "Description:"
-  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal."
+  echo "  This script migrate existing Kubernetes PersistentVolumes (PVs) that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem has been removed."
   echo ""
   exit 1
 }
@@ -44,7 +44,7 @@ main() {
   print_start_banner
   check_prerequisites
   collect_fs_prefixes
-  echo "Starting migration of IBM Storage Scale CSI PersistentVolumes to a new format by updating the volumeHandle path with the specified prefix after primary removal"
+  echo "Starting migration of IBM Storage Scale CSI PersistentVolumes that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem has been removed."
   echo ""
   read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
   if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
@@ -66,7 +66,7 @@ main() {
 
 print_start_banner() {
   echo "======================================================================================================"
-  echo "Starting Storage Scale CSI --> PV Migration Script to remove primary filesystem and fileset references"
+  echo "Starting Migration Script – IBM Storage Scale CSI (Primary filesystem mount path to Actual fileset mount path)"
   echo "======================================================================================================"
   echo ""
   echo "This script will:"

@@ -86,7 +86,25 @@ A helper script is provided to automate PV migration:
 - No arguments are required.
 - The script automatically detects the **actual fileset mount path** for each PV and updates accordingly.
 
-## 7. Features of the Migration Script
+## 7. Validate the migration.
+
+Validate the migration once the migration script finishes. The migration summary should have only successful or skipped PVs. There shouldn't be any Failed PVs in the summary.
+```bash
+Migration Summary:
+------------------------------------------------------------------------------------------------------------------------
+Successful PVs: 1
+    PVC Name                                                                  | PV Name
+    --------------------------------------------------------------------------------------------------------------------
+    ibm-spectrum-scale-pvc-clone-from-pvc-advanced                            | pvc-7981775f-08b1-4a53-ae4d-6740e2ec9a89
+
+Skipped PVs (already migrated): 2
+    PVC Name                                                                  | PV Name
+    --------------------------------------------------------------------------------------------------------------------
+    scale-advance-pvc                                                         | pvc-dd8e015c-382c-4487-a215-91dd22a01d45
+    ibm-spectrum-scale-pvc-advance-from-snapshot                              | pvc-e920921e-7a25-4017-9c8d-6469750a4772
+```
+
+## 8. Features of the Migration Script
 
 - ✅ Filters only PVs created with the **spectrumscale.csi.ibm.com** driver.
 - ✅ Skips PVs already migrated (with an actual fileset mount path in `volumeHandle`).
@@ -112,7 +130,7 @@ csi_migration_data/migration-<timestamp>/migration.log
 - ✅ Summarizes **success, skipped, and failed** migrations at the end.
 - ✅ Idempotent – safe to re-run if needed.
 
-## 8. Preserved PV Properties
+## 9. Preserved PV Properties
 
 The script ensures that **all original PV configurations** are retained after migration.
 The following fields are preserved:
@@ -126,7 +144,7 @@ The following fields are preserved:
 
 - Only the **`volumeHandle` path** is modified to reflect the actual fileset mount.
 
-## 9. Notes and Limitations
+## 10. Notes and Limitations
 
 - The **filesystem names** (e.g., `remotefs1`) must remain identical between pre-primary-filesystem and post-primary-filesystem removal deployments.
 - The script does **not delete or recreate volumes** on IBM Storage Scale; it only updates Kubernetes PV metadata.
