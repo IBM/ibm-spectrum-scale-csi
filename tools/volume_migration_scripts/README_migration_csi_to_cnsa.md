@@ -133,7 +133,7 @@ Skipped PVs (already migrated): 2
 
 ```text
 csi_migration_data/
-└── <migration-name>-<timestamp>/
+└── <timestamp>/
     ├── migration.log
     ├── <namespace>/
     │   └── <pvc-name>/
@@ -145,7 +145,7 @@ csi_migration_data/
 - ✅ Logs all actions, successes, skips, and failures into:
 
 ```text
-csi_migration_data/<migration-name>-<timestamp>/migration.log
+csi_migration_data/<timestamp>/migration.log
 ```
 
 - ✅ Summarizes **success, skipped, and failed** migrations at the end.

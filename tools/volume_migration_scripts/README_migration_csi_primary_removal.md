@@ -15,7 +15,7 @@ It ensures that workloads continue to access their data seamlessly after migrati
     - Labels, annotations, and other PV metadata
 
 - Only the **volumeHandle path segment** is updated to a new IBM Storage Scale CSI required format.
-- Supports migration of PVs created from **different volume types** (fileset-based, CG, cache, static, dependent, independent).
+- Supports migration of PVs across **different fileset types** (independent, dependent, static, cache, CG, etc.).
 - Generates **backup YAML files** before applying changes.
 - Can be safely re-run if required (**idempotent migration**).
 
@@ -124,7 +124,7 @@ csi_migration_data/
 - ✅ Logs all actions, successes, skips, and failures into:
 
 ```
-csi_migration_data/migration-<timestamp>/migration.log
+csi_migration_data/<timestamp>/migration.log
 ```
 
 - ✅ Summarizes **success, skipped, and failed** migrations at the end.

@@ -14,8 +14,8 @@ It updates PVs to use the **actual fileset mount path** on IBM Storage Scale con
     - Filesystem type (`fsType`)
     - Labels, annotations, and other PV metadata
 
-- Only the **volumeHandle path segment** is updated to IBM Storage Scale container native’s required format.
-- Supports migration of PVs created from **different volume types** (fileset-based, CG, cache, static, dependent, independent).
+- Only the **volumeHandle path segment** is updated to IBM Storage Scale container native’s required format based on the **fileset type** and **prefix**.
+- Supports migration of PVs across **different fileset types** (independent, dependent, static, cache, CG, etc.).
 - Generates **backup YAML files** before applying changes.
 - Can be safely re-run if required (**idempotent migration**).
 
@@ -112,7 +112,7 @@ Skipped PVs (already migrated): 2
 
 ```text
 csi_migration_data/
-└── migration-<timestamp>/
+└── <timestamp>/
     ├── migration.log
     ├── <namespace>/
     │   └── <pvc-name>/
@@ -124,7 +124,7 @@ csi_migration_data/
 - ✅ Logs all actions, successes, skips, and failures into:
 
 ```text
-csi_migration_data/migration-<timestamp>/migration.log
+csi_migration_data/<timestamp>/migration.log
 ```
 
 - ✅ Summarizes **success, skipped, and failed** migrations at the end.
