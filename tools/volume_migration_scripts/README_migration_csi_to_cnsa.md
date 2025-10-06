@@ -107,8 +107,25 @@ Where:
 
 - `--new_path_prefix` specifies the **base mount point** of IBM Storage Scale filesystems on IBM Storage Scale container native worker nodes. Allowed values: `/ibm`, `/mnt`, `/var/mnt`
 
+## 8. Validate the migration.
 
-## 8. Features of the Migration Script
+Validate the migration once the migration script finishes. The migration summary should have only successful or skipped PVs. There shouldn't be any Failed PVs in the summary.
+```bash
+Migration Summary:
+------------------------------------------------------------------------------------------------------------------------
+Successful PVs: 1
+    PVC Name                                                                  | PV Name
+    --------------------------------------------------------------------------------------------------------------------
+    ibm-spectrum-scale-pvc-clone-from-pvc-advanced                            | pvc-7981775f-08b1-4a53-ae4d-6740e2ec9a89
+
+Skipped PVs (already migrated): 2
+    PVC Name                                                                  | PV Name
+    --------------------------------------------------------------------------------------------------------------------
+    scale-advance-pvc                                                         | pvc-dd8e015c-382c-4487-a215-91dd22a01d45
+    ibm-spectrum-scale-pvc-advance-from-snapshot                              | pvc-e920921e-7a25-4017-9c8d-6469750a4772
+```
+
+## 9. Features of the Migration Script
 
 - ✅ Filters only PVs created with the **spectrumscale.csi.ibm.com** driver.
 - ✅ Skips PVs already migrated (with a IBM Storage Scale container native-compatible path in `volumeHandle`).
@@ -116,7 +133,7 @@ Where:
 
 ```text
 csi_migration_data/
-└── <migration-name>-<timestamp>/
+└── <timestamp>/
     ├── migration.log
     ├── <namespace>/
     │   └── <pvc-name>/
@@ -128,14 +145,14 @@ csi_migration_data/
 - ✅ Logs all actions, successes, skips, and failures into:
 
 ```text
-csi_migration_data/<migration-name>-<timestamp>/migration.log
+csi_migration_data/<timestamp>/migration.log
 ```
 
 - ✅ Summarizes **success, skipped, and failed** migrations at the end.
 - ✅ Idempotent – safe to re-run if needed.
 
 
-## 9. Preserved PV Properties
+## 10. Preserved PV Properties
 
 The script ensures that **all original PV configurations** are retained after migration.
 The following fields are preserved:
@@ -150,7 +167,7 @@ The following fields are preserved:
 - Only the **`volumeHandle` path** is modified to meet IBM Storage Scale container native expectations.
 
 
-## 10. Notes and Limitations
+## 11. Notes and Limitations
 
 - The **filesystem names** (e.g., `remotefs1`) must remain identical between IBM Storage Scale CSI and IBM Storage Scale container native deployments.
 - The provided `--new_path_prefix` must reflect the **actual base mount point** of IBM Storage Scale on all IBM Storage Scale container native **worker nodes**.
