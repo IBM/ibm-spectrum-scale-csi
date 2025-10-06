@@ -1,7 +1,7 @@
 
 # Migration Script – IBM Storage Scale container native (Primary filesystem mount path to Actual fileset mount path)
 
-This script helps to migrate existing CSI **PersistentVolumes (PVs)** in a **IBM Storage Scale container native environment** that were originally created when the **primary filesystem & fileset option** was enabled.
+This script helps to migrate existing IBM Storage Scale container native **PersistentVolumes (PVs)** that were originally created when the **primary filesystem & fileset option** was enabled.
 
 It updates PVs to use the **actual fileset mount path** on IBM Storage Scale container native worker nodes after the primary filesystem has been removed, ensuring workloads continue to access their data seamlessly.
 
