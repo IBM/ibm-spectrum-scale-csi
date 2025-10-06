@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./migration_csi_primary_removal.bash
-# Migrate existing Kubernetes PersistentVolumes (PVs) that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem has been removed.
+# Migrate existing Kubernetes PersistentVolumes (PVs) that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem/fileset has been removed.
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ help() {
   echo "Usage: $0"
   echo ""
   echo "Description:"
-  echo "  This script migrate existing Kubernetes PersistentVolumes (PVs) that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem has been removed."
+  echo "  This script migrate existing Kubernetes PersistentVolumes (PVs) that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem/fileset has been removed."
   echo ""
   exit 1
 }
@@ -44,7 +44,7 @@ main() {
   print_start_banner
   check_prerequisites
   collect_fs_prefixes
-  echo "Starting migration of IBM Storage Scale CSI PersistentVolumes that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem has been removed."
+  echo "Starting migration of IBM Storage Scale CSI PersistentVolumes that were originally created when the primary filesystem and fileset was enabled, to a format that uses the actual fileset mount path after the primary filesystem/fileset has been removed."
   echo ""
   read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
   if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then

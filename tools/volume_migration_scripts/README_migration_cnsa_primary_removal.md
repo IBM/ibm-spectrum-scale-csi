@@ -3,7 +3,7 @@
 
 This script helps to migrate existing IBM Storage Scale container native **PersistentVolumes (PVs)** that were originally created when the **primary filesystem & fileset option** was enabled.
 
-It updates PVs to use the **actual fileset mount path** on IBM Storage Scale container native worker nodes after the primary filesystem has been removed, ensuring workloads continue to access their data seamlessly.
+It updates PVs to use the **actual fileset mount path** on IBM Storage Scale container native worker nodes after the primary filesystem/fileset has been removed, ensuring workloads continue to access their data seamlessly.
 
 ## 1. Key Features
 
@@ -23,7 +23,7 @@ It updates PVs to use the **actual fileset mount path** on IBM Storage Scale con
 
 Till IBM Storage Scale container native 6.0.x/IBM Storage Scale CSI 2.14.x , the **primary filesystem and fileset** hierachy were being used, and the PVs were created under paths tied to the **primary filesystem and fileset hierarchy**.
 
-Going forward IBM Storage Scale container native 6.0.x/IBM Storage Scale CSI 3.0.0, the **primary filesystem has been removed**, these paths are invalid:
+Going forward IBM Storage Scale container native 6.0.x/IBM Storage Scale CSI 3.0.0, the **primary filesystem/fileset has been removed**, these paths are invalid:
 
 - PVs definitions needs to be updated according to the **actual fileset mount path** in the IBM Storage Scale filesystem.
 - Without migration, existing workloads would **not be able to mount or access their data**  after switching to IBM Storage Scale container native 6.0.0
@@ -49,7 +49,7 @@ jq --version
 
 ## 4. Example Transformation
 
-### Before (PV created with **primary filesystem** enabled):
+### Before (PV created with **primary filesystem/fileset** enabled):
 ```text
 volumeHandle: 0;2;13009550825755318848;A3D56F10:9BC12E30;;pvc-3b1a-49d3-89e1-51f607b91234;/ibm/remotefs1/primary-remotefs1-123456789/.volumes/pvc-3b1a-49d3-89e1-51f607b91234
 ```
