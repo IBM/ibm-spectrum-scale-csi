@@ -23,15 +23,15 @@ spec:
 # Below specifies the details of a IBM Storage Scale cluster configuration used by the
 # plugin. It can have multiple values.
 # ==================================================================================
-  localScaleCluster: "<Primary Cluster ID>"
+  localScaleCluster: "< Scale Cluster ID >" # Local IBM Storage Scale cluster where Kubernetes or Red Hat OpenShift is running.
   clusters:
-    - id: "<Primary Cluster ID>"
+    - id: "< Scale Cluster ID >"
       secrets: "secret1"
       secureSslMode: false
 #      cacert:  "< Name of CA cert configmap for GUI >"   # Optional
       restApi:
-        - guiHost: "< IP/Hostname of a GUI node of primary cluster >"
-#       - guiHost: "< IP/Hostname of another GUI node of primary cluster >" #Optional - Multiple GUI IPs/Hostnames can be provided like this, if the storage cluster has GUI installed on multiple nodes.
+        - guiHost: "< IP/Hostname of a GUI node of the Scale cluster >"
+#       - guiHost: "< IP/Hostname of another GUI node of the Scale cluster >" #Optional - Multiple GUI IPs/Hostnames can be provided like this, if the storage cluster has GUI installed on multiple nodes.
 #
 # In the case we have multiple clusters, specify their configuration below.
 # ==================================================================================

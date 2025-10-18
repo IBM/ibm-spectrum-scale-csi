@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./migration_cnsa_primary_removal.bash --new_path_prefix /var/mnt
-# Migrates IBM Storage Scale PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix after primary removal.
+# Migrate existing IBM Storage Scale container native PersistentVolumes (PVs) that were originally created when the primary filesystem & fileset option was enabled.
 
 set -euo pipefail
 
@@ -16,7 +16,7 @@ help() {
   echo "  These must match the base mount point of IBM Storage Scale on your nodes."
   echo ""
   echo "Description:"
-  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to CNSA format by updating the volumeHandle path with the specified prefix after primary removal."
+  echo "  This script helps to migrate existing IBM Storage Scale container native PersistentVolumes (PVs) that were originally created when the primary filesystem & fileset option was enabled."
   echo ""
   exit 1
 }
@@ -68,6 +68,7 @@ main() {
   check_prerequisites
   echo "Using the new path prefix: $NEW_PATH_PREFIX"
   echo "The new volume handle volumePath will be: $NEW_PATH_PREFIX/<RemoteFS>/..."
+  echo "Starting migration of existing IBM Storage Scale container native PersistentVolumes (PVs) that were originally created when the primary filesystem & fileset option was enabled."
   echo ""
   read -rp "Proceed with migration? (yes/y/Y to continue): " CONFIRM
   if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
