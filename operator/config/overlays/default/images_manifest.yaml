@@ -6,4 +6,4 @@ images:
   csiLivenessprobe: cp.icr.io/cp/gpfs/csi/livenessprobe@sha256:88092d100909918ae0a768956cf78c88bc59cd7232720f7cdbdfb5d2e235001e
   csiNodeRegistrar: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:5244abbe87e01b35adeb8bb13882a74785df0c0619f8325c9e950395c3f72a97
   csiResizer: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:5e7cbb63fd497fa913caa21fee1a69f727c220c6fa83c5f8bb0995e2ad73a474
-  csiDriver: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:2c92ecc6d30a35a06b92bece7e3c6b3122892da54119a9fd4f042c5af8424622
+  csiDriver: cp.icr.io/cp/gpfs/csi/ibm-spectrum-scale-csi-driver@sha256:4178d546c92cac71ac785e00052693a7aaa70eb7c768c41a7bf00499aa84b565
