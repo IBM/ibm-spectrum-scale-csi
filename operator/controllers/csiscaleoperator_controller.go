@@ -353,6 +353,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
 	// If the setup is a cnsa dev setup, then we are not going to set any clusterTypeData as cnsa operator is not present in the cluster and platform is also local.
 	inClusterScaleGui := os.Getenv("incluster_gui_host")
+	logger.Info("inClusterScaleGui value", "inClusterScaleGui", inClusterScaleGui)
 	if inClusterScaleGui == "" {
 		if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
 			logger.Info("Checking the clusterType and presence of CNSA")
@@ -368,6 +369,10 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				return ctrl.Result{}, err
 			}
 		}
+	} else if inClusterScaleGui != "" {
+		// If in-cluster GUI is enabled, we need to set the appropriate environment variables
+		clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeOpenshift
+		clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "True"
 	}
 	logger.Info("CSI environment variables are found successfully", "CSIConfig", r.CSIEnvConfig)
 	/*	// Get CSI env images from the ClusterManagerConfig for cnsa
