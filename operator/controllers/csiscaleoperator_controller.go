@@ -357,8 +357,8 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
 			logger.Info("Checking the clusterType and presence of CNSA")
 			var cnsaOperatorNamespace string
-			if req.Namespace == config.CNSAScaleNamespace {
-				cnsaOperatorNamespace = req.Namespace
+			if os.Getenv("SINGLE_NAMESPACE_DEPLOYMENT") == "true" {
+				cnsaOperatorNamespace = config.CNSAScaleNamespace
 			} else {
 				cnsaOperatorNamespace = config.CNSAOperatorNamespace
 			}
