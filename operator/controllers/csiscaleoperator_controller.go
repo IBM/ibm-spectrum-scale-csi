@@ -349,31 +349,32 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 6. Driver daemonset
 
 	// Calling the function to get platform type and check whether CNSA is present or not in the cluster
-	_, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
-	_, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
+	// _, clusterConfigTypeExists := clusterTypeData[config.ENVClusterConfigurationType]
+	// _, cnsaOperatorPresenceExists := clusterTypeData[config.ENVClusterCNSAPresenceCheck]
 	// If the setup is a cnsa dev setup, then we are not going to set any clusterTypeData as cnsa operator is not present in the cluster and platform is also local.
 	inClusterScaleGui := os.Getenv("incluster_gui_host")
 	logger.Info("inClusterScaleGui value", "inClusterScaleGui", inClusterScaleGui)
-	if inClusterScaleGui == "" {
-		if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
-			logger.Info("Checking the clusterType and presence of CNSA")
-			var cnsaOperatorNamespace string
-			if req.Namespace == config.CNSAScaleNamespace {
-				cnsaOperatorNamespace = req.Namespace
-			} else {
-				cnsaOperatorNamespace = config.CNSAOperatorNamespace
-			}
-			err := getClusterTypeAndCNSAOperatorPresence(ctx, cnsaOperatorNamespace)
-			if err != nil {
-				logger.Error(err, "Failed to check cluster platform and cnsa presence")
-				return ctrl.Result{}, err
-			}
-		}
-	} else if inClusterScaleGui != "" {
-		// If in-cluster GUI is enabled, we need to set the appropriate environment variables
-		clusterTypeData[config.ENVClusterConfigurationType] = config.ENVClusterTypeOpenshift
+
+	// if !clusterConfigTypeExists || !cnsaOperatorPresenceExists {
+	logger.Info("Checking the clusterType and presence of CNSA")
+	var cnsaOperatorNamespace string
+	if req.Namespace == config.CNSAScaleNamespace {
+		cnsaOperatorNamespace = req.Namespace
+	} else {
+		cnsaOperatorNamespace = config.CNSAOperatorNamespace
+	}
+	err = getClusterTypeAndCNSAOperatorPresence(ctx, cnsaOperatorNamespace)
+	if err != nil {
+		logger.Error(err, "Failed to check cluster platform and cnsa presence")
+		return ctrl.Result{}, err
+	}
+
+	if inClusterScaleGui != "" {
+		// If in-cluster GUI is enabled i.e. dev env for cnsa, we need to set the appropriate environment variables
+
 		clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "True"
 	}
+	logger.Info("clusterTypeData values", "clusterTypeData", clusterTypeData)
 	logger.Info("CSI environment variables are found successfully", "CSIConfig", r.CSIEnvConfig)
 	/*	// Get CSI env images from the ClusterManagerConfig for cnsa
 		r.GetCSIConfig(ctx)
