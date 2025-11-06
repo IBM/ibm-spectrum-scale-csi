@@ -365,7 +365,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	// }
-	logger.V(4).Info("clusterTypeData values", "clusterTypeData", clusterTypeData)
+	logger.Info("clusterTypeData values", "clusterTypeData", clusterTypeData)
 	logger.V(4).Info("CSI environment variables are found successfully", "CSIConfig", r.CSIEnvConfig)
 
 	// Synchronizing optional configMap
@@ -392,14 +392,14 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if isValidationNeeded {
 			if err == nil && len(cm.Data) != 0 {
 				cmData = r.parseConfigMap(ctx, instance, cm)
-				logger.V(4).Info("Final optional configmap values ", "when the optional configmap is present", cmData)
+				logger.Info("Final optional configmap values ", "when the optional configmap is present", cmData)
 
 			} else {
 				cmData = map[string]string{}
 				logger.Info("Optional ConfigMap is either not found or is empty, skipped parsing it", "ConfigMap", config.EnvVarConfigMap)
 				// setting default values if values are empty
 				setDefaultDriverEnvValues(ctx, cmData)
-				logger.V(4).Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
+				logger.Info("Final optional configmap values ", "when the optional configmap is absent", cmData)
 			}
 		}
 	}
@@ -412,7 +412,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		cmData[config.ENVClusterCNSAPresenceCheck] = clusterTypeData[config.ENVClusterCNSAPresenceCheck]
 	}
 
-	logger.V(4).Info("Final optional configmap values", "when the sent to syncer is ", cmData)
+	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
 	// Synchronizing node/driver daemonset
 	CGPrefix := r.GetConsistencyGroupPrefix(ctx, instance)
@@ -2562,7 +2562,7 @@ func getClusterTypeAndCNSAOperatorPresence(ctx context.Context, inClusterScaleGu
 
 			for _, deployment := range deployments.Items {
 				if strings.Contains(deployment.GetName(), config.CNSAOperatorDeploymentName) {
-					logger.V(4).Info("CNSA deployment found", "namespace", ns, "deployment", deployment.GetName())
+					logger.Info("CNSA deployment found", "namespace", ns, "deployment", deployment.GetName())
 					clusterTypeData[config.ENVClusterCNSAPresenceCheck] = "True"
 					found = true
 					break
@@ -2575,7 +2575,7 @@ func getClusterTypeAndCNSAOperatorPresence(ctx context.Context, inClusterScaleGu
 		}
 
 		if !found {
-			logger.V(4).Info("CNSA deployment not found in any target namespace", "namespaces", namespaces)
+			logger.Info("CNSA deployment not found in any target namespace", "namespaces", namespaces)
 		}
 
 	}
