@@ -54,7 +54,7 @@ env:
 
     # Build tool versions
     - KUSTOMIZE_VERSION=4.5.2
-    - GOLANGCI_LINT_VERSION=v1.59.0
+    - GOLANGCI_LINT_VERSION=v1.64.8
 
 # Operator ENV
     - OCTOKIT_API_ENDPOINT="https://github.ibm.com/api/v3/"
