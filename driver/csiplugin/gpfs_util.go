@@ -112,6 +112,8 @@ type cacheVolumeId struct {
 	NfsInfo        map[string]string
 	IsNfsSupported bool
 	GateWayNode    string
+	NfsTuningParams map[string]interface{}
+	S3TuningParams  map[string]interface{}
 }
 
 type scaleVolId struct {

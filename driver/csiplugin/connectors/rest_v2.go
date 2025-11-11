@@ -523,7 +523,7 @@ func (s *SpectrumRestV2) GetLatestFilesetSnapshots(ctx context.Context, filesyst
 	return getLatestFilesetSnapshotsResponse.Snapshots, nil
 }
 
-func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}, setAfmAttributes bool) error {
+func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}, setAfmAttributes string) error {
 	klog.V(4).Infof("[%s] rest_v2 UpdateFileset. filesystem: %s, fileset: %s, volType: %s, opts: %v", utils.GetLoggerId(ctx), filesystemName, filesetName, volType, opts)
 	filesetreq := CreateFilesetRequest{}
 	inodeLimit, inodeLimitSpecified := opts[UserSpecifiedInodeLimit]
@@ -536,42 +536,12 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.Comment = fmt.Sprintf("%v", comment)
 	}
 
-	if volType == cacheVolumeType && setAfmAttributes {
-		afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
-		if afmReadSparseThresholdFound {
-			filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
-		} else {
-			filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
-		}
-
-		afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
-		if afmNumFlushThreadsFound {
-			filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
-		} else {
-			filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
-		}
-
-		afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
-		if afmPrefetchThresholdFound {
-			filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
-		} else {
-			filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
-		}
-
-		afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
-		if afmObjectFastReaddirFound {
-			filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
-		} else {
-			filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
-		}
-
-		afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
-		if afmFileOpenRefreshIntervalFound {
-			filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
-		} else {
-			filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
-		}
-
+	if volType == cacheVolumeType && setAfmAttributes != "None"{
+		if setAfmAttributes == "NFS" {
+			updateFilesetWithNfsTuningParams(ctx, &filesetreq, opts)
+		} else{
+			updateFilesetWithS3TuningParams(ctx, &filesetreq, opts)
+		}	
 	}
 
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)
@@ -594,6 +564,74 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		return err
 	}
 	return nil
+}
+
+func updateFilesetWithNfsTuningParams(ctx context.Context, filesetreq *CreateFilesetRequest, opts map[string]interface{}){
+
+	afmDirLookupRefreshIntervalValue, afmDirLookupRefreshIntervalFound := opts[AfmDirLookupRefreshInterval]
+	if afmDirLookupRefreshIntervalFound {
+		filesetreq.AfmDirLookupRefreshInterval = afmDirLookupRefreshIntervalValue.(string)
+	} else {
+		filesetreq.AfmDirLookupRefreshInterval = AfmDirLookupRefreshIntervalDefault
+	}
+
+	afmDirOpenRefreshIntervalValue, afmDirOpenRefreshIntervalFound := opts[AfmDirOpenRefreshInterval]
+	if afmDirOpenRefreshIntervalFound {
+		filesetreq.AfmDirOpenRefreshInterval = afmDirOpenRefreshIntervalValue.(string)
+	} else {
+		filesetreq.AfmDirOpenRefreshInterval = AfmDirOpenRefreshIntervalDefault
+	}
+
+	afmFileLookupRefreshIntervalValue, afmFileLookupRefreshIntervalFound := opts[AfmFileLookupRefreshInterval]
+	if afmFileLookupRefreshIntervalFound {
+		filesetreq.AfmFileLookupRefreshInterval = afmFileLookupRefreshIntervalValue.(string)
+	} else {
+		filesetreq.AfmFileLookupRefreshInterval = AfmFileLookupRefreshIntervalDefault
+	}
+
+	afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
+	if afmFileOpenRefreshIntervalFound {
+		filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
+	} else {
+		filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
+	}
+}
+
+func updateFilesetWithS3TuningParams(ctx context.Context, filesetreq *CreateFilesetRequest, opts map[string]interface{}){
+	afmReadSparseThresholdValue, afmReadSparseThresholdFound := opts[AfmReadSparseThreshold]
+	if afmReadSparseThresholdFound {
+		filesetreq.AfmReadSparseThreshold = afmReadSparseThresholdValue.(string)
+	} else {
+		filesetreq.AfmReadSparseThreshold = AfmReadSparseThresholdDefault
+	}
+
+	afmNumFlushThreadsValue, afmNumFlushThreadsFound := opts[AfmNumFlushThreads]
+	if afmNumFlushThreadsFound {
+		filesetreq.AfmNumFlushThreads = afmNumFlushThreadsValue.(int)
+	} else {
+		filesetreq.AfmNumFlushThreads = AfmNumFlushThreadsDefault
+	}
+
+	afmPrefetchThresholdValue, afmPrefetchThresholdFound := opts[AfmPrefetchThreshold]
+	if afmPrefetchThresholdFound {
+		filesetreq.AfmPrefetchThreshold = afmPrefetchThresholdValue.(int)
+	} else {
+		filesetreq.AfmPrefetchThreshold = AfmPrefetchThresholdDefault
+	}
+
+	afmObjectFastReaddirValue, afmObjectFastReaddirFound := opts[AfmObjectFastReaddir]
+	if afmObjectFastReaddirFound {
+		filesetreq.AfmObjectFastReaddir = afmObjectFastReaddirValue.(string)
+	} else {
+		filesetreq.AfmObjectFastReaddir = AfmObjectFastReaddirDefault
+	}
+
+	afmFileOpenRefreshIntervalValue, afmFileOpenRefreshIntervalFound := opts[AfmFileOpenRefreshInterval]
+	if afmFileOpenRefreshIntervalFound {
+		filesetreq.AfmFileOpenRefreshInterval = afmFileOpenRefreshIntervalValue.(string)
+	} else {
+		filesetreq.AfmFileOpenRefreshInterval = AfmFileOpenRefreshIntervalDefault
+	}
 }
 
 // GetGatewayNode : A gateway node is must for cache fileset,
