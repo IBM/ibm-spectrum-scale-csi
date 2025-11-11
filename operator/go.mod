@@ -77,3 +77,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/IBM/ibm-spectrum-scale-csi/driver => github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20251111145639-b43390cb1f9a
