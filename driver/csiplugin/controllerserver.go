@@ -31,6 +31,7 @@ import (
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -230,6 +231,7 @@ func (cs *ScaleControllerServer) createDirectory(ctx context.Context, scVol *sca
 	return nil
 }
 
+/*
 // createSoftlink: Create soft link if not present
 func (cs *ScaleControllerServer) createSoftlink(ctx context.Context, scVol *scaleVolume, target string) error {
 	loggerId := utils.GetLoggerId(ctx)
@@ -250,7 +252,7 @@ func (cs *ScaleControllerServer) createSoftlink(ctx context.Context, scVol *scal
 		}
 	}
 	return nil
-}
+} */
 
 // setQuota: Set quota if not set
 func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolume, volName string) error {
@@ -857,9 +859,9 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	ctx := utils.SetModuleName(newctx, createVolume)
 
 	// Mask the secrets from request before logging
-	reqToLog := *req
+	reqToLog := proto.Clone(req).(*csi.CreateVolumeRequest)
 	reqToLog.Secrets = nil
-	klog.Infof("[%s] CreateVolume req: %v", loggerId, &reqToLog)
+	klog.Infof("[%s] CreateVolume req: %+v", loggerId, reqToLog)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		klog.Errorf("[%s] invalid create volume req: %v", loggerId, req)
@@ -972,10 +974,11 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			}
 		} else {
 			if scaleVol.VolumeType == cacheVolume {
-				if scaleVol.CacheMode == "" {
+				switch scaleVol.CacheMode {
+				case "":
 					// cacheMode is not specified, use AFM mode IW by default for other volume access modes
 					scaleVol.CacheMode = afmModeIW
-				} else if scaleVol.CacheMode == afmModeRO {
+				case afmModeRO:
 					return nil, status.Error(codes.InvalidArgument, "The cacheMode readonly is only supported with the volume access mode ReadOnlyMany")
 				}
 			}
@@ -1322,7 +1325,7 @@ func validateCacheSecret(ctx context.Context, secretData map[string]string) ([]s
 
 	if len(secretData) == 0 {
 		klog.Errorf("[%s] secret in the req doesn't have any parameters", loggerId)
-		return nil, false, status.Error(codes.Internal, fmt.Sprintf("secret in the req doesn't have any parameters"))
+		return nil, false, status.Error(codes.Internal, "secret in the req doesn't have any parameters")
 	}
 
 	if _, exists := secretData[KeysForNfs[0]]; exists {
@@ -2587,9 +2590,9 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	ctx := utils.SetModuleName(newctx, deleteVolume)
 
 	// Mask the secrets from request before logging
-	reqToLog := *req
+	reqToLog := proto.Clone(req).(*csi.CreateVolumeRequest)
 	reqToLog.Secrets = nil
-	klog.Infof("[%s] DeleteVolume req: %v", loggerId, &reqToLog)
+	klog.Infof("[%s] DeleteVolume req: %v", loggerId, reqToLog)
 
 	if err := cs.Driver.ValidateControllerServiceRequest(ctx, csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
 		klog.Errorf("[%s] Invalid delete volume req: %v", loggerId, req)
@@ -2801,8 +2804,8 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 					if !isNfsSupported {
 						bucketName := req.Secrets[connectors.BucketName]
 						endpoint := req.Secrets[connectors.BucketEndpoint]
-						if err != nil {
-							return nil, fmt.Errorf("failed to parse endpoint URL %s, error %v", endpoint, err)
+						if endpoint == "" || bucketName == "" {
+							return nil, fmt.Errorf("failed to parse endpoint URL %s and bucket name %s, error %v", endpoint, bucketName, err)
 						}
 						err = conn.DeleteBucketKeys(ctx, bucketName+":"+volumeName+"-exportmap")
 						if err != nil {
@@ -3125,12 +3128,12 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 		//error when FS is not mounted on all the gatewayNodes for "cache" volume
 		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE && !isFsMountedOnGateway {
 			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on all the gatewayNodes %v", loggerId, fsName, gatewayNodeNames)
-			klog.Errorf(message)
+			klog.Errorf("%s", message)
 			return nil, status.Error(codes.Internal, message)
 		}
 		if !isFsMounted {
 			message := fmt.Sprintf("[%s] ControllerPublishVolume : filesystem %s is not mounted on node %s", loggerId, fsName, scalenodeID)
-			klog.Errorf(message)
+			klog.Errorf("%s", message)
 			return nil, status.Error(codes.Internal, message)
 		}
 	}

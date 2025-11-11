@@ -319,15 +319,16 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if fsetTypeSpecified {
-		if fsetType == dependentFileset {
+		switch fsetType {
+		case dependentFileset:
 			if inodeLimSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "inodeLimit and filesetType=dependent must not be specified together in storageClass")
 			}
-		} else if fsetType == independentFileset {
+		case independentFileset:
 			if isparentFilesetSpecified {
 				return &scaleVolume{}, status.Error(codes.InvalidArgument, "parentFileset and filesetType=independent(Default) must not be specified together in storageClass")
 			}
-		} else {
+		default:
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Invalid value specified for filesetType in storageClass")
 		}
 	}

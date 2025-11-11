@@ -56,8 +56,8 @@ const (
 
 	//	BLOCK_FILESET_VOLUME = 3
 
-	defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
-	symlinkDir            = ".volumes"
+	// defaultPrimaryFileset = "spectrum-scale-csi-volume-store"
+	// symlinkDir            = ".volumes"
 	volumeStatsCapability = "VOLUME_STATS_CAPABILITY"
 )
 
