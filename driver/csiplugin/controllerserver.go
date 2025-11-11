@@ -2590,7 +2590,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	ctx := utils.SetModuleName(newctx, deleteVolume)
 
 	// Mask the secrets from request before logging
-	reqToLog := proto.Clone(req).(*csi.CreateVolumeRequest)
+	reqToLog := proto.Clone(req).(*csi.DeleteVolumeRequest)
 	reqToLog.Secrets = nil
 	klog.Infof("[%s] DeleteVolume req: %v", loggerId, reqToLog)
 
