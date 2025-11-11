@@ -121,7 +121,7 @@ jobs:
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s -- $KUSTOMIZE_VERSION ${HOME}/bin
         # Testing that the generated files match the deploy/*.yaml files, it they do not match, fail Travis
         - ansible-playbook ${TRAVIS_BUILD_DIR}/tools/ansible/generate-playbook.yaml --extra-vars "travis_testing=true"
-        - golangci-lint run --no-config --disable-all -E gosec --out-format json,colored-line-number --timeout 3m0s
+        - golangci-lint run --no-config --disable-all -E gosec --out-format json,colored-line-number --timeout 10m0s
 
     - stage: build
       name: "Build - Driver: image and push to registry"
