@@ -536,12 +536,14 @@ func (s *SpectrumRestV2) UpdateFileset(ctx context.Context, filesystemName strin
 		filesetreq.Comment = fmt.Sprintf("%v", comment)
 	}
 
-	if volType == cacheVolumeType && setAfmAttributes != "None"{
+	if volType == cacheVolumeType && setAfmAttributes != ""{
 		if setAfmAttributes == "NFS" {
 			updateFilesetWithNfsTuningParams(ctx, &filesetreq, opts)
-		} else{
+		} else if setAfmAttributes == "S3" {
 			updateFilesetWithS3TuningParams(ctx, &filesetreq, opts)
-		}	
+		}else{
+			klog.Infof("[%s] no vac parameters provided for cache volume", utils.GetLoggerId(ctx))
+		}
 	}
 
 	updateFilesetURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s", filesystemName, filesetName)

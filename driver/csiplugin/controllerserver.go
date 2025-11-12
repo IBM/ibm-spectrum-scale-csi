@@ -738,7 +738,7 @@ func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeReque
 
 func updateComment(ctx context.Context, scVol *scaleVolume, cacheVolId *cacheVolumeId) error {
 	updateOpts := make(map[string]interface{})
-	setAfmAttributes := "None"
+	setAfmAttributes := ""
 	if cacheVolId.IsNfsSupported {
 		if len(cacheVolId.NfsTuningParams) > 0{
 			updateOpts = cacheVolId.NfsTuningParams
@@ -2658,7 +2658,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 		return nil, err
 	}
 
-	setAfmAttributes := "None"
+	setAfmAttributes := ""
 	if len(cacheVolId.NfsTuningParams) > 0{
 		setAfmAttributes = "NFS"
 		afmTuningParams = cacheVolId.NfsTuningParams
@@ -4039,7 +4039,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 			if numberInSlice(fsetDetails.Config.MaxNumInodes, maxInodesCombination) {
 				opt := make(map[string]interface{})
 				opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
-				fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, opt, "None")
+				fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, opt, "")
 				if fseterr != nil {
 					klog.Errorf("[%s] Volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesetName, filesystemName, fseterr)
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
