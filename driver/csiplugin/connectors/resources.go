@@ -622,8 +622,8 @@ type CreateFilesetRequest struct {
 	IamMode                      string `json:"iamMode,omitempty"`
 	AfmTarget                    string `json:"afmTarget,omitempty"`
 	AfmAsyncDelay                string `json:"afmAsyncDelay,omitempty"`
-	AfmDirLookupRefreshInterval  string `json:"afmDirLookupRefreshInterval,omitempty"`
-	AfmDirOpenRefreshInterval    string `json:"afmDirOpenRefreshInterval,omitempty"`
+	AfmDirLookupRefreshInterval  string    `json:"afmDirLookupRefreshInterval,omitempty"`
+	AfmDirOpenRefreshInterval    string    `json:"afmDirOpenRefreshInterval,omitempty"`
 	AfmEnableAutoEviction        string `json:"afmEnableAutoEviction,omitempty"`
 	AfmExpirationTimeout         string `json:"afmExpirationTimeout,omitempty"`
 	AfmFileLookupRefreshInterval string `json:"afmFileLookupRefreshInterval,omitempty"`
@@ -637,9 +637,9 @@ type CreateFilesetRequest struct {
 	AfmPrimaryID                 string `json:"afmPrimaryID,omitempty"`
 	AfmRPO                       int    `json:"afmRPO,omitempty"`
 	AfmShowHomeSnapshots         string `json:"afmShowHomeSnapshots,omitempty"`
-        AfmReadSparseThreshold       string `json:"afmReadSparseThreshold,omitempty"`
+	AfmReadSparseThreshold       string `json:"afmReadSparseThreshold,omitempty"`
 	AfmObjectFastReaddir         string `json:"afmObjectFastReaddir,omitempty"`
-	AfmFileOpenRefreshInterval   string `json:"afmFileOpenRefreshInterval,omitempty"`
+	AfmFileOpenRefreshInterval   string    `json:"afmFileOpenRefreshInterval,omitempty"`
 }
 
 type CreateS3CacheFilesetRequest struct {
@@ -652,10 +652,10 @@ type CreateS3CacheFilesetRequest struct {
 	VerifyKeys       bool   `json:"verifyKeys,omitempty"`
 	MakeActive       bool   `json:"makeActive,omitempty"`
 	TempDir          string `json:"tmpDir,omitempty"`
-	Uid				 string `json:"uid,omitempty"`
-	Gid				 string `json:"gid,omitempty"`
-	Permission		 string `json:"permission,omitempty"`
-	Dir   			 string `json:"dir,omitempty"`       
+	Uid              string `json:"uid,omitempty"`
+	Gid              string `json:"gid,omitempty"`
+	Permission       string `json:"permission,omitempty"`
+	Dir              string `json:"dir,omitempty"`
 }
 
 type SetBucketKeysRequest struct {
