@@ -78,4 +78,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/IBM/ibm-spectrum-scale-csi/driver => github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20251111145639-b43390cb1f9a
+replace github.com/IBM/ibm-spectrum-scale-csi/driver => github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20251121094552-bd12f28953e0
