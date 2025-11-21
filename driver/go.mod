@@ -3,7 +3,7 @@ module github.com/IBM/ibm-spectrum-scale-csi/driver
 go 1.24.0
 
 require (
-	github.com/container-storage-interface/spec v1.12.0
+	github.com/container-storage-interface/spec v1.11.0
 	github.com/google/uuid v1.6.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	golang.org/x/net v0.46.0
