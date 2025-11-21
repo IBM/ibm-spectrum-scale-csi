@@ -49,7 +49,7 @@ type SpectrumScaleConnector interface {
 	DeleteNodeMappingAFMWithCos(ctx context.Context, exportMapName string) error
 	CreateS3CacheFileset(ctx context.Context, filesystemName string, filesetName string, mode string, opts map[string]interface{}, access map[string]string, exportMapName string, parsedURL *url.URL) error
 	CreateNodeMappingAFMWithCos(ctx context.Context, exportMapName string, gatewayNodeName string, bucketInfo, nfsInfo map[string]string, isNfsSupported bool) error
-	UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}, setAfmAttributes bool) error
+	UpdateFileset(ctx context.Context, filesystemName string, volType string, filesetName string, opts map[string]interface{}, setAfmAttributes string) error
 	DeleteFileset(ctx context.Context, filesystemName string, filesetName string) error
 	//LinkFileset(filesystemName string, filesetName string) error
 	LinkFileset(ctx context.Context, filesystemName string, filesetName string, linkpath string) error
@@ -134,13 +134,18 @@ const (
 	UserSpecifiedVolNamePrefix    string = "volNamePrefix"
 	UserSpecifiedExistingVolume   string = "existingVolume"
 
-	// AFM tuning parameters to modify cache fileset
+	// AFM tuning parameters to modify cache fileset for s3
 	AfmReadSparseThreshold     string = "afmReadSparseThreshold"
 	AfmNumFlushThreads         string = "afmNumFlushThreads"
 	AfmPrefetchThreshold       string = "afmPrefetchThreshold"
 	AfmObjectFastReaddir       string = "afmObjectFastReaddir"
 	AfmFileOpenRefreshInterval string = "afmFileOpenRefreshInterval"
 	AfmNumReadThreads          string = "afmNumReadThreads"
+
+	// AFM tuning parameters for nfs
+	AfmDirLookupRefreshInterval  string = "afmDirLookupRefreshInterval"
+	AfmDirOpenRefreshInterval    string = "afmDirOpenRefreshInterval"
+	AfmFileLookupRefreshInterval string = "afmFileLookupRefreshInterval"
 
 	// default value for AFM tuning parameters
 	AfmNumFlushThreadsDefault         = 4
@@ -149,6 +154,10 @@ const (
 	AfmNumReadThreadsDefault          = 1
 	AfmObjectFastReaddirDefault       = "no"
 	AfmReadSparseThresholdDefault     = "128"
+	AfmDirLookupRefreshIntervalDefault = "60"
+	AfmDirOpenRefreshIntervalDefault   = "60"
+	AfmFileLookupRefreshIntervalDefault = "30"
+
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {

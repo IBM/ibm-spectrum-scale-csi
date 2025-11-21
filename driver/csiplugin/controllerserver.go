@@ -59,6 +59,7 @@ const (
 
 	fsetNotFoundErrCode = "EFSSG0072C"
 	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
+	refreshInterval     = 2147483647 //refresh Interval for afm tuning parameters
 
 	//pvcNameKey      = "csi.storage.k8s.io/pvc/name"
 	//pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
@@ -329,7 +330,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, afmTuningParams map[string]interface{}, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, cacheVolId.GateWayNode)
 	opt := make(map[string]interface{})
@@ -427,7 +428,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 		scVol.ParentFileset = ""
 		createDataDir := false
-		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil, nil)
+		_, err = cs.createFilesetVol(ctx, scVol, indepFilesetName, fsDetails, opt, createDataDir, true, isCGVolume, nil)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create independent fileset [%v] in filesystem [%v]. Error: %v", loggerId, indepFilesetName, indepFilesetName, scVol.VolBackendFs, err)
 			return "", err
@@ -455,7 +456,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		if scVol.VolDirBasePath != "" {
 			opt[connectors.UserSpecifiedVolDirPath] = fmt.Sprintf("%s/%s/%s", fsDetails.Mount.MountPoint, scVol.VolDirBasePath, indepFilesetName)
 		}
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, cacheVolId)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, cacheVolId)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create dependent fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -465,7 +466,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	} else if scVol.VolumeType == cacheVolume {
 		createDataDir := false
 		klog.Infof("[%s] creating a fileset for a cache volume, fileset name: [%s] in filesystem [%s] and gateway for export map [%s]", loggerId, scVol.VolName, scVol.VolBackendFs, cacheVolId.GateWayNode)
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, afmTuningParams, cacheVolId)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, cacheVolId)
 		if err != nil {
 			klog.Errorf("[%s] failed to create a cache fileset [%s] in filesystem [%s]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -485,7 +486,7 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		// Create fileset
 		klog.Infof("[%s] creating fileset for classic storageClass with fileset name: [%v]", loggerId, scVol.VolName)
 		createDataDir := true
-		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, nil, cacheVolId)
+		filesetPath, err := cs.createFilesetVol(ctx, scVol, scVol.VolName, fsDetails, opt, createDataDir, false, isCGVolume, cacheVolId)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - failed to create fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolName, scVol.VolBackendFs, err)
 			return "", err
@@ -511,14 +512,11 @@ func checkFSQuotasEnforcedAndFilesetdfEnabled(ctx context.Context, scVol *scaleV
 	return nil
 }
 
-func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, afmTuningParams map[string]interface{}, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *scaleVolume, volName string, fsDetails connectors.FileSystem_v2, opt map[string]interface{}, createDataDir bool, isCGIndependentFset bool, isCGVolume bool, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
 	// Check if fileset exist
 	filesetInfo, err := scVol.Connector.ListFileset(ctx, scVol.VolBackendFs, volName)
 	loggerId := utils.GetLoggerId(ctx)
-	setAfmAttributes := false
-	if len(afmTuningParams) > 0 {
-		setAfmAttributes = true
-	}
+
 	if err != nil {
 		klog.Errorf("[%s] volume:[%v] - unable to list fileset [%v] in filesystem [%v]. Error: %v", loggerId, volName, volName, scVol.VolBackendFs, err)
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", volName, scVol.VolBackendFs, err))
@@ -564,7 +562,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 
 			// For cache fileset, add a comment as the create COS fileset
 			// interface doesn't allow setting the fileset comment.
-			if err := handleUpdateComment(ctx, scVol, setAfmAttributes, afmTuningParams); err != nil {
+			if err := handleUpdateComment(ctx, scVol, cacheVolId); err != nil {
 				return "", err
 			}
 		} else {
@@ -595,7 +593,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 		// fileset is present. Confirm if creator is IBM Storage Scale CSI driver and fileset type is correct.
 		if !strings.Contains(filesetInfo.Config.Comment, connectors.FilesetComment) {
 			if scVol.VolumeType == cacheVolume {
-				if err := handleUpdateComment(ctx, scVol, setAfmAttributes, afmTuningParams); err != nil {
+				if err := handleUpdateComment(ctx, scVol, cacheVolId); err != nil {
 					return "", err
 				}
 			} else {
@@ -710,11 +708,11 @@ func createExportMap(ctx context.Context, scVol *scaleVolume, volName string, ca
 
 }
 
-func handleUpdateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool, afmTuningParams map[string]interface{}) error {
+func handleUpdateComment(ctx context.Context, scVol *scaleVolume, cacheVolId *cacheVolumeId) error {
 	loggerId := utils.GetLoggerId(ctx)
 	volName := scVol.VolName
 
-	if updateerr := updateComment(ctx, scVol, setAfmAttributes, afmTuningParams); updateerr != nil {
+	if updateerr := updateComment(ctx, scVol, cacheVolId); updateerr != nil {
 		if strings.Contains(updateerr.Error(), fsetNotFoundErrCode) ||
 			strings.Contains(updateerr.Error(), fsetNotFoundErrMsg) {
 			// Filset is not found, refresh filesets
@@ -724,7 +722,7 @@ func handleUpdateComment(ctx context.Context, scVol *scaleVolume, setAfmAttribut
 			}
 
 			// Try update again after fileset refresh
-			if updateerr := updateComment(ctx, scVol, setAfmAttributes, afmTuningParams); updateerr != nil {
+			if updateerr := updateComment(ctx, scVol, cacheVolId); updateerr != nil {
 				klog.Errorf("[%s] failed to update comment for fileset [%s] in filesystem [%s] even after fileset refresh. Error: %v", loggerId, volName, scVol.VolBackendFs, updateerr)
 				return status.Error(codes.Internal, fmt.Sprintf("failed to update comment for fileset [%s] in filesystem [%s] even after fileset refresh. Error: %v", volName, scVol.VolBackendFs, updateerr))
 			}
@@ -741,10 +739,19 @@ func (cs *ScaleControllerServer) getVolumeSizeInBytes(req *csi.CreateVolumeReque
 	return capacity.GetRequiredBytes()
 }
 
-func updateComment(ctx context.Context, scVol *scaleVolume, setAfmAttributes bool, afmTuningParams map[string]interface{}) error {
+func updateComment(ctx context.Context, scVol *scaleVolume, cacheVolId *cacheVolumeId) error {
 	updateOpts := make(map[string]interface{})
-	if setAfmAttributes {
-		updateOpts = afmTuningParams
+	setAfmAttributes := ""
+	if cacheVolId.IsNfsSupported {
+		if len(cacheVolId.NfsTuningParams) > 0 {
+			updateOpts = cacheVolId.NfsTuningParams
+			setAfmAttributes = settings.NfsCache
+		}
+	} else {
+		if len(cacheVolId.S3TuningParams) > 0 {
+			updateOpts = cacheVolId.S3TuningParams
+			setAfmAttributes = settings.S3Cache
+		}
 	}
 	updateOpts[connectors.FilesetCommentKey] = fmt.Sprintf(connectors.FilesetCommentValue, scVol.PVCName, scVol.Namespace)
 	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, scVol.VolName, updateOpts, setAfmAttributes)
@@ -789,57 +796,99 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 // As part of initial implementation only 6 parameters are considered for tuning by default
 // afmObjectSyncOpenFiles,afmNumFlushThreads,afmPrefetchThreshold,afmObjectFastReaddir,afmFileOpenRefreshInterval,afmNumReadThreads (Default parameters)
 // Values to the parameters are configured through VAC (volume attributes class). If not then default values are considered for tuning
-func validateVACParams(ctx context.Context, mutableParams map[string]string) (map[string]interface{}, error) {
+func validateVACParams(ctx context.Context, mutableParams map[string]string, cacheVolId *cacheVolumeId) error {
 	loggerId := utils.GetLoggerId(ctx)
-	afmTuningParams := make(map[string]interface{})
 
 	for vacKey, vacValue := range mutableParams {
 		switch vacKey {
 
 		case connectors.AfmReadSparseThreshold:
 			afmReadSparseThresholdValue, _ := strconv.Atoi(vacValue)
-			if afmReadSparseThresholdValue < 0 || afmReadSparseThresholdValue > 2147483647 {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
+			if afmReadSparseThresholdValue < 0 || afmReadSparseThresholdValue > refreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmReadSparseThreshold))
 			} else {
-				afmTuningParams[vacKey] = vacValue
+				cacheVolId.S3TuningParams[vacKey] = vacValue
 			}
 
 		case connectors.AfmNumFlushThreads:
 			afmNumFlushThreadsValue, _ := strconv.Atoi(vacValue)
 			if afmNumFlushThreadsValue < 1 || afmNumFlushThreadsValue > 1024 {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmNumFlushThreads))
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmNumFlushThreads))
 			} else {
-				afmTuningParams[vacKey] = afmNumFlushThreadsValue
+				cacheVolId.S3TuningParams[vacKey] = vacValue
 			}
 
 		case connectors.AfmPrefetchThreshold:
 			afmPrefetchThresholdValue, _ := strconv.Atoi(vacValue)
 			if afmPrefetchThresholdValue < 0 || afmPrefetchThresholdValue > 100 {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmPrefetchThreshold))
 			} else {
-				afmTuningParams[vacKey] = afmPrefetchThresholdValue
+				cacheVolId.S3TuningParams[vacKey] = vacValue
 			}
 
 		case connectors.AfmObjectFastReaddir:
 			if !(vacValue == "no" || vacValue == "yes") {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmObjectFastReaddir))
 			} else {
-				afmTuningParams[vacKey] = vacValue
+				cacheVolId.S3TuningParams[vacKey] = vacValue
 			}
 
 		case connectors.AfmFileOpenRefreshInterval:
 			afmFileOpenRefreshIntervalValue, _ := strconv.Atoi(vacValue)
-			if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > 2147483647 {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
+			if afmFileOpenRefreshIntervalValue < 0 || afmFileOpenRefreshIntervalValue > refreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileOpenRefreshInterval))
 			} else {
-				afmTuningParams[vacKey] = vacValue
+				cacheVolId.S3TuningParams[vacKey] = vacValue
+				cacheVolId.NfsTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmDirLookupRefreshInterval:
+			afmDirLookupRefreshIntervalValue, _ := strconv.Atoi(vacValue)
+			if afmDirLookupRefreshIntervalValue < 0 || afmDirLookupRefreshIntervalValue > refreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmDirLookupRefreshInterval))
+			} else {
+				cacheVolId.NfsTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmDirOpenRefreshInterval:
+			afmDirOpenRefreshIntervalValue, _ := strconv.Atoi(vacValue)
+			if afmDirOpenRefreshIntervalValue < 0 || afmDirOpenRefreshIntervalValue > refreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmDirOpenRefreshInterval))
+			} else {
+				cacheVolId.NfsTuningParams[vacKey] = vacValue
+			}
+
+		case connectors.AfmFileLookupRefreshInterval:
+			afmFileLookupRefreshIntervalValue, _ := strconv.Atoi(vacValue)
+			if afmFileLookupRefreshIntervalValue < 0 || afmFileLookupRefreshIntervalValue > refreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("invalid value specified for the parameter[%s]", connectors.AfmFileLookupRefreshInterval))
+			} else {
+				cacheVolId.NfsTuningParams[vacKey] = vacValue
 			}
 
 		default:
-			klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
+			if vacKey != connectors.AfmReadSparseThreshold {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmReadSparseThreshold))
+			} else if vacKey != connectors.AfmNumFlushThreads {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmNumFlushThreads))
+			} else if vacKey != connectors.AfmPrefetchThreshold {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmPrefetchThreshold))
+			} else if vacKey != connectors.AfmObjectFastReaddir {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmObjectFastReaddir))
+			} else if vacKey != connectors.AfmFileOpenRefreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmFileOpenRefreshInterval))
+			} else if vacKey != connectors.AfmDirLookupRefreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmDirLookupRefreshInterval))
+			} else if vacKey != connectors.AfmDirOpenRefreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmDirOpenRefreshInterval))
+			} else if vacKey != connectors.AfmFileLookupRefreshInterval {
+				return status.Error(codes.Internal, fmt.Sprintf("Invalid vac parameter %s is provided. Please check case before providing in vac", connectors.AfmFileLookupRefreshInterval))
+			} else {
+				klog.Infof("[%s] parameter configured in vac is not in default supported list", loggerId)
+			}
 		}
 	}
-	return afmTuningParams, nil
+	return nil
 }
 
 func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (connectors.SpectrumScaleConnector, string, error) {
@@ -936,11 +985,29 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return nil, status.Error(codes.InvalidArgument, "Creating a cache volume from another volume or snapshot is not supported")
 	}
 
-	afmTuningParams := make(map[string]interface{})
 	mutableParams := req.GetMutableParameters()
+	var targetPath string
+	cacheVolId := &cacheVolumeId{}
+	cacheVolId.S3TuningParams = make(map[string]interface{})
+	cacheVolId.NfsTuningParams = make(map[string]interface{})
+	if scaleVol.VolumeType == cacheVolume {
+		// Validate the secret data in case of cache volumes
+		missingKeys, isNfsSupported, err := validateCacheSecret(ctx, req.Secrets)
+		if len(missingKeys) != 0 || err != nil {
+			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret for cache volume %s does not have required parameter(s): %v", scaleVol.VolName, missingKeys))
+		}
+
+		if isNfsSupported {
+			cacheVolId.IsNfsSupported = isNfsSupported
+			cacheVolId.NfsInfo = req.Secrets
+		} else {
+			cacheVolId.BucketInfo = req.Secrets
+		}
+	}
+
 	if mutableParams != nil {
 		if scaleVol.VolumeType == cacheVolume {
-			afmTuningParams, err = validateVACParams(ctx, mutableParams)
+			err = validateVACParams(ctx, mutableParams, cacheVolId)
 			if err != nil {
 				return nil, err
 			}
@@ -950,7 +1017,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 				filesetName = fsetNameFrmVac
 				klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create filesetName has been provided from VolumeAttributeClass filesetName:[ %s ]\n", loggerId, scaleVol.VolName, filesetName)
 			}
-
 		} else {
 			return nil, status.Error(codes.InvalidArgument, "Creating volume with volume attribute class is not supported")
 		}
@@ -1121,23 +1187,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize) // #nosec G115 -- false positive
 	defer delete(cs.Driver.reqmap, scaleVol.VolName)
 
-	var targetPath string
-	cacheVolId := &cacheVolumeId{}
 	if scaleVol.VolumeType == cacheVolume {
-		// Validate the secret data in case of cache volumes
-		missingKeys, isNfsSupported, err := validateCacheSecret(ctx, req.Secrets)
-		if len(missingKeys) != 0 || err != nil {
-			return nil, status.Error(codes.Aborted, fmt.Sprintf("The secret for cache volume %s does not have required parameter(s): %v", scaleVol.VolName, missingKeys))
-		}
-
-		if isNfsSupported {
-			cacheVolId.IsNfsSupported = isNfsSupported
-			cacheVolId.NfsInfo = req.Secrets
-		} else {
-			cacheVolId.BucketInfo = req.Secrets
-		}
-
-		// A gateway node is must for cache fileset
 		gatewayNodeName, err := scaleVol.Connector.GetGatewayNode(ctx)
 		if err != nil {
 			return nil, err
@@ -1160,7 +1210,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, afmTuningParams, cacheVolId)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, cacheVolId)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}
@@ -2504,6 +2554,7 @@ func (cs *ScaleControllerServer) DeleteCGFileset(ctx context.Context, Filesystem
 
 func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
 	loggerId := utils.GetLoggerId(ctx)
+	afmTuningParams := make(map[string]interface{})
 
 	klog.Infof("[%s] ControllerModifyVolume - Volume modify req: %v", loggerId, req)
 	klog.Infof("[%s] ControllerModifyVolume - Number of param: %v", loggerId, len(req.MutableParameters))
@@ -2569,14 +2620,26 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 			return nil, status.Error(codes.InvalidArgument, "ControllerModifyVolume: - Volume Attributes class is only supported for cacheVolumes and staticVolumes")
 		}
 	}
-	afmTuningParams, err := validateVACParams(ctx, mutableParams)
+	cacheVolId := &cacheVolumeId{}
+	err = validateVACParams(ctx, mutableParams, cacheVolId)
 	if err != nil {
 		return nil, err
 	}
 
+	setAfmAttributes := ""
+	if len(cacheVolId.NfsTuningParams) > 0 {
+		setAfmAttributes = settings.NfsCache
+		afmTuningParams = cacheVolId.NfsTuningParams
+	}
+
+	if len(cacheVolId.S3TuningParams) > 0 {
+		setAfmAttributes = settings.S3Cache
+		afmTuningParams = cacheVolId.S3TuningParams
+	}
+
 	klog.Infof("Fileset [%v] is created by IBM Container Storage Interface driver, moving ahead with modify fileset", filesetName)
 
-	fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, afmTuningParams, true)
+	fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, afmTuningParams, setAfmAttributes)
 	if fseterr != nil {
 		klog.Errorf("[%s] Volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesetName, filesystemName, fseterr)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))
@@ -3944,7 +4007,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 			if numberInSlice(fsetDetails.Config.MaxNumInodes, maxInodesCombination) {
 				opt := make(map[string]interface{})
 				opt[connectors.UserSpecifiedInodeLimit] = strconv.FormatUint(200000, 10)
-				fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, opt, false)
+				fseterr := conn.UpdateFileset(ctx, filesystemName, volumeIDMembers.StorageClassType, filesetName, opt, "")
 				if fseterr != nil {
 					klog.Errorf("[%s] Volume:[%v] - unable to update fileset [%v] in filesystem [%v]. Error: %v", loggerId, filesetName, filesetName, filesystemName, fseterr)
 					return nil, status.Error(codes.Internal, fmt.Sprintf("unable to update fileset [%v] in filesystem [%v]. Error: %v", filesetName, filesystemName, fseterr))

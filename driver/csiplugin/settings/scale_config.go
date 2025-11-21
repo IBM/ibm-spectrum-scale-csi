@@ -92,6 +92,8 @@ const (
 	// #nosec G101
 	SecretBasePath  string = "/var/lib/ibm/" //nolint:gosec
 	CertificatePath string = "/var/lib/ibm/ssl/public"
+	S3Cache         string = "S3"
+	NfsCache        string = "NFS"
 )
 
 func LoadScaleConfigSettings(ctx context.Context) ScaleSettingsConfigMap {
