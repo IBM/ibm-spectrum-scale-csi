@@ -550,7 +550,11 @@ func (c *CSIScaleOperator) GenerateNodePluginClusterRole() *rbacv1.ClusterRole {
 				Resources: []string{persistentVolumesResource},
 				Verbs:     []string{verbGet, verbList, verbWatch, verbUpdate},
 			},
-
+			{
+				APIGroups: []string{""},
+				Resources: []string{persistentVolumeClaimsResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
+			},
 			{
 				APIGroups: []string{storageApiGroup},
 				Resources: []string{volumeAttachmentsResource},

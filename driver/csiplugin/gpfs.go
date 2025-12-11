@@ -30,6 +30,8 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
 
@@ -118,6 +120,8 @@ type ScaleDriver struct {
 	vcap  []*csi.VolumeCapability_AccessMode
 	cscap []*csi.ControllerServiceCapability
 	nscap []*csi.NodeServiceCapability
+
+	clientset *kubernetes.Clientset
 }
 
 func GetScaleDriver(ctx context.Context) *ScaleDriver {
@@ -241,7 +245,29 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	driver.ids = NewIdentityServer(ctx, driver)
 	driver.ns = NewNodeServer(ctx, driver)
 	driver.cs = NewControllerServer(ctx, driver, scmap, cmap, primary)
+	driver.clientset, err = initKubeClient(ctx)
+	if err != nil {
+		klog.Errorf("[%s] failed to initialize kube client: %v", utils.GetLoggerId(ctx), err)
+		return err
+	}
 	return nil
+}
+
+func initKubeClient(ctx context.Context) (*kubernetes.Clientset, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] Initialize IBM Storage Scale CSI Kubernetes client", loggerId)
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		klog.Errorf("[%s] Unable to get incluster config", loggerId)
+		return nil, fmt.Errorf("unable to get incluster config: %v", err)
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		klog.Errorf("[%s] Unable to initialize Kubernetes client", loggerId)
+		return nil, fmt.Errorf("unable to initialize Kubernetes client: %v", err)
+	}
+	return clientset, nil
 }
 
 func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error) { //nolint:funlen
