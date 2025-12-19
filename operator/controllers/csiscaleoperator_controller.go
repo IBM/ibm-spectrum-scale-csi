@@ -144,7 +144,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	//_ = log.FromContext(ctx)
 
 	logger := csiLog.FromContext(ctx).WithName("Reconcile")
-	logger.Info("CSI setup started. f093bb81634d5d406e175f9d8d86c1f7e797fb83 ")
+	logger.Info("CSI setup started.")
 
 	//setENVIsOpenShift(r)
 
@@ -1367,7 +1367,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(ctx context.Context, i
 		}, found)
 		if err != nil && errors.IsNotFound(err) {
 			logger.Info("Creating a new ClusterRole", "Name", cr.GetName())
-			logger.Info("Clusterrole new ", "clusterrole", cr)
+			logger.V(6).Info("New ClusterRole ", "clusterroles", cr)
 			err = r.Client.Create(context.TODO(), cr)
 			if err != nil {
 				message := "Failed to create the ClusterRole: " + cr.GetName()
@@ -1386,7 +1386,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(ctx context.Context, i
 			return err
 		} else {
 			logger.Info("Clusterrole " + cr.GetName() + " already exists. Updating clusterrole.")
-			logger.Info("Clusterrole already exists ", "clusterrole", cr)
+			logger.V(6).Info("Updating ClusterRole", "clusterroles", cr)
 			err = r.Client.Update(context.TODO(), cr)
 			if err != nil {
 				message := "Failed to update the ClusterRole: " + cr.GetName()
