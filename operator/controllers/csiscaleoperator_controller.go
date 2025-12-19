@@ -144,7 +144,7 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	//_ = log.FromContext(ctx)
 
 	logger := csiLog.FromContext(ctx).WithName("Reconcile")
-	logger.Info("CSI setup started.")
+	logger.Info("CSI setup started. f093bb81634d5d406e175f9d8d86c1f7e797fb83 ")
 
 	//setENVIsOpenShift(r)
 
