@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 )
 
@@ -60,9 +61,6 @@ const (
 	fsetNotFoundErrCode = "EFSSG0072C"
 	fsetNotFoundErrMsg  = "400 Invalid value in 'filesetName'"
 	refreshInterval     = 2147483647 //refresh Interval for afm tuning parameters
-
-	//pvcNameKey      = "csi.storage.k8s.io/pvc/name"
-	//pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
 )
 
 type ScaleControllerServer struct {
@@ -962,8 +960,18 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	filesetName := ""
 	if scaleVol.IsStaticPVBased {
-		filesetName = req.GetParameters()["csi.storage.k8s.io/pvc/name"]
-		klog.Infof("[%s] Requested pvc is a static volume", loggerId)
+		pvc, err := cs.Driver.clientset.CoreV1().PersistentVolumeClaims(req.GetParameters()[PvcNamespaceKey]).Get(context.TODO(), req.GetParameters()[PvcNameKey], metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("[%s] Failed to get PVC detail for fetching filesetName from annotation with error %v", loggerId, err)
+			return nil, status.Error(codes.Internal, fmt.Sprintf(" Failed to get PVC detail for fetching filesetName from annotation with error %v", err))
+		}
+		klog.V(4).Infof("[%s] Annotations of the PVC [%s] , annotation [%v]", loggerId, volName, pvc.Annotations)
+		if pvc.Annotations != nil && pvc.Annotations[StaticFilesetNameAnnotationKey] != "" {
+			filesetName = pvc.Annotations[StaticFilesetNameAnnotationKey]
+		} else {
+			filesetName = req.GetParameters()[PvcNameKey]
+		}
+		klog.Infof("[%s] Requested pvc is a static volume  filesetName:[%s]", loggerId, filesetName)
 	}
 
 	if scaleVol.IsStaticPVBased && (isSnapSource || isVolSource) {
@@ -1011,12 +1019,12 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			if err != nil {
 				return nil, err
 			}
-		} else if scaleVol.IsStaticPVBased {
+			/* } else if scaleVol.IsStaticPVBased {
 			fsetNameFrmVac := mutableParams["filesetName"]
 			if fsetNameFrmVac != "" {
 				filesetName = fsetNameFrmVac
 				klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create filesetName has been provided from VolumeAttributeClass filesetName:[ %s ]\n", loggerId, scaleVol.VolName, filesetName)
-			}
+			} */
 		} else {
 			return nil, status.Error(codes.InvalidArgument, "Creating volume with volume attribute class is not supported")
 		}

@@ -1367,6 +1367,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(ctx context.Context, i
 		}, found)
 		if err != nil && errors.IsNotFound(err) {
 			logger.Info("Creating a new ClusterRole", "Name", cr.GetName())
+			logger.V(6).Info("New ClusterRole ", "clusterroles", cr)
 			err = r.Client.Create(context.TODO(), cr)
 			if err != nil {
 				message := "Failed to create the ClusterRole: " + cr.GetName()
@@ -1385,6 +1386,7 @@ func (r *CSIScaleOperatorReconciler) reconcileClusterRole(ctx context.Context, i
 			return err
 		} else {
 			logger.Info("Clusterrole " + cr.GetName() + " already exists. Updating clusterrole.")
+			logger.V(6).Info("Updating ClusterRole", "clusterroles", cr)
 			err = r.Client.Update(context.TODO(), cr)
 			if err != nil {
 				message := "Failed to update the ClusterRole: " + cr.GetName()

@@ -41,6 +41,10 @@ const (
 	VolNamePrefixEnvKey      = "VOLUME_NAME_PREFIX"
 	existingVolumeAllowedVal = "yes"
 	AFMCacheSharedPermission = "0777"
+
+	PvcNameKey                     = "csi.storage.k8s.io/pvc/name"
+	PvcNamespaceKey                = "csi.storage.k8s.io/pvc/namespace"
+	StaticFilesetNameAnnotationKey = "spectrumscale.csi.ibm.com/filesetName"
 )
 
 // AFM caching constants
@@ -108,10 +112,10 @@ type scaleVolume struct {
 }
 
 type cacheVolumeId struct {
-	BucketInfo     map[string]string
-	NfsInfo        map[string]string
-	IsNfsSupported bool
-	GateWayNode    string
+	BucketInfo      map[string]string
+	NfsInfo         map[string]string
+	IsNfsSupported  bool
+	GateWayNode     string
 	NfsTuningParams map[string]interface{}
 	S3TuningParams  map[string]interface{}
 }
@@ -211,11 +215,11 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	if isSCTypeSpecified && storageClassType == "" {
 		isSCTypeSpecified = false
 	}
-	if volOptions["csi.storage.k8s.io/pvc/name"] != "" {
-		scaleVol.PVCName = volOptions["csi.storage.k8s.io/pvc/name"]
+	if volOptions[PvcNameKey] != "" {
+		scaleVol.PVCName = volOptions[PvcNameKey]
 	}
-	if volOptions["csi.storage.k8s.io/pvc/namespace"] != "" {
-		scaleVol.Namespace = volOptions["csi.storage.k8s.io/pvc/namespace"]
+	if volOptions[PvcNamespaceKey] != "" {
+		scaleVol.Namespace = volOptions[PvcNamespaceKey]
 	}
 
 	isSCAdvanced := false
@@ -458,7 +462,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		if cgPrefix == notFound {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "Failed to extract the consistencyGroup prefix")
 		}
-		scaleVol.ConsistencyGroup = fmt.Sprintf("%s-%s", cgPrefix, volOptions["csi.storage.k8s.io/pvc/namespace"])
+		scaleVol.ConsistencyGroup = fmt.Sprintf("%s-%s", cgPrefix, volOptions[PvcNamespaceKey])
 	}
 
 	if isCompressionSpecified {
