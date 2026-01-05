@@ -721,7 +721,7 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 
 	if volumeType == cacheVolume {
 		filesetreq.AfmMode = mode
-		nfsTarget := fmt.Sprintf("nfs://%s/%s", exportMapName, nfsInfo[NfsPath])
+		nfsTarget := fmt.Sprintf("nfs://%s%s", exportMapName, nfsInfo[NfsPath])
 		filesetreq.AfmTarget = nfsTarget
 	}
 
