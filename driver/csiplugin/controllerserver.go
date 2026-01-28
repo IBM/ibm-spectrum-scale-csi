@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -51,7 +52,7 @@ const (
 	maximumPVSize         uint64 = 931322 * 1024 * 1024 * 1024 * 1024 // 999999999999999K
 	maximumPVSizeForLog          = "953673728GiB"
 	defaultSnapWindow            = "30" // default snapWindow for Consistency Group snapshots is 30 minutes
-	softQuotaPercent             = 70 // This value is % of the hardQuotaLimit e.g. 70%
+	softQuotaPercent             = 70   // This value is % of the hardQuotaLimit e.g. 70%
 
 	discoverCGFilesetDisabled = "DISABLED"
 
@@ -286,7 +287,6 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 	}
 	return nil
 }
-
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
 func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
@@ -702,12 +702,11 @@ func updateComment(ctx context.Context, scVol *scaleVolume, cacheVolId *cacheVol
 	return scVol.Connector.UpdateFileset(ctx, scVol.VolBackendFs, scVol.StorageClassType, scVol.VolName, updateOpts, setAfmAttributes)
 }
 
-func getS3TuningParams(ctx context.Context)[]string{
+func getS3TuningParams(ctx context.Context) []string {
 	return []string{connectors.AfmReadSparseThreshold, connectors.AfmNumFlushThreads, connectors.AfmPrefetchThreshold, connectors.AfmObjectFastReaddir, connectors.AfmFileOpenRefreshInterval}
 }
 
-
-func getNfsTuningParams(ctx context.Context)[]string{
+func getNfsTuningParams(ctx context.Context) []string {
 	return []string{connectors.AfmFileOpenRefreshInterval, connectors.AfmDirLookupRefreshInterval, connectors.AfmDirOpenRefreshInterval, connectors.AfmFileLookupRefreshInterval}
 }
 
@@ -734,7 +733,7 @@ func checkSCSupportedParams(params map[string]string) (string, bool) {
 			"volBackendFs", "volDirBasePath", "uid", "gid", "permissions",
 			"clusterId", "filesetType", "parentFileset", "inodeLimit", "nodeClass",
 			"version", "tier", "compression", "consistencyGroup", "shared",
-			"volumeType", "cacheMode", "volNamePrefix", "existingVolume":
+			"volumeType", "cacheMode", "volNamePrefix", "existingVolume", "filesetName":
 			// These are valid parameters, do nothing here
 		default:
 			invalidParams = append(invalidParams, k)
@@ -755,14 +754,14 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string, cac
 
 	for vacKey, vacValue := range mutableParams {
 
-		if cacheVolId.IsNfsSupported{
+		if cacheVolId.IsNfsSupported {
 			nfsTuningParams := getNfsTuningParams(ctx)
-			if !utils.ContainsString(vacKey, nfsTuningParams){
+			if !utils.ContainsString(vacKey, nfsTuningParams) {
 				return status.Error(codes.Internal, fmt.Sprintf("Invalid nfs vac tuning parameter [%s] is provided. Please check case/parameter before providing in vac", vacKey))
 			}
-		}else{
+		} else {
 			s3TuningParams := getS3TuningParams(ctx)
-			if !utils.ContainsString(vacKey, s3TuningParams){
+			if !utils.ContainsString(vacKey, s3TuningParams) {
 				return status.Error(codes.Internal, fmt.Sprintf("Invalid s3 vac tuning parameter [%s] is provided. Please check case/parameter before providing in vac", vacKey))
 			}
 		}
@@ -839,8 +838,6 @@ func validateVACParams(ctx context.Context, mutableParams map[string]string, cac
 	return nil
 }
 
-
-
 func (cs *ScaleControllerServer) getPrimaryClusterDetails(ctx context.Context) (connectors.SpectrumScaleConnector, string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 
@@ -894,8 +891,8 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			return nil, status.Error(codes.Unimplemented, "mountOptions are not supported")
 		}
 	}
-
-	invalidParams, allValid := checkSCSupportedParams(req.GetParameters())
+	scParams := req.GetParameters()
+	invalidParams, allValid := checkSCSupportedParams(scParams)
 	if !allValid {
 		return nil, status.Error(codes.InvalidArgument, "The Parameter(s) not supported in storageClass: "+invalidParams)
 	}
@@ -912,20 +909,28 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 
 	filesetName := ""
 	if scaleVol.IsStaticPVBased {
-		pvc, err := cs.Driver.clientset.CoreV1().PersistentVolumeClaims(req.GetParameters()[PvcNamespaceKey]).Get(context.TODO(), req.GetParameters()[PvcNameKey], metav1.GetOptions{})
-		if err != nil {
-			klog.Errorf("[%s] Failed to get PVC detail for fetching filesetName from annotation with error %v", loggerId, err)
-			return nil, status.Error(codes.Internal, fmt.Sprintf(" Failed to get PVC detail for fetching filesetName from annotation with error %v", err))
-		}
-		klog.V(4).Infof("[%s] Annotations of the PVC [%s] , annotation [%v]", loggerId, volName, pvc.Annotations)
-		if pvc.Annotations != nil && pvc.Annotations[StaticFilesetNameAnnotationKey] != "" {
-			filesetName = pvc.Annotations[StaticFilesetNameAnnotationKey]
+		// Fetch filesetName from sc parameter "filesetName"
+		if scParams[StaticFilesetNameKey] != "" {
+			filesetName = scParams[StaticFilesetNameKey]
+			klog.V(4).Infof("[%s] Static volume [%s] with sc parameter filesetName:[%s]", loggerId, volName, filesetName)
 		} else {
-			filesetName = req.GetParameters()[PvcNameKey]
+			// Fetch filesetName, if annotation key "spectrumscale.csi.ibm.com/filesetName" is present otherwise filesetName is the PVC name
+			pvc, err := cs.Driver.clientset.CoreV1().PersistentVolumeClaims(scParams[PvcNamespaceKey]).Get(context.TODO(), scParams[PvcNameKey], metav1.GetOptions{})
+			if err != nil {
+				klog.Errorf("[%s] Failed to get PVC detail for fetching filesetName from annotation with error %v", loggerId, err)
+				return nil, status.Error(codes.Internal, fmt.Sprintf(" Failed to get PVC detail for fetching filesetName from annotation with error %v", err))
+			}
+			klog.V(4).Infof("[%s] Annotations of the PVC [%s] , annotation [%v]", loggerId, volName, pvc.Annotations)
+			if pvc.Annotations != nil && pvc.Annotations[StaticFilesetNameAnnotationKey] != "" {
+				// from PVC annotation
+				filesetName = pvc.Annotations[StaticFilesetNameAnnotationKey]
+			} else {
+				// Fetch filesetName from parameter "csi.storage.k8s.io/pvc/name" i.e PVC name
+				filesetName = scParams[PvcNameKey]
+			}
 		}
-		klog.Infof("[%s] Requested pvc is a static volume  filesetName:[%s]", loggerId, filesetName)
+		klog.Infof("[%s] Requested pvc is a static volume [%s], filesetName:[%s]", loggerId, volName, filesetName)
 	}
-
 	if scaleVol.IsStaticPVBased && (isSnapSource || isVolSource) {
 		return nil, status.Error(codes.InvalidArgument, "Creating a static volume from another volume or snapshot is not supported")
 	}
@@ -1097,7 +1102,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			Volume: &csi.Volume{
 				VolumeId:      volID,
 				CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
-				VolumeContext: req.GetParameters(),
+				VolumeContext: scParams,
 				ContentSource: volSrc,
 			},
 		}, nil
@@ -1212,7 +1217,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		Volume: &csi.Volume{
 			VolumeId:      volID,
 			CapacityBytes: int64(scaleVol.VolSize), // #nosec G115 -- false positive
-			VolumeContext: req.GetParameters(),
+			VolumeContext: scParams,
 			ContentSource: volSrc,
 		},
 	}, nil
@@ -1263,9 +1268,8 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 		return "", status.Error(codes.Internal, fmt.Sprintf("unable to list fileset [%v] in filesystem [%v]. Error: %v", filesetName, scVol.VolBackendFs, err))
 	} else if reflect.ValueOf(filesetInfo).IsZero() {
 		// This means fileset is not present, return the call
-		return "", status.Error(codes.Internal, fmt.Sprintf("unable to find fileset [%v] in filesystem [%v]. Create a fileset with the same pvc name to create a static volume based pvc", filesetName, scVol.VolBackendFs))
+		return "", status.Error(codes.Internal, fmt.Sprintf("unable to find fileset [%s] in filesystem [%s]. Create a fileset [%s] prior to create a static volume based pvc", filesetName, scVol.VolBackendFs, filesetName))
 	} else {
-
 		// check fileset type is matching with the requested volume type indepedendent or dependent
 
 		// fileset is present. Confirm if creator shouldn't be IBM Storage Scale CSI driver and fileset type is correct.
@@ -1320,7 +1324,7 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 		if err != nil {
 			return "", status.Error(codes.Internal, err.Error())
 		}
-		klog.V(4).Infof("[%s] createStaticBasedVol: volumeName : [%s], targetPath : [%s]", utils.GetLoggerId(ctx), filesetName, targetBasePath)
+		klog.V(4).Infof("[%s] createStaticBasedVol: volumeName : [%s], targetPath : [%s]", utils.GetLoggerId(ctx), scVol.VolName, targetBasePath)
 
 		return targetBasePath, nil
 	}
@@ -2562,7 +2566,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 	cacheVolId.NfsTuningParams = make(map[string]interface{})
 	if strings.Contains(filesetInfo.AFM.AFMTarget, "nfs:") {
 		cacheVolId.IsNfsSupported = true
-	}else{
+	} else {
 		cacheVolId.IsNfsSupported = false
 	}
 
@@ -2586,7 +2590,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 	if len(cacheVolId.NfsTuningParams) > 0 && cacheVolId.IsNfsSupported {
 		setAfmAttributes = settings.NfsCache
 		afmTuningParams = cacheVolId.NfsTuningParams
-	}else if len(cacheVolId.S3TuningParams) > 0 {
+	} else if len(cacheVolId.S3TuningParams) > 0 {
 		setAfmAttributes = settings.S3Cache
 		afmTuningParams = cacheVolId.S3TuningParams
 	}

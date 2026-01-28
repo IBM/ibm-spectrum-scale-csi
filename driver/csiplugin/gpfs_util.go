@@ -45,6 +45,7 @@ const (
 	PvcNameKey                     = "csi.storage.k8s.io/pvc/name"
 	PvcNamespaceKey                = "csi.storage.k8s.io/pvc/namespace"
 	StaticFilesetNameAnnotationKey = "spectrumscale.csi.ibm.com/filesetName"
+	StaticFilesetNameKey           = "filesetName"
 )
 
 // AFM caching constants
