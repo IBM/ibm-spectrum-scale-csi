@@ -38,7 +38,7 @@ BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crdVersions=v1"
+CRD_OPTIONS ?= crd
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -87,14 +87,16 @@ generate: controller-gen kustomize fmt ## Generate code containing DeepCopy, Dee
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) build --reorder none config/overlays/default > ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 	$(KUSTOMIZE) cfg fmt ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
-	sed -i "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
+	sed -i '.bak' "s|0.0.0|$(VERSION)|g" ../generated/installer/ibm-spectrum-scale-csi-operator.yaml
 
     # Generating installer manifest file : ibm-spectrum-scale-csi/generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
 	cp ../generated/installer/ibm-spectrum-scale-csi-operator.yaml ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|IfNotPresent|Always|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
-	sed -i "s|productVersion:.*|productVersion: $(VERSION)|" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i '.bak' "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i '.bak' "s|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator.*|quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator:dev|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i '.bak' "s|IfNotPresent|Always|g" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	sed -i '.bak' "s|productVersion:.*|productVersion: $(VERSION)|" ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml
+	rm -f ../generated/installer/ibm-spectrum-scale-csi-operator.yaml.bak
+	rm -f ../generated/installer/ibm-spectrum-scale-csi-operator-dev.yaml.bak
 
 fmt: ## Run go fmt against code.
 	@echo "***** FORMATTING ******"
