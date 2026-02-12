@@ -1,7 +1,7 @@
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20260212153536-173dbe7bfaef h1:FYVS1jaXK2QLhjGzVR5JECln/6E3+11+JBUbxnpLwIE=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20260212153536-173dbe7bfaef/go.mod h1:k5PAJdu3hMp6gNy6nwa4z7wMlfuv5fOjAfR8ZnPf4q0=
 github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
-github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20260212071439-0eafd544d743 h1:Vl1FHGBN/VhMEuAasukK+a4DYEWLBs4GXydtB7UvxFE=
-github.com/badri-pathak/ibm-spectrum-scale-csi/driver v0.0.0-20260212071439-0eafd544d743/go.mod h1:k5PAJdu3hMp6gNy6nwa4z7wMlfuv5fOjAfR8ZnPf4q0=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
