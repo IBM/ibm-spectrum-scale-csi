@@ -45,6 +45,8 @@ const (
 	PvcNameKey                     = "csi.storage.k8s.io/pvc/name"
 	PvcNamespaceKey                = "csi.storage.k8s.io/pvc/namespace"
 	StaticFilesetNameAnnotationKey = "spectrumscale.csi.ibm.com/filesetName"
+	StaticFilesetNameKey           = "filesetName"
+	vmdiskCloning	               = "vmdisk"
 )
 
 // AFM caching constants
@@ -109,6 +111,7 @@ type scaleVolume struct {
 	IsStaticPVBased    bool                              `json:"isStaticPV"`
 	PVCName            string                            `json:"pvcName"`
 	Namespace          string                            `json:"namespace"`
+	VmDiskOptimized	   bool	                             `json:"vmDiskOptimized"`
 }
 
 type cacheVolumeId struct {
@@ -487,12 +490,13 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		klog.V(6).Infof("[%s] gpfs_util tier was set: %s", loggerId, tier)
 	}
 
+	scaleVol.VmDiskOptimized = false
 	if volumeTypeSpecified {
 		if isSCTypeSpecified {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"version\" and \"volumeType\" in storage class are mutually exclusive")
 		}
 
-		if isUserInputFsetType {
+		if isUserInputFsetType && volumeType == cacheVolume {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"filesetType\" and \"volumeType\" in storage class are mutually exclusive")
 		}
 
@@ -512,9 +516,15 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 				scaleVol.VolDirBasePath = volDirPath
 				scaleVol.IsFilesetBased = true
 			}
-		} else {
+		}else if scaleVol.StorageClassType == STORAGECLASS_CLASSIC && fsetType == independentFileset && volumeType == vmdiskCloning{
+			scaleVol.VmDiskOptimized = true
+		}else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s, only allowed value is: %s", volumeType, cacheVolume))
 		}
+	}
+
+	if scaleVol.VmDiskOptimized && scaleVol.Compression != "" {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume: compression is not supported for vmDiskOptimized volume: %s", scaleVol.VolName))
 	}
 
 	if cacheModeSpecified && scaleVol.VolumeType != cacheVolume {

@@ -143,6 +143,16 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+func ContainsString(a string, list []string) bool{
+	klog.V(6).Infof("utils ContainsString. string: %s, slice: %v", a, list)
+	for _, b := range list {
+		if a == b {
+			return true
+		}
+	}
+	return false
+}
+
 func ConvertToBytes(inputStr string) (uint64, error) {
 	klog.V(6).Infof("utils ConvertToBytes. string: %s", inputStr)
 	var Iter int
@@ -253,4 +263,3 @@ func GetModuleName(ctx context.Context) string {
 	moduleName, _ := ctx.Value(moduleName).(string)
 	return moduleName
 }
-

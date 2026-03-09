@@ -153,7 +153,6 @@ const (
 	EnvPersistentLogKey               = "PERSISTENT_LOG"
 	EnvNodePublishMethodKey           = "NODEPUBLISH_METHOD"
 	EnvVolumeStatsCapabilityKey       = "VOLUME_STATS_CAPABILITY"
-	EnvDiscoverCGFilesetKey           = "DISCOVER_CG_FILESET"
 	HostNetworkKey                    = "HOST_NETWORK"
 	EnvVolNamePrefixKey               = "VOLUME_NAME_PREFIX"
 
@@ -162,7 +161,6 @@ const (
 	EnvPersistentLogKeyPrefixed         = EnvVarPrefix + EnvPersistentLogKey
 	EnvNodePublishMethodKeyPrefixed     = EnvVarPrefix + EnvNodePublishMethodKey
 	EnvVolumeStatsCapabilityKeyPrefixed = EnvVarPrefix + EnvVolumeStatsCapabilityKey
-	EnvDiscoverCGFilesetKeyPrefixed     = EnvVarPrefix + EnvDiscoverCGFilesetKey
 	EnvVolNamePrefixKeyPrefixed         = EnvVarPrefix + EnvVolNamePrefixKey
 
 	// Optional ConfigMap default values if not provided in the cm
@@ -196,7 +194,6 @@ var CSIOptionalConfigMapKeys = []string{
 	EnvNodePublishMethodKeyPrefixed,
 	EnvVolumeStatsCapabilityKeyPrefixed,
 	DaemonSetUpgradeMaxUnavailableKey,
-	EnvDiscoverCGFilesetKeyPrefixed,
 	EnvVolNamePrefixKeyPrefixed,
 	HostNetworkKey,
 	DriverCPULimits,
@@ -209,7 +206,6 @@ var EnvLogLevelValues = []string{"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "
 var EnvNodePublishMethodValues = []string{"SYMLINK", "BINDMOUNT"}
 var EnvPersistentLogValues = []string{"ENABLED", "DISABLED"}
 var EnvVolumeStatsCapabilityValues = []string{"ENABLED", "DISABLED"}
-var EnvDiscoverCGFilesetValues = []string{"ENABLED", "DISABLED"}
 var EnvHostNetworkValues = []string{"ENABLED", "DISABLED"}
 
 const (

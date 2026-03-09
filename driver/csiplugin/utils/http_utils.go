@@ -42,7 +42,7 @@ const BucketKeysURL = "scalemgmt/v2/bucket/keys"
 */
 
 func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}) error {
-	klog.V(6).Infof("[%s] http_utils UnmarshalResponse. response: %v", GetLoggerId(ctx), r.Body)
+	klog.V(6).Infof("[%s] http_utils UnmarshalResponse. response: %+v", GetLoggerId(ctx), r.Body)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

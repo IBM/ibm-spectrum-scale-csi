@@ -509,6 +509,93 @@ func (s *SpectrumRestV2) DeleteSnapshot(ctx context.Context, filesystemName stri
 	return nil
 }
 
+func (s *SpectrumRestV2) CreateSnapshotCloneCopy(ctx context.Context, filesystemName, filesetName, snapshotName, sourcePath, targetFilesystemName, targetFileset, targetPath string) error {
+
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateSnapshotCloneCopy. filesystem: %s, fileset: %s, snapName: %s, srcPath: %s, targetFsName: %s, targetFset: %s, targetPath: %s", loggerId, filesystemName, filesetName, snapshotName, sourcePath, targetFilesystemName, targetFileset, targetPath)
+
+	snapCloneCopyReq := SnapshotCloneCopyRequest{}
+	snapCloneCopyReq.TargetFilesystem = targetFilesystemName
+	snapCloneCopyReq.TargetFileset = targetFileset
+	snapCloneCopyReq.TargetPath = targetPath
+
+	formattedSrcPath := strings.ReplaceAll(sourcePath, "/", "%2F")
+	snapshotCloneCopyURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCloneCopy/%s/path/%s", filesystemName, filesetName, snapshotName, formattedSrcPath)
+	snapCloneCopyResponse := GenericResponse{}
+
+	err := s.doHTTP(ctx, snapshotCloneCopyURL, "PUT", &snapCloneCopyResponse, snapCloneCopyReq)
+	if err != nil {
+		klog.Errorf("[%s] Error in snapshot clone copy request: %v", loggerId, err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, snapCloneCopyResponse, snapshotCloneCopyURL)
+	if err != nil {
+		klog.Errorf("[%s] request not accepted for processing: %v", loggerId, err)
+		return err
+	}
+	err = s.WaitForJobCompletion(ctx, snapCloneCopyResponse.Status.Code, snapCloneCopyResponse.Jobs[0].JobID)
+	if err != nil {
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as snapshot already exists
+			klog.Infof("[%s] snapshot clone copy already exists for snapshot %s: , fileset %s , error: %v", loggerId, snapshotName, filesetName, err)
+			return nil
+		}
+		klog.Errorf("[%s] unable to create snapshot clone copy for snapshot %s: fileset %s, error: %v", loggerId, snapshotName, filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) CreateSnapshotCloneSplit(ctx context.Context, filesystemName, filesetName string) error {
+
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 CreateSnapshotCloneSplit. filesystemName: %s, filesetName: %s", loggerId, filesystemName, filesetName)
+
+	snapCloneSplitURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCloneSplit", filesystemName, filesetName)
+	snapCloneSplitResponse := GenericResponse{}
+
+	err := s.doHTTP(ctx, snapCloneSplitURL, "PUT", &snapCloneSplitResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Error in snapshot clone split request: %v", loggerId, err)
+		return err
+	}
+
+	err = s.isRequestAccepted(ctx, snapCloneSplitResponse, snapCloneSplitURL)
+	if err != nil {
+		klog.Errorf("[%s] request not accepted for processing: %v", loggerId, err)
+		return err
+	}
+	err = s.WaitForJobCompletion(ctx, snapCloneSplitResponse.Status.Code, snapCloneSplitResponse.Jobs[0].JobID)
+	if err != nil {
+		// TODO: Need to check if this happens.
+		if strings.Contains(err.Error(), "EFSSP1102C") { // job failed as snapshot already exists
+			klog.Infof("[%s] snapshot clone split already done for fileset %s , error: %v", loggerId, filesetName, err)
+			return nil
+		}
+		klog.Errorf("[%s] unable to create snapshot clone split for filesetName %s: %v", loggerId, filesetName, err)
+		return err
+	}
+	return nil
+}
+
+func (s *SpectrumRestV2) GetSnapshotCloneChild(ctx context.Context, filesystemName, filesetName, snapshotName, sourcePath string) (string, error) {
+
+	klog.V(4).Infof("[%s] rest_v2 GetSnapshotCloneChild. filesystemName: %s, filesetName: %s, snapshotName:%s, sourcePath:%s ", utils.GetLoggerId(ctx), filesystemName, filesetName, snapshotName, sourcePath)
+
+	formattedSrcPath := strings.ReplaceAll(sourcePath, "/", "%2F")
+	snapCloneChildURL := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets/%s/snapshotCloneChilds/%s/path/%s", filesystemName, filesetName, snapshotName, formattedSrcPath)
+	snapCloneChildResponse := GetCloneChildrenResponse{}
+
+	err := s.doHTTP(ctx, snapCloneChildURL, "GET", &snapCloneChildResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] unable to get snapshot clone childs for fileset [%v]. Error [%v]", utils.GetLoggerId(ctx), filesetName, err)
+		return "", fmt.Errorf("unable to get snapshot clone childs for fileset [%v]. Error [%v]", filesetName, err)
+
+	}
+
+	return snapCloneChildResponse.CloneChildren[0].FilesetName, nil
+}
+
 func (s *SpectrumRestV2) GetLatestFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error) {
 	klog.V(4).Infof("[%s] rest_v2 GetLatestFilesetSnapshots. filesystem: %s, fileset: %s", utils.GetLoggerId(ctx), filesystemName, filesetName)
 
@@ -723,6 +810,7 @@ func (s *SpectrumRestV2) CreateFileset(ctx context.Context, filesystemName strin
 		filesetreq.AfmMode = mode
 		nfsTarget := fmt.Sprintf("nfs://%s%s", exportMapName, nfsInfo[NfsPath])
 		filesetreq.AfmTarget = nfsTarget
+		filesetreq.MakeActive = true
 	}
 
 	uid, uidSpecified := opts[UserSpecifiedUID]
@@ -1162,43 +1250,6 @@ func (s *SpectrumRestV2) CheckFilesetWithAFMTarget(ctx context.Context, filesyst
 	}
 
 	return "", nil
-}
-
-func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
-	loggerID := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s .", loggerID, filesystemName)
-
-	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
-	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
-	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment='''%s.*'''", encodedFilesetComment)
-	getFilesetURL := url + "?" + filter
-	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, getFilesetURL)
-	getFilesetResponse := GetFilesetResponse_v2{}
-
-	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
-	if err != nil {
-		klog.Errorf("[%s] Error in list fileset request: %v", loggerID, err)
-		return nil, err
-	}
-
-	filesets := getFilesetResponse.Filesets
-
-	emptyPages := Pages{}
-	for getFilesetResponse.Paging != emptyPages {
-		lastID := strconv.Itoa(getFilesetResponse.Paging.LastID)
-
-		getFilesetURL := url + "?lastId=" + lastID + "&" + filter
-		getFilesetResponse = GetFilesetResponse_v2{}
-		klog.V(6).Infof("[%s] getFilesetURL with lastId [%v] ", loggerID, getFilesetURL)
-		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
-		if err != nil {
-			klog.Errorf("[%s] Error in list fileset request with lastId: %v", loggerID, err)
-			return nil, err
-		}
-		filesets = append(filesets, getFilesetResponse.Filesets...)
-	}
-
-	return filesets, nil
 }
 
 func (s *SpectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error) {

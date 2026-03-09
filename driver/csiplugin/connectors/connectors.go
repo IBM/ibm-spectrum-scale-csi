@@ -56,7 +56,6 @@ type SpectrumScaleConnector interface {
 	UnlinkFileset(ctx context.Context, filesystemName string, filesetName string, force bool) error
 	//ListFilesets(filesystemName string) ([]resources.Volume, error)
 	ListFileset(ctx context.Context, filesystemName string, filesetName string) (Fileset_v2, error)
-	ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error)
 	GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error)
 	IsFilesetLinked(ctx context.Context, filesystemName string, filesetName string) (bool, error)
 	FilesetRefreshTask(ctx context.Context) error
@@ -95,6 +94,9 @@ type SpectrumScaleConnector interface {
 	WaitForJobCompletionWithResp(ctx context.Context, statusCode int, jobID uint64) (GenericResponse, error)
 	CreateSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
 	DeleteSnapshot(ctx context.Context, filesystemName string, filesetName string, snapshotName string) error
+	CreateSnapshotCloneCopy(ctx context.Context, filesystemName, filesetName, snapshotName, sourcePath, targetFilesystemName, targetFileset, targetPath string) error
+	CreateSnapshotCloneSplit(ctx context.Context, filesystemName, filesetName string) error
+	GetSnapshotCloneChild(ctx context.Context, filesystemName, filesetName, snapshotName, sourcePath string) (string, error)
 	GetLatestFilesetSnapshots(ctx context.Context, filesystemName string, filesetName string) ([]Snapshot_v2, error)
 	GetSnapshotUid(ctx context.Context, filesystemName string, filesetName string, snapName string) (string, error)
 	GetSnapshotCreateTimestamp(ctx context.Context, filesystemName string, filesetName string, snapName string) (string, error)
@@ -125,7 +127,6 @@ const (
 	UserSpecifiedSnapWindow       string = "snapWindow"
 	UserSpecifiedConsistencyGroup string = "consistencyGroup"
 	UserSpecifiedShared           string = "shared"
-	AFMModeSecondary              string = "secondary"
 	FilesetComment                string = "Fileset created by IBM Container Storage Interface driver"
 	FilesetCommentKey             string = "FilesetComment"
 	FilesetCommentValue           string = FilesetComment + " for PVC [ %s ] in the namespace [ %s ]"
@@ -148,16 +149,15 @@ const (
 	AfmFileLookupRefreshInterval string = "afmFileLookupRefreshInterval"
 
 	// default value for AFM tuning parameters
-	AfmNumFlushThreadsDefault         = 4
-	AfmPrefetchThresholdDefault       = 0
-	AfmFileOpenRefreshIntervalDefault = "30"
-	AfmNumReadThreadsDefault          = 1
-	AfmObjectFastReaddirDefault       = "no"
-	AfmReadSparseThresholdDefault     = "128"
-	AfmDirLookupRefreshIntervalDefault = "60"
-	AfmDirOpenRefreshIntervalDefault   = "60"
+	AfmNumFlushThreadsDefault           = 4
+	AfmPrefetchThresholdDefault         = 0
+	AfmFileOpenRefreshIntervalDefault   = "30"
+	AfmNumReadThreadsDefault            = 1
+	AfmObjectFastReaddirDefault         = "no"
+	AfmReadSparseThresholdDefault       = "128"
+	AfmDirLookupRefreshIntervalDefault  = "60"
+	AfmDirOpenRefreshIntervalDefault    = "60"
 	AfmFileLookupRefreshIntervalDefault = "30"
-
 )
 
 func GetSpectrumScaleConnector(ctx context.Context, config settings.Clusters) (SpectrumScaleConnector, error) {
