@@ -2833,13 +2833,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 					isPvcFromSnapshot = true
 					snapshotName = volPath[1]
 					if volumeIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
-						_, origFileset, filesetFound :=strings.Cut(before, mountInfo.MountPoint)
-						if filesetFound {
-							 independentFset = strings.TrimSuffix(origFileset, "/")
-						} else {
-							klog.Errorf("[%s] Invalid volume path to delete shallow copy volume reference for advanced storage class", loggerId)
-							return nil, status.Error(codes.Internal, "invalid volume path to delete shallow copy volume reference for advanced storage class")
-						}
+						independentFset = strings.TrimSuffix(before, "/")
 					} else {
 						fileset := volPath[2]
 						independentFset = strings.Replace(fileset, "-data", "", 1)
