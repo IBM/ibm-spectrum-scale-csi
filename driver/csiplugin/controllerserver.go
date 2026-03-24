@@ -718,11 +718,11 @@ func getNfsTuningParams(ctx context.Context) []string {
 	return []string{connectors.AfmFileOpenRefreshInterval, connectors.AfmDirLookupRefreshInterval, connectors.AfmDirOpenRefreshInterval, connectors.AfmFileLookupRefreshInterval}
 }
 
-func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid string, fsUUID string) (connectors.SpectrumScaleConnector, error) {
+func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid string, fsUUID string) (connectors.SpectrumScaleConnector, string, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	connector, isConnPresent := cs.Driver.connmap[cid]
 	if isConnPresent {
-		return connector, nil
+		return connector, "", nil
 	}
 
 	// DR fallback: If cluster ID not found and fsUUID is provided, check primary cluster
@@ -732,22 +732,22 @@ func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid s
 		primaryConn, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
 		if err != nil {
 			klog.Errorf("[%s] unable to get primary cluster details for DR fallback: %v", loggerId, err)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
+			return nil, "", status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
 		}
 
 		// Check if filesystem with this UUID exists in primary cluster
 		fsName, err := primaryConn.GetFilesystemName(ctx, fsUUID)
 		if err != nil {
 			klog.Errorf("[%s] filesystem with UUID %v not found in primary cluster: %v", loggerId, fsUUID, err)
-			return nil, status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
+			return nil, "", status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
 		}
 
 		klog.Infof("[%s] DR fallback successful: found filesystem %v with UUID %v in primary cluster %v", loggerId, fsName, fsUUID, primaryClusterID)
-		return primaryConn, nil
+		return primaryConn, primaryClusterID, nil
 	}
 
 	klog.Errorf("[%s] unable to get connector for cluster ID %v", loggerId, cid)
-	return nil, status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
+	return nil, "", status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
 }
 
 // checkSCSupportedParams checks if given CreateVolume request parameter keys
@@ -1563,7 +1563,7 @@ func (cs *ScaleControllerServer) setScaleVolumeWithRemoteCluster(ctx context.Con
 				scaleVol.ClusterId = primaryClusterID
 			}
 		}
-		conn, err := cs.getConnFromClusterID(ctx, scaleVol.ClusterId, volFsInfo.UUID)
+		conn, _, err := cs.getConnFromClusterID(ctx, scaleVol.ClusterId, volFsInfo.UUID)
 		if err != nil {
 			return err
 		}
@@ -1708,7 +1708,7 @@ func (cs *ScaleControllerServer) getCopyJobStatus(ctx context.Context, req *csi.
 func (cs *ScaleControllerServer) copySnapContent(ctx context.Context, scVol *scaleVolume, snapId scaleSnapId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copySnapContent snapId: [%v], scaleVolume: [%v]", loggerId, snapId, scVol)
-	conn, err := cs.getConnFromClusterID(ctx, snapId.ClusterId, snapId.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, snapId.ClusterId, snapId.FsUUID)
 	if err != nil {
 		return err
 	}
@@ -1786,7 +1786,7 @@ func (cs *ScaleControllerServer) copySnapContent(ctx context.Context, scVol *sca
 func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copyShallowVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", loggerId, sourcevolume, newvolume, newvolume.VolName)
-	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
 	if err != nil {
 		return err
 	}
@@ -1859,7 +1859,7 @@ func (cs *ScaleControllerServer) copyShallowVolumeContent(ctx context.Context, n
 func (cs *ScaleControllerServer) copyVolumeContentWithSnapshotClone(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleSnapId, fsDetails connectors.FileSystem_v2) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copyVolumeContentWithIntermittentSnapshot volume ID: [%v], scaleVolume: [%v], volume name: [%v]", loggerId, sourcevolume, newvolume, newvolume.VolName)
-	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
 	if err != nil {
 		return err
 	}
@@ -1914,7 +1914,7 @@ func (cs *ScaleControllerServer) copyVolumeContentWithSnapshotClone(ctx context.
 func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolume *scaleVolume, sourcevolume scaleVolId, fsDetails connectors.FileSystem_v2, targetPath string, volID string) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] copyVolContent volume ID: [%v], scaleVolume: [%v], volume name: [%v]", loggerId, sourcevolume, newvolume, newvolume.VolName)
-	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
 	if err != nil {
 		return err
 	}
@@ -2128,14 +2128,18 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateSnapId [%v]", loggerId, sourcesnapshot)
-	conn, err := cs.getConnFromClusterID(ctx, sourcesnapshot.ClusterId, sourcesnapshot.FsUUID)
+	conn, primaryClusterID, err := cs.getConnFromClusterID(ctx, sourcesnapshot.ClusterId, sourcesnapshot.FsUUID)
 	if err != nil {
 		return err
 	}
 
 	// Restrict cross cluster cloning
-	if newvolume.ClusterId != sourcesnapshot.ClusterId {
+
+	if primaryClusterID == "" && newvolume.ClusterId != sourcesnapshot.ClusterId {
 		return status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
+	} else if primaryClusterID != "" {
+		klog.V(4).Infof("[%s] setting sourcesnapshot ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
+		sourcesnapshot.ClusterId = primaryClusterID
 	}
 
 	// Restrict cross storage class version volume from snapshot
@@ -2365,7 +2369,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateVolId [%v]", loggerId, sourcevolume)
 
-	conn, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
+	conn, primaryClusterID, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
 	if err != nil {
 		return err
 	}
@@ -2381,9 +2385,16 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		return status.Error(codes.Unimplemented, "cloning of cache volume is not supported")
 	}
 
-	// Restrict cross cluster cloning
-	if newvolume.ClusterId != sourcevolume.ClusterId {
-		return status.Error(codes.Unimplemented, "cloning of volume across clusters is not supported")
+	/* 	// Restrict cross cluster cloning
+	   	if newvolume.ClusterId != sourcevolume.ClusterId {
+	   		return status.Error(codes.Unimplemented, "cloning of volume across clusters is not supported")
+	   	} */
+
+	if primaryClusterID == "" && newvolume.ClusterId != sourcevolume.ClusterId {
+		return status.Error(codes.Unimplemented, "cloning of cache volume is not supported")
+	} else {
+		klog.V(4).Infof("[%s] setting sourcevolume ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
+		sourcevolume.ClusterId = primaryClusterID
 	}
 
 	// Restrict cross storage class version
@@ -2484,7 +2495,7 @@ func (cs *ScaleControllerServer) isSourceVolORSnapSourceVolStatic(ctx context.Co
 	}
 
 	if storageClassType == STORAGECLASS_CLASSIC {
-		conn, err := cs.getConnFromClusterID(ctx, clusterID, "")
+		conn, _, err := cs.getConnFromClusterID(ctx, clusterID, fsUUID)
 		if err != nil {
 			return err
 		}
@@ -2676,7 +2687,7 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ControllerModifyVolume - Error in source Volume ID %v: %v", volumeId, err))
 	}
 
-	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -2780,7 +2791,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 		klog.V(4).Infof("[%s] Volume is IsFilesetBased [%v]", loggerId, volumeIdMembers.IsFilesetBased)
 	}
 
-	conn, err := cs.getConnFromClusterID(ctx, volumeIdMembers.ClusterId, volumeIdMembers.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, volumeIdMembers.ClusterId, volumeIdMembers.FsUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -3327,7 +3338,7 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	var fsNameRemote string
 	if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
 		// To check all of the gateway nodes are having filesystem mounted
-		conn, err = cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
+		conn, _, err = cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -3514,10 +3525,16 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is dependent fileset for new storageClass", volID))
 	}
 
-	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
+	conn, primaryClusterID, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, err
 	}
+
+	if primaryClusterID != "" {
+		klog.V(4).Infof("[%s] setting volumeIDMembers ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
+		volumeIDMembers.ClusterId = primaryClusterID
+	}
+
 	assembledScaleversion, err := cs.assembledScaleVersion(ctx, conn)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("the  IBM Storage Scale version check for permissions failed with error %s", err))
@@ -3942,7 +3959,7 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 		return nil, err
 	}
 
-	conn, err := cs.getConnFromClusterID(ctx, snapIdMembers.ClusterId, snapIdMembers.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, snapIdMembers.ClusterId, snapIdMembers.FsUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -4193,7 +4210,7 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		}, nil
 	}
 
-	conn, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
+	conn, _, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -4289,7 +4306,7 @@ func (cs *ScaleControllerServer) getRemoteClusterID(ctx context.Context, cluster
 		} else { // cluster details are expired
 			klog.V(4).Infof("[%s] cluster details found from cache map for cluster %s are expired.", loggerId, clusterName)
 			cID := clusterDetails.(ClusterDetails).id
-			conn, err := cs.getConnFromClusterID(ctx, cID, "")
+			conn, _, err := cs.getConnFromClusterID(ctx, cID, "")
 			if err != nil {
 				return "", err
 			}
@@ -4374,7 +4391,7 @@ func checkExpiry(clusterDetails interface{}) bool {
 func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID string) (string, bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] Creating new connector for the cluster %s", loggerId, cID)
-	clusterConnector, err := cs.getConnFromClusterID(ctx, cID, "")
+	clusterConnector, _, err := cs.getConnFromClusterID(ctx, cID, "")
 	// clusterConnector, err := connectors.NewSpectrumRestV2(cluster)
 	if err != nil {
 		klog.V(4).Infof("[%s] unable to create new connector for the cluster %s", loggerId, cID)
