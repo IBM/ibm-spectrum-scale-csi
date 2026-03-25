@@ -31,10 +31,10 @@ import (
 
 const (
 	snapshotStorageApiGroup              string = "snapshot.storage.k8s.io"
-	securityOpenshiftApiGroup            string = "security.openshift.io"
 	storageApiGroup                      string = "storage.k8s.io"
 	rbacAuthorizationApiGroup            string = "rbac.authorization.k8s.io"
 	coordinationApiGroup                 string = "coordination.k8s.io"
+	filesystemCRApiGroup                 string = "scale.spectrum.ibm.com"
 	podSecurityPolicyApiGroup            string = "extensions"
 	storageClassesResource               string = "storageclasses"
 	volumeAttributeClassesResource       string = "volumeattributesclasses"
@@ -52,10 +52,10 @@ const (
 	nodesResource                        string = "nodes"
 	csiNodesResource                     string = "csinodes"
 	namespacesResource                   string = "namespaces"
-	securityContextConstraintsResource   string = "securitycontextconstraints"
 	podSecurityPolicyResource            string = "podsecuritypolicies"
 	leaseResource                        string = "leases"
 	secretResource                       string = "secrets"
+	filesystemCRResource                 string = "filesystems"
 	verbGet                              string = "get"
 	verbList                             string = "list"
 	verbWatch                            string = "watch"
@@ -565,6 +565,11 @@ func (c *CSIScaleOperator) GenerateNodePluginClusterRole() *rbacv1.ClusterRole {
 				APIGroups: []string{""},
 				Resources: []string{namespacesResource},
 				Verbs:     []string{verbGet, verbList},
+			},
+			{
+				APIGroups: []string{filesystemCRApiGroup},
+				Resources: []string{filesystemCRResource},
+				Verbs:     []string{verbGet, verbList, verbWatch},
 			},
 		},
 	}

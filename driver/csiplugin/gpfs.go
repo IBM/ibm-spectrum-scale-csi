@@ -30,7 +30,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
@@ -122,7 +122,7 @@ type ScaleDriver struct {
 	cscap []*csi.ControllerServiceCapability
 	nscap []*csi.NodeServiceCapability
 
-	clientset *kubernetes.Clientset
+	dynamicClient *dynamic.DynamicClient
 }
 
 func GetScaleDriver(ctx context.Context) *ScaleDriver {
@@ -246,7 +246,7 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	driver.ids = NewIdentityServer(ctx, driver)
 	driver.ns = NewNodeServer(ctx, driver)
 	driver.cs = NewControllerServer(ctx, driver, scmap, cmap, primary)
-	driver.clientset, err = initKubeClient(ctx)
+	driver.dynamicClient, err = initKubeClient(ctx)
 	if err != nil {
 		klog.Errorf("[%s] failed to initialize kube client: %v", utils.GetLoggerId(ctx), err)
 		return err
@@ -254,21 +254,21 @@ func (driver *ScaleDriver) SetupScaleDriver(ctx context.Context, name, vendorVer
 	return nil
 }
 
-func initKubeClient(ctx context.Context) (*kubernetes.Clientset, error) {
+func initKubeClient(ctx context.Context) (*dynamic.DynamicClient, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] Initialize IBM Storage Scale CSI Kubernetes client", loggerId)
+	klog.Infof("[%s] Initialize IBM Storage Scale CSI Kubernetes dynamic client", loggerId)
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		klog.Errorf("[%s] Unable to get incluster config", loggerId)
 		return nil, fmt.Errorf("unable to get incluster config: %v", err)
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		klog.Errorf("[%s] Unable to initialize Kubernetes client", loggerId)
-		return nil, fmt.Errorf("unable to initialize Kubernetes client: %v", err)
+		klog.Errorf("[%s] Unable to initialize Kubernetes dynamic client", loggerId)
+		return nil, fmt.Errorf("unable to initialize Kubernetes dynamic client: %v", err)
 	}
-	return clientset, nil
+	return dynamicClient, nil
 }
 
 func (driver *ScaleDriver) PluginInitialize(ctx context.Context) (map[string]connectors.SpectrumScaleConnector, settings.ScaleSettingsConfigMap, settings.Primary, error) { //nolint:funlen

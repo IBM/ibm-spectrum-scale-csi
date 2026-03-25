@@ -1252,6 +1252,43 @@ func (s *SpectrumRestV2) CheckFilesetWithAFMTarget(ctx context.Context, filesyst
 	return "", nil
 }
 
+func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesystemName string) ([]Fileset_v2, error) {
+	loggerID := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] rest_v2 ListCSIIndependentFilesets. filesystem: %s .", loggerID, filesystemName)
+
+	encodedFilesetComment := strings.ReplaceAll(FilesetComment, " ", "%20")
+	url := fmt.Sprintf("scalemgmt/v2/filesystems/%s/filesets", filesystemName)
+	filter := fmt.Sprintf("filter=config.isInodeSpaceOwner=true,config.comment='''%s.*'''", encodedFilesetComment)
+	getFilesetURL := url + "?" + filter
+	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, getFilesetURL)
+	getFilesetResponse := GetFilesetResponse_v2{}
+
+	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
+	if err != nil {
+		klog.Errorf("[%s] Error in list fileset request: %v", loggerID, err)
+		return nil, err
+	}
+
+	filesets := getFilesetResponse.Filesets
+
+	emptyPages := Pages{}
+	for getFilesetResponse.Paging != emptyPages {
+		lastID := strconv.Itoa(getFilesetResponse.Paging.LastID)
+
+		getFilesetURL := url + "?lastId=" + lastID + "&" + filter
+		getFilesetResponse = GetFilesetResponse_v2{}
+		klog.V(6).Infof("[%s] getFilesetURL with lastId [%v] ", loggerID, getFilesetURL)
+		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
+		if err != nil {
+			klog.Errorf("[%s] Error in list fileset request with lastId: %v", loggerID, err)
+			return nil, err
+		}
+		filesets = append(filesets, getFilesetResponse.Filesets...)
+	}
+
+	return filesets, nil
+}
+
 func (s *SpectrumRestV2) GetFilesetsInodeSpace(ctx context.Context, filesystemName string, inodeSpace int) ([]Fileset_v2, error) {
 	klog.V(4).Infof("[%s] rest_v2 ListAllFilesets. filesystem: %s", utils.GetLoggerId(ctx), filesystemName)
 

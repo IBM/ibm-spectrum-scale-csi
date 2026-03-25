@@ -36,6 +36,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 )
 
@@ -52,7 +53,8 @@ const (
 	maximumPVSize              uint64 = 931322 * 1024 * 1024 * 1024 * 1024 // 999999999999999K
 	maximumPVSizeForLog               = "953673728GiB"
 	defaultSnapWindow                 = "30" // default snapWindow for Consistency Group snapshots is 30 minutes
-	softQuotaPercent                  = 70   // This value is % of the hardQuotaLimit e.g. 70%
+	cgPrefixLen                       = 37
+	softQuotaPercent                  = 70 // This value is % of the hardQuotaLimit e.g. 70%
 	intermittentFusionSnapshot        = "csiclone"
 
 	discoverCGFilesetDisabled = "DISABLED"
@@ -297,7 +299,7 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 }
 
 // createFilesetBasedVol: Create fileset based volume  - return relative path of volume created
-func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
+func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVol *scaleVolume, isCGVolume bool, fsType string, cacheVolId *cacheVolumeId) (string, error) { //nolint:gocyclo,funlen
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] volume: [%v] - ControllerServer:createFilesetBasedVol , gatewayNodeName:[%s]", loggerId, scVol.VolName, cacheVolId.GateWayNode)
 	opt := make(map[string]interface{})
@@ -364,6 +366,22 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 	if isCGVolume {
 		// For new storageClass first create independent fileset if not present
+
+		isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scVol.VolBackendFs)
+		klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
+
+		if isMDREnabledOnFS && len(scVol.ConsistencyGroup) > cgPrefixLen {
+			// Check for consistencyGroup
+			if fsType != filesystemTypeRemote {
+				newcg, err := cs.validateCG(ctx, scVol)
+				if err != nil {
+					klog.Errorf("ValidateCG failed for MDR . Error: %v", err)
+					klog.Errorf("[%s] failed to validate CG for MDR fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
+					return "", err
+				}
+				scVol.ConsistencyGroup = newcg
+			}
+		}
 
 		indepFilesetName := scVol.ConsistencyGroup
 		klog.Infof("[%s] creating independent fileset for new storageClass with fileset name: [%v]", loggerId, indepFilesetName)
@@ -945,15 +963,25 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 			klog.V(4).Infof("[%s] Static volume [%s] with sc parameter filesetName:[%s]", loggerId, volName, filesetName)
 		} else {
 			// Fetch filesetName, if annotation key "spectrumscale.csi.ibm.com/filesetName" is present otherwise filesetName is the PVC name
-			pvc, err := cs.Driver.clientset.CoreV1().PersistentVolumeClaims(scParams[PvcNamespaceKey]).Get(context.TODO(), scParams[PvcNameKey], metav1.GetOptions{})
+
+			gvr := schema.GroupVersionResource{
+				Group:    "", // core API group
+				Version:  "v1",
+				Resource: "persistentvolumeclaims",
+			}
+
+			pvc, err := cs.Driver.dynamicClient.Resource(gvr).Namespace(scParams[PvcNamespaceKey]).
+				Get(context.TODO(), scParams[PvcNameKey], metav1.GetOptions{})
+
 			if err != nil {
 				klog.Errorf("[%s] Failed to get PVC detail for fetching filesetName from annotation with error %v", loggerId, err)
 				return nil, status.Error(codes.Internal, fmt.Sprintf(" Failed to get PVC detail for fetching filesetName from annotation with error %v", err))
 			}
-			klog.V(4).Infof("[%s] Annotations of the PVC [%s] , annotation [%v]", loggerId, volName, pvc.Annotations)
-			if pvc.Annotations != nil && pvc.Annotations[StaticFilesetNameAnnotationKey] != "" {
+			annotations := pvc.GetAnnotations()
+			klog.V(4).Infof("[%s] Annotations of the PVC [%s] , annotation [%v]", loggerId, volName, annotations)
+			if annotations != nil && annotations[StaticFilesetNameAnnotationKey] != "" {
 				// from PVC annotation
-				filesetName = pvc.Annotations[StaticFilesetNameAnnotationKey]
+				filesetName = annotations[StaticFilesetNameAnnotationKey]
 			} else {
 				// Fetch filesetName from parameter "csi.storage.k8s.io/pvc/name" i.e PVC name
 				filesetName = scParams[PvcNameKey]
@@ -1150,7 +1178,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		}, nil
 	}
 
-	klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create params : %v\n", loggerId, scaleVol.VolName, scaleVol)
+	klog.Infof("[%s] volume:[%v] -  IBM Storage Scale volume create params : %v , Connector: %v\n", loggerId, scaleVol.VolName, scaleVol, scaleVol.Connector)
 
 	if scaleVol.VmDiskOptimized && scaleVol.Compression != "" {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateVolume: compression is not supported for vmDiskOptimized volume: %s", scaleVol.VolName))
@@ -1221,7 +1249,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		capacity := uint64(capRange.GetRequiredBytes()) // #nosec G115 -- false positive
 		targetPath, err = cs.createStaticBasedVol(ctx, scaleVol, filesetName, capacity)
 	} else if scaleVol.IsFilesetBased {
-		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, cacheVolId)
+		targetPath, err = cs.createFilesetBasedVol(ctx, scaleVol, isCGVolume, volFsInfo.Type, cacheVolId)
 	} else {
 		targetPath, err = cs.createLWVol(ctx, scaleVol)
 	}
@@ -2134,12 +2162,14 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	}
 
 	// Restrict cross cluster cloning
+	isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, newvolume.VolBackendFs)
+	klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
-	if primaryClusterID == "" && newvolume.ClusterId != sourcesnapshot.ClusterId {
-		return status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
-	} else if primaryClusterID != "" {
+	if isMDREnabledOnFS {
 		klog.V(4).Infof("[%s] setting sourcesnapshot ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
 		sourcesnapshot.ClusterId = primaryClusterID
+	} else if newvolume.ClusterId != sourcesnapshot.ClusterId {
+		return status.Error(codes.Unimplemented, "creating volume from snapshot across clusters is not supported")
 	}
 
 	// Restrict cross storage class version volume from snapshot
@@ -2385,16 +2415,14 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		return status.Error(codes.Unimplemented, "cloning of cache volume is not supported")
 	}
 
-	/* 	// Restrict cross cluster cloning
-	   	if newvolume.ClusterId != sourcevolume.ClusterId {
-	   		return status.Error(codes.Unimplemented, "cloning of volume across clusters is not supported")
-	   	} */
+	isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scaleVol.VolBackendFs)
+	klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
-	if primaryClusterID == "" && newvolume.ClusterId != sourcevolume.ClusterId {
-		return status.Error(codes.Unimplemented, "cloning of cache volume is not supported")
-	} else {
+	if isMDREnabledOnFS {
 		klog.V(4).Infof("[%s] setting sourcevolume ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
 		sourcevolume.ClusterId = primaryClusterID
+	} else if newvolume.ClusterId != sourcevolume.ClusterId {
+		return status.Error(codes.Unimplemented, "cloning of volume across clusters is not supported")
 	}
 
 	// Restrict cross storage class version
