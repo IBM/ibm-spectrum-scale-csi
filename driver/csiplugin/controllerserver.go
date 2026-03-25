@@ -2165,7 +2165,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, newvolume.VolBackendFs)
 	klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
-	if isMDREnabledOnFS {
+	if isMDREnabledOnFS && primaryClusterID != "" {
 		klog.V(4).Infof("[%s] setting sourcesnapshot ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
 		sourcesnapshot.ClusterId = primaryClusterID
 	} else if newvolume.ClusterId != sourcesnapshot.ClusterId {
@@ -2418,7 +2418,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 	isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scaleVol.VolBackendFs)
 	klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
-	if isMDREnabledOnFS {
+	if isMDREnabledOnFS && primaryClusterID != "" {
 		klog.V(4).Infof("[%s] setting sourcevolume ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
 		sourcevolume.ClusterId = primaryClusterID
 	} else if newvolume.ClusterId != sourcevolume.ClusterId {
