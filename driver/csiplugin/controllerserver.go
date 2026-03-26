@@ -759,9 +759,15 @@ func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid s
 			klog.Errorf("[%s] filesystem with UUID %v not found in primary cluster: %v", loggerId, fsUUID, err)
 			return nil, "", status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
 		}
-
-		klog.Infof("[%s] DR fallback successful: found filesystem %v with UUID %v in primary cluster %v", loggerId, fsName, fsUUID, primaryClusterID)
-		return primaryConn, primaryClusterID, nil
+		isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, fsName)
+		klog.V(4).Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
+		if isMDREnabledOnFS {
+			klog.Infof("[%s] DR fallback successful: found filesystem %v with UUID %v in primary cluster %v", loggerId, fsName, fsUUID, primaryClusterID)
+			return primaryConn, primaryClusterID, nil
+		} else {
+			klog.Errorf("[%s] filesystem with UUID %v in primary cluster %v does not have MDR enabled", loggerId, fsUUID, primaryClusterID)
+			return nil, "", status.Error(codes.Internal, fmt.Sprintf("filesystem with UUID %v in primary cluster %v does not have MDR enabled", fsUUID, primaryClusterID))
+		}
 	}
 
 	klog.Errorf("[%s] unable to get connector for cluster ID %v", loggerId, cid)
@@ -2162,10 +2168,7 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	}
 
 	// Restrict cross cluster cloning
-	isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, newvolume.VolBackendFs)
-	klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
-
-	if isMDREnabledOnFS && primaryClusterID != "" {
+	if primaryClusterID != "" {
 		klog.V(4).Infof("[%s] setting sourcesnapshot ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
 		sourcesnapshot.ClusterId = primaryClusterID
 	} else if newvolume.ClusterId != sourcesnapshot.ClusterId {
@@ -2415,10 +2418,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		return status.Error(codes.Unimplemented, "cloning of cache volume is not supported")
 	}
 
-	isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scaleVol.VolBackendFs)
-	klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
-
-	if isMDREnabledOnFS && primaryClusterID != "" {
+	if primaryClusterID != "" {
 		klog.V(4).Infof("[%s] setting sourcevolume ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
 		sourcevolume.ClusterId = primaryClusterID
 	} else if newvolume.ClusterId != sourcevolume.ClusterId {
