@@ -62,21 +62,7 @@ type Filesystem struct {
 func (cs *ScaleControllerServer) isMDREnabledOnFS(ctx context.Context, filesystemName string) bool {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] isMDREnabledOnFS for filesystemName [%s], check if MetroDR replication is enabled", loggerId, filesystemName)
-	/*
-		// Check if DISCOVER_CG_FILESET is explicitly disabled via environment variable
-		discoverCGEnv := strings.ToUpper(utils.GetEnv(settings.DiscoverCGFileset, ""))
-		if discoverCGEnv == "DISABLED" {
-			klog.V(4).Infof("[%s] DISCOVER_CG_FILESET is explicitly disabled via environment variable", loggerId)
-			return false
-		}
-
-		// If explicitly enabled via environment variable, return true
-		if discoverCGEnv == "ENABLED" || discoverCGEnv == "TRUE" {
-			klog.V(4).Infof("[%s] DISCOVER_CG_FILESET is explicitly enabled via environment variable", loggerId)
-			return true
-		} */
-
-	// Otherwise, check the Filesystem CR for the specified filesystem
+	// check the Filesystem CR for the specified filesystem
 
 	// Define the GVR for Filesystem CR
 	filesystemGVR := schema.GroupVersionResource{
