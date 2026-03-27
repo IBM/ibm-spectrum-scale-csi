@@ -46,7 +46,7 @@ const (
 	PvcNamespaceKey                = "csi.storage.k8s.io/pvc/namespace"
 	StaticFilesetNameAnnotationKey = "spectrumscale.csi.ibm.com/filesetName"
 	StaticFilesetNameKey           = "filesetName"
-	vmdiskCloning	               = "vmdisk"
+	vmdiskCloning                  = "vmdisk"
 )
 
 // AFM caching constants
@@ -111,7 +111,7 @@ type scaleVolume struct {
 	IsStaticPVBased    bool                              `json:"isStaticPV"`
 	PVCName            string                            `json:"pvcName"`
 	Namespace          string                            `json:"namespace"`
-	VmDiskOptimized	   bool	                             `json:"vmDiskOptimized"`
+	VmDiskOptimized    bool                              `json:"vmDiskOptimized"`
 }
 
 type cacheVolumeId struct {
@@ -257,6 +257,11 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 
 	if fsetTypeSpecified && fsetType == "" {
 		fsetTypeSpecified = false
+	}
+
+	// Convert filesetType to lowercase to allow case-insensitive input (similar to volumeType at line 511)
+	if fsetTypeSpecified {
+		fsetType = strings.ToLower(fsetType)
 	}
 
 	if isCGSpecified && cg == "" {
@@ -516,9 +521,9 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 				scaleVol.VolDirBasePath = volDirPath
 				scaleVol.IsFilesetBased = true
 			}
-		}else if scaleVol.StorageClassType == STORAGECLASS_CLASSIC && fsetType == independentFileset && volumeType == vmdiskCloning{
+		} else if scaleVol.StorageClassType == STORAGECLASS_CLASSIC && fsetType == independentFileset && volumeType == vmdiskCloning {
 			scaleVol.VmDiskOptimized = true
-		}else {
+		} else {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid volumeType is specified: %s, only allowed value is: %s", volumeType, cacheVolume))
 		}
 	}
