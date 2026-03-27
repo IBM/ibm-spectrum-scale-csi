@@ -259,7 +259,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		fsetTypeSpecified = false
 	}
 
-	// Convert filesetType to lowercase to allow case-insensitive input (similar to volumeType at line 511)
+	// Convert filesetType to lowercase to allow case-insensitive input
 	if fsetTypeSpecified {
 		fsetType = strings.ToLower(fsetType)
 	}
