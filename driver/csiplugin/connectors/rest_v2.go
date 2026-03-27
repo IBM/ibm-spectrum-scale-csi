@@ -1262,28 +1262,32 @@ func (s *SpectrumRestV2) ListCSIIndependentFilesets(ctx context.Context, filesys
 	getFilesetURL := url + "?" + filter
 	klog.V(6).Infof("[%s] getFilesetURL [%v] ", loggerID, getFilesetURL)
 	getFilesetResponse := GetFilesetResponse_v2{}
-
+	var filesets []Fileset_v2
 	err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
 	if err != nil {
 		klog.Errorf("[%s] Error in list fileset request: %v", loggerID, err)
 		return nil, err
 	}
+	if len(getFilesetResponse.Filesets) > 0 {
+		klog.V(4).Infof("[%s] getFilesetResponse [%v] ", loggerID, getFilesetResponse)
+		filesets = getFilesetResponse.Filesets
 
-	filesets := getFilesetResponse.Filesets
+		emptyPages := Pages{}
+		for getFilesetResponse.Paging != emptyPages {
+			lastID := strconv.Itoa(getFilesetResponse.Paging.LastID)
 
-	emptyPages := Pages{}
-	for getFilesetResponse.Paging != emptyPages {
-		lastID := strconv.Itoa(getFilesetResponse.Paging.LastID)
-
-		getFilesetURL := url + "?lastId=" + lastID + "&" + filter
-		getFilesetResponse = GetFilesetResponse_v2{}
-		klog.V(6).Infof("[%s] getFilesetURL with lastId [%v] ", loggerID, getFilesetURL)
-		err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
-		if err != nil {
-			klog.Errorf("[%s] Error in list fileset request with lastId: %v", loggerID, err)
-			return nil, err
+			getFilesetURL := url + "?lastId=" + lastID + "&" + filter
+			getFilesetResponse = GetFilesetResponse_v2{}
+			klog.V(6).Infof("[%s] getFilesetURL with lastId [%v] ", loggerID, getFilesetURL)
+			err := s.doHTTP(ctx, getFilesetURL, "GET", &getFilesetResponse, nil)
+			if err != nil {
+				klog.Errorf("[%s] Error in list fileset request with lastId: %v", loggerID, err)
+				return nil, err
+			}
+			if len(getFilesetResponse.Filesets) > 0 {
+				filesets = append(filesets, getFilesetResponse.Filesets...)
+			}
 		}
-		filesets = append(filesets, getFilesetResponse.Filesets...)
 	}
 
 	return filesets, nil

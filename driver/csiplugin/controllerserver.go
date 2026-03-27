@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -366,20 +367,23 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 
 	if isCGVolume {
 		// For new storageClass first create independent fileset if not present
+		// Check if we're in DR mode (CNSADeployment presence)
+		_, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
+		if cnsaPresence {
+			isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scVol.VolBackendFs)
+			klog.V(4).Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
-		isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scVol.VolBackendFs)
-		klog.V(4).Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
-
-		if isMDREnabledOnFS && len(scVol.ConsistencyGroup) > cgPrefixLen {
-			// Check for consistencyGroup
-			if fsType != filesystemTypeRemote {
-				newcg, err := cs.validateCG(ctx, scVol.Connector, scVol.VolBackendFs, scVol.ConsistencyGroup)
-				if err != nil {
-					klog.Errorf("ValidateCG failed for MDR . Error: %v", err)
-					klog.Errorf("[%s] failed to validate CG for MDR fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
-					return "", err
+			if isMDREnabledOnFS && len(scVol.ConsistencyGroup) > cgPrefixLen {
+				// Check for consistencyGroup
+				if fsType != filesystemTypeRemote {
+					newcg, err := cs.validateCG(ctx, scVol.Connector, scVol.VolBackendFs, scVol.ConsistencyGroup)
+					if err != nil {
+						klog.Errorf("ValidateCG failed for MDR . Error: %v", err)
+						klog.Errorf("[%s] failed to validate CG for MDR fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
+						return "", err
+					}
+					scVol.ConsistencyGroup = newcg
 				}
-				scVol.ConsistencyGroup = newcg
 			}
 		}
 
@@ -742,9 +746,12 @@ func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid s
 	if isConnPresent {
 		return connector, "", nil
 	}
+	klog.V(4).Infof("[%s] cluster ID %v not found in connmap, checking environment variables", loggerId, cid)
+	// Check if we're in DR mode (CNSADeployment presence)
+	_, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
 
 	// DR fallback: If cluster ID not found and fsUUID is provided, check primary cluster
-	if fsUUID != "" {
+	if fsUUID != "" && cnsaPresence {
 		klog.V(4).Infof("[%s] cluster ID %v not found, attempting DR fallback with filesystem UUID %v", loggerId, cid, fsUUID)
 
 		primaryConn, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
@@ -771,7 +778,7 @@ func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid s
 	}
 
 	klog.Errorf("[%s] unable to get connector for cluster ID %v", loggerId, cid)
-	return nil, "", status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details in custom resource", cid))
+	return nil, "", status.Error(codes.Internal, fmt.Sprintf("unable to find cluster [%v] details", cid))
 }
 
 // checkSCSupportedParams checks if given CreateVolume request parameter keys
