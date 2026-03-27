@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -106,18 +107,18 @@ func (cs *ScaleControllerServer) isMDREnabledOnFS(ctx context.Context, filesyste
 	return isExternal
 }
 
-func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVolume) (string, error) {
+func (cs *ScaleControllerServer) validateCG(ctx context.Context, connector connectors.SpectrumScaleConnector, volBackendFs string, consistencyGroup string) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] Validate CG for volume [%v]", loggerId, scVol)
+	klog.V(4).Infof("[%s] Validate CG for volBackendFs [%v]", loggerId, volBackendFs)
 
-	fsetlist, err := scVol.Connector.ListCSIIndependentFilesets(ctx, scVol.VolBackendFs)
+	fsetlist, err := connector.ListCSIIndependentFilesets(ctx, volBackendFs)
 	if err != nil {
 		return "", err
 	}
 
 	klog.V(4).Infof("[%s] Validate CG response fsetlist [%v]", loggerId, fsetlist)
 	var flist []string
-	pvcns := scVol.ConsistencyGroup[cgPrefixLen:]
+	pvcns := consistencyGroup[cgPrefixLen:]
 
 	for _, fset := range fsetlist {
 		if len(fset.FilesetName) > cgPrefixLen {
@@ -131,7 +132,7 @@ func (cs *ScaleControllerServer) validateCG(ctx context.Context, scVol *scaleVol
 
 	// no fileset with this namespace found
 	if len(flist) == 0 {
-		return scVol.ConsistencyGroup, nil
+		return consistencyGroup, nil
 	}
 
 	// multiple filesets with this namespace found

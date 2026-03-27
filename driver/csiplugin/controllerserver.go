@@ -368,12 +368,12 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 		// For new storageClass first create independent fileset if not present
 
 		isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scVol.VolBackendFs)
-		klog.Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
+		klog.V(4).Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
 		if isMDREnabledOnFS && len(scVol.ConsistencyGroup) > cgPrefixLen {
 			// Check for consistencyGroup
 			if fsType != filesystemTypeRemote {
-				newcg, err := cs.validateCG(ctx, scVol)
+				newcg, err := cs.validateCG(ctx, scVol.Connector, scVol.VolBackendFs, scVol.ConsistencyGroup)
 				if err != nil {
 					klog.Errorf("ValidateCG failed for MDR . Error: %v", err)
 					klog.Errorf("[%s] failed to validate CG for MDR fileset [%v] in filesystem [%v]. Error: %v", loggerId, scVol.VolName, scVol.VolBackendFs, err)
@@ -3558,11 +3558,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 		return nil, err
 	}
 
-	if primaryClusterID != "" {
-		klog.V(4).Infof("[%s] setting volumeIDMembers ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
-		volumeIDMembers.ClusterId = primaryClusterID
-	}
-
 	assembledScaleversion, err := cs.assembledScaleVersion(ctx, conn)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("the  IBM Storage Scale version check for permissions failed with error %s", err))
@@ -3607,6 +3602,28 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	if volumeIDMembers.StorageClassType != STORAGECLASS_ADVANCED {
 		if filesetResp.Config.ParentId > 0 {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("CreateSnapshot - volume [%s] - Volume snapshot can only be created when source volume is independent fileset", volID))
+		}
+	}
+	if primaryClusterID != "" {
+		klog.V(4).Infof("[%s] setting volumeIDMembers ClusterId for Metro DR to primaryClusterID [%v]", loggerId, primaryClusterID)
+		volumeIDMembers.ClusterId = primaryClusterID
+
+		if volumeIDMembers.StorageClassType == STORAGECLASS_ADVANCED && len(volumeIDMembers.ConsistencyGroup) > cgPrefixLen {
+			fsDetails, err := conn.GetFilesystemDetails(ctx, filesystemName)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot - unable to get fs info for FS [%v] in the cluster", volumeIDMembers.FsName))
+			}
+			// Check for consistencyGroup
+			if fsDetails.Type != filesystemTypeRemote {
+				newcg, err := cs.validateCG(ctx, conn, filesystemName, volumeIDMembers.ConsistencyGroup)
+				if err != nil {
+					klog.Errorf("ValidateCG failed for MDR . Error: %v", err)
+					klog.Errorf("[%s] failed to validate CG for MDR fileset [%v] in filesystem [%v]. Error: %v", loggerId, volumeIDMembers.FsetName, volumeIDMembers.FsName, err)
+					return nil, err
+				}
+				klog.V(4).Infof("[%s] setting volumeIDMembers ConsistencyGroup for Metro DR to the cg [%v]", loggerId, newcg)
+				volumeIDMembers.ConsistencyGroup = newcg
+			}
 		}
 	}
 
