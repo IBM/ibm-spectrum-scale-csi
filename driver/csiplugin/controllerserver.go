@@ -2262,10 +2262,8 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		return status.Error(codes.Internal, fmt.Sprintf("snapshot [%v] does not exist for fileset [%v]", sourcesnapshot.SnapName, filesetToCheck))
 	}
 
-	if sourcesnapshot.VolType == FILE_VMDISKOPTIMIZED_VOLUME {
-		if scaleVol.FilesetType == independentFileset && !scaleVol.VmDiskOptimized {
-			return status.Error(codes.Internal, "creating independent fileset based volume from vm-disk-optimized snapshot is not supported")
-		}
+	if sourcesnapshot.VolType == FILE_VMDISKOPTIMIZED_VOLUME && !scaleVol.VmDiskOptimized {
+		return status.Error(codes.Internal, "creating other type volumes from vm-disk-optimized snapshot is not supported")
 	}
 
 	if scaleVol.VmDiskOptimized {
@@ -2493,10 +2491,8 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		}
 	}
 
-	if sourcevolume.VolType == FILE_VMDISKOPTIMIZED_VOLUME {
-		if scaleVol.FilesetType == independentFileset && !scaleVol.VmDiskOptimized {
-			return status.Error(codes.Internal, "creating independent fileset based volume from vm-disk-optimized volume is not supported")
-		}
+	if sourcevolume.VolType == FILE_VMDISKOPTIMIZED_VOLUME && !scaleVol.VmDiskOptimized {
+		return status.Error(codes.Internal, "creating other type volumes from vm-disk-optimized volume is not supported")
 	}
 
 	if scaleVol.VmDiskOptimized {
