@@ -35,6 +35,7 @@ import (
 	"github.com/presslabs/controller-util/pkg/syncer"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -69,6 +70,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+//+kubebuilder:rbac:groups="",resources=pods/eviction,verbs=create
 
 // CSIScaleOperatorReconciler reconciles a CSIScaleOperator object
 type CSIScaleOperatorReconciler struct {
@@ -117,6 +120,7 @@ var watchResources = map[string]map[string]bool{corev1.ResourceConfigMaps.String
 // +kubebuilder:rbac:groups=csi.ibm.com,resources=*,verbs=*
 
 // +kubebuilder:rbac:groups="",resources={pods,persistentvolumeclaims,services,endpoints,events,configmaps,secrets,secrets/status,services/finalizers,serviceaccounts},verbs=*
+// +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 // TODO: Does the operator need to access to all the resources mentioned above?
 // TODO: Does all resources mentioned above required delete/patch/update permissions?
 
@@ -524,6 +528,9 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	logger.Info(fmt.Sprintf("Synchronization of ConfigMap %s is successful", config.CSIConfigMap))
 
+	// Synchronizing sidecar pods on node label changes. reconcile will be called again if there are any pods to evict.
+	r.evictMisplacedPods(ctx)
+
 	message := "The CSI driver resources have been created/updated successfully"
 	logger.Info(message)
 
@@ -872,6 +879,32 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 	}
 
+	// Predicate for Node label changes
+	nodePredicateFuncs := predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			// Don't reconcile on node creation
+			return false
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldNode, okOld := e.ObjectOld.(*corev1.Node)
+			newNode, okNew := e.ObjectNew.(*corev1.Node)
+			if !okOld || !okNew {
+				return false
+			}
+			// Trigger reconciliation only if node labels have changed
+			if !reflect.DeepEqual(oldNode.Labels, newNode.Labels) {
+				logger.Info("Node labels changed, checking all pods for misplaced deployments", "Node", newNode.Name)
+				// Check all deployment pods to see if any are on nodes that don't match their nodeSelector
+				return true
+			}
+			return false
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			// Don't reconcile on node deletion
+			return false
+		},
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&csiv1.CSIScaleOperator{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&corev1.Secret{},
@@ -883,9 +916,187 @@ func (r *CSIScaleOperatorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
 			builder.WithPredicates(predicateFuncs(corev1.ResourceConfigMaps.String())),
 		).
+		Watches(
+			&corev1.Node{},
+			handler.EnqueueRequestsFromMapFunc(CSIReconcileRequestFunc),
+			builder.WithPredicates(nodePredicateFuncs),
+		).
 		Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.DaemonSet{}).
 		Complete(r)
+}
+
+// evictMisplacedPods checks all CSI sidecar deployment pods and evicts any that are running
+// on nodes that don't match their deployment's nodeSelector
+// Note: DaemonSet pods are not checked as DaemonSet controller handles them automatically
+func (r *CSIScaleOperatorReconciler) evictMisplacedPods(ctx context.Context) {
+	logger := csiLog.FromContext(ctx).WithName("evictMisplacedPods")
+	logger.Info("Checking sidecar pods for nodeSelector violations")
+
+	// Cache all nodes once to avoid repeated API calls
+	nodeList := &corev1.NodeList{}
+	if err := r.Client.List(ctx, nodeList); err != nil {
+		logger.Error(err, "Failed to list nodes")
+		return
+	}
+
+	// Build node map for quick lookup instead of api calls on every reconcile.
+	nodeMap := make(map[string]*corev1.Node)
+	for i := range nodeList.Items {
+		node := &nodeList.Items[i]
+		nodeMap[node.Name] = node
+	}
+
+	// List all CSIScaleOperator instances
+	csiScaleList := &csiv1.CSIScaleOperatorList{}
+	if err := r.Client.List(ctx, csiScaleList); err != nil {
+		logger.Error(err, "Failed to list CSIScaleOperator instances")
+		return
+	}
+
+	// deployment names for CSI sidecars
+	deploymentNames := []config.ResourceName{
+		config.CSIControllerAttacher,
+		config.CSIControllerProvisioner,
+		config.CSIControllerSnapshotter,
+		config.CSIControllerResizer,
+	}
+	// will be used to store the pods that are evicted
+	const evictedAnnotationKey = "csiscale.ibm.com/evicted"
+
+	for _, csiScale := range csiScaleList.Items {
+		for _, resourceName := range deploymentNames {
+			deployName := config.GetNameForResource(resourceName, csiScale.Name)
+
+			// Get the Deployment to know its nodeSelector
+			deploy := &appsv1.Deployment{}
+			if err := r.Client.Get(ctx, types.NamespacedName{Name: deployName, Namespace: csiScale.Namespace}, deploy); err != nil {
+				if !errors.IsNotFound(err) {
+					logger.Error(err, "Failed to get Deployment", "Deployment", deployName)
+				}
+				continue
+			}
+
+			// Get the desired nodeSelector from deployment
+			desiredNodeSelector := deploy.Spec.Template.Spec.NodeSelector
+
+			// Skip if no nodeSelector (matches all nodes)
+			if len(desiredNodeSelector) == 0 {
+				logger.Info("Deployment has no nodeSelector, skipping", "Deployment", deployName)
+				continue
+			}
+
+			// List all pods for this deployment
+			podList := &corev1.PodList{}
+			listOpts := []client.ListOption{
+				client.InNamespace(csiScale.Namespace),
+				client.MatchingLabels(deploy.Spec.Selector.MatchLabels),
+			}
+
+			if err := r.Client.List(ctx, podList, listOpts...); err != nil {
+				logger.Error(err, "Failed to list pods", "Deployment", deployName)
+				continue
+			}
+
+			// Check each pod to see if it's on a node that matches the desired nodeSelector
+			for _, pod := range podList.Items {
+				// Skip pods that aren't scheduled yet
+				if pod.Spec.NodeName == "" {
+					continue
+				}
+
+				// Skip pods already being deleted
+				if pod.DeletionTimestamp != nil {
+					continue
+				}
+
+				// Skip pods not in Running phase (avoid evicting pods that are already terminating/pending)
+				if pod.Status.Phase != corev1.PodRunning {
+					continue
+				}
+
+				// Skip pods already evicted (prevent eviction loops)
+				if pod.Annotations != nil && pod.Annotations[evictedAnnotationKey] == "true" {
+					logger.V(1).Info("Pod already marked as evicted, skipping", "Pod", pod.Name)
+					continue
+				}
+
+				// Get the node from cache
+				node, exists := nodeMap[pod.Spec.NodeName]
+				if !exists {
+					logger.Error(nil, "Node not found in cache", "Node", pod.Spec.NodeName, "Pod", pod.Name)
+					continue
+				}
+
+				// Check if node labels match the desired nodeSelector
+				if !r.nodeMatchesSelector(node.Labels, desiredNodeSelector) {
+					logger.Info("Pod is on node that doesn't match nodeSelector, evicting", "Pod", pod.Name, "Node", node.Name, "Deployment", deployName, "DesiredNodeSelector", desiredNodeSelector, "NodeLabels", node.Labels)
+
+					// Mark pod as evicted before eviction to prevent loops
+					if err := r.markPodAsEvicted(ctx, &pod, evictedAnnotationKey); err != nil {
+						logger.Error(err, "Failed to mark pod as evicted", "Pod", pod.Name)
+						// Continue
+					}
+
+					// Evict the pod
+					r.evictPod(ctx, &pod)
+				}
+			}
+		}
+	}
+}
+
+// markPodAsEvicted annotation to prevent re-eviction
+func (r *CSIScaleOperatorReconciler) markPodAsEvicted(ctx context.Context, pod *corev1.Pod, annotationKey string) error {
+	patch := client.MergeFrom(pod.DeepCopy())
+	if pod.Annotations == nil {
+		pod.Annotations = make(map[string]string)
+	}
+	pod.Annotations[annotationKey] = "true"
+	return r.Client.Patch(ctx, pod, patch)
+}
+
+// nodeMatchesSelector checks if node labels match the given nodeSelector
+func (r *CSIScaleOperatorReconciler) nodeMatchesSelector(nodeLabels map[string]string, nodeSelector map[string]string) bool {
+	if len(nodeSelector) == 0 {
+		return true // No selector means all nodes match
+	}
+
+	if nodeLabels == nil {
+		return false // Node has no labels, can't match selector
+	}
+
+	for key, value := range nodeSelector {
+		if nodeLabels[key] != value {
+			return false
+		}
+	}
+	return true
+}
+
+// evictPod evicts a single pod if fails then delete the pod
+func (r *CSIScaleOperatorReconciler) evictPod(ctx context.Context, pod *corev1.Pod) {
+	logger := csiLog.FromContext(ctx).WithName("evictPod")
+	logger.Info("Checking sidecar pods for evictPod")
+	// Create eviction object
+	eviction := &policyv1.Eviction{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pod.Name,
+			Namespace: pod.Namespace,
+		},
+	}
+
+	err := r.Client.SubResource("eviction").Create(ctx, pod, eviction)
+	if err != nil {
+		// Eviction failed, try direct delete as fallback
+		logger.Error(err, "Eviction API failed, attempting direct delete", "Pod", pod.Name)
+		if deleteErr := r.Client.Delete(ctx, pod); deleteErr != nil {
+			logger.Error(deleteErr, "Failed to delete pod", "Pod", pod.Name)
+			return
+		}
+	}
+
+	logger.Info("Successfully evicted pod", "Pod", pod.Name, "Node", pod.Spec.NodeName)
 }
 
 func (r *CSIScaleOperatorReconciler) setRestartedAtValues() {
