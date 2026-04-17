@@ -263,7 +263,7 @@ func (cs *ScaleControllerServer) createSoftlink(ctx context.Context, scVol *scal
 } */
 
 // setQuota: Set quota if not set
-func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolume, volName string) error {
+func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolume, volName string, fsBlockSize int) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] volume: [%v] - ControllerServer:setQuota", loggerId, volName)
 	quota, err := scVol.Connector.ListFilesetQuota(ctx, scVol.VolBackendFs, volName)
@@ -283,17 +283,20 @@ func (cs *ScaleControllerServer) setQuota(ctx context.Context, scVol *scaleVolum
 
 	if filesetQuotaBytes != scVol.VolSize {
 		var hardLimit, softLimit string
-		hardLimit = strconv.FormatUint(scVol.VolSize, 10)
+		// Calculate hardLimit/softLimit as multiple of fsBlockSize, always <= scVol.VolSize
+		alignedVolSize := (scVol.VolSize / uint64(fsBlockSize)) * uint64(fsBlockSize)
+		hardLimit = strconv.FormatUint(alignedVolSize, 10)
 		if scVol.VolumeType == cacheVolume {
-			softLimit = strconv.FormatUint(uint64(math.Round(softQuotaPercent/float64(100)*float64(scVol.VolSize))), 10)
+			softLimit = strconv.FormatUint(uint64(math.Round(softQuotaPercent/float64(100)*float64(alignedVolSize))), 10)
 		} else {
 			softLimit = hardLimit
 		}
 
+		klog.V(4).Infof("[%s] ControllerServer setQuota. filesystem: %s, fileset: %s, hardLimit: %s, softLimit: %s", loggerId, scVol.VolBackendFs, volName, hardLimit, softLimit)
 		err = scVol.Connector.SetFilesetQuota(ctx, scVol.VolBackendFs, volName, hardLimit, softLimit)
 		if err != nil {
 			// failed to set quota, no cleanup, next retry might be able to set quota
-			return fmt.Errorf("unable to set quota [%v] on fileset [%v] of FS [%v]", scVol.VolSize, volName, scVol.VolBackendFs)
+			return fmt.Errorf("unable to set quota [%v] on fileset [%v] of FS [%v]", alignedVolSize, volName, scVol.VolBackendFs)
 		}
 	}
 	return nil
@@ -629,7 +632,7 @@ func (cs *ScaleControllerServer) createFilesetVol(ctx context.Context, scVol *sc
 	targetBasePath := ""
 	if !isCGIndependentFset {
 		if scVol.VolSize != 0 {
-			err = cs.setQuota(ctx, scVol, volName)
+			err = cs.setQuota(ctx, scVol, volName, fsDetails.Block.BlockSize)
 			if err != nil {
 				return "", status.Error(codes.Internal, err.Error())
 			}
@@ -1408,7 +1411,9 @@ func (cs *ScaleControllerServer) createStaticBasedVol(ctx context.Context, scVol
 			klog.Errorf("[%s] createStaticBasedVol: unable to convert quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, scVol.VolBackendFs, err)
 			return "", status.Error(codes.Internal, fmt.Sprintf("unable to convert quota for fileset [%v] in filesystem [%v] or Check whether quota is set properly for the fileset. Error [%v]", filesetName, scVol.VolBackendFs, err))
 		}
-		if filesetQuotaBytes < capacity {
+		alignedVolSize := (capacity / uint64(fsDetails.Block.BlockSize)) * uint64(fsDetails.Block.BlockSize)
+		klog.V(4).Infof("[%s] createStaticBasedVol: filesetQuotaInBytesPresent:[%v] volCapacityRequired:[%v]", loggerId, filesetQuotaBytes, alignedVolSize)
+		if filesetQuotaBytes < alignedVolSize {
 			klog.Errorf("[%s] createStaticBasedVol: requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", loggerId, capacity, filesetName, quota)
 			return "", status.Error(codes.Internal, fmt.Sprintf("requested volSize:[%v] of the fileset %v is beyond the fileset quota:[%v] available", capacity, filesetName, quota))
 		}
@@ -1949,7 +1954,6 @@ func (cs *ScaleControllerServer) copyVolumeContentWithSnapshotClone(ctx context.
 		remoteMntPt := remotefsDetails.Mount.MountPoint
 		targetPath = strings.Replace(targetPath, fsDetails.Mount.MountPoint, remoteMntPt, 1)
 	}
-
 
 	klog.Infof("[%s] sourcePath:[%s], targetPath:[%s]", loggerId, sourcePath, targetPath)
 	err = conn.CreateSnapshotCloneCopy(ctx, sourcevolume.FsName, sourcevolume.FsetName, sourcevolume.SnapName, sourcePath, newvolume.VolBackendFs, newvolume.VolName, targetPath)
@@ -2497,7 +2501,7 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 
 	if scaleVol.VmDiskOptimized {
 		if (sourcevolume.VolType != FILE_INDEPENDENTFILESET_VOLUME || sourcevolume.VolType != FILE_VMDISKOPTIMIZED_VOLUME) && !newvolume.VmDiskOptimized {
-			return status.Error(codes.Internal, fmt.Sprintf("validation of volume cloning failed either the source(independent fileset) [%s] and destination volume(vmdisk) [%s] type doesn't match", sourcevolume.VolType, newvolume.VolumeType ))
+			return status.Error(codes.Internal, fmt.Sprintf("validation of volume cloning failed either the source(independent fileset) [%s] and destination volume(vmdisk) [%s] type doesn't match", sourcevolume.VolType, newvolume.VolumeType))
 		}
 	}
 
@@ -4310,6 +4314,13 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, status.Error(codes.Internal, fmt.Sprintf("fileset [%v] does not exist in filesystem [%v]. Error [%v]", filesetName, filesystemName, err))
 	}
 
+	// Get filesystem details to obtain block size
+	fsDetails, err := conn.GetFilesystemDetails(ctx, filesystemName)
+	if err != nil {
+		klog.Errorf("[%s] unable to get filesystem details for [%v]. Error [%v]", loggerId, filesystemName, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem details for [%v]. Error [%v]", filesystemName, err))
+	}
+
 	quota, err := conn.ListFilesetQuota(ctx, filesystemName, filesetName)
 	if err != nil {
 		klog.Errorf("[%s] unable to list quota for fileset [%v] in filesystem [%v]. Error [%v]", loggerId, filesetName, filesystemName, err)
@@ -4324,12 +4335,15 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 
 	if filesetQuotaBytes < capacity {
 		var hardLimit, softLimit string
-		hardLimit = strconv.FormatUint(capacity, 10)
+		// Calculate hardLimit as multiple of fsBlockSize, always <= capacity
+		alignedCapacity := (capacity / uint64(fsDetails.Block.BlockSize)) * uint64(fsDetails.Block.BlockSize)
+		hardLimit = strconv.FormatUint(alignedCapacity, 10)
 		if volumeIDMembers.StorageClassType == STORAGECLASS_CACHE {
-			softLimit = strconv.FormatUint(uint64(math.Round(float64(capacity)*float64(softQuotaPercent)/float64(100))), 10)
+			softLimit = strconv.FormatUint(uint64(math.Round(float64(alignedCapacity)*float64(softQuotaPercent)/float64(100))), 10)
 		} else {
 			softLimit = hardLimit
 		}
+		klog.Infof("[%s] updating the quota. HardLimit [%v], SoftLimit [%v]", loggerId, hardLimit, softLimit)
 		err = conn.SetFilesetQuota(ctx, filesystemName, filesetName, hardLimit, softLimit)
 		if err != nil {
 			klog.Errorf("[%s] unable to update the quota. Error [%v]", loggerId, err)
