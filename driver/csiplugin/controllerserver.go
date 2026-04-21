@@ -3803,14 +3803,14 @@ func (cs *ScaleControllerServer) getSnapRestoreSize(ctx context.Context, conn co
 	if err != nil {
 		return 0, err
 	}
-
-	if quotaResp.BlockLimit < 0 {
-		klog.Errorf("[%s] getSnapRestoreSize: Invalid block limit [%v] for fileset [%s:%s] found", utils.GetLoggerId(ctx), quotaResp.BlockLimit, filesystemName, filesetName)
-		return 0, status.Error(codes.Internal, fmt.Sprintf("invalid block limit [%v] for fileset [%s:%s] found", quotaResp.BlockLimit, filesystemName, filesetName))
+	if quotaResp.BlockLimit > 0 {
+		klog.Infof("[%s] getSnapRestoreSize: for filesystemName:fileset [%s:%s] snapshot restoreSize in blocklimit: [%v],restoreSize: [%v] ", utils.GetLoggerId(ctx), filesystemName, filesetName, quotaResp.BlockLimit, int64(quotaResp.BlockLimit*1024))
+		// REST API returns block limit in kb, convert it to bytes and return
+		return int64(quotaResp.BlockLimit * 1024), nil
+	} else {
+		klog.Errorf("[%s] getSnapRestoreSize: Invalid quota found for fileset [%s:%s] found", utils.GetLoggerId(ctx), filesystemName, filesetName)
+		return 0, status.Error(codes.Internal, fmt.Sprintf("invalid quota found for fileset [%s:%s] found", filesystemName, filesetName))
 	}
-
-	// REST API returns block limit in kb, convert it to bytes and return
-	return int64(quotaResp.BlockLimit * 1024), nil
 }
 
 func (cs *ScaleControllerServer) isExistingSnapUseableForVol(ctx context.Context, conn connectors.SpectrumScaleConnector, filesystemName string, consistencyGroup string, filesetName string, cgSnapName string) (bool, error) {
