@@ -170,7 +170,7 @@ spec:
       serviceAccountName: ibm-spectrum-scale-csi-operator
       containers:
       - name: operator
-        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:83199f0be1814b65eb73baaf54e2c0b1ff02954d4e869ec6bed23584679c71fb
+        image: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-operator@sha256:d5a18f541e96ebc1578badb8cdb98cdb3bbcd258e014bd9c1834b0115a3bc79c
         args:
         - --leaderElection=true
         env:
@@ -181,7 +181,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CSI_DRIVER_IMAGE
-          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:35f038ea0f236fc814fd20ecc7ed1abfb5c2bd676ac653b59830b30dc5557870
+          value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver@sha256:231e0975d55feebb691809d35237887b749ecb861a3ae8836a6b9354133911eb
         - name: CSI_SNAPSHOTTER_IMAGE
           value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:5f4bb469fec51147ce157329dab598c758da1b018bad6dad26f0ff469326d769
         - name: CSI_ATTACHER_IMAGE
