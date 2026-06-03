@@ -195,10 +195,33 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 
 	volumeType, volumeTypeSpecified := volOptions[connectors.UserSpecifiedVolumeType]
 	cacheMode, cacheModeSpecified := volOptions[connectors.UserSpecifiedCacheMode]
+	existingVolume, existingVolumeSpecified := volOptions[connectors.UserSpecifiedExistingVolume]
+
+	// convert sc param values To Lower case if specified
+	if fsetTypeSpecified {
+		fsetType = strings.ToLower(fsetType)
+	}
+	if isCompressionSpecified {
+		compression = strings.ToLower(compression)
+	}
+	if isTierSpecified {
+		tier = strings.ToLower(tier)
+	}
+	if isSharedSpecified {
+		shared = strings.ToLower(shared)
+	}
+	if cacheModeSpecified {
+		cacheMode = strings.ToLower(cacheMode)
+	}
+	if volumeTypeSpecified {
+		volumeType = strings.ToLower(volumeType)
+	}
+	if existingVolumeSpecified {
+		existingVolume = strings.ToLower(existingVolume)
+	}
 
 	// for static pv
 	scaleVol.IsStaticPVBased = false
-	existingVolume, existingVolumeSpecified := volOptions[connectors.UserSpecifiedExistingVolume]
 	if existingVolumeSpecified && existingVolume == existingVolumeAllowedVal {
 		scaleVol.IsStaticPVBased = true
 	}
@@ -259,11 +282,6 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		fsetTypeSpecified = false
 	}
 
-	// Convert filesetType to lowercase to allow case-insensitive input
-	if fsetTypeSpecified {
-		fsetType = strings.ToLower(fsetType)
-	}
-
 	if isCGSpecified && cg == "" {
 		isCGSpecified = false
 	}
@@ -287,7 +305,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		fsetType = independentFileset
 	}
 
-	if !fsetTypeSpecified && volDirPathSpecified && !isSCAdvanced && volumeType == vmdiskCloning{
+	if !fsetTypeSpecified && volDirPathSpecified && !isSCAdvanced && volumeType == vmdiskCloning {
 		fsetTypeSpecified = true
 		fsetType = independentFileset
 	}
@@ -418,12 +436,10 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if isSharedSpecified {
-		//ignore case of passed "shared" parameter
-		icShared := strings.ToLower(shared)
-		if !(icShared == "true" || icShared == "false") {
+		if !(shared == "true" || shared == "false") {
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "invalid value specified for parameter shared")
 		}
-		if icShared == "false" {
+		if shared == "false" {
 			isSharedSpecified = false
 			scaleVol.Shared = false
 		} else {
@@ -480,7 +496,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 
 	if isCompressionSpecified {
 		// Default compression will be Z if set but not specified
-		if strings.ToLower(compression) == "true" {
+		if compression == "true" {
 			klog.V(6).Infof("[%s] gpfs_util compression was set to true. Defaulting to Z", loggerId)
 			compression = "z"
 		}
@@ -518,7 +534,6 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 			return &scaleVolume{}, status.Error(codes.InvalidArgument, "The parameters \"volDirBasePath\" and \"volumeType\" in storage class are mutually exclusive")
 		}*/
 
-		volumeType = strings.ToLower(volumeType)
 		if volumeType == cacheVolume {
 			scaleVol.StorageClassType = STORAGECLASS_CACHE
 			scaleVol.VolumeType = cacheVolume
@@ -543,7 +558,6 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 	}
 
 	if cacheModeSpecified {
-		cacheMode = strings.ToLower(cacheMode)
 		switch cacheMode {
 		case inputModeIW, inputModeRO, inputModeSW, inputModeLU:
 			scaleVol.CacheMode = inputToAFMMode[cacheMode]
