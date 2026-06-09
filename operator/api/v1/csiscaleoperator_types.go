@@ -133,7 +133,9 @@ type CSIScaleOperatorSpec struct {
 	CSIpspname string `json:"csipspname,omitempty"`
 
 	// consistencyGroupPrefix is a prefix of consistency group of an application.
-	// This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values)
+	// This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values).
+	// Must be either empty (operator will auto-generate) or exactly 36 characters.
+	// +kubebuilder:validation:XValidation:rule="self == '' || size(self) == 36",message="consistencyGroupPrefix must be either empty or exactly 36 characters"
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Consistency Group Prefix",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	CGPrefix string `json:"consistencyGroupPrefix,omitempty"`
 }

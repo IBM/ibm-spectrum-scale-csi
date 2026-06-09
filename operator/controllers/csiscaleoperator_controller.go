@@ -121,6 +121,7 @@ var watchResources = map[string]map[string]bool{corev1.ResourceConfigMaps.String
 
 // +kubebuilder:rbac:groups="",resources={pods,persistentvolumeclaims,services,endpoints,events,configmaps,secrets,secrets/status,services/finalizers,serviceaccounts},verbs=*
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 // TODO: Does the operator need to access to all the resources mentioned above?
 // TODO: Does all resources mentioned above required delete/patch/update permissions?
 
@@ -419,7 +420,16 @@ func (r *CSIScaleOperatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Final optional configmap values", "when the sent to syncer is ", cmData)
 
 	// Synchronizing node/driver daemonset
-	CGPrefix := r.GetConsistencyGroupPrefix(ctx, instance)
+	CGPrefix, err := r.GetConsistencyGroupPrefix(ctx, instance)
+	if err != nil {
+		logger.Error(err, "Failed to get consistency group prefix. Will requeue reconciliation.")
+		message := "Failed to get consistency group prefix for CSIScaleOperator resource " + instance.Name + ". Retrying..."
+		SetStatusAndRaiseEvent(instance, r.Recorder, corev1.EventTypeWarning, string(config.StatusConditionSuccess),
+			metav1.ConditionFalse, string(csiv1.GetFailed), message,
+		)
+		// Requeue after 10 seconds to retry fetching kube-system namespace UID
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
 
 	if instance.Spec.CGPrefix == "" {
 		logger.Info("Updating consistency group prefix in CSIScaleOperator resource.")
@@ -1903,12 +1913,12 @@ func (r *CSIScaleOperatorReconciler) deleteCSIDriver(ctx context.Context, instan
 // GetConsistencyGroupPrefix returns a universal unique ideintiier(UUID) of string format.
 // For Redhat Openshift Cluster Platform, Cluster ID as string is returned.
 // For Vanilla kubernetes cluster, generated UUID is returned.
-func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) string {
+func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(ctx context.Context, instance *csiscaleoperator.CSIScaleOperator) (string, error) {
 	logger := csiLog.FromContext(ctx).WithName("GetConsistencyGroupPrefix")
 	logger.Info("Checking if consistency group prefix is passed in CSIScaleOperator specs.")
 	if instance.Spec.CGPrefix != "" {
 		logger.Info("Consistency group prefix found in CSIScaleOperator specs.")
-		return instance.Spec.CGPrefix
+		return instance.Spec.CGPrefix, nil
 	}
 
 	logger.Info("Consistency group prefix is not found in CSIScaleOperator specs.")
@@ -1916,8 +1926,23 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(ctx context.Conte
 
 	if clusterTypeData[config.ENVClusterConfigurationType] != config.ENVClusterTypeOpenshift {
 		logger.Info("Cluster is a Kubernetes Platform.")
+		// Try to get kube-system namespace UID
+		kubeSystemUID, err := r.getKubeSystemNamespaceUID(ctx)
+		if err == nil && kubeSystemUID != "" {
+			logger.Info("Successfully fetched kube-system namespace UID.", "UID", kubeSystemUID)
+			return kubeSystemUID, nil
+		}
+
+		// Check if error is retryable (API unavailable or timeout)
+		if err != nil && (errors.IsTimeout(err) || errors.IsServerTimeout(err) || errors.IsServiceUnavailable(err)) {
+			logger.Info("Retryable error encountered. Will requeue reconciliation.", "error", err.Error())
+			return "", err
+		}
+
+		// For non-retryable errors, fallback to generating a random UUID
+		logger.Info("Non-retryable error or unable to fetch kube-system namespace UID. Falling back to generating a random UUID for consistency group prefix.")
 		UUID := r.GenerateUUID(ctx)
-		return UUID.String()
+		return UUID.String(), nil
 	}
 
 	logger.Info("Cluster is Redhat Openshift Cluster Platform.")
@@ -1929,11 +1954,51 @@ func (r *CSIScaleOperatorReconciler) GetConsistencyGroupPrefix(ctx context.Conte
 	if err != nil {
 		logger.Info("Unable to fetch the cluster scoped resource.")
 		UUID := r.GenerateUUID(ctx)
-		return UUID.String()
+		return UUID.String(), nil
 	}
 	UUID := string(CV.Spec.ClusterID)
-	return UUID
+	return UUID, nil
 
+}
+
+// getKubeSystemNamespaceUID fetches the UID of the kube-system namespace.
+// It returns the UID as a string if successful, or an error if the fetch fails.
+// Retries are handled by the reconciliation loop for retryable errors.
+func (r *CSIScaleOperatorReconciler) getKubeSystemNamespaceUID(ctx context.Context) (string, error) {
+	logger := csiLog.FromContext(ctx).WithName("getKubeSystemNamespaceUID")
+	logger.Info("Attempting to fetch kube-system namespace UID.")
+
+	const kubeSystemName = "kube-system"
+
+	namespace := &corev1.Namespace{}
+	err := r.Client.Get(ctx, types.NamespacedName{Name: kubeSystemName}, namespace)
+
+	if err != nil {
+		// Log specific error types for better debugging
+		if errors.IsNotFound(err) {
+			logger.Error(err, "kube-system namespace not found. This is unexpected in a Kubernetes cluster.")
+		} else if errors.IsForbidden(err) {
+			logger.Error(err, "Access forbidden when trying to fetch kube-system namespace. Check RBAC permissions.")
+		} else if errors.IsUnauthorized(err) {
+			logger.Error(err, "Unauthorized access when trying to fetch kube-system namespace. Check service account permissions.")
+		} else if errors.IsTimeout(err) || errors.IsServerTimeout(err) || errors.IsServiceUnavailable(err) {
+			logger.Info("Retryable error encountered while fetching kube-system namespace. Reconciliation will retry.",
+				"error", err.Error())
+		} else {
+			logger.Error(err, "Unexpected error while fetching kube-system namespace.")
+		}
+		return "", err
+	}
+
+	// Successfully fetched the namespace
+	uid := string(namespace.UID)
+	if uid == "" {
+		logger.Error(nil, "kube-system namespace UID is empty.")
+		return "", fmt.Errorf("kube-system namespace UID is empty")
+	}
+
+	logger.Info("Successfully fetched kube-system namespace UID.", "UID", uid)
+	return uid, nil
 }
 
 // GenerateUUID returns a new random UUID.
