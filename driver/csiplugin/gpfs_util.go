@@ -287,7 +287,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 		fsetType = independentFileset
 	}
 
-	if !fsetTypeSpecified && volDirPathSpecified && !isSCAdvanced && volumeType == vmdiskCloning{
+	if !fsetTypeSpecified && volDirPathSpecified && !isSCAdvanced && volumeType == vmdiskCloning {
 		fsetTypeSpecified = true
 		fsetType = independentFileset
 	}
@@ -323,7 +323,7 @@ func getScaleVolumeOptions(ctx context.Context, volOptions map[string]string) (*
 
 	/* Check if either fileset based or LW volume. */
 	if volDirPathSpecified {
-		if (fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset)) || isSCAdvanced || volumeType == vmdiskCloning {
+		if (fsetTypeSpecified && (fsetType == dependentFileset || fsetType == independentFileset)) || isSCAdvanced || volumeType == vmdiskCloning || volumeType == cacheVolume {
 			scaleVol.IsFilesetBased = true
 		} else {
 			if inodeLimSpecified {
