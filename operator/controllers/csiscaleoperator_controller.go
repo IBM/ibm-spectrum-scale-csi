@@ -1974,18 +1974,14 @@ func (r *CSIScaleOperatorReconciler) getKubeSystemNamespaceUID(ctx context.Conte
 	err := r.Client.Get(ctx, types.NamespacedName{Name: kubeSystemName}, namespace)
 
 	if err != nil {
-		// Log specific error types for better debugging
+		// Log error type for debugging
 		if errors.IsNotFound(err) {
 			logger.Error(err, "kube-system namespace not found. This is unexpected in a Kubernetes cluster.")
-		} else if errors.IsForbidden(err) {
-			logger.Error(err, "Access forbidden when trying to fetch kube-system namespace. Check RBAC permissions.")
-		} else if errors.IsUnauthorized(err) {
-			logger.Error(err, "Unauthorized access when trying to fetch kube-system namespace. Check service account permissions.")
 		} else if errors.IsTimeout(err) || errors.IsServerTimeout(err) || errors.IsServiceUnavailable(err) {
 			logger.Info("Retryable error encountered while fetching kube-system namespace. Reconciliation will retry.",
 				"error", err.Error())
 		} else {
-			logger.Error(err, "Unexpected error while fetching kube-system namespace.")
+			logger.Error(err, "Error while fetching kube-system namespace.")
 		}
 		return "", err
 	}
