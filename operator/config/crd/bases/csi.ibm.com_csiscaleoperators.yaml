@@ -1060,12 +1060,12 @@ spec:
                 description: |-
                   consistencyGroupPrefix is a prefix of consistency group of an application.
                   This is expected to be an RFC4122 UUID value (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx in hexadecimal values).
-                  Must be either empty (operator will auto-generate) or exactly 36 characters.
+                  Must be either empty (operator will auto-generate) or exactly 36 characters and must not start with hyphen.
                 type: string
                 x-kubernetes-validations:
                 - message: consistencyGroupPrefix must be either empty or exactly
-                    36 characters
-                  rule: self == '' || size(self) == 36
+                    36 characters and must not start with hyphen
+                  rule: self == '' || (size(self) == 36 && !self.startsWith('-'))
               csipspname:
                 description: PodSecurityPolicy name for CSI driver and sidecar pods.
                 type: string
