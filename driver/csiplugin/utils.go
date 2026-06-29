@@ -17,6 +17,7 @@
 package scale
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
 )

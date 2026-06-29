@@ -17,21 +17,22 @@
 package scale
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
 	"k8s.io/klog/v2"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
-	"golang.org/x/net/context"
-	"k8s.io/mount-utils"
-    "google.golang.org/protobuf/proto"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"k8s.io/mount-utils"
 )
 
 type ScaleNodeServer struct {
@@ -89,19 +90,56 @@ func unlock(targetPath string, ctx context.Context) {
 
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
-// corresponding error.
+// corresponding error. This function resolves the path to its
+// canonical form and verifies it is within allowed GPFS mount points.
 func checkGpfsType(ctx context.Context, path string) error {
+	loggerId := utils.GetLoggerId(ctx)
+
+	// Resolve the path to its canonical form
+	// This resolves symlinks and normalizes the path
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		// If symlink resolution fails, normalize the path
+		resolvedPath = filepath.Clean(path)
+		klog.V(4).Infof("[%s] checkGpfsType: could not resolve symlinks for [%s], using normalized path [%s]: %v",
+			loggerId, path, resolvedPath, err)
+	}
+
+	// Verify the resolved path is absolute
+	if !filepath.IsAbs(resolvedPath) {
+		return fmt.Errorf("checkGpfsType: resolved path [%s] is not absolute", resolvedPath)
+	}
+
 	gpfsPaths := getGpfsPaths(ctx)
+	if len(gpfsPaths) == 0 {
+		return fmt.Errorf("checkGpfsType: no GPFS mount points found on the system")
+	}
+
 	isGpfsPath := false
+	var matchedGpfsPath string
+
 	for _, gpfsPath := range gpfsPaths {
-		if strings.HasPrefix(path, gpfsPath) {
+		// Normalize the GPFS path for consistent comparison
+		cleanGpfsPath := filepath.Clean(gpfsPath)
+
+		// Verify the resolved path is within this GPFS mount
+		// Use filepath.Rel to compute the relative path
+		relPath, err := filepath.Rel(cleanGpfsPath, resolvedPath)
+		if err == nil && !strings.HasPrefix(relPath, "..") && relPath != ".." {
+			// The resolved path is within this GPFS mount point
 			isGpfsPath = true
+			matchedGpfsPath = cleanGpfsPath
+			klog.V(4).Infof("[%s] checkGpfsType: path [%s] resolved to [%s] is within GPFS mount [%s]",
+				loggerId, path, resolvedPath, matchedGpfsPath)
 			break
 		}
 	}
 
 	if !isGpfsPath {
-		return fmt.Errorf("checkGpfsType: the path [%s] is not a valid gpfs path ", strings.TrimPrefix(path, hostDir))
+		klog.Errorf("[%s] checkGpfsType: path [%s] resolved to [%s] is not within any valid GPFS mount point. Available GPFS mounts: %v",
+			loggerId, strings.TrimPrefix(path, hostDir), strings.TrimPrefix(resolvedPath, hostDir), gpfsPaths)
+		return fmt.Errorf("checkGpfsType: the path [%s] (resolves to [%s]) is not within any valid GPFS mount point",
+			strings.TrimPrefix(path, hostDir), strings.TrimPrefix(resolvedPath, hostDir))
 	}
 
 	return nil
