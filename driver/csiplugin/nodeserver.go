@@ -120,15 +120,19 @@ func checkGpfsType(ctx context.Context, path string) error {
 
 	for _, gpfsPath := range gpfsPaths {
 		// Normalize the GPFS path for consistent comparison
-		cleanGpfsPath := filepath.Clean(gpfsPath)
-
+		// This function resolves the path to its
+		// canonical form for the allowed GPFS mount points.
+		resolvedGpfsPath, err := filepath.EvalSymlinks(gpfsPath)
+		if err != nil {
+			resolvedGpfsPath = filepath.Clean(gpfsPath)
+		}
 		// Verify the resolved path is within this GPFS mount
 		// Use filepath.Rel to compute the relative path
-		relPath, err := filepath.Rel(cleanGpfsPath, resolvedPath)
+		relPath, err := filepath.Rel(resolvedGpfsPath, resolvedPath)
 		if err == nil && !strings.HasPrefix(relPath, "..") && relPath != ".." {
 			// The resolved path is within this GPFS mount point
 			isGpfsPath = true
-			matchedGpfsPath = cleanGpfsPath
+			matchedGpfsPath = resolvedGpfsPath
 			klog.V(4).Infof("[%s] checkGpfsType: path [%s] resolved to [%s] is within GPFS mount [%s]",
 				loggerId, path, resolvedPath, matchedGpfsPath)
 			break
