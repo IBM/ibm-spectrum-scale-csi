@@ -24,7 +24,9 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	"golang.org/x/sys/unix"
 	"k8s.io/klog/v2"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -54,6 +56,13 @@ const mountPathLength = 6
 const ENVClusterCNSAPresenceCheck = "CNSADeployment"
 const ENVClusterConfigurationType = "ClusterConfigurationType"
 const ENVClusterTypeOpenshift = "OpenShiftPlatform"
+
+const statfsTimeout = 10 * time.Second
+
+type statfsResult struct {
+	stat unix.Statfs_t
+	err  error
+}
 
 // A map for locking/unlocking a target path for NodePublish/NodeUnpublish
 // calls. The key is target path and value is a boolean true in case there
@@ -90,96 +99,136 @@ func unlock(targetPath string, ctx context.Context) {
 
 // checkGpfsType checks if a given path is of type gpfs and
 // returns nil if it is a gpfs type, otherwise returns
-// corresponding error. This function resolves the path to its
-// canonical form and verifies it is within allowed GPFS mount points.
+// corresponding error.
+//
+// Path namespace note:
+//   - `path` is always passed as /host/<kernel-path> (container view).
+//   - filepath.EvalSymlinks may or may not resolve through the /host bind-mount
+//     depending on the kernel/container runtime; it may return either
+//     /host/<kernel-path> or <kernel-path> directly.
+//   - getGpfsPaths returns kernel-visible paths with no /host prefix.
+//
+// To compare both sides in the same namespace, we explicitly strip the /host
+// prefix from resolvedPath before the mount containment check.
 func checkGpfsType(ctx context.Context, path string) error {
 	loggerId := utils.GetLoggerId(ctx)
 
-	// Resolve the path to its canonical form
-	// This resolves symlinks and normalizes the path
+	// Resolve the path to its canonical form (resolves symlinks and normalizes).
 	resolvedPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		// If symlink resolution fails, normalize the path
+		// If symlink resolution fails, fall back to a clean path.
 		resolvedPath = filepath.Clean(path)
 		klog.V(4).Infof("[%s] checkGpfsType: could not resolve symlinks for [%s], using normalized path [%s]: %v",
 			loggerId, path, resolvedPath, err)
 	}
 
-	// Verify the resolved path is absolute
+	// Verify the resolved path is absolute.
 	if !filepath.IsAbs(resolvedPath) {
 		return fmt.Errorf("checkGpfsType: resolved path [%s] is not absolute", resolvedPath)
 	}
+
+	// Normalise to kernel-visible namespace: strip /host prefix regardless of
+	// whether EvalSymlinks resolved through the bind-mount or not.
+	kernelPath := strings.TrimPrefix(resolvedPath, hostDir)
 
 	gpfsPaths := getGpfsPaths(ctx)
 	if len(gpfsPaths) == 0 {
 		return fmt.Errorf("checkGpfsType: no GPFS mount points found on the system")
 	}
+	klog.V(4).Infof("[%s] checkGpfsType: resolvedPath: %s kernelPath: %s", loggerId, resolvedPath, kernelPath)
 
-	isGpfsPath := false
-	var matchedGpfsPath string
-
+	// gpfsPaths entries are kernel-visible mount roots (e.g. /var/mnt/remote-sample).
+	// kernelPath is always a deep volume path under one of those roots.
 	for _, gpfsPath := range gpfsPaths {
-		// Normalize the GPFS path for consistent comparison
-		// This function resolves the path to its
-		// canonical form for the allowed GPFS mount points.
-		resolvedGpfsPath, err := filepath.EvalSymlinks(gpfsPath)
+		if !strings.HasPrefix(kernelPath, gpfsPath+"/") {
+			klog.V(4).Infof("[%s] checkGpfsType: kernelPath [%s] is not under mount [%s], skipping", loggerId, kernelPath, gpfsPath)
+			continue
+		}
+		ok, err := isGPFS(ctx, resolvedPath)
 		if err != nil {
-			resolvedGpfsPath = filepath.Clean(gpfsPath)
+			return fmt.Errorf("checkGpfsType: failed to validate volume mount path [%s]: %w", resolvedPath, err)
 		}
-		// Verify the resolved path is within this GPFS mount
-		// Use filepath.Rel to compute the relative path
-		relPath, err := filepath.Rel(resolvedGpfsPath, resolvedPath)
-		if err == nil && !strings.HasPrefix(relPath, "..") && relPath != ".." {
-			// The resolved path is within this GPFS mount point
-			isGpfsPath = true
-			matchedGpfsPath = resolvedGpfsPath
-			klog.V(4).Infof("[%s] checkGpfsType: path [%s] resolved to [%s] is within GPFS mount [%s]",
-				loggerId, path, resolvedPath, matchedGpfsPath)
-			break
+		if ok {
+			return nil
 		}
 	}
 
-	if !isGpfsPath {
-		klog.Errorf("[%s] checkGpfsType: path [%s] resolved to [%s] is not within any valid GPFS mount point. Available GPFS mounts: %v",
-			loggerId, strings.TrimPrefix(path, hostDir), strings.TrimPrefix(resolvedPath, hostDir), gpfsPaths)
-		return fmt.Errorf("checkGpfsType: the path [%s] (resolves to [%s]) is not within any valid GPFS mount point",
-			strings.TrimPrefix(path, hostDir), strings.TrimPrefix(resolvedPath, hostDir))
-	}
-
-	return nil
+	klog.Errorf("[%s] checkGpfsType: path [%s] resolved to [%s] is not within any valid GPFS mount point. Available GPFS mounts: %v",
+		loggerId, strings.TrimPrefix(path, hostDir), kernelPath, gpfsPaths)
+	return fmt.Errorf("checkGpfsType: the path [%s] (resolves to [%s]) is not within any valid GPFS mount point",
+		strings.TrimPrefix(path, hostDir), kernelPath)
 }
 
+// isGPFS reports whether the filesystem containing path is GPFS.
+// The underlying statfs syscall is run in a goroutine so that a hung
+// remote filesystem (e.g. stale NFS/GPFS mount) cannot block the
+// NodePublish RPC indefinitely.
+func isGPFS(ctx context.Context, path string) (bool, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] isGPFS: path %s", loggerId, path)
+
+	ch := make(chan statfsResult, 1)
+	go func() {
+		var st unix.Statfs_t
+		err := unix.Statfs(path, &st)
+		ch <- statfsResult{stat: st, err: err}
+	}()
+
+	select {
+	case res := <-ch:
+		if res.err != nil {
+			return false, fmt.Errorf("statfs %q: %w", path, res.err)
+		}
+		klog.V(4).Infof("[%s] isGPFS: fsType 0x%x for path %s", loggerId, uint64(res.stat.Type), path)
+		// GPFS magic number: 0x47504653 ("GPFS")
+		return uint64(res.stat.Type) == 0x47504653, nil
+	case <-time.After(statfsTimeout):
+		klog.Errorf("[%s] isGPFS: statfs %q timed out after %s", loggerId, path, statfsTimeout)
+		return false, fmt.Errorf("statfs %q: timed out after %s", path, statfsTimeout)
+	case <-ctx.Done():
+		klog.Errorf("[%s] isGPFS: context cancelled while waiting for statfs %q: %v", loggerId, path, ctx.Err())
+		return false, fmt.Errorf("statfs %q: %w", path, ctx.Err())
+	}
+}
+
+// getGpfsPaths returns GPFS mount points as kernel-visible paths (no /host prefix).
+//
+// /proc/mounts inside the node-plugin container shows host paths prefixed with
+// /host because the host rootfs is bind-mounted there. EvalSymlinks resolves
+// through that bind mount and returns the real kernel path (e.g. /mnt/... or
+// /var/mnt/... on CNSA/OpenShift). To make the comparison in checkGpfsType
+// work across all environments, we store the path exactly as the kernel sees
+// it: strip the leading /host prefix and keep the rest unchanged.
 func getGpfsPaths(ctx context.Context) []string {
+	loggerId := utils.GetLoggerId(ctx)
 	var gpfsPaths []string
 	gpfsPathCmd := `cat /proc/mounts | grep "gpfs"`
 	cmd := exec.Command("bash", "-c", gpfsPathCmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		klog.Errorf("[%s] Error in executing command: [%s]", utils.GetLoggerId(ctx), err)
-	} else {
-		outputPaths := string(output)
-		strOutput := strings.Split(outputPaths, "\n")
-		for _, out := range strOutput {
-			finalOutput := strings.Split(out, " ")
-			if len(finalOutput) == mountPathLength {
-				if finalOutput[1] != "" && finalOutput[2] == "gpfs" {
-					cnsaPresence, ok := os.LookupEnv(ENVClusterCNSAPresenceCheck)
-					clusterType, cok := os.LookupEnv(ENVClusterConfigurationType)
-					if (ok && cnsaPresence == "True") && (cok && clusterType == ENVClusterTypeOpenshift) {
-						before, after, found := strings.Cut(finalOutput[1], "/var")
-						if found && before == hostDir && strings.HasPrefix(after, mountPath) {
-							openShiftMountPath := before + after
-							gpfsPaths = append(gpfsPaths, openShiftMountPath)
-						} else {
-							gpfsPaths = append(gpfsPaths, finalOutput[1])
-						}
-					} else {
-						gpfsPaths = append(gpfsPaths, finalOutput[1])
-					}
-				}
-			}
-		}
+		return gpfsPaths
 	}
+
+	strOutput := strings.Split(string(output), "\n")
+	for _, out := range strOutput {
+		fields := strings.Split(out, " ")
+		if len(fields) != mountPathLength {
+			continue
+		}
+		mountPoint := fields[1]
+		fsType := fields[2]
+		if mountPoint == "" || fsType != "gpfs" {
+			continue
+		}
+		// Strip the container-side /host prefix to get the kernel-visible path.
+		// This is the path EvalSymlinks will resolve to, regardless of whether
+		// the cluster is CNSA/OpenShift or plain Kubernetes.
+		kernelPath := strings.TrimPrefix(mountPoint, hostDir)
+		gpfsPaths = append(gpfsPaths, kernelPath)
+		klog.V(4).Infof("[%s] getGpfsPaths: added kernel path [%s] (from mount entry [%s])", loggerId, kernelPath, mountPoint)
+	}
+	klog.V(4).Infof("[%s] getGpfsPaths: %v", loggerId, gpfsPaths)
 	return gpfsPaths
 }
 
@@ -230,6 +279,13 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		if readlinkErr != nil {
 			klog.Errorf("[%s] NodePublishVolume - readlink [%s] failed with error [%v]", loggerId, volScalePathInContainer, readlinkErr)
 			return nil, fmt.Errorf("NodePublishVolume - readlink [%s] failed with error [%v]", volScalePathInContainer, readlinkErr)
+		}
+		// Validate the symlink target to prevent path traversal attacks.
+		// A malicious or misconfigured symlink pointing to e.g. "../../etc"
+		// would otherwise escape the GPFS mount and expose arbitrary host paths.
+		if err := validatePath(symlinkTarget); err != nil {
+			klog.Errorf("[%s] NodePublishVolume - symlink target [%s] failed path validation: [%v]", loggerId, symlinkTarget, err)
+			return nil, status.Errorf(codes.InvalidArgument, "NodePublishVolume - symlink target [%s] is not a valid path: %v", symlinkTarget, err)
 		}
 		volScalePathInContainer = hostDir + symlinkTarget
 		volScalePath = symlinkTarget
@@ -517,6 +573,13 @@ func (ns *ScaleNodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.Node
 		if err != nil {
 			klog.Errorf("[%s] NodeGetVolumeStats - destination [%s] failed with error [%v]", loggerId, volumePath, err)
 		} else if len(dst) > 0 {
+			// Validate the symlink target to prevent path traversal.
+			// A symlink pointing to e.g. "../../etc" would otherwise let
+			// FsStatInfo read arbitrary host filesystem paths.
+			if err := validatePath(dst); err != nil {
+				klog.Errorf("[%s] NodeGetVolumeStats - symlink target [%s] failed path validation: [%v]", loggerId, dst, err)
+				return nil, status.Errorf(codes.InvalidArgument, "NodeGetVolumeStats - symlink target [%s] is not a valid path: %v", dst, err)
+			}
 			volumePath = hostDir + dst
 			klog.V(4).Infof("[%s] %s links to (%s) is a SYMLINK", loggerId, req.GetVolumePath(), volumePath)
 		}
