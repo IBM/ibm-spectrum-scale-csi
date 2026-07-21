@@ -24,9 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
-	"golang.org/x/sys/unix"
 	"k8s.io/klog/v2"
 
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
@@ -57,13 +55,7 @@ const ENVClusterCNSAPresenceCheck = "CNSADeployment"
 const ENVClusterConfigurationType = "ClusterConfigurationType"
 const ENVClusterTypeOpenshift = "OpenShiftPlatform"
 
-const statfsTimeout = 10 * time.Second
 const gpfsmagicNumber uint64 = 0x47504653
-
-type statfsResult struct {
-	stat unix.Statfs_t
-	err  error
-}
 
 // A map for locking/unlocking a target path for NodePublish/NodeUnpublish
 // calls. The key is target path and value is a boolean true in case there
@@ -160,37 +152,12 @@ func checkGpfsType(ctx context.Context, path string) error {
 		strings.TrimPrefix(path, hostDir), kernelPath)
 }
 
-// StatfsWithTimeout performs a unix.Statfs call in a background goroutine and
-// returns the result, honouring both a fixed timeout and the caller's context.
-// This prevents a hung or unresponsive remote filesystem from blocking the
-// calling goroutine indefinitely.
-//
-// The background goroutine always completes eventually (the channel is
-// buffered) so there is no goroutine leak even when a timeout fires.
-func StatfsWithTimeout(ctx context.Context, path string) (unix.Statfs_t, error) {
-	ch := make(chan statfsResult, 1)
-	go func() {
-		var st unix.Statfs_t
-		err := unix.Statfs(path, &st)
-		ch <- statfsResult{stat: st, err: err}
-	}()
-
-	select {
-	case res := <-ch:
-		return res.stat, res.err
-	case <-time.After(statfsTimeout):
-		return unix.Statfs_t{}, fmt.Errorf("statfs %q: timed out after %s", path, statfsTimeout)
-	case <-ctx.Done():
-		return unix.Statfs_t{}, fmt.Errorf("statfs %q: %w", path, ctx.Err())
-	}
-}
-
 // isGPFS reports whether the filesystem containing path is GPFS.
 func isGPFS(ctx context.Context, path string) (bool, error) {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.V(4).Infof("[%s] isGPFS: path %s", loggerId, path)
 
-	st, err := StatfsWithTimeout(ctx, path)
+	st, err := utils.StatfsWithTimeout(ctx, path)
 	if err != nil {
 		klog.Errorf("[%s] isGPFS: statfs %q failed: %v", loggerId, path, err)
 		return false, err
@@ -378,9 +345,8 @@ func (ns *ScaleNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodeP
 		}
 
 		// create bind mount
-		options := []string{"bind"}
 		klog.V(4).Infof("[%s] NodePublishVolume - creating bind mount [%v] -> [%v]", loggerId, targetPath, volScalePath)
-		if err := mounter.Mount(volScalePath, targetPath, "", options); err != nil {
+		if err := utils.BindMount(ctx, volScalePath, volScalePathInContainer, targetPath); err != nil {
 			klog.Errorf("[%s] NodePublishVolume - mounting [%s] at [%s] failed with error [%v]", loggerId, volScalePath, targetPath, err)
 			return nil, fmt.Errorf("NodePublishVolume - mounting [%s] at [%s] failed with error [%v]", volScalePath, targetPath, err)
 		}
