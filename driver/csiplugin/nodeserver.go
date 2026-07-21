@@ -58,6 +58,7 @@ const ENVClusterConfigurationType = "ClusterConfigurationType"
 const ENVClusterTypeOpenshift = "OpenShiftPlatform"
 
 const statfsTimeout = 10 * time.Second
+const gpfsmagicNumber uint64 = 0x47504653
 
 type statfsResult struct {
 	stat unix.Statfs_t
@@ -159,14 +160,14 @@ func checkGpfsType(ctx context.Context, path string) error {
 		strings.TrimPrefix(path, hostDir), kernelPath)
 }
 
-// isGPFS reports whether the filesystem containing path is GPFS.
-// The underlying statfs syscall is run in a goroutine so that a hung
-// remote filesystem (e.g. stale NFS/GPFS mount) cannot block the
-// NodePublish RPC indefinitely.
-func isGPFS(ctx context.Context, path string) (bool, error) {
-	loggerId := utils.GetLoggerId(ctx)
-	klog.V(4).Infof("[%s] isGPFS: path %s", loggerId, path)
-
+// StatfsWithTimeout performs a unix.Statfs call in a background goroutine and
+// returns the result, honouring both a fixed timeout and the caller's context.
+// This prevents a hung or unresponsive remote filesystem from blocking the
+// calling goroutine indefinitely.
+//
+// The background goroutine always completes eventually (the channel is
+// buffered) so there is no goroutine leak even when a timeout fires.
+func StatfsWithTimeout(ctx context.Context, path string) (unix.Statfs_t, error) {
 	ch := make(chan statfsResult, 1)
 	go func() {
 		var st unix.Statfs_t
@@ -176,19 +177,27 @@ func isGPFS(ctx context.Context, path string) (bool, error) {
 
 	select {
 	case res := <-ch:
-		if res.err != nil {
-			return false, fmt.Errorf("statfs %q: %w", path, res.err)
-		}
-		klog.V(4).Infof("[%s] isGPFS: fsType 0x%x for path %s", loggerId, uint64(res.stat.Type), path)
-		// GPFS magic number: 0x47504653 ("GPFS")
-		return uint64(res.stat.Type) == 0x47504653, nil
+		return res.stat, res.err
 	case <-time.After(statfsTimeout):
-		klog.Errorf("[%s] isGPFS: statfs %q timed out after %s", loggerId, path, statfsTimeout)
-		return false, fmt.Errorf("statfs %q: timed out after %s", path, statfsTimeout)
+		return unix.Statfs_t{}, fmt.Errorf("statfs %q: timed out after %s", path, statfsTimeout)
 	case <-ctx.Done():
-		klog.Errorf("[%s] isGPFS: context cancelled while waiting for statfs %q: %v", loggerId, path, ctx.Err())
-		return false, fmt.Errorf("statfs %q: %w", path, ctx.Err())
+		return unix.Statfs_t{}, fmt.Errorf("statfs %q: %w", path, ctx.Err())
 	}
+}
+
+// isGPFS reports whether the filesystem containing path is GPFS.
+func isGPFS(ctx context.Context, path string) (bool, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.V(4).Infof("[%s] isGPFS: path %s", loggerId, path)
+
+	st, err := StatfsWithTimeout(ctx, path)
+	if err != nil {
+		klog.Errorf("[%s] isGPFS: statfs %q failed: %v", loggerId, path, err)
+		return false, err
+	}
+	klog.V(4).Infof("[%s] isGPFS: fsType 0x%x for path %s", loggerId, uint64(st.Type), path)
+	// GPFS magic number: 0x47504653 ("GPFS")
+	return uint64(st.Type) == gpfsmagicNumber, nil
 }
 
 // getGpfsPaths returns GPFS mount points as kernel-visible paths (no /host prefix).
