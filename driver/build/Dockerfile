@@ -20,8 +20,8 @@ ENV REVISION $commit
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'main.gitCommit=${REVISION}' -extldflags '-static'" -o _output/ibm-spectrum-scale-csi ./cmd/ibm-spectrum-scale-csi
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
-FROM registry.access.redhat.com/ubi9-minimal:9.8-1782797275
-ARG version=2.14.8
+FROM registry.access.redhat.com/ubi9-minimal:9.8-1785339117
+ARG version=2.14.9
 ARG commit
 ARG build_date
 
