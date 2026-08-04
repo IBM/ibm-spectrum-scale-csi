@@ -662,8 +662,7 @@ func getNodeMapping(kubernetesNodeID string) (gpfsAdminName string) {
 }
 
 const (
-	SHORTNAME_NODE_MAPPING = "SHORTNAME_NODE_MAPPING"
-	SKIP_MOUNT_UNMOUNT     = "SKIP_MOUNT_UNMOUNT"
+	SKIP_MOUNT_UNMOUNT = "SKIP_MOUNT_UNMOUNT"
 )
 
 func shortnameInSlice(shortname string, nodeNames []string) bool {

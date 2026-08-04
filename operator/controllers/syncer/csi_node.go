@@ -64,7 +64,6 @@ const (
 	EnvVarForCSINodeRegistrarImage = "CSI_NODE_REGISTRAR_IMAGE" // #nosec G101 false positive
 	EnvVarForCSILivenessProbeImage = "CSI_LIVENESSPROBE_IMAGE"
 	EnvVarForLivenessHealthPort    = "LIVENESS_HEALTH_PORT"
-	EnvVarForShortNodeNameMapping  = "SHORTNAME_NODE_MAPPING"
 )
 
 var (
@@ -75,14 +74,13 @@ var (
 )
 
 type CSIEnvConfigs struct {
-	CsiSnapshotter       string
-	CsiAttacher          string
-	CsiProvisioner       string
-	CsiLivenessprobe     string
-	CsiNodeRegistrar     string
-	CsiResizer           string
-	CsiDriver            string
-	ShortNameNodeMapping string
+	CsiSnapshotter   string
+	CsiAttacher      string
+	CsiProvisioner   string
+	CsiLivenessprobe string
+	CsiNodeRegistrar string
+	CsiResizer       string
+	CsiDriver        string
 }
 
 type csiNodeSyncer struct {
@@ -225,7 +223,6 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 			"--endpoint=$(CSI_ENDPOINT)",
 			"--kubeletRootDirPath=$(KUBELET_ROOT_DIR_PATH)",
 		},
-		CSIEnvConfig,
 	)
 
 	nodePlugin.Resources = ensureDriverResources(cpuLimits, memoryLimits)
@@ -277,7 +274,6 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 			"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)",
 			"--v=5",
 		},
-		CSIEnvConfig,
 	)
 
 	registrar.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
@@ -294,7 +290,6 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 			"--v=5",
 			"--probe-timeout=20s",
 		},
-		CSIEnvConfig,
 	)
 	livenessProbe.SecurityContext = ensureDriverContainersSecurityContext(false, false, true, false)
 	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
@@ -310,12 +305,12 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 
 // ensureContainer returns a container with given name, image and
 // some other fields.
-func (s *csiNodeSyncer) ensureContainer(name, image string, args []string, CSIEnvConfig CSIEnvConfigs) corev1.Container {
+func (s *csiNodeSyncer) ensureContainer(name, image string, args []string) corev1.Container {
 	return corev1.Container{
 		Name:         name,
 		Image:        image,
 		Args:         args,
-		Env:          s.getEnvFor(name, CSIEnvConfig),
+		Env:          s.getEnvFor(name),
 		VolumeMounts: s.getVolumeMountsFor(name),
 	}
 }
@@ -336,7 +331,7 @@ func envVarFromField(name, fieldPath string) corev1.EnvVar {
 }
 
 // getEnvFor returns list of environment variables for given container name.
-func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []corev1.EnvVar {
+func (s *csiNodeSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 	switch name {
 	case nodeContainerName:
@@ -349,17 +344,6 @@ func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []cor
 				EnvVars = append(EnvVars, obj)
 			}
 		}
-
-		shortNodeNameMappingObj := corev1.EnvVar{}
-		shortNodeNameMappingObj.Name = "SHORTNAME_NODE_MAPPING"
-		shortNodeNameMappingObj.Value = "no"
-		shortNodeNameMapping, found := os.LookupEnv(EnvVarForShortNodeNameMapping)
-		if found {
-			shortNodeNameMappingObj.Value = shortNodeNameMapping
-		} else if CSIEnvConfig.ShortNameNodeMapping != "" {
-			shortNodeNameMappingObj.Value = CSIEnvConfig.ShortNameNodeMapping
-		}
-		EnvVars = append(EnvVars, shortNodeNameMappingObj)
 
 		CGPrefixObj := corev1.EnvVar{}
 		CGPrefixObj.Name = config.ENVCGPrefix
