@@ -825,3 +825,28 @@ func isSubset(subset []string, superset []string) bool {
 	}
 	return false
 }
+
+// getMountedNodes returns a de-duplicated list of nodes where the filesystem is mounted,
+// combining both read-write and read-only REST fields.
+func getMountedNodes(mountInfo connectors.MountInfo) []string {
+	mountedNodes := make([]string, 0, len(mountInfo.NodesMounted)+len(mountInfo.NodesMountedReadOnly))
+	nodeSet := make(map[string]struct{})
+
+	for _, node := range mountInfo.NodesMounted {
+		if _, seen := nodeSet[node]; seen {
+			continue
+		}
+		nodeSet[node] = struct{}{}
+		mountedNodes = append(mountedNodes, node)
+	}
+
+	for _, node := range mountInfo.NodesMountedReadOnly {
+		if _, seen := nodeSet[node]; seen {
+			continue
+		}
+		nodeSet[node] = struct{}{}
+		mountedNodes = append(mountedNodes, node)
+	}
+
+	return mountedNodes
+}
