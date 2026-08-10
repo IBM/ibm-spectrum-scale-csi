@@ -1,3 +1,5 @@
+//go:build linux
+
 /**
  * Copyright 2019, 2024 IBM Corp.
  *
