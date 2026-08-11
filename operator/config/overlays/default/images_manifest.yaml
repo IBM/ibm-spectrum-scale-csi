@@ -1,8 +1,0 @@
-version: 3.2.0
-images:
-  csiSnapshotter: cp.icr.io/cp/gpfs/csi/csi-snapshotter@sha256:da081c27e8a6d91f36042c1942362d0515ced8d06e18c11b8f893e58c4d6d797
-  csiAttacher: cp.icr.io/cp/gpfs/csi/csi-attacher@sha256:b74b05b39501565022883fc128002b4cb857a7bb6c858606bcb3fdedba0b0b80
-  csiProvisioner: cp.icr.io/cp/gpfs/csi/csi-provisioner@sha256:6be9f63ca4caa6c46aae55aa372500949d8a21473d72f819da1f746076b32d4e
-  csiLivenessprobe: cp.icr.io/cp/gpfs/csi/livenessprobe@sha256:c4cc074199c045dd73ab85f28897e2a32f4d6f38ffdba4f3b13b8007ccbd3570
-  csiNodeRegistrar: cp.icr.io/cp/gpfs/csi/csi-node-driver-registrar@sha256:ab482308a4921e28a6df09a16ab99a457e9af9641ff44fb1be1a690d07ce8b70
-  csiResizer: cp.icr.io/cp/gpfs/csi/csi-resizer@sha256:589e525cddef6d768e68da1f0bc9ffd0a24bf3add3dd010648eb7189976fde79
