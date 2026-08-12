@@ -25,13 +25,12 @@ ENV GOOS $TARGETOS
 ENV GOARCH $TARGETARCH
 
 # Build dummy health checker
-RUN CGO_ENABLED=0 go build -ldflags="-X 'main.gitCommit=${REVISION}'" -a -o health_check.sh health_check.go
+RUN CGO_ENABLED=0 GOFIPS140=latest go build -ldflags="-X 'main.gitCommit=${REVISION}'" -a -o health_check.sh health_check.go
 # Build CSI Operator
-RUN CGO_ENABLED=0 go build -ldflags="-X 'main.gitCommit=${REVISION}'" -a -o manager main.go
+RUN CGO_ENABLED=0 GOFIPS140=latest go build -ldflags="-X 'main.gitCommit=${REVISION}'" -a -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+# Use UBI-Micro as minimal base image to package the manager binary
+FROM registry.access.redhat.com/ubi10/ubi-micro:latest
 WORKDIR /
 ARG version=3.2.0
 ARG commit
