@@ -720,6 +720,11 @@ func (s *csiControllerSyncer) envVarFromSecret(sctName, name, key string, opt bo
 // getEnvFor returns a k8s envVar object for the CSI sidecar containers.
 func (s *csiControllerSyncer) getEnvFor(name string) []corev1.EnvVar {
 
+	fipsEnv := corev1.EnvVar{
+		Name:  "GODEBUG",
+		Value: "fips140=on",
+	}
+
 	switch name {
 	case provisionerContainerName, attacherContainerName, snapshotterContainerName, resizerContainerName:
 		return []corev1.EnvVar{
@@ -739,6 +744,7 @@ func (s *csiControllerSyncer) getEnvFor(name string) []corev1.EnvVar {
 				Name:  "LEADER_ELECTION_RETRY_PERIOD",
 				Value: "26s",
 			},
+			fipsEnv,
 		}
 	}
 	return nil
