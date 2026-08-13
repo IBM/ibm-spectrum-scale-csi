@@ -721,8 +721,8 @@ func (s *csiControllerSyncer) envVarFromSecret(sctName, name, key string, opt bo
 func (s *csiControllerSyncer) getEnvFor(name string) []corev1.EnvVar {
 
 	fipsEnv := corev1.EnvVar{
-		Name:  "GODEBUG",
-		Value: "fips140=on",
+		Name:  config.ENVGoDebug,
+		Value: config.ENVGoDebugFIPS,
 	}
 
 	switch name {

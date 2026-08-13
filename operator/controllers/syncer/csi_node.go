@@ -339,8 +339,8 @@ func envVarFromField(name, fieldPath string) corev1.EnvVar {
 func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []corev1.EnvVar {
 
 	fipsEnv := corev1.EnvVar{
-		Name:  "GODEBUG",
-		Value: "fips140=on",
+		Name:  config.ENVGoDebug,
+		Value: config.ENVGoDebugFIPS,
 	}
 
 	switch name {

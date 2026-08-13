@@ -139,6 +139,11 @@ const (
 
 	DaemonSetUpgradeUpdateStrategyType = "RollingUpdate"
 
+	// ENVGoDebug is the name of the GODEBUG environment variable.
+	ENVGoDebug = "GODEBUG"
+	// ENVGoDebugFIPS is the GODEBUG value required to enable FIPS 140 mode in Go binaries.
+	ENVGoDebugFIPS = "fips140=on"
+
 	// Optional ConfigMap constants for CSI driver environment variables
 	EnvVarConfigMap = "ibm-spectrum-scale-csi-config"
 	EnvVarPrefix    = "VAR_DRIVER_"
