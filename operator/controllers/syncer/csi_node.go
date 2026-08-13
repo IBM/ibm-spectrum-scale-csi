@@ -390,7 +390,6 @@ func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []cor
 			},
 			envVarFromField("NODE_ID", "spec.nodeName"),
 			// envVarFromField("KUBE_NODE_NAME", "spec.nodeName"),
-			fipsEnv,
 		}...)
 
 	case nodeDriverRegistrarContainerName:
