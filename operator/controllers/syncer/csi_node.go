@@ -338,6 +338,11 @@ func envVarFromField(name, fieldPath string) corev1.EnvVar {
 // getEnvFor returns list of environment variables for given container name.
 func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []corev1.EnvVar {
 
+	fipsEnv := corev1.EnvVar{
+		Name:  config.ENVGoDebug,
+		Value: config.ENVGoDebugFIPS,
+	}
+
 	switch name {
 	case nodeContainerName:
 		EnvVars := []corev1.EnvVar{}
@@ -398,6 +403,7 @@ func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []cor
 				Value: s.driver.GetSocketPath(),
 			},
 			envVarFromField("KUBE_NODE_NAME", "spec.nodeName"),
+			fipsEnv,
 		}
 
 	case nodeLivenessProbeContainerName:
@@ -406,6 +412,7 @@ func (s *csiNodeSyncer) getEnvFor(name string, CSIEnvConfig CSIEnvConfigs) []cor
 				Name:  "ADDRESS",
 				Value: s.driver.GetSocketPath(),
 			},
+			fipsEnv,
 		}
 	}
 	return nil
