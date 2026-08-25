@@ -230,11 +230,6 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 
 	nodePlugin.Resources = ensureDriverResources(cpuLimits, memoryLimits)
 
-	//nodePlugin.Ports = ensurePorts(corev1.ContainerPort{
-	//	Name:          nodeContainerHealthPortName,
-	//	ContainerPort: nodeContainerHealthPortNumber,
-	//})
-
 	nodePlugin.ImagePullPolicy = config.CSIDriverImagePullPolicy
 
 	// Check if there is any environment variable passing liveness
@@ -253,7 +248,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 	nodePlugin.LivenessProbe = ensureProbe(10, 30, 120, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
-			Port:   healthPort,
+			Port:   intstr.FromString(nodeContainerHealthPortName),
 			Scheme: corev1.URISchemeHTTP,
 		},
 	})
@@ -300,6 +295,13 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 	fillSecurityContextCapabilities(livenessProbe.SecurityContext)
 	livenessProbe.ImagePullPolicy = config.LivenessProbeImagePullPolicy
 	livenessProbe.Resources = ensureSidecarResources(sidecarCPULimits, sidecarMemoryLimits)
+	livenessProbe.Ports = []corev1.ContainerPort{
+		{
+			Name:          nodeContainerHealthPortName,
+			ContainerPort: int32(nodeContainerHealthPortNumber),
+			Protocol:      corev1.ProtocolTCP,
+		},
+	}
 
 	return []corev1.Container{
 		nodePlugin,

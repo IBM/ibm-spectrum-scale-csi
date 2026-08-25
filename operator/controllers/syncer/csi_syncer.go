@@ -893,10 +893,6 @@ func (s *csiControllerSyncer) ensurePodTolerations(ctx context.Context, tolerati
 	return podTolerations
 }
 
-/*func ensurePorts(ports ...corev1.ContainerPort) []corev1.ContainerPort {
-	return ports
-}*/
-
 func ensureProbe(delay, timeout, period int32, handler corev1.ProbeHandler) *corev1.Probe {
 	return &corev1.Probe{
 		InitialDelaySeconds: delay,
