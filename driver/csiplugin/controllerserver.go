@@ -3377,7 +3377,8 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	}
 
 	klog.Infof("[%s] fsName:%s, fsMount:%+v, scalenodeID:%s", loggerId, fsName, fsMount, scalenodeID)
-	klog.Infof("[%s] ControllerPublishVolume : FS is mounted on %v", loggerId, fsMount.NodesMounted)
+	mountedNodes := getMountedNodes(fsMount)
+	klog.Infof("[%s] ControllerPublishVolume : FS is mounted on %v", loggerId, mountedNodes)
 	klog.V(4).Infof("[%s] ControllerPublishVolume : Volume is from Filesystem %s", loggerId, fsName)
 
 	if !strings.HasPrefix(volumePath, fsMount.MountPoint) {
@@ -3409,11 +3410,11 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	// This means node mapping must be to admin names.
 	// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
 	if shortnameNodeMapping == yes {
-		isFsMounted = shortnameInSlice(scalenodeID, fsMount.NodesMounted)
+		isFsMounted = shortnameInSlice(scalenodeID, mountedNodes)
 	} else {
-		isFsMounted = utils.StringInSlice(scalenodeID, fsMount.NodesMounted)
+		isFsMounted = utils.StringInSlice(scalenodeID, mountedNodes)
 	}
-	klog.Infof("[%s] ControllerPublishVolume : Volume Source FS is mounted on %v", loggerId, fsMount.NodesMounted)
+	klog.Infof("[%s] ControllerPublishVolume : Volume Source FS is mounted on %v", loggerId, mountedNodes)
 	klog.Infof("[%s] ControllerPublishVolume : Mount Status of fs [ %t ]", loggerId, isFsMounted)
 
 	var isFsMountedOnGateway bool
@@ -3447,10 +3448,11 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 			klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] is a local mount", loggerId, fsName)
 		}
 
-		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, fsRemoteMountDetails.NodesMounted)
+		remoteMountedNodes := getMountedNodes(fsRemoteMountDetails)
+		klog.V(4).Infof("[%s] ControllerPublishVolume : filesystem:[%s] or fsNameRemote:[%s] is mounted on these nodes %v", loggerId, fsName, fsNameRemote, remoteMountedNodes)
 
 		// check whether FS is mounted on all the gateway nodes or not
-		isFsMountedOnGateway = isSubset(gatewayNodeNames, fsRemoteMountDetails.NodesMounted)
+		isFsMountedOnGateway = isSubset(gatewayNodeNames, remoteMountedNodes)
 
 		//sucess when FS is mounted primary , volumeFS and on all the gatewayNodes for "cache" volume
 		if isFsMounted && isFsMountedOnGateway {

@@ -397,10 +397,11 @@ type MountInfo struct {
 	AdditionalMountOptions string `json:"additionalMountOptions,omitempty"`
 	MountPriority          int    `json:"mountPriority,omitempty"`
 	//	DriveLetter            string `json:"driveLetter,omitempty"`
-	RemoteDeviceName string   `json:"remoteDeviceName,omitempty"`
-	NodesMounted     []string `json:"nodesMountedReadWrite,omitempty"`
-	ReadOnly         bool     `json:"readOnly,omitempty"`
-	Status           string   `json:"status,omitempty"`
+	RemoteDeviceName     string   `json:"remoteDeviceName,omitempty"`
+	NodesMounted         []string `json:"nodesMountedReadWrite,omitempty"`
+	NodesMountedReadOnly []string `json:"nodesMountedReadOnly,omitempty"`
+	ReadOnly             bool     `json:"readOnly,omitempty"`
+	Status               string   `json:"status,omitempty"`
 }
 
 type QuotaInfo struct {
