@@ -3371,11 +3371,6 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	scalenodeID := getNodeMapping(nodeID)
 	klog.Infof("[%s] ControllerPublishVolume : scalenodeID:%s --known as-- k8snodeName: %s", loggerId, scalenodeID, nodeID)
 
-	shortnameNodeMapping := utils.GetEnv(SHORTNAME_NODE_MAPPING, no)
-	if shortnameNodeMapping == yes {
-		klog.V(4).Infof("[%s] ControllerPublishVolume : SHORTNAME_NODE_MAPPING is set to %s", loggerId, shortnameNodeMapping)
-	}
-
 	klog.Infof("[%s] fsName:%s, fsMount:%+v, scalenodeID:%s", loggerId, fsName, fsMount, scalenodeID)
 	klog.Infof("[%s] ControllerPublishVolume : FS is mounted on %v", loggerId, fsMount.NodesMounted)
 	klog.V(4).Infof("[%s] ControllerPublishVolume : Volume is from Filesystem %s", loggerId, fsName)
@@ -3405,12 +3400,13 @@ func (cs *ScaleControllerServer) ControllerPublishVolume(ctx context.Context, re
 	}
 
 	var isFsMounted bool
-	// NodesMounted has admin node names
-	// This means node mapping must be to admin names.
-	// Unless shortnameNodeMapping=="yes", then we should check shortname portion matches.
-	if shortnameNodeMapping == yes {
+	// NodesMounted has admin node names. If CNSA is present, check shortname portion matches.
+	_, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
+	if cnsaPresence {
+		klog.V(4).Infof("[%s] ControllerPublishVolume: validating whther fs is mounted for not in the cnsa env", loggerId)
 		isFsMounted = shortnameInSlice(scalenodeID, fsMount.NodesMounted)
 	} else {
+		klog.V(4).Infof("[%s] ControllerPublishVolume: validating whther fs is mounted for not in the standalone csi env", loggerId)
 		isFsMounted = utils.StringInSlice(scalenodeID, fsMount.NodesMounted)
 	}
 	klog.Infof("[%s] ControllerPublishVolume : Volume Source FS is mounted on %v", loggerId, fsMount.NodesMounted)
