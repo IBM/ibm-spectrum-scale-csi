@@ -196,17 +196,17 @@ spec:
         - name: CSI_DRIVER_IMAGE
           value: quay.io/ibm-spectrum-scale-dev/ibm-spectrum-scale-csi-driver:dev
         - name: CSI_SNAPSHOTTER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:da081c27e8a6d91f36042c1942362d0515ced8d06e18c11b8f893e58c4d6d797
+          value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:42af0929bcd60a43499825c078a60ff0534e08af8fbeb283aa391be40feb9f3e
         - name: CSI_ATTACHER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-attacher@sha256:b74b05b39501565022883fc128002b4cb857a7bb6c858606bcb3fdedba0b0b80
+          value: registry.k8s.io/sig-storage/csi-attacher@sha256:b9dc9a714a484ccdeeb6f86d88d4db9b7a5ecfc5a55da6db3a60bb3fa33c278a
         - name: CSI_PROVISIONER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:6be9f63ca4caa6c46aae55aa372500949d8a21473d72f819da1f746076b32d4e
+          value: registry.k8s.io/sig-storage/csi-provisioner@sha256:a4b0b1a37605b7b04a293e136edf7006ec1786a8eb3f4e5a945f81d667dcc371
         - name: CSI_LIVENESSPROBE_IMAGE
-          value: registry.k8s.io/sig-storage/livenessprobe@sha256:c4cc074199c045dd73ab85f28897e2a32f4d6f38ffdba4f3b13b8007ccbd3570
+          value: registry.k8s.io/sig-storage/livenessprobe@sha256:06da0d5b8908072f2e4522692aee8dc119fba7247a9658497e1153992cd777e9
         - name: CSI_NODE_REGISTRAR_IMAGE
-          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:ab482308a4921e28a6df09a16ab99a457e9af9641ff44fb1be1a690d07ce8b70
+          value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f9de845b170155199f2a2a3f9531cf13d78e31235e9db6b6582a8b0db0a50dad
         - name: CSI_RESIZER_IMAGE
-          value: registry.k8s.io/sig-storage/csi-resizer@sha256:589e525cddef6d768e68da1f0bc9ffd0a24bf3add3dd010648eb7189976fde79
+          value: registry.k8s.io/sig-storage/csi-resizer@sha256:ea1d25e23479000c7e8eeb92d827df66258df4e482ca054c5e7ce3fc0f5c41a5
         resources:
           limits:
             cpu: 600m
