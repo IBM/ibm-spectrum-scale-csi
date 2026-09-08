@@ -35,6 +35,7 @@ type moduleKey string
 
 const loggerId loggerKey = "logger_id"
 const moduleName moduleKey = "module_name"
+const statfsTimeout = 10 * time.Second
 
 type LoggerLevel int
 
@@ -48,6 +49,11 @@ const (
 	ERROR
 	FATAL
 )
+
+type statfsResult struct {
+	stat unix.Statfs_t
+	err  error
+}
 
 func (level LoggerLevel) String() string {
 	switch level {
@@ -218,11 +224,11 @@ func FsStatInfo(path string) (int64, int64, int64, int64, int64, int64, error) {
 	if err != nil {
 		return 0, 0, 0, 0, 0, 0, err
 	}
-	available := int64(statfs.Bavail) * int64(statfs.Bsize) // #nosec G115 -- false positive
-	capacity := int64(statfs.Blocks) * int64(statfs.Bsize) // #nosec G115 -- false positive
+	available := int64(statfs.Bavail) * int64(statfs.Bsize)                     // #nosec G115 -- false positive
+	capacity := int64(statfs.Blocks) * int64(statfs.Bsize)                      // #nosec G115 -- false positive
 	usage := (int64(statfs.Blocks) - int64(statfs.Bfree)) * int64(statfs.Bsize) // #nosec G115 -- false positive
-	inodes := int64(statfs.Files) // #nosec G115 -- false positive
-	inodesFree := int64(statfs.Ffree) // #nosec G115 -- false positive
+	inodes := int64(statfs.Files)                                               // #nosec G115 -- false positive
+	inodesFree := int64(statfs.Ffree)                                           // #nosec G115 -- false positive
 	inodesUsed := inodes - inodesFree
 
 	return available, capacity, usage, inodes, inodesFree, inodesUsed, nil
@@ -244,7 +250,6 @@ func GetExecutionTime() int64 {
 	return timeinMilliSec
 }
 
-
 func SetModuleName(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, moduleName, name)
 }
@@ -254,3 +259,27 @@ func GetModuleName(ctx context.Context) string {
 	return moduleName
 }
 
+// StatfsWithTimeout performs a unix.Statfs call in a background goroutine and
+// returns the result, honouring both a fixed timeout and the caller's context.
+// This prevents a hung or unresponsive remote filesystem from blocking the
+// calling goroutine indefinitely.
+//
+// The background goroutine always completes eventually (the channel is
+// buffered) so there is no goroutine leak even when a timeout fires.
+func StatfsWithTimeout(ctx context.Context, path string) (unix.Statfs_t, error) {
+	ch := make(chan statfsResult, 1)
+	go func() {
+		var st unix.Statfs_t
+		err := unix.Statfs(path, &st)
+		ch <- statfsResult{stat: st, err: err}
+	}()
+
+	select {
+	case res := <-ch:
+		return res.stat, res.err
+	case <-time.After(statfsTimeout):
+		return unix.Statfs_t{}, fmt.Errorf("statfs %q: timed out after %s", path, statfsTimeout)
+	case <-ctx.Done():
+		return unix.Statfs_t{}, fmt.Errorf("statfs %q: %w", path, ctx.Err())
+	}
+}

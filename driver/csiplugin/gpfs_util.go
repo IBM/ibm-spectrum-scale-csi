@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -636,6 +637,39 @@ func numberInSlice(a int, list []int) bool {
 	return false
 }
 
+// validatePath performs validation on a path to ensure it is well-formed
+// and normalized. It ensures the path is absolute, clean, and properly formatted.
+func validatePath(path string) error {
+	if path == "" {
+		return status.Error(codes.InvalidArgument, "path cannot be empty")
+	}
+
+	// Path must be absolute
+	if !filepath.IsAbs(path) {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("path must be absolute: %s", path))
+	}
+
+	// Clean the path to normalize it
+	cleanPath := filepath.Clean(path)
+
+	// Verify the path is already in normalized form
+	if cleanPath != path {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("path is not normalized: %s", path))
+	}
+
+	// Reject paths containing parent directory references
+	if strings.Contains(path, "..") {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("path contains parent directory reference: %s", path))
+	}
+
+	// Reject paths with redundant separators
+	if strings.Contains(path[1:], "//") {
+		return status.Error(codes.InvalidArgument, fmt.Sprintf("path contains redundant separators: %s", path))
+	}
+
+	return nil
+}
+
 func getVolIDMembers(vID string) (scaleVolId, error) {
 	splitVid := strings.Split(vID, ";")
 	var vIdMem scaleVolId
@@ -650,7 +684,13 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
-		vIdMem.Path = slnkSplit[1]
+		extractedPath := slnkSplit[1]
+		// Validate path format
+		if err := validatePath(extractedPath); err != nil {
+			return scaleVolId{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid path in Volume Id [%v]: %v", vID, err))
+		}
+
+		vIdMem.Path = extractedPath
 		vIdMem.IsFilesetBased = false
 		return vIdMem, nil
 	}
@@ -677,7 +717,13 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
-		vIdMem.Path = slnkSplit[1]
+		extractedPath := slnkSplit[1]
+		// Validate path format
+		if err := validatePath(extractedPath); err != nil {
+			return scaleVolId{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid path in Volume Id [%v]: %v", vID, err))
+		}
+
+		vIdMem.Path = extractedPath
 		vIdMem.IsFilesetBased = true
 		return vIdMem, nil
 	}
@@ -701,7 +747,13 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		} else {
 			vIdMem.IsFilesetBased = true
 		}
-		vIdMem.Path = splitVid[6]
+		extractedPath := splitVid[6]
+		// Validate path format
+		if err := validatePath(extractedPath); err != nil {
+			return scaleVolId{}, status.Error(codes.InvalidArgument, fmt.Sprintf("Invalid path in Volume Id [%v]: %v", vID, err))
+		}
+
+		vIdMem.Path = extractedPath
 		return vIdMem, nil
 
 	}

@@ -27,15 +27,16 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/connectors"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/settings"
 	"github.com/IBM/ibm-spectrum-scale-csi/driver/csiplugin/utils"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/klog/v2"
 )
 
@@ -63,8 +64,9 @@ const (
 	fsetLinkNotFoundErrCode = "EFSSG0449C"
 	fsetLinkNotFoundErrMsg  = "is not linked"
 
-	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
-	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
+	pvcNameKey            = "csi.storage.k8s.io/pvc/name"
+	pvcNamespaceKey       = "csi.storage.k8s.io/pvc/namespace"
+	StaticPVInDynamicMode = "STATICPV_DYNAMIC_MODE"
 )
 
 type ScaleControllerServer struct {
@@ -943,7 +945,13 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	filesetName := ""
+	StaticPVInDynamicModeEnabled := os.Getenv(StaticPVInDynamicMode)
+	klog.Infof("[%s] StaticPVInDynamicMode env variable is set to [%s]", loggerId, StaticPVInDynamicModeEnabled)
 	if scaleVol.IsStaticPVBased {
+		if strings.ToUpper(StaticPVInDynamicModeEnabled) == "DISABLED" {
+			klog.Errorf("[%s] Static PV creation is disabled in dynamic provisioning, please enable it by setting environment variable VAR_DRIVER_STATICPV_DYNAMIC_MODE=enabled", loggerId)
+			return nil, status.Error(codes.InvalidArgument, "Static PV creation is disabled in dynamic provisioning, please enable it by setting environment variable VAR_DRIVER_STATICPV_DYNAMIC_MODE=enabled")
+		}
 		filesetName = req.GetParameters()["csi.storage.k8s.io/pvc/name"]
 		klog.Infof("[%s] Requested pvc is a static volume", loggerId)
 	}

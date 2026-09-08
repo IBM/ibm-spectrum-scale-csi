@@ -2451,6 +2451,8 @@ func (r *CSIScaleOperatorReconciler) parseConfigMap(instance *csiscaleoperator.C
 				validateCPULimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
 			case config.SidecarMemoryLimits:
 				validateMemoryLimitsValue(keyUpper, value, validEnvMap, invalidEnvValueMap)
+			case config.EnvStaticPVDynamicModeKeyPrefixed:
+				validateEnvVarValue(config.EnvStaticPVDynamicModeValues[:], keyUpper, value, validEnvMap, invalidEnvValueMap)
 			}
 		} else {
 			invalidEnvKeys = append(invalidEnvKeys, key)
@@ -2688,6 +2690,10 @@ func setDefaultDriverEnvValues(envMap map[string]string) {
 	if _, ok := envMap[config.EnvPrimaryFilesystemKey]; !ok {
 		logger.Info("PRIMARY_FILESYSTEM is empty or incorrect.", "Defaulting PRIMARY_FILESYSTEM to", config.EnvPrimaryFilesystemDefaultValue)
 		envMap[config.EnvPrimaryFilesystemKey] = config.EnvPrimaryFilesystemDefaultValue
+	}
+	if _, ok := envMap[config.EnvStaticPVDynamicModeKey]; !ok {
+		logger.Info("StaticPV in Dynamic Mode is empty or incorrect.", "Defaulting StaticPV in Dynamic Mode to", config.EnvStaticPVDynamicModeDefaultValue)
+		envMap[config.EnvStaticPVDynamicModeKey] = config.EnvStaticPVDynamicModeDefaultValue
 	}
 }
 
