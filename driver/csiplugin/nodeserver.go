@@ -162,8 +162,14 @@ func isGPFS(ctx context.Context, path string) (bool, error) {
 		klog.Errorf("[%s] isGPFS: statfs %q failed: %v", loggerId, path, err)
 		return false, err
 	}
-	klog.V(4).Infof("[%s] isGPFS: fsType 0x%x for path %s", loggerId, uint64(st.Type), path)
+
+	if st.Type < 0 {
+		return false, fmt.Errorf("isGPFS: statfs %q returned negative filesystem type: %d", path, st.Type)
+	}
+
+	klog.V(4).Infof("[%s] isGPFS: fsType 0x%x for path %s", loggerId, uint64(st.Type), path) //#nosec G115
 	// GPFS magic number: 0x47504653 ("GPFS")
+	//#nosec G115 safe and required conversion
 	return uint64(st.Type) == gpfsmagicNumber, nil
 }
 
