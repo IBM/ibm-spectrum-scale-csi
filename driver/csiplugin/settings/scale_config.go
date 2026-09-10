@@ -159,6 +159,7 @@ func HandleSecretsAndCerts(ctx context.Context, cmap *ScaleSettingsConfigMap) er
 				}
 
 				// Read file contents
+				// #nosec G122 - Safe to read as path has RBAC and could be modified by only operator SA and mounted as ReadOnly volume inside the container
 				data, err := os.ReadFile(path) // #nosec G304 Valid Path is generated internally
 				if err != nil {
 					return fmt.Errorf("failed to read the IBM Storage Scale CA certificate directory:%s - error: %v", path, err)

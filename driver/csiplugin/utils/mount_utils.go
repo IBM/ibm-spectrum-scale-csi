@@ -47,6 +47,7 @@ import (
 func BindMount(ctx context.Context, hostSource, statfsSource, target string) error {
 	loggerId := GetLoggerId(ctx)
 	// First pass: establish the bind mount using the bare host path.
+	// #nosec G204 - Using exec.Command to call mount is safe here because the arguments are controlled and not user input.
 	if out, err := exec.Command("mount", "--bind", hostSource, target).CombinedOutput(); err != nil {
 		klog.Errorf("[%s] mount --bind source [%s] target [%s] failed, Error: %v, Output: %s", loggerId, hostSource, target, err, string(out))
 		return fmt.Errorf("mount --bind source [%s] target [%s] failed, Error: %v, Output: %s", hostSource, target, err, string(out))
@@ -80,6 +81,7 @@ func BindMount(ctx context.Context, hostSource, statfsSource, target string) err
 
 	// Second pass: remount with inherited flags.
 	opts := strings.Join(mountOpts, ",")
+	// #nosec G204 - Using exec.Command to call mount is safe here because the arguments are controlled and not user input.
 	if out, err := exec.Command("mount", "-o", opts, hostSource, target).CombinedOutput(); err != nil {
 		klog.Errorf("[%s] mount -o %s %s %s failed: %v, Output: %s", loggerId, opts, hostSource, target, err, string(out))
 		return fmt.Errorf("mount -o %s %s %s failed: %v, Output: %s", opts, hostSource, target, err, string(out))
