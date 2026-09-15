@@ -1111,14 +1111,10 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	if err != nil {
 		return nil, err
 	}
+
 	assembledScaleversion, err := cs.assembledScaleVersion(ctx, scaleVol.Connector)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("IBM Storage Scale version check for permissions failed with error %s", err))
-	}
-	if isCGVolume {
-		if err := cs.checkCGSupport(assembledScaleversion); err != nil {
-			return nil, err
-		}
 	}
 
 	if scaleVol.VolumeType == cacheVolume {
@@ -1134,7 +1130,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	}
 
 	if isVolSource {
-		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, volFsInfo, assembledScaleversion)
+		err = cs.validateCloneRequest(ctx, scaleVol, &srcVolumeIDMembers, scaleVol, volFsInfo)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source volume validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -1144,7 +1140,7 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 	srcFileset := ""
 	srcSnapshot := ""
 	if isSnapSource {
-		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol, assembledScaleversion)
+		err = cs.validateSnapId(ctx, scaleVol, &snapIdMembers, scaleVol)
 		if err != nil {
 			klog.Errorf("[%s] volume:[%v] - Error in source snapshot validation [%v]", loggerId, volName, err)
 			return nil, err
@@ -1637,16 +1633,6 @@ func (cs *ScaleControllerServer) setScaleVolumeWithRemoteCluster(ctx context.Con
 
 func (cs *ScaleControllerServer) checkVolTierAndSetFilesystemPolicy(ctx context.Context, scaleVol *scaleVolume, volFsInfo connectors.FileSystem_v2, volName string) error {
 	loggerId := utils.GetLoggerId(ctx)
-	if err := cs.checkVolTierSupport(volFsInfo.Version); err != nil {
-		// TODO: Remove this secondary call to local gui when GUI refreshes remote cache immediately
-		tempFsInfo, err := scaleVol.Connector.GetFilesystemDetails(ctx, scaleVol.VolBackendFs)
-		if err != nil {
-			return err
-		}
-		if err := cs.checkVolTierSupport(tempFsInfo.Version); err != nil {
-			return err
-		}
-	}
 
 	if err := scaleVol.Connector.DoesTierExist(ctx, scaleVol.Tier, scaleVol.VolBackendFs); err != nil {
 		return err
@@ -2097,73 +2083,22 @@ func (cs *ScaleControllerServer) assembledScaleVersion(ctx context.Context, conn
 	if err != nil {
 		return assembledScaleVer, err
 	}
-	/* Assuming IBM Storage Scale version is in a format like 5.0.0-0_170818.165000 */
-	// "serverVersion" : "5.1.1.1-developer build",
+	// scale versions pattern will be as below
+	// V.R.M-F.E where V=version R=release M=modification level F=Fix Level and E=Efix level e.g. 5.2.3-3
+	// We are considering only the major version i.e V.R.M and ignoring the rest of the versioning information
 	splitScaleVer := strings.Split(scaleVersion, ".")
 	if len(splitScaleVer) < 3 {
 		return assembledScaleVer, status.Error(codes.Internal, fmt.Sprintf("invalid IBM Storage Scale version - %s", scaleVersion))
 	}
-	var splitMinorVer []string
-	if len(splitScaleVer) == 4 {
-		//dev build e.g. "5.1.5.0-developer build"
-		splitMinorVer = strings.Split(splitScaleVer[3], "-")
-		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitScaleVer[2] + splitMinorVer[0]
-	} else {
-		//GA build e.g. "5.1.5-0"
-		splitMinorVer = strings.Split(splitScaleVer[2], "-")
-		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitMinorVer[0] + splitMinorVer[1][0:1]
+
+	if len(splitScaleVer) >= 3 {
+		assembledScaleVer = splitScaleVer[0] + splitScaleVer[1] + splitScaleVer[2]
 	}
 	return assembledScaleVer, nil
 }
 
 func checkMinScaleVersionValid(assembledScaleVer string, version string) bool {
 	return assembledScaleVer >= version
-}
-
-func (cs *ScaleControllerServer) checkMinFsVersion(fsVersion string, version string) bool {
-	/* Assuming Filesystem version (fsVersion) in a format like 27.00 and version as 2700 */
-	assembledFsVer := strings.ReplaceAll(fsVersion, ".", "")
-
-	klog.Infof("fs version (%s) vs min required version (%s)", assembledFsVer, version)
-	return assembledFsVer >= version
-}
-
-func (cs *ScaleControllerServer) checkSnapshotSupport(assembledScaleversion string) error {
-	/* Verify IBM Storage Scale Version is not below 5.1.1-0 */
-	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5110")
-	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for snapshot support with CSI is 5.1.1-0")
-	}
-	return nil
-}
-
-func (cs *ScaleControllerServer) checkVolCloneSupport(assembledScaleversion string) error {
-	/* Verify IBM Storage Scale Version is not below 5.1.2-1 */
-	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5121")
-	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for volume cloning support with CSI is 5.1.2-1")
-	}
-	return nil
-}
-
-func (cs *ScaleControllerServer) checkVolTierSupport(version string) error {
-	/* Verify IBM Storage Scale Filesystem Version is not below 5.1.3-0 (27.00) */
-
-	versionCheck := cs.checkMinFsVersion(version, "2700")
-
-	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale Filesystem version for tiering support with CSI is 27.00 (5.1.3-0)")
-	}
-	return nil
-}
-
-func (cs *ScaleControllerServer) checkCGSupport(assembledScaleversion string) error {
-	/* Verify IBM Storage Scale Version is not below 5.1.3-0 */
-	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5130")
-	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for consistency group support with CSI is 5.1.3-0")
-	}
-	return nil
 }
 
 func (cs *ScaleControllerServer) checkCacheVolumeSupport(assembledScaleversion string) error {
@@ -2184,21 +2119,7 @@ func (cs *ScaleControllerServer) checkVMDiskCloningSupport(assembledScaleversion
 	return nil
 }
 
-/*func (cs *ScaleControllerServer) checkGuiHASupport(ctx context.Context, conn connectors.SpectrumScaleConnector) error {
-	  // Verify IBM Storage Scale Version is not below 5.1.5-0
-
-	  versionCheck, err := cs.checkMinScaleVersion(ctx, conn, "5150")
-	  if err != nil {
-		  return err
-	  }
-
-	  if !versionCheck {
-		  return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for GUI HA support with CSI is 5.1.5-0")
-	  }
-	  return nil
-  }*/
-
-func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *scaleVolume, sourcesnapshot *scaleSnapId, newvolume *scaleVolume) error {
 
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateSnapId [%v]", loggerId, sourcesnapshot)
@@ -2231,12 +2152,6 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 	// if newvolume.StorageClassType == STORAGECLASS_CLASSIC && newvolume.FilesetType == dependentFileset {
 	// 	return status.Error(codes.Unimplemented, "creating dependent fileset based volume from snapshot is not supported")
 	// }
-
-	/* Check if IBM Storage Scale supports Snapshot */
-	chkSnapshotErr := cs.checkSnapshotSupport(assembledScaleversion)
-	if chkSnapshotErr != nil {
-		return chkSnapshotErr
-	}
 
 	if newvolume.NodeClass != "" {
 		isValidNodeclass, err := conn.IsValidNodeclass(ctx, newvolume.NodeClass)
@@ -2442,19 +2357,13 @@ func (cs *ScaleControllerServer) createSnapshotTrackingDir(ctx context.Context, 
 	return nil
 }
 
-func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scaleVol *scaleVolume, sourcevolume *scaleVolId, newvolume *scaleVolume, volFsInfo connectors.FileSystem_v2, assembledScaleversion string) error {
+func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scaleVol *scaleVolume, sourcevolume *scaleVolId, newvolume *scaleVolume, volFsInfo connectors.FileSystem_v2) error {
 	loggerId := utils.GetLoggerId(ctx)
 	klog.Infof("[%s] validateVolId [%v]", loggerId, sourcevolume)
 
 	conn, primaryClusterID, err := cs.getConnFromClusterID(ctx, sourcevolume.ClusterId, sourcevolume.FsUUID)
 	if err != nil {
 		return err
-	}
-
-	// This is kind of snapshot restore
-	chkVolCloneErr := cs.checkVolCloneSupport(assembledScaleversion)
-	if chkVolCloneErr != nil {
-		return chkVolCloneErr
 	}
 
 	// Block cloning for cache volume
@@ -3611,16 +3520,6 @@ func (cs *ScaleControllerServer) CreateSnapshot(newctx context.Context, req *csi
 	conn, primaryClusterID, err := cs.getConnFromClusterID(ctx, volumeIDMembers.ClusterId, volumeIDMembers.FsUUID)
 	if err != nil {
 		return nil, err
-	}
-
-	assembledScaleversion, err := cs.assembledScaleVersion(ctx, conn)
-	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("the  IBM Storage Scale version check for permissions failed with error %s", err))
-	}
-	/* Check if IBM Storage Scale supports Snapshot */
-	chkSnapshotErr := cs.checkSnapshotSupport(assembledScaleversion)
-	if chkSnapshotErr != nil {
-		return nil, chkSnapshotErr
 	}
 
 	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
