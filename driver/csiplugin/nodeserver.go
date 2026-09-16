@@ -133,7 +133,7 @@ func checkGpfsType(ctx context.Context, path string) error {
 	// gpfsPaths entries are kernel-visible mount roots (e.g. /var/mnt/remote-sample).
 	// kernelPath is always a deep volume path under one of those roots.
 	for _, gpfsPath := range gpfsPaths {
-		if !strings.HasPrefix(kernelPath, gpfsPath+"/") {
+		if kernelPath != gpfsPath && !strings.HasPrefix(kernelPath, gpfsPath+"/") {
 			klog.V(4).Infof("[%s] checkGpfsType: kernelPath [%s] is not under mount [%s], skipping", loggerId, kernelPath, gpfsPath)
 			continue
 		}
