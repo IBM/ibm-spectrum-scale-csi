@@ -21,24 +21,22 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOFIPS140=latest GOARCH=$TARGETARCH go build -a
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi10-minimal:10.1-1772441549
-ARG version=3.2.0
+ARG csi_version=3.2.0
 ARG commit
 ARG build_date
 
-ENV version $version
 ENV commit $commit
 ENV build_date $build_date
 
 LABEL name="IBM Storage Scale CSI driver" \
       vendor="ibm" \
-      version=$version \
-      release="1" \
       summary="An implementation of CSI Plugin for the IBM Storage Scale product." \
       description="An implementation of CSI Plugin for the IBM Storage Scale product." \
       maintainer="IBM Storage Scale" \
       build-date=$build_date \
       vcs-ref=$commit \
       vcs-type="git" \
+      org.opencontainers.image.version=$csi_version \
       url="https://www.ibm.com/docs/en/spectrum-scale-csi"
 
 COPY licenses /licenses
