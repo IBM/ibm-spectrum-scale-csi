@@ -370,8 +370,8 @@ func (cs *ScaleControllerServer) createFilesetBasedVol(ctx context.Context, scVo
 	if isCGVolume {
 		// For new storageClass first create independent fileset if not present
 		// Check if we're in DR mode (CNSADeployment presence)
-		_, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
-		if cnsaPresence {
+		cnsaVal, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
+		if cnsaPresence && cnsaVal == "True" {
 			isMDREnabledOnFS := cs.isMDREnabledOnFS(ctx, scVol.VolBackendFs)
 			klog.V(4).Infof("[%s] isMDREnabledOnFS for MDR is : %t", loggerId, isMDREnabledOnFS)
 
@@ -750,10 +750,10 @@ func (cs *ScaleControllerServer) getConnFromClusterID(ctx context.Context, cid s
 	}
 	klog.V(4).Infof("[%s] cluster ID %v not found in connmap, checking environment variables", loggerId, cid)
 	// Check if we're in DR mode (CNSADeployment presence)
-	_, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
+	cnsaVal, cnsaPresence := os.LookupEnv(ENVClusterCNSAPresenceCheck)
 
 	// DR fallback: If cluster ID not found and fsUUID is provided, check primary cluster
-	if fsUUID != "" && cnsaPresence {
+	if fsUUID != "" && cnsaPresence && cnsaVal == "True" {
 		klog.V(4).Infof("[%s] cluster ID %v not found, attempting DR fallback with filesystem UUID %v", loggerId, cid, fsUUID)
 
 		primaryConn, primaryClusterID, err := cs.getPrimaryClusterDetails(ctx)
