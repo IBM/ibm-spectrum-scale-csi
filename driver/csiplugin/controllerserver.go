@@ -4442,24 +4442,29 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 	return cName, true, nil
 }
 
+// findActualFsWithFsUUID resolves a filesystem UUID to its actual/remote filesystem name
+// by querying the primary cluster connector.
 func (cs *ScaleControllerServer) findActualFsWithFsUUID(ctx context.Context, fsUUID string) (string, error) {
 	loggerId := utils.GetLoggerId(ctx)
-	klog.Infof("[%s] findActualFsWithFsUUID: fsUUID:[%v]", loggerId, fsUUID)
-	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
-	if !isprimaryConnPresent {
+	klog.V(4).Infof("[%s] findActualFsWithFsUUID: fsUUID:[%v]", loggerId, fsUUID)
+
+	primaryConn, isPrimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isPrimaryConnPresent {
 		klog.Errorf("[%s] findActualFsWithFsUUID - unable to get connector for primary cluster", loggerId)
 		return "", status.Error(codes.Internal, "findActualFsWithFsUUID - unable to find primary cluster details in custom resource")
 	}
 
 	filesystemName, err := primaryConn.GetFilesystemName(ctx, fsUUID)
 	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("findActualFsWithFsUUID - Unable to get filesystem Name for fsUUID [%v]. Error [%v]", fsUUID, err))
+		klog.Errorf("[%s] findActualFsWithFsUUID - unable to get filesystem name for fsUUID [%v]: %v", loggerId, fsUUID, err)
+		return "", status.Error(codes.Internal, fmt.Sprintf("findActualFsWithFsUUID - unable to get filesystem name for fsUUID [%v]: %v", fsUUID, err))
 	}
 
 	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
 	if err != nil {
-		return "", status.Error(codes.Internal, fmt.Sprintf("findActualFsWithFsUUID - unable to get mount info for FS [%v] in primary cluster", filesystemName))
+		klog.Errorf("[%s] findActualFsWithFsUUID - unable to get mount info for filesystem [%v] in primary cluster: %v", loggerId, filesystemName, err)
+		return "", status.Error(codes.Internal, fmt.Sprintf("findActualFsWithFsUUID - unable to get mount info for filesystem [%v] in primary cluster: %v", filesystemName, err))
 	}
-	fsName := getRemoteFsName(mountInfo.RemoteDeviceName)
-	return fsName, nil
+
+	return getRemoteFsName(mountInfo.RemoteDeviceName), nil
 }
