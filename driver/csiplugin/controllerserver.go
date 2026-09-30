@@ -1764,10 +1764,12 @@ func (cs *ScaleControllerServer) copySnapContent(ctx context.Context, scVol *sca
 	//	return err
 	//}
 
-	targetFsName, err := conn.GetFilesystemName(ctx, fsDetails.UUID)
+	targetFsName, err := cs.findActualFsWithFsUUID(ctx, fsDetails.UUID)
 	if err != nil {
-		return err
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, fsDetails.UUID, snapId.ClusterId, err)
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", fsDetails.UUID, snapId.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] copySnapContent with fsName [%s]", loggerId, targetFsName)
 
 	targetFsDetails, err := conn.GetFilesystemDetails(ctx, targetFsName)
 	if err != nil {
@@ -1979,16 +1981,17 @@ func (cs *ScaleControllerServer) copyVolumeContent(ctx context.Context, newvolum
 		return err
 	}
 
-	targetFsName, err := conn.GetFilesystemName(ctx, fsDetails.UUID)
+	targetFsName, err := cs.findActualFsWithFsUUID(ctx, fsDetails.UUID)
 	if err != nil {
-		return err
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, fsDetails.UUID, sourcevolume.ClusterId, err)
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", fsDetails.UUID, sourcevolume.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] copyVolumeContent with fsName [%s]", loggerId, targetFsName)
 
 	targetFsDetails, err := conn.GetFilesystemDetails(ctx, targetFsName)
 	if err != nil {
 		return err
 	}
-
 	fsMntPt := targetFsDetails.Mount.MountPoint
 	targetPath = fmt.Sprintf("%s/%s", fsMntPt, targetPath)
 
@@ -2164,11 +2167,12 @@ func (cs *ScaleControllerServer) validateSnapId(ctx context.Context, scaleVol *s
 		}
 	}
 
-	sourcesnapshot.FsName, err = conn.GetFilesystemName(ctx, sourcesnapshot.FsUUID)
-
+	sourcesnapshot.FsName, err = cs.findActualFsWithFsUUID(ctx, sourcesnapshot.FsUUID)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err)
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", sourcesnapshot.FsUUID, sourcesnapshot.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] validateSnapId with fsName [%s]", loggerId, sourcesnapshot.FsName)
 
 	filesetToCheck := sourcesnapshot.FsetName
 	if sourcesnapshot.StorageClassType == STORAGECLASS_ADVANCED {
@@ -2397,10 +2401,12 @@ func (cs *ScaleControllerServer) validateCloneRequest(ctx context.Context, scale
 		}
 	}
 
-	sourcevolume.FsName, err = conn.GetFilesystemName(ctx, sourcevolume.FsUUID)
+	sourcevolume.FsName, err = cs.findActualFsWithFsUUID(ctx, sourcevolume.FsUUID)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", sourcevolume.FsUUID, sourcevolume.ClusterId, err))
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, sourcevolume.FsUUID, sourcevolume.ClusterId, err)
+		return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", sourcevolume.FsUUID, sourcevolume.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] validateCloneRequest with fsName [%s]", loggerId, sourcevolume.FsName)
 
 	sourceFsDetails, err := conn.GetFilesystemDetails(ctx, sourcevolume.FsName)
 	if err != nil {
@@ -2484,10 +2490,14 @@ func (cs *ScaleControllerServer) isSourceVolORSnapSourceVolStatic(ctx context.Co
 		if err != nil {
 			return err
 		}
-		fsName, err := conn.GetFilesystemName(ctx, fsUUID)
+
+		fsName, err := cs.findActualFsWithFsUUID(ctx, fsUUID)
 		if err != nil {
-			return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", fsUUID, clusterID, err))
+			klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, fsUUID, clusterID, err)
+			return status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", fsUUID, clusterID, err))
 		}
+		klog.V(4).Infof("[%s] isSourceVolORSnapSourceVolStatic with fsName [%s]", loggerId, fsName)
+
 		// additional check to determine source pv or sourcesnap as staticPV
 		filesetInfo, err := conn.ListFileset(ctx, fsName, fsetName)
 		if err != nil {
@@ -2679,11 +2689,12 @@ func (cs *ScaleControllerServer) ControllerModifyVolume(ctx context.Context, req
 		return nil, err
 	}
 
-	filesystemName, err := conn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
+	filesystemName, err := cs.findActualFsWithFsUUID(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] ControllerModifyVolume with fsName [%s]", loggerId, filesystemName)
 
 	filesetName := volumeIDMembers.FsetName
 
@@ -2791,7 +2802,7 @@ func (cs *ScaleControllerServer) DeleteVolume(newctx context.Context, req *csi.D
 	from Primary cluster */
 	FilesystemName, err := primaryConn.GetFilesystemName(ctx, volumeIdMembers.FsUUID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for Id [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", volumeIdMembers.FsUUID, volumeIdMembers.ClusterId, err))
 	}
 
 	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, FilesystemName)
@@ -3966,10 +3977,12 @@ func (cs *ScaleControllerServer) DeleteSnapshot(newctx context.Context, req *csi
 		return nil, err
 	}
 
-	filesystemName, err := conn.GetFilesystemName(ctx, snapIdMembers.FsUUID)
+	filesystemName, err := cs.findActualFsWithFsUUID(ctx, snapIdMembers.FsUUID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("DeleteSnapshot - unable to get filesystem Name for Filesystem UID [%v] and clusterId [%v]. Error [%v]", snapIdMembers.FsUUID, snapIdMembers.ClusterId, err))
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, snapIdMembers.FsUUID, snapIdMembers.ClusterId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", snapIdMembers.FsUUID, snapIdMembers.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] DeleteSnapshot with fsName [%s]", loggerId, filesystemName)
 
 	filesetExist := false
 	if snapIdMembers.StorageClassType == STORAGECLASS_ADVANCED {
@@ -4220,11 +4233,12 @@ func (cs *ScaleControllerServer) ControllerExpandVolume(ctx context.Context, req
 		return nil, err
 	}
 
-	filesystemName, err := conn.GetFilesystemName(ctx, volumeIDMembers.FsUUID)
+	filesystemName, err := cs.findActualFsWithFsUUID(ctx, volumeIDMembers.FsUUID)
 	if err != nil {
-		klog.Errorf("[%s] ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
-		return nil, status.Error(codes.Internal, fmt.Sprintf("ControllerExpandVolume - unable to get filesystem Name for Filesystem Uid [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
+		klog.Errorf("[%s] unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", loggerId, volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to get filesystem Name for FsUUID [%v] and clusterId [%v]. Error [%v]", volumeIDMembers.FsUUID, volumeIDMembers.ClusterId, err))
 	}
+	klog.V(4).Infof("[%s] ControllerExpandVolume with fsName [%s]", loggerId, filesystemName)
 
 	filesetName := volumeIDMembers.FsetName
 
@@ -4426,4 +4440,26 @@ func (cs *ScaleControllerServer) updateClusterMap(ctx context.Context, cID strin
 	cs.Driver.clusterMap.Store(ClusterID{cID}, ClusterDetails{cID, cName, time.Now(), 24})
 	klog.V(4).Infof("[%s] ClusterMap updated: [%s : %s]", loggerId, cID, cName)
 	return cName, true, nil
+}
+
+func (cs *ScaleControllerServer) findActualFsWithFsUUID(ctx context.Context, fsUUID string) (string, error) {
+	loggerId := utils.GetLoggerId(ctx)
+	klog.Infof("[%s] findActualFsWithFsUUID: fsUUID:[%v]", loggerId, fsUUID)
+	primaryConn, isprimaryConnPresent := cs.Driver.connmap["primary"]
+	if !isprimaryConnPresent {
+		klog.Errorf("[%s] findActualFsWithFsUUID - unable to get connector for primary cluster", loggerId)
+		return "", status.Error(codes.Internal, "findActualFsWithFsUUID - unable to find primary cluster details in custom resource")
+	}
+
+	filesystemName, err := primaryConn.GetFilesystemName(ctx, fsUUID)
+	if err != nil {
+		return "", status.Error(codes.Internal, fmt.Sprintf("findActualFsWithFsUUID - Unable to get filesystem Name for fsUUID [%v]. Error [%v]", fsUUID, err))
+	}
+
+	mountInfo, err := primaryConn.GetFilesystemMountDetails(ctx, filesystemName)
+	if err != nil {
+		return "", status.Error(codes.Internal, fmt.Sprintf("findActualFsWithFsUUID - unable to get mount info for FS [%v] in primary cluster", filesystemName))
+	}
+	fsName := getRemoteFsName(mountInfo.RemoteDeviceName)
+	return fsName, nil
 }
