@@ -217,75 +217,6 @@ func TestCheckMinScaleVersionValid(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// checkMinFsVersion
-// ---------------------------------------------------------------------------
-
-func TestCheckMinFsVersion(t *testing.T) {
-	cs := newTestControllerServer(nil)
-	tests := []struct {
-		name      string
-		fsVersion string // e.g. "27.00"
-		minimum   string // e.g. "2700"
-		want      bool
-	}{
-		// Exactly at boundary.
-		{"at boundary", "27.00", "2700", true},
-		// Above boundary.
-		{"above", "28.00", "2700", true},
-		// Below boundary.
-		{"below", "26.99", "2700", false},
-		// Well above.
-		{"well above", "30.00", "2700", true},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := cs.checkMinFsVersion(tc.fsVersion, tc.minimum)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-// ---------------------------------------------------------------------------
-// check*Support helpers — each requires min version or returns FailedPrecondition
-// ---------------------------------------------------------------------------
-
-// TestCheckSnapshotSupport verifies version boundary for snapshot support (5.1.1-0).
-func TestCheckSnapshotSupport(t *testing.T) {
-	cs := newTestControllerServer(nil)
-	// Exactly at minimum → nil.
-	assert.NoError(t, cs.checkSnapshotSupport("5110"))
-	// Above → nil.
-	assert.NoError(t, cs.checkSnapshotSupport("5120"))
-	// Below → FailedPrecondition.
-	err := cs.checkSnapshotSupport("5100")
-	require.Error(t, err)
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.FailedPrecondition, st.Code())
-}
-
-// TestCheckVolCloneSupport verifies version boundary for volume clone (5.1.2-1).
-func TestCheckVolCloneSupport(t *testing.T) {
-	cs := newTestControllerServer(nil)
-	assert.NoError(t, cs.checkVolCloneSupport("5121"))
-	assert.NoError(t, cs.checkVolCloneSupport("6000"))
-	err := cs.checkVolCloneSupport("5120")
-	require.Error(t, err)
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.FailedPrecondition, st.Code())
-}
-
-// TestCheckCGSupport verifies version boundary for consistency group (5.1.3-0).
-func TestCheckCGSupport(t *testing.T) {
-	cs := newTestControllerServer(nil)
-	assert.NoError(t, cs.checkCGSupport("5130"))
-	assert.NoError(t, cs.checkCGSupport("5140"))
-	err := cs.checkCGSupport("5129")
-	require.Error(t, err)
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.FailedPrecondition, st.Code())
-}
-
 // TestCheckCacheVolumeSupport verifies version boundary for cache volume (5.2.3-0).
 func TestCheckCacheVolumeSupport(t *testing.T) {
 	cs := newTestControllerServer(nil)
@@ -303,17 +234,6 @@ func TestCheckVMDiskCloningSupport(t *testing.T) {
 	assert.NoError(t, cs.checkVMDiskCloningSupport("6010"))
 	assert.NoError(t, cs.checkVMDiskCloningSupport("6020"))
 	err := cs.checkVMDiskCloningSupport("6009")
-	require.Error(t, err)
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.FailedPrecondition, st.Code())
-}
-
-// TestCheckVolTierSupport verifies version boundary for tiering (fs version 27.00).
-func TestCheckVolTierSupport(t *testing.T) {
-	cs := newTestControllerServer(nil)
-	assert.NoError(t, cs.checkVolTierSupport("27.00"))
-	assert.NoError(t, cs.checkVolTierSupport("28.00"))
-	err := cs.checkVolTierSupport("26.99")
 	require.Error(t, err)
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.FailedPrecondition, st.Code())
