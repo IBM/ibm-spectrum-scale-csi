@@ -3,7 +3,7 @@
 # Multi-arch build for IBM Storage Scale CSI Driver
 # usage: docker buildx build -f build/multi-arch.Dockerfile --platform=linux/amd64 -t my_image_tag .
 
-FROM --platform=$BUILDPLATFORM preprod.icr.io/cp/scale-devops/plumbing/golang:1.26.5 AS builder
+FROM --platform=$BUILDPLATFORM preprod.icr.io/cp/scale-devops/plumbing/golang:1.27.2 AS builder
 WORKDIR /go/src/github.com/IBM/ibm-spectrum-scale-csi/driver/
 COPY ./go.mod .
 COPY ./go.sum .
@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -ldflags "-X 'ma
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi9-minimal:9.8-1785339117
-ARG version=2.14.9
+ARG version=2.14.10
 ARG commit
 ARG build_date
 
