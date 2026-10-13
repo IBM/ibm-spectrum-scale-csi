@@ -1239,13 +1239,6 @@ func (cs *ScaleControllerServer) CreateVolume(newctx context.Context, req *csi.C
 		return volResponse, nil
 	}
 
-	if scaleVol.VolPermissions != "" {
-		versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5112")
-		if !versionCheck {
-			return nil, status.Error(codes.Internal, "the minimum required IBM Storage Scale version for permissions support with CSI is 5.1.1-2")
-		}
-	}
-
 	/* Update driver map with new volume. Make sure to defer delete */
 
 	cs.Driver.reqmap[scaleVol.VolName] = int64(scaleVol.VolSize) // #nosec G115 -- false positive
@@ -2105,19 +2098,19 @@ func checkMinScaleVersionValid(assembledScaleVer string, version string) bool {
 }
 
 func (cs *ScaleControllerServer) checkCacheVolumeSupport(assembledScaleversion string) error {
-	/* Verify IBM Storage Scale Version is not below 5.2.3-0 */
-	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "5230")
+	/* Verify IBM Storage Scale Version is not below 5.2.3 */
+	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "523")
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for cache volume support with CSI is 5.2.3-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for cache volume support with CSI is 5.2.3")
 	}
 	return nil
 }
 
 func (cs *ScaleControllerServer) checkVMDiskCloningSupport(assembledScaleversion string) error {
-	/* Verify IBM Storage Scale Version is not below 6.0.1-0 */
-	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "6010")
+	/* Verify IBM Storage Scale Version is not below 6.0.1 */
+	versionCheck := checkMinScaleVersionValid(assembledScaleversion, "601")
 	if !versionCheck {
-		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for VM disk cloning support with CSI is 6.0.1-0")
+		return status.Error(codes.FailedPrecondition, "the minimum required IBM Storage Scale version for VM disk cloning support with CSI is 6.0.1")
 	}
 	return nil
 }
