@@ -245,7 +245,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 	nodePlugin.LivenessProbe = ensureProbe(10, 30, 120, corev1.ProbeHandler{
 		HTTPGet: &corev1.HTTPGetAction{
 			Path:   "/healthz",
-			Port:   intstr.FromString(nodeContainerHealthPortName),
+			Port:   healthPort,
 			Scheme: corev1.URISchemeHTTP,
 		},
 	})
@@ -293,7 +293,7 @@ func (s *csiNodeSyncer) ensureContainersSpec(ctx context.Context, cpuLimits stri
 	livenessProbe.Ports = []corev1.ContainerPort{
 		{
 			Name:          nodeContainerHealthPortName,
-			ContainerPort: int32(nodeContainerHealthPortNumber),
+			ContainerPort: healthPort.IntVal,
 			Protocol:      corev1.ProtocolTCP,
 		},
 	}
