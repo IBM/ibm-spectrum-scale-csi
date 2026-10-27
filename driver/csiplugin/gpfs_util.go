@@ -733,7 +733,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
-		extractedPath := slnkSplit[1]
+		extractedPath := strings.TrimRight(slnkSplit[1], "/")
 
 		// Validate path format
 		if err := validatePath(extractedPath); err != nil {
@@ -767,7 +767,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		if len(slnkSplit) < 2 {
 			return scaleVolId{}, status.Error(codes.Internal, fmt.Sprintf("Invalid Volume Id : [%v]", vID))
 		}
-		extractedPath := slnkSplit[1]
+		extractedPath := strings.TrimRight(slnkSplit[1], "/")
 
 		// Validate path format
 		if err := validatePath(extractedPath); err != nil {
@@ -798,7 +798,7 @@ func getVolIDMembers(vID string) (scaleVolId, error) {
 		} else {
 			vIdMem.IsFilesetBased = true
 		}
-		extractedPath := splitVid[6]
+		extractedPath := strings.TrimRight(splitVid[6], "/")
 
 		// Validate path format
 		if err := validatePath(extractedPath); err != nil {
