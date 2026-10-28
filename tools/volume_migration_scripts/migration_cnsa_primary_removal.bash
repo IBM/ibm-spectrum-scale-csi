@@ -313,7 +313,13 @@ migrate_each() {
   fi
 
   echo "Deleting PVC and PV..."
-  kubectl delete pvc "$PVC_NAME" -n "$PVC_NAMESPACE"
+  kubectl delete pvc "$PVC_NAME" -n "$PVC_NAMESPACE" --wait=true --timeout=120s
+  if kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" >/dev/null 2>&1; then
+    echo "PVC $PVC_NAME still exists after deletion (may be stuck on finalizer). Skipping $PV"
+    fail_count=$(expr $fail_count + 1)
+    fail_list+=("$PVC_NAME|$PV")
+    return
+  fi
 
 # Remove external-attacher finalizer from PV if it exists
   finalizer="external-attacher/spectrumscale-csi-ibm-com"
@@ -347,7 +353,7 @@ spec:
   volumeMode: $VOLUME_MODE
 EOF
 
-  cat <<EOF | kubectl apply -f -
+  cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
