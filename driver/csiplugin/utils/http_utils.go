@@ -58,7 +58,7 @@ func UnmarshalResponse(ctx context.Context, r *http.Response, object interface{}
 }
 
 func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestType string, requestURL string, user string, password string, rawPayload interface{}) (*http.Response, error) {
-	klog.V(4).Infof("[%s] http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", GetLoggerId(ctx), requestType, requestURL, user)
+	klog.V(4).Infof("[%s] http_utils HttpExecuteUserAuth. type: %s, url: %s, user: %s", GetLoggerId(ctx), requestType, requestURL, MaskString(user))
 	if !strings.Contains(requestURL, BucketKeysURL) {
 		klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth. request payload: %v", GetLoggerId(ctx), rawPayload)
 	}
@@ -89,7 +89,6 @@ func HttpExecuteUserAuth(ctx context.Context, httpClient *http.Client, requestTy
 		requestToLog.Body = nil
 	}
 	klog.V(6).Infof("[%s] http_utils HttpExecuteUserAuth request: %+v", GetLoggerId(ctx), &requestToLog)
-
 
 	return httpClient.Do(request) // #nosec G704 - This is a user initiated request to the cluster and the URL is generated internally, so it is not vulnerable to SSRF attacks.
 }

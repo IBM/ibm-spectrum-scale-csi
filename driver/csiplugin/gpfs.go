@@ -316,6 +316,7 @@ func (driver *ScaleDriver) Run(ctx context.Context, endpoint string) {
 
 func (driver *ScaleDriver) PrintDriverInit(ctx context.Context) {
 	for i := range driver.cmap.Clusters {
+		driver.cmap.Clusters[i].MgmtUsername = utils.MaskString(driver.cmap.Clusters[i].MgmtUsername)
 		driver.cmap.Clusters[i].MgmtPassword = "*******"
 	}
 	klog.Infof("[%s] Scale CSI Driver Initialized: [%+v]", utils.GetLoggerId(ctx), driver)

@@ -1619,7 +1619,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 		}
 	}
 
-	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), user)
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), utils.MaskString(user))
 	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 
 	activeEndpointFound := false

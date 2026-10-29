@@ -75,6 +75,14 @@ func (level LoggerLevel) String() string {
 	}
 }
 
+// MaskString masks all but the first and last character of s, e.g. for logging usernames.
+func MaskString(s string) string {
+	if len(s) <= 2 {
+		return strings.Repeat("*", len(s))
+	}
+	return s[:1] + strings.Repeat("*", len(s)-2) + s[len(s)-1:]
+}
+
 func ReadFile(path string) ([]byte, error) {
 	klog.V(6).Infof("utils ReadFile. path: %s", path)
 

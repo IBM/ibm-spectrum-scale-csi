@@ -111,7 +111,7 @@ func handle(ctx context.Context) {
 
 func createPersistentStorage(persistentStoragePath string) error {
 	if _, err := os.Stat(persistentStoragePath); os.IsNotExist(err) {
-		if err := os.MkdirAll(persistentStoragePath, os.FileMode(0644)); err != nil {
+		if err := os.MkdirAll(persistentStoragePath, os.FileMode(0750)); err != nil {
 			return err
 		}
 	}
