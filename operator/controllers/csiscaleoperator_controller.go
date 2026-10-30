@@ -2195,8 +2195,7 @@ func (r *CSIScaleOperatorReconciler) newConnector(ctx context.Context, instance 
 		logger.Info("Created IBM Storage Scale connector with SSL mode for guiHost(s)")
 
 	} else {
-		//#nosec G402 InsecureSkipVerify was requested by user.
-		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec
+		tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec // #nosec G402 -- InsecureSkipVerify is intentional: user set SecureSslMode=false, explicitly opting out of certificate verification.
 		logger.Info("Created IBM Storage Scale connector without SSL mode for guiHost(s)")
 	}
 	logger.Info("Created IBM Storage Scale connector rest : ", " username ", username)

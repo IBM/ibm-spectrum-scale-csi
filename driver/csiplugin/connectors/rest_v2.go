@@ -1594,14 +1594,15 @@ func (s *SpectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName st
 }
 
 func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method string, responseObject interface{}, param interface{}) error {
-	var paramToLog SetBucketKeysRequest
+	var paramToLog string
 	if urlSuffix == utils.BucketKeysURL && method == "PUT" && param != nil {
-		paramToLog = param.(SetBucketKeysRequest)
-		paramToLog.AccessKey = ""
-		paramToLog.SecretKey = ""
+		bucketKeysParam := param.(SetBucketKeysRequest)
+		paramToLog = fmt.Sprintf("{bucket:%s server:%s accessKey:<redacted> secretKey:<redacted>}", bucketKeysParam.BucketName, bucketKeysParam.Server)
+	} else {
+		paramToLog = fmt.Sprintf("%v", param)
 	}
 
-	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, paramToLog)
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %s", utils.GetLoggerId(ctx), urlSuffix, method, paramToLog)
 	endpoint := s.Endpoint[s.EndPointIndex]
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	var user, password string
@@ -1619,7 +1620,7 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 		}
 	}
 
-	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), user)
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: setting user [%s] and password", utils.GetLoggerId(ctx), utils.MaskString(user))
 	response, err := utils.HttpExecuteUserAuth(ctx, s.HTTPclient, method, endpoint+urlSuffix, user, password, param)
 
 	activeEndpointFound := false
@@ -1645,30 +1646,30 @@ func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method st
 			}
 		} else {
 			klog.Errorf("[%s] rest_v2 doHTTP: Error in connecting to GUI endpoint %s: %v", utils.GetLoggerId(ctx), endpoint, err)
-			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, paramToLog, response))
+			return status.Error(codes.Internal, fmt.Sprintf("Error in Connecting to GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, utils.MaskString(user), paramToLog, response))
 		}
 	} else {
 		activeEndpointFound = true
 	}
 	if !activeEndpointFound {
 		klog.Errorf("[%s] rest_v2 doHTTP: Could not find any active GUI endpoint: %v", utils.GetLoggerId(ctx), err)
-		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, user, paramToLog, response))
+		return status.Error(codes.Internal, fmt.Sprintf("Could not find any active GUI endpoint: %s request %v%v, user: %v, param: %v, response: %v", method, endpoint, urlSuffix, utils.MaskString(user), paramToLog, response))
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, user, paramToLog, response))
+		return status.Error(codes.Unauthenticated, fmt.Sprintf("%v: Unauthorized %s request: %v%v, user: %v, param: %v, response: %v", http.StatusUnauthorized, method, endpoint, urlSuffix, utils.MaskString(user), paramToLog, response))
 	} else if response.StatusCode == http.StatusForbidden {
-		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, user, paramToLog, response))
+		return status.Error(codes.Internal, fmt.Sprintf("%v: Forbidden %s request %v%v, user: %v, param: %v, response: %v", http.StatusForbidden, method, endpoint, urlSuffix, utils.MaskString(user), paramToLog, response))
 	}
 
 	err = utils.UnmarshalResponse(ctx, response, responseObject)
 	if err != nil {
-		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, user, paramToLog, response, err))
+		return status.Error(codes.Internal, fmt.Sprintf("Response unmarshal failed: %s request %v%v, user: %v, param: %v, response: %v, error %v", method, endpoint, urlSuffix, utils.MaskString(user), paramToLog, response, err))
 	}
 
 	if !s.isStatusOK(response.StatusCode) {
-		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, user, paramToLog, response))
+		return status.Error(codes.Internal, fmt.Sprintf("remote call failed with response %v: %s request %v%v, user: %v, param: %v, response: %v", responseObject, method, endpoint, urlSuffix, utils.MaskString(user), paramToLog, response))
 	}
 
 	return nil
