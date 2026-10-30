@@ -1594,14 +1594,15 @@ func (s *SpectrumRestV2) ListFilesetQuota(ctx context.Context, filesystemName st
 }
 
 func (s *SpectrumRestV2) doHTTP(ctx context.Context, urlSuffix string, method string, responseObject interface{}, param interface{}) error {
-	var paramToLog SetBucketKeysRequest
+	var paramToLog string
 	if urlSuffix == utils.BucketKeysURL && method == "PUT" && param != nil {
-		paramToLog = param.(SetBucketKeysRequest)
-		paramToLog.AccessKey = ""
-		paramToLog.SecretKey = ""
+		bucketKeysParam := param.(SetBucketKeysRequest)
+		paramToLog = fmt.Sprintf("{bucket:%s server:%s accessKey:<redacted> secretKey:<redacted>}", bucketKeysParam.BucketName, bucketKeysParam.Server)
+	} else {
+		paramToLog = fmt.Sprintf("%v", param)
 	}
 
-	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %v", utils.GetLoggerId(ctx), urlSuffix, method, paramToLog)
+	klog.V(4).Infof("[%s] rest_v2 doHTTP: urlSuffix: %s, method: %s, param: %s", utils.GetLoggerId(ctx), urlSuffix, method, paramToLog)
 	endpoint := s.Endpoint[s.EndPointIndex]
 	klog.V(4).Infof("[%s] rest_v2 doHTTP: endpoint: %s", utils.GetLoggerId(ctx), endpoint)
 	var user, password string

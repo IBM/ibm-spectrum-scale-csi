@@ -200,19 +200,30 @@ func (s *csiControllerSyncer) SyncConfigMapFn(ctx context.Context) error {
 
 	out := s.obj.(*corev1.ConfigMap)
 	out.ObjectMeta = metav1.ObjectMeta{Name: config.CSIConfigMap, Namespace: s.driver.Namespace, Labels: s.driver.GetLabels()}
-	localScaleClusterData, specErr := json.Marshal(&s.driver.Spec.LocalScaleCluster)
+	combined := struct {
+		LocalScaleCluster json.RawMessage `json:"localScaleCluster"`
+		Clusters          json.RawMessage `json:"clusters"`
+	}{}
+
+	var specErr error
+	combined.LocalScaleCluster, specErr = json.Marshal(&s.driver.Spec.LocalScaleCluster)
 	if specErr != nil {
 		return specErr
 	}
 
-	clustersData, err := json.Marshal(&s.driver.Spec.Clusters)
+	var err error
+	combined.Clusters, err = json.Marshal(&s.driver.Spec.Clusters)
 	if err != nil {
 		return err
 	}
 
-	clustersDataWithKey := "{ \"localScaleCluster\": " + string(localScaleClusterData) + " , \"clusters\": " + string(clustersData) + " }"
+	clustersDataWithKey, err := json.Marshal(combined)
+	if err != nil {
+		return err
+	}
+
 	out.Data = map[string]string{
-		config.CSIConfigMap + ".json": clustersDataWithKey,
+		config.CSIConfigMap + ".json": string(clustersDataWithKey),
 	}
 
 	return nil
