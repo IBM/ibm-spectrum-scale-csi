@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOFIPS140=latest GOARCH=$TARGETARCH go build -a
 # RUN chmod +x,u+s _output/ibm-spectrum-scale-csi
 
 FROM registry.access.redhat.com/ubi10-minimal:10.2-1791444377
-ARG csi_version=3.2.0
+ARG csi_version=3.3.0
 ARG commit
 ARG build_date
 
