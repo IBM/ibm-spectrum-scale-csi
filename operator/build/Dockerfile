@@ -32,7 +32,7 @@ RUN CGO_ENABLED=0 GOFIPS140=latest go build -ldflags="-X 'main.gitCommit=${REVIS
 # Use UBI-Micro as minimal base image to package the manager binary
 FROM registry.access.redhat.com/ubi10/ubi-micro:1791441991
 WORKDIR /
-ARG version=3.2.0
+ARG version=3.3.0
 ARG commit
 ARG build_date
 
