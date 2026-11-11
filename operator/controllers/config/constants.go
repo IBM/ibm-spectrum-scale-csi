@@ -92,18 +92,18 @@ const (
 	//  Default images for containers
 
 	CSIDriverPluginImage = "quay.io/ibm-spectrum-scale/ibm-spectrum-scale-csi-driver:v2.14.10"
-	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.17.0
-	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:f9de845b170155199f2a2a3f9531cf13d78e31235e9db6b6582a8b0db0a50dad" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/livenessprobe:v2.19.0
-	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:06da0d5b8908072f2e4522692aee8dc119fba7247a9658497e1153992cd777e9" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-attacher:v4.12.0
-	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:b9dc9a714a484ccdeeb6f86d88d4db9b7a5ecfc5a55da6db3a60bb3fa33c278a" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-provisioner:v6.3.0
-	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:a4b0b1a37605b7b04a293e136edf7006ec1786a8eb3f4e5a945f81d667dcc371" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-snapshotter:v8.6.0
-	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:42af0929bcd60a43499825c078a60ff0534e08af8fbeb283aa391be40feb9f3e" // #nosec G101 false positive
-	//  registry.k8s.io/sig-storage/csi-resizer:v2.2.1
-	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:ea1d25e23479000c7e8eeb92d827df66258df4e482ca054c5e7ce3fc0f5c41a5" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.18.0
+	CSINodeDriverRegistrarImage = "registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:b7fefd08651f00ac4df1a196ed4c621c2451fbb899297fe9fad9e36c667af0c0" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/livenessprobe:v2.20.0
+	LivenessProbeImage = "registry.k8s.io/sig-storage/livenessprobe@sha256:19f2cf2f40e1987c7943945deca5f65cd4e4bf5cc0657fc78a5df131861578e8" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-attacher:v4.13.0
+	CSIAttacherImage = "registry.k8s.io/sig-storage/csi-attacher@sha256:d1a26170efed45491074ca4545c81844eee2b9043fb885ac01fb4aed6f8b72d2" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-provisioner:v6.4.0
+	CSIProvisionerImage = "registry.k8s.io/sig-storage/csi-provisioner@sha256:6ebe60fd8ed67a7f8a90d34402e9e706b274e53612d6fa5fbb8285728db622e2" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-snapshotter:v8.7.0
+	CSISnapshotterImage = "registry.k8s.io/sig-storage/csi-snapshotter@sha256:b03d3334f8035fa42660b166f6eb819a659a14774da020eb1b6c52cd422eaadb" // #nosec G101 false positive
+	//  registry.k8s.io/sig-storage/csi-resizer:v2.3.0
+	CSIResizerImage = "registry.k8s.io/sig-storage/csi-resizer@sha256:48fb3deb93cd848e3c8998b6368f4322c93bb5ce4a90d1307b6dda0dbefb9a0e" // #nosec G101 false positive
 
 	//ImagePullPolicies for containers
 	CSIDriverImagePullPolicy              = "IfNotPresent"
