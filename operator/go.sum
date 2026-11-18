@@ -1,5 +1,5 @@
-github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20260212153536-173dbe7bfaef h1:FYVS1jaXK2QLhjGzVR5JECln/6E3+11+JBUbxnpLwIE=
-github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20260212153536-173dbe7bfaef/go.mod h1:k5PAJdu3hMp6gNy6nwa4z7wMlfuv5fOjAfR8ZnPf4q0=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20261030165431-1ecf57ed9adc h1:P3DRu2f+Mhl/ggScaWqJQDlkzpLHm/U0Uw5X7VdTwGY=
+github.com/IBM/ibm-spectrum-scale-csi/driver v0.0.0-20261030165431-1ecf57ed9adc/go.mod h1:b0SOqNL+uCmFvu+it0/tAVh5QqI1JDffwa8emFD6RdA=
 github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
