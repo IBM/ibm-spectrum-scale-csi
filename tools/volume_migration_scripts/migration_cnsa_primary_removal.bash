@@ -121,6 +121,20 @@ get_pv_list() {
   echo "Found $(echo "$ALL_PVS" | wc -l) PVs using spectrumscale.csi.ibm.com driver"
 }
 
+# Pre-requisite check: prints the pod names and returns 0 if the PVC is used by any
+# active (not Succeeded/Failed) pod in the given namespace, otherwise returns 1.
+get_pods_using_pvc() {
+  local pvc_name="$1" pvc_ns="$2"
+  local pods
+  pods=$(kubectl get pods -n "$pvc_ns" -o json | jq -r --arg pvc "$pvc_name" '
+    .items[]
+    | select(.status.phase != "Succeeded" and .status.phase != "Failed")
+    | select(any(.spec.volumes[]?; .persistentVolumeClaim.claimName == $pvc))
+    | .metadata.name') || return 1
+  [[ -n "$pods" ]] || return 1
+  echo "$pods"
+}
+
 migrate_each() {
   PV="$1"
 
@@ -142,6 +156,14 @@ migrate_each() {
     echo "PVC $PVC_NAME not found in namespace $PVC_NAMESPACE, skipping."
     fail_list+=("$PVC_NAME|$PV")
     fail_count=$(expr $fail_count + 1)
+    return
+  fi
+
+  if USED_BY_PODS=$(get_pods_using_pvc "$PVC_NAME" "$PVC_NAMESPACE"); then
+    echo "PVC $PVC_NAME in namespace $PVC_NAMESPACE is in use by pod(s): $(echo "$USED_BY_PODS" | tr '\n' ' ')"
+    echo "Skipping migration of PV $PV. Stop the application pod(s) and re-run the script to migrate it."
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
     return
   fi
 
@@ -345,6 +367,11 @@ spec:
   accessModes: $(echo "$ACCESS_MODES" | jq '.')
   persistentVolumeReclaimPolicy: $RECLAIM_POLICY_ORIGINAL
   storageClassName: $STORAGE_CLASS
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: $PVC_NAME
+    namespace: $PVC_NAMESPACE
   csi:
     driver: $DRIVER
     fsType: $FSTYPE
@@ -403,7 +430,7 @@ final_summary() {
   fi
 
   if (( ${#skip_list[@]} > 0 )); then
-    echo "Skipped PVs (already migrated): ${#skip_list[@]}"
+    echo "Skipped PVs (migration not required / already migrated / in use by pods): ${#skip_list[@]}"
     printf "   %-80s | %s\n" "PVC Name" "PV Name"
     printf "   %s\n" "----------------------------------------------------------------------------------------------------------------------------"
     for entry in "${skip_list[@]}"; do
