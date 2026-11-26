@@ -149,3 +149,34 @@ The following fields are preserved:
 - The **filesystem names** (e.g., `remotefs1`) must remain identical between pre-primary-filesystem and post-primary-filesystem removal deployments.
 - The script does **not delete or recreate volumes** on IBM Storage Scale; it only updates Kubernetes PV metadata.
 - Existing workloads must be restarted to pick up new PV mount paths after migration.
+
+## Restore PVs/PVCs to the original spec
+
+Before a PV is touched, the script saves its original PV and PVC specs, cleaned of cluster-populated fields
+(`uid`, `resourceVersion`, `status`, `claimRef.uid`, ...) and ready to be re-applied, in a separate directory of
+the migration run, together with the raw `kubectl get -o yaml` backups:
+
+```
+csi_migration_data/<timestamp>/
+├── migration.log
+├── <namespace>/<pvc_name>/pv.yaml, pvc.yaml     # raw backup
+└── restore_specs/<namespace>/<pvc_name>/pv.json, pvc.json   # original specs used by --restore
+```
+
+Restore every PV/PVC of a run, or only selected ones:
+
+```bash
+./migration_csi_primary_removal.bash --restore csi_migration_data/<timestamp>
+./migration_csi_primary_removal.bash --restore csi_migration_data/<timestamp> --pvc <namespace>/<pvc_name> [--pvc <namespace>/<pvc_name> ...]
+```
+
+For each PVC the restore:
+
+1. Skips it if a pod is using the PVC (stop the application and re-run), or if it already has the original `volumeHandle`.
+2. Saves what currently exists to `csi_migration_data/restore_<timestamp>/pre_restore/`.
+3. Sets the PV reclaim policy to `Retain` (data is never deleted), deletes the PVC and PV, and re-applies the original PV and PVC specs. The original reclaim policy is restored with the PV spec.
+4. Waits for the PVC to become `Bound`.
+
+The restore log is written to `csi_migration_data/restore_<timestamp>/restore.log`. `--new_path_prefix` is not needed with `--restore`.
+
+Runs created by an earlier version of the script have no `restore_specs` directory; the restore then generates the specs from the raw `pv.yaml`/`pvc.yaml` backup. In that case the reclaim policy in the backup is `Retain` (it was patched before the backup was taken), so set it back manually if needed.

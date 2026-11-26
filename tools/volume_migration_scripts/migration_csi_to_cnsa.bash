@@ -7,28 +7,78 @@ set -euo pipefail
 
 # --- Help Function ---
 help() {
-  echo ""
-  echo "Usage: $0 --new_path_prefix <path> "
-  echo ""
-  echo "Example:"
-  echo "  $0 --new_path_prefix /var/mnt"
-  echo ""
-  echo "  These must match the base mount point of IBM Storage Scale on your nodes."
-  echo ""
-  echo "Description:"
-  echo "  This script migrates IBM Storage Scale CSI PersistentVolumes to IBM Storage Scale container native format by updating the volumeHandle path with the specified prefix"
-  echo ""
+  cat <<EOF_HELP
+
+Usage:
+  Migrate : $0 --new_path_prefix <path>
+  Restore : $0 --restore <backup_dir> [--pvc <namespace>/<pvc_name> ...]
+  Help    : $0 -h | --help
+
+Description:
+  Migrates IBM Storage Scale CSI PersistentVolumes (PVs) to IBM Storage Scale container native
+  format by updating the volumeHandle path with the specified prefix.
+
+Migration:
+  Updates the volumeHandle path of each PV to use the new path prefix. For every PV the script
+  sets the reclaim policy to Retain, backs up the PV/PVC, deletes and re-creates them with the
+  new volumeHandle. PVCs in use by pods are skipped; stop the application pods and re-run.
+
+  Options:
+    --new_path_prefix <path>        Base mount point of IBM Storage Scale on your nodes.
+                                    Allowed values: /ibm, /var/mnt, /mnt
+
+  Examples:
+    $0 --new_path_prefix /var/mnt
+
+Restore (revert migrated PV/PVCs to their original spec):
+  Reverts PVs/PVCs of an earlier migration run to the specs saved before they were changed.
+
+  Options:
+    --restore <backup_dir>          Migration run directory, e.g. csi_migration_data/20260101_120000
+    --pvc <namespace>/<pvc_name>    Restore only this PVC and its PV. Can be given multiple times.
+                                    Without --pvc, all PV/PVCs of the run are restored.
+
+  Examples:
+    $0 --restore csi_migration_data/20260101_120000
+    $0 --restore csi_migration_data/20260101_120000 --pvc ns1/pvc1 --pvc ns2/pvc2
+
+  Notes:
+    - Use the same script for the restore that was used for the migration.
+    - PVCs in use by pods, or already bound to a different PV, are skipped.
+
+Output:
+  Logs, PV/PVC backups and restore specs are written to ./csi_migration_data/
+EOF_HELP
   exit 1
 }
 
 # --- Argument Parsing ---
 NEW_PATH_PREFIX=""
 
+RESTORE_DIR=""
+RESTORE_PVCS=()
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --new_path_prefix)
       shift
       NEW_PATH_PREFIX="$1"
+      ;;
+    --restore)
+      shift
+      RESTORE_DIR="${1:-}"
+      if [[ -z "$RESTORE_DIR" ]]; then
+        echo "Missing value for --restore"
+        help
+      fi
+      ;;
+    --pvc)
+      shift
+      if [[ -z "${1:-}" || "$1" != */* ]]; then
+        echo "--pvc expects <namespace>/<pvc_name>"
+        help
+      fi
+      RESTORE_PVCS+=("$1")
       ;;
     -h|--help)
       help
@@ -41,17 +91,22 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ -z "$NEW_PATH_PREFIX" ]]; then
+if [[ -z "$RESTORE_DIR" && -z "$NEW_PATH_PREFIX" ]]; then
   echo "Missing required argument: --new_path_prefix"
   help
 fi
 
 #TODO: Uncomment the following lines to enforce allowed path prefixes
 # Enforce allowed path prefixes
-if [[ "$NEW_PATH_PREFIX" != "/ibm" && "$NEW_PATH_PREFIX" != "/var/mnt" && "$NEW_PATH_PREFIX" != "/mnt" ]]; then
+if [[ -z "$RESTORE_DIR" && "$NEW_PATH_PREFIX" != "/ibm" && "$NEW_PATH_PREFIX" != "/var/mnt" && "$NEW_PATH_PREFIX" != "/mnt" ]]; then
   echo "Error: Unsupported --new_path_prefix value: '$NEW_PATH_PREFIX'"
   echo "Allowed values are: /ibm, /var/mnt, /mnt"
   exit 1
+fi
+
+if [[ ${#RESTORE_PVCS[@]} -gt 0 && -z "$RESTORE_DIR" ]]; then
+  echo "--pvc can only be used together with --restore"
+  help
 fi
 
 # --- Initialize Counters and Lists ---
@@ -66,6 +121,7 @@ skip_count=0
 main() {
   init
   check_prerequisites
+  confirm_prerequisites
   echo "Using the new path prefix: $NEW_PATH_PREFIX"
   echo "The new volume handle volumePath will be: $NEW_PATH_PREFIX/<RemoteFS>/..."
   echo ""
@@ -85,6 +141,29 @@ main() {
     COUNT=$((COUNT + 1))
   done
   final_summary
+}
+
+# Asks the user to confirm that the manual pre-requisites are met before anything is changed
+confirm_prerequisites() {
+  echo ""
+  echo "======================================================================================================"
+  echo "PRE-REQUISITES - please confirm before continuing"
+  echo "======================================================================================================"
+  echo "  1. All applications (pods) using the Storage Scale CSI PVCs are stopped/deleted"
+  echo "     (e.g. scale deployments/statefulsets to 0). PVCs still used by pods are skipped."
+  echo "  2. No PVC/PV is stuck in Terminating state."
+  echo "  3. The new path prefix is the base mount point of IBM Storage Scale on all your nodes."
+  echo "  4. You are logged into the correct Kubernetes cluster."
+  echo "  5. Do not interrupt the script while it is running."
+  echo "     Original PV/PVC specs are saved in $BACKUP_BASE_DIR and can be re-applied with --restore."
+  echo "======================================================================================================"
+  echo ""
+  read -rp "Have all the above pre-requisites been met and applications stopped? (yes/y/Y to continue): " PREREQ_CONFIRM
+  if [[ "$PREREQ_CONFIRM" != "yes" && "$PREREQ_CONFIRM" != "y" && "$PREREQ_CONFIRM" != "Y" ]]; then
+    echo "Pre-requisites not confirmed. Aborting migration. No changes were made."
+    exit 0
+  fi
+  echo ""
 }
 
 check_prerequisites() {
@@ -120,6 +199,20 @@ get_pv_list() {
   echo "Found $(echo "$ALL_PVS" | wc -l) PVs using spectrumscale.csi.ibm.com driver"
 }
 
+# Pre-requisite check: prints the pod names and returns 0 if the PVC is used by any
+# active (not Succeeded/Failed) pod in the given namespace, otherwise returns 1.
+get_pods_using_pvc() {
+  local pvc_name="$1" pvc_ns="$2"
+  local pods
+  pods=$(kubectl get pods -n "$pvc_ns" -o json | jq -r --arg pvc "$pvc_name" '
+    .items[]
+    | select(.status.phase != "Succeeded" and .status.phase != "Failed")
+    | select(any(.spec.volumes[]?; .persistentVolumeClaim.claimName == $pvc))
+    | .metadata.name') || return 1
+  [[ -n "$pods" ]] || return 1
+  echo "$pods"
+}
+
 migrate_each() {
   PV="$1"
 
@@ -141,6 +234,26 @@ migrate_each() {
     echo "PVC $PVC_NAME not found in namespace $PVC_NAMESPACE, skipping."
     fail_list+=("$PVC_NAME|$PV")
     fail_count=$(expr $fail_count + 1)
+    return
+  fi
+
+  # The PVC found by name must be bound to this PV; otherwise this PV has a stale claimRef
+  # (for example a Released PV left over from an earlier run) and must not be migrated.
+  PVC_BOUND_PV=$(kubectl get pvc "$PVC_NAME" -n "$PVC_NAMESPACE" -o jsonpath='{.spec.volumeName}' 2>/dev/null || true)
+  if [[ "$PVC_BOUND_PV" != "$PV" ]]; then
+    PV_PHASE=$(kubectl get pv "$PV" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+    echo "PV $PV is in phase '${PV_PHASE:-unknown}' and its claim $PVC_NAMESPACE/$PVC_NAME is bound to '${PVC_BOUND_PV:-no PV}', not to this PV (stale claimRef)."
+    echo "Skipping $PV. This PV is not attached to its original claim; verify it manually (kubectl get pv $PV -o yaml) before deleting or re-binding it. Do not use --restore for this PVC, as it would replace the PVC that is bound to ${PVC_BOUND_PV:-another PV}."
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
+    return
+  fi
+
+  if USED_BY_PODS=$(get_pods_using_pvc "$PVC_NAME" "$PVC_NAMESPACE"); then
+    echo "PVC $PVC_NAME in namespace $PVC_NAMESPACE is in use by pod(s): $(echo "$USED_BY_PODS" | tr '\n' ' ')"
+    echo "Skipping migration of PV $PV. Stop the application pod(s) and re-run the script to migrate it."
+    skip_count=$(expr $skip_count + 1)
+    skip_list+=("$PVC_NAME|$PV")
     return
   fi
 
@@ -255,6 +368,14 @@ migrate_each() {
 
   echo "Updated volumeHandle for $PV: $NEW_VOLUME_HANDLE"
 
+  echo "Saving original PV and PVC specs for restore..."
+  if ! save_restore_specs "$PV" "$PVC_NAME" "$PVC_NAMESPACE"; then
+    echo "Failed to save restore specs for PV: $PV"
+    fail_count=$(expr $fail_count + 1)
+    fail_list+=("$PVC_NAME|$PV")
+    return
+  fi
+
   echo "Setting reclaim policy to Retain for PV: $PV"
   if ! kubectl patch pv "$PV" --type=merge -p '{"spec": {"persistentVolumeReclaimPolicy": "Retain"}}'; then
     echo "Failed to patch reclaim policy for PV: $PV"
@@ -311,6 +432,11 @@ spec:
   accessModes: $(echo "$ACCESS_MODES" | jq '.')
   persistentVolumeReclaimPolicy: $RECLAIM_POLICY_ORIGINAL
   storageClassName: $STORAGE_CLASS
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: $PVC_NAME
+    namespace: $PVC_NAMESPACE
   csi:
     driver: $DRIVER
     fsType: $FSTYPE
@@ -369,7 +495,7 @@ final_summary() {
   fi
 
   if (( ${#skip_list[@]} > 0 )); then
-    echo "Skipped PVs (already migrated): ${#skip_list[@]}"
+    echo "Skipped PVs (migration not required / already migrated / in use by pods): ${#skip_list[@]}"
     printf "   %-80s | %s\n" "PVC Name" "PV Name"
     printf "   %s\n" "----------------------------------------------------------------------------------------------------------------------------"
     for entry in "${skip_list[@]}"; do
@@ -382,6 +508,230 @@ final_summary() {
   echo "Completed migration at: $(date)"
 }
 
-main
+# =====================================================================================
+# Restore support
+#
+# While migrating, the original PV and PVC specs are saved (cleaned and ready to be
+# re-applied) in a separate directory of the migration run:
+#     <backup_dir>/restore_specs/<namespace>/<pvc_name>/pv.json
+#     <backup_dir>/restore_specs/<namespace>/<pvc_name>/pvc.json
+#
+# Usage:
+#     --restore <backup_dir>                      restore every PV/PVC found in the run
+#     --restore <backup_dir> --pvc <ns>/<pvc>     restore only the given PVC(s); repeatable
+# =====================================================================================
+
+# jq filter: strip fields populated by the cluster so that the object can be re-applied
+JQ_STRIP_RUNTIME='del(.status, .metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.generation, .metadata.managedFields, .metadata.finalizers, .metadata.deletionTimestamp, .metadata.deletionGracePeriodSeconds, .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"], .metadata.annotations["pv.kubernetes.io/bound-by-controller"], .metadata.annotations["pv.kubernetes.io/bind-completed"], .spec.claimRef.uid, .spec.claimRef.resourceVersion, .spec.claimRef.fieldPath)'
+
+# Saves the original PV and PVC specs in the restore_specs directory of this run.
+# Must be called before the PV is patched or deleted.
+save_restore_specs() {
+  local pv="$1" pvc="$2" ns="$3"
+  local dir="$BACKUP_BASE_DIR/restore_specs/$ns/$pvc"
+  mkdir -p "$dir"
+  kubectl get pv "$pv" -o json | jq "$JQ_STRIP_RUNTIME" > "$dir/pv.json" \
+    && kubectl get pvc "$pvc" -n "$ns" -o json | jq "$JQ_STRIP_RUNTIME" > "$dir/pvc.json"
+}
+
+init_restore() {
+  RUN_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  BACKUP_PARENT_DIR="csi_migration_data"
+  RESTORE_BASE_DIR="$BACKUP_PARENT_DIR/restore_$RUN_TIMESTAMP"
+  mkdir -p "$RESTORE_BASE_DIR"
+
+  LOG_FILE="$RESTORE_BASE_DIR/restore.log"
+  exec > >(tee "$LOG_FILE") 2>&1
+
+  echo "Logging to $LOG_FILE"
+  echo "Starting restore at: $(date)"
+  echo ""
+}
+
+# Restores one PV/PVC pair to its original spec: $1 = namespace, $2 = pvc name
+restore_each() {
+  local ns="$1" pvc="$2"
+  local spec_dir="$RESTORE_DIR/restore_specs/$ns/$pvc"
+  local raw_dir="$RESTORE_DIR/$ns/$pvc"
+  local pv_file="$spec_dir/pv.json" pvc_file="$spec_dir/pvc.json"
+  local pv live_pv pods cur_handle orig_handle snap_dir finalizer index phase
+
+  if [[ ! -s "$pv_file" || ! -s "$pvc_file" ]]; then
+    echo "No restore specs in $spec_dir, generating them from the raw backup in $raw_dir"
+    echo "Note: the raw backup is taken after the reclaim policy was patched to Retain, so the restored PV keeps 'Retain'."
+    mkdir -p "$spec_dir"
+    if ! { kubectl create --dry-run=client -f "$raw_dir/pv.yaml" -o json | jq "$JQ_STRIP_RUNTIME" > "$pv_file" \
+        && kubectl create --dry-run=client -f "$raw_dir/pvc.yaml" -o json | jq "$JQ_STRIP_RUNTIME" > "$pvc_file"; }; then
+      echo "Failed to generate restore specs for PVC $pvc in namespace $ns"
+      fail_count=$((fail_count + 1)); fail_list+=("$pvc|"); return
+    fi
+  fi
+
+  pv=$(jq -r '.metadata.name' "$pv_file")
+  orig_handle=$(jq -r '.spec.csi.volumeHandle' "$pv_file")
+  echo "Restoring PVC $pvc (namespace $ns) and PV $pv from $spec_dir"
+  echo "Original volumeHandle: $orig_handle"
+
+  # Guard: never replace a live PVC that is bound to a different PV than the one in the backup
+  live_pv=$(kubectl get pvc "$pvc" -n "$ns" -o jsonpath='{.spec.volumeName}' 2>/dev/null || true)
+  if [[ -n "$live_pv" && "$live_pv" != "$pv" ]]; then
+    echo "PVC $pvc in namespace $ns is currently bound to PV '$live_pv', not to the backed-up PV '$pv'."
+    echo "Skipping restore to avoid replacing a live PVC. Verify manually if '$pv' is still needed."
+    skip_count=$((skip_count + 1)); skip_list+=("$pvc|$pv"); return
+  fi
+
+  if pods=$(get_pods_using_pvc "$pvc" "$ns"); then
+    echo "PVC $pvc in namespace $ns is in use by pod(s): $(echo "$pods" | tr '\n' ' ')"
+    echo "Skipping restore of PV $pv. Stop the application pod(s) and re-run the restore."
+    skip_count=$((skip_count + 1)); skip_list+=("$pvc|$pv"); return
+  fi
+
+  cur_handle=$(kubectl get pv "$pv" -o jsonpath='{.spec.csi.volumeHandle}' 2>/dev/null || true)
+  if [[ "$cur_handle" == "$orig_handle" ]] && kubectl get pvc "$pvc" -n "$ns" >/dev/null 2>&1; then
+    echo "PV $pv already has the original volumeHandle and PVC exists. Nothing to restore."
+    skip_count=$((skip_count + 1)); skip_list+=("$pvc|$pv"); return
+  fi
+  echo "Current volumeHandle: ${cur_handle:-<PV not found>}"
+
+  # Keep a copy of whatever exists now, so the state before the restore is not lost
+  snap_dir="$RESTORE_BASE_DIR/pre_restore/$ns/$pvc"
+  mkdir -p "$snap_dir"
+  kubectl get pv "$pv" -o yaml > "$snap_dir/pv.yaml" 2>/dev/null || rm -f "$snap_dir/pv.yaml"
+  kubectl get pvc "$pvc" -n "$ns" -o yaml > "$snap_dir/pvc.yaml" 2>/dev/null || rm -f "$snap_dir/pvc.yaml"
+
+  if kubectl get pv "$pv" >/dev/null 2>&1; then
+    echo "Setting reclaim policy to Retain for PV: $pv (protects the data while it is re-created)"
+    if ! kubectl patch pv "$pv" --type=merge -p '{"spec": {"persistentVolumeReclaimPolicy": "Retain"}}'; then
+      echo "Failed to patch reclaim policy for PV: $pv"
+      fail_count=$((fail_count + 1)); fail_list+=("$pvc|$pv"); return
+    fi
+  fi
+
+  echo "Deleting current PVC and PV..."
+  kubectl delete pvc "$pvc" -n "$ns" --ignore-not-found --wait=true --timeout=120s || true
+  if kubectl get pvc "$pvc" -n "$ns" >/dev/null 2>&1; then
+    echo "PVC $pvc still exists after deletion (may be stuck on finalizer). Skipping $pv"
+    fail_count=$((fail_count + 1)); fail_list+=("$pvc|$pv"); return
+  fi
+
+  if kubectl get pv "$pv" >/dev/null 2>&1; then
+    finalizer="external-attacher/spectrumscale-csi-ibm-com"
+    index=$(kubectl get pv "$pv" -o json | jq -r \
+      ".metadata.finalizers // [] | to_entries | map(select(.value==\"${finalizer}\")) | .[0].key")
+    if [[ -n "$index" && "$index" != "null" ]]; then
+      echo "Removing ${finalizer} finalizer from PV ${pv}..."
+      kubectl patch pv "$pv" --type=json -p="[ { \"op\": \"remove\", \"path\": \"/metadata/finalizers/${index}\" } ]"
+    fi
+    kubectl delete pv "$pv" --ignore-not-found --timeout=120s
+  fi
+
+  echo "Re-creating original PV and PVC..."
+  if ! kubectl apply -f "$pv_file" || ! kubectl apply -f "$pvc_file"; then
+    echo "Failed to apply the original specs for PV $pv / PVC $pvc. Specs are kept in $spec_dir"
+    fail_count=$((fail_count + 1)); fail_list+=("$pvc|$pv"); return
+  fi
+
+  phase=""
+  for _ in $(seq 1 30); do
+    phase=$(kubectl get pvc "$pvc" -n "$ns" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+    if [[ "$phase" == "Bound" ]]; then break; fi
+    sleep 2
+  done
+  if [[ "$phase" != "Bound" ]]; then
+    echo "PVC $pvc did not reach Bound state (phase: ${phase:-unknown}). Check: kubectl describe pvc $pvc -n $ns"
+    fail_count=$((fail_count + 1)); fail_list+=("$pvc|$pv"); return
+  fi
+
+  echo "Restore successful for PV: $pv and PVC: $pvc"
+  echo "----------------------------------------------------------------------------------------"
+  success_count=$((success_count + 1)); success_list+=("$pvc|$pv")
+}
+
+restore_summary() {
+  local title entry pvc pv
+  local list=()
+  echo ""
+  echo "Restore Summary:"
+  echo "----------------------------------------------------------------------------------------------------------------------------"
+  for title in "Restored" "Failed" "Skipped"; do
+    list=()
+    case "$title" in
+      Restored) if (( ${#success_list[@]} > 0 )); then list=("${success_list[@]}"); fi ;;
+      Failed)   if (( ${#fail_list[@]} > 0 )); then list=("${fail_list[@]}"); fi ;;
+      Skipped)  if (( ${#skip_list[@]} > 0 )); then list=("${skip_list[@]}"); fi ;;
+    esac
+    if (( ${#list[@]} == 0 )); then continue; fi
+    echo "$title PVs: ${#list[@]}"
+    printf "   %-80s | %s\n" "PVC Name" "PV Name"
+    printf "   %s\n" "----------------------------------------------------------------------------------------------------------------------------"
+    for entry in "${list[@]}"; do
+      IFS='|' read -r pvc pv <<< "$entry"
+      printf "   %-80s | %s\n" "$pvc" "$pv"
+    done
+    echo ""
+  done
+  echo "Completed restore at: $(date)"
+  echo "State before the restore was saved in: $RESTORE_BASE_DIR/pre_restore"
+}
+
+restore_main() {
+  init_restore
+  check_prerequisites
+
+  RESTORE_DIR="${RESTORE_DIR%/}"
+  if [[ ! -d "$RESTORE_DIR" ]]; then
+    echo "Error: backup directory '$RESTORE_DIR' not found."
+    exit 1
+  fi
+
+  local targets=() d ns pvc f match
+  for d in "$RESTORE_DIR"/*/*/; do
+    if [[ ! -f "${d}pv.yaml" ]]; then continue; fi
+    d="${d%/}"
+    pvc="${d##*/}"
+    ns="${d%/*}"; ns="${ns##*/}"
+    if (( ${#RESTORE_PVCS[@]} > 0 )); then
+      match=0
+      for f in "${RESTORE_PVCS[@]}"; do
+        if [[ "$f" == "$ns/$pvc" ]]; then match=1; fi
+      done
+      if (( match == 0 )); then continue; fi
+    fi
+    targets+=("$ns|$pvc")
+  done
+
+  if (( ${#targets[@]} == 0 )); then
+    echo "No PV/PVC backups found in '$RESTORE_DIR' to restore (expected <backup_dir>/<namespace>/<pvc>/pv.yaml)."
+    exit 1
+  fi
+
+  echo "The following PVC(s) (and their PVs) will be restored to their original spec:"
+  for f in "${targets[@]}"; do
+    IFS='|' read -r ns pvc <<< "$f"
+    echo "  $ns/$pvc"
+  done
+  echo ""
+  read -rp "Proceed with restore? (yes/y/Y to continue): " CONFIRM
+  if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+    echo "Aborting restore."
+    exit 0
+  fi
+
+  local count=1
+  for f in "${targets[@]}"; do
+    IFS='|' read -r ns pvc <<< "$f"
+    echo ""
+    echo "[$count/${#targets[@]}]  --------------------------------------------------------------------------------"
+    restore_each "$ns" "$pvc"
+    count=$((count + 1))
+  done
+  restore_summary
+}
+
+if [[ -n "$RESTORE_DIR" ]]; then
+  restore_main
+else
+  main
+fi
 
 exit 0
